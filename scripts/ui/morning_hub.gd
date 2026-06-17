@@ -21,6 +21,12 @@ const SHOP_ITEMS: Array[Dictionary] = [
 	{ "id": "watermelon", "name": "Watermelon", "cost": 5.0, "qty": 10 },
 	{ "id": "sugar", "name": "Sugar", "cost": 1.5, "qty": 10 },
 	{ "id": "ice", "name": "Ice", "cost": 1.0, "qty": 10 },
+	{
+		"id": "water",
+		"name": "Water",
+		"cost": Balancing.WATER_COST,
+		"qty": Balancing.WATER_BOX_FILLINGS,
+	},
 	{ "id": "cups", "name": "Cups", "cost": 0.5, "qty": 10 },
 ]
 

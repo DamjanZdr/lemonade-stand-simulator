@@ -59,6 +59,10 @@ const DELIVERY_COST_PER_UNIT: float = 0.20
 const DELIVERY_QUANTITY: float = 10.0
 const DELIVERY_DROP_HEIGHT: float = 4.0
 
+# === WATER DISPENSER ===
+const WATER_COST: float = 5.0
+const WATER_BOX_FILLINGS: float = 5.0
+
 # === CUSTOMERS ===
 const SPAWN_RATE_MIN: float = 5.0
 const SPAWN_RATE_MAX: float = 30.0

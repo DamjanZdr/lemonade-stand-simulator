@@ -34,6 +34,7 @@ const CONTAINER_SCENES: Dictionary = {
 	"cup_stack": preload("res://scenes/objects/cup_stack.tscn"),
 	"pitcher": preload("res://scenes/objects/pitcher.tscn"),
 	"press": preload("res://scenes/objects/press.tscn"),
+	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
 }
 
 const CONTAINER_PLACEMENT_SCALE: Dictionary = {
@@ -43,6 +44,7 @@ const CONTAINER_PLACEMENT_SCALE: Dictionary = {
 	"cup_stack": Vector3.ONE * 0.03, # Smaller cups
 	"pitcher": Vector3.ONE * 0.15,
 	"press": Vector3.ONE * 0.10,
+	"water_dispenser": Vector3.ONE * 0.08,
 }
 
 const CONTAINER_HAND_SCALE: Dictionary = {
@@ -52,6 +54,7 @@ const CONTAINER_HAND_SCALE: Dictionary = {
 	"cup_stack": Vector3.ONE * 0.015,
 	"pitcher": Vector3.ONE * 0.08,
 	"press": Vector3.ONE * 0.05,
+	"water_dispenser": Vector3.ONE * 0.04,
 }
 
 
@@ -158,7 +161,12 @@ func _poll_hint() -> void:
 				if press != null:
 					var _recipe: Dictionary = held_item_data.get("saved_recipe", { })
 					hint = press.get_pitcher_snap_hint(_recipe)
-				elif _ghost_valid:
+					return
+				var dispenser := _find_looked_at_dispenser()
+				if dispenser != null:
+					hint = dispenser.get_hint(self)
+					return
+				if _ghost_valid:
 					hint = "LMB: Place  |  RMB: Cancel (refund)"
 				else:
 					hint = "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
@@ -231,6 +239,26 @@ func _primary_interact() -> void:
 					return
 				EventBus.interaction_hint_changed.emit(
 					press.get_pitcher_snap_hint(recipe),
+				)
+				return
+			var dispenser := _find_looked_at_dispenser()
+			if dispenser != null:
+				var recipe: Dictionary = held_item_data.get("saved_recipe", { })
+				var temp_pitcher := CONTAINER_SCENES["pitcher"].instantiate() as Pitcher
+				temp_pitcher.fruit_type = recipe.get("fruit_type", "")
+				temp_pitcher.fruit_count = recipe.get("fruit_count", recipe.get("lemons", 0.0))
+				temp_pitcher.water = recipe.get("water", 0.0)
+				var can_snap := dispenser.can_snap_pitcher(temp_pitcher)
+				temp_pitcher.queue_free()
+				if can_snap:
+					_ghost.global_position = dispenser.get_snap_global_position()
+					_ghost_valid = true
+					var placed := _try_place_container()
+					if placed is Pitcher:
+						dispenser.snap_pitcher(placed as Pitcher)
+					return
+				EventBus.interaction_hint_changed.emit(
+					dispenser.get_hint(self),
 				)
 				return
 		_try_place_container()
@@ -580,6 +608,20 @@ func _update_rapid_fire(delta: float) -> void:
 		cup_stack.interact(self)
 		return
 
+	# Handle water dispenser refill
+	var dispenser := interactable as WaterDispenser
+	if dispenser != null:
+		if held_item_data.get("ingredient_type", "") != "water":
+			return
+		if dispenser.water_fillings >= dispenser.max_fillings:
+			return
+		var amount: float = held_item_data.get("amount", 0.0)
+		if amount <= 0.0:
+			return
+		_rapid_fire_timer = _get_rapid_fire_interval()
+		dispenser.interact(self)
+		return
+
 	# Handle ingredient bin deposits
 	var bin := interactable as IngredientBin
 	if bin == null:
@@ -630,6 +672,21 @@ func _find_looked_at_press() -> Press:
 				break
 			if node is Press:
 				return node as Press
+			node = node.get_parent()
+	return null
+
+
+func _find_looked_at_dispenser() -> WaterDispenser:
+	var interactable := _get_looked_at_interactable()
+	if interactable is WaterDispenser:
+		return interactable as WaterDispenser
+	if ray.is_colliding():
+		var node := ray.get_collider()
+		for i in range(6):
+			if node == null:
+				break
+			if node is WaterDispenser:
+				return node as WaterDispenser
 			node = node.get_parent()
 	return null
 
@@ -901,6 +958,31 @@ func _update_ghost() -> void:
 			else:
 				_ghost_valid = false
 				_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
+			return
+		var dispenser := _find_looked_at_dispenser()
+		if dispenser != null:
+			var recipe: Dictionary = held_item_data.get("saved_recipe", { })
+			var pitcher_scene := load("res://scenes/objects/pitcher.tscn") as PackedScene
+			var pitcher := _ghost as Pitcher
+			if pitcher == null and pitcher_scene != null:
+				_destroy_ghost()
+				_ghost = pitcher_scene.instantiate()
+				get_tree().current_scene.add_child(_ghost)
+				_ghost.scale = CONTAINER_PLACEMENT_SCALE.get("pitcher", Vector3.ONE)
+				pitcher = _ghost as Pitcher
+			_ghost.global_position = dispenser.get_snap_global_position()
+			_ghost.visible = true
+			var temp_pitcher := pitcher_scene.instantiate() as Pitcher
+			temp_pitcher.fruit_type = recipe.get("fruit_type", "")
+			temp_pitcher.fruit_count = recipe.get("fruit_count", recipe.get("lemons", 0.0))
+			temp_pitcher.water = recipe.get("water", 0.0)
+			if dispenser.can_snap_pitcher(temp_pitcher):
+				_ghost_valid = true
+				_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+			else:
+				_ghost_valid = false
+				_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
+			temp_pitcher.queue_free()
 			return
 
 	if not ray.is_colliding():
