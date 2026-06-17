@@ -428,7 +428,7 @@ func _show_shop_category(cat: String) -> void:
 	var page: VBoxContainer = _pages.get("shop")
 	if page == null:
 		return
-	var grid := page.get_node("ShopGrid") as GridContainer
+	var grid := page.find_child("ShopGrid", true, false) as GridContainer
 	if grid == null:
 		return
 	for child in grid.get_children():
@@ -462,14 +462,21 @@ func _refresh_analytics() -> void:
 		c.queue_free()
 	if DayManager.day_number > 1:
 		var h := Label.new()
-		h.text = "Yesterday (Day %d)" % (DayManager.day_number - 1)
-		h.add_theme_font_size_override("font_size", 14)
+		h.text = "Day %d Results" % (DayManager.day_number - 1)
+		h.add_theme_font_size_override("font_size", 18)
+		h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ybox.add_child(h)
+		var sep := HSeparator.new()
+		ybox.add_child(sep)
 		var rev := Label.new()
 		rev.text = "Revenue: $%.2f" % DayManager.day_revenue
+		rev.add_theme_font_size_override("font_size", 16)
+		rev.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ybox.add_child(rev)
 		var s := Label.new()
 		s.text = "Served: %d  |  Happy: %d" % [DayManager.day_serves, DayManager.day_happy_serves]
+		s.add_theme_font_size_override("font_size", 14)
+		s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ybox.add_child(s)
 
 

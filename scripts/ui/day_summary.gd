@@ -2,6 +2,7 @@ extends CanvasLayer
 ## Evening summary: show day's stats, then go to next morning.
 
 @onready var panel: PanelContainer = $Panel
+@onready var backdrop: ColorRect = $Backdrop
 @onready var day_label: Label = $Panel/VBox/DayLabel
 @onready var revenue_label: Label = $Panel/VBox/Stats/RevenueLabel
 @onready var serves_label: Label = $Panel/VBox/Stats/ServesLabel
@@ -12,6 +13,7 @@ extends CanvasLayer
 
 func _ready() -> void:
 	panel.visible = false
+	backdrop.visible = false
 	next_btn.pressed.connect(_on_next_day)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 
@@ -21,6 +23,7 @@ func _on_day_phase_changed(phase: int, day: int) -> void:
 		_show_summary(day)
 	else:
 		panel.visible = false
+		backdrop.visible = false
 
 
 func _show_summary(day: int) -> void:
@@ -32,11 +35,24 @@ func _show_summary(day: int) -> void:
 		DayManager.day_serves - DayManager.day_happy_serves,
 	]
 	popularity_label.text = "Popularity: %.0f%%" % (GameState.popularity * 100.0)
+	backdrop.visible = true
 	panel.visible = true
+	panel.modulate = Color(1, 1, 1, 0)
+	backdrop.modulate = Color(1, 1, 1, 0)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var tween := create_tween()
+	tween.tween_property(backdrop, "modulate", Color(1, 1, 1, 1), 0.5)
+	tween.tween_property(panel, "modulate", Color(1, 1, 1, 1), 0.3)
 
 
 func _on_next_day() -> void:
-	panel.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	DayManager.end_evening()
+	var tween := create_tween()
+	tween.tween_property(panel, "modulate", Color(1, 1, 1, 0), 0.2)
+	tween.parallel().tween_property(backdrop, "modulate", Color(1, 1, 1, 0), 0.4)
+	tween.tween_callback(
+		func():
+			panel.visible = false
+			backdrop.visible = false
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			DayManager.end_evening()
+	)
