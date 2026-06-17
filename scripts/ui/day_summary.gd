@@ -28,6 +28,7 @@ func _fade_to_black() -> void:
 	tween.tween_callback(
 		func():
 			DayManager.end_evening()
-			tween.tween_property(backdrop, "modulate", Color(1, 1, 1, 0), 0.5)
-			tween.tween_callback(func(): backdrop.visible = false)
+			var t2 := create_tween()
+			t2.tween_property(backdrop, "modulate", Color(1, 1, 1, 0), 0.5)
+			t2.tween_callback(func(): backdrop.visible = false)
 	)
