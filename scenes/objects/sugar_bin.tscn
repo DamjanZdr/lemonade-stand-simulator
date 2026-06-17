@@ -1,0 +1,125 @@
+[gd_scene format=3 uid="uid://desse2tnq7jkq"]
+
+[ext_resource type="Script" uid="uid://15kio5i6ygqt" path="res://scripts/objects/ingredient_bin.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://d26s0baibr53s" path="res://blender/sugar cube.glb" id="2_qsjya"]
+[ext_resource type="PackedScene" uid="uid://bwhavk06obiue" path="res://blender/sugar container.glb" id="2_sugar"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_001"]
+size = Vector3(0.42, 0.15, 0.38)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_001"]
+size = Vector3(7.616211, 7.388916, 7.0898438)
+
+[node name="SugarBin" type="Node3D" unique_id=1178009107]
+script = ExtResource("1_script")
+ingredient_type = "sugar"
+starting_amount = 0.0
+max_capacity = 28.0
+drop_height = 1.0
+
+[node name="Container" type="MeshInstance3D" parent="." unique_id=356187360]
+visible = false
+mesh = SubResource("BoxMesh_001")
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=1585967040]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=1252030926]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.01953125, 3.671722, 0)
+shape = SubResource("BoxShape3D_001")
+
+[node name="ItemGrid" type="Node3D" parent="." unique_id=1445714112]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+
+[node name="sugar cube" parent="ItemGrid" unique_id=1900417416 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0.07793808, -6.906022, 0.46759987)
+
+[node name="sugar cube2" parent="ItemGrid" unique_id=512337176 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.44167295, -0.255, 0, 0.255, 0.44167295, 0, 0, 0, 0.51, -1.075799, -6.3177447, 0.47699603)
+
+[node name="sugar cube3" parent="ItemGrid" unique_id=1050474817 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.47631398, 0.275, 0, -0.275, 0.47631398, 0, 0, 0, 0.55, 1.2633762, -6.1976147, 0.47699603)
+
+[node name="sugar cube4" parent="ItemGrid" unique_id=1048903501 instance=ExtResource("2_qsjya")]
+transform = Transform3D(-2.4041261e-08, 0, -0.55, 0.275, 0.47631398, -1.2020631e-08, 0.47631398, -0.275, -2.0820343e-08, -0.04917717, -6.5961404, -0.80986756)
+
+[node name="sugar cube5" parent="ItemGrid" unique_id=150960266 instance=ExtResource("2_qsjya")]
+transform = Transform3D(-2.4563544e-08, 1.1953007e-09, -0.51, 0.23755795, 0.45129395, -1.0383987e-08, 0.45129395, -0.23755795, -2.2292808e-08, -0.04917717, -6.5089383, 1.614698)
+
+[node name="sugar cube6" parent="ItemGrid" unique_id=1338103257 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.58, 0, 0, 0, 0.58, 0, 0, 0, 0.58, 0.027985573, -5.7075124, 0.4168024)
+
+[node name="sugar cube7" parent="ItemGrid" unique_id=1891772771 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.32944897, 0.21236947, -0.3858271, -0.20717035, 0.49992296, 0.09827278, 0.3886435, 0.08646558, 0.37944674, -1.4811411, -6.298818, -0.90075254)
+
+[node name="sugar cube8" parent="ItemGrid" unique_id=291059399 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.50216067, -0.22435391, 0, 0.2126068, 0.4758677, -0.17563687, 0.07164512, 0.16035986, 0.52120215, 1.2570677, -6.5399957, -0.71939945)
+
+[node name="sugar cube9" parent="ItemGrid" unique_id=1868998497 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.51712906, 0.18729001, 0, -0.18112138, 0.50009674, 0.13999394, 0.047671754, -0.13162714, 0.5318851, -1.2226305, -6.207764, 1.5989809)
+
+[node name="sugar cube10" parent="ItemGrid" unique_id=1140896081 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.51, 0, 0, 0, 0.4124783, -0.2999361, 0, 0.2999361, 0.4124783, 1.0773954, -6.088927, 1.7362108)
+
+[node name="sugar cube11" parent="ItemGrid" unique_id=1751760764 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.53937405, -0.10323263, 0.030308858, 0.10338973, 0.54019487, 0, -0.029768532, 0.0056975004, 0.5491642, -2.253951, -5.395491, 1.1864371)
+
+[node name="sugar cube12" parent="ItemGrid" unique_id=1357374456 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.58, 0, 0, 0, 0.53258675, -0.22967668, 0, 0.22967668, 0.53258675, -2.2633905, -5.2920623, -0.063434124)
+
+[node name="sugar cube13" parent="ItemGrid" unique_id=840788392 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.51412064, -0.10627614, -0.16396731, 0.14542657, 0.51636976, 0.121298656, 0.13050295, -0.15674067, 0.510785, 0.74485207, -5.8191013, -1.90164)
+
+[node name="sugar cube14" parent="ItemGrid" unique_id=527054500 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.5574891, -0.11676172, 0.10941946, 0.020962965, 0.44647223, 0.36962563, -0.15863943, -0.351325, 0.43336388, -0.49364567, -5.6279936, 2.5263205)
+
+[node name="sugar cube15" parent="ItemGrid" unique_id=779549534 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.5126496, 0, -0.19922459, 0, 0.55, 0, 0.19922459, 0, 0.5126496, 2.4249153, -5.471279, 1.1591161)
+
+[node name="sugar cube16" parent="ItemGrid" unique_id=1663736891 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.47853157, -0.24042521, 0.12531258, 0.24691962, 0.49145773, 0, -0.111974254, 0.05625843, 0.5355341, 2.173458, -5.643029, -0.33219665)
+
+[node name="sugar cube17" parent="ItemGrid" unique_id=1041436210 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.5457828, 0, 0.19626799, 0, 0.58, 0, -0.19626799, 0, 0.5457828, -0.7001114, -5.7020206, -1.9782768)
+
+[node name="sugar cube18" parent="ItemGrid" unique_id=1952820627 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.5035005, -0.010430773, -0.08048847, 0, 0.5057706, -0.06554452, 0.08116154, 0.06470922, 0.49932507, 0.9149122, -5.192111, 2.5365167)
+
+[node name="sugar cube19" parent="ItemGrid" unique_id=1945757451 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.54828656, -0.009345265, 0.042363666, 0, 0.5370872, 0.11847942, -0.043382198, -0.1181103, 0.5354139, 0.2669859, -5.3346343, -0.87247574)
+
+[node name="sugar cube20" parent="ItemGrid" unique_id=1715763422 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.5301762, 0.065026104, -0.13109054, -0.057490166, 0.5456546, 0.038155887, 0.134566, -0.023078054, 0.5327846, 1.2474022, -4.8878145, 0.6577444)
+
+[node name="sugar cube21" parent="ItemGrid" unique_id=587324506 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.5389119, 0, -0.21441549, 0, 0.58, 0, 0.21441549, 0, 0.5389119, -1.0285444, -5.0860367, -0.32167244)
+
+[node name="sugar cube22" parent="ItemGrid" unique_id=1208721030 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.5064408, 0, -0.060147393, 0, 0.51, 0, 0.060147393, 0, 0.5064408, -1.1379976, -4.9759965, 1.1382122)
+
+[node name="sugar cube23" parent="ItemGrid" unique_id=2125498019 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.4947526, -0.08910806, -0.2231135, 0, 0.5107706, -0.20399384, 0.24024965, 0.18350269, 0.45946378, 0.04977131, -4.767358, 1.5709529)
+
+[node name="sugar cube24" parent="ItemGrid" unique_id=891745751 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.3398077, 0.08082188, 0.42485118, 0, 0.54031, -0.10278627, -0.43247047, 0.063504666, 0.33382094, 0.039146423, -4.8361635, 0.28340816)
+
+[node name="sugar cube25" parent="ItemGrid" unique_id=267021031 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.5752885, -0.0737778, 0, 0.0737778, 0.5752885, 0, 0, 0, 0.58, -0.73032475, -3.7673242, 0.8812237)
+
+[node name="sugar cube26" parent="ItemGrid" unique_id=839847305 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.53601116, 0.10602614, -0.06285306, -0.10672532, 0.53954583, 0, 0.06165838, 0.012196387, 0.54639685, 0.6766701, -3.6053357, 0.9292784)
+
+[node name="sugar cube27" parent="ItemGrid" unique_id=1887981569 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.3980619, 0.054885622, -0.41825145, 0, 0.57506967, 0.07546431, 0.4218373, -0.051792182, 0.39467815, -0.7144604, -4.036605, -0.39655423)
+
+[node name="sugar cube28" parent="ItemGrid" unique_id=1652397722 instance=ExtResource("2_qsjya")]
+transform = Transform3D(0.49089083, -3.799796e-09, 0.13829756, -0.048543587, 0.4775499, 0.17230675, -0.129498, -0.17901422, 0.4596566, 0.63112164, -3.9335628, -0.36959797)
+
+[node name="AmountLabel" type="Label3D" parent="." unique_id=1735510362]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.14, -0.100666285)
+pixel_size = 0.002
+text = "Sugar %.0f / %.0f"
+font_size = 435
+outline_size = 8
+
+[node name="SugarContainer" parent="." unique_id=2073322503 instance=ExtResource("2_sugar")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 2.4213982, 0.24426234)

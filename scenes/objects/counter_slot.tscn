@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://chy8f3ijddiiq"]
+
+[ext_resource type="Script" uid="uid://6476ue4x6ph8" path="res://scripts/objects/counter_slot.gd" id="1_slot"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_slot"]
+size = Vector3(0.44433594, 0.28710938, 0.4)
+
+[node name="CounterSlot" type="Node3D" unique_id=1512091129]
+script = ExtResource("1_slot")
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=263728291]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=1151982639]
+shape = SubResource("BoxShape3D_slot")
+
+[node name="Label" type="Label3D" parent="." unique_id=325303119]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+pixel_size = 0.002
+billboard = 1
+modulate = Color(0.9, 0.9, 0.9, 0.8)
+text = "← place pitcher"
+font_size = 14
+outline_size = 3

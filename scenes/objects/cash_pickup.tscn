@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://dr4k7li21a5fg"]
+
+[ext_resource type="Script" uid="uid://bvsyhdqwq1qf" path="res://scripts/objects/cash_pickup.gd" id="1_cash"]
+
+[sub_resource type="StandardMaterial3D" id="Material_bill"]
+albedo_color = Color(0.12, 0.62, 0.22, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bill"]
+size = Vector3(0.18, 0.008, 0.09)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bill"]
+size = Vector3(0.22851563, 0.041313477, 0.12524414)
+
+[node name="CashPickup" type="Node3D" unique_id=627754851]
+script = ExtResource("1_cash")
+
+[node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=2134408263]
+material_override = SubResource("Material_bill")
+mesh = SubResource("BoxMesh_bill")
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=381889252]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=325720818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.016560059, 0)
+shape = SubResource("BoxShape3D_bill")
+
+[node name="Label" type="Label3D" parent="." unique_id=1799731807]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0)
+pixel_size = 0.002
+billboard = 1
+modulate = Color(0.2, 1, 0.2, 1)
+text = "$0.00"
+font_size = 20
+outline_size = 4

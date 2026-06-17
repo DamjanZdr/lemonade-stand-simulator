@@ -1,0 +1,71 @@
+[gd_scene load_steps=10 format=3 uid="uid://customer001ls"]
+
+[ext_resource type="Script" path="res://scripts/customer/customer.gd" id="1_customer"]
+[ext_resource type="Script" path="res://scripts/customer/customer_interactable.gd" id="2_cinteract"]
+[ext_resource type="Script" path="res://scripts/customer/emoji_display.gd" id="3_emoji"]
+[ext_resource type="PackedScene" uid="uid://dgiq68gtr7ei4" path="res://npc.tscn" id="4_npc"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_cust"]
+radius = 0.3
+height = 1.6
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_interact"]
+radius = 0.5
+height = 1.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_body"]
+top_radius = 0.25
+bottom_radius = 0.25
+height = 1.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_bar"]
+size = Vector3(0.4, 0.04, 0.04)
+
+[sub_resource type="BoxMesh" id="BoxMesh_barbg"]
+size = Vector3(0.4, 0.04, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="Material_barbg"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="Customer" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_customer")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_cust")
+position = Vector3(0, 0.667, 0)
+
+[node name="NPCBody" parent="." instance=ExtResource("4_npc")]
+transform = Transform3D(-0.09, 0, 0, 0, 0.09, 0, 0, 0, -0.09, 0, 0.87, 0)
+
+[node name="PatienceBarBG" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_barbg")
+material_override = SubResource("Material_barbg")
+position = Vector3(0, 1.75, 0)
+
+[node name="PatienceBar" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_bar")
+position = Vector3(0, 1.75, 0)
+
+[node name="CustomerInteractable" type="Node3D" parent="."]
+script = ExtResource("2_cinteract")
+
+[node name="Physics" type="StaticBody3D" parent="CustomerInteractable"]
+collision_layer = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CustomerInteractable/Physics"]
+shape = SubResource("CapsuleShape3D_interact")
+position = Vector3(0, 0.8, 0)
+
+[node name="EmojiAnchor" type="Node3D" parent="."]
+position = Vector3(0, 1.7, 0)
+
+[node name="EmojiDisplay" type="Node3D" parent="EmojiAnchor"]
+script = ExtResource("3_emoji")
+
+[node name="Label" type="Label3D" parent="EmojiAnchor/EmojiDisplay"]
+pixel_size = 0.007
+text = ""
+font_size = 48
+billboard = 1

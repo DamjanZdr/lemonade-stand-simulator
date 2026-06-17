@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://cp7qs3uvx2d25"]
+
+[ext_resource type="Script" uid="uid://df4ou8mq0yrwh" path="res://scripts/objects/supply_box.gd" id="1_supply"]
+[ext_resource type="PackedScene" uid="uid://dip2gnypvjfe4" path="res://blender/box.glb" id="2_2qs8a"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_box"]
+size = Vector3(0.519104, 0.27648926, 0.38378906)
+
+[node name="SupplyBox" type="Node3D" unique_id=691346376]
+script = ExtResource("1_supply")
+
+[node name="BodyMesh" parent="." unique_id=1928964477 instance=ExtResource("2_2qs8a")]
+transform = Transform3D(-0.155, 0, 1.35505305e-08, 0, 0.155, 0, -1.35505305e-08, 0, -0.155, -0.010066152, 0.10551484, 0)
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=924767529]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=288131956]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.013336182, 0.12982178, 0)
+shape = SubResource("BoxShape3D_box")
+
+[node name="Label" type="Label3D" parent="." unique_id=1625588565]
+transform = Transform3D(-1, -8.742278e-08, -3.821371e-15, 0, -4.371139e-08, 1, -8.742278e-08, 1, 4.371139e-08, 0, 0.22274372, -0.070456505)
+pixel_size = 0.0005
+text = "Lemon
+×10"
+font_size = 72
+outline_size = 16

@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://diaoxm2t413cw"]
+
+[ext_resource type="PackedScene" uid="uid://cup001lemon" path="res://scenes/objects/cup.tscn" id="1_cup"]
+
+[node name="FilledCup" type="Node3D" unique_id=990178256 groups=["filled_cup"]]
+transform = Transform3D(0.03, 0, 0, 0, 0.03, 0, 0, 0, 0.03, 0, 0, 0)
+
+[node name="Cup" parent="." unique_id=1206874521 instance=ExtResource("1_cup")]

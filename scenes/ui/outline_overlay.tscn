@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://outlineoverlay_ls"]
+
+[ext_resource type="Script" path="res://scripts/ui/outline_overlay.gd" id="1_ol"]
+
+[node name="OutlineSystem" type="Node"]
+script = ExtResource("1_ol")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+transparent_bg = true
+render_target_update_mode = 4
+
+[node name="OutlineCamera" type="Camera3D" parent="SubViewport"]
+cull_mask = 2
+
+[node name="OverlayLayer" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="DisplayRect" type="TextureRect" parent="OverlayLayer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 0

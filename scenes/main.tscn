@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://main001ls"]
+
+[ext_resource type="Script" uid="uid://b41up2s0vay8l" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://world001ls" path="res://scenes/world/world.tscn" id="2_world"]
+[ext_resource type="PackedScene" uid="uid://debrqguawbc46" path="res://scenes/player/player.tscn" id="3_player"]
+[ext_resource type="Script" uid="uid://bdwb7soqi2pxp" path="res://scripts/customer/customer_spawner.gd" id="5_spawner"]
+[ext_resource type="Script" path="res://scripts/customer/pedestrian_spawner.gd" id="10_pedspawner"]
+[ext_resource type="Script" uid="uid://kude15htrunu" path="res://scripts/systems/delivery_system.gd" id="6_delivery"]
+[ext_resource type="PackedScene" uid="uid://hud001ls" path="res://scenes/ui/hud.tscn" id="7_hud"]
+[ext_resource type="PackedScene" uid="uid://dp8lh1ptnkcc3" path="res://scenes/ui/debug_panel.tscn" id="9_debug"]
+
+[node name="Main" type="Node" unique_id=1191278377]
+script = ExtResource("1_main")
+
+[node name="World" parent="." unique_id=1350432744 instance=ExtResource("2_world")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00049734116, 0.013125181, 0.015693188)
+
+[node name="Player" parent="." unique_id=581860798 instance=ExtResource("3_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+
+[node name="CustomerSpawner" type="Node" parent="." unique_id=2002667936]
+script = ExtResource("5_spawner")
+
+[node name="PedestrianSpawner" type="Node" parent="." unique_id=3145882019]
+script = ExtResource("10_pedspawner")
+
+[node name="DeliverySystem" type="Node" parent="." unique_id=1974616056]
+script = ExtResource("6_delivery")
+
+[node name="HUD" parent="." unique_id=1577022415 instance=ExtResource("7_hud")]
+
+
+[node name="DebugPanel" parent="." unique_id=1101678529 instance=ExtResource("9_debug")]

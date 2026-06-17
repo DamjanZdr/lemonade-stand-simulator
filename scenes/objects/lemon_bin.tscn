@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://dnsxg6n5vma3a"]
+
+[ext_resource type="Script" uid="uid://15kio5i6ygqt" path="res://scripts/objects/ingredient_bin.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://up7xyn0lo0ou" path="res://blender/lemon.glb" id="2_bs7qo"]
+[ext_resource type="PackedScene" uid="uid://mqs45tbggd6p" path="res://blender/fruit crate.glb" id="2_crate"]
+[ext_resource type="Resource" path="res://resources/data/lemon.tres" id="2_w2dsf"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_001"]
+size = Vector3(0.42, 0.15, 0.38)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_001"]
+size = Vector3(10.198242, 4.206238, 6.2036133)
+
+[node name="LemonBin" type="Node3D" unique_id=1507066681]
+script = ExtResource("1_script")
+ingredient_data = ExtResource("2_w2dsf")
+drop_height = 1.5
+
+[node name="Container" type="MeshInstance3D" parent="." unique_id=316117860]
+visible = false
+mesh = SubResource("BoxMesh_001")
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=367484378]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=536302313]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11681414, 1.8791382, -0.16017759)
+shape = SubResource("BoxShape3D_001")
+
+[node name="ItemGrid" type="Node3D" parent="." unique_id=582310434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.77031827, 0)
+
+[node name="lemon" parent="ItemGrid" unique_id=1539523883 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.00052078883, -3.456794e-05, 0.8192448, 0.04747952, 0.77788, 0, -0.7459392, 0.04951255, 0.0005719682, -3.9453053, 0, -1.5438132)
+
+[node name="lemon2" parent="ItemGrid" unique_id=1485327916 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.089653715, 0, 0.8133304, 0, 0.7794542, 0, -0.7420526, 0, 0.09826538, -2.0201874, 0, -1.5543327)
+
+[node name="lemon3" parent="ItemGrid" unique_id=464598879 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(-0.068105936, -0.00501992, 0.8158199, -0.05269897, 0.77751446, -4.656613e-10, -0.74247175, -0.05472575, -0.07483407, -0.00039107125, 0, -1.5438132)
+
+[node name="lemon4" parent="ItemGrid" unique_id=488896680 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.00052184274, 0, 0.8192448, 0, 0.7794542, 0, -0.74744874, 0, 0.0005719682, 1.9668053, 0, -1.5753727)
+
+[node name="lemon5" parent="ItemGrid" unique_id=1550872111 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.08947266, -0.0059388466, 0.8133304, 0.047479518, 0.77788, 0, -0.7405539, 0.049155097, 0.09826538, 3.597372, 0, -1.5332937)
+
+[node name="lemon6" parent="ItemGrid" unique_id=1495346776 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.0005205441, 3.836801e-05, 0.8192448, -0.052698974, 0.77751446, 3.637979e-12, -0.74558866, -0.054955494, 0.0005719682, -3.9141786, 0, 1.1777391)
+
+[node name="lemon7" parent="ItemGrid" unique_id=430941302 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(-0.06827584, 0, 0.8158199, 0, 0.7794542, 0, -0.744324, 0, -0.07483407, -2.0498977, 0, 1.0935141)
+
+[node name="lemon8" parent="ItemGrid" unique_id=2124200263 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.00052078883, -3.456794e-05, 0.8192448, 0.04747952, 0.77788, 0, -0.7459392, 0.04951255, 0.0005719682, -0.062116183, 0, 1.0935141)
+
+[node name="lemon9" parent="ItemGrid" unique_id=93811183 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.08943061, 0.006591707, 0.8133304, -0.052698974, 0.77751446, 4.656613e-10, -0.740206, -0.05455875, 0.09826538, 1.9011292, 0, 1.0935141)
+
+[node name="lemon10" parent="ItemGrid" unique_id=932904824 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(-0.06827584, 0, 0.8158199, 0, 0.7794542, 0, -0.744324, 0, -0.07483407, 3.6713684, 0, 1.081954)
+
+[node name="AmountLabel" type="Label3D" parent="." unique_id=1014811336]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9866607, 2.841489)
+pixel_size = 0.002
+text = "Lemon
+%.0f / %.0f"
+font_size = 443
+outline_size = 8
+
+[node name="FruitCrate" parent="." unique_id=2046530714 instance=ExtResource("2_crate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

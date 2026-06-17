@@ -1,0 +1,79 @@
+[gd_scene format=3 uid="uid://icebin001ls"]
+
+[ext_resource type="Script" uid="uid://15kio5i6ygqt" path="res://scripts/objects/ingredient_bin.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bd4cnpqaahdw1" path="res://blender/ice cube.glb" id="2_0y7tb"]
+[ext_resource type="PackedScene" uid="uid://wyqplvr63lo6" path="res://blender/ice cube container.glb" id="2_joivs"]
+[ext_resource type="PackedScene" uid="uid://girp1th3jnox" path="res://blender/price tag.glb" id="4_0d8lj"]
+
+[sub_resource type="StandardMaterial3D" id="IceMaterial_001"]
+transparency = 1
+albedo_color = Color(0.62, 0.8, 0.92, 0.65)
+
+[sub_resource type="BoxMesh" id="BoxMesh_001"]
+size = Vector3(0.42, 0.15, 0.38)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_001"]
+size = Vector3(5.602722, 4.4561768, 5.486328)
+
+[node name="IceBin" type="Node3D" unique_id=613285195]
+script = ExtResource("1_script")
+ingredient_type = "ice"
+starting_amount = 0.0
+
+[node name="Container" type="MeshInstance3D" parent="." unique_id=905362112]
+visible = false
+material_override = SubResource("IceMaterial_001")
+mesh = SubResource("BoxMesh_001")
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=11352680]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=2075945668]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0038146973, 2.1508179, 0)
+shape = SubResource("BoxShape3D_001")
+
+[node name="ItemGrid" type="Node3D" parent="." unique_id=1876003744]
+
+[node name="ice cube" parent="ItemGrid" unique_id=1294746521 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0.027964592, 0.97708285, -0.05592978)
+
+[node name="ice cube2" parent="ItemGrid" unique_id=1598307330 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.6996739, -0.021364756, 0, 0.021364756, 0.6996739, 0, 0, 0, 0.70000005, 1.5243081, 1.0571436, -0.6898037)
+
+[node name="ice cube3" parent="ItemGrid" unique_id=920752927 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0.027964652, 0.97708285, -1.4923422)
+
+[node name="ice cube4" parent="ItemGrid" unique_id=1688010298 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.69682634, 0.06658124, 0, -0.06658124, 0.69682634, 0, 0, 0, 0.7, -1.4644003, 0.98453784, -0.82030743)
+
+[node name="ice cube5" parent="ItemGrid" unique_id=1540577602 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 5.9604645e-08, 0.97708285, 1.4457347)
+
+[node name="ice cube6" parent="ItemGrid" unique_id=120839079 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.69682634, 0.06658124, 0, -0.06658124, 0.69682634, 0, 0, 0, 0.7, -1.4737651, 0.9854326, 0.70932215)
+
+[node name="ice cube7" parent="ItemGrid" unique_id=1778681515 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.6996739, -0.021364756, 0, 0.021364756, 0.6996739, 0, 0, 0, 0.70000005, 1.5149914, 1.0568591, 0.8025392)
+
+[node name="ice cube8" parent="ItemGrid" unique_id=1002658816 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.69946796, -0.027286552, 0, 0.027286552, 0.69946796, 0, 0, 0, 0.70000005, 0.7806086, 2.4343488, 0.71274304)
+
+[node name="ice cube9" parent="ItemGrid" unique_id=1700436121 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.6995041, 0.026346495, 0, -0.026346495, 0.6995041, 0, 0, 0, 0.7000001, -0.7193914, 2.4343488, 0.71274304)
+
+[node name="ice cube10" parent="ItemGrid" unique_id=1844344762 instance=ExtResource("2_0y7tb")]
+transform = Transform3D(0.6999972, -0.0020158608, 0, 0.0020158608, 0.6999972, 0, 0, 0, 0.7000001, 0.029375017, 2.4343488, -0.80713546)
+
+[node name="AmountLabel" type="Label3D" parent="." unique_id=1716650883]
+transform = Transform3D(0.851582, -0.15236337, 0.50159097, -0.050826926, 0.9283246, 0.36828008, -0.5217516, -0.33911496, 0.7828002, -3.0857985, 1.1689792, 2.404252)
+visible = false
+pixel_size = 0.002
+text = "Ice
+%.0f / %.0f"
+font_size = 244
+outline_size = 8
+
+[node name="ice cube container" parent="." unique_id=202007052 instance=ExtResource("2_joivs")]
+
+[node name="price tag" parent="." unique_id=214155793 instance=ExtResource("4_0d8lj")]
+transform = Transform3D(0.83550066, 0, 0.5494896, 0, 1, 0, -0.5494896, 0, 0.83550066, -3.3211455, 0.91547036, 2.0672765)
+visible = false

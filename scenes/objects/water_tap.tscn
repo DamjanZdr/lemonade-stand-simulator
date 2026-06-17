@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://cxr1tjog60nsy"]
+
+[ext_resource type="Script" path="res://scripts/objects/water_tap.gd" id="1_tap"]
+
+[sub_resource type="StandardMaterial3D" id="Material_tap"]
+albedo_color = Color(0.3, 0.55, 0.9, 1)
+metallic = 0.7
+roughness = 0.25
+
+[sub_resource type="BoxMesh" id="BoxMesh_tap"]
+size = Vector3(0.14, 0.22, 0.14)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tap"]
+size = Vector3(0.14, 0.22, 0.14)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_col"]
+size = Vector3(0.24, 0.30, 0.24)
+
+[node name="WaterTap" type="Node3D"]
+script = ExtResource("1_tap")
+
+[node name="BodyMesh" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, 0)
+mesh = SubResource("BoxMesh_tap")
+material_override = SubResource("Material_tap")
+
+[node name="Physics" type="StaticBody3D" parent="."]
+collision_layer = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics"]
+position = Vector3(0, 0.11, 0)
+shape = SubResource("BoxShape3D_tap")
+
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0, 0.3, 0)
+pixel_size = 0.002
+text = "Water Tap"
+font_size = 14
+billboard = 1
+outline_size = 3
+modulate = Color(0.7, 0.85, 1.0, 0.9)

@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://cupstack001ls"]
+
+[ext_resource type="Script" uid="uid://l7r38mf7o68s" path="res://scripts/objects/cup_stack.gd" id="1_stack"]
+[ext_resource type="PackedScene" uid="uid://daobpi7s7leeo" path="res://blender/cup.glb" id="2_cup_glb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_stack"]
+size = Vector3(4.248, 9.351, 5)
+
+[node name="CupStack" type="Node3D" unique_id=1330120847]
+script = ExtResource("1_stack")
+starting_count = 1
+drop_height = 1.0
+
+[node name="ItemGrid" type="Node3D" parent="." unique_id=1695638061]
+
+[node name="Cup1" parent="ItemGrid" unique_id=448648121 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 1.6079581, 0)
+
+[node name="Cup2" parent="ItemGrid" unique_id=1709766911 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 2.2079582, 0)
+
+[node name="Cup3" parent="ItemGrid" unique_id=1168892484 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 2.8079581, 0)
+
+[node name="Cup4" parent="ItemGrid" unique_id=1594114133 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 3.407958, 0)
+
+[node name="Cup5" parent="ItemGrid" unique_id=1971855264 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 4.0079584, 0)
+
+[node name="Cup6" parent="ItemGrid" unique_id=1328750424 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 4.607958, 0)
+
+[node name="Cup7" parent="ItemGrid" unique_id=1133323501 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 5.207958, 0)
+
+[node name="Cup8" parent="ItemGrid" unique_id=2105978562 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 5.8079576, 0)
+
+[node name="Cup9" parent="ItemGrid" unique_id=437264932 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 6.407958, 0)
+
+[node name="Cup10" parent="ItemGrid" unique_id=348258109 instance=ExtResource("2_cup_glb")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -1.4057215e-07, 7.0079575, 0)
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=782953911]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=1220784048]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6380005, 0)
+shape = SubResource("BoxShape3D_stack")
+
+[node name="AmountLabel" type="Label3D" parent="." unique_id=2077752240]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+pixel_size = 0.002
+billboard = 1
+text = "Cups
+%.0f / %.0f"
+font_size = 16
+outline_size = 3

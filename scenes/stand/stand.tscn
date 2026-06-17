@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://stand001ls"]
+
+[ext_resource type="PackedScene" uid="uid://dr6hcqf1qa5fg" path="res://scenes/objects/cash_register_prop.tscn" id="4_reg"]
+[ext_resource type="PackedScene" uid="uid://dr4k7li21a5fg" path="res://scenes/objects/cash_pickup.tscn" id="5_rhe6q"]
+[ext_resource type="PackedScene" uid="uid://bou3sk465l5ij" path="res://blender/stand.glb" id="9_gb53w"]
+[ext_resource type="PackedScene" uid="uid://8fx8pc1vgdd7" path="res://blender/moneyshelf.glb" id="10_shelf"]
+
+[sub_resource type="StandardMaterial3D" id="Material_counter"]
+albedo_color = Color(0.82, 0.65, 0.38, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_counter"]
+size = Vector3(3, 0.1, 0.7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_counter"]
+size = Vector3(2.4143066, 0.1, 1.0370239)
+
+[sub_resource type="StandardMaterial3D" id="Material_post"]
+albedo_color = Color(0.55, 0.38, 0.18, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_post"]
+size = Vector3(0.12, 2.4, 0.12)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_post"]
+size = Vector3(0.12, 2.4, 0.12)
+
+[node name="Stand" type="Node3D" unique_id=410268249]
+
+[node name="Counter" type="StaticBody3D" parent="." unique_id=1852297107 groups=["placement_surface"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4394764, -0.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="Counter" unique_id=1793611340]
+visible = false
+material_override = SubResource("Material_counter")
+mesh = SubResource("BoxMesh_counter")
+
+[node name="Col" type="CollisionShape3D" parent="Counter" unique_id=232916564]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.36096805)
+shape = SubResource("BoxShape3D_counter")
+
+[node name="Post_FL" type="StaticBody3D" parent="." unique_id=329472463]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0468526, 1.2, -0.55)
+
+[node name="Mesh" type="MeshInstance3D" parent="Post_FL" unique_id=463836428]
+visible = false
+material_override = SubResource("Material_post")
+mesh = SubResource("BoxMesh_post")
+
+[node name="Col" type="CollisionShape3D" parent="Post_FL" unique_id=1668895768]
+shape = SubResource("BoxShape3D_post")
+
+[node name="Post_FR" type="StaticBody3D" parent="." unique_id=1908297932]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.087167, 1.2, -0.55)
+
+[node name="Mesh" type="MeshInstance3D" parent="Post_FR" unique_id=629716007]
+visible = false
+material_override = SubResource("Material_post")
+mesh = SubResource("BoxMesh_post")
+
+[node name="Col" type="CollisionShape3D" parent="Post_FR" unique_id=1000235213]
+shape = SubResource("BoxShape3D_post")
+
+[node name="stand" parent="." unique_id=1821962680 instance=ExtResource("9_gb53w")]
+transform = Transform3D(0.185, 0, 0, 0, 0.185, 0, 0, 0, 0.185, 0.011183739, 0.50997543, -0.49250138)
+
+[node name="SignLabel" type="Label3D" parent="stand" unique_id=899284364]
+transform = Transform3D(5.405405, 0, 9.451112e-07, 0, 5.405405, 0, -9.451112e-07, 0, 5.405405, -0.060452648, 15.936857, 0.7188288)
+pixel_size = 0.004
+modulate = Color(0.8862745, 0.9411765, 0, 1)
+text = "🍋 LEMONADE STAND 🍋"
+font_size = 45
+outline_size = 3
+metadata/no_depth_override = true
+
+[node name="CashRegister" parent="." unique_id=808262555 instance=ExtResource("4_reg")]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -0.44949764, 1.3292329, -1.0962787)
+
+[node name="MoneyShelf" parent="CashRegister" unique_id=999999999 instance=ExtResource("10_shelf")]
+transform = Transform3D(0.185, 0, 0, 0, 0.185, 0, 0, 0, 0.185, -0.4668811, -0.041514635, -0.24224448)
+
+[node name="CashPickup" parent="." unique_id=627754851 instance=ExtResource("5_rhe6q")]
+transform = Transform3D(1.257, 0, 0, 0, 1.257, 0, 0, 0, 1.257, -0.284, 1.49, -0.832)

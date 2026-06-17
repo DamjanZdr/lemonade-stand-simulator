@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://b3dp8tqlem5ar"]
+
+[ext_resource type="Script" path="res://scripts/customer/pedestrian.gd" id="1_ped"]
+[ext_resource type="PackedScene" uid="uid://dgiq68gtr7ei4" path="res://npc.tscn" id="2_npc"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ped"]
+radius = 0.3
+height = 1.6
+
+[node name="Pedestrian" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_ped")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.667, 0)
+shape = SubResource("CapsuleShape3D_ped")
+
+[node name="NPCBody" parent="." instance=ExtResource("2_npc")]
+transform = Transform3D(-0.09, 0, 0, 0, 0.09, 0, 0, 0, -0.09, 0, 0.87, 0)

@@ -1,0 +1,31 @@
+[gd_scene load_steps=3 format=3 uid="uid://bin001lemon"]
+
+[ext_resource type="Script" path="res://scripts/objects/ingredient_bin.gd" id="1_binscript"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_outer"]
+size = Vector3(0.42, 0.15, 0.38)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_col"]
+size = Vector3(0.42, 0.15, 0.38)
+
+[node name="IngredientBin" type="Node3D"]
+script = ExtResource("1_binscript")
+
+[node name="Container" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_outer")
+
+[node name="Physics" type="StaticBody3D" parent="."]
+collision_layer = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics"]
+shape = SubResource("BoxShape3D_col")
+
+[node name="ItemGrid" type="Node3D" parent="."]
+
+[node name="AmountLabel" type="Label3D" parent="."]
+position = Vector3(0, 0.14, 0)
+pixel_size = 0.002
+text = "Lemon\n10 / 20"
+font_size = 18
+billboard = 1
+outline_size = 4

@@ -1,0 +1,215 @@
+[gd_scene format=3 uid="uid://dr6hcqf1qa5fg"]
+
+[ext_resource type="Script" uid="uid://kx04824sehej" path="res://scripts/objects/cash_register_prop.gd" id="1_regprop"]
+[ext_resource type="Script" uid="uid://bj5od8y5abpya" path="res://scripts/objects/denomination_item.gd" id="2_denom"]
+[ext_resource type="PackedScene" uid="uid://b57mt7dy7wnp6" path="res://blender/calculator.glb" id="3_calc"]
+
+[sub_resource type="BoxShape3D" id="Shape_body"]
+size = Vector3(0.28, 0.24, 0.34594727)
+
+[sub_resource type="StandardMaterial3D" id="Mat_1c"]
+albedo_color = Color(0.72, 0.42, 0.18, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_denom"]
+size = Vector3(0.08, 0.014, 0.05)
+
+[sub_resource type="BoxShape3D" id="Shape_denom"]
+size = Vector3(0.125, 0.028, 0.205)
+
+[sub_resource type="StandardMaterial3D" id="Mat_5c"]
+albedo_color = Color(0.76, 0.76, 0.8, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_10c"]
+albedo_color = Color(0.84, 0.84, 0.87, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_50c"]
+albedo_color = Color(0.9, 0.76, 0.18, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_1d"]
+albedo_color = Color(0.12, 0.62, 0.22, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_5d"]
+albedo_color = Color(0.06, 0.4, 0.13, 1)
+
+[node name="CashRegisterProp" type="Node3D" unique_id=600060924]
+script = ExtResource("1_regprop")
+
+[node name="BodyMesh" parent="." unique_id=994805288 instance=ExtResource("3_calc")]
+transform = Transform3D(0.09659258, 0, -0.025881905, 0, 0.1, 0, 0.025881905, 0, 0.09659258, -0.0038340674, -0.01006867, -0.0005047647)
+
+[node name="BodyPhysics" type="StaticBody3D" parent="." unique_id=377603935]
+transform = Transform3D(0.9659258, 0, -0.25881904, 0, 1, 0, 0.25881904, 0, 0.9659258, -0.0038340674, 0, -0.0005047647)
+collision_layer = 1
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BodyPhysics" unique_id=927506557]
+transform = Transform3D(1.0000012, 0, 0, 0, 1, 0, 0, 0, 1.0000012, -4.656613e-10, 0.12946609, -0.03503423)
+shape = SubResource("Shape_body")
+
+[node name="ActionLabel" type="Label3D" parent="." unique_id=731378278]
+transform = Transform3D(0.9659258, 0, -0.25881904, 0, 1, 0, 0.25881904, 0, 0.9659258, -0.027127782, 0.32, 0.08642856)
+visible = false
+pixel_size = 0.000625
+text = "✓ Click to confirm"
+font_size = 64
+outline_size = 16
+
+[node name="CalcLabel" type="Label3D" parent="." unique_id=401732256]
+transform = Transform3D(0.9659258, 0.21811813, -0.13932616, 0, 0.53831494, 0.84274375, 0.25881904, -0.81402797, 0.51997226, 0.034795918, 0.06384025, -0.14467382)
+pixel_size = 0.000375
+text = "$2.00 - $1.50 =
+$0.50"
+font_size = 60
+outline_size = 16
+
+[node name="Denominations" type="Node3D" parent="." unique_id=1726521852]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18129766, 0, 0.06450936)
+
+[node name="D1c" type="Node3D" parent="Denominations" unique_id=1128637289]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.10646373, 0.04, -0.3024975)
+script = ExtResource("2_denom")
+
+[node name="Mesh" type="MeshInstance3D" parent="Denominations/D1c" unique_id=1462314789]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, 0.026293308, -0.037307296, 0.22944973)
+material_override = SubResource("Mat_1c")
+mesh = SubResource("BoxMesh_denom")
+
+[node name="Physics" type="StaticBody3D" parent="Denominations/D1c" unique_id=2123520098]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.023576617, 0, 0.22346535)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Denominations/D1c/Physics" unique_id=1787001198]
+shape = SubResource("Shape_denom")
+
+[node name="Label" type="Label3D" parent="Denominations/D1c" unique_id=415790329]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, 0.026293308, 0.024861194, 0.22944973)
+pixel_size = 0.001
+billboard = 1
+text = "¢1"
+font_size = 12
+outline_size = 3
+
+[node name="D5c" type="Node3D" parent="Denominations" unique_id=1571580827]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19810712, 0.04, -0.30488878)
+script = ExtResource("2_denom")
+cents = 5
+
+[node name="Mesh" type="MeshInstance3D" parent="Denominations/D5c" unique_id=1840040867]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, -0.026304424, -0.037307296, 0.22944973)
+material_override = SubResource("Mat_5c")
+mesh = SubResource("BoxMesh_denom")
+
+[node name="Physics" type="StaticBody3D" parent="Denominations/D5c" unique_id=159691793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.025108516, 0, 0.22597642)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Denominations/D5c/Physics" unique_id=658383073]
+shape = SubResource("Shape_denom")
+
+[node name="Label" type="Label3D" parent="Denominations/D5c" unique_id=887427355]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, -0.026304424, 0.024861194, 0.22944973)
+pixel_size = 0.001
+billboard = 1
+text = "¢5"
+font_size = 12
+outline_size = 3
+
+[node name="D10c" type="Node3D" parent="Denominations" unique_id=2057766744]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.39581674, 0.04, -0.075025685)
+script = ExtResource("2_denom")
+cents = 10
+
+[node name="Mesh" type="MeshInstance3D" parent="Denominations/D10c" unique_id=370685654]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, 0.026290357, -0.037307296, -0.00025647134)
+material_override = SubResource("Mat_10c")
+mesh = SubResource("BoxMesh_denom")
+
+[node name="Physics" type="StaticBody3D" parent="Denominations/D10c" unique_id=1752286679]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.026304126, 0, -0.003586933)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Denominations/D10c/Physics" unique_id=1005172861]
+shape = SubResource("Shape_denom")
+
+[node name="Label" type="Label3D" parent="Denominations/D10c" unique_id=329392056]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, 0.026290357, 0.024861194, -0.00025647134)
+pixel_size = 0.001
+billboard = 1
+text = "¢10"
+font_size = 12
+outline_size = 3
+
+[node name="D50c" type="Node3D" parent="Denominations" unique_id=577442545]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.490293, 0.04, -0.07489153)
+script = ExtResource("2_denom")
+cents = 50
+
+[node name="Mesh" type="MeshInstance3D" parent="Denominations/D50c" unique_id=1698359797]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, -0.02647528, -0.037307296, 5.1274896e-05)
+material_override = SubResource("Mat_50c")
+mesh = SubResource("BoxMesh_denom")
+
+[node name="Physics" type="StaticBody3D" parent="Denominations/D50c" unique_id=2143294078]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.026304156, 0, -0.0011956394)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Denominations/D50c/Physics" unique_id=1341152002]
+shape = SubResource("Shape_denom")
+
+[node name="Label" type="Label3D" parent="Denominations/D50c" unique_id=774466415]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, -0.02647528, 0.024861194, 5.1274896e-05)
+pixel_size = 0.001
+billboard = 1
+text = "¢50"
+font_size = 12
+outline_size = 3
+
+[node name="Dollar1" type="Node3D" parent="Denominations" unique_id=2120212538]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6911706, 0.04, 0.15391003)
+script = ExtResource("2_denom")
+cents = 100
+
+[node name="Mesh" type="MeshInstance3D" parent="Denominations/Dollar1" unique_id=1635459336]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, 0.026725262, -0.037307296, -0.22934704)
+material_override = SubResource("Mat_1d")
+mesh = SubResource("BoxMesh_denom")
+
+[node name="Physics" type="StaticBody3D" parent="Denominations/Dollar1" unique_id=1497626357]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02665186, 0, -0.23064509)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Denominations/Dollar1/Physics" unique_id=1433547317]
+shape = SubResource("Shape_denom")
+
+[node name="Label" type="Label3D" parent="Denominations/Dollar1" unique_id=1969457065]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, 0.026725262, 0.024861194, -0.22934704)
+pixel_size = 0.001
+billboard = 1
+text = "$1"
+font_size = 12
+outline_size = 3
+
+[node name="Dollar5" type="Node3D" parent="Denominations" unique_id=572731991]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7854834, 0.04, 0.15408815)
+script = ExtResource("2_denom")
+cents = 500
+
+[node name="Mesh" type="MeshInstance3D" parent="Denominations/Dollar5" unique_id=1196688334]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, -0.026529253, -0.037307296, -0.22934704)
+material_override = SubResource("Mat_5d")
+mesh = SubResource("BoxMesh_denom")
+
+[node name="Physics" type="StaticBody3D" parent="Denominations/Dollar5" unique_id=692491179]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02665186, 0, -0.23064087)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Denominations/Dollar5/Physics" unique_id=600684365]
+shape = SubResource("Shape_denom")
+
+[node name="Label" type="Label3D" parent="Denominations/Dollar5" unique_id=1211723114]
+transform = Transform3D(1.3803893, 0, 0, 0, 1.2433697, 0, 0, 0, 3.2939837, -0.026529253, 0.024861194, -0.22934704)
+pixel_size = 0.001
+billboard = 1
+text = "$5"
+font_size = 12
+outline_size = 3

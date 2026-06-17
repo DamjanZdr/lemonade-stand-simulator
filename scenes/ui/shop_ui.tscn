@@ -1,0 +1,86 @@
+[gd_scene format=3 uid="uid://shopui001abc"]
+
+[ext_resource type="Script" path="res://scripts/ui/shop_ui.gd" id="1_shop"]
+
+[node name="ShopUI" type="CanvasLayer"]
+script = ExtResource("1_shop")
+layer = 10
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -40.0
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="DayLabel" type="Label" parent="Panel/VBox/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Day 1"
+
+[node name="MoneyLabel" type="Label" parent="Panel/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Money: $50.00"
+horizontal_alignment = 2
+
+[node name="TempLabel" type="Label" parent="Panel/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Weather: 25°C"
+horizontal_alignment = 2
+
+[node name="Sep1" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="PriceRow" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="PriceLabel" type="Label" parent="Panel/VBox/PriceRow"]
+layout_mode = 2
+text = "Cup Price:"
+
+[node name="PriceSlider" type="HSlider" parent="Panel/VBox/PriceRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PriceValue" type="Label" parent="Panel/VBox/PriceRow"]
+layout_mode = 2
+text = "$1.50"
+
+[node name="Sep2" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="ShopLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Buy Ingredients:"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Grid" type="GridContainer" parent="Panel/VBox/Scroll"]
+layout_mode = 2
+columns = 4
+
+[node name="StatusLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = ""
+horizontal_alignment = 1
+
+[node name="StartBtn" type="Button" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Start Day"

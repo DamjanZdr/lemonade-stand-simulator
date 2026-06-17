@@ -1,0 +1,124 @@
+[gd_scene format=3 uid="uid://world001ls"]
+
+[ext_resource type="PackedScene" uid="uid://stand001ls" path="res://scenes/stand/stand.tscn" id="1_stand"]
+[ext_resource type="PackedScene" uid="uid://dcrdb3cxjew85" path="res://scenes/stand/workstation.tscn" id="2_workstation"]
+[ext_resource type="PackedScene" uid="uid://b5nygw38vywdu" path="res://scenes/objects/thermometer.tscn" id="5_v5dby"]
+[ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
+[ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
+[ext_resource type="Script" path="res://scripts/objects/sun_controller.gd" id="37_sun"]
+
+[sub_resource type="StandardMaterial3D" id="Material_ground"]
+albedo_color = Color(0.42331815, 0.62640846, 3.85046e-07, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+size = Vector3(120, 0.1, 120)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(148.4972, 0.59904784, 116.18762)
+
+[sub_resource type="StandardMaterial3D" id="Material_dzone"]
+transparency = 1
+albedo_color = Color(1, 0.5, 0, 0.7)
+
+[sub_resource type="BoxMesh" id="BoxMesh_dzone"]
+size = Vector3(0.8, 0.05, 0.8)
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_main"]
+sky_top_color = Color(0.35, 0.6, 1, 1)
+sky_horizon_color = Color(0.72, 0.87, 1, 1)
+ground_bottom_color = Color(0.28, 0.38, 0.22, 1)
+ground_horizon_color = Color(0.6, 0.75, 0.5, 1)
+ground_curve = 0.1
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_main")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 3
+ambient_light_sky_contribution = 0.8
+tonemap_mode = 2
+tonemap_exposure = 1.1
+tonemap_white = 6.0
+
+[node name="World" type="Node3D" unique_id=1769167416]
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=622270793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Ground" unique_id=1497984592]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.011994839, 0, -0.020724297)
+material_override = SubResource("Material_ground")
+mesh = SubResource("BoxMesh_ground")
+
+[node name="Col" type="CollisionShape3D" parent="Ground" unique_id=1231860438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9057007, -0.2495, -16.958313)
+shape = SubResource("BoxShape3D_ground")
+
+[node name="Stand" parent="." unique_id=1183170314 instance=ExtResource("1_stand")]
+transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 0, 0.06850231, -1)
+
+[node name="Workstation" parent="." unique_id=1892686148 instance=ExtResource("2_workstation")]
+transform = Transform3D(0.865, 0, 0, 0, 0.865, 0, 0, 0, 0.865, 0, -0.114597976, 3.5492034)
+
+[node name="DeliveryZone" type="MeshInstance3D" parent="." unique_id=1231808297]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9554234, 0.03, 3.6055803)
+material_override = SubResource("Material_dzone")
+mesh = SubResource("BoxMesh_dzone")
+
+[node name="DeliveryMarker" type="Marker3D" parent="." unique_id=1391857877]
+transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 2.9424672, 0.51908034, 3.5500283)
+
+[node name="QueueMarker1" type="Marker3D" parent="." unique_id=1918688911]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.02438742, 0, -1.3009591)
+
+[node name="QueueMarker2" type="Marker3D" parent="." unique_id=920740298]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.2467859, 0, -1.3009591)
+
+[node name="DirectionalLight" type="DirectionalLight3D" parent="." unique_id=285599754]
+transform = Transform3D(0.8592105, -0.27406377, -0.43200752, 0.3315773, -0.34480715, 0.8781687, -0.38962752, -0.8977783, -0.20538925, 0, 10, 0)
+script = ExtResource("37_sun")
+light_color = Color(1, 0.97, 0.88, 1)
+light_energy = 1.6
+shadow_enabled = true
+
+[node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1098989604]
+transform = Transform3D(-0.866, -0.25, -0.433, 0, 0.866, -0.5, 0.5, -0.433, -0.75, 0, 8, 0)
+visible = false
+light_color = Color(0.7, 0.85, 1, 1)
+light_energy = 0.5
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=305494689]
+environment = SubResource("Environment_main")
+
+[node name="Routes" type="Node3D" parent="." unique_id=1364106154]
+
+[node name="Route 1" type="Marker3D" parent="Routes" unique_id=232494331 node_paths=PackedStringArray("waypoints")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -62.04986, 0, -11.774675)
+script = ExtResource("36_0wrxw")
+waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4")]
+
+[node name="Point 1" type="Marker3D" parent="Routes/Route 1" unique_id=241292620]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.355095, 0, 0)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 2" type="Marker3D" parent="Routes/Route 1" unique_id=1776416609]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70.86752, 0, 0)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 3" type="Marker3D" parent="Routes/Route 1" unique_id=1442564108]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 88.69208, 0, 0)
+script = ExtResource("36_sygq6")
+
+[node name="Point 4" type="Marker3D" parent="Routes/Route 1" unique_id=1551296121]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 88.69208, 0, -47.375595)
+script = ExtResource("36_sygq6")
+
+[node name="Route 2" type="Marker3D" parent="Routes" unique_id=2040185839]
+script = ExtResource("36_0wrxw")
+
+[node name="Thermometer" parent="." unique_id=242897628 instance=ExtResource("5_v5dby")]
+transform = Transform3D(0.04, 0, 0, 0, 0.039188195, 0.008017811, 0, -0.008017811, 0.039188195, 0.6703902, 1.1902373, -0.59936786)

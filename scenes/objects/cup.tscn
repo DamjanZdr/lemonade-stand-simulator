@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://cup001lemon"]
+
+[ext_resource type="Script" uid="uid://e7o24oyy11ah" path="res://scripts/objects/cup.gd" id="1_cup"]
+[ext_resource type="PackedScene" uid="uid://daobpi7s7leeo" path="res://blender/cup.glb" id="2_cup_glb"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_cup"]
+height = 3.6904297
+radius = 1.5737305
+
+[node name="Cup" type="Node3D" unique_id=865630752]
+script = ExtResource("1_cup")
+
+[node name="Model" parent="." unique_id=1665424869 instance=ExtResource("2_cup_glb")]
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=707460190]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=1773124384]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8041992, 0)
+shape = SubResource("CylinderShape3D_cup")

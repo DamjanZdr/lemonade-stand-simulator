@@ -1,0 +1,65 @@
+[gd_scene format=3 uid="uid://daysummary001"]
+
+[ext_resource type="Script" path="res://scripts/ui/day_summary.gd" id="1_summary"]
+
+[node name="DaySummary" type="CanvasLayer"]
+script = ExtResource("1_summary")
+layer = 10
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -200.0
+offset_right = 250.0
+offset_bottom = 200.0
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+alignment = 1
+
+[node name="DayLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Day 1 Complete!"
+horizontal_alignment = 1
+
+[node name="Sep" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="Stats" type="VBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="RevenueLabel" type="Label" parent="Panel/VBox/Stats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Revenue: $0.00"
+horizontal_alignment = 1
+
+[node name="ServesLabel" type="Label" parent="Panel/VBox/Stats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Served: 0 customers"
+horizontal_alignment = 1
+
+[node name="HappyLabel" type="Label" parent="Panel/VBox/Stats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Happy: 0 | Unhappy: 0"
+horizontal_alignment = 1
+
+[node name="PopularityLabel" type="Label" parent="Panel/VBox/Stats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Popularity: 10%"
+horizontal_alignment = 1
+
+[node name="NextBtn" type="Button" parent="Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 22
+text = "Next Day"

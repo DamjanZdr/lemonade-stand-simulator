@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="IngredientData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/ingredient_data.gd" id="1_ingredient_data"]
+
+[resource]
+script = ExtResource("1_ingredient_data")
+id = &"strawberry"
+display_name = "Strawberry"
+flavor_strength = 0.7
+sweetness = 0.2
+ideal_fruit_count = 4
+ideal_water = 5.0
+ideal_sugar = 2.5
+fruit_count_inner = 0.5
+fruit_count_outer = 2.0
+sugar_inner = 0.5
+sugar_outer = 2.0
+press_time_per_fruit = 1.2
