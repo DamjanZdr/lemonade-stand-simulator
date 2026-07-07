@@ -47,12 +47,13 @@ const CUP_STACK_MAX: int = 10
 const CUP_STACK_START: int = 5
 
 # === CONTAINERS (purchasable & placeable) ===
-const CONTAINER_COST_LEMON_BIN: float = 15.0
+const CONTAINER_COST_FRUIT_BIN: float = 15.0
 const CONTAINER_COST_SUGAR_BIN: float = 15.0
 const CONTAINER_COST_ICE_BIN: float = 15.0
 const CONTAINER_COST_CUP_STACK: float = 10.0
 const CONTAINER_COST_PITCHER: float = 20.0
 const CONTAINER_COST_PRESS: float = 30.0
+const CONTAINER_COST_WATER_DISPENSER: float = 25.0
 
 # === DELIVERY ===
 const DELIVERY_COST_PER_UNIT: float = 0.20
@@ -82,7 +83,7 @@ const UPGRADE_TIER1_COST: float = 25.0
 const UPGRADE_TIER2_COST: float = 75.0
 
 
-static func ideal_ice_for_temp(temperature: float) -> float:
+func ideal_ice_for_temp(temperature: float) -> float:
 	var t: float = clampf(
 		(temperature - ICE_MIN_TEMP) / (ICE_MAX_TEMP - ICE_MIN_TEMP),
 		0.0,

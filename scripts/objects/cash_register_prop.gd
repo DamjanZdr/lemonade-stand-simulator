@@ -10,29 +10,26 @@ var _payment_cents: int = 0
 var _change_due_cents: int = 0
 var _tendered_cents: int = 0
 
-@onready var _calc_lbl:   Label3D = $CalcLabel
+@onready var _calc_lbl: Label3D = $CalcLabel
 @onready var _action_lbl: Label3D = $ActionLabel
 @onready var _denominations: Node3D = $Denominations
-@onready var _shelf: Node3D = $MoneyShelf
-@onready var _body: Node3D = $BodyMesh  # The main register body to slide
+@onready var _shelf: Node3D = get_node_or_null("MoneyShelf")
+@onready var _body: Node3D = get_node_or_null("BodyMesh") # The main register body to slide
 
 var _register_rest_pos: Vector3 = Vector3.ZERO
-var _register_slide_pos: Vector3 = Vector3(0, 0, -0.4)  # Slide 0.4 units backward on Z
+var _register_slide_pos: Vector3 = Vector3(0, 0, -0.4) # Slide 0.4 units backward on Z
 
 
 func _ready() -> void:
 	EventBus.sale_initiated.connect(_on_sale_initiated)
 	EventBus.change_finalized.connect(_on_change_finalized)
 	# Hide all interactive elements at startup
-	_denominations.visible = false
-	_calc_lbl.visible = false
-	_action_lbl.visible = false
-	is_active = false
+	_set_active(false)
 	# Store register rest position (we move the whole register, shelf moves with it)
 	_register_rest_pos = position
 
-
 # --- Interactable overrides ---
+
 
 func interact(_player: Node) -> void:
 	if not is_active or _tendered_cents < _change_due_cents:
@@ -55,13 +52,15 @@ func get_hint(_player: Node) -> String:
 func set_highlight(on: bool) -> void:
 	# Only highlight when active (during sale)
 	if not is_active:
-		_apply_outline($BodyMesh, false)
+		if _body != null:
+			_apply_outline(_body, false)
 		return
 	# Highlight only the register body, not denomination children.
-	_apply_outline($BodyMesh, on)
-
+	if _body != null:
+		_apply_outline(_body, on)
 
 # --- Called by DenominationItem children ---
+
 
 func add_denomination(cents: int) -> void:
 	if not is_active:
@@ -69,13 +68,13 @@ func add_denomination(cents: int) -> void:
 	_tendered_cents += cents
 	_refresh()
 
-
 # --- Internal ---
 
+
 func _on_sale_initiated(payment: float, change_due: float) -> void:
-	_payment_cents    = roundi(payment    * 100.0)
+	_payment_cents = roundi(payment * 100.0)
 	_change_due_cents = roundi(change_due * 100.0)
-	_tendered_cents   = 0
+	_tendered_cents = 0
 	_set_active(true)
 	_refresh()
 	_slide_register_out()
@@ -88,13 +87,13 @@ func _on_change_finalized(_earned: float) -> void:
 func _slide_register_out() -> void:
 	var tween := create_tween()
 	tween.tween_property(self, "position", _register_rest_pos + _register_slide_pos, 0.3) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 func _slide_register_back() -> void:
 	var tween := create_tween()
 	tween.tween_property(self, "position", _register_rest_pos, 0.3) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 func _give_change() -> void:
@@ -108,11 +107,32 @@ func _set_active(on: bool) -> void:
 	_denominations.visible = on
 	_calc_lbl.visible = on
 	_action_lbl.visible = on
+	if _shelf != null:
+		_shelf.visible = on
+	# Disable collision when inactive so it doesn't block placement on the stand
+	_toggle_collision(on)
+
+
+func _toggle_collision(on: bool) -> void:
+	for child in get_children():
+		_toggle_collision_recursive(child, on)
+
+
+func _toggle_collision_recursive(node: Node, on: bool) -> void:
+	if node is CollisionShape3D:
+		node.disabled = not on
+		return
+	if node is StaticBody3D or node is RigidBody3D or node is CharacterBody3D:
+		for child in node.get_children():
+			_toggle_collision_recursive(child, on)
+		return
+	for child in node.get_children():
+		_toggle_collision_recursive(child, on)
 
 
 func _refresh() -> void:
-	var paid   := _payment_cents / 100.0
-	var price  := (_payment_cents - _change_due_cents) / 100.0
+	var paid := _payment_cents / 100.0
+	var price := (_payment_cents - _change_due_cents) / 100.0
 	var change := _change_due_cents / 100.0
 	_calc_lbl.text = "$%.2f - $%.2f =\n$%.2f" % [paid, price, change]
 

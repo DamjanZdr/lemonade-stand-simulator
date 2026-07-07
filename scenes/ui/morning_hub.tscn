@@ -1,10 +1,187 @@
 [gd_scene format=3 uid="uid://3j1qhop5peqq"]
 
-[ext_resource type="Script" path="res://scripts/ui/morning_hub.gd" id="1_hub"]
+[ext_resource type="Script" uid="uid://brnh31dq7of6r" path="res://scripts/ui/morning_hub.gd" id="1_hub"]
+
+[sub_resource type="StyleBoxFlat" id="panel_main"]
+bg_color = Color(0.075, 0.082, 0.098, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.18, 0.20, 0.25, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="panel_right"]
+bg_color = Color(0.065, 0.072, 0.088, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.18, 0.20, 0.25, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="tab_normal"]
+bg_color = Color(0.12, 0.13, 0.16, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="tab_hover"]
+bg_color = Color(0.16, 0.17, 0.21, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="tab_active"]
+bg_color = Color(0.88, 0.65, 0.12, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="btn_primary"]
+bg_color = Color(0.82, 0.58, 0.08, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="btn_primary_hover"]
+bg_color = Color(0.92, 0.68, 0.12, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="btn_primary_pressed"]
+bg_color = Color(0.70, 0.48, 0.05, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="btn_secondary"]
+bg_color = Color(0.14, 0.15, 0.19, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.28, 0.30, 0.36, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="btn_secondary_hover"]
+bg_color = Color(0.18, 0.19, 0.24, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.37, 0.44, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="btn_secondary_pressed"]
+bg_color = Color(0.10, 0.11, 0.14, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.88, 0.65, 0.12, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="cart_panel"]
+bg_color = Color(0.08, 0.09, 0.11, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.20, 0.22, 0.27, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="preview_panel"]
+bg_color = Color(0.04, 0.045, 0.055, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.16, 0.18, 0.22, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="header_sep"]
+color = Color(0.2, 0.22, 0.28, 0.5)
 
 [node name="MorningHub" type="CanvasLayer"]
-script = ExtResource("1_hub")
 layer = 10
+script = ExtResource("1_hub")
 
 [node name="Backdrop" type="ColorRect" parent="."]
 anchors_preset = 15
@@ -12,18 +189,451 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.05, 0.04, 0.02, 1)
+color = Color(0.02, 0.022, 0.028, 0.95)
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="MainHBox" type="HBoxContainer" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 80.0
-offset_top = 60.0
-offset_right = -80.0
-offset_bottom = -60.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 16
 
-[node name="VBox" type="VBoxContainer" parent="Panel"]
+[node name="Panel" type="PanelContainer" parent="MainHBox"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+theme_override_styles/panel = SubResource("panel_main")
+
+[node name="VBox" type="VBoxContainer" parent="MainHBox/Panel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="MainHBox/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="DayLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.92, 0.85, 1)
+theme_override_font_sizes/font_size = 20
+text = "Day 1"
+
+[node name="Spacer" type="Control" parent="MainHBox/Panel/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MoneyLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.28, 1)
+theme_override_font_sizes/font_size = 18
+text = "Money: $0.00"
+
+[node name="TempLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.70, 0.85, 1)
+theme_override_font_sizes/font_size = 15
+text = "25C"
+
+[node name="HeaderSep" type="HSeparator" parent="MainHBox/Panel/VBox"]
+layout_mode = 2
+theme_override_styles/separator = SubResource("header_sep")
+
+[node name="TabTitle" type="Label" parent="MainHBox/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 14
+text = "Analytics"
+horizontal_alignment = 1
+
+[node name="Content" type="MarginContainer" parent="MainHBox/Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="AnalyticsPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="TodayLabel" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.72, 0.66, 1)
+theme_override_font_sizes/font_size = 14
+text = "Day 1  |  $0.00  |  0% pop  |  25C"
+
+[node name="YesterdayBox" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="UpgradesPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UpgradeTree" type="Control" parent="MainHBox/Panel/VBox/Content/UpgradesPage"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true
+
+[node name="Tooltip" type="PanelContainer" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree"]
+visible = false
+z_index = 100
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 80.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("cart_panel")
+
+[node name="TipContent" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TipTitle" type="Label" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip/TipContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.82, 0.25, 1)
+theme_override_font_sizes/font_size = 14
+text = "Upgrade Name"
+
+[node name="TipPrice" type="Label" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip/TipContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 11
+text = "$0"
+
+[node name="TipDesc" type="Label" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip/TipContent"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 0)
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 11
+text = "Description"
+autowrap_mode = 2
+
+[node name="TipEffect" type="Label" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip/TipContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 11
+text = "Current bonus: +10%"
+
+[node name="ShopPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="CatRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ShopPage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Cat_consumables" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/CatRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
+theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
+theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("btn_secondary")
+theme_override_styles/hover = SubResource("btn_secondary_hover")
+theme_override_styles/pressed = SubResource("btn_secondary_pressed")
+text = "Consumables"
+
+[node name="Cat_equipment" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/CatRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
+theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
+theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("btn_secondary")
+theme_override_styles/hover = SubResource("btn_secondary_hover")
+theme_override_styles/pressed = SubResource("btn_secondary_pressed")
+text = "Equipment"
+
+[node name="ShopSplit" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ShopPage"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="ScrollContainer2" type="ScrollContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ShopGrid" type="GridContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 4
+
+[node name="CartPC" type="PanelContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit"]
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("cart_panel")
+
+[node name="CartPanel" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="CartTitle" type="Label" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 16
+text = "Cart"
+horizontal_alignment = 1
+
+[node name="CartSep" type="HSeparator" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
+layout_mode = 2
+theme_override_styles/separator = SubResource("header_sep")
+
+[node name="CartScroll" type="ScrollContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CartList" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="CartTotal" type="Label" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 16
+text = "Total: $0.00"
+horizontal_alignment = 1
+
+[node name="CheckoutBtn" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 36)
+theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_colors/font_hover_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_colors/font_pressed_color = Color(0.95, 0.92, 0.85, 1)
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("btn_primary")
+theme_override_styles/hover = SubResource("btn_primary_hover")
+theme_override_styles/pressed = SubResource("btn_primary_pressed")
+text = "Checkout"
+
+[node name="ReadyPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="ReadyTitle" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 20
+text = "Ready to Open?"
+horizontal_alignment = 1
+
+[node name="WeatherRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ReadyPage"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 24
+
+[node name="TempInfo" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage/WeatherRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.70, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+text = "Temperature: 25C"
+
+[node name="PopInfo" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage/WeatherRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 16
+text = "Popularity: 10%"
+
+[node name="PriceRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ReadyPage"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="PriceTitle" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage/PriceRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 15
+text = "Cup Price:"
+
+[node name="PriceSlider" type="HSlider" parent="MainHBox/Panel/VBox/Content/ReadyPage/PriceRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(200, 0)
+
+[node name="PriceValue" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage/PriceRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.28, 1)
+theme_override_font_sizes/font_size = 16
+text = "$0.00"
+
+[node name="StartDayBtn" type="Button" parent="MainHBox/Panel/VBox/Content/ReadyPage"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 50)
+theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_colors/font_hover_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_colors/font_pressed_color = Color(0.95, 0.92, 0.85, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("btn_primary")
+theme_override_styles/hover = SubResource("btn_primary_hover")
+theme_override_styles/pressed = SubResource("btn_primary_pressed")
+text = "Start Day 1"
+
+[node name="FlowIndicator" type="HBoxContainer" parent="MainHBox/Panel/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 2
+
+[node name="BackBtn" type="Button" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(32, 32)
+theme_override_colors/font_color = Color(0.6, 0.58, 0.52, 1)
+theme_override_colors/font_hover_color = Color(0.85, 0.82, 0.75, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("tab_normal")
+theme_override_styles/hover = SubResource("btn_secondary_hover")
+theme_override_styles/pressed = SubResource("btn_secondary_pressed")
+text = "<"
+
+[node name="StepPC_analytics" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 32)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_analytics" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_analytics"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 13
+text = "Analytics"
+
+[node name="StepPC_upgrades" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 32)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_upgrades" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_upgrades"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 13
+text = "Upgrades"
+
+[node name="StepPC_shop" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 32)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_shop" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_shop"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 13
+text = "Shop"
+
+[node name="StepPC_ready" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 32)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_ready" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_ready"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 13
+text = "Ready"
+
+[node name="NextBtn" type="Button" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(32, 32)
+theme_override_colors/font_color = Color(0.6, 0.58, 0.52, 1)
+theme_override_colors/font_hover_color = Color(0.85, 0.82, 0.75, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("tab_normal")
+theme_override_styles/hover = SubResource("btn_secondary_hover")
+theme_override_styles/pressed = SubResource("btn_secondary_pressed")
+text = ">"
+
+[node name="BottomBar" type="VBoxContainer" parent="MainHBox/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="StatusLbl" type="Label" parent="MainHBox/Panel/VBox/BottomBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+
+[node name="RightPanel" type="PanelContainer" parent="MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.8
+theme_override_styles/panel = SubResource("panel_right")
+
+[node name="RightVBox" type="VBoxContainer" parent="MainHBox/RightPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="PreviewTitle" type="Label" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 15
+text = "Stand Preview"
+horizontal_alignment = 1
+
+[node name="PreviewContainer" type="PanelContainer" parent="MainHBox/RightPanel/RightVBox"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.2
+theme_override_styles/panel = SubResource("preview_panel")
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="MainHBox/RightPanel/RightVBox/PreviewContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+ratio = 1.2828
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="MainHBox/RightPanel/RightVBox/PreviewContainer/AspectRatioContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = true
+
+[node name="PreviewViewport" type="SubViewport" parent="MainHBox/RightPanel/RightVBox/PreviewContainer/AspectRatioContainer/SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(320, 250)
+render_target_update_mode = 4
+
+[node name="PreviewCamera" type="Camera3D" parent="MainHBox/RightPanel/RightVBox/PreviewContainer/AspectRatioContainer/SubViewportContainer/PreviewViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 4, 8)
+
+[node name="StatsSep" type="HSeparator" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+theme_override_styles/separator = SubResource("header_sep")
+
+[node name="StatsTitle" type="Label" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 14
+text = "Stand Status"
+horizontal_alignment = 1
+
+[node name="StatsScroll" type="ScrollContainer" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StatsVBox" type="VBoxContainer" parent="MainHBox/RightPanel/RightVBox/StatsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4

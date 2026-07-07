@@ -20,8 +20,8 @@ func _ready() -> void:
 	# QueueMarker2 sets the direction and spacing between each customer slot.
 	# Move/rotate these two markers in the editor to reorient the whole queue.
 	# Up to 20 customer slots are generated automatically from that direction.
-	var m1 := world.get_node_or_null("QueueMarker1") as Marker3D
-	var m2 := world.get_node_or_null("QueueMarker2") as Marker3D
+	var m1: Marker3D = world.get_node_or_null("QueueMarker1") as Marker3D
+	var m2: Marker3D = world.get_node_or_null("QueueMarker2") as Marker3D
 	var start := Vector3(0.0, 0.0, -2.0)
 	var step := Vector3(0.0, 0.0, -1.0)
 	if m1:
@@ -33,21 +33,21 @@ func _ready() -> void:
 		spots.append(start + step * float(i))
 	spawner.set_queue_spots(spots, step)
 
-	# Wire delivery zone
-	var dmarker := world.get_node("DeliveryMarker") as Marker3D
-	if dmarker:
-		delivery.set_delivery_zone(dmarker.global_position)
-
 	# Pedestrian spawner reads its PedestrianPath children automatically.
 	# No wiring needed here — add paths in the editor as children of PedestrianSpawner.
 	ped_spawner.setup(spawner)
 
+	# Wire delivery zone
+	var dmarker := world.get_node_or_null("DeliveryMarker") as Marker3D
+	if dmarker:
+		delivery.set_delivery_zone(dmarker.global_position)
+
 	# Find the CashPickup placed in the stand scene — use its position, then hide it
-	var cash_template := world.find_child("CashPickup", true, false) as Node3D
+	var cash_template: Node3D = world.find_child("CashPickup", true, false) as Node3D
 	if cash_template:
 		_cash_drop_pos = cash_template.global_position
 		cash_template.visible = false
-		var phys := cash_template.get_node_or_null("Physics") as StaticBody3D
+		var phys: StaticBody3D = cash_template.get_node_or_null("Physics") as StaticBody3D
 		if phys:
 			phys.collision_layer = 0
 
@@ -56,7 +56,7 @@ func _ready() -> void:
 
 	# Spawn the screen-space outline overlay and hand it the main camera so it
 	# can mirror the transform every frame.
-	var outline_sys := OUTLINE_SCENE.instantiate()
+	var outline_sys: Node = OUTLINE_SCENE.instantiate()
 	add_child(outline_sys)
 	outline_sys.setup(player.get_node("Head/Camera3D") as Camera3D)
 
@@ -66,6 +66,7 @@ func _ready() -> void:
 
 	# Start the day cycle in morning phase
 	DayManager.start_morning()
+	SaveManager.respawn_placed_containers()
 
 
 func _on_cash_dropped(drop_pos: Vector3, payment: float, change_due: float) -> void:

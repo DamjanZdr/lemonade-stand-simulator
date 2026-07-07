@@ -14,31 +14,64 @@ extends Node
 
 const _OUTLINE_SHADER := preload("res://scripts/shaders/outline.gdshader")
 
-@onready var _subvp:   SubViewport = $SubViewport
-@onready var _cam:     Camera3D    = $SubViewport/OutlineCamera
+@onready var _subvp: SubViewport = $SubViewport
+@onready var _cam: Camera3D = $SubViewport/OutlineCamera
 @onready var _display: TextureRect = $OverlayLayer/DisplayRect
 
 var _main_cam: Camera3D = null
+var _target_width: float = 2.5
+
+
+func _get_base_viewport_size() -> Vector2i:
+	return Vector2i(
+		ProjectSettings.get_setting("display/window/size/viewport_width"),
+		ProjectSettings.get_setting("display/window/size/viewport_height"),
+	)
 
 
 func _ready() -> void:
-	# Resize SubViewport to always match the window.
-	_subvp.size = get_viewport().size
-	get_viewport().size_changed.connect(func(): _subvp.size = get_viewport().size)
+	# Render the outline mask at the project base size so it stretches with the
+	# 3D viewport instead of being treated as an independent UI element.
+	_subvp.size = _get_base_viewport_size()
+	get_viewport().size_changed.connect(_update_shader_width)
 
 	# Build the edge-detect material and point it at the SubViewport texture.
 	var mat := ShaderMaterial.new()
 	mat.shader = _OUTLINE_SHADER
 	_display.material = mat
-	_display.texture  = _subvp.get_texture()
+	_display.texture = _subvp.get_texture()
 
 	# Dev panel live controls.
 	EventBus.debug_set_outline_width.connect(_on_set_width)
 	EventBus.debug_set_outline_color.connect(_on_set_color)
 
+	# Sync outline camera right before every render to avoid one-frame lag.
+	RenderingServer.frame_pre_draw.connect(_on_frame_pre_draw)
+
+	_update_shader_width()
+
 
 func _on_set_width(width: float) -> void:
-	(_display.material as ShaderMaterial).set_shader_parameter("outline_width", width)
+	_target_width = width
+	_update_shader_width()
+
+
+func _update_shader_width() -> void:
+	if _display == null or _display.material == null:
+		return
+	var base_size := Vector2(_get_base_viewport_size())
+	var win_size := Vector2(get_window().size)
+	var scale_factor: float = (
+			0.5
+			* (
+					win_size.x / max(1.0, base_size.x)
+					+ win_size.y / max(1.0, base_size.y)
+			)
+	)
+	(_display.material as ShaderMaterial).set_shader_parameter(
+		"outline_width",
+		_target_width / scale_factor,
+	)
 
 
 func _on_set_color(color: Color) -> void:
@@ -49,11 +82,12 @@ func setup(main_cam: Camera3D) -> void:
 	_main_cam = main_cam
 
 
-func _process(_delta: float) -> void:
+func _on_frame_pre_draw() -> void:
 	if _main_cam == null:
 		return
-	# Mirror main camera every frame so the outline mask stays in sync.
+	# Mirror main camera immediately before rendering so the outline mask
+	# never lags behind the main view.
 	_cam.global_transform = _main_cam.global_transform
-	_cam.fov  = _main_cam.fov
+	_cam.fov = _main_cam.fov
 	_cam.near = _main_cam.near
-	_cam.far  = _main_cam.far
+	_cam.far = _main_cam.far

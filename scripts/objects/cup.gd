@@ -8,7 +8,8 @@ const CUP_GLB: PackedScene = preload("res://blender/cup.glb")
 enum CupState { EMPTY, FILLED }
 
 var state: CupState = CupState.EMPTY
-var recipe: Dictionary = {}
+var recipe: Dictionary = { }
+var fill_color: Color = Color(1.0, 0.9, 0.3, 1.0)
 
 @onready var model: Node3D = $Model
 @onready var physics: StaticBody3D = $Physics
@@ -24,7 +25,9 @@ func _ready() -> void:
 func fill(recipe_snapshot: Dictionary) -> void:
 	state = CupState.FILLED
 	recipe = recipe_snapshot
+	fill_color = recipe_snapshot.get("color", fill_color)
 	_refresh_fill_visibility()
+	apply_fill_color()
 
 
 func interact(player: Node) -> void:
@@ -35,7 +38,7 @@ func interact(player: Node) -> void:
 		CupState.EMPTY:
 			physics.collision_layer = 0
 			model.visible = false
-			p.set_held(p.HeldItem.CUP_EMPTY, {}, _make_hand_mesh(false))
+			p.set_held(p.HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
 			queue_free()
 		CupState.FILLED:
 			physics.collision_layer = 0
@@ -56,14 +59,36 @@ func _refresh_fill_visibility() -> void:
 		_cup_fill_mesh.visible = (state == CupState.FILLED)
 
 
-static func make_hand_mesh(filled: bool) -> Node3D:
+static func make_hand_mesh(filled: bool, color: Color = Color(1.0, 0.9, 0.3, 1.0)) -> Node3D:
 	var inst := CUP_GLB.instantiate() as Node3D
 	inst.scale = Vector3.ONE * 0.05
 	var fill_node := inst.find_child("CupFill", true, false)
 	if fill_node:
 		fill_node.visible = filled
+		if filled:
+			var mesh := fill_node as MeshInstance3D
+			if mesh != null and mesh.mesh != null:
+				var base_mat := mesh.mesh.surface_get_material(0)
+				if base_mat != null:
+					var mat := base_mat.duplicate() as StandardMaterial3D
+					mat.albedo_color = color
+					mesh.material_override = mat
 	return inst
 
 
+func apply_fill_color() -> void:
+	if _cup_fill_mesh == null:
+		return
+	var mesh := _cup_fill_mesh as MeshInstance3D
+	if mesh == null or mesh.mesh == null:
+		return
+	var base_mat := mesh.mesh.surface_get_material(0)
+	if base_mat == null:
+		return
+	var mat := base_mat.duplicate() as StandardMaterial3D
+	mat.albedo_color = fill_color
+	mesh.material_override = mat
+
+
 func _make_hand_mesh(filled: bool) -> Node3D:
-	return Cup.make_hand_mesh(filled)
+	return Cup.make_hand_mesh(filled, fill_color)

@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="UpgradeTreeData" format=3 uid="uid://dx21mx2gce5dx"]
+
+[ext_resource type="Script" uid="uid://b1locwn4syoul" path="res://scripts/resources/upgrade_tree_data.gd" id="1_abc12"]
+
+[resource]
+script = ExtResource("1_abc12")

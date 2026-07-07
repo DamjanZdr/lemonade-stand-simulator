@@ -2,10 +2,13 @@
 
 [ext_resource type="PackedScene" uid="uid://stand001ls" path="res://scenes/stand/stand.tscn" id="1_stand"]
 [ext_resource type="PackedScene" uid="uid://dcrdb3cxjew85" path="res://scenes/stand/workstation.tscn" id="2_workstation"]
+[ext_resource type="PackedScene" uid="uid://bpiux7tbvj0ky" path="res://scenes/objects/water_dispenser.tscn" id="3_wdispenser"]
 [ext_resource type="PackedScene" uid="uid://b5nygw38vywdu" path="res://scenes/objects/thermometer.tscn" id="5_v5dby"]
+[ext_resource type="PackedScene" uid="uid://cupstack001ls" path="res://scenes/objects/cup_stack.tscn" id="6_cupstack"]
+[ext_resource type="Script" uid="uid://dcc7v87n0gjjq" path="res://scripts/tools/preview_orbit_camera.gd" id="10_preview"]
 [ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
-[ext_resource type="Script" path="res://scripts/objects/sun_controller.gd" id="37_sun"]
+[ext_resource type="Script" uid="uid://dklkcjfc1wreh" path="res://scripts/objects/sun_controller.gd" id="37_sun"]
 
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
 albedo_color = Color(0.42331815, 0.62640846, 3.85046e-07, 1)
@@ -62,6 +65,12 @@ transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0
 [node name="Workstation" parent="." unique_id=1892686148 instance=ExtResource("2_workstation")]
 transform = Transform3D(0.865, 0, 0, 0, 0.865, 0, 0, 0, 0.865, 0, -0.114597976, 3.5492034)
 
+[node name="WaterDispenser" parent="." unique_id=1929335132 instance=ExtResource("3_wdispenser")]
+transform = Transform3D(-0.25, 0, 3.774895e-08, 0, 0.25, 0, -3.774895e-08, 0, -0.25, -2.3000002, 0.21918052, 3.3)
+
+[node name="CupStack" parent="." unique_id=2000000002 instance=ExtResource("6_cupstack")]
+transform = Transform3D(0.03, 0, 0, 0, 0.03, 0, 0, 0, 0.03, -0.5, 1.0035, -0.675)
+
 [node name="DeliveryZone" type="MeshInstance3D" parent="." unique_id=1231808297]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9554234, 0.03, 3.6055803)
 material_override = SubResource("Material_dzone")
@@ -78,10 +87,10 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.2
 
 [node name="DirectionalLight" type="DirectionalLight3D" parent="." unique_id=285599754]
 transform = Transform3D(0.8592105, -0.27406377, -0.43200752, 0.3315773, -0.34480715, 0.8781687, -0.38962752, -0.8977783, -0.20538925, 0, 10, 0)
-script = ExtResource("37_sun")
 light_color = Color(1, 0.97, 0.88, 1)
 light_energy = 1.6
 shadow_enabled = true
+script = ExtResource("37_sun")
 
 [node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1098989604]
 transform = Transform3D(-0.866, -0.25, -0.433, 0, 0.866, -0.5, 0.5, -0.433, -0.75, 0, 8, 0)
@@ -122,3 +131,10 @@ script = ExtResource("36_0wrxw")
 
 [node name="Thermometer" parent="." unique_id=242897628 instance=ExtResource("5_v5dby")]
 transform = Transform3D(0.04, 0, 0, 0, 0.039188195, 0.008017811, 0, -0.008017811, 0.039188195, 0.6703902, 1.1902373, -0.59936786)
+
+[node name="PreviewCenter" type="Marker3D" parent="." unique_id=1183170315]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -1)
+
+[node name="PreviewOrbitCamera" type="Marker3D" parent="." unique_id=1183170316]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 8.422926, 4)
+script = ExtResource("10_preview")

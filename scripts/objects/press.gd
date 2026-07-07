@@ -17,6 +17,15 @@ const FRAME_PRESS_START: float = 0.0
 const FRAME_PRESS_END: float = 10.0
 const FRAME_OPEN_END: float = 20.0
 
+# Fruit juice colors (absolute, no water blend)
+const FRUIT_COLORS: Dictionary = {
+	"lemon": Color(1.0, 0.9, 0.3, 1.0),
+	"strawberry": Color(1.0, 0.2, 0.4, 1.0),
+	"blueberry": Color(0.3, 0.1, 0.6, 1.0),
+	"peach": Color(1.0, 0.7, 0.5, 1.0),
+	"watermelon": Color(0.9, 0.1, 0.2, 1.0),
+}
+
 var _snapped_pitcher: Pitcher = null
 
 @onready var _mesh: Node3D = $PressMesh
@@ -53,7 +62,9 @@ func _process(delta: float) -> void:
 			target_pressed = minf(target_pressed, fruit_count)
 			if target_pressed > _pressed_so_far:
 				var to_add := target_pressed - _pressed_so_far
+				print("PRESS _process: adding fruit_type=", fruit_type, " to_add=", to_add, " pitcher_liquid=", _snapped_pitcher.get_liquid_volume())
 				var ok := _snapped_pitcher.add_ingredient(fruit_type, to_add)
+				print("PRESS _process: add_ingredient returned ok=", ok)
 				if ok:
 					_pressed_so_far = target_pressed
 				else:
@@ -154,6 +165,18 @@ func interact_secondary(player: Node) -> void:
 		p.pickup_container(self, "press")
 
 
+func _get_pitcher_hint() -> String:
+	if _snapped_pitcher == null or not is_instance_valid(_snapped_pitcher):
+		return ""
+	var vol := _snapped_pitcher.get_liquid_volume()
+	if vol <= 0.0:
+		return " (pitcher empty)"
+	return " (pitcher: %s, %.1f liq)" % [
+		_snapped_pitcher.get_contents_string(),
+		vol,
+	]
+
+
 func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null:
@@ -166,19 +189,29 @@ func get_hint(player: Node) -> String:
 		if not _is_fruit(itype):
 			return "Press only accepts fruits"
 		if fruit_count > 0.0 and fruit_type != itype:
-			return "Cannot mix fruit types in press"
-		return "Click: add %s to press (has %.0f)" % [itype.capitalize(), fruit_count]
+			return "Cannot mix fruit types in press (has %.0f %s)" % [
+				fruit_count,
+				fruit_type.capitalize(),
+			]
+		return "Click: add %s to press (has %.0f %s)" % [
+			itype.capitalize(),
+			fruit_count,
+			fruit_type if fruit_count > 0.0 else "",
+		]
 	if fruit_count > 0.0:
 		if not has_snapped_pitcher():
-			return "Snap a pitcher to the press! (%.0f %s ready)" % [
+			return "Snap a pitcher! (%.0f %s ready)" % [
 				fruit_count,
 				fruit_type.capitalize(),
 			]
 		if not _can_press_into_pitcher(_snapped_pitcher):
-			return "Pitcher incompatible — empty or same-fruit/no-water only"
-		return "Click: press %s into pitcher | RMB: pick up" % fruit_type.capitalize()
+			return "Pitcher incompatible%s" % _get_pitcher_hint()
+		return "Click: press %s into pitcher%s | RMB: pick up" % [
+			fruit_type.capitalize(),
+			_get_pitcher_hint(),
+		]
 	if fruit_count <= 0.0 and has_snapped_pitcher():
-		return "LMB: pick up pitcher | RMB: pick up pitcher"
+		return "LMB: pick up pitcher%s | RMB: pick up" % _get_pitcher_hint()
 	if fruit_count <= 0.0 and not has_snapped_pitcher():
 		return "LMB: pick up press | RMB: pick up press"
 	return "Press has fruit or pitcher — cannot pick up"
@@ -329,8 +362,13 @@ func _start_press() -> void:
 		_juice_mesh.visible = true
 		_juice_mesh.position.y = 0.7
 		_juice_mesh.scale = Vector3.ONE
-	# Animate pitcher eraser from current fill to final fill over press duration
+		_set_juice_color(fruit_type)
+		print("PRESS _start_press: fruit_type=", fruit_type, " target_color=", FRUIT_COLORS.get(fruit_type, Color(1.0, 0.9, 0.3, 1.0)))
+	# Preview the fruit color on the pitcher so liquid shows correct color immediately
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and fruit_count > 0.0:
+		if _snapped_pitcher.fruit_type == "":
+			_snapped_pitcher.fruit_type = fruit_type
+		_snapped_pitcher.update_liquid_color()
 		var target_vol := _snapped_pitcher.get_liquid_volume() + fruit_count
 		_snapped_pitcher.start_press_eraser_animation(target_vol, _press_duration)
 
@@ -412,3 +450,58 @@ func _start_juice_drain() -> void:
 			_juice_mesh.scale = Vector3.ONE
 			_juice_mesh.position.y = 0.7
 	)
+
+
+func _set_juice_color(ftype: String) -> void:
+	if _juice_mesh == null:
+		return
+	var color: Color = FRUIT_COLORS.get(ftype, Color(1.0, 0.9, 0.3, 1.0))
+
+	# Handle CSGCombiner3D first (extends CSGShape3D but has no material)
+	var combiner := _juice_mesh as CSGCombiner3D
+	if combiner != null:
+		for child in combiner.get_children():
+			var child_csg := child as CSGShape3D
+			if child_csg != null:
+				var mat: Material = child_csg.material
+				if mat == null:
+					mat = StandardMaterial3D.new()
+				var dup := mat.duplicate() as StandardMaterial3D
+				dup.albedo_color = color
+				child_csg.material = dup
+		# Force CSG combiner to rebuild so new materials are picked up
+		combiner.visible = false
+		combiner.visible = true
+		return
+
+	# Handle CSGShape3D / CSGCylinder3D directly
+	var csg := _juice_mesh as CSGShape3D
+	if csg != null:
+		var mat: Material = csg.material
+		if mat == null:
+			mat = StandardMaterial3D.new()
+		var dup := mat.duplicate() as StandardMaterial3D
+		dup.albedo_color = color
+		csg.material = dup
+		return
+
+	# Handle MeshInstance3D and its children
+	var targets: Array[MeshInstance3D] = []
+	var root_inst := _juice_mesh as MeshInstance3D
+	if root_inst != null:
+		targets.append(root_inst)
+	for child in _juice_mesh.get_children():
+		var mi := child as MeshInstance3D
+		if mi != null:
+			targets.append(mi)
+	for mi in targets:
+		var mat: Material = null
+		if mi.material_override != null:
+			mat = mi.material_override
+		elif mi.mesh != null:
+			mat = mi.mesh.surface_get_material(0)
+		if mat == null:
+			mat = StandardMaterial3D.new()
+		var dup := mat.duplicate() as StandardMaterial3D
+		dup.albedo_color = color
+		mi.material_override = dup

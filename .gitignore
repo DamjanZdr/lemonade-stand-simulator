@@ -1,3 +1,9 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Temporary Blender caches & backups
+blender/cache_fluid_*/
+blender/*.blend1
+scenes/ui/*.tscn.backup
+

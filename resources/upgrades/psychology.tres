@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"psychology"
+display_name = "Psychology"
+description = "Reveals exact feedback after each serve."
+category = "recipe"
+effect_per_node = 1.0

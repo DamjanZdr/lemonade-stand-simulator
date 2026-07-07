@@ -32,26 +32,26 @@ func set_highlight(on: bool) -> void:
 func _get_fill_mat() -> StandardMaterial3D:
 	if _fill_mat == null:
 		_fill_mat = StandardMaterial3D.new()
-		_fill_mat.albedo_color            = Color.WHITE
-		_fill_mat.shading_mode            = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_fill_mat.transparency            = BaseMaterial3D.TRANSPARENCY_DISABLED
+		_fill_mat.albedo_color = Color.WHITE
+		_fill_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_fill_mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 	return _fill_mat
 
 
 func _apply_outline(node: Node, on: bool) -> void:
 	if node is MeshInstance3D and node.name != "_Outline":
-		var mi       := node as MeshInstance3D
+		var mi := node as MeshInstance3D
 		var existing := mi.get_node_or_null("_Outline") as MeshInstance3D
 		if on and existing == null and mi.mesh != null:
 			var ol := MeshInstance3D.new()
-			ol.name              = "_Outline"
-			ol.mesh              = mi.mesh
-			ol.layers            = 2        # invisible to main camera; seen only by OutlineCamera
+			ol.name = "_Outline"
+			ol.mesh = mi.mesh
+			ol.layers = 2 # invisible to main camera; seen only by OutlineCamera
 			ol.material_override = _get_fill_mat()
 			mi.add_child(ol)
 		elif not on and existing != null:
 			existing.queue_free()
 	for child in node.get_children():
 		if child.name == "_Outline":
-			continue  # never recurse into outline nodes themselves
+			continue # never recurse into outline nodes themselves
 		_apply_outline(child, on)

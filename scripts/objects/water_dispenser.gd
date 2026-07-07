@@ -15,7 +15,7 @@ var _snapped_pitcher: Pitcher = null
 var _tap_tween: Tween = null
 
 @onready var _water_eraser: CSGBox3D = $CSGCombiner3D/WaterEraser
-@onready var _tap_mesh: MeshInstance3D = $water dispenser/TapObject
+@onready var _tap_mesh: MeshInstance3D = $"water dispenser/TapObject"
 @onready var _snap_point: Marker3D = $Marker3D
 
 const TAP_Y_CLOSED: float = 110.0
@@ -37,9 +37,9 @@ func _process(delta: float) -> void:
 		if t >= 1.0:
 			_finish_fill()
 		else:
-			# Animate tap handle during fill
-			if _tap_mesh:
-				_tap_mesh.rotation_degrees.y = lerpf(TAP_Y_CLOSED, TAP_Y_OPEN, t)
+			# Smoothly decrease dispenser water visual as pitcher fills
+			var display_fillings := float(water_fillings) - t
+			_update_water_visual(display_fillings)
 
 
 func _update_snap() -> void:
@@ -54,9 +54,13 @@ func _update_snap() -> void:
 			_reset_tap()
 
 
-func _update_water_visual() -> void:
+func _update_water_visual(display_fillings: float = -1.0) -> void:
 	if _water_eraser:
-		var t := float(water_fillings) / float(max_fillings)
+		var t: float
+		if display_fillings >= 0.0:
+			t = display_fillings / float(max_fillings)
+		else:
+			t = float(water_fillings) / float(max_fillings)
 		var target_y := lerpf(WATER_Y_EMPTY, WATER_Y_FULL, t)
 		_water_eraser.position.y = target_y
 
@@ -84,20 +88,43 @@ func interact(player: Node) -> void:
 			if qty <= 0.0:
 				return
 			var space: int = max_fillings - water_fillings
-			var to_add: int = int(minf(qty, float(space)))
+			if space <= 0:
+				return
+			var to_add: int = 1
+			var prev_fillings := water_fillings
 			water_fillings += to_add
-			_update_water_visual()
+			var start_y := lerpf(
+				WATER_Y_EMPTY,
+				WATER_Y_FULL,
+				float(prev_fillings) / float(max_fillings),
+			)
+			var end_y := lerpf(
+				WATER_Y_EMPTY,
+				WATER_Y_FULL,
+				float(water_fillings) / float(max_fillings),
+			)
+			_water_eraser.position.y = start_y
+			var tween := create_tween()
+			tween.tween_property(_water_eraser, "position:y", end_y, 0.35) \
+					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 			EventBus.supply_box_deposited.emit("water", float(to_add))
 			var remaining: float = qty - float(to_add)
 			if remaining > 0.0:
 				p.update_held_amount(remaining)
 				EventBus.interaction_hint_changed.emit(
-					"Dispenser: %d/%d (box has %.0f left)" % [water_fillings, max_fillings, remaining],
+					"Dispenser: %d/%d (box has %.0f left)" % [
+						water_fillings,
+						max_fillings,
+						remaining,
+					],
 				)
 			else:
 				p.clear_held()
 				EventBus.interaction_hint_changed.emit(
-					"Dispenser refilled! (%d/%d)" % [water_fillings, max_fillings],
+					"Dispenser refilled! (%d/%d)" % [
+						water_fillings,
+						max_fillings,
+					],
 				)
 			return
 
@@ -214,6 +241,7 @@ func _start_fill(water_amount: float) -> void:
 	_is_filling = true
 	_fill_progress = 0.0
 	_fill_amount = water_amount
+	print("DISPENSER _start_fill: water_amount=", water_amount, " pitcher_liquid=", _snapped_pitcher.get_liquid_volume(), " pitcher_water=", _snapped_pitcher.water, " pitcher_fruit_count=", _snapped_pitcher.fruit_count)
 	# Animate tap to open
 	if _tap_mesh:
 		if _tap_tween and _tap_tween.is_valid():
@@ -224,6 +252,8 @@ func _start_fill(water_amount: float) -> void:
 	var current_vol := _snapped_pitcher.get_liquid_volume()
 	var target_vol := current_vol + water_amount
 	_snapped_pitcher.start_press_eraser_animation(target_vol, fill_time_per_pitcher)
+	_snapped_pitcher.tween_color_for_water_addition(water_amount, fill_time_per_pitcher)
+	# Water visual will animate smoothly in _process from current level down by 1
 
 
 func _finish_fill() -> void:
@@ -233,11 +263,13 @@ func _finish_fill() -> void:
 	_update_water_visual()
 
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
+		print("DISPENSER _finish_fill: adding _fill_amount=", _fill_amount, " to pitcher_water=", _snapped_pitcher.water)
 		_snapped_pitcher.water += _fill_amount
 		# Trigger label/eraser refresh — _update_label is conventionally private
 		# but called across classes for state sync in this codebase
-		_snapped_pitcher._update_label()
+		_snapped_pitcher.update_label()
 		_snapped_pitcher.end_press_eraser_animation()
+		_snapped_pitcher.update_liquid_color()
 		EventBus.pitcher_ingredient_added.emit("water", _fill_amount)
 		# Transition to COMPLETE if both fruit and water present
 		if _snapped_pitcher.fruit_count > 0.0 and _snapped_pitcher.water > 0.0 \

@@ -11,14 +11,14 @@ var _payment_cents: int = 0
 var _change_due_cents: int = 0
 var _tendered_cents: int = 0
 
-@onready var _panel:          PanelContainer = $Panel
-@onready var _paid_lbl:       Label = $Panel/Margin/VBox/PaidLabel
-@onready var _due_lbl:        Label = $Panel/Margin/VBox/DueLabel
-@onready var _tendered_lbl:   Label = $Panel/Margin/VBox/TenderedLabel
-@onready var _denom_row:      HBoxContainer = $Panel/Margin/VBox/DenomRow
-@onready var _clear_btn:      Button = $Panel/Margin/VBox/BtnRow/ClearBtn
-@onready var _give_btn:       Button = $Panel/Margin/VBox/BtnRow/GiveBtn
-@onready var _status_lbl:     Label = $Panel/Margin/VBox/StatusLabel
+@onready var _panel: PanelContainer = $Panel
+@onready var _paid_lbl: Label = $Panel/Margin/VBox/PaidLabel
+@onready var _due_lbl: Label = $Panel/Margin/VBox/DueLabel
+@onready var _tendered_lbl: Label = $Panel/Margin/VBox/TenderedLabel
+@onready var _denom_row: HBoxContainer = $Panel/Margin/VBox/DenomRow
+@onready var _clear_btn: Button = $Panel/Margin/VBox/BtnRow/ClearBtn
+@onready var _give_btn: Button = $Panel/Margin/VBox/BtnRow/GiveBtn
+@onready var _status_lbl: Label = $Panel/Margin/VBox/StatusLabel
 
 
 func _ready() -> void:
@@ -27,6 +27,9 @@ func _ready() -> void:
 	_give_btn.pressed.connect(_on_give_pressed)
 
 	# Wire each denomination button in the order they appear in DenomRow.
+	if _denom_row == null:
+		push_warning("CashRegister: DenomRow node not found!")
+		return
 	var btns := _denom_row.get_children()
 	for i in btns.size():
 		var btn := btns[i] as Button
@@ -35,9 +38,9 @@ func _ready() -> void:
 
 
 func _on_sale_initiated(payment: float, change_due: float) -> void:
-	_payment_cents     = roundi(payment    * 100.0)
-	_change_due_cents  = roundi(change_due * 100.0)
-	_tendered_cents    = 0
+	_payment_cents = roundi(payment * 100.0)
+	_change_due_cents = roundi(change_due * 100.0)
+	_tendered_cents = 0
 	_refresh()
 	_panel.show()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -61,9 +64,9 @@ func _on_give_pressed() -> void:
 
 
 func _refresh() -> void:
-	_paid_lbl.text     = "Customer paid:   $%.2f" % (_payment_cents     / 100.0)
-	_due_lbl.text      = "Change due:      $%.2f" % (_change_due_cents  / 100.0)
-	_tendered_lbl.text = "Tendered:        $%.2f" % (_tendered_cents     / 100.0)
+	_paid_lbl.text = "Customer paid:   $%.2f" % (_payment_cents / 100.0)
+	_due_lbl.text = "Change due:      $%.2f" % (_change_due_cents / 100.0)
+	_tendered_lbl.text = "Tendered:        $%.2f" % (_tendered_cents / 100.0)
 
 	_give_btn.disabled = _tendered_cents < _change_due_cents
 

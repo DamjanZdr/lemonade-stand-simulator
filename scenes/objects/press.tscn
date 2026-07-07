@@ -333,8 +333,9 @@ libraries/ = SubResource("AnimationLibrary_nd6j0")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.509, 0.70000005, 0)
 
 [node name="CSGCylinder3D" type="CSGCylinder3D" parent="press/JuiceMesh" unique_id=475533139]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0380855, 0)
 radius = 0.1
-height = 4.0
+height = 6.076172
 material = SubResource("StandardMaterial3D_wwj3x")
 
 [node name="CSGBox3D" type="CSGBox3D" parent="press/JuiceMesh" unique_id=641226898]

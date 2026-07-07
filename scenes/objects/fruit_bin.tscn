@@ -1,0 +1,206 @@
+[gd_scene format=3 uid="uid://crlc4ejpqvn4g"]
+
+[ext_resource type="Script" uid="uid://cd23t4s5gn5dx" path="res://scripts/objects/fruit_bin.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://up7xyn0lo0ou" path="res://blender/lemon.glb" id="2_bs7qo"]
+[ext_resource type="PackedScene" uid="uid://mqs45tbggd6p" path="res://blender/fruit crate.glb" id="2_crate"]
+[ext_resource type="Script" uid="uid://c3ybsim8kysff" path="res://scripts/objects/item_grid.gd" id="3_gkbo6"]
+[ext_resource type="PackedScene" uid="uid://k7f3tfy2h2fg" path="res://blender/strawberry.glb" id="4_tx33c"]
+[ext_resource type="PackedScene" uid="uid://6g3m2e7xbxut" path="res://blender/blueberry.glb" id="5_gkbo6"]
+[ext_resource type="PackedScene" uid="uid://dd78710vollfc" path="res://blender/peach.glb" id="7_yji4x"]
+[ext_resource type="PackedScene" uid="uid://crdxnotvcd7vg" path="res://blender/watermelon.glb" id="8_g3ttd"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_001"]
+size = Vector3(0.42, 0.15, 0.38)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_001"]
+size = Vector3(10.198242, 4.206238, 6.2036133)
+
+[node name="FruitBin" type="Node3D" unique_id=1507066681]
+script = ExtResource("1_script")
+drop_height = 1.5
+
+[node name="FruitCrate" parent="." unique_id=2046530714 instance=ExtResource("2_crate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="AmountLabel" type="Label3D" parent="." unique_id=1014811336]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9866607, 2.841489)
+pixel_size = 0.002
+font_size = 443
+outline_size = 8
+
+[node name="Container" type="MeshInstance3D" parent="." unique_id=316117860]
+visible = false
+mesh = SubResource("BoxMesh_001")
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=367484378]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=536302313]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11681414, 1.8791382, -0.16017759)
+shape = SubResource("BoxShape3D_001")
+
+[node name="ItemGrid_Lemon" type="Node3D" parent="." unique_id=582310434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.77031827, 0)
+script = ExtResource("3_gkbo6")
+capacity = 10
+starting_amount = 0.0
+drop_height = 2.0
+
+[node name="lemon" parent="ItemGrid_Lemon" unique_id=1539523883 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.00052078883, -3.456794e-05, 0.8192448, 0.04747952, 0.77788, 0, -0.7459392, 0.04951255, 0.0005719682, -3.9453053, 0, -1.5438132)
+
+[node name="lemon2" parent="ItemGrid_Lemon" unique_id=1485327916 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.089653715, 0, 0.8133304, 0, 0.7794542, 0, -0.7420526, 0, 0.09826538, -2.0201874, 0, -1.5543327)
+
+[node name="lemon3" parent="ItemGrid_Lemon" unique_id=464598879 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(-0.068105936, -0.00501992, 0.8158199, -0.05269897, 0.77751446, -4.656613e-10, -0.74247175, -0.05472575, -0.07483407, -0.00039107125, 0, -1.5438132)
+
+[node name="lemon4" parent="ItemGrid_Lemon" unique_id=488896680 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.00052184274, 0, 0.8192448, 0, 0.7794542, 0, -0.74744874, 0, 0.0005719682, 1.9668053, 0, -1.5753727)
+
+[node name="lemon5" parent="ItemGrid_Lemon" unique_id=1550872111 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.08947266, -0.0059388466, 0.8133304, 0.047479518, 0.77788, 0, -0.7405539, 0.049155097, 0.09826538, 3.597372, 0, -1.5332937)
+
+[node name="lemon6" parent="ItemGrid_Lemon" unique_id=1495346776 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.0005205441, 3.836801e-05, 0.8192448, -0.052698974, 0.77751446, 3.637979e-12, -0.74558866, -0.054955494, 0.0005719682, -3.9141786, 0, 1.1777391)
+
+[node name="lemon7" parent="ItemGrid_Lemon" unique_id=430941302 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(-0.06827584, 0, 0.8158199, 0, 0.7794542, 0, -0.744324, 0, -0.07483407, -2.0498977, 0, 1.0935141)
+
+[node name="lemon8" parent="ItemGrid_Lemon" unique_id=2124200263 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.00052078883, -3.456794e-05, 0.8192448, 0.04747952, 0.77788, 0, -0.7459392, 0.04951255, 0.0005719682, -0.062116183, 0, 1.0935141)
+
+[node name="lemon9" parent="ItemGrid_Lemon" unique_id=93811183 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(0.08943061, 0.006591707, 0.8133304, -0.052698974, 0.77751446, 4.656613e-10, -0.740206, -0.05455875, 0.09826538, 1.9011292, 0, 1.0935141)
+
+[node name="lemon10" parent="ItemGrid_Lemon" unique_id=932904824 instance=ExtResource("2_bs7qo")]
+transform = Transform3D(-0.06827584, 0, 0.8158199, 0, 0.7794542, 0, -0.744324, 0, -0.07483407, 3.6713684, 0, 1.081954)
+
+[node name="ItemGrid_Strawberry" type="Node3D" parent="." unique_id=1827350282]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.77031827, 0)
+script = ExtResource("3_gkbo6")
+capacity = 12
+starting_amount = 0.0
+drop_height = 2.0
+
+[node name="strawberry" parent="ItemGrid_Strawberry" unique_id=1041489490 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -3.4396374, -0.83590895, -1.6987594)
+
+[node name="strawberry2" parent="ItemGrid_Strawberry" unique_id=1329650417 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -1.8408782, -0.83590895, -1.6987594)
+
+[node name="strawberry3" parent="ItemGrid_Strawberry" unique_id=1157125240 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -0.1972282, -0.83590895, -1.6987594)
+
+[node name="strawberry4" parent="ItemGrid_Strawberry" unique_id=1273788215 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 1.384816, -0.83590895, -1.6987594)
+
+[node name="strawberry5" parent="ItemGrid_Strawberry" unique_id=1952723110 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.9925528, -0.83590895, -1.6987594)
+
+[node name="strawberry6" parent="ItemGrid_Strawberry" unique_id=1796983395 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -3.4396374, -0.83590895, 0.101240635)
+
+[node name="strawberry7" parent="ItemGrid_Strawberry" unique_id=436911234 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -1.8408782, -0.83590895, 0.101240635)
+
+[node name="strawberry8" parent="ItemGrid_Strawberry" unique_id=566231668 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -0.1972282, -0.83590895, 0.101240635)
+
+[node name="strawberry9" parent="ItemGrid_Strawberry" unique_id=401728790 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 1.384816, -0.83590895, 0.101240635)
+
+[node name="strawberry10" parent="ItemGrid_Strawberry" unique_id=1699281289 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.9925528, -0.83590895, 0.101240635)
+
+[node name="strawberry11" parent="ItemGrid_Strawberry" unique_id=343810039 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -3.4396374, -0.83590895, 1.9012407)
+
+[node name="strawberry12" parent="ItemGrid_Strawberry" unique_id=845293887 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -1.8408782, -0.83590895, 1.9012407)
+
+[node name="strawberry13" parent="ItemGrid_Strawberry" unique_id=1131307060 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -0.1972282, -0.83590895, 1.9012407)
+
+[node name="strawberry14" parent="ItemGrid_Strawberry" unique_id=7981495 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 1.384816, -0.83590895, 1.9012407)
+
+[node name="strawberry15" parent="ItemGrid_Strawberry" unique_id=2072041611 instance=ExtResource("4_tx33c")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.9925528, -0.83590895, 1.9012407)
+
+[node name="ItemGrid_Blueberry" type="Node3D" parent="." unique_id=97532183]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6857164, 0.31758022)
+script = ExtResource("3_gkbo6")
+capacity = 6
+starting_amount = 0.0
+drop_height = 2.0
+
+[node name="blueberry" parent="ItemGrid_Blueberry" unique_id=1469835037 instance=ExtResource("5_gkbo6")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -3.046576, -0.539253, -1.5730659)
+
+[node name="blueberry2" parent="ItemGrid_Blueberry" unique_id=1784112550 instance=ExtResource("5_gkbo6")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -0.20765018, -0.539253, -1.5730659)
+
+[node name="blueberry3" parent="ItemGrid_Blueberry" unique_id=599419556 instance=ExtResource("5_gkbo6")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.6877854, -0.539253, -1.5730659)
+
+[node name="blueberry4" parent="ItemGrid_Blueberry" unique_id=1078755481 instance=ExtResource("5_gkbo6")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -3.046576, -0.539253, 0.9269341)
+
+[node name="blueberry5" parent="ItemGrid_Blueberry" unique_id=502459280 instance=ExtResource("5_gkbo6")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -0.20765018, -0.539253, 0.9269341)
+
+[node name="blueberry6" parent="ItemGrid_Blueberry" unique_id=794798039 instance=ExtResource("5_gkbo6")]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.6877854, -0.539253, 0.9269341)
+
+[node name="ItemGrid_Peach" type="Node3D" parent="." unique_id=1914565953]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6857164, 0.31758022)
+script = ExtResource("3_gkbo6")
+capacity = 8
+starting_amount = 0.0
+drop_height = 2.0
+
+[node name="peach" parent="ItemGrid_Peach" unique_id=2024204152 instance=ExtResource("7_yji4x")]
+transform = Transform3D(-0.7293073, 0.10321211, 0.6763565, 0, 0.9885561, -0.15085381, -0.6841863, -0.11001878, -0.72096115, -3.6685836, 0.23582566, -1.4270217)
+
+[node name="peach2" parent="ItemGrid_Peach" unique_id=1824725805 instance=ExtResource("7_yji4x")]
+transform = Transform3D(0.9842416, 0.12025448, -0.12964262, -0.121277966, 0.99261856, 0, 0.1286857, 0.015722796, 0.9915608, -1.3685837, 0.23582566, -1.4270217)
+
+[node name="peach3" parent="ItemGrid_Peach" unique_id=1687949997 instance=ExtResource("7_yji4x")]
+transform = Transform3D(0.6380175, 0.12888077, 0.7591598, -0.08062198, 0.9916557, -0.10059428, -0.76578975, 0.0029759484, 0.64308435, 0.9314162, 0.23582566, -1.4270217)
+
+[node name="peach4" parent="ItemGrid_Peach" unique_id=456042726 instance=ExtResource("7_yji4x")]
+transform = Transform3D(0.9445165, -0.18810849, 0.26926535, 0.19532253, 0.98073906, 0, -0.26407906, 0.05259359, 0.96306604, 3.2314165, 0.23582566, -1.4270217)
+
+[node name="peach5" parent="ItemGrid_Peach" unique_id=792398978 instance=ExtResource("7_yji4x")]
+transform = Transform3D(0.94271433, -0.23931037, -0.23242237, 0.2460484, 0.96925753, -3.7252903e-09, 0.22527713, -0.057187155, 0.97261494, -3.6685836, 0.23582566, 0.8729782)
+
+[node name="peach6" parent="ItemGrid_Peach" unique_id=970076662 instance=ExtResource("7_yji4x")]
+transform = Transform3D(-0.116152704, 0, -0.99323136, 0, 1, 0, 0.99323136, 0, -0.116152704, -1.3685837, 0.23582566, 0.8729782)
+
+[node name="peach7" parent="ItemGrid_Peach" unique_id=763327828 instance=ExtResource("7_yji4x")]
+transform = Transform3D(0.80944693, 0, -0.5871931, 0, 1, 0, 0.5871931, 0, 0.80944693, 0.9314162, 0.23582566, 0.8729782)
+
+[node name="peach8" parent="ItemGrid_Peach" unique_id=205039891 instance=ExtResource("7_yji4x")]
+transform = Transform3D(-0.11520812, -0.064933896, 0.99121666, 0.1334165, 0.9878082, 0.080217496, -0.98434097, 0.14148644, -0.10514033, 3.2314165, 0.23582566, 0.8729782)
+
+[node name="ItemGrid_Watermelon" type="Node3D" parent="." unique_id=1174746464]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5519059, 0.31758022)
+script = ExtResource("3_gkbo6")
+capacity = 5
+starting_amount = 0.0
+drop_height = 2.0
+
+[node name="watermelon" parent="ItemGrid_Watermelon" unique_id=51893003 instance=ExtResource("8_g3ttd")]
+transform = Transform3D(-0.036659803, -0.004903308, 0.59885895, -0.07954263, 0.59470415, 4.656613e-10, -0.59357315, -0.07939136, -0.03698626, -3.773903, 0, -0.1780255)
+
+[node name="watermelon2" parent="ItemGrid_Watermelon" unique_id=1757635258 instance=ExtResource("8_g3ttd")]
+transform = Transform3D(-0.05508167, 0, 0.59746635, 0, 0.6, 0, -0.59746635, 0, -0.05508167, -1.9739028, 0, -0.17802536)
+
+[node name="watermelon3" parent="ItemGrid_Watermelon" unique_id=1346876860 instance=ExtResource("8_g3ttd")]
+transform = Transform3D(0.06285998, -0.0053236093, 0.5966744, 0.05063272, 0.5978598, 4.656613e-10, -0.594546, 0.050352074, 0.06308502, -0.1400215, 0, -0.17444305)
+
+[node name="watermelon4" parent="ItemGrid_Watermelon" unique_id=160552762 instance=ExtResource("8_g3ttd")]
+transform = Transform3D(-0.03698626, 0, 0.59885895, 0, 0.6, 0, -0.59885895, 0, -0.03698626, 1.6260973, 0, -0.1780251)
+
+[node name="watermelon5" parent="ItemGrid_Watermelon" unique_id=1004849978 instance=ExtResource("8_g3ttd")]
+transform = Transform3D(0.044167217, 0.024394104, 0.59787476, -0.0017971836, 0.59950393, -0.02432781, -0.5983695, 1.7202835e-09, 0.04420377, 3.4260974, 0, -0.17802496)

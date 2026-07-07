@@ -37,6 +37,16 @@ const ERASER_Y_EMPTY: float = 1.752
 const ERASER_Y_FULL: float = 5.245
 const MAX_FILL_VOLUME: float = 10.0
 
+@export_group("Liquid Colors")
+@export var water_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+@export var lemon_color: Color = Color(1.0, 0.9, 0.3, 1.0)
+@export var strawberry_color: Color = Color(1.0, 0.2, 0.4, 1.0)
+@export var blueberry_color: Color = Color(0.3, 0.1, 0.6, 1.0)
+@export var peach_color: Color = Color(1.0, 0.7, 0.5, 1.0)
+@export var watermelon_color: Color = Color(0.9, 0.1, 0.2, 1.0)
+
+# _liquid_material is NOT cached to avoid hot-reload / CSG rebuild resets
+
 const _FILL_PATHS: Array = [
 	"res://blender/lemonade 0.glb",
 	"res://blender/lemonade 1.glb",
@@ -71,7 +81,8 @@ func _ready() -> void:
 			_fill_stages.append(inst)
 	_fix_glass_transparency()
 	_update_eraser_position()
-	_update_label()
+	update_label()
+	update_liquid_color()
 
 
 # Glass uses TRANSPARENCY_ALPHA_DEPTH_PRE_PASS which writes depth before the opaque
@@ -99,8 +110,10 @@ func is_fully_empty() -> bool:
 
 
 func add_ingredient(ingredient_type: String, amount: float) -> bool:
+	print("PITCHER add_ingredient called: type=", ingredient_type, " amount=", amount, " | BEFORE state=", state, " fruit_type=", fruit_type, " fruit_count=", fruit_count, " water=", water)
 	# Can only add ingredients in PREPPING or COMPLETE state
 	if state != PitcherState.PREPPING and state != PitcherState.COMPLETE:
+		print("PITCHER add_ingredient REJECTED: wrong state ", state)
 		return false
 
 	# Once cups are poured, can no longer add sugar or ice
@@ -114,8 +127,10 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 		_ when is_fruit:
 			# Can only add fruit in PREPPING state (not COMPLETE)
 			if state == PitcherState.COMPLETE:
+				print("PITCHER add_ingredient REJECTED: cannot add fruit in COMPLETE state")
 				return false
 			if get_liquid_volume() + amount > Balancing.PITCHER_MAX_LIQUID:
+				print("PITCHER add_ingredient REJECTED: would exceed max liquid")
 				return false
 			# Reject mixed fruits in the same pitcher.
 			if fruit_type != "" and fruit_type != ingredient_type:
@@ -129,6 +144,7 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 			if fruit_type == "":
 				fruit_type = ingredient_type
 			fruit_count += amount
+			update_liquid_color()
 			# Check if we should transition to COMPLETE (has both fruit and water)
 			if fruit_count > 0.0 and water > 0.0:
 				state = PitcherState.COMPLETE
@@ -140,6 +156,7 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 			if get_liquid_volume() + amount > Balancing.PITCHER_MAX_LIQUID:
 				return false
 			water += amount
+			update_liquid_color()
 			# Check if we should transition to COMPLETE
 			if fruit_count > 0.0 and water > 0.0:
 				state = PitcherState.COMPLETE
@@ -150,18 +167,21 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 			ice += amount
 		_:
 			return false
-	_update_label()
+	update_label()
 	EventBus.pitcher_ingredient_added.emit(ingredient_type, amount)
+	print("PITCHER add_ingredient: ", ingredient_type, " +", amount, " | state=", state, " fruit_type=", fruit_type, " fruit_count=", fruit_count, " water=", water)
 	return true
 
 
 func get_recipe_snapshot() -> Dictionary:
+	var color := _get_current_liquid_color()
 	return {
 		"fruit_type": fruit_type,
 		"fruit_count": fruit_count,
 		"water": water,
 		"sugar": sugar,
 		"ice": ice,
+		"color": color,
 	}
 
 
@@ -183,7 +203,9 @@ func pour_portion() -> Dictionary:
 		water = 0.0
 		sugar = 0.0
 		ice = 0.0
-	_update_label()
+	update_label()
+	update_liquid_color()
+	print("PITCHER pour_portion: portion removed, fruit_count=", fruit_count, " water=", water, " liquid=", get_liquid_volume())
 	return snap
 
 
@@ -200,9 +222,8 @@ func _clear_and_return() -> void:
 	# Only move back to prep position if not in SERVING state (i.e., at prep table)
 	if not was_serving:
 		global_position = prep_position
-		scale = _prep_scale
 	set_pitcher_visible(true)
-	_update_label()
+	update_label()
 	EventBus.pitcher_cleared.emit()
 	EventBus.pitcher_state_changed.emit(int(state))
 
@@ -282,6 +303,21 @@ func try_add_ingredient(ingredient_type: String, amount: float) -> bool:
 	return true
 
 
+func get_contents_string() -> String:
+	var parts: Array[String] = []
+	if fruit_count > 0.0 and fruit_type != "":
+		parts.append("%.0f %s" % [fruit_count, fruit_type])
+	if water > 0.0:
+		parts.append("%.0f water" % water)
+	if sugar > 0.0:
+		parts.append("%.0f sugar" % sugar)
+	if ice > 0.0:
+		parts.append("%.0f ice" % ice)
+	if parts.is_empty():
+		return "empty"
+	return " ".join(parts)
+
+
 func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null:
@@ -290,17 +326,26 @@ func get_hint(player: Node) -> String:
 		PitcherState.PREPPING, PitcherState.COMPLETE:
 			if p.held_item == p.HeldItem.SUPPLY_BOX \
 					and p.held_item_data.get("source") == "bin_scoop":
-				return "Click: add %s to pitcher" % p.held_item_data.get("ingredient_type", "")
+				return "Click: add %s to pitcher (%s)" % [
+					p.held_item_data.get("ingredient_type", ""),
+					get_contents_string(),
+				]
 			if get_liquid_volume() <= 0.0:
 				return "LMB: pick up pitcher  |  RMB: pick up pitcher"
 			# Has liquid, can fill cups or pick up
 			if p.held_item == p.HeldItem.CUP_EMPTY:
-				return "LMB: fill cup (%.1f liq)  |  RMB: pick up pitcher" % get_liquid_volume()
-			return "LMB: pick up pitcher  |  RMB: throw out"
+				return "LMB: fill cup  |  RMB: pick up (%s, %.1f liq)" % [
+					get_contents_string(),
+					get_liquid_volume(),
+				]
+			return "LMB: pick up pitcher  |  RMB: throw out (%s)" % get_contents_string()
 		PitcherState.SERVING:
 			if p.held_item == p.HeldItem.CUP_EMPTY:
-				return "LMB: fill cup (%.1f liq)  |  RMB: pick up pitcher" % get_liquid_volume()
-			return "LMB: pick up pitcher  |  RMB: throw out"
+				return "LMB: fill cup  |  RMB: pick up (%s, %.1f liq)" % [
+					get_contents_string(),
+					get_liquid_volume(),
+				]
+			return "LMB: pick up pitcher  |  RMB: throw out (%s)" % get_contents_string()
 	return ""
 
 
@@ -326,10 +371,10 @@ func _make_hand_mesh() -> Node3D:
 
 
 func _make_filled_cup_mesh() -> Node3D:
-	return Cup.make_hand_mesh(true)
+	return Cup.make_hand_mesh(true, _get_current_liquid_color())
 
 
-func _update_label() -> void:
+func update_label() -> void:
 	var status := ""
 	match state:
 		PitcherState.PREPPING:
@@ -387,12 +432,38 @@ func end_press_eraser_animation() -> void:
 
 
 func fill_water_slow(amount: float, duration: float = 2.0) -> void:
+	var start_color := _get_current_liquid_color()
 	water += amount
+	var end_color := _get_current_liquid_color()
 	_update_eraser_position(duration)
-	_update_label()
+	update_label()
+	var tween := create_tween()
+	tween.tween_method(
+		func(c: Color):
+			_apply_liquid_color(c),
+		start_color,
+		end_color,
+		duration,
+	)
 	if fruit_count > 0.0 and water > 0.0 and state == PitcherState.PREPPING:
 		state = PitcherState.COMPLETE
 		EventBus.pitcher_state_changed.emit(int(state))
+
+
+func tween_color_for_water_addition(water_amount: float, duration: float) -> void:
+	var start_color := _get_current_liquid_color()
+	var original_water := water
+	water = original_water + water_amount
+	var end_color := _get_current_liquid_color()
+	water = original_water
+	var tween := create_tween()
+	tween.tween_method(
+		func(c: Color):
+			_apply_liquid_color(c),
+		start_color,
+		end_color,
+		duration,
+	)
 
 
 func _can_add_ingredient(ingredient_type: String, amount: float) -> bool:
@@ -490,6 +561,81 @@ func sync_fill_display() -> void:
 	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
 	if _lemonade_eraser != null:
 		_lemonade_eraser.position.y = target_y
+	update_liquid_color()
+
+
+func update_liquid_color() -> void:
+	var total := get_liquid_volume()
+	var blended: Color
+	if total <= 0.0:
+		if fruit_type != "":
+			blended = _get_fruit_color(fruit_type)
+		else:
+			blended = Color(1.0, 0.9, 0.3, 1.0)
+	else:
+		blended = _get_current_liquid_color()
+	print("PITCHER update_liquid_color: liquid=", total, " fruit_type=", fruit_type, " fruit_count=", fruit_count, " water=", water, " blended=", blended)
+	_apply_liquid_color(blended)
+
+
+func _get_current_liquid_color() -> Color:
+	var total := get_liquid_volume()
+	if total <= 0.0:
+		return Color(0, 0, 0, 1)
+	# Pure fruit color when fruit is present; water color only when water alone
+	if fruit_type != "" and fruit_count > 0.0:
+		return _get_fruit_color(fruit_type)
+	return water_color
+
+
+func _get_fruit_color(ftype: String) -> Color:
+	match ftype:
+		"lemon":
+			return lemon_color
+		"strawberry":
+			return strawberry_color
+		"blueberry":
+			return blueberry_color
+		"peach":
+			return peach_color
+		"watermelon":
+			return watermelon_color
+		_:
+			return lemon_color
+
+
+func _apply_liquid_color(color: Color) -> void:
+	var mesh := $LemonadeFill/LemonadeMesh as CSGMesh3D
+	if mesh == null or mesh.mesh == null:
+		return
+	var base_mat: Material = mesh.mesh.surface_get_material(0)
+	var mat: StandardMaterial3D
+	if base_mat != null:
+		mat = base_mat.duplicate() as StandardMaterial3D
+	else:
+		mat = StandardMaterial3D.new()
+	mat.albedo_color = color
+	# CSGCombiner3D ignores .material during rebuild; must set surface material on mesh itself
+	var dup_mesh := mesh.mesh.duplicate() as ArrayMesh
+	dup_mesh.surface_set_material(0, mat)
+	mesh.mesh = dup_mesh
+
+	# The CSG subtractive eraser defines the material of the exposed top surface.
+	# Update its material so the liquid level shows the correct color.
+	var eraser := $LemonadeFill/LemonadeEraser as CSGBox3D
+	if eraser != null:
+		var eraser_mat: Material = eraser.material
+		if eraser_mat != null:
+			var dup := eraser_mat.duplicate() as StandardMaterial3D
+			dup.albedo_color = color
+			eraser.material = dup
+		else:
+			var new_mat := StandardMaterial3D.new()
+			new_mat.albedo_color = color
+			eraser.material = new_mat
+		# Nudge eraser to force CSGCombiner3D to rebuild with new materials
+		eraser.position.y += 0.0001
+		eraser.position.y -= 0.0001
 
 
 func _on_debug_empty_pitcher() -> void:

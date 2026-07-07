@@ -22,6 +22,7 @@ signal pitcher_cup_filled(recipe: Dictionary)
 
 # --- Delivery ---
 signal supply_order_placed(ingredient_type: String, quantity: float, cost: float)
+signal equipment_order_placed(container_type: String)
 signal supply_box_spawned(box: Node)
 
 # --- Customer ---
@@ -71,3 +72,4 @@ signal debug_set_outline_width(width: float)
 signal debug_set_outline_color(color: Color)
 signal debug_force_happy_serve()
 signal debug_set_popularity(value: float)
+signal debug_set_time_scale(scale: float)

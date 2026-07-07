@@ -3,17 +3,15 @@
 [ext_resource type="Script" uid="uid://du65be1ijimhx" path="res://scripts/objects/pitcher.gd" id="1_pitcher"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_col"]
-height = 3.6163573
-radius = 1.1918945
+height = 2.8584716
+radius = 0.83154297
 
 [sub_resource type="BoxMesh" id="BoxMesh_f7qsj"]
 size = Vector3(3, 5, 3)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlc56"]
 resource_name = "Material.010"
-cull_mode = 2
-albedo_color = Color(1, 0.903628, 0.30610237, 1)
-roughness = 0.5
+albedo_color = Color(1, 0.9019608, 0.30588236, 1)
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_jqijl"]
 _surfaces = [{
@@ -51,11 +49,11 @@ shadow_mesh = SubResource("ArrayMesh_jqijl")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yk5qa"]
 resource_name = "Material.009"
-albedo_color = Color(0.6666667, 0.81960785, 0.9372549, 0.8862745)
+albedo_color = Color(0.6901961, 0.80784315, 0.9098039, 0.5294118)
 metallic = 0.33678755
-roughness = 0.18
+roughness = 0.0
 refraction_enabled = true
-refraction_scale = 0.02
+refraction_scale = 0.0
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_5jn5u"]
 _surfaces = [{
@@ -127,11 +125,17 @@ shadow_mesh = SubResource("ArrayMesh_f7qsj")
 
 [node name="Pitcher" type="Node3D" unique_id=1489343685 groups=["container"]]
 script = ExtResource("1_pitcher")
+water_color = Color(0.5474296, 0.6550144, 0.7320979, 0.6509804)
+lemon_color = Color(1, 0.9019608, 0, 1)
+strawberry_color = Color(1, 0, 0, 1)
+blueberry_color = Color(0.16862746, 0.09803922, 0.81960785, 1)
+peach_color = Color(1, 0.48235294, 0.32941177, 1)
+watermelon_color = Color(0.90876645, 0, 0.25791737, 1)
 
 [node name="Physics" type="StaticBody3D" parent="." unique_id=1721874400]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=1508390408]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8135988, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4346559, 0)
 shape = SubResource("CylinderShape3D_col")
 
 [node name="ContentsLabel" type="Label3D" parent="." unique_id=982179225]
@@ -159,24 +163,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.015365124, 0, 0)
 visible = false
 mesh = SubResource("ArrayMesh_20peb")
 
-[node name="MeshInstance3D" type="CSGBox3D" parent="lemonade" unique_id=36060096]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.7357788, 0)
-visible = false
-size = Vector3(1, 3.4715576, 1)
-
 [node name="pitcher" type="Node3D" parent="." unique_id=1438741472]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
 
 [node name="Cylinder_001" type="MeshInstance3D" parent="pitcher" unique_id=676611644]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0011322498, 0.004323244, -0.0020725727)
 mesh = SubResource("ArrayMesh_01adr")
 
 [node name="LemonadeFill" type="CSGCombiner3D" parent="." unique_id=1501480683]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
 
 [node name="LemonadeMesh" type="CSGMesh3D" parent="LemonadeFill" unique_id=661462062]
 mesh = SubResource("ArrayMesh_grset")
 
 [node name="LemonadeEraser" type="CSGBox3D" parent="LemonadeFill" unique_id=1519726119]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.752, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7519999, 0)
 operation = 2
 size = Vector3(2.1210938, 3.473709, 2.2792969)
 material = SubResource("StandardMaterial3D_qlc56")

@@ -1,9 +1,6 @@
 [gd_scene format=4 uid="uid://bpiux7tbvj0ky"]
 
-[ext_resource type="Script" path="res://scripts/objects/water_dispenser.gd" id="1_script"]
-
-[sub_resource type="BoxShape3D" id="BoxShape_physics"]
-size = Vector3(2, 5, 2)
+[ext_resource type="Script" uid="uid://b620lh5tlihsp" path="res://scripts/objects/water_dispenser.gd" id="1_script"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f6du4"]
 resource_name = "Material.037"
@@ -216,9 +213,11 @@ shadow_mesh = SubResource("ArrayMesh_83740")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mqd7g"]
 resource_name = "Material.038"
 cull_mode = 2
-albedo_color = Color(0.7607843, 0.8627451, 0.90588236, 0.24705882)
+depth_draw_mode = 1
+albedo_color = Color(0.7411765, 0.87058824, 0.8862745, 0.5058824)
 roughness = 0.0
 refraction_enabled = true
+refraction_scale = 0.0
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_5m32m"]
 _surfaces = [{
@@ -255,8 +254,7 @@ shadow_mesh = SubResource("ArrayMesh_5m32m")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6jvyv"]
 resource_name = "Material.039"
 cull_mode = 2
-albedo_color = Color(0.35557154, 0.57889813, 0.90644574, 1)
-roughness = 0.5
+albedo_color = Color(0.29411766, 0.5411765, 1, 1)
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_a720k"]
 _surfaces = [{
@@ -317,6 +315,9 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_a720k")
 
+[sub_resource type="BoxShape3D" id="BoxShape_physics"]
+size = Vector3(2, 8.3365965, 2)
+
 [node name="WaterDispenser" type="Node3D" unique_id=1929335132]
 script = ExtResource("1_script")
 
@@ -357,12 +358,14 @@ libraries/ = SubResource("AnimationLibrary_sull2")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, 0)
 
 [node name="Water" type="CSGMesh3D" parent="CSGCombiner3D" unique_id=804566432]
+transform = Transform3D(0.95, 0, 0, 0, 0.98, 0, 0, 0, 0.95, 0, 0, 0)
 mesh = SubResource("ArrayMesh_vt45c")
 
 [node name="WaterEraser" type="CSGBox3D" parent="CSGCombiner3D" unique_id=2010646788]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.73597956, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7359791, 0)
 operation = 2
 size = Vector3(3, 4, 3)
+material = SubResource("StandardMaterial3D_6jvyv")
 
 [node name="Marker3D" type="Marker3D" parent="." unique_id=325260024]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1785065, 0.78946257)
@@ -370,5 +373,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1785065, 0.78946257)
 [node name="Physics" type="StaticBody3D" parent="." unique_id=999999001]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=999999002]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2288451, 0)
 shape = SubResource("BoxShape_physics")

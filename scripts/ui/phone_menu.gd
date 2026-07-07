@@ -63,10 +63,9 @@ func _build_order_buttons() -> void:
 	container_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	order_buttons.add_child(container_header)
 	var containers := [
-		["lemon_bin", "Lemon Crate", Balancing.CONTAINER_COST_LEMON_BIN],
+		["fruit_bin", "Fruit Bin", Balancing.CONTAINER_COST_FRUIT_BIN],
 		["sugar_bin", "Sugar Bin", Balancing.CONTAINER_COST_SUGAR_BIN],
 		["ice_bin", "Ice Plate", Balancing.CONTAINER_COST_ICE_BIN],
-		["cup_stack", "Cup Stack", Balancing.CONTAINER_COST_CUP_STACK],
 		["pitcher", "Pitcher", Balancing.CONTAINER_COST_PITCHER],
 		["press", "Fruit Press", Balancing.CONTAINER_COST_PRESS],
 	]
@@ -152,58 +151,7 @@ func _buy_container(container_type: String, cost: float) -> void:
 	if not GameState.spend_money(cost):
 		EventBus.interaction_hint_changed.emit("Not enough money!")
 		return
-	# Deliver container to the drop zone
-	_deliver_container(container_type)
-
-
-func _deliver_container(container_type: String) -> void:
-	var container_scenes := {
-		"lemon_bin": preload("res://scenes/objects/lemon_bin.tscn"),
-		"sugar_bin": preload("res://scenes/objects/sugar_bin.tscn"),
-		"ice_bin": preload("res://scenes/objects/ice_bin.tscn"),
-		"cup_stack": preload("res://scenes/objects/cup_stack.tscn"),
-		"pitcher": preload("res://scenes/objects/pitcher.tscn"),
-		"press": preload("res://scenes/objects/press.tscn"),
-	}
-	var placement_scales := {
-		"lemon_bin": Vector3.ONE * 0.06,
-		"sugar_bin": Vector3.ONE * 0.04,
-		"ice_bin": Vector3.ONE * 0.03,
-		"cup_stack": Vector3.ONE * 0.05,
-		"pitcher": Vector3.ONE * 0.15,
-		"press": Vector3.ONE * 0.10,
-	}
-	var scene: PackedScene = container_scenes.get(container_type)
-	if scene == null:
-		return
-
-	var instance := scene.instantiate()
-	# Apply scale and set empty
-	var scale: Vector3 = placement_scales.get(container_type, Vector3.ONE)
-	instance.scale = scale
-	if "starting_amount" in instance:
-		instance.starting_amount = 0.0
-	if "starting_count" in instance:
-		instance.starting_count = 0
-
-	get_tree().current_scene.add_child(instance)
-	instance.add_to_group("container")
-
-	# Get delivery zone position from DeliverySystem
-	var delivery: Node = get_tree().current_scene.find_child("DeliverySystem", true, false)
-	var drop_pos := Vector3(5.0, 0.5, 5.0) # default
-	if delivery and "delivery_zone" in delivery:
-		drop_pos = delivery.delivery_zone
-
-	var drop_start := drop_pos + Vector3(0, Balancing.DELIVERY_DROP_HEIGHT, 0)
-	instance.global_position = drop_start
-
-	# Tween down like supply boxes
-	var tween := instance.create_tween()
-	tween.tween_property(instance, "global_position", drop_pos, 0.7) \
-			.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-
-	EventBus.container_placed.emit(container_type, instance)
+	EventBus.equipment_order_placed.emit(container_type)
 
 
 func _buy_upgrade(id: String, btn: Button, name_lbl: Label) -> void:

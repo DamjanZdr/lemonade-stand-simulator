@@ -8,6 +8,7 @@ var delivery_zone: Vector3 = Vector3(5.0, 0.5, 5.0) # set by main via set_delive
 
 func _ready() -> void:
 	EventBus.supply_order_placed.connect(_on_supply_order_placed)
+	EventBus.equipment_order_placed.connect(_on_equipment_order_placed)
 
 
 func set_delivery_zone(pos: Vector3) -> void:
@@ -20,6 +21,21 @@ func _on_supply_order_placed(ingredient_type: String, quantity: float, _cost: fl
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	box.ingredient_type = ingredient_type
 	box.quantity = quantity
+	get_parent().add_child(box)
+
+	var drop_start := delivery_zone + Vector3(0, Balancing.DELIVERY_DROP_HEIGHT, 0)
+	box.global_position = drop_start
+	EventBus.supply_box_spawned.emit(box)
+
+	var tween := box.create_tween()
+	tween.tween_property(box, "global_position", delivery_zone, 0.7) \
+			.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+
+
+func _on_equipment_order_placed(container_type: String) -> void:
+	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
+	box.is_equipment = true
+	box.equipment_type = container_type
 	get_parent().add_child(box)
 
 	var drop_start := delivery_zone + Vector3(0, Balancing.DELIVERY_DROP_HEIGHT, 0)

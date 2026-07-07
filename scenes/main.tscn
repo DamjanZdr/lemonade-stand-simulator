@@ -4,10 +4,10 @@
 [ext_resource type="PackedScene" uid="uid://world001ls" path="res://scenes/world/world.tscn" id="2_world"]
 [ext_resource type="PackedScene" uid="uid://debrqguawbc46" path="res://scenes/player/player.tscn" id="3_player"]
 [ext_resource type="Script" uid="uid://bdwb7soqi2pxp" path="res://scripts/customer/customer_spawner.gd" id="5_spawner"]
-[ext_resource type="Script" path="res://scripts/customer/pedestrian_spawner.gd" id="10_pedspawner"]
 [ext_resource type="Script" uid="uid://kude15htrunu" path="res://scripts/systems/delivery_system.gd" id="6_delivery"]
 [ext_resource type="PackedScene" uid="uid://hud001ls" path="res://scenes/ui/hud.tscn" id="7_hud"]
 [ext_resource type="PackedScene" uid="uid://dp8lh1ptnkcc3" path="res://scenes/ui/debug_panel.tscn" id="9_debug"]
+[ext_resource type="Script" uid="uid://bulmw0nj3xrmn" path="res://scripts/customer/pedestrian_spawner.gd" id="10_pedspawner"]
 
 [node name="Main" type="Node" unique_id=1191278377]
 script = ExtResource("1_main")
@@ -21,13 +21,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
 [node name="CustomerSpawner" type="Node" parent="." unique_id=2002667936]
 script = ExtResource("5_spawner")
 
-[node name="PedestrianSpawner" type="Node" parent="." unique_id=3145882019]
+[node name="PedestrianSpawner" type="Node" parent="." unique_id=-1149085277]
 script = ExtResource("10_pedspawner")
 
 [node name="DeliverySystem" type="Node" parent="." unique_id=1974616056]
 script = ExtResource("6_delivery")
 
 [node name="HUD" parent="." unique_id=1577022415 instance=ExtResource("7_hud")]
-
 
 [node name="DebugPanel" parent="." unique_id=1101678529 instance=ExtResource("9_debug")]

@@ -34,13 +34,11 @@ albedo_color = Color(0.06, 0.4, 0.13, 1)
 [node name="CashRegisterProp" type="Node3D" unique_id=600060924]
 script = ExtResource("1_regprop")
 
-[node name="BodyMesh" parent="." unique_id=994805288 instance=ExtResource("3_calc")]
+[node name="Calculator" parent="." unique_id=994805288 instance=ExtResource("3_calc")]
 transform = Transform3D(0.09659258, 0, -0.025881905, 0, 0.1, 0, 0.025881905, 0, 0.09659258, -0.0038340674, -0.01006867, -0.0005047647)
 
 [node name="BodyPhysics" type="StaticBody3D" parent="." unique_id=377603935]
 transform = Transform3D(0.9659258, 0, -0.25881904, 0, 1, 0, 0.25881904, 0, 0.9659258, -0.0038340674, 0, -0.0005047647)
-collision_layer = 1
-collision_mask = 1
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="BodyPhysics" unique_id=927506557]
 transform = Transform3D(1.0000012, 0, 0, 0, 1, 0, 0, 0, 1.0000012, -4.656613e-10, 0.12946609, -0.03503423)

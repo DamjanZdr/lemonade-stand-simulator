@@ -1,0 +1,320 @@
+[gd_scene format=3 uid="uid://cln645chxinxp"]
+
+[ext_resource type="Script" uid="uid://ckhhjvdyos60c" path="res://scripts/tools/upgrade_tree_node.gd" id="1_node"]
+[ext_resource type="Resource" path="res://resources/upgrades/press_speed.tres" id="2_press_speed"]
+[ext_resource type="Resource" path="res://resources/upgrades/sunroof.tres" id="3_sunroof"]
+[ext_resource type="Resource" path="res://resources/upgrades/lemon_unlock.tres" id="4_lemon_unlock"]
+[ext_resource type="Resource" path="res://resources/upgrades/strawberry_unlock.tres" id="5_strawberry_unlock"]
+[ext_resource type="Resource" path="res://resources/upgrades/blueberry_unlock.tres" id="6_blueberry_unlock"]
+[ext_resource type="Resource" path="res://resources/upgrades/peach_unlock.tres" id="7_peach_unlock"]
+[ext_resource type="Resource" path="res://resources/upgrades/watermelon_unlock.tres" id="8_watermelon_unlock"]
+[ext_resource type="Resource" path="res://resources/upgrades/demand.tres" id="9_demand"]
+[ext_resource type="Resource" path="res://resources/upgrades/nimbleness.tres" id="10_nimbleness"]
+[ext_resource type="Resource" path="res://resources/upgrades/water_dispenser.tres" id="11_water_dispenser"]
+
+[node name="UpgradeTree" type="Node2D" unique_id=235020644]
+
+[node name="Root" type="Node2D" parent="." unique_id=334159279]
+position = Vector2(0, 0)
+script = ExtResource("1_node")
+is_root = true
+
+[node name="PressSpeed1" type="Node2D" parent="."]
+position = Vector2(140.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("2_press_speed")
+cost = 40
+
+[node name="PressSpeed2" type="Node2D" parent="."]
+position = Vector2(280.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("2_press_speed")
+cost = 60
+
+[node name="PressSpeed3" type="Node2D" parent="."]
+position = Vector2(420.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("2_press_speed")
+cost = 80
+
+[node name="PressSpeed4" type="Node2D" parent="."]
+position = Vector2(560.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("2_press_speed")
+cost = 100
+
+[node name="PressSpeed5" type="Node2D" parent="."]
+position = Vector2(700.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("2_press_speed")
+cost = 120
+
+[node name="Sunroof1" type="Node2D" parent="."]
+position = Vector2(113.3, 82.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("3_sunroof")
+cost = 50
+
+[node name="Sunroof2" type="Node2D" parent="."]
+position = Vector2(226.5, 164.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("3_sunroof")
+cost = 70
+
+[node name="Sunroof3" type="Node2D" parent="."]
+position = Vector2(339.8, 246.9)
+script = ExtResource("1_node")
+upgrade = ExtResource("3_sunroof")
+cost = 90
+
+[node name="Sunroof4" type="Node2D" parent="."]
+position = Vector2(453.0, 329.2)
+script = ExtResource("1_node")
+upgrade = ExtResource("3_sunroof")
+cost = 110
+
+[node name="Sunroof5" type="Node2D" parent="."]
+position = Vector2(566.3, 411.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("3_sunroof")
+cost = 130
+
+[node name="LemonUnlock1" type="Node2D" parent="."]
+position = Vector2(43.3, 133.1)
+script = ExtResource("1_node")
+upgrade = ExtResource("4_lemon_unlock")
+cost = 30
+
+[node name="LemonUnlock2" type="Node2D" parent="."]
+position = Vector2(86.5, 266.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("4_lemon_unlock")
+cost = 50
+
+[node name="LemonUnlock3" type="Node2D" parent="."]
+position = Vector2(129.8, 399.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("4_lemon_unlock")
+cost = 70
+
+[node name="LemonUnlock4" type="Node2D" parent="."]
+position = Vector2(173.0, 532.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("4_lemon_unlock")
+cost = 90
+
+[node name="LemonUnlock5" type="Node2D" parent="."]
+position = Vector2(216.3, 665.7)
+script = ExtResource("1_node")
+upgrade = ExtResource("4_lemon_unlock")
+cost = 110
+
+[node name="StrawberryUnlock1" type="Node2D" parent="."]
+position = Vector2(-43.3, 133.1)
+script = ExtResource("1_node")
+upgrade = ExtResource("5_strawberry_unlock")
+cost = 35
+
+[node name="StrawberryUnlock2" type="Node2D" parent="."]
+position = Vector2(-86.5, 266.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("5_strawberry_unlock")
+cost = 55
+
+[node name="StrawberryUnlock3" type="Node2D" parent="."]
+position = Vector2(-129.8, 399.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("5_strawberry_unlock")
+cost = 75
+
+[node name="StrawberryUnlock4" type="Node2D" parent="."]
+position = Vector2(-173.0, 532.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("5_strawberry_unlock")
+cost = 95
+
+[node name="StrawberryUnlock5" type="Node2D" parent="."]
+position = Vector2(-216.3, 665.7)
+script = ExtResource("1_node")
+upgrade = ExtResource("5_strawberry_unlock")
+cost = 115
+
+[node name="BlueberryUnlock1" type="Node2D" parent="."]
+position = Vector2(-113.3, 82.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("6_blueberry_unlock")
+cost = 40
+
+[node name="BlueberryUnlock2" type="Node2D" parent="."]
+position = Vector2(-226.5, 164.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("6_blueberry_unlock")
+cost = 60
+
+[node name="BlueberryUnlock3" type="Node2D" parent="."]
+position = Vector2(-339.8, 246.9)
+script = ExtResource("1_node")
+upgrade = ExtResource("6_blueberry_unlock")
+cost = 80
+
+[node name="BlueberryUnlock4" type="Node2D" parent="."]
+position = Vector2(-453.0, 329.2)
+script = ExtResource("1_node")
+upgrade = ExtResource("6_blueberry_unlock")
+cost = 100
+
+[node name="BlueberryUnlock5" type="Node2D" parent="."]
+position = Vector2(-566.3, 411.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("6_blueberry_unlock")
+cost = 120
+
+[node name="PeachUnlock1" type="Node2D" parent="."]
+position = Vector2(-140.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("7_peach_unlock")
+cost = 45
+
+[node name="PeachUnlock2" type="Node2D" parent="."]
+position = Vector2(-280.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("7_peach_unlock")
+cost = 65
+
+[node name="PeachUnlock3" type="Node2D" parent="."]
+position = Vector2(-420.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("7_peach_unlock")
+cost = 85
+
+[node name="PeachUnlock4" type="Node2D" parent="."]
+position = Vector2(-560.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("7_peach_unlock")
+cost = 105
+
+[node name="PeachUnlock5" type="Node2D" parent="."]
+position = Vector2(-700.0, 0.0)
+script = ExtResource("1_node")
+upgrade = ExtResource("7_peach_unlock")
+cost = 125
+
+[node name="WatermelonUnlock1" type="Node2D" parent="."]
+position = Vector2(-113.3, -82.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("8_watermelon_unlock")
+cost = 50
+
+[node name="WatermelonUnlock2" type="Node2D" parent="."]
+position = Vector2(-226.5, -164.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("8_watermelon_unlock")
+cost = 70
+
+[node name="WatermelonUnlock3" type="Node2D" parent="."]
+position = Vector2(-339.8, -246.9)
+script = ExtResource("1_node")
+upgrade = ExtResource("8_watermelon_unlock")
+cost = 90
+
+[node name="WatermelonUnlock4" type="Node2D" parent="."]
+position = Vector2(-453.0, -329.2)
+script = ExtResource("1_node")
+upgrade = ExtResource("8_watermelon_unlock")
+cost = 110
+
+[node name="WatermelonUnlock5" type="Node2D" parent="."]
+position = Vector2(-566.3, -411.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("8_watermelon_unlock")
+cost = 130
+
+[node name="Demand1" type="Node2D" parent="."]
+position = Vector2(-43.3, -133.1)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_demand")
+cost = 60
+
+[node name="Demand2" type="Node2D" parent="."]
+position = Vector2(-86.5, -266.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_demand")
+cost = 80
+
+[node name="Demand3" type="Node2D" parent="."]
+position = Vector2(-129.8, -399.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_demand")
+cost = 100
+
+[node name="Demand4" type="Node2D" parent="."]
+position = Vector2(-173.0, -532.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_demand")
+cost = 120
+
+[node name="Demand5" type="Node2D" parent="."]
+position = Vector2(-216.3, -665.7)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_demand")
+cost = 140
+
+[node name="Nimbleness1" type="Node2D" parent="."]
+position = Vector2(43.3, -133.1)
+script = ExtResource("1_node")
+upgrade = ExtResource("10_nimbleness")
+cost = 40
+
+[node name="Nimbleness2" type="Node2D" parent="."]
+position = Vector2(86.5, -266.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("10_nimbleness")
+cost = 60
+
+[node name="Nimbleness3" type="Node2D" parent="."]
+position = Vector2(129.8, -399.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("10_nimbleness")
+cost = 80
+
+[node name="Nimbleness4" type="Node2D" parent="."]
+position = Vector2(173.0, -532.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("10_nimbleness")
+cost = 100
+
+[node name="Nimbleness5" type="Node2D" parent="."]
+position = Vector2(216.3, -665.7)
+script = ExtResource("1_node")
+upgrade = ExtResource("10_nimbleness")
+cost = 120
+
+[node name="WaterDispenser1" type="Node2D" parent="."]
+position = Vector2(113.3, -82.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("11_water_dispenser")
+cost = 50
+
+[node name="WaterDispenser2" type="Node2D" parent="."]
+position = Vector2(226.5, -164.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("11_water_dispenser")
+cost = 70
+
+[node name="WaterDispenser3" type="Node2D" parent="."]
+position = Vector2(339.8, -246.9)
+script = ExtResource("1_node")
+upgrade = ExtResource("11_water_dispenser")
+cost = 90
+
+[node name="WaterDispenser4" type="Node2D" parent="."]
+position = Vector2(453.0, -329.2)
+script = ExtResource("1_node")
+upgrade = ExtResource("11_water_dispenser")
+cost = 110
+
+[node name="WaterDispenser5" type="Node2D" parent="."]
+position = Vector2(566.3, -411.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("11_water_dispenser")
+cost = 130

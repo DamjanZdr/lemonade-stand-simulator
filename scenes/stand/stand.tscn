@@ -23,6 +23,9 @@ size = Vector3(0.12, 2.4, 0.12)
 [sub_resource type="BoxShape3D" id="BoxShape3D_post"]
 size = Vector3(0.12, 2.4, 0.12)
 
+[sub_resource type="SystemFont" id="SystemFont_j2gmx"]
+font_names = PackedStringArray("Komika Axis")
+
 [node name="Stand" type="Node3D" unique_id=410268249]
 
 [node name="Counter" type="StaticBody3D" parent="." unique_id=1852297107 groups=["placement_surface"]]
@@ -63,12 +66,13 @@ shape = SubResource("BoxShape3D_post")
 transform = Transform3D(0.185, 0, 0, 0, 0.185, 0, 0, 0, 0.185, 0.011183739, 0.50997543, -0.49250138)
 
 [node name="SignLabel" type="Label3D" parent="stand" unique_id=899284364]
-transform = Transform3D(5.405405, 0, 9.451112e-07, 0, 5.405405, 0, -9.451112e-07, 0, 5.405405, -0.060452648, 15.936857, 0.7188288)
+transform = Transform3D(5.405405, 0, 9.451112e-07, 0, 5.405405, 0, -9.451112e-07, 0, 5.405405, -0.060452648, 17.790394, 0.7188288)
 pixel_size = 0.004
 modulate = Color(0.8862745, 0.9411765, 0, 1)
-text = "🍋 LEMONADE STAND 🍋"
+text = "🍋 LEMONADE 🍋"
+font = SubResource("SystemFont_j2gmx")
 font_size = 45
-outline_size = 3
+outline_size = 27
 metadata/no_depth_override = true
 
 [node name="CashRegister" parent="." unique_id=808262555 instance=ExtResource("4_reg")]
