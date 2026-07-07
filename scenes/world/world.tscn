@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://bpiux7tbvj0ky" path="res://scenes/objects/water_dispenser.tscn" id="3_wdispenser"]
 [ext_resource type="PackedScene" uid="uid://b5nygw38vywdu" path="res://scenes/objects/thermometer.tscn" id="5_v5dby"]
 [ext_resource type="PackedScene" uid="uid://cupstack001ls" path="res://scenes/objects/cup_stack.tscn" id="6_cupstack"]
+[ext_resource type="PackedScene" uid="uid://c7m3x1q2y4z5a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
 [ext_resource type="Script" uid="uid://dcc7v87n0gjjq" path="res://scripts/tools/preview_orbit_camera.gd" id="10_preview"]
 [ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
@@ -78,6 +79,9 @@ mesh = SubResource("BoxMesh_dzone")
 
 [node name="DeliveryMarker" type="Marker3D" parent="." unique_id=1391857877]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 2.9424672, 0.51908034, 3.5500283)
+
+[node name="DeliveryGrid" parent="." instance=ExtResource("7_dgrid")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9424672, 0.51908034, 3.5500283)
 
 [node name="QueueMarker1" type="Marker3D" parent="." unique_id=1918688911]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.02438742, 0, -1.3009591)

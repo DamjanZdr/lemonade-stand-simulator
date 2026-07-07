@@ -5,6 +5,7 @@ const CASH_PICKUP_SCENE: PackedScene = preload("res://scenes/objects/cash_pickup
 const OUTLINE_SCENE: PackedScene = preload("res://scenes/ui/outline_overlay.tscn")
 const MORNING_HUB_SCENE: PackedScene = preload("res://scenes/ui/morning_hub.tscn")
 const DAY_SUMMARY_SCENE: PackedScene = preload("res://scenes/ui/day_summary.tscn")
+const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 
 @onready var world: Node3D = $World
 @onready var player: CharacterBody3D = $Player
@@ -37,10 +38,14 @@ func _ready() -> void:
 	# No wiring needed here — add paths in the editor as children of PedestrianSpawner.
 	ped_spawner.setup(spawner)
 
-	# Wire delivery zone
-	var dmarker := world.get_node_or_null("DeliveryMarker") as Marker3D
-	if dmarker:
-		delivery.set_delivery_zone(dmarker.global_position)
+	# Wire delivery grid
+	var dgrid := world.get_node_or_null("DeliveryGrid") as DeliveryGrid
+	if dgrid == null:
+		var dmarker := world.get_node_or_null("DeliveryMarker") as Marker3D
+		if dmarker:
+			delivery.set_delivery_zone(dmarker.global_position)
+	else:
+		delivery.set_grid(dgrid)
 
 	# Find the CashPickup placed in the stand scene — use its position, then hide it
 	var cash_template: Node3D = world.find_child("CashPickup", true, false) as Node3D
