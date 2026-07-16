@@ -15,8 +15,11 @@ var _preview_angle: float = 0.0
 
 
 func _ready() -> void:
-	# Higher render resolution so the preview looks crisp in the UI card.
-	_viewport.size = Vector2i(400, 240)
+	# Render at 2x the UI display size so the preview is crisp without
+	# excessive downscaling that blurs small details (e.g. strawberry seeds).
+	var w := maxi(160, int(custom_minimum_size.x * 2.0))
+	var h := maxi(100, int(custom_minimum_size.y * 2.0))
+	_viewport.size = Vector2i(w, h)
 	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_viewport.own_world_3d = true
 	_viewport.transparent_bg = true
@@ -30,14 +33,20 @@ func _ready() -> void:
 
 
 func _setup_environment() -> void:
-	## Each preview viewport has its own World3D, so it needs its own
-	## environment. Add a soft ambient fill so shadows are not pitch black.
+	## Each preview viewport has its own World3D. Use a procedural sky so
+	# transparent/metallic objects (like the pitcher glass) get reflections
+	# and small surface details (like strawberry seeds) keep natural contrast.
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sun_enabled = false
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+
 	var env := Environment.new()
-	env.background_mode = Environment.BG_CLEAR_COLOR
-	env.background_color = Color(0.15, 0.15, 0.15, 0.0)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.4, 0.4, 0.4, 1.0)
-	env.ambient_light_energy = 0.4
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_sky_contribution = 1.0
+	env.ambient_light_energy = 0.5
 
 	var we := WorldEnvironment.new()
 	we.environment = env
