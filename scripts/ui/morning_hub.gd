@@ -826,9 +826,7 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 
 	var preview := ITEM_PREVIEW_WIDGET.instantiate()
 	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
-	# Strawberry seeds are tiny geometry, so give that preview more pixels.
-	var preview_size := Vector2(120, 72) if id == "strawberry" else Vector2(90, 54)
-	preview.custom_minimum_size = preview_size
+	preview.custom_minimum_size = Vector2(120, 72)
 	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	inner.add_child(preview)
 
