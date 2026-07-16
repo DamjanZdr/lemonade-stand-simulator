@@ -45,7 +45,7 @@ func _setup_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_sky_contribution = 1.0
-	env.ambient_light_energy = 0.5
+	env.ambient_light_energy = 0.3
 
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -74,6 +74,8 @@ func _load_preview_scene(scene: PackedScene) -> void:
 	if _camera != null:
 		_camera.current = true
 
+	_configure_lights(_preview_instance)
+
 	_model_root = _find_model_root(_preview_instance)
 
 
@@ -85,6 +87,16 @@ func _find_camera(node: Node) -> Camera3D:
 		if found != null:
 			return found
 	return null
+
+
+func _configure_lights(node: Node) -> void:
+	## Enable shadows on any DirectionalLight3D in the preview scene so small
+	## surface details (like strawberry seeds) get visible contrast.
+	if node is DirectionalLight3D:
+		var light := node as DirectionalLight3D
+		light.shadow_enabled = true
+	for child in node.get_children():
+		_configure_lights(child)
 
 
 func _find_model_root(node: Node) -> Node3D:
