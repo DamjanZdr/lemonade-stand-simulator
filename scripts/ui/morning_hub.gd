@@ -782,133 +782,116 @@ func _process(delta: float) -> void:
 
 
 func _create_ingredient_card(item: Dictionary) -> PanelContainer:
-	var id: String = item["id"]
-	var card := PanelContainer.new()
-	card.name = "Card_" + id
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.10, 0.11, 0.14)
-	st.border_width_left = 1
-	st.border_width_top = 1
-	st.border_width_right = 1
-	st.border_width_bottom = 1
-	st.border_color = Color(0.20, 0.22, 0.27)
-	st.set_corner_radius_all(10)
-	st.set_content_margin_all(8)
-	card.add_theme_stylebox_override("panel", st)
-	var inner := VBoxContainer.new()
-	inner.name = "Inner"
-	inner.alignment = BoxContainer.ALIGNMENT_CENTER
-	inner.add_theme_constant_override("separation", 6)
-	card.add_child(inner)
-
-	var top_row := HBoxContainer.new()
-	top_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	top_row.add_theme_constant_override("separation", 6)
-
-	var name_lbl := Label.new()
-	name_lbl.text = item["name"]
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 14)
-	name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
-	top_row.add_child(name_lbl)
-
-	var cost_lbl := Label.new()
-	cost_lbl.text = "$%.0f for %d" % [item["cost"], item["qty"]]
-	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	cost_lbl.add_theme_font_size_override("font_size", 12)
-	cost_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
-	top_row.add_child(cost_lbl)
-
-	inner.add_child(top_row)
-
-	var preview := ITEM_PREVIEW_WIDGET.instantiate()
-	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
-	preview.custom_minimum_size = Vector2(120, 72)
-	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	inner.add_child(preview)
-
-	var buy_btn := Button.new()
-	buy_btn.name = "Buy_" + id
-	buy_btn.text = "Add"
-	buy_btn.custom_minimum_size = Vector2(0, 30)
-	buy_btn.add_theme_font_size_override("font_size", 12)
-	_apply_button_style(
-		buy_btn,
-		Color(0.14, 0.15, 0.19),
-		Color(0.88, 0.65, 0.12),
-		Color(0.18, 0.20, 0.25),
-		Color(0.92, 0.88, 0.78),
-		8,
-	)
-	buy_btn.pressed.connect(func(): _add_to_cart(item))
-	inner.add_child(buy_btn)
-	return card
+	return _create_item_card(item, "Card_", Color(0.10, 0.11, 0.14), Color(0.20, 0.22, 0.27))
 
 
 func _create_equipment_card(item: Dictionary) -> PanelContainer:
+	return _create_item_card(item, "EquipCard_", Color(0.09, 0.10, 0.13), Color(0.18, 0.22, 0.30))
+
+
+func _create_item_card(item: Dictionary, name_prefix: String, bg: Color, border: Color) -> PanelContainer:
 	var id: String = item["id"]
 	var card := PanelContainer.new()
-	card.name = "EquipCard_" + id
+	card.name = name_prefix + id
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
 	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.09, 0.10, 0.13)
+	st.bg_color = bg
 	st.border_width_left = 1
 	st.border_width_top = 1
 	st.border_width_right = 1
 	st.border_width_bottom = 1
-	st.border_color = Color(0.18, 0.22, 0.30)
+	st.border_color = border
 	st.set_corner_radius_all(10)
 	st.set_content_margin_all(8)
 	card.add_theme_stylebox_override("panel", st)
 
-	var inner := VBoxContainer.new()
+	var inner := HBoxContainer.new()
+	inner.name = "Inner"
 	inner.alignment = BoxContainer.ALIGNMENT_CENTER
-	inner.add_theme_constant_override("separation", 6)
+	inner.add_theme_constant_override("separation", 8)
 	card.add_child(inner)
 
-	var top_row := HBoxContainer.new()
-	top_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	top_row.add_theme_constant_override("separation", 6)
+	var preview_panel := PanelContainer.new()
+	preview_panel.custom_minimum_size = Vector2(96, 96)
+	var preview_st := StyleBoxFlat.new()
+	preview_st.bg_color = Color(0.08, 0.09, 0.11)
+	preview_st.border_width_left = 1
+	preview_st.border_width_top = 1
+	preview_st.border_width_right = 1
+	preview_st.border_width_bottom = 1
+	preview_st.border_color = Color(0.35, 0.38, 0.46)
+	preview_st.set_corner_radius_all(8)
+	preview_st.set_content_margin_all(4)
+	preview_panel.add_theme_stylebox_override("panel", preview_st)
+	inner.add_child(preview_panel)
 
-	var name_lbl := Label.new()
-	name_lbl.text = item["name"]
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 14)
-	name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
-	top_row.add_child(name_lbl)
-
-	var cost_lbl := Label.new()
-	cost_lbl.text = "$%.0f" % item["cost"]
-	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	cost_lbl.add_theme_font_size_override("font_size", 12)
-	cost_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
-	top_row.add_child(cost_lbl)
-
-	inner.add_child(top_row)
+	var preview_holder := CenterContainer.new()
+	preview_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preview_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preview_panel.add_child(preview_holder)
 
 	var preview := ITEM_PREVIEW_WIDGET.instantiate()
 	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
-	preview.custom_minimum_size = Vector2(120, 72)
+	preview.custom_minimum_size = Vector2(88, 88)
 	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	inner.add_child(preview)
+	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	preview_holder.add_child(preview)
 
-	var buy_btn := Button.new()
-	buy_btn.text = "Add"
-	buy_btn.custom_minimum_size = Vector2(0, 30)
-	buy_btn.add_theme_font_size_override("font_size", 12)
+	var right_box := VBoxContainer.new()
+	right_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_box.add_theme_constant_override("separation", 4)
+	inner.add_child(right_box)
+
+	var name_lbl := Label.new()
+	name_lbl.text = item["name"]
+	name_lbl.add_theme_font_size_override("font_size", 14)
+	name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
+	right_box.add_child(name_lbl)
+
+	var pack_qty: int = int(item.get("qty", 1))
+	var pack_lbl := Label.new()
+	pack_lbl.text = "%d unit%s" % [pack_qty, "" if pack_qty == 1 else "s"]
+	pack_lbl.add_theme_font_size_override("font_size", 11)
+	pack_lbl.add_theme_color_override("font_color", Color(0.65, 0.68, 0.75))
+	right_box.add_child(pack_lbl)
+
+	var per_unit: float = item["cost"] / maxi(1, pack_qty)
+	var per_unit_lbl := Label.new()
+	per_unit_lbl.text = "$%.2f / unit" % per_unit
+	per_unit_lbl.add_theme_font_size_override("font_size", 11)
+	per_unit_lbl.add_theme_color_override("font_color", Color(0.55, 0.70, 0.85))
+	right_box.add_child(per_unit_lbl)
+
+	var bottom_row := HBoxContainer.new()
+	bottom_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	bottom_row.alignment = BoxContainer.ALIGNMENT_END
+	bottom_row.add_theme_constant_override("separation", 6)
+	right_box.add_child(bottom_row)
+
+	var total_lbl := Label.new()
+	total_lbl.text = "$%.2f" % item["cost"]
+	total_lbl.add_theme_font_size_override("font_size", 14)
+	total_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
+	total_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.add_child(total_lbl)
+
+	var add_btn := Button.new()
+	add_btn.text = "+"
+	add_btn.custom_minimum_size = Vector2(32, 32)
+	add_btn.add_theme_font_size_override("font_size", 18)
 	_apply_button_style(
-		buy_btn,
+		add_btn,
 		Color(0.14, 0.15, 0.19),
 		Color(0.88, 0.65, 0.12),
 		Color(0.18, 0.20, 0.25),
 		Color(0.92, 0.88, 0.78),
-		8,
+		6,
 	)
-	buy_btn.pressed.connect(func(): _add_to_cart(item))
-	inner.add_child(buy_btn)
+	add_btn.pressed.connect(func(): _add_to_cart(item))
+	bottom_row.add_child(add_btn)
+
 	return card
 
 
