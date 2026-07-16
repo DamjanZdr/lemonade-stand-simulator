@@ -17,6 +17,7 @@ const ITEM_PREVIEW_SCENES: Dictionary = {
 	"ice_bin": preload("res://scenes/ui/shop_previews/ice_bin_preview.tscn"),
 	"pitcher": preload("res://scenes/ui/shop_previews/pitcher_preview.tscn"),
 	"press": preload("res://scenes/ui/shop_previews/press_preview.tscn"),
+	"workstation": preload("res://scenes/ui/shop_previews/workstation_preview.tscn"),
 }
 
 @onready var panel: PanelContainer = $MainHBox/Panel
@@ -126,6 +127,7 @@ var container_items: Array[Dictionary] = [
 	{ "id": "ice_bin", "name": "Ice Plate", "cost": Balancing.CONTAINER_COST_ICE_BIN },
 	{ "id": "pitcher", "name": "Pitcher", "cost": Balancing.CONTAINER_COST_PITCHER },
 	{ "id": "press", "name": "Fruit Press", "cost": Balancing.CONTAINER_COST_PRESS },
+	{ "id": "workstation", "name": "Table", "cost": Balancing.CONTAINER_COST_WORKSTATION },
 ]
 
 

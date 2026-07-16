@@ -1,6 +1,44 @@
-[gd_scene format=3 uid="uid://dwfxhexbks0ea"]
+[gd_scene format=4 uid="uid://dwfxhexbks0ea"]
 
-[ext_resource type="PackedScene" uid="uid://bd4cnpqaahdw1" path="res://blender/ice cube.glb" id="1_ice"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_62jrq"]
+resource_name = "Material.001"
+cull_mode = 2
+albedo_color = Color(0.4201667, 0.75006634, 0.90639853, 0.78756475)
+roughness = 0.08290155
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_17rwh"]
+_surfaces = [{
+"aabb": AABB(-1.0605444, -1.0656185, -1.0524746, 2.1049998, 2.1049998, 2.082327),
+"format": 34896613377,
+"index_count": 132,
+"index_data": PackedByteArray("DQAOAAEADQABAAIAAQAOAA8AAQAPAAkAAgABAAkADgAHAA8ACQAPAAUABQAPAAcADgAQAAcABAAJAAUAEQAOAA0AEQAQAA4ADQACAAoAEQANAAoAAgAJABIABAASAAkACgACABMAEgATAAIABAAUABIAEgAUABMABgAUAAQABgAEAAUACwATABQACgATAAsABgAVABQACwAUABUABgAFAAMABQAHAAMABgAIABUAAwAIAAYAAwAHABYAAwAWAAgAFgAHABAAFgAQAAwADAAIABYAEQAMABAAFQAIAAAADAAAAAgAFQAAAAsAFwAMABEAFwAAAAwAFwALAAAAEQAKABcACgALABcA"),
+"lods": [1.2673079, PackedByteArray("BQAHAAMABgAFAAMAAwAIAAYAAwAHAAgABgAEAAUABgAIAAQABQAJAAcABAAJAAUAAQAHAAkAAgAJAAQAAgABAAkAAQACAAoACwACAAQACgACAAsACwAEAAgADAABAAoAAQAMAAcADAAKAAsADAAIAAcACAAAAAsACwAAAAwADAAAAAgA"), 1.9009619, PackedByteArray("AAABAAIAAQAAAAMAAAACAAQAAgABAAUAAQADAAUAAgAFAAQAAAAGAAMABgAFAAMAAAAEAAYABgAEAAUA")],
+"name": "Material.001",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("P+OcIHUIAABBG0kc//8AAJLnSRz//wAAlB/y+VweAADK6P//U+sAAGkdNPsJ5gAAuuX0+7EZAAAAAMrodRcAALrlVuXUAgAAdhlW5Qr/AABT4CANM+EAAP//NBd1FwAANBc0FwAAAAA0FwAAU+sAAIIMPiIz4QAA2QJW5S7oAADpCZwgXB4AAKAhIA1rIAAAiuQo5VP8AAD//zQXU+sAAFf8VuUu6AAAV/xW5bEZAABBG5rotgMAAIrk+ge9HAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_ac7qc"]
+resource_name = "ice cube_Cube_001"
+_surfaces = [{
+"aabb": AABB(-1.0605444, -1.0656185, -1.0524746, 2.1049998, 2.1049998, 2.082327),
+"attribute_data": PackedByteArray("VWQRhc0l/z9VZO46zGXNBf+fzQUQpVVEEKWpezHazEUx2jJ6/58vwMxl////nzH6MprMxTKa///MZTK6MprMhcBlMnrNJf9/MlrMRTKazQXNJcxF/x/MRc0lMnr/HzJ6MloyesBlzEUymjI6MprARTKaPnoymj66zGXMxcxlMfoymjH6"),
+"format": 34896613399,
+"index_count": 132,
+"index_data": PackedByteArray("FAAVAAEAFAABAAIAFgAVABQAFgAXABUAFgARABcAFgAUABIAFAACABIAGAARABYAFgASABgAGAAAABEAEgAQABgAGAAQAAAAEgACABkAEgAZABAAAgADABMAGgAZAAIAAgATABoAEAAZABsAGgAbABkABQAaABMABQAbABoABQATAAQAEAAbABwAHAAAABAABgAbAAUABgAcABsABgAFAAcABgAHAAgABgAPABwAHAAPAAAACQAPAAYADgAAAA8ADgAPAB0ACQAdAA8AHQAeAA4ACQAMAB0AHQAMAB4ACwAMAAkAHwAeAAwACwAgAAwAHwAMACAADQAgAAsACgAfACAACgAgAA0A"),
+"lods": [1.2673079, PackedByteArray("CwAMAAkACwANAAwACgAMAA0ACgAOAAwACQAMAA8ADgAPAAwACQAPAAYADgAAAA8ABgAHAAgABgAFAAcABgAPAAUADwAAABAAEAAFAA8AEAAAABEAEQASABAAEQABABIAAQACABIAEgACABAAEAACAAUAAgATAAUABQATAAQAAgADABMA"), 1.9009619, PackedByteArray("AAABAAIAAgADAAQAAgAEAAUAAAACAAUAAAAFAAYABgAFAAcABgAHAAgAAAAGAAkACgAAAAkACgAJAAsA")],
+"material": SubResource("StandardMaterial3D_62jrq"),
+"name": "Material.001",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 33,
+"vertex_data": PackedByteArray("P+OcIHUISu1BG0kc//+5oJLnSRz//w+tQRtJHP//zsZpHTT7CebnzMro//9T6/XquuX0+7EZNf1pHTT7CeZH+ZQf8vlcHiz4lB/y+VweTc1BG0kc//9nx2kdNPsJ5s60AADK6HUX+dF2GVblCv/PtDQXNBcAAFb/uuVW5dQCqf7//zQXdRfe1zQXNBcAAMToU+AgDTPhKbZ2GVblCv+rxTQXAABT66a1ggw+IjPhO8OgISANayD5yekJnCBcHnTViuT6B70cDM3//zQXU+vHwIrkKOVT/GDPV/xW5S7o/NVX/FblsRk250Ebmui2A7vo6QmcIFweJuSCDD4iM+G71NkCVuUu6ErEWyx2UdlUrqG7BMwry93a+D7n4DAQMk0FeT1wFB52S7BdeZrFasmxpxLeofgW+WGk784BxyT2j9ntTulJHj54Lhcpq0HgIhqTXARWaRn/5tzCL++XAVULrWYhn5KORtilkw41bUwYSzfDGVwFlShCHGY0yiaAyQm3A89c2qHU2d8O4KLN")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_17rwh")
 
 [node name="IcePreview" type="Node3D" unique_id=1591543598]
 
@@ -14,4 +52,7 @@ transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -
 
 [node name="Model" type="Node3D" parent="." unique_id=2068303322]
 
-[node name="Ice" parent="Model" unique_id=150510663 instance=ExtResource("1_ice")]
+[node name="Ice" type="Node3D" parent="Model" unique_id=150510663]
+
+[node name="Cube_001" type="MeshInstance3D" parent="Model/Ice" unique_id=478534704]
+mesh = SubResource("ArrayMesh_ac7qc")

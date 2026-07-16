@@ -68,6 +68,7 @@ func _build_order_buttons() -> void:
 		["ice_bin", "Ice Plate", Balancing.CONTAINER_COST_ICE_BIN],
 		["pitcher", "Pitcher", Balancing.CONTAINER_COST_PITCHER],
 		["press", "Fruit Press", Balancing.CONTAINER_COST_PRESS],
+		["workstation", "Table", Balancing.CONTAINER_COST_WORKSTATION],
 	]
 	for entry in containers:
 		var ctype: String = entry[0]

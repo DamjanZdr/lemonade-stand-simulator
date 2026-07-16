@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://world001ls"]
 
 [ext_resource type="PackedScene" uid="uid://stand001ls" path="res://scenes/stand/stand.tscn" id="1_stand"]
-[ext_resource type="PackedScene" uid="uid://dcrdb3cxjew85" path="res://scenes/stand/workstation.tscn" id="2_workstation"]
 [ext_resource type="PackedScene" uid="uid://bpiux7tbvj0ky" path="res://scenes/objects/water_dispenser.tscn" id="3_wdispenser"]
 [ext_resource type="PackedScene" uid="uid://b5nygw38vywdu" path="res://scenes/objects/thermometer.tscn" id="5_v5dby"]
 [ext_resource type="PackedScene" uid="uid://c7m3x1q2y405a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
@@ -73,9 +72,6 @@ shape = SubResource("BoxShape3D_ground")
 
 [node name="Stand" parent="." unique_id=1183170314 instance=ExtResource("1_stand")]
 transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.278463, -2.2)
-
-[node name="Workstation" parent="." unique_id=1892686148 instance=ExtResource("2_workstation")]
-transform = Transform3D(0.865, 0, 0, 0, 0.865, 0, 0, 0, 0.865, -1.2, 0.08174759, 3.5492034)
 
 [node name="WaterDispenser" parent="." unique_id=1929335132 instance=ExtResource("3_wdispenser")]
 transform = Transform3D(4.8676796e-08, 0, 0.25, 0, 0.25, 0, -0.25, 0, 4.8676796e-08, -1.2000002, 0.25480768, 2.1)

@@ -11,6 +11,7 @@ const CONTAINER_SCENES: Dictionary = {
 	"press": preload("res://scenes/objects/press.tscn"),
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
 	"cup_stack": preload("res://scenes/objects/cup_stack.tscn"),
+	"workstation": preload("res://scenes/stand/workstation.tscn"),
 }
 
 const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.tscn")
@@ -256,6 +257,8 @@ func _get_container_type(node: Node) -> String:
 		return "water_dispenser"
 	if node is CupStack:
 		return "cup_stack"
+	if node is Workstation:
+		return "workstation"
 	var n := node.name.to_lower()
 	if n.contains("pitcher"):
 		return "pitcher"

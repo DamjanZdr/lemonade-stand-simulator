@@ -36,6 +36,7 @@ const CONTAINER_SCENES: Dictionary = {
 	"pitcher": preload("res://scenes/objects/pitcher.tscn"),
 	"press": preload("res://scenes/objects/press.tscn"),
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
+	"workstation": preload("res://scenes/stand/workstation.tscn"),
 }
 
 const CONTAINER_PLACEMENT_SCALE: Dictionary = {
@@ -46,6 +47,7 @@ const CONTAINER_PLACEMENT_SCALE: Dictionary = {
 	"pitcher": Vector3.ONE * 0.1575,
 	"press": Vector3.ONE * 0.10,
 	"water_dispenser": Vector3.ONE * 0.08,
+	"workstation": Vector3.ONE,
 }
 
 const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.tscn")
@@ -61,18 +63,20 @@ const CONTAINER_HAND_SCALE: Dictionary = {
 	"pitcher": Vector3.ONE * 0.08,
 	"press": Vector3.ONE * 0.05,
 	"water_dispenser": Vector3.ONE * 0.04,
+	"workstation": Vector3.ONE * 0.05,
 }
 
 
-func _get_container_bottom_offset(node: Node) -> float:
+func _get_container_bottom_offset(node: Node, parent_y: float = 0.0) -> float:
 	"""Calculate how far the collision extends below the node's origin."""
 	if node == null:
 		return 0.0
-	var lowest_y := 0.0
+	var node_y := parent_y + node.position.y
+	var lowest_y := node_y
 	for child in node.get_children():
 		if child is CollisionShape3D:
 			var col := child as CollisionShape3D
-			var shape_pos_y := col.position.y
+			var shape_pos_y := node_y + col.position.y
 			var half_height := 0.0
 			if col.shape is BoxShape3D:
 				half_height = (col.shape as BoxShape3D).size.y * 0.5
@@ -82,7 +86,7 @@ func _get_container_bottom_offset(node: Node) -> float:
 				half_height = (col.shape as SphereShape3D).radius
 			var bottom := shape_pos_y - half_height
 			lowest_y = min(lowest_y, bottom)
-		lowest_y = min(lowest_y, _get_container_bottom_offset(child))
+		lowest_y = min(lowest_y, _get_container_bottom_offset(child, node_y))
 	return lowest_y
 
 
@@ -184,14 +188,20 @@ func _poll_hint() -> void:
 				if _ghost_valid:
 					hint = "LMB: Place  |  RMB: Cancel (refund)"
 				else:
-					hint = "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
+					hint = (
+							"Aim at ground to place  |  RMB: Cancel (refund)"
+							if container_type == "workstation" else "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
+					)
 			elif _ghost_valid:
 				hint = "LMB: Place  |  RMB: Cancel (refund)"
 			else:
 				if held_item_data.get("from_delivery_box", false):
 					hint = "Aim at ground or box to place  |  RMB: Cancel (refund)"
 				else:
-					hint = "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
+					hint = (
+							"Aim at ground to place  |  RMB: Cancel (refund)"
+							if container_type == "workstation" else "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
+					)
 	elif held_item == HeldItem.SUPPLY_BOX \
 			and held_item_data.get("ingredient_type") == "cups":
 		hint = "LMB: Place 1 cup  |  RMB: Drop box"
@@ -406,13 +416,17 @@ func _primary_interact() -> void:
 						return
 			var collider := ray.get_collider()
 			var on_surface := _is_placement_surface(collider)
-			if on_surface:
-				var is_ground := _is_ground_surface(collider)
-				if is_equipment and not is_ground:
-					# Place working equipment on workstation
-					_place_equipment_from_box()
-					return
-				# Place box on ground or for non-equipment items
+			var is_ground := _is_ground_surface(collider)
+			var equipment_type: String = held_item_data.get("equipment_type", "")
+			if is_equipment and (
+					on_surface and not is_ground and equipment_type != "workstation"
+					or is_ground and equipment_type == "workstation"
+			):
+				# Place working equipment on workstation (or floor for tables)
+				_place_equipment_from_box()
+				return
+			if on_surface and not is_equipment:
+				# Place ingredient box on a surface
 				_place_held_supply_box_on(
 					ray.get_collision_point() + Vector3(0, SUPPLY_BOX_BOTTOM_OFFSET, 0),
 				)
@@ -1236,21 +1250,43 @@ func _update_equipment_box_ghost() -> void:
 		node = node.get_parent()
 
 	var on_surface := _is_placement_surface(collider)
+	var is_ground := _is_ground_surface(collider)
+
+	# Workstations are tables — they can only be placed on the floor.
+	if equipment_type == "workstation":
+		if not is_ground:
+			_destroy_ghost()
+			_ghost_valid = false
+			return
+		_ensure_container_ghost(equipment_type)
+		if _ghost == null:
+			_ghost_valid = false
+			return
+		var offset: float = _ghost.get_meta("bottom_offset", 0.0)
+		_ghost.global_position = hit_point + Vector3(0, -offset, 0)
+		var look_dir := global_position - hit_point
+		look_dir.y = 0
+		if look_dir.length_squared() > 0.001:
+			_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
+		_ghost.visible = true
+		_ghost_valid = true
+		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+		return
+
 	if not on_surface:
 		_destroy_ghost()
 		_ghost_valid = false
 		return
 
-	var is_ground := _is_ground_surface(collider)
 	if is_ground:
-		# Floor placement — show box ghost
+		# Floor placement for other equipment — just drop the box
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SUPPLY_BOX_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
 		_ghost_valid = true
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 	else:
-		# Workstation placement — show container ghost
+		# Other equipment on a surface — show container ghost
 		_ensure_container_ghost(equipment_type)
 		if _ghost == null:
 			_ghost_valid = false
@@ -1388,8 +1424,16 @@ func _update_ghost() -> void:
 			node = node.get_parent()
 
 	var on_surface := _is_placement_surface(collider)
-	# Ghost only shows on approved placement surfaces
-	if not on_surface:
+	var is_ground := _is_ground_surface(collider)
+
+	# Workstations are tables and can only be placed on the ground.
+	# Other containers need an existing stand or workstation surface.
+	if container_type == "workstation":
+		if not is_ground:
+			_ghost.visible = false
+			_ghost_valid = false
+			return
+	elif not on_surface:
 		_ghost.visible = false
 		_ghost_valid = false
 		return
@@ -1406,10 +1450,10 @@ func _update_ghost() -> void:
 
 	# Check for overlap with existing containers
 	var overlapping := _check_ghost_overlap()
-	# Deployed containers (picked up from workstation) can't go on ground
-	var is_ground := _is_ground_surface(collider)
+	# Deployed containers (picked up from workstation) can't go on ground,
+	# except for workstations themselves.
 	var deployed: bool = held_item_data.get("deployed", false)
-	var valid := not overlapping and not (deployed and is_ground)
+	var valid := not overlapping and (not (deployed and is_ground) or container_type == "workstation")
 
 	_ghost_valid = valid
 	var mat := _get_ghost_mat_valid() if valid else _get_ghost_mat_invalid()
@@ -1560,6 +1604,8 @@ func _get_container_type_for_node(node: Node) -> String:
 		return "fruit_bin"
 	if node is WaterDispenser:
 		return "water_dispenser"
+	if node is Workstation:
+		return "workstation"
 	return ""
 
 
@@ -1608,6 +1654,8 @@ func _get_container_cost(container_type: String) -> float:
 			return Balancing.CONTAINER_COST_PRESS
 		"water_dispenser":
 			return Balancing.CONTAINER_COST_WATER_DISPENSER
+		"workstation":
+			return Balancing.CONTAINER_COST_WORKSTATION
 	return 0.0
 
 

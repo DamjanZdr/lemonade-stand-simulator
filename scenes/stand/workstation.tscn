@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://dcrdb3cxjew85"]
 
+[ext_resource type="Script" path="res://scripts/objects/workstation.gd" id="1_workstation"]
 [ext_resource type="PackedScene" uid="uid://doie0lnyld7j5" path="res://blender/plastictable.glb" id="2_nrlja"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_prep"]
@@ -9,6 +10,7 @@ size = Vector3(1.6, 0.15917969, 1.5979004)
 size = Vector3(0.1, 0.90000004, 0.1)
 
 [node name="Workstation" type="Node3D" unique_id=2068234288]
+script = ExtResource("1_workstation")
 
 [node name="PrepTable" type="StaticBody3D" parent="." unique_id=232193047 groups=["placement_surface"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.92, -0.02704382)

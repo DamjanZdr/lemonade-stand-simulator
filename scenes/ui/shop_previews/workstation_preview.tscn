@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://dcrdb3cxjew85" path="res://scenes/stand/workstation.tscn" id="1_workstation"]
+
+[node name="WorkstationPreview" type="Node3D" unique_id=252193929]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=249090223]
+transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 2.5, 4.5)
+projection = 1
+size = 3.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1635506904]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
+
+[node name="Model" type="Node3D" parent="." unique_id=980431229]
+
+[node name="Workstation" parent="Model" unique_id=1424721917 instance=ExtResource("1_workstation")]
