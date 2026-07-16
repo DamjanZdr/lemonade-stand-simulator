@@ -399,11 +399,11 @@ func _show_tree_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	if _tree_tooltip == null:
 		return
 	var data := UpgradeManager.get_node_data(node_id)
-	var vbox := _tree_tooltip.get_node("TipContent")
-	var title := vbox.get_node("TipTitle") as Label
-	var price := vbox.get_node("TipPrice") as Label
-	var desc := vbox.get_node("TipDesc") as Label
-	var effect := vbox.get_node("TipEffect") as Label
+	var tip_vbox := _tree_tooltip.get_node("TipContent")
+	var title := tip_vbox.get_node("TipTitle") as Label
+	var price := tip_vbox.get_node("TipPrice") as Label
+	var desc := tip_vbox.get_node("TipDesc") as Label
+	var effect := tip_vbox.get_node("TipEffect") as Label
 	title.text = data.get("name", "???")
 	price.text = "$%.0f" % data.get("cost", 0.0)
 	price.visible = not data.get("purchased", false)
@@ -641,9 +641,9 @@ func _layout_upgrade_tree(tree_ctrl: Control) -> void:
 	)
 	tree_ctrl.custom_minimum_size = area
 	tree_ctrl.size = area
-	var vbox := tree_ctrl.get_parent() as Container
-	if vbox:
-		vbox.queue_sort()
+	var parent_vbox := tree_ctrl.get_parent() as Container
+	if parent_vbox:
+		parent_vbox.queue_sort()
 	_tree_laid_out = true
 	tree_ctrl.queue_redraw()
 
