@@ -37,7 +37,6 @@ func _setup_environment() -> void:
 	# transparent/metallic objects (like the pitcher glass) get reflections
 	# and small surface details (like strawberry seeds) keep natural contrast.
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sun_enabled = false
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 
