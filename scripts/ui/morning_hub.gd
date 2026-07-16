@@ -195,6 +195,14 @@ func _ready() -> void:
 			card.visible = false
 			shop_grid.add_child(card)
 
+	# Disable horizontal scrolling in the shop item list
+	var shop_scroll := (
+			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2
+	) as ScrollContainer
+	if shop_scroll:
+		shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		shop_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+
 	# Build upgrade skill tree (uses pre-existing UpgradeTree Control from scene)
 	var tree_ctrl := (
 			$MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree as Control
@@ -786,7 +794,7 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 	st.border_width_bottom = 1
 	st.border_color = Color(0.20, 0.22, 0.27)
 	st.set_corner_radius_all(10)
-	st.set_content_margin_all(12)
+	st.set_content_margin_all(8)
 	card.add_theme_stylebox_override("panel", st)
 	var inner := VBoxContainer.new()
 	inner.name = "Inner"
@@ -794,32 +802,39 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 	inner.add_theme_constant_override("separation", 6)
 	card.add_child(inner)
 
-	var preview := ITEM_PREVIEW_WIDGET.instantiate()
-	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
-	preview.custom_minimum_size = Vector2(100, 60)
-	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	inner.add_child(preview)
+	var top_row := HBoxContainer.new()
+	top_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	top_row.add_theme_constant_override("separation", 6)
 
 	var name_lbl := Label.new()
 	name_lbl.text = item["name"]
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.add_theme_font_size_override("font_size", 14)
 	name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
-	inner.add_child(name_lbl)
+	top_row.add_child(name_lbl)
 
 	var cost_lbl := Label.new()
 	cost_lbl.text = "$%.0f for %d" % [item["cost"], item["qty"]]
-	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	cost_lbl.add_theme_font_size_override("font_size", 12)
 	cost_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
-	inner.add_child(cost_lbl)
+	top_row.add_child(cost_lbl)
+
+	inner.add_child(top_row)
+
+	var preview := ITEM_PREVIEW_WIDGET.instantiate()
+	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
+	preview.custom_minimum_size = Vector2(90, 54)
+	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	inner.add_child(preview)
 
 	var qty_row := HBoxContainer.new()
 	qty_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	qty_row.add_theme_constant_override("separation", 8)
+	qty_row.add_theme_constant_override("separation", 6)
 	var minus := Button.new()
 	minus.text = "-"
-	minus.custom_minimum_size = Vector2(32, 28)
+	minus.custom_minimum_size = Vector2(28, 28)
 	_apply_button_style(
 		minus,
 		Color(0.14, 0.15, 0.19),
@@ -834,13 +849,13 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 	qty_lbl.name = "Qty_" + id
 	qty_lbl.text = "0"
 	qty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	qty_lbl.custom_minimum_size = Vector2(28, 0)
+	qty_lbl.custom_minimum_size = Vector2(22, 0)
 	qty_lbl.add_theme_font_size_override("font_size", 15)
 	qty_lbl.add_theme_color_override("font_color", Color(0.92, 0.88, 0.78))
 	qty_row.add_child(qty_lbl)
 	var plus := Button.new()
 	plus.text = "+"
-	plus.custom_minimum_size = Vector2(32, 28)
+	plus.custom_minimum_size = Vector2(28, 28)
 	_apply_button_style(
 		plus,
 		Color(0.14, 0.15, 0.19),
@@ -884,7 +899,7 @@ func _create_equipment_card(item: Dictionary) -> PanelContainer:
 	st.border_width_bottom = 1
 	st.border_color = Color(0.18, 0.22, 0.30)
 	st.set_corner_radius_all(10)
-	st.set_content_margin_all(12)
+	st.set_content_margin_all(8)
 	card.add_theme_stylebox_override("panel", st)
 
 	var inner := VBoxContainer.new()
@@ -892,25 +907,32 @@ func _create_equipment_card(item: Dictionary) -> PanelContainer:
 	inner.add_theme_constant_override("separation", 6)
 	card.add_child(inner)
 
-	var preview := ITEM_PREVIEW_WIDGET.instantiate()
-	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
-	preview.custom_minimum_size = Vector2(100, 60)
-	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	inner.add_child(preview)
+	var top_row := HBoxContainer.new()
+	top_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	top_row.add_theme_constant_override("separation", 6)
 
 	var name_lbl := Label.new()
 	name_lbl.text = item["name"]
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.add_theme_font_size_override("font_size", 14)
 	name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
-	inner.add_child(name_lbl)
+	top_row.add_child(name_lbl)
 
 	var cost_lbl := Label.new()
 	cost_lbl.text = "$%.0f" % item["cost"]
-	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	cost_lbl.add_theme_font_size_override("font_size", 12)
 	cost_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
-	inner.add_child(cost_lbl)
+	top_row.add_child(cost_lbl)
+
+	inner.add_child(top_row)
+
+	var preview := ITEM_PREVIEW_WIDGET.instantiate()
+	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
+	preview.custom_minimum_size = Vector2(90, 54)
+	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	inner.add_child(preview)
 
 	var buy_btn := Button.new()
 	buy_btn.text = "Add to Cart"
@@ -994,10 +1016,17 @@ func _on_next_pressed() -> void:
 
 
 func _show_shop_category(cat: String) -> void:
+	var shop_split := $MainHBox/Panel/VBox/Content/ShopPage/ShopSplit as HBoxContainer
+	var employees_ph := $MainHBox/Panel/VBox/Content/ShopPage/EmployeesPlaceholder as CenterContainer
+	if shop_split:
+		shop_split.visible = (cat != "employees")
+	if employees_ph:
+		employees_ph.visible = (cat == "employees")
+
 	var grid := (
 			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2/ShopGrid
 	) as GridContainer
-	if grid:
+	if grid and cat != "employees":
 		for child in grid.get_children():
 			if child.name.begins_with("Card_"):
 				child.visible = (cat == "consumables")

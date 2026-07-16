@@ -1,17 +1,17 @@
-[gd_scene format=3 uid="uid://fruitbinpreva"]
+[gd_scene format=3 uid="uid://bwgm78le5ki4i"]
 
 [ext_resource type="PackedScene" uid="uid://mqs45tbggd6p" path="res://blender/fruit crate.glb" id="1_model"]
 
-[node name="FruitBinPreview" type="Node3D"]
+[node name="FruitBinPreview" type="Node3D" unique_id=1930931508]
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.96022046, -0.21104343, 0.1828589, 0.15392217, 0.94639134, 0.28399196, -0.23299071, -0.24454886, 0.94122857, 3.6703, 6.5352, 22.5969)
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1730133897]
+transform = Transform3D(1, 0, 0, 0, 0.9817675, 0.1900861, 0, -0.1900861, 0.9817675, -0.22713876, 2.7508163, 12.838135)
 projection = 1
-size = 15.0
+size = 7.867715
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=348799317]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
 
-[node name="Model" type="Node3D" parent="."]
+[node name="Model" type="Node3D" parent="." unique_id=2084500160]
 
-[node name="FruitCrate" parent="Model" instance=ExtResource("1_model")]
+[node name="FruitCrate" parent="Model" unique_id=1618112962 instance=ExtResource("1_model")]

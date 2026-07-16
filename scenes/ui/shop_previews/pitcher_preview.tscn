@@ -1,17 +1,17 @@
 [gd_scene format=3 uid="uid://pitcherpreva"]
 
-[ext_resource type="PackedScene" uid="uid://o3ikb2ut4vbr" path="res://blender/pitcher.glb" id="1_model"]
+[ext_resource type="PackedScene" uid="uid://pitcher001ls" path="res://scenes/objects/pitcher.tscn" id="1_ceyf5"]
 
-[node name="PitcherPreview" type="Node3D"]
+[node name="PitcherPreview" type="Node3D" unique_id=1960525976]
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.96022046, -0.21104343, 0.1828589, 0.15392217, 0.94639134, 0.28399196, -0.23299071, -0.24454886, 0.94122857, 1.3457, 2.3960, 8.2883)
+[node name="Camera3D" type="Camera3D" parent="." unique_id=784019645]
+transform = Transform3D(1, 0, 0, 0, 0.9928519, 0.11935266, 0, -0.11935266, 0.9928519, 0, 1.9534101, 3.900508)
 projection = 1
-size = 5.5
+size = 3.6067588
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2081982563]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
 
-[node name="Model" type="Node3D" parent="."]
+[node name="Model" type="Node3D" parent="." unique_id=2044521108]
 
-[node name="Pitcher" parent="Model" instance=ExtResource("1_model")]
+[node name="Pitcher" parent="Model" unique_id=1489343685 instance=ExtResource("1_ceyf5")]

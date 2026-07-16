@@ -1,17 +1,17 @@
-[gd_scene format=3 uid="uid://sugarbinprev1"]
+[gd_scene format=3 uid="uid://desse2tngxvuy"]
 
 [ext_resource type="PackedScene" uid="uid://bwhavk06obiue" path="res://blender/sugar container.glb" id="1_model"]
 
-[node name="SugarBinPreview" type="Node3D"]
+[node name="SugarBinPreview" type="Node3D" unique_id=724927057]
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.96022046, -0.21104343, 0.1828589, 0.15392217, 0.94639134, 0.28399196, -0.23299071, -0.24454886, 0.94122857, 1.4679, 2.6138, 9.0411)
+[node name="Camera3D" type="Camera3D" parent="." unique_id=576262067]
+transform = Transform3D(1, 0, 0, 0, 0.9927566, 0.12014306, 0, -0.12014306, 0.9927566, -0.06872964, 1.3119876, 7.097224)
 projection = 1
-size = 6.0
+size = 4.3202724
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=733789418]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
 
-[node name="Model" type="Node3D" parent="."]
+[node name="Model" type="Node3D" parent="." unique_id=1759009211]
 
-[node name="SugarContainer" parent="Model" instance=ExtResource("1_model")]
+[node name="SugarContainer" parent="Model" unique_id=1596980840 instance=ExtResource("1_model")]

@@ -2,16 +2,16 @@
 
 [ext_resource type="PackedScene" uid="uid://dagbqtfbfhpdb" path="res://blender/press.glb" id="1_model"]
 
-[node name="PressPreview" type="Node3D"]
+[node name="PressPreview" type="Node3D" unique_id=1117355384]
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.96022046, -0.21104343, 0.1828589, 0.15392217, 0.94639134, 0.28399196, -0.23299071, -0.24454886, 0.94122857, 5.1385, 9.1487, 31.6413)
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1042038271]
+transform = Transform3D(1, 0, 0, 0, 0.9853639, 0.17046425, 0, -0.17046425, 0.9853639, -1.9579837, 0.920321, 9.488442)
 projection = 1
-size = 21.0
+size = 12.915595
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1248271945]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
 
-[node name="Model" type="Node3D" parent="."]
+[node name="Model" type="Node3D" parent="." unique_id=545709879]
 
-[node name="Press" parent="Model" instance=ExtResource("1_model")]
+[node name="Press" parent="Model" unique_id=1958045921 instance=ExtResource("1_model")]

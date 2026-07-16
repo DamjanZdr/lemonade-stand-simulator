@@ -360,6 +360,17 @@ theme_override_styles/hover = SubResource("btn_secondary_hover")
 theme_override_styles/pressed = SubResource("btn_secondary_pressed")
 text = "Equipment"
 
+[node name="Cat_employees" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/CatRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
+theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
+theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("btn_secondary")
+theme_override_styles/hover = SubResource("btn_secondary_hover")
+theme_override_styles/pressed = SubResource("btn_secondary_pressed")
+text = "Employees"
+
 [node name="ShopSplit" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ShopPage"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -373,12 +384,12 @@ size_flags_vertical = 3
 [node name="ShopGrid" type="GridContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/h_separation = 10
+theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 10
 columns = 4
 
 [node name="CartPC" type="PanelContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit"]
-custom_minimum_size = Vector2(260, 0)
+custom_minimum_size = Vector2(230, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("cart_panel")
 
@@ -425,6 +436,18 @@ theme_override_styles/normal = SubResource("btn_primary")
 theme_override_styles/hover = SubResource("btn_primary_hover")
 theme_override_styles/pressed = SubResource("btn_primary_pressed")
 text = "Checkout"
+
+[node name="EmployeesPlaceholder" type="CenterContainer" parent="MainHBox/Panel/VBox/Content/ShopPage"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="MainHBox/Panel/VBox/Content/ShopPage/EmployeesPlaceholder"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 18
+text = "Under Construction"
+horizontal_alignment = 1
 
 [node name="ReadyPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
 visible = false

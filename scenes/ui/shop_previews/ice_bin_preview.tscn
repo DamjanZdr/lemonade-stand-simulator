@@ -2,16 +2,16 @@
 
 [ext_resource type="PackedScene" uid="uid://dthysfy1v8b52" path="res://blender/ice bucket.glb" id="1_model"]
 
-[node name="IceBinPreview" type="Node3D"]
+[node name="IceBinPreview" type="Node3D" unique_id=227423066]
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.96022046, -0.21104343, 0.1828589, 0.15392217, 0.94639134, 0.28399196, -0.23299071, -0.24454886, 0.94122857, 4.1595, 7.4059, 25.6173)
+[node name="Camera3D" type="Camera3D" parent="." unique_id=888098487]
+transform = Transform3D(1, 0, 0, 0, 0.9931136, 0.11715569, 0, -0.11715569, 0.9931136, 0, 1.358715, 9.4446745)
 projection = 1
-size = 17.0
+size = 6.375249
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1253175830]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
 
-[node name="Model" type="Node3D" parent="."]
+[node name="Model" type="Node3D" parent="." unique_id=1628551742]
 
-[node name="IceBucket" parent="Model" instance=ExtResource("1_model")]
+[node name="IceBucket" parent="Model" unique_id=1942549108 instance=ExtResource("1_model")]
