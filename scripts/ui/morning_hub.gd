@@ -1020,7 +1020,9 @@ func _on_next_pressed() -> void:
 
 func _show_shop_category(cat: String) -> void:
 	var shop_split := $MainHBox/Panel/VBox/Content/ShopPage/ShopSplit as HBoxContainer
-	var employees_ph := $MainHBox/Panel/VBox/Content/ShopPage/EmployeesPlaceholder as CenterContainer
+	var employees_ph := get_node(
+		"MainHBox/Panel/VBox/Content/ShopPage/EmployeesPlaceholder",
+	) as CenterContainer
 	if shop_split:
 		shop_split.visible = (cat != "employees")
 	if employees_ph:
@@ -1570,8 +1572,8 @@ func _on_dev_reset() -> void:
 	EventBus.money_changed.emit(GameState.money)
 	EventBus.price_changed.emit(GameState.current_price)
 	EventBus.weather_changed.emit(GameState.temperature)
-	DayManager._end_day()
+	DayManager.end_day()
 
 
 func _on_dev_end_day() -> void:
-	DayManager._end_day()
+	DayManager.end_day()

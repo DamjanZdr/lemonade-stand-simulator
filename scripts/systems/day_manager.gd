@@ -27,7 +27,7 @@ func _process(delta: float) -> void:
 		return
 	_day_timer -= delta
 	if _day_timer <= 0.0:
-		_end_day()
+		end_day()
 	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
 
 
@@ -51,7 +51,7 @@ func start_day() -> void:
 	EventBus.day_phase_changed.emit(Phase.DAY, day_number)
 
 
-func _end_day() -> void:
+func end_day() -> void:
 	_day_running = false
 	current_phase = Phase.EVENING
 	EventBus.day_phase_changed.emit(Phase.EVENING, day_number)

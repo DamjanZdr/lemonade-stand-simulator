@@ -118,7 +118,7 @@ func _ready() -> void:
 	end_day_btn.add_theme_font_size_override("font_size", 9)
 	end_day_btn.pressed.connect(
 		func():
-			DayManager._end_day()
+			DayManager.end_day()
 	)
 	vbox.add_child(end_day_btn)
 
