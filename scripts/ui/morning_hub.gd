@@ -54,7 +54,8 @@ const ITEM_PREVIEW_SCENES: Dictionary = {
 var _active_tab: String = "analytics"
 var _flow_tabs: Array[String] = ["analytics", "upgrades", "shop", "ready"]
 var _flow_step: int = 0
-var _shop_qty: Dictionary = { }
+var _shop_qty: Dictionary = { } # actual cart quantities
+var _desired_qty: Dictionary = { } # per-item amount shown by +/- buttons
 var _preview_angle: float = 0.0
 var _bin_amounts: Dictionary = { }
 var _equipment_counts: Dictionary = { }
@@ -847,7 +848,8 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 	qty_row.add_child(minus)
 	var qty_lbl := Label.new()
 	qty_lbl.name = "Qty_" + id
-	qty_lbl.text = "0"
+	qty_lbl.text = "1"
+	_desired_qty[id] = 1
 	qty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	qty_lbl.custom_minimum_size = Vector2(22, 0)
 	qty_lbl.add_theme_font_size_override("font_size", 15)
@@ -888,6 +890,7 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 
 func _create_equipment_card(item: Dictionary) -> PanelContainer:
 	var id: String = item["id"]
+	_desired_qty[id] = 1
 	var card := PanelContainer.new()
 	card.name = "EquipCard_" + id
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1172,29 +1175,37 @@ func _fit_tree_scale(_tree_ctrl: Control, area: Vector2) -> void:
 
 
 func _change_qty(id: String, delta: int) -> void:
-	var new_val := clampi(_shop_qty.get(id, 0) + delta, 0, 10)
-	_shop_qty[id] = new_val
+	var new_val := clampi(_desired_qty.get(id, 1) + delta, 1, 10)
+	_desired_qty[id] = new_val
+	_refresh_desired_label(id, new_val)
+
+
+func _refresh_desired_label(id: String, value: int) -> void:
 	var shop_grid := (
 			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2/ShopGrid
 	) as GridContainer
-	if shop_grid:
-		var qty_lbl: Label = null
-		var card := shop_grid.get_node_or_null("Card_" + id)
-		if card:
-			qty_lbl = card.get_node_or_null("Inner/Qty_" + id) as Label
-		else:
-			card = shop_grid.get_node_or_null("EquipCard_" + id)
-			if card:
-				qty_lbl = card.get_node_or_null("Inner/Qty_" + id) as Label
+	if shop_grid == null:
+		return
+	var card := shop_grid.get_node_or_null("Card_" + id)
+	if card == null:
+		card = shop_grid.get_node_or_null("EquipCard_" + id)
+	if card:
+		var qty_lbl := card.find_child("Qty_" + id, true, false) as Label
 		if qty_lbl:
-			qty_lbl.text = str(new_val)
+			qty_lbl.text = str(value)
 
 
 func _add_to_cart(item: Dictionary) -> void:
 	var id: String = item["id"]
+	var desired: int = _desired_qty.get(id, 1)
 	var current: int = _shop_qty.get(id, 0)
-	if current < 10:
-		_change_qty(id, 1)
+	if current + desired > 10:
+		_animate_status_text("Max 10 in cart")
+		return
+	if desired > 0:
+		_shop_qty[id] = current + desired
+		_desired_qty[id] = 1
+		_refresh_desired_label(id, 1)
 		_update_cart_ui()
 		_animate_status_text("Added to cart!")
 
@@ -1202,7 +1213,7 @@ func _add_to_cart(item: Dictionary) -> void:
 func _remove_from_cart(id: String) -> void:
 	var current: int = _shop_qty.get(id, 0)
 	if current > 0:
-		_change_qty(id, -1)
+		_shop_qty[id] = current - 1
 		_update_cart_ui()
 		_animate_status_text("Removed from cart")
 
@@ -1290,7 +1301,8 @@ func _checkout_cart() -> void:
 			for i in range(qty):
 				_buy_container(id, item["cost"])
 			_shop_qty[id] = 0
-			_change_qty(id, 0)
+			_desired_qty[id] = 1
+			_refresh_desired_label(id, 1)
 	_update_cart_ui()
 
 
@@ -1317,7 +1329,8 @@ func _buy_ingredient(id: String) -> void:
 			_status_lbl.text = "Bought %d %s crate(s)!" % [qty, item["name"]]
 			_animate_status()
 			_shop_qty[id] = 0
-			_change_qty(id, 0)
+			_desired_qty[id] = 1
+			_refresh_desired_label(id, 1)
 			return
 
 
