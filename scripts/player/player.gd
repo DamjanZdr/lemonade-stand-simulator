@@ -1648,7 +1648,8 @@ func _is_ground_surface(collider: Object) -> bool:
 	if node == null:
 		return false
 	for i in range(3):
-		if node.name == "Ground":
+		var n: String = node.name
+		if n.to_lower() == "ground" or "ground" in n.to_lower():
 			return true
 		node = node.get_parent()
 		if node == null:

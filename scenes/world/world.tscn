@@ -58,8 +58,8 @@ size = Vector2(8, 2)
 
 [node name="World" type="Node3D" unique_id=1769167416]
 
-[node name="DefaultGround" type="StaticBody3D" parent="." unique_id=622270793]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, -99)
+[node name="DefaultGround" type="StaticBody3D" parent="." unique_id=622270793 groups=["placement_surface"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
 
 [node name="Mesh" type="MeshInstance3D" parent="DefaultGround" unique_id=1497984592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.011994839, 0, -0.020724297)
