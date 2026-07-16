@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://chovoroa2b2be"]
+
+[ext_resource type="PackedScene" uid="uid://crdxnotvcd7vg" path="res://blender/watermelon.glb" id="1_watermelon"]
+
+[node name="WatermelonPreview" type="Node3D" unique_id=1810907860]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1034573515]
+transform = Transform3D(1, 0, 0, 0, 0.9917431, 0.12824091, 0, -0.12824091, 0.9917431, 0.04987657, 1.6058835, 7.800266)
+projection = 1
+size = 5.37514
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1655511930]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
+
+[node name="Model" type="Node3D" parent="." unique_id=2075979707]
+
+[node name="Watermelon" parent="Model" unique_id=1648902297 instance=ExtResource("1_watermelon")]

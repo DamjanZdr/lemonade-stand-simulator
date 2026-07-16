@@ -1,87 +1,37 @@
 [gd_scene format=3 uid="uid://dcrdb3cxjew85"]
 
-[ext_resource type="PackedScene" uid="uid://cffotry67m101" path="res://blender/workstation.glb" id="8_1yooq"]
-
-[sub_resource type="StandardMaterial3D" id="Material_prep"]
-albedo_color = Color(0.7, 0.55, 0.3, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_prep"]
-size = Vector3(3, 0.1, 1)
+[ext_resource type="PackedScene" uid="uid://doie0lnyld7j5" path="res://blender/plastictable.glb" id="2_nrlja"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_prep"]
-size = Vector3(3, 0.1104248, 1)
+size = Vector3(1.6, 0.15917969, 1.5979004)
 
-[sub_resource type="StandardMaterial3D" id="Material_leg"]
-albedo_color = Color(0.55, 0.38, 0.18, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_leg"]
-size = Vector3(0.1, 0.92, 0.1)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_leg"]
-size = Vector3(0.1, 0.92, 0.1)
+[sub_resource type="BoxShape3D" id="BoxShape3D_nrlja"]
+size = Vector3(0.1, 0.90000004, 0.1)
 
 [node name="Workstation" type="Node3D" unique_id=2068234288]
 
 [node name="PrepTable" type="StaticBody3D" parent="." unique_id=232193047 groups=["placement_surface"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.92, -0.02704382)
 
-[node name="Mesh" type="MeshInstance3D" parent="PrepTable" unique_id=1917418051]
-visible = false
-material_override = SubResource("Material_prep")
-mesh = SubResource("BoxMesh_prep")
-
 [node name="Col" type="CollisionShape3D" parent="PrepTable" unique_id=60679237]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005212426, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.029066533)
 shape = SubResource("BoxShape3D_prep")
 
-[node name="PrepLeg_FL" type="StaticBody3D" parent="." unique_id=698457311]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 0.46, -0.5270438)
+[node name="Col2" type="CollisionShape3D" parent="PrepTable" unique_id=529764417]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, -0.52545065, 0.72801673)
+shape = SubResource("BoxShape3D_nrlja")
 
-[node name="Mesh" type="MeshInstance3D" parent="PrepLeg_FL" unique_id=403998889]
-visible = false
-material_override = SubResource("Material_leg")
-mesh = SubResource("BoxMesh_leg")
+[node name="Col3" type="CollisionShape3D" parent="PrepTable" unique_id=1976157113]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, -0.52545065, 0.72801673)
+shape = SubResource("BoxShape3D_nrlja")
 
-[node name="Col" type="CollisionShape3D" parent="PrepLeg_FL" unique_id=398711086]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07313037, 0, -0.0045707226)
-shape = SubResource("BoxShape3D_leg")
+[node name="Col4" type="CollisionShape3D" parent="PrepTable" unique_id=923462313]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, -0.52545065, -0.67198324)
+shape = SubResource("BoxShape3D_nrlja")
 
-[node name="PrepLeg_FR" type="StaticBody3D" parent="." unique_id=484001763]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 0.46, -0.5270438)
+[node name="Col5" type="CollisionShape3D" parent="PrepTable" unique_id=889345645]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, -0.52545065, -0.67198324)
+shape = SubResource("BoxShape3D_nrlja")
 
-[node name="Mesh" type="MeshInstance3D" parent="PrepLeg_FR" unique_id=1564854467]
-visible = false
-material_override = SubResource("Material_leg")
-mesh = SubResource("BoxMesh_leg")
-
-[node name="Col" type="CollisionShape3D" parent="PrepLeg_FR" unique_id=960951172]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.082271695, 0, -0.004570961)
-shape = SubResource("BoxShape3D_leg")
-
-[node name="PrepLeg_BL" type="StaticBody3D" parent="." unique_id=1127964583]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 0.46, 0.47295618)
-
-[node name="Mesh" type="MeshInstance3D" parent="PrepLeg_BL" unique_id=1488351503]
-visible = false
-material_override = SubResource("Material_leg")
-mesh = SubResource("BoxMesh_leg")
-
-[node name="Col" type="CollisionShape3D" parent="PrepLeg_BL" unique_id=2110643455]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07770109, 0, 0.16911411)
-shape = SubResource("BoxShape3D_leg")
-
-[node name="PrepLeg_BR" type="StaticBody3D" parent="." unique_id=1674711499]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 0.46, 0.47295618)
-
-[node name="Mesh" type="MeshInstance3D" parent="PrepLeg_BR" unique_id=1194716724]
-visible = false
-material_override = SubResource("Material_leg")
-mesh = SubResource("BoxMesh_leg")
-
-[node name="Col" type="CollisionShape3D" parent="PrepLeg_BR" unique_id=481417755]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07770121, 0, 0.16454315)
-shape = SubResource("BoxShape3D_leg")
-
-[node name="workstation" parent="." unique_id=46373767 instance=ExtResource("8_1yooq")]
-transform = Transform3D(0.09, 0, 0, 0, 0.09, 0, 0, 0, 0.09, 0, 0.02891469, 0.049700737)
-
+[node name="plastictable" parent="." unique_id=1885891269 instance=ExtResource("2_nrlja")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0.3, 0)

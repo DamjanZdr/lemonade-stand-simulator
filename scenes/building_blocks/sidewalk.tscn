@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://b4pwv4pd4oxa4"]
+
+[ext_resource type="PackedScene" uid="uid://1q1d3kh73f3l" path="res://Visuals/Sidewalk/sidewalk.glb" id="1_4manb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
+size = Vector3(4, 2.0268922, 2)
+
+[node name="Sidewalk" type="StaticBody3D" unique_id=540526995]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1404238115]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.023736477, 0)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="sidewalk" parent="." unique_id=134895877 instance=ExtResource("1_4manb")]

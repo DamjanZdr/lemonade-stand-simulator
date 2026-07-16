@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://co27rdu2lfn2c"]
+
+[ext_resource type="PackedScene" uid="uid://dd78710vollfc" path="res://blender/peach.glb" id="1_peach"]
+
+[node name="PeachPreview" type="Node3D" unique_id=1125346413]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1903170940]
+transform = Transform3D(1, 0, 0, 0, 0.9713539, 0.23763797, 0, -0.23763797, 0.9713539, 0, 1.1142845, 3.6598346)
+projection = 1
+size = 2.779329
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=526314410]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
+
+[node name="Model" type="Node3D" parent="." unique_id=95211629]
+
+[node name="Peach" parent="Model" unique_id=1810953283 instance=ExtResource("1_peach")]

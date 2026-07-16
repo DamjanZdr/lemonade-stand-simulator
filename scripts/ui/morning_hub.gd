@@ -1,6 +1,18 @@
 extends CanvasLayer
 ## Morning hub: Analytics, Shop, Upgrades. Compact, animated, lemonade-stand vibe.
 
+const ITEM_PREVIEW_WIDGET: PackedScene = preload("res://scenes/ui/item_preview_3d.tscn")
+const ITEM_PREVIEW_SCENES: Dictionary = {
+	"lemon": preload("res://scenes/ui/shop_previews/lemon_preview.tscn"),
+	"strawberry": preload("res://scenes/ui/shop_previews/strawberry_preview.tscn"),
+	"blueberry": preload("res://scenes/ui/shop_previews/blueberry_preview.tscn"),
+	"peach": preload("res://scenes/ui/shop_previews/peach_preview.tscn"),
+	"watermelon": preload("res://scenes/ui/shop_previews/watermelon_preview.tscn"),
+	"sugar": preload("res://scenes/ui/shop_previews/sugar_preview.tscn"),
+	"ice": preload("res://scenes/ui/shop_previews/ice_preview.tscn"),
+	"cups": preload("res://scenes/ui/shop_previews/cups_preview.tscn"),
+}
+
 @onready var panel: PanelContainer = $MainHBox/Panel
 @onready var vbox: VBoxContainer = $MainHBox/Panel/VBox
 @onready var backdrop: ColorRect = $Backdrop
@@ -776,10 +788,11 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 	inner.add_theme_constant_override("separation", 6)
 	card.add_child(inner)
 
-	var icon := ColorRect.new()
-	icon.custom_minimum_size = Vector2(80, 50)
-	icon.color = _color_for_item(id)
-	inner.add_child(icon)
+	var preview := ITEM_PREVIEW_WIDGET.instantiate()
+	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
+	preview.custom_minimum_size = Vector2(100, 60)
+	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	inner.add_child(preview)
 
 	var name_lbl := Label.new()
 	name_lbl.text = item["name"]
@@ -873,10 +886,11 @@ func _create_equipment_card(item: Dictionary) -> PanelContainer:
 	inner.add_theme_constant_override("separation", 6)
 	card.add_child(inner)
 
-	var icon := ColorRect.new()
-	icon.custom_minimum_size = Vector2(80, 50)
-	icon.color = Color(0.45, 0.48, 0.55)
-	inner.add_child(icon)
+	var preview := ITEM_PREVIEW_WIDGET.instantiate()
+	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
+	preview.custom_minimum_size = Vector2(100, 60)
+	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	inner.add_child(preview)
 
 	var name_lbl := Label.new()
 	name_lbl.text = item["name"]
@@ -907,28 +921,6 @@ func _create_equipment_card(item: Dictionary) -> PanelContainer:
 	buy_btn.pressed.connect(func(): _add_to_cart(item))
 	inner.add_child(buy_btn)
 	return card
-
-
-func _color_for_item(id: String) -> Color:
-	match id:
-		"lemon":
-			return Color(1.0, 0.9, 0.2)
-		"strawberry":
-			return Color(1.0, 0.3, 0.3)
-		"blueberry":
-			return Color(0.3, 0.4, 0.9)
-		"peach":
-			return Color(1.0, 0.7, 0.5)
-		"watermelon":
-			return Color(0.3, 0.8, 0.3)
-		"sugar":
-			return Color(1.0, 1.0, 1.0)
-		"ice":
-			return Color(0.7, 0.9, 1.0)
-		"cups":
-			return Color(0.9, 0.8, 0.7)
-		_:
-			return Color(0.5, 0.5, 0.5)
 
 
 func _show_tab(tab_name: String) -> void:

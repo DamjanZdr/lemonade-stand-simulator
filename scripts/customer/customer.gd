@@ -6,6 +6,12 @@ enum CustomerState { WALKING, WAITING, RECEIVING, REACTING, LEAVING }
 
 const GRAVITY: float = 9.8
 
+const ORDER_ICONS: Dictionary = {
+	"lemon": "🍋",
+	"orange": "🍊",
+	"lime": "🍈",
+}
+
 var queue_position: Vector3 = Vector3.ZERO
 var queue_slot: int = 0 # 0 = active (faces counter), 1+ = queued (faces front of queue)
 var queue_face_dir: Vector3 = Vector3(1, 0, 0) # set by spawner
@@ -13,6 +19,7 @@ var counter_face_dir: Vector3 = Vector3(0, 0, 1) # set by spawner
 var patience_max: float = Balancing.PATIENCE_BASE
 var patience: float = 0.0
 var state: CustomerState = CustomerState.WALKING
+var expected_fruit: String = "lemon"
 var _outcome: String = ""
 var _waiting_for_change: bool = false
 var _change_callable: Callable = Callable()
@@ -21,10 +28,15 @@ var _facing_target: Basis = Basis.IDENTITY
 var _is_rotating_to_face: bool = false
 const _ROTATION_SPEED: float = 10.0
 
+var _leave_waypoints: Array[PedestrianWaypoint] = []
+var _leave_waypoint_idx: int = 0
+
 @onready var patience_bar: MeshInstance3D = $PatienceBar
 @onready var patience_bar_bg: MeshInstance3D = $PatienceBarBG
 @onready var emoji_anchor: Node3D = $EmojiAnchor
 @onready var emoji_display: Node = $EmojiAnchor/EmojiDisplay
+@onready var order_label: Label3D = $EmojiAnchor/OrderLabel
+@onready var order_panel: MeshInstance3D = $EmojiAnchor/OrderPanel
 @onready var _npc: Node3D = $NPCBody
 
 var _preserve_appearance: bool = false
@@ -35,7 +47,12 @@ func preserve_appearance() -> void:
 
 
 func _ready() -> void:
-	floor_snap_length = 0.2
+	up_direction = Vector3.UP
+	floor_max_angle = deg_to_rad(60.0)
+	floor_snap_length = 0.3
+	floor_constant_speed = true
+	floor_stop_on_slope = false
+	floor_block_on_wall = false
 	var sunroof_bonus: float = UpgradeManager.get_effect_total("sunroof")
 	if sunroof_bonus > 0.0:
 		patience_max *= (1.0 + sunroof_bonus)
@@ -75,6 +92,9 @@ func _physics_process(delta: float) -> void:
 				state = CustomerState.WAITING
 				_begin_smooth_facing()
 				_npc.play_anim("Idle")
+				order_label.text = ORDER_ICONS.get(expected_fruit, "🥤")
+				order_label.visible = true
+				order_panel.visible = true
 				EventBus.customer_arrived.emit(self)
 		CustomerState.WAITING:
 			patience -= delta
@@ -84,16 +104,22 @@ func _physics_process(delta: float) -> void:
 			if patience <= 0.0:
 				_resolve("timeout")
 		CustomerState.LEAVING:
-			_walk_toward(
-				Vector3(
-					global_position.x,
-					global_position.y,
-					Balancing.CUSTOMER_DESPAWN_Z,
-				),
-				delta,
-			)
-			if global_position.z <= Balancing.CUSTOMER_DESPAWN_Z:
+			if _leave_waypoints.is_empty():
+				_walk_toward(
+					Vector3(global_position.x, global_position.y, Balancing.CUSTOMER_DESPAWN_Z),
+					delta,
+				)
+				if global_position.z <= Balancing.CUSTOMER_DESPAWN_Z:
+					queue_free()
+			elif _leave_waypoint_idx >= _leave_waypoints.size():
 				queue_free()
+			else:
+				var target := _leave_waypoints[_leave_waypoint_idx].global_position
+				_walk_toward(target, delta)
+				if global_position.distance_to(target) < 0.55:
+					_leave_waypoint_idx += 1
+					if _leave_waypoint_idx >= _leave_waypoints.size():
+						queue_free()
 
 	move_and_slide()
 
@@ -123,9 +149,9 @@ func try_serve(player: Node) -> void:
 	var recipe: Dictionary = p.held_item_data.get("recipe", { })
 	p.clear_held()
 	state = CustomerState.RECEIVING
+	order_label.visible = false
+	order_panel.visible = false
 	var wait_ratio := patience / patience_max
-	## Currently all customers order lemon; multi-fruit shop not yet implemented.
-	var expected_fruit := "lemon"
 	var outcome := RecipeEvaluator.evaluate(
 		recipe,
 		GameState.temperature,
@@ -199,6 +225,8 @@ func _leave_after_change() -> void:
 
 func _start_leaving() -> void:
 	state = CustomerState.LEAVING
+	order_label.visible = false
+	order_panel.visible = false
 	_npc.stop_payment_pose()
 	var cp_name: String = _npc.get_cash_point_name()
 	var cp := _npc.get_node_or_null(cp_name + "/CashPickup") as CashPickup
@@ -240,6 +268,11 @@ func start_waiting() -> void:
 	_begin_smooth_facing()
 	_npc.play_anim("Idle")
 	EventBus.customer_arrived.emit(self)
+
+
+func set_route_continuation(waypoints: Array[PedestrianWaypoint], next_index: int) -> void:
+	_leave_waypoints = waypoints
+	_leave_waypoint_idx = next_index
 
 
 func _begin_smooth_facing() -> void:

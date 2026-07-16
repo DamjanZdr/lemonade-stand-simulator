@@ -23,15 +23,20 @@ var _queue_arrived_cb: Callable = Callable() # called once the pedestrian reache
 
 
 func _ready() -> void:
-	floor_snap_length = 0.2
+	up_direction = Vector3.UP
+	floor_max_angle = deg_to_rad(60.0)
+	floor_snap_length = 0.3
+	floor_constant_speed = true
+	floor_stop_on_slope = false
+	floor_block_on_wall = false
 	_npc.randomize_appearance()
 	_npc.play_anim("Walk")
 
 
 ## Called by PedestrianSpawner right after instantiation.
-func setup(waypoints: Array[PedestrianWaypoint]) -> void:
+func setup(waypoints: Array[PedestrianWaypoint], start_index: int = 0) -> void:
 	_waypoints = waypoints
-	_waypoint_idx = 0
+	_waypoint_idx = start_index
 
 
 ## Called by PedestrianSpawner after a slot is reserved.
@@ -46,6 +51,13 @@ func walk_to_queue(target: Vector3, on_arrive: Callable) -> void:
 
 func update_queue_target(target: Vector3) -> void:
 	_queue_target = target
+
+
+func get_route_continuation() -> Dictionary:
+	return {
+		"waypoints": _waypoints,
+		"next_index": _waypoint_idx + 1,
+	}
 
 
 func _physics_process(delta: float) -> void:

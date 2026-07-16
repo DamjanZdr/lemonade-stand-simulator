@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://dwfxhexbks0ea"]
+
+[ext_resource type="PackedScene" uid="uid://bd4cnpqaahdw1" path="res://blender/ice cube.glb" id="1_ice"]
+
+[node name="IcePreview" type="Node3D" unique_id=1591543598]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1266607423]
+transform = Transform3D(1, 0, 0, 0, 0.986185, 0.16564777, 0, -0.16564777, 0.986185, 0.028359175, 0.7113924, 3.924563)
+projection = 1
+size = 2.824109
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1147041736]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
+
+[node name="Model" type="Node3D" parent="." unique_id=2068303322]
+
+[node name="Ice" parent="Model" unique_id=150510663 instance=ExtResource("1_ice")]

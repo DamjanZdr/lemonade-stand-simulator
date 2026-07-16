@@ -98,6 +98,14 @@ func _ready() -> void:
 	# The main camera must not render them — only the SubViewport OutlineCamera does.
 	$Head/Camera3D.cull_mask &= ~2
 
+	# Smooth movement over small ledges and slopes (sidewalks, curbs, etc.)
+	up_direction = Vector3.UP
+	floor_max_angle = deg_to_rad(60.0)
+	floor_snap_length = 0.3
+	floor_constant_speed = true
+	floor_stop_on_slope = false
+	floor_block_on_wall = false
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:

@@ -61,8 +61,8 @@ func _try_spawn() -> void:
 
 	var ped: Pedestrian = PEDESTRIAN_SCENE.instantiate()
 	get_parent().add_child(ped)
-	ped.global_position = chosen.global_position
-	ped.setup(chosen.waypoints)
+	ped.global_position = chosen.waypoints[0].global_position
+	ped.setup(chosen.waypoints, 1)
 	ped.wants_to_join.connect(_on_wants_to_join)
 	_pedestrians.append(ped)
 

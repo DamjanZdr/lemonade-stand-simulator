@@ -38,6 +38,10 @@ window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[editor_plugins]
+
+enabled=PackedStringArray()
+
 [input]
 
 secondary_interact={
@@ -84,4 +88,5 @@ jump={
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+textures/decals/filter=0
 occlusion_culling/use_occlusion_culling=true

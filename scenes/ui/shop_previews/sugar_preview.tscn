@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://ddyrlsoqbiqil"]
+
+[ext_resource type="PackedScene" uid="uid://d26s0baibr53s" path="res://blender/sugar cube.glb" id="1_sugar"]
+
+[node name="SugarPreview" type="Node3D" unique_id=1381041257]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1383889841]
+transform = Transform3D(1, 0, 0, 0, 0.9670207, 0.254698, 0, -0.254698, 0.9670207, 0.022775054, 0.71884954, 2.5946503)
+projection = 1
+size = 3.1177323
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=360174521]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
+
+[node name="Model" type="Node3D" parent="." unique_id=735557044]
+
+[node name="Sugar" parent="Model" unique_id=1183612018 instance=ExtResource("1_sugar")]

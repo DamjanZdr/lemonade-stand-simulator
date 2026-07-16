@@ -17,19 +17,25 @@ var _cash_drop_pos: Vector3 = Vector3(0, 1.05, -0.4)
 
 
 func _ready() -> void:
-	# QueueMarker1 sets the start of the line.
-	# QueueMarker2 sets the direction and spacing between each customer slot.
-	# Move/rotate these two markers in the editor to reorient the whole queue.
+	# QueueMarkerActive is the spot for the customer currently at the stand.
+	# QueueMarker1 is the first waiting spot (second customer in line).
+	# QueueMarker2 sets the direction and spacing for the rest of the waiting line.
+	# Move/rotate these markers in the editor to reorient the whole queue.
 	# Up to 20 customer slots are generated automatically from that direction.
+	var m_active: Marker3D = world.get_node_or_null("QueueMarkerActive") as Marker3D
 	var m1: Marker3D = world.get_node_or_null("QueueMarker1") as Marker3D
 	var m2: Marker3D = world.get_node_or_null("QueueMarker2") as Marker3D
+	var active_pos := Vector3(0.0, 0.0, -1.0)
 	var start := Vector3(0.0, 0.0, -2.0)
 	var step := Vector3(0.0, 0.0, -1.0)
+	if m_active:
+		active_pos = m_active.global_position
 	if m1:
 		start = m1.global_position
 		if m2:
 			step = m2.global_position - m1.global_position
 	var spots: Array[Vector3] = []
+	spots.append(active_pos)
 	for i in range(20):
 		spots.append(start + step * float(i))
 	spawner.set_queue_spots(spots, step)

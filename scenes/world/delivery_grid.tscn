@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://c7m3x1q2y4z5a"]
+[gd_scene format=3 uid="uid://c7m3x1q2y405a"]
 
 [ext_resource type="Script" path="res://scripts/systems/delivery_grid.gd" id="1_grid"]
 

@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://cfydvflgaqte1"]
+
+[ext_resource type="PackedScene" uid="uid://up7xyn0lo0ou" path="res://blender/lemon.glb" id="1_lemon"]
+
+[node name="LemonPreview" type="Node3D" unique_id=1438012934]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1432480459]
+transform = Transform3D(0.96022046, -0.21104343, 0.1828589, 0.15392217, 0.94639134, 0.28399196, -0.23299071, -0.24454886, 0.94122857, 0.579721, 1.0321962, 3.5703897)
+projection = 1
+size = 2.369355
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=827221046]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
+
+[node name="Model" type="Node3D" parent="." unique_id=45244145]
+
+[node name="Lemon" parent="Model" unique_id=1221542667 instance=ExtResource("1_lemon")]

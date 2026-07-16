@@ -225,6 +225,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	customer.queue_position = _queue_spots[slot_index]
 	_apply_facing(customer)
 
+	var route_continuation: Dictionary = { }
 	if source_pedestrian != null and is_instance_valid(source_pedestrian):
 		customer.preserve_appearance()
 		var old_npc := customer.get_node_or_null("NPCBody")
@@ -235,12 +236,16 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 			customer.add_child(new_npc)
 			new_npc.owner = customer
 			old_npc.queue_free()
+		route_continuation = source_pedestrian.get_route_continuation()
 
 	get_parent().add_child(customer)
 	if source_pedestrian != null:
 		customer.global_position = source_pedestrian.global_position
 		customer.basis = source_pedestrian.basis
 		customer.state = Customer.CustomerState.WALKING
+		if not route_continuation.is_empty():
+			var route := route_continuation
+			customer.set_route_continuation(route.waypoints, route.next_index)
 	else:
 		customer.global_position = _queue_spots[slot_index]
 		customer.start_waiting()

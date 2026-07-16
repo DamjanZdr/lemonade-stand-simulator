@@ -4,9 +4,13 @@
 [ext_resource type="PackedScene" uid="uid://dcrdb3cxjew85" path="res://scenes/stand/workstation.tscn" id="2_workstation"]
 [ext_resource type="PackedScene" uid="uid://bpiux7tbvj0ky" path="res://scenes/objects/water_dispenser.tscn" id="3_wdispenser"]
 [ext_resource type="PackedScene" uid="uid://b5nygw38vywdu" path="res://scenes/objects/thermometer.tscn" id="5_v5dby"]
-[ext_resource type="PackedScene" uid="uid://cupstack001ls" path="res://scenes/objects/cup_stack.tscn" id="6_cupstack"]
-[ext_resource type="PackedScene" uid="uid://c7m3x1q2y4z5a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
+[ext_resource type="PackedScene" uid="uid://c7m3x1q2y405a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
 [ext_resource type="Script" uid="uid://dcc7v87n0gjjq" path="res://scripts/tools/preview_orbit_camera.gd" id="10_preview"]
+[ext_resource type="PackedScene" uid="uid://1q1d3kh73f3l" path="res://Visuals/Sidewalk/sidewalk.glb" id="11_5qq27"]
+[ext_resource type="PackedScene" uid="uid://dgq6s78nqrt5g" path="res://Visuals/Street/street.glb" id="11_srmg5"]
+[ext_resource type="Texture2D" uid="uid://bqlpigldpktbp" path="res://Visuals/Sidewalk/sidewalk dirt 1.png" id="12_dlabj"]
+[ext_resource type="Texture2D" uid="uid://b4prs77j8tkhp" path="res://Visuals/Street/road dirt 1.png" id="12_umvgx"]
+[ext_resource type="PackedScene" uid="uid://3iu5tq16nvb0" path="res://scenes/building_blocks/neighborhood.tscn" id="15_mxkvs"]
 [ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
 [ext_resource type="Script" uid="uid://dklkcjfc1wreh" path="res://scripts/objects/sun_controller.gd" id="37_sun"]
@@ -46,31 +50,35 @@ tonemap_mode = 2
 tonemap_exposure = 1.1
 tonemap_white = 6.0
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_57qmd"]
+albedo_color = Color(0.583027, 0.82345086, 2.3102762e-06, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_g4v7s"]
+material = SubResource("StandardMaterial3D_57qmd")
+size = Vector2(8, 2)
+
 [node name="World" type="Node3D" unique_id=1769167416]
 
-[node name="Ground" type="StaticBody3D" parent="." unique_id=622270793]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+[node name="DefaultGround" type="StaticBody3D" parent="." unique_id=622270793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, -99)
 
-[node name="Mesh" type="MeshInstance3D" parent="Ground" unique_id=1497984592]
+[node name="Mesh" type="MeshInstance3D" parent="DefaultGround" unique_id=1497984592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.011994839, 0, -0.020724297)
 material_override = SubResource("Material_ground")
 mesh = SubResource("BoxMesh_ground")
 
-[node name="Col" type="CollisionShape3D" parent="Ground" unique_id=1231860438]
+[node name="Col" type="CollisionShape3D" parent="DefaultGround" unique_id=1231860438]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9057007, -0.2495, -16.958313)
 shape = SubResource("BoxShape3D_ground")
 
 [node name="Stand" parent="." unique_id=1183170314 instance=ExtResource("1_stand")]
-transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 0, 0.06850231, -1)
+transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.278463, -2.2)
 
 [node name="Workstation" parent="." unique_id=1892686148 instance=ExtResource("2_workstation")]
-transform = Transform3D(0.865, 0, 0, 0, 0.865, 0, 0, 0, 0.865, 0, -0.114597976, 3.5492034)
+transform = Transform3D(0.865, 0, 0, 0, 0.865, 0, 0, 0, 0.865, -1.2, 0.08174759, 3.5492034)
 
 [node name="WaterDispenser" parent="." unique_id=1929335132 instance=ExtResource("3_wdispenser")]
-transform = Transform3D(-0.25, 0, 3.774895e-08, 0, 0.25, 0, -3.774895e-08, 0, -0.25, -2.3000002, 0.21918052, 3.3)
-
-[node name="CupStack" parent="." unique_id=2000000002 instance=ExtResource("6_cupstack")]
-transform = Transform3D(0.03, 0, 0, 0, 0.03, 0, 0, 0, 0.03, -0.5, 1.0035, -0.675)
+transform = Transform3D(4.8676796e-08, 0, 0.25, 0, 0.25, 0, -0.25, 0, 4.8676796e-08, -1.2000002, 0.25480768, 2.1)
 
 [node name="DeliveryZone" type="MeshInstance3D" parent="." unique_id=1231808297]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9554234, 0.03, 3.6055803)
@@ -80,19 +88,20 @@ mesh = SubResource("BoxMesh_dzone")
 [node name="DeliveryMarker" type="Marker3D" parent="." unique_id=1391857877]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 2.9424672, 0.51908034, 3.5500283)
 
-[node name="DeliveryGrid" parent="." instance=ExtResource("7_dgrid")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9424672, 0.51908034, 3.5500283)
+[node name="DeliveryGrid" parent="." unique_id=2063779733 instance=ExtResource("7_dgrid")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9424672, 0.21908033, 3.5500283)
+
+[node name="QueueMarkerActive" type="Marker3D" parent="." unique_id=1918688920]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9837594, 0, -2.300959)
 
 [node name="QueueMarker1" type="Marker3D" parent="." unique_id=1918688911]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.02438742, 0, -1.3009591)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.016240656, 0, -2.900959)
 
 [node name="QueueMarker2" type="Marker3D" parent="." unique_id=920740298]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.2467859, 0, -1.3009591)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.0467854, 0, -2.900959)
 
 [node name="DirectionalLight" type="DirectionalLight3D" parent="." unique_id=285599754]
 transform = Transform3D(0.8592105, -0.27406377, -0.43200752, 0.3315773, -0.34480715, 0.8781687, -0.38962752, -0.8977783, -0.20538925, 0, 10, 0)
-light_color = Color(1, 0.97, 0.88, 1)
-light_energy = 1.6
 shadow_enabled = true
 script = ExtResource("37_sun")
 
@@ -110,35 +119,269 @@ environment = SubResource("Environment_main")
 [node name="Route 1" type="Marker3D" parent="Routes" unique_id=232494331 node_paths=PackedStringArray("waypoints")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -62.04986, 0, -11.774675)
 script = ExtResource("36_0wrxw")
-waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4")]
+waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
 
 [node name="Point 1" type="Marker3D" parent="Routes/Route 1" unique_id=241292620]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.355095, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.355095, 0, -30.1)
 script = ExtResource("36_sygq6")
 convertable = true
 
 [node name="Point 2" type="Marker3D" parent="Routes/Route 1" unique_id=1776416609]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70.86752, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.967522, 0, -1.1999998)
+script = ExtResource("36_sygq6")
+
+[node name="Point 3" type="Marker3D" parent="Routes/Route 1" unique_id=1442564108]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.692078, 0, -1.1999998)
 script = ExtResource("36_sygq6")
 convertable = true
 
-[node name="Point 3" type="Marker3D" parent="Routes/Route 1" unique_id=1442564108]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 88.69208, 0, 0)
+[node name="Point 4" type="Marker3D" parent="Routes/Route 1" unique_id=1551296121]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 81.19208, 0, -1.3755932)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 5" type="Marker3D" parent="Routes/Route 1" unique_id=1091805813]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115.19208, 0, -1.3755932)
 script = ExtResource("36_sygq6")
 
-[node name="Point 4" type="Marker3D" parent="Routes/Route 1" unique_id=1551296121]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 88.69208, 0, -47.375595)
+[node name="Point 6" type="Marker3D" parent="Routes/Route 1" unique_id=608703098]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115.19208, 0, -40.375595)
 script = ExtResource("36_sygq6")
 
 [node name="Route 2" type="Marker3D" parent="Routes" unique_id=2040185839]
 script = ExtResource("36_0wrxw")
 
 [node name="Thermometer" parent="." unique_id=242897628 instance=ExtResource("5_v5dby")]
-transform = Transform3D(0.04, 0, 0, 0, 0.039188195, 0.008017811, 0, -0.008017811, 0.039188195, 0.6703902, 1.1902373, -0.59936786)
+transform = Transform3D(0.04, 0, 0, 0, 0.03999999, -2.3709377e-05, 0, 2.3709377e-05, 0.03999999, 2.6779885, 1.7902373, -1.824846)
 
 [node name="PreviewCenter" type="Marker3D" parent="." unique_id=1183170315]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0394282, 1.4845874, -1.5014197)
 
 [node name="PreviewOrbitCamera" type="Marker3D" parent="." unique_id=1183170316]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 8.422926, 4)
 script = ExtResource("10_preview")
+
+[node name="Ground" type="Node3D" parent="." unique_id=14617844]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -75)
+
+[node name="Sidewalks" type="Node3D" parent="Ground" unique_id=1158080230]
+
+[node name="FivePieceSegment" type="Node3D" parent="Ground/Sidewalks" unique_id=797878280]
+
+[node name="sidewalk" parent="Ground/Sidewalks/FivePieceSegment" unique_id=134895877 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -0.90000004, -2)
+
+[node name="sidewalk16" parent="Ground/Sidewalks/FivePieceSegment" unique_id=568260937 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -0.90000004, -2)
+
+[node name="sidewalk17" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1266656995 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -0.90000004, -4)
+
+[node name="sidewalk18" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1887704974 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -0.90000004, -4)
+
+[node name="sidewalk2" parent="Ground/Sidewalks/FivePieceSegment" unique_id=884368936 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, -0.90000004, -2)
+
+[node name="sidewalk3" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1251919133 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, -0.90000004, -2)
+
+[node name="sidewalk4" parent="Ground/Sidewalks/FivePieceSegment" unique_id=476942098 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -0.90000004, -2)
+
+[node name="sidewalk5" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1989420211 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -0.90000004, -2)
+
+[node name="sidewalk6" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1292094487 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -0.90000004, 0)
+
+[node name="sidewalk7" parent="Ground/Sidewalks/FivePieceSegment" unique_id=846776175 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -0.90000004, 0)
+
+[node name="sidewalk8" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1244920664 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -0.90000004, 2)
+
+[node name="sidewalk9" parent="Ground/Sidewalks/FivePieceSegment" unique_id=678843693 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -0.90000004, 2)
+
+[node name="sidewalk10" parent="Ground/Sidewalks/FivePieceSegment" unique_id=2064492071 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -0.90000004, 4)
+
+[node name="sidewalk11" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1023789133 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -0.90000004, 4)
+
+[node name="sidewalk12" parent="Ground/Sidewalks/FivePieceSegment" unique_id=605194588 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -0.90000004, 6)
+
+[node name="sidewalk13" parent="Ground/Sidewalks/FivePieceSegment" unique_id=2040804223 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -0.90000004, 6)
+
+[node name="sidewalk14" parent="Ground/Sidewalks/FivePieceSegment" unique_id=940479364 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -0.90000004, 8)
+
+[node name="sidewalk15" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1508370504 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -0.90000004, 8)
+
+[node name="Decal" type="Decal" parent="Ground/Sidewalks/FivePieceSegment" unique_id=914089762]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.960983, -0.42371196, -2.0085034)
+size = Vector3(12, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="Decal8" type="Decal" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1044371655]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.039017, -0.42371196, -2.0085034)
+size = Vector3(12, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="Decal2" type="Decal" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1944407428]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.031016886, -0.42371196, -0.008503437)
+size = Vector3(8, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="Decal7" type="Decal" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1375649840]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.031016886, -0.42371196, -4.0085034)
+size = Vector3(8, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="Decal3" type="Decal" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1336833252]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.031016886, -0.42371196, 1.9914966)
+size = Vector3(8, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="Decal4" type="Decal" parent="Ground/Sidewalks/FivePieceSegment" unique_id=2059812766]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.031016886, -0.42371196, 3.9914966)
+size = Vector3(8, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="Decal5" type="Decal" parent="Ground/Sidewalks/FivePieceSegment" unique_id=422144603]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.031016886, -0.42371196, 5.9914966)
+size = Vector3(8, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="Decal6" type="Decal" parent="Ground/Sidewalks/FivePieceSegment" unique_id=1969726518]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.031016886, -0.42371196, 7.991497)
+size = Vector3(8, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="FivePieceSegment2" type="Node3D" parent="Ground/Sidewalks" unique_id=410016374]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+
+[node name="sidewalk6" parent="Ground/Sidewalks/FivePieceSegment2" unique_id=1881048308 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.90000004, -17)
+
+[node name="Decal" type="Decal" parent="Ground/Sidewalks/FivePieceSegment2/sidewalk6" unique_id=938884777]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.031016886, 0.47628808, -0.008503437)
+size = Vector3(20.016, 1.165, 2)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="sidewalk7" parent="Ground/Sidewalks/FivePieceSegment2" unique_id=789540769 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.90000004, -17)
+
+[node name="sidewalk8" parent="Ground/Sidewalks/FivePieceSegment2" unique_id=1137413550 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, -0.90000004, -17)
+
+[node name="sidewalk9" parent="Ground/Sidewalks/FivePieceSegment2" unique_id=1691328120 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, -0.90000004, -17)
+
+[node name="sidewalk10" parent="Ground/Sidewalks/FivePieceSegment2" unique_id=1023202967 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, -0.90000004, -17)
+
+[node name="FivePieceSegment3" type="Node3D" parent="Ground/Sidewalks" unique_id=336422567]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+
+[node name="sidewalk11" parent="Ground/Sidewalks/FivePieceSegment3" unique_id=862672442 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -0.90000004, -7)
+
+[node name="sidewalk16" parent="Ground/Sidewalks/FivePieceSegment3" unique_id=2075220958 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -0.90000004, -7)
+
+[node name="sidewalk12" parent="Ground/Sidewalks/FivePieceSegment3" unique_id=754044666 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, -0.90000004, -7)
+
+[node name="sidewalk13" parent="Ground/Sidewalks/FivePieceSegment3" unique_id=1997752200 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, -0.90000004, -7)
+
+[node name="sidewalk14" parent="Ground/Sidewalks/FivePieceSegment3" unique_id=1060091191 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -0.90000004, -7)
+
+[node name="sidewalk15" parent="Ground/Sidewalks/FivePieceSegment3" unique_id=612724421 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -0.90000004, -7)
+
+[node name="Decal" type="Decal" parent="Ground/Sidewalks/FivePieceSegment3" unique_id=2123852922]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.0230165, -0.42371196, -7.0085034)
+size = Vector3(12, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="Decal2" type="Decal" parent="Ground/Sidewalks/FivePieceSegment3" unique_id=1398087628]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.9769835, -0.42371196, -7.0085034)
+size = Vector3(12, 1.165, 1.987)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="FivePieceSegment4" type="Node3D" parent="Ground/Sidewalks" unique_id=715893316]
+
+[node name="sidewalk16" parent="Ground/Sidewalks/FivePieceSegment4" unique_id=1659818204 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.90000004, -22)
+
+[node name="Decal" type="Decal" parent="Ground/Sidewalks/FivePieceSegment4/sidewalk16" unique_id=1145827189]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.031016886, 0.47628808, -0.008503437)
+size = Vector3(20.016, 1.165, 2)
+texture_albedo = ExtResource("12_dlabj")
+
+[node name="sidewalk17" parent="Ground/Sidewalks/FivePieceSegment4" unique_id=1827794100 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.90000004, -22)
+
+[node name="sidewalk18" parent="Ground/Sidewalks/FivePieceSegment4" unique_id=1790066366 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, -0.90000004, -22)
+
+[node name="sidewalk19" parent="Ground/Sidewalks/FivePieceSegment4" unique_id=1435846202 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, -0.90000004, -22)
+
+[node name="sidewalk20" parent="Ground/Sidewalks/FivePieceSegment4" unique_id=1419751554 instance=ExtResource("11_5qq27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, -0.90000004, -22)
+
+[node name="Streets" type="Node3D" parent="Ground" unique_id=1145680010]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+
+[node name="FivePieceSegment" type="Node3D" parent="Ground/Streets" unique_id=2052823232]
+
+[node name="street" parent="Ground/Streets/FivePieceSegment" unique_id=1300452679 instance=ExtResource("11_srmg5")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 2, -0.967523, -11.982353)
+
+[node name="street2" parent="Ground/Streets/FivePieceSegment" unique_id=1004959956 instance=ExtResource("11_srmg5")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2, -0.967523, -12)
+
+[node name="street3" parent="Ground/Streets/FivePieceSegment" unique_id=1838502129 instance=ExtResource("11_srmg5")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -6, -0.967523, -12)
+
+[node name="street6" parent="Ground/Streets/FivePieceSegment" unique_id=84762735 instance=ExtResource("11_srmg5")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -10, -0.967523, -12)
+
+[node name="street4" parent="Ground/Streets/FivePieceSegment" unique_id=515610948 instance=ExtResource("11_srmg5")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 6, -0.967523, -12)
+
+[node name="street5" parent="Ground/Streets/FivePieceSegment" unique_id=1297033138 instance=ExtResource("11_srmg5")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 10, -0.967523, -12)
+
+[node name="Decal" type="Decal" parent="Ground/Streets/FivePieceSegment" unique_id=1055386148]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0.00814227, 0.3487301, -10.021285)
+size = Vector3(24, 2, 4)
+texture_albedo = ExtResource("12_umvgx")
+
+[node name="Decal2" type="Decal" parent="Ground/Streets/FivePieceSegment" unique_id=1253773718]
+transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, 0.008142188, 0.3487301, -13.995509)
+size = Vector3(24, 2, 4)
+texture_albedo = ExtResource("12_umvgx")
+
+[node name="DriveWay" type="Node3D" parent="Ground/Streets" unique_id=2046482069]
+
+[node name="Grass" type="Node3D" parent="Ground" unique_id=1639434993]
+
+[node name="GrassSurface" type="MeshInstance3D" parent="Ground/Grass" unique_id=369451328]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.0192976, -4)
+mesh = SubResource("PlaneMesh_g4v7s")
+
+[node name="GrassSurface2" type="MeshInstance3D" parent="Ground/Grass" unique_id=1475038896]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.0192976, -4)
+mesh = SubResource("PlaneMesh_g4v7s")
+
+[node name="Neighborhood" parent="." unique_id=1396389632 instance=ExtResource("15_mxkvs")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -1.1, -8)
