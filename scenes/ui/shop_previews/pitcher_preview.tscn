@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://pitcherpreva"]
 
-[ext_resource type="PackedScene" uid="uid://pitcher001ls" path="res://scenes/objects/pitcher.tscn" id="1_ceyf5"]
+[ext_resource type="PackedScene" uid="uid://o3ikb2ut4vbr" path="res://blender/pitcher.glb" id="1_model"]
 
 [node name="PitcherPreview" type="Node3D" unique_id=1960525976]
 
@@ -14,4 +14,4 @@ transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -
 
 [node name="Model" type="Node3D" parent="." unique_id=2044521108]
 
-[node name="Pitcher" parent="Model" unique_id=1489343685 instance=ExtResource("1_ceyf5")]
+[node name="Pitcher" parent="Model" unique_id=1489343685 instance=ExtResource("1_model")]
