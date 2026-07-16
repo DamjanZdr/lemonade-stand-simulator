@@ -54,8 +54,7 @@ const ITEM_PREVIEW_SCENES: Dictionary = {
 var _active_tab: String = "analytics"
 var _flow_tabs: Array[String] = ["analytics", "upgrades", "shop", "ready"]
 var _flow_step: int = 0
-var _shop_qty: Dictionary = { } # actual cart quantities
-var _desired_qty: Dictionary = { } # per-item amount shown by +/- buttons
+var _cart: Array[Dictionary] = []
 var _preview_angle: float = 0.0
 var _bin_amounts: Dictionary = { }
 var _equipment_counts: Dictionary = { }
@@ -830,49 +829,9 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	inner.add_child(preview)
 
-	var qty_row := HBoxContainer.new()
-	qty_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	qty_row.add_theme_constant_override("separation", 6)
-	var minus := Button.new()
-	minus.text = "-"
-	minus.custom_minimum_size = Vector2(28, 28)
-	_apply_button_style(
-		minus,
-		Color(0.14, 0.15, 0.19),
-		Color(0.25, 0.18, 0.12),
-		Color(0.18, 0.19, 0.22),
-		Color(0.9, 0.85, 0.75),
-		6,
-	)
-	minus.pressed.connect(func(): _change_qty(id, -1))
-	qty_row.add_child(minus)
-	var qty_lbl := Label.new()
-	qty_lbl.name = "Qty_" + id
-	qty_lbl.text = "1"
-	_desired_qty[id] = 1
-	qty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	qty_lbl.custom_minimum_size = Vector2(22, 0)
-	qty_lbl.add_theme_font_size_override("font_size", 15)
-	qty_lbl.add_theme_color_override("font_color", Color(0.92, 0.88, 0.78))
-	qty_row.add_child(qty_lbl)
-	var plus := Button.new()
-	plus.text = "+"
-	plus.custom_minimum_size = Vector2(28, 28)
-	_apply_button_style(
-		plus,
-		Color(0.14, 0.15, 0.19),
-		Color(0.12, 0.25, 0.12),
-		Color(0.18, 0.19, 0.22),
-		Color(0.9, 0.85, 0.75),
-		6,
-	)
-	plus.pressed.connect(func(): _change_qty(id, 1))
-	qty_row.add_child(plus)
-	inner.add_child(qty_row)
-
 	var buy_btn := Button.new()
 	buy_btn.name = "Buy_" + id
-	buy_btn.text = "Add to Cart"
+	buy_btn.text = "Add"
 	buy_btn.custom_minimum_size = Vector2(0, 30)
 	buy_btn.add_theme_font_size_override("font_size", 12)
 	_apply_button_style(
@@ -890,7 +849,6 @@ func _create_ingredient_card(item: Dictionary) -> PanelContainer:
 
 func _create_equipment_card(item: Dictionary) -> PanelContainer:
 	var id: String = item["id"]
-	_desired_qty[id] = 1
 	var card := PanelContainer.new()
 	card.name = "EquipCard_" + id
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -933,12 +891,12 @@ func _create_equipment_card(item: Dictionary) -> PanelContainer:
 
 	var preview := ITEM_PREVIEW_WIDGET.instantiate()
 	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
-	preview.custom_minimum_size = Vector2(90, 54)
+	preview.custom_minimum_size = Vector2(120, 72)
 	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	inner.add_child(preview)
 
 	var buy_btn := Button.new()
-	buy_btn.text = "Add to Cart"
+	buy_btn.text = "Add"
 	buy_btn.custom_minimum_size = Vector2(0, 30)
 	buy_btn.add_theme_font_size_override("font_size", 12)
 	_apply_button_style(
@@ -1176,53 +1134,15 @@ func _fit_tree_scale(_tree_ctrl: Control, area: Vector2) -> void:
 	_tree_scale = clampf(fit_scale, 0.3, 1.5)
 
 
-func _change_qty(id: String, delta: int) -> void:
-	var new_val := clampi(_desired_qty.get(id, 1) + delta, 1, 10)
-	_desired_qty[id] = new_val
-	_refresh_desired_label(id, new_val)
-
-
-func _refresh_desired_label(id: String, value: int) -> void:
-	var shop_grid := (
-			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2/ShopGrid
-	) as GridContainer
-	if shop_grid == null:
-		return
-	var card := shop_grid.get_node_or_null("Card_" + id)
-	if card == null:
-		card = shop_grid.get_node_or_null("EquipCard_" + id)
-	if card:
-		var qty_lbl := card.find_child("Qty_" + id, true, false) as Label
-		if qty_lbl:
-			qty_lbl.text = str(value)
-
-
 func _add_to_cart(item: Dictionary) -> void:
-	var id: String = item["id"]
-	var desired: int = _desired_qty.get(id, 1)
-	var current: int = _shop_qty.get(id, 0)
-	if current + desired > 10:
-		_animate_status_text("Max 10 in cart")
-		return
-	if desired > 0:
-		_shop_qty[id] = current + desired
-		_desired_qty[id] = 1
-		_refresh_desired_label(id, 1)
-		_update_cart_ui()
-		_animate_status_text("Added to cart!")
+	_cart.append(item)
+	_update_cart_ui()
+	_animate_status_text("Added to cart!")
 
 
-func _change_cart_qty(id: String, delta: int) -> void:
-	var current: int = _shop_qty.get(id, 0)
-	var new_val := clampi(current + delta, 0, 10)
-	if new_val != current:
-		_shop_qty[id] = new_val
-		_update_cart_ui()
-
-
-func _remove_all_from_cart(id: String) -> void:
-	if _shop_qty.get(id, 0) > 0:
-		_shop_qty[id] = 0
+func _remove_cart_entry(index: int) -> void:
+	if index >= 0 and index < _cart.size():
+		_cart.remove_at(index)
 		_update_cart_ui()
 		_animate_status_text("Removed from cart")
 
@@ -1233,91 +1153,46 @@ func _update_cart_ui() -> void:
 		_cart_list.remove_child(c)
 		c.queue_free()
 	var total := 0.0
-	var has_items := false
-	var all_items := []
-	all_items.append_array(shop_items)
-	all_items.append_array(container_items)
-	for item in all_items:
-		var qty: int = _shop_qty.get(item["id"], 0)
-		if qty > 0:
-			has_items = true
-			total += qty * item["cost"]
-			var row := HBoxContainer.new()
-			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_theme_constant_override("separation", 6)
-			var name_lbl := Label.new()
-			name_lbl.text = item["name"]
-			name_lbl.add_theme_font_size_override("font_size", 14)
-			name_lbl.add_theme_color_override(
-				"font_color",
-				Color(0.92, 0.90, 0.82),
-			)
-			name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_child(name_lbl)
-			var price_lbl := Label.new()
-			price_lbl.text = "$%.2f" % (qty * item["cost"])
-			price_lbl.add_theme_font_size_override("font_size", 13)
-			price_lbl.add_theme_color_override(
-				"font_color",
-				Color(0.65, 0.80, 0.45),
-			)
-			row.add_child(price_lbl)
-			var minus_btn := Button.new()
-			minus_btn.text = "-"
-			minus_btn.custom_minimum_size = Vector2(24, 24)
-			minus_btn.add_theme_font_size_override("font_size", 14)
-			_apply_button_style(
-				minus_btn,
-				Color(0.14, 0.15, 0.19),
-				Color(0.25, 0.18, 0.12),
-				Color(0.18, 0.19, 0.22),
-				Color(0.9, 0.85, 0.75),
-				4,
-			)
-			minus_btn.pressed.connect(func(): _change_cart_qty(item["id"], -1))
-			row.add_child(minus_btn)
-
-			var qty_lbl := Label.new()
-			qty_lbl.text = "x%d" % qty
-			qty_lbl.add_theme_font_size_override("font_size", 14)
-			qty_lbl.add_theme_color_override(
-				"font_color",
-				Color(0.70, 0.88, 1.0),
-			)
-			qty_lbl.custom_minimum_size = Vector2(24, 0)
-			qty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			row.add_child(qty_lbl)
-
-			var plus_btn := Button.new()
-			plus_btn.text = "+"
-			plus_btn.custom_minimum_size = Vector2(24, 24)
-			plus_btn.add_theme_font_size_override("font_size", 14)
-			_apply_button_style(
-				plus_btn,
-				Color(0.14, 0.15, 0.19),
-				Color(0.12, 0.25, 0.12),
-				Color(0.18, 0.19, 0.22),
-				Color(0.9, 0.85, 0.75),
-				4,
-			)
-			plus_btn.pressed.connect(func(): _change_cart_qty(item["id"], 1))
-			row.add_child(plus_btn)
-
-			var rem_btn := Button.new()
-			rem_btn.text = "X"
-			rem_btn.custom_minimum_size = Vector2(28, 24)
-			rem_btn.add_theme_font_size_override("font_size", 12)
-			_apply_button_style(
-				rem_btn,
-				Color(0.14, 0.12, 0.10),
-				Color(0.35, 0.15, 0.12),
-				Color(0.18, 0.14, 0.12),
-				Color(0.95, 0.70, 0.60),
-				6,
-			)
-			rem_btn.pressed.connect(func(): _remove_all_from_cart(item["id"]))
-			row.add_child(rem_btn)
-			_cart_list.add_child(row)
+	var has_items := _cart.size() > 0
+	for i in _cart.size():
+		var item: Dictionary = _cart[i]
+		var idx: int = i
+		total += item["cost"]
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 6)
+		var name_lbl := Label.new()
+		name_lbl.text = item["name"]
+		name_lbl.add_theme_font_size_override("font_size", 14)
+		name_lbl.add_theme_color_override(
+			"font_color",
+			Color(0.92, 0.90, 0.82),
+		)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_lbl)
+		var price_lbl := Label.new()
+		price_lbl.text = "$%.2f" % item["cost"]
+		price_lbl.add_theme_font_size_override("font_size", 13)
+		price_lbl.add_theme_color_override(
+			"font_color",
+			Color(0.65, 0.80, 0.45),
+		)
+		row.add_child(price_lbl)
+		var rem_btn := Button.new()
+		rem_btn.text = "X"
+		rem_btn.custom_minimum_size = Vector2(28, 24)
+		rem_btn.add_theme_font_size_override("font_size", 12)
+		_apply_button_style(
+			rem_btn,
+			Color(0.14, 0.12, 0.10),
+			Color(0.35, 0.15, 0.12),
+			Color(0.18, 0.14, 0.12),
+			Color(0.95, 0.70, 0.60),
+			6,
+		)
+		rem_btn.pressed.connect(func(): _remove_cart_entry(idx))
+		row.add_child(rem_btn)
+		_cart_list.add_child(row)
 	_cart_total_lbl.text = "Total: $%.2f" % total
 	_checkout_btn.disabled = not has_items or GameState.money < total
 	if not has_items:
@@ -1330,21 +1205,26 @@ func _update_cart_ui() -> void:
 
 
 func _checkout_cart() -> void:
-	for item in shop_items:
+	var counts: Dictionary = { }
+	var item_lookup: Dictionary = { }
+	for item in _cart:
 		var id: String = item["id"]
-		var qty: int = _shop_qty.get(id, 0)
-		if qty > 0:
-			_buy_ingredient(id)
-	for item in container_items:
-		var id: String = item["id"]
-		var qty: int = _shop_qty.get(id, 0)
-		if qty > 0:
+		counts[id] = counts.get(id, 0) + 1
+		item_lookup[id] = item
+	_cart.clear()
+	for id in counts.keys():
+		var item: Dictionary = item_lookup[id]
+		var qty: int = counts[id]
+		if _is_ingredient(item):
+			_buy_ingredient(item, qty)
+		else:
 			for i in range(qty):
 				_buy_container(id, item["cost"])
-			_shop_qty[id] = 0
-			_desired_qty[id] = 1
-			_refresh_desired_label(id, 1)
 	_update_cart_ui()
+
+
+func _is_ingredient(item: Dictionary) -> bool:
+	return item in shop_items
 
 
 func _animate_status_text(msg: String) -> void:
@@ -1356,23 +1236,14 @@ func _animate_status_text(msg: String) -> void:
 	tween.tween_property(_status_lbl, "modulate", Color(1, 1, 1, 0), 0.5)
 
 
-func _buy_ingredient(id: String) -> void:
-	var qty: int = _shop_qty.get(id, 0)
-	if qty <= 0:
+func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
+	var total: float = qty * item["cost"]
+	if not GameState.spend_money(total):
 		return
-	for item in shop_items:
-		if item["id"] == id:
-			var total: float = qty * item["cost"]
-			if not GameState.spend_money(total):
-				return
-			for i in range(qty):
-				EventBus.supply_order_placed.emit(id, item["qty"], item["cost"])
-			_status_lbl.text = "Bought %d %s crate(s)!" % [qty, item["name"]]
-			_animate_status()
-			_shop_qty[id] = 0
-			_desired_qty[id] = 1
-			_refresh_desired_label(id, 1)
-			return
+	for i in range(qty):
+		EventBus.supply_order_placed.emit(item["id"], item["qty"], item["cost"])
+	_status_lbl.text = "Bought %d %s crate(s)!" % [qty, item["name"]]
+	_animate_status()
 
 
 func _buy_container(container_type: String, cost: float) -> void:

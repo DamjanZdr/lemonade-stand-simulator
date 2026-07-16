@@ -412,6 +412,7 @@ theme_override_styles/separator = SubResource("header_sep")
 [node name="CartScroll" type="ScrollContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
 [node name="CartList" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll"]
 layout_mode = 2
