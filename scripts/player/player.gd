@@ -629,7 +629,7 @@ func _update_single_cup_ghost() -> void:
 	_apply_ghost_material(_ghost, mat)
 
 
-func _place_single_cup(filled: bool) -> void:
+func _place_single_cup(_filled: bool) -> void:
 	"""Place a single cup on the surface (creates new stack with 1 cup)."""
 	# Check ghost validity before placing
 	if not _ghost_valid or _ghost == null:
@@ -708,7 +708,7 @@ func _place_filled_cup() -> void:
 	EventBus.interaction_hint_changed.emit("Filled cup placed!")
 
 
-func _place_held_supply_box_on(position: Vector3) -> void:
+func _place_held_supply_box_on(place_pos: Vector3) -> void:
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	if held_item_data.get("is_equipment", false):
 		box.is_equipment = true
@@ -717,7 +717,7 @@ func _place_held_supply_box_on(position: Vector3) -> void:
 		box.ingredient_type = held_item_data.get("ingredient_type", "lemon")
 		box.quantity = held_item_data.get("amount", 1.0)
 	get_parent().add_child(box)
-	box.global_position = position
+	box.global_position = place_pos
 	_destroy_ghost()
 	clear_held()
 
@@ -999,10 +999,10 @@ func _create_container_hand_mesh(
 	if from_box:
 		var box_scene: PackedScene = load("res://blender/box.glb") as PackedScene
 		if box_scene:
-			var inst: Node3D = box_scene.instantiate() as Node3D
-			inst.scale = Vector3.ONE * 0.05
-			_disable_hand_collision(inst)
-			return inst
+			var box_inst: Node3D = box_scene.instantiate() as Node3D
+			box_inst.scale = Vector3.ONE * 0.05
+			_disable_hand_collision(box_inst)
+			return box_inst
 		return null
 
 	var scene: PackedScene = _get_container_scene(container_type)
@@ -1279,8 +1279,8 @@ func _update_equipment_box_ghost() -> void:
 		if _ghost == null:
 			_ghost_valid = false
 			return
-		var offset: float = _ghost.get_meta("bottom_offset", 0.0)
-		_ghost.global_position = hit_point + Vector3(0, -offset, 0)
+		var ws_offset: float = _ghost.get_meta("bottom_offset", 0.0)
+		_ghost.global_position = hit_point + Vector3(0, -ws_offset, 0)
 		var look_dir := global_position - hit_point
 		look_dir.y = 0
 		if look_dir.length_squared() > 0.001:
@@ -1308,8 +1308,8 @@ func _update_equipment_box_ghost() -> void:
 		if _ghost == null:
 			_ghost_valid = false
 			return
-		var offset: float = _ghost.get_meta("bottom_offset", 0.0)
-		_ghost.global_position = hit_point + Vector3(0, -offset, 0)
+		var equip_offset: float = _ghost.get_meta("bottom_offset", 0.0)
+		_ghost.global_position = hit_point + Vector3(0, -equip_offset, 0)
 		var look_dir := global_position - hit_point
 		look_dir.y = 0
 		if look_dir.length_squared() > 0.001:
@@ -1423,7 +1423,7 @@ func _update_ghost() -> void:
 
 	var collider := ray.get_collider()
 	var hit_point := ray.get_collision_point()
-	var hit_normal := ray.get_collision_normal()
+	var _hit_normal := ray.get_collision_normal()
 	var from_box: bool = held_item_data.get("from_delivery_box", false)
 
 	# When holding an equipment box, allow stacking on other boxes
@@ -1432,8 +1432,8 @@ func _update_ghost() -> void:
 		while node != null:
 			if node is SupplyBox:
 				var box := node as SupplyBox
-				var offset: float = _ghost.get_meta("bottom_offset", 0.0)
-				_ghost.global_position = box.global_position + Vector3(0, 0.262 - offset, 0)
+				var box_offset: float = _ghost.get_meta("bottom_offset", 0.0)
+				_ghost.global_position = box.global_position + Vector3(0, 0.262 - box_offset, 0)
 				_ghost.visible = true
 				_ghost_valid = true
 				_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -1621,7 +1621,7 @@ func _get_container_type_for_node(node: Node) -> String:
 		return "fruit_bin"
 	if node is WaterDispenser:
 		return "water_dispenser"
-	var node_script := node.get_script()
+	var node_script: Script = node.get_script() as Script
 	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
 	return ""

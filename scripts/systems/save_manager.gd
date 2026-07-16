@@ -274,7 +274,7 @@ func _get_container_type(node: Node) -> String:
 		return "water_dispenser"
 	if node is CupStack:
 		return "cup_stack"
-	var node_script := node.get_script()
+	var node_script: Script = node.get_script() as Script
 	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
 	var n := node.name.to_lower()
