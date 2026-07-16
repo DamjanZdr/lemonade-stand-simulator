@@ -15,11 +15,33 @@ var _preview_angle: float = 0.0
 
 
 func _ready() -> void:
+	# Higher render resolution so the preview looks crisp in the UI card.
+	_viewport.size = Vector2i(400, 240)
 	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_viewport.own_world_3d = true
 	_viewport.transparent_bg = true
+	# Smooth scaling when the viewport texture is drawn at UI size.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+
+	_setup_environment()
+
 	if preview_scene != null:
 		_load_preview_scene(preview_scene)
+
+
+func _setup_environment() -> void:
+	## Each preview viewport has its own World3D, so it needs its own
+	## environment. Add a soft ambient fill so shadows are not pitch black.
+	var env := Environment.new()
+	env.background_mode = Environment.BG_CLEAR_COLOR
+	env.background_color = Color(0, 0, 0, 0)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.6, 0.6, 0.6, 1.0)
+	env.ambient_light_energy = 1.0
+
+	var we := WorldEnvironment.new()
+	we.environment = env
+	_viewport.add_child(we)
 
 
 func set_preview_scene(scene: PackedScene) -> void:
