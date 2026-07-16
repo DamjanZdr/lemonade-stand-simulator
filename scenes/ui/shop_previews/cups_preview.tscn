@@ -1,17 +1,17 @@
 [gd_scene format=3 uid="uid://bbw73qtirxxao"]
 
-[ext_resource type="PackedScene" uid="uid://daobpi7s7leeo" path="res://blender/cup.glb" id="1_cup"]
+[ext_resource type="PackedScene" uid="uid://cup001lemon" path="res://scenes/objects/cup.tscn" id="1_cup"]
 
-[node name="CupsPreview" type="Node3D" unique_id=2050674446]
+[node name="CupsPreview" type="Node3D"]
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=1807581858]
+[node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.96972007, 0.24421921, 0, -0.24421921, 0.96972007, -0.035569668, 2.186701, 5.1026134)
 projection = 1
 size = 4.5756235
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1193496585]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
 
-[node name="Model" type="Node3D" parent="." unique_id=425111385]
+[node name="Model" type="Node3D" parent="."]
 
-[node name="Cup" parent="Model" unique_id=872450082 instance=ExtResource("1_cup")]
+[node name="Cup" parent="Model" instance=ExtResource("1_cup")]

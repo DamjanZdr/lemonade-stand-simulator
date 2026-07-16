@@ -11,6 +11,12 @@ const ITEM_PREVIEW_SCENES: Dictionary = {
 	"sugar": preload("res://scenes/ui/shop_previews/sugar_preview.tscn"),
 	"ice": preload("res://scenes/ui/shop_previews/ice_preview.tscn"),
 	"cups": preload("res://scenes/ui/shop_previews/cups_preview.tscn"),
+	"water": preload("res://scenes/ui/shop_previews/water_preview.tscn"),
+	"fruit_bin": preload("res://scenes/ui/shop_previews/fruit_bin_preview.tscn"),
+	"sugar_bin": preload("res://scenes/ui/shop_previews/sugar_bin_preview.tscn"),
+	"ice_bin": preload("res://scenes/ui/shop_previews/ice_bin_preview.tscn"),
+	"pitcher": preload("res://scenes/ui/shop_previews/pitcher_preview.tscn"),
+	"press": preload("res://scenes/ui/shop_previews/press_preview.tscn"),
 }
 
 @onready var panel: PanelContainer = $MainHBox/Panel

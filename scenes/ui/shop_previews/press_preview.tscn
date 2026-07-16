@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://presspreva"]
+
+[ext_resource type="PackedScene" uid="uid://dagbqtfbfhpdb" path="res://blender/press.glb" id="1_model"]
+
+[node name="PressPreview" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.96022046, -0.21104343, 0.1828589, 0.15392217, 0.94639134, 0.28399196, -0.23299071, -0.24454886, 0.94122857, 5.1385, 9.1487, 31.6413)
+projection = 1
+size = 21.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 2, 2, 2)
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Press" parent="Model" instance=ExtResource("1_model")]
