@@ -789,7 +789,12 @@ func _create_equipment_card(item: Dictionary) -> PanelContainer:
 	return _create_item_card(item, "EquipCard_", Color(0.09, 0.10, 0.13), Color(0.18, 0.22, 0.30))
 
 
-func _create_item_card(item: Dictionary, name_prefix: String, bg: Color, border: Color) -> PanelContainer:
+func _create_item_card(
+		item: Dictionary,
+		name_prefix: String,
+		bg: Color,
+		border: Color,
+) -> PanelContainer:
 	var id: String = item["id"]
 	var card := PanelContainer.new()
 	card.name = name_prefix + id
