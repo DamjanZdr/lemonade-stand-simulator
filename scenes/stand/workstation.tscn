@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dcrdb3cxjew85"]
 
-[ext_resource type="Script" path="res://scripts/objects/workstation.gd" id="1_workstation"]
+[ext_resource type="Script" uid="uid://3lckhre7pcl1k" path="res://scripts/objects/workstation.gd" id="1_workstation"]
 [ext_resource type="PackedScene" uid="uid://doie0lnyld7j5" path="res://blender/plastictable.glb" id="2_nrlja"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_prep"]

@@ -11,8 +11,11 @@ const CONTAINER_SCENES: Dictionary = {
 	"press": preload("res://scenes/objects/press.tscn"),
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
 	"cup_stack": preload("res://scenes/objects/cup_stack.tscn"),
-	"workstation": preload("res://scenes/stand/workstation.tscn"),
 }
+
+# Workstation is loaded at runtime to avoid compile-time preload issues while the
+# editor imports the new scene/script .uid files.
+var _workstation_scene: PackedScene = null
 
 const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.tscn")
 
@@ -25,6 +28,20 @@ func _ready() -> void:
 	EventBus.game_reset.connect(_on_game_reset)
 	EventBus.container_placed.connect(func(_t, _n): save_game())
 	EventBus.container_picked_up.connect(func(_t, _n): save_game())
+
+	# Load the workstation scene at runtime to avoid compile-time preload issues
+	# while the editor imports the new scene/script .uid files.
+	_workstation_scene = load("res://scenes/stand/workstation.tscn") as PackedScene
+
+
+func _get_container_scene(ctype: String) -> PackedScene:
+	if ctype == "workstation":
+		return _workstation_scene
+	return CONTAINER_SCENES.get(ctype) as PackedScene
+
+
+func _is_known_container_type(ctype: String) -> bool:
+	return ctype in CONTAINER_SCENES or ctype == "workstation"
 
 
 func save_game() -> void:
@@ -133,7 +150,7 @@ func _scan_placed_containers() -> Array:
 		if player != null and node.is_ancestor_of(player) or _is_child_of_player(node, player):
 			continue
 		var ctype := _get_container_type(node)
-		if ctype == "" or not ctype in CONTAINER_SCENES:
+		if ctype == "" or not _is_known_container_type(ctype):
 			continue
 		var entry := {
 			"type": ctype,
@@ -257,7 +274,8 @@ func _get_container_type(node: Node) -> String:
 		return "water_dispenser"
 	if node is CupStack:
 		return "cup_stack"
-	if node is Workstation:
+	var node_script := node.get_script()
+	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
 	var n := node.name.to_lower()
 	if n.contains("pitcher"):
@@ -283,7 +301,7 @@ func _do_respawn() -> void:
 		# Remove existing containers of known types so we don't duplicate
 		for node in root.get_tree().get_nodes_in_group("container"):
 			var ctype := _get_container_type(node)
-			if ctype != "" and ctype in CONTAINER_SCENES:
+			if ctype != "" and _is_known_container_type(ctype):
 				node.queue_free()
 
 		for entry in cdata:
@@ -293,7 +311,7 @@ func _do_respawn() -> void:
 			var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
 			if ctype == "" or pos.size() < 3:
 				continue
-			var scene: PackedScene = CONTAINER_SCENES.get(ctype)
+			var scene: PackedScene = _get_container_scene(ctype)
 			if scene == null:
 				continue
 			var instance := scene.instantiate()

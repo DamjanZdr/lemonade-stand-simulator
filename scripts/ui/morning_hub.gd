@@ -17,7 +17,6 @@ const ITEM_PREVIEW_SCENES: Dictionary = {
 	"ice_bin": preload("res://scenes/ui/shop_previews/ice_bin_preview.tscn"),
 	"pitcher": preload("res://scenes/ui/shop_previews/pitcher_preview.tscn"),
 	"press": preload("res://scenes/ui/shop_previews/press_preview.tscn"),
-	"workstation": preload("res://scenes/ui/shop_previews/workstation_preview.tscn"),
 }
 
 @onready var panel: PanelContainer = $MainHBox/Panel
@@ -839,7 +838,10 @@ func _create_item_card(
 	preview_panel.add_child(preview_holder)
 
 	var preview := ITEM_PREVIEW_WIDGET.instantiate()
-	preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
+	if id == "workstation":
+		preview.preview_scene = load("res://scenes/ui/shop_previews/workstation_preview.tscn") as PackedScene
+	else:
+		preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
 	preview.custom_minimum_size = Vector2(88, 88)
 	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER

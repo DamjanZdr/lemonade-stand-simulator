@@ -36,8 +36,11 @@ const CONTAINER_SCENES: Dictionary = {
 	"pitcher": preload("res://scenes/objects/pitcher.tscn"),
 	"press": preload("res://scenes/objects/press.tscn"),
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
-	"workstation": preload("res://scenes/stand/workstation.tscn"),
 }
+
+# Workstation scene is loaded at runtime to avoid compile-time preload issues
+# while the editor re-imports its new .uid files.
+var _workstation_scene: PackedScene = null
 
 const CONTAINER_PLACEMENT_SCALE: Dictionary = {
 	"fruit_bin": Vector3.ONE * 0.06,
@@ -71,7 +74,9 @@ func _get_container_bottom_offset(node: Node, parent_y: float = 0.0) -> float:
 	"""Calculate how far the collision extends below the node's origin."""
 	if node == null:
 		return 0.0
-	var node_y := parent_y + node.position.y
+	var node_y := parent_y
+	if node is Node3D:
+		node_y += (node as Node3D).position.y
 	var lowest_y := node_y
 	for child in node.get_children():
 		if child is CollisionShape3D:
@@ -86,8 +91,16 @@ func _get_container_bottom_offset(node: Node, parent_y: float = 0.0) -> float:
 				half_height = (col.shape as SphereShape3D).radius
 			var bottom := shape_pos_y - half_height
 			lowest_y = min(lowest_y, bottom)
-		lowest_y = min(lowest_y, _get_container_bottom_offset(child, node_y))
+		if child is Node3D:
+			lowest_y = min(lowest_y, _get_container_bottom_offset(child, node_y))
 	return lowest_y
+
+
+func _get_container_scene(container_type: String) -> PackedScene:
+	"""Return the PackedScene for a container type, handling workstation specially."""
+	if container_type == "workstation":
+		return _workstation_scene
+	return CONTAINER_SCENES.get(container_type) as PackedScene
 
 
 @onready var head: Node3D = $Head
@@ -109,6 +122,10 @@ func _ready() -> void:
 	floor_constant_speed = true
 	floor_stop_on_slope = false
 	floor_block_on_wall = false
+
+	# Load the workstation scene at runtime to avoid compile-time preload issues
+	# while the editor imports the new scene/script .uid files.
+	_workstation_scene = load("res://scenes/stand/workstation.tscn") as PackedScene
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -500,8 +517,8 @@ func _place_cup_stack_from_box() -> void:
 	var stack: Node = CUP_STACK_SCENE.instantiate()
 
 	# Apply smaller placement scale
-	var scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
-	stack.scale = scale
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
+	stack.scale = placement_scale
 
 	# Set the count to 1 and max capacity
 	stack.starting_count = 1
@@ -513,7 +530,7 @@ func _place_cup_stack_from_box() -> void:
 	# Position on surface with collision offset
 	var place_point := ray.get_collision_point()
 	var bottom_offset := _get_container_bottom_offset(stack)
-	stack.global_position = place_point + Vector3(0, -bottom_offset * scale.y, 0)
+	stack.global_position = place_point + Vector3(0, -bottom_offset * placement_scale.y, 0)
 	# Face the player
 	var look_dir := global_position - place_point
 	look_dir.y = 0
@@ -540,11 +557,11 @@ func _update_single_cup_ghost() -> void:
 	if _ghost == null:
 		if held_item == HeldItem.CUP_FILLED:
 			_ghost = CUP_SCENE.instantiate()
-			var scale: Vector3 = Vector3.ONE * 0.03
-			_ghost.scale = scale
+			var placement_scale: Vector3 = Vector3.ONE * 0.03
+			_ghost.scale = placement_scale
 			_ghost.state = Cup.CupState.FILLED
 			var bottom_offset := _get_container_bottom_offset(_ghost)
-			_ghost.set_meta("bottom_offset", bottom_offset * scale.y)
+			_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 			_disable_scripts(_ghost)
 			_disable_physics(_ghost)
 			_ghost.add_to_group("ghost")
@@ -552,10 +569,10 @@ func _update_single_cup_ghost() -> void:
 			get_tree().current_scene.add_child(_ghost)
 		else:
 			_ghost = CUP_STACK_SCENE.instantiate()
-			var scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
-			_ghost.scale = scale
+			var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
+			_ghost.scale = placement_scale
 			var bottom_offset := _get_container_bottom_offset(_ghost)
-			_ghost.set_meta("bottom_offset", bottom_offset * scale.y)
+			_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 			_disable_scripts(_ghost)
 			_disable_physics(_ghost)
 			_ghost.add_to_group("ghost")
@@ -621,8 +638,8 @@ func _place_single_cup(filled: bool) -> void:
 
 	var stack: Node = CUP_STACK_SCENE.instantiate()
 
-	var scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
-	stack.scale = scale
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
+	stack.scale = placement_scale
 	stack.starting_count = 1
 	stack.max_capacity = 10
 
@@ -631,7 +648,7 @@ func _place_single_cup(filled: bool) -> void:
 
 	var hit_point := ray.get_collision_point()
 	var bottom_offset := _get_container_bottom_offset(stack)
-	stack.global_position = hit_point + Vector3(0, -bottom_offset * scale.y, 0)
+	stack.global_position = hit_point + Vector3(0, -bottom_offset * placement_scale.y, 0)
 	var look_dir := global_position - hit_point
 	look_dir.y = 0
 	if look_dir.length_squared() > 0.001:
@@ -653,8 +670,8 @@ func _place_filled_cup() -> void:
 		return
 
 	# Apply scale
-	var scale := Vector3.ONE * 0.03
-	cup.scale = scale
+	var placement_scale := Vector3.ONE * 0.03
+	cup.scale = placement_scale
 
 	# Transfer recipe and set state
 	var recipe: Dictionary = held_item_data.get("recipe", { })
@@ -678,7 +695,7 @@ func _place_filled_cup() -> void:
 	# Position
 	var hit_point := ray.get_collision_point()
 	var bottom_offset := _get_container_bottom_offset(cup)
-	cup.global_position = hit_point + Vector3(0, -bottom_offset * scale.y, 0)
+	cup.global_position = hit_point + Vector3(0, -bottom_offset * placement_scale.y, 0)
 
 	# Face the player
 	var look_dir := global_position - hit_point
@@ -729,14 +746,14 @@ func _place_equipment_from_box() -> void:
 		EventBus.interaction_hint_changed.emit("Can only place on stand or workstation!")
 		return
 	var equipment_type: String = held_item_data.get("equipment_type", "")
-	var scene: PackedScene = CONTAINER_SCENES.get(equipment_type)
+	var scene: PackedScene = _get_container_scene(equipment_type)
 	if scene == null:
 		push_warning("Unknown equipment type: " + equipment_type)
 		return
 	var instance: Node3D = scene.instantiate() as Node3D
 	# Apply placement scale
-	var scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
-	instance.scale = scale
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
+	instance.scale = placement_scale
 	# Set initial state BEFORE add_child so _ready() sees it
 	if "starting_amount" in instance:
 		instance.starting_amount = 0.0
@@ -937,7 +954,7 @@ func hold_container(
 		saved_recipe: Dictionary = { },
 		from_box: bool = false,
 ) -> void:
-	var scene: PackedScene = CONTAINER_SCENES.get(container_type)
+	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
 		push_warning("Unknown container type: " + container_type)
 		return
@@ -988,7 +1005,7 @@ func _create_container_hand_mesh(
 			return inst
 		return null
 
-	var scene: PackedScene = CONTAINER_SCENES.get(container_type)
+	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
 		return null
 
@@ -1077,18 +1094,18 @@ func _disable_hand_collision(node: Node) -> void:
 
 func _create_ghost(container_type: String) -> void:
 	_destroy_ghost()
-	var scene: PackedScene = CONTAINER_SCENES.get(container_type)
+	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
 		return
 	_ghost = scene.instantiate()
 	_ghost.set_meta("ghost_type", "container")
 	_ghost.set_meta("container_type", container_type)
 	# Apply placement scale so ghost matches final size
-	var scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
-	_ghost.scale = scale
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
+	_ghost.scale = placement_scale
 	# Calculate offset based on collision bounds (will be stored in metadata)
 	var bottom_offset := _get_container_bottom_offset(_ghost)
-	_ghost.set_meta("bottom_offset", bottom_offset * scale.y)
+	_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 	# Set starting state so the ghost's _ready() shows the correct item
 	# count and label, matching what will actually be placed.
 	var saved_amount: float = held_item_data.get("saved_amount", 0.0)
@@ -1149,10 +1166,10 @@ func _update_cup_box_ghost() -> void:
 		_destroy_ghost()
 		_ghost = CUP_STACK_SCENE.instantiate()
 		_ghost.set_meta("ghost_type", "cup_stack")
-		var scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
-		_ghost.scale = scale
+		var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
+		_ghost.scale = placement_scale
 		var bottom_offset := _get_container_bottom_offset(_ghost)
-		_ghost.set_meta("bottom_offset", bottom_offset * scale.y)
+		_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 		_disable_scripts(_ghost)
 		_disable_physics(_ghost)
 		_ghost.add_to_group("ghost")
@@ -1321,16 +1338,16 @@ func _ensure_container_ghost(container_type: String) -> void:
 		if current_type == container_type:
 			return
 	_destroy_ghost()
-	var scene: PackedScene = CONTAINER_SCENES.get(container_type)
+	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
 		return
 	_ghost = scene.instantiate()
 	_ghost.set_meta("ghost_type", "container")
 	_ghost.set_meta("container_type", container_type)
-	var scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
-	_ghost.scale = scale
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
+	_ghost.scale = placement_scale
 	var bottom_offset := _get_container_bottom_offset(_ghost)
-	_ghost.set_meta("bottom_offset", bottom_offset * scale.y)
+	_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 	_disable_physics(_ghost)
 	_ghost.add_to_group("ghost")
 	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -1375,7 +1392,7 @@ func _update_ghost() -> void:
 		var dispenser := _find_looked_at_dispenser()
 		if dispenser != null:
 			var _recipe: Dictionary = held_item_data.get("saved_recipe", { })
-			var pitcher_scene: PackedScene = CONTAINER_SCENES.get("pitcher")
+			var pitcher_scene: PackedScene = _get_container_scene("pitcher")
 			var pitcher := _ghost as Pitcher
 			if pitcher == null and pitcher_scene != null:
 				_destroy_ghost()
@@ -1466,14 +1483,14 @@ func _try_place_container() -> Node3D:
 		return null
 
 	var container_type: String = held_item_data.get("container_type", "")
-	var scene: PackedScene = CONTAINER_SCENES.get(container_type)
+	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
 		return null
 
 	var instance: Node = scene.instantiate()
 	# Apply placement scale
-	var scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
-	instance.scale = scale
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
+	instance.scale = placement_scale
 	# Restore saved contents (or empty if none)
 	var saved_amount: float = held_item_data.get("saved_amount", 0.0)
 	var saved_count: int = held_item_data.get("saved_count", 0)
@@ -1604,7 +1621,8 @@ func _get_container_type_for_node(node: Node) -> String:
 		return "fruit_bin"
 	if node is WaterDispenser:
 		return "water_dispenser"
-	if node is Workstation:
+	var node_script := node.get_script()
+	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
 	return ""
 
