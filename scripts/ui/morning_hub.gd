@@ -1212,10 +1212,17 @@ func _add_to_cart(item: Dictionary) -> void:
 		_animate_status_text("Added to cart!")
 
 
-func _remove_from_cart(id: String) -> void:
+func _change_cart_qty(id: String, delta: int) -> void:
 	var current: int = _shop_qty.get(id, 0)
-	if current > 0:
-		_shop_qty[id] = current - 1
+	var new_val := clampi(current + delta, 0, 10)
+	if new_val != current:
+		_shop_qty[id] = new_val
+		_update_cart_ui()
+
+
+func _remove_all_from_cart(id: String) -> void:
+	if _shop_qty.get(id, 0) > 0:
+		_shop_qty[id] = 0
 		_update_cart_ui()
 		_animate_status_text("Removed from cart")
 
@@ -1255,6 +1262,21 @@ func _update_cart_ui() -> void:
 				Color(0.65, 0.80, 0.45),
 			)
 			row.add_child(price_lbl)
+			var minus_btn := Button.new()
+			minus_btn.text = "-"
+			minus_btn.custom_minimum_size = Vector2(24, 24)
+			minus_btn.add_theme_font_size_override("font_size", 14)
+			_apply_button_style(
+				minus_btn,
+				Color(0.14, 0.15, 0.19),
+				Color(0.25, 0.18, 0.12),
+				Color(0.18, 0.19, 0.22),
+				Color(0.9, 0.85, 0.75),
+				4,
+			)
+			minus_btn.pressed.connect(func(): _change_cart_qty(item["id"], -1))
+			row.add_child(minus_btn)
+
 			var qty_lbl := Label.new()
 			qty_lbl.text = "x%d" % qty
 			qty_lbl.add_theme_font_size_override("font_size", 14)
@@ -1262,12 +1284,29 @@ func _update_cart_ui() -> void:
 				"font_color",
 				Color(0.70, 0.88, 1.0),
 			)
-			qty_lbl.custom_minimum_size = Vector2(30, 0)
+			qty_lbl.custom_minimum_size = Vector2(24, 0)
 			qty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			row.add_child(qty_lbl)
+
+			var plus_btn := Button.new()
+			plus_btn.text = "+"
+			plus_btn.custom_minimum_size = Vector2(24, 24)
+			plus_btn.add_theme_font_size_override("font_size", 14)
+			_apply_button_style(
+				plus_btn,
+				Color(0.14, 0.15, 0.19),
+				Color(0.12, 0.25, 0.12),
+				Color(0.18, 0.19, 0.22),
+				Color(0.9, 0.85, 0.75),
+				4,
+			)
+			plus_btn.pressed.connect(func(): _change_cart_qty(item["id"], 1))
+			row.add_child(plus_btn)
+
 			var rem_btn := Button.new()
 			rem_btn.text = "X"
-			rem_btn.custom_minimum_size = Vector2(32, 30)
+			rem_btn.custom_minimum_size = Vector2(28, 24)
+			rem_btn.add_theme_font_size_override("font_size", 12)
 			_apply_button_style(
 				rem_btn,
 				Color(0.14, 0.12, 0.10),
@@ -1276,7 +1315,7 @@ func _update_cart_ui() -> void:
 				Color(0.95, 0.70, 0.60),
 				6,
 			)
-			rem_btn.pressed.connect(func(): _remove_from_cart(item["id"]))
+			rem_btn.pressed.connect(func(): _remove_all_from_cart(item["id"]))
 			row.add_child(rem_btn)
 			_cart_list.add_child(row)
 	_cart_total_lbl.text = "Total: $%.2f" % total
