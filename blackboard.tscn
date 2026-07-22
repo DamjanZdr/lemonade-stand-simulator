@@ -102,11 +102,12 @@ mesh = SubResource("ArrayMesh_gre7q")
 
 [node name="Decal" type="Decal" parent="." unique_id=740589585]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0.006688595, 0.004922867, -0.15167749)
+visible = false
 size = Vector3(3.063774, 2, 2.171566)
 texture_albedo = ExtResource("2_bicc1")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=740589586]
-transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, 0, 0.6, 3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.4)
 
 [node name="Body" type="StaticBody3D" parent="." unique_id=740589587]
 
@@ -114,7 +115,7 @@ transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.939
 shape = SubResource("BoxShape3D_blackboard")
 
 [node name="Lemon" type="Label3D" parent="." unique_id=710531807]
-transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, -1.3829508, 0.6945422, 0.5493705)
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -1.3829508, 0.59290814, 0.032456458)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
@@ -127,7 +128,7 @@ horizontal_alignment = 0
 vertical_alignment = 0
 
 [node name="Strawberry" type="Label3D" parent="." unique_id=963498998]
-transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, -0.5506823, 0.6945422, 0.5493705)
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.5506823, 0.59290814, 0.032456458)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
@@ -140,7 +141,7 @@ horizontal_alignment = 0
 vertical_alignment = 0
 
 [node name="Blueberry" type="Label3D" parent="." unique_id=1496912397]
-transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, 0.6170492, 0.6945422, 0.5493705)
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0.6170492, 0.59290814, 0.032456458)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
@@ -153,7 +154,7 @@ horizontal_alignment = 0
 vertical_alignment = 0
 
 [node name="Peach" type="Label3D" parent="." unique_id=1134475254]
-transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, -1.3829508, 0.03675741, 0.7887846)
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -1.3829508, -0.107091874, 0.032456458)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
@@ -166,7 +167,7 @@ horizontal_alignment = 0
 vertical_alignment = 0
 
 [node name="Watermelon" type="Label3D" parent="." unique_id=1649485860]
-transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, -0.5506823, 0.03675741, 0.7887846)
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.5506823, -0.107091874, 0.032456458)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
@@ -179,7 +180,7 @@ horizontal_alignment = 0
 vertical_alignment = 0
 
 [node name="Ice" type="Label3D" parent="." unique_id=370624161]
-transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, 0.6170492, 0.03675741, 0.7887846)
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0.6170492, -0.107091874, 0.032456458)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2

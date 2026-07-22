@@ -12,7 +12,7 @@ const CURSOR_BLINK := 0.5
 var _label_nodes: Array[Label3D] = []
 var _label_data: Array[Dictionary] = []
 var _label_index := -1
-var _field_index := 0  # 0 = primary, 1 = sugar
+var _field_index := 0 # 0 = primary, 1 = sugar
 var _edit_buffer := ""
 var _cursor_visible := true
 var _cursor_timer := 0.0
@@ -112,13 +112,15 @@ func _scan_labels() -> void:
 			var lines := label.text.split("\n")
 			var prefix1 := _extract_prefix(lines[0] if lines.size() > 0 else "")
 			var prefix2 := _extract_prefix(lines[1] if lines.size() > 1 else "")
-			_label_data.append({
-				"name": label.name,
-				"prefix1": prefix1,
-				"prefix2": prefix2,
-				"value1": "",
-				"value2": "",
-			})
+			_label_data.append(
+					{
+						"name": label.name,
+						"prefix1": prefix1,
+						"prefix2": prefix2,
+						"value1": "",
+						"value2": "",
+					}
+			)
 			_add_click_area(label, _label_nodes.size() - 1)
 
 
@@ -160,6 +162,7 @@ func _build_line(prefix: String, value: String, field: int, index: int) -> Strin
 	var is_active := index == _label_index and field == _field_index
 	var display := value if value != "" else EMPTY_VALUE
 	if is_active:
+		display = _edit_buffer if _edit_buffer != "" else EMPTY_VALUE
 		var cursor := "_" if _cursor_visible else " "
 		return prefix + display + cursor
 	return prefix + display
@@ -188,8 +191,8 @@ func _confirm_and_next() -> void:
 
 func _move_horizontal(direction: int) -> void:
 	_store_buffer()
-	var row := _label_index / columns
-	var col := _label_index % columns
+	var row := int(_label_index / columns)
+	var col := int(_label_index % columns)
 	col = wrapi(col + direction, 0, columns)
 	var new_index := row * columns + col
 	_start_edit(new_index, _field_index)
@@ -197,12 +200,12 @@ func _move_horizontal(direction: int) -> void:
 
 func _move_vertical(direction: int) -> void:
 	_store_buffer()
-	var rows := _label_nodes.size() / columns
+	var rows := int(_label_nodes.size() / columns)
 	if _field_index == 0:
 		if direction < 0:
 			# From primary, up goes to sugar of label above.
-			var row := _label_index / columns
-			var col := _label_index % columns
+			var row := int(_label_index / columns)
+			var col := int(_label_index % columns)
 			row = wrapi(row - 1, 0, rows)
 			_start_edit(row * columns + col, 1)
 		else:
@@ -211,8 +214,8 @@ func _move_vertical(direction: int) -> void:
 	else:
 		if direction > 0:
 			# From sugar, down goes to primary of label below.
-			var row := _label_index / columns
-			var col := _label_index % columns
+			var row := int(_label_index / columns)
+			var col := int(_label_index % columns)
 			row = wrapi(row + 1, 0, rows)
 			_start_edit(row * columns + col, 0)
 		else:
@@ -227,8 +230,6 @@ func _store_buffer() -> void:
 
 
 func _append_char(c: String) -> void:
-	if _edit_buffer.length() >= 1:
-		return
 	_edit_buffer = c
 	_cursor_visible = true
 	_cursor_timer = 0.0
