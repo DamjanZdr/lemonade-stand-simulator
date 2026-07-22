@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://bm5kqiqiqh50m" path="res://scripts/objects/blackboard.gd" id="1_blackboard"]
 [ext_resource type="Texture2D" uid="uid://cxe3outnm8hmw" path="res://blender/blackboard_FrameTexture.png" id="1_k8u6i"]
-[ext_resource type="Texture2D" uid="uid://ctvwfutjtmsit" path="res://blender/blackboard text.png" id="2_bicc1"]
 [ext_resource type="Texture2D" uid="uid://eca6stl7o2ia" path="res://blender/blackboard_blackboard.png" id="2_xtl8c"]
+[ext_resource type="Texture2D" uid="uid://dik6vlm7o0m05" path="res://board square.png" id="4_ntenn"]
 [ext_resource type="FontFile" uid="uid://bhpvfso21t8k4" path="res://AmaticSC-Bold.ttf" id="5_ntenn"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ntenn"]
@@ -86,12 +86,22 @@ blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_olt3x")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_blackboard"]
-size = Vector3(3.2, 2.2, 0.2)
+size = Vector3(2.6579711, 3.2024047, 0.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_er0on"]
+transparency = 1
+shading_mode = 0
+albedo_texture = ExtResource("4_ntenn")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_b6sl7"]
+material = SubResource("StandardMaterial3D_er0on")
+size = Vector2(1.17, 0.62)
 
 [node name="Blackboard" type="Node3D" unique_id=2117954484]
 script = ExtResource("1_blackboard")
 
 [node name="blackboard" type="Node3D" parent="." unique_id=1504418037]
+transform = Transform3D(-4.371139e-08, -1.2, 0, 1, -5.2453668e-08, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Cube" type="MeshInstance3D" parent="blackboard" unique_id=669228014]
 mesh = SubResource("ArrayMesh_er0on")
@@ -100,94 +110,190 @@ mesh = SubResource("ArrayMesh_er0on")
 transform = Transform3D(1.526, 0, 0, 0, 1.0333511, 0, 0, 0, 0.060000002, 0, 0, -0.032559205)
 mesh = SubResource("ArrayMesh_gre7q")
 
-[node name="Decal" type="Decal" parent="." unique_id=740589585]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0.006688595, 0.004922867, -0.15167749)
-visible = false
-size = Vector3(3.063774, 2, 2.171566)
-texture_albedo = ExtResource("2_bicc1")
-
 [node name="Camera3D" type="Camera3D" parent="." unique_id=740589586]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.972998)
 
 [node name="Body" type="StaticBody3D" parent="." unique_id=740589587]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Body" unique_id=740589588]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0056214333, -0.00049448013, 0)
 shape = SubResource("BoxShape3D_blackboard")
 
-[node name="Lemon" type="Label3D" parent="." unique_id=710531807]
-transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -1.3829508, 0.59290814, 0.032456458)
+[node name="Recipes" type="Label3D" parent="." unique_id=737303058]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.002927959, 1.4343122, 0.032456458)
+pixel_size = 0.002
+double_sided = false
+alpha_cut = 2
+text = "Recipes"
+font = ExtResource("5_ntenn")
+font_size = 170
+outline_size = 0
+vertical_alignment = 0
+
+[node name="LemonTitle" type="Label3D" parent="." unique_id=2018246616]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.5704755, 1.0285653, 0.032456458)
+pixel_size = 0.001
+double_sided = false
+alpha_cut = 2
+text = "Lemon"
+font = ExtResource("5_ntenn")
+font_size = 170
+outline_size = 0
+vertical_alignment = 0
+
+[node name="Lemon" type="Label3D" parent="LemonTitle" unique_id=710531807]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3220579, -0.19467068, 0)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
-text = "Lemon .. ?
-Sugar ....?"
+text = "Fruit  ->  ?
+Sugar ->  ?"
 font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
 
-[node name="Strawberry" type="Label3D" parent="." unique_id=963498998]
-transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.5506823, 0.59290814, 0.032456458)
+[node name="Decal4" type="MeshInstance3D" parent="LemonTitle/Lemon" unique_id=2106742231]
+transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.31616414, -0.2633486, -0.002615381)
+mesh = SubResource("PlaneMesh_b6sl7")
+
+[node name="StrawberryTitle" type="Label3D" parent="." unique_id=1491525097]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0.58969647, 1.0261725, 0.032456458)
+pixel_size = 0.001
+double_sided = false
+alpha_cut = 2
+text = "Strawberry"
+font = ExtResource("5_ntenn")
+font_size = 170
+outline_size = 0
+vertical_alignment = 0
+
+[node name="Strawberry" type="Label3D" parent="StrawberryTitle" unique_id=963498998]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.34300414, -0.19227779, 0)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
-text = "Strawberry .. ?
-Sugar ....... ?"
+text = "Fruit  ->  ?
+Sugar ->  ?"
 font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
 
-[node name="Blueberry" type="Label3D" parent="." unique_id=1496912397]
-transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0.6170492, 0.59290814, 0.032456458)
+[node name="Decal2" type="MeshInstance3D" parent="StrawberryTitle/Strawberry" unique_id=1724894750]
+transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.3413127, -0.26334858, -0.002615381)
+mesh = SubResource("PlaneMesh_b6sl7")
+
+[node name="BlueberryTitle" type="Label3D" parent="." unique_id=1049764702]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.5704755, 0.20043701, 0.032456458)
+pixel_size = 0.001
+double_sided = false
+alpha_cut = 2
+text = "Blueberry"
+font = ExtResource("5_ntenn")
+font_size = 170
+outline_size = 0
+vertical_alignment = 0
+
+[node name="Blueberry" type="Label3D" parent="BlueberryTitle" unique_id=1496912397]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3333016, -0.19594482, 0)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
-text = "Blueberry .. ?
-Sugar ...... ?"
+text = "Fruit  ->  ?
+Sugar ->  ?"
 font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
 
-[node name="Peach" type="Label3D" parent="." unique_id=1134475254]
-transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -1.3829508, -0.107091874, 0.032456458)
+[node name="Decal3" type="MeshInstance3D" parent="BlueberryTitle/Blueberry" unique_id=1360979945]
+transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.32874686, -0.2633486, -0.002615381)
+mesh = SubResource("PlaneMesh_b6sl7")
+
+[node name="PeachTitle" type="Label3D" parent="." unique_id=133488808]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0.58969647, 0.20562363, 0.032456458)
+pixel_size = 0.001
+double_sided = false
+alpha_cut = 2
+text = "Peach"
+font = ExtResource("5_ntenn")
+font_size = 170
+outline_size = 0
+vertical_alignment = 0
+
+[node name="Peach" type="Label3D" parent="PeachTitle" unique_id=1134475254]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33945316, -0.20692348, 0)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
-text = "Peach .. ?
-Sugar ..?"
+text = "Fruit  ->  ?
+Sugar ->  ?"
 font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
 
-[node name="Watermelon" type="Label3D" parent="." unique_id=1649485860]
-transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.5506823, -0.107091874, 0.032456458)
+[node name="Decal6" type="MeshInstance3D" parent="PeachTitle/Peach" unique_id=967695631]
+transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.3328154, -0.25882426, -0.002615381)
+mesh = SubResource("PlaneMesh_b6sl7")
+
+[node name="WatermelonTitle" type="Label3D" parent="." unique_id=2000349811]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.5704755, -0.63441396, 0.032456458)
+pixel_size = 0.001
+double_sided = false
+alpha_cut = 2
+text = "Watermelon"
+font = ExtResource("5_ntenn")
+font_size = 170
+outline_size = 0
+vertical_alignment = 0
+
+[node name="Watermelon" type="Label3D" parent="WatermelonTitle" unique_id=1649485860]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3677724, -0.20365375, 0)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
-text = "Watermelon .. ?
-Sugar ......... ?"
+text = "Fruit  ->  ?
+Sugar ->  ?"
 font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
 
-[node name="Ice" type="Label3D" parent="." unique_id=370624161]
-transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0.6170492, -0.107091874, 0.032456458)
+[node name="Decal5" type="MeshInstance3D" parent="WatermelonTitle/Watermelon" unique_id=385564235]
+transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.35337394, -0.25882435, -0.002615381)
+mesh = SubResource("PlaneMesh_b6sl7")
+
+[node name="IceTitle" type="Label3D" parent="." unique_id=1177472243]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0.58969647, -0.64156526, 0.032456458)
+pixel_size = 0.001
+double_sided = false
+alpha_cut = 2
+text = "Ice"
+font = ExtResource("5_ntenn")
+font_size = 170
+outline_size = 0
+vertical_alignment = 0
+
+[node name="Ice" type="Label3D" parent="IceTitle" unique_id=370624161]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.48874533, -0.19970375, 0)
 pixel_size = 0.0012
 double_sided = false
 alpha_cut = 2
-text = "Ice ..... ?
-Sugar .. ?"
+text = "Celsius       ->  ?
+Fahrenheit ->  ?"
 font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
+
+[node name="Decal7" type="MeshInstance3D" parent="IceTitle/Ice" unique_id=1498410913]
+transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.4717725, -0.2588243, -0.002615381)
+mesh = SubResource("PlaneMesh_b6sl7")

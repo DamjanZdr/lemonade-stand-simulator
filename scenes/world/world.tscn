@@ -290,7 +290,7 @@ size = Vector3(166, 111.47754, 343)
 material = SubResource("FogMaterial_g4v7s")
 
 [node name="Blackboard" parent="." unique_id=2117954484 instance=ExtResource("45_kx0xk")]
-transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.5, 1.8940175, 16.6)
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3, 1.8940175, 16.6)
 
 [node name="PriceBoard" parent="." unique_id=2059859859 instance=ExtResource("46_5fxch")]
 transform = Transform3D(-0.18977769, 0, -0.1627404, 0, 0.25, 0, 0.1627404, 0, -0.18977769, 0.13646549, 0.5373678, -1.6013975)

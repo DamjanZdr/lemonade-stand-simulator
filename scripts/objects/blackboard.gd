@@ -4,7 +4,7 @@ extends Interactable
 const EMPTY_VALUE := "?"
 const CURSOR_BLINK := 0.5
 
-@export var columns: int = 3
+@export var columns: int = 2
 @export var click_collider_size: Vector3 = Vector3(0.9, 0.45, 0.05)
 
 @onready var board_camera: Camera3D = $Camera3D
@@ -105,23 +105,24 @@ func _process(delta: float) -> void:
 func _scan_labels() -> void:
 	_label_nodes.clear()
 	_label_data.clear()
-	for child in get_children():
-		if child is Label3D:
-			var label := child as Label3D
-			_label_nodes.append(label)
-			var lines := label.text.split("\n")
-			var prefix1 := _extract_prefix(lines[0] if lines.size() > 0 else "")
-			var prefix2 := _extract_prefix(lines[1] if lines.size() > 1 else "")
-			_label_data.append(
-					{
-						"name": label.name,
-						"prefix1": prefix1,
-						"prefix2": prefix2,
-						"value1": "",
-						"value2": "",
-					}
-			)
-			_add_click_area(label, _label_nodes.size() - 1)
+	for child in find_children("*", "Label3D"):
+		var label := child as Label3D
+		if label.text.find(EMPTY_VALUE) < 0:
+			continue
+		_label_nodes.append(label)
+		var lines := label.text.split("\n")
+		var prefix1 := _extract_prefix(lines[0] if lines.size() > 0 else "")
+		var prefix2 := _extract_prefix(lines[1] if lines.size() > 1 else "")
+		_label_data.append(
+				{
+					"name": label.name,
+					"prefix1": prefix1,
+					"prefix2": prefix2,
+					"value1": "",
+					"value2": "",
+				}
+		)
+		_add_click_area(label, _label_nodes.size() - 1)
 
 
 func _extract_prefix(line: String) -> String:
@@ -135,8 +136,8 @@ func _add_click_area(label: Label3D, index: int) -> void:
 	var area := Area3D.new()
 	area.name = label.name + "Area"
 	area.input_ray_pickable = true
-	area.position = label.position
 	add_child(area)
+	area.global_position = label.global_position
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	box.size = click_collider_size
