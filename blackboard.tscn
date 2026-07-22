@@ -1,5 +1,6 @@
 [gd_scene format=4 uid="uid://cdx1e3dagxpjh"]
 
+[ext_resource type="Script" uid="uid://bm5kqiqiqh50m" path="res://scripts/objects/blackboard.gd" id="1_blackboard"]
 [ext_resource type="Texture2D" uid="uid://cxe3outnm8hmw" path="res://blender/blackboard_FrameTexture.png" id="1_k8u6i"]
 [ext_resource type="Texture2D" uid="uid://ctvwfutjtmsit" path="res://blender/blackboard text.png" id="2_bicc1"]
 [ext_resource type="Texture2D" uid="uid://eca6stl7o2ia" path="res://blender/blackboard_blackboard.png" id="2_xtl8c"]
@@ -83,7 +84,12 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_olt3x")
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_blackboard"]
+size = Vector3(3.2, 2.2, 0.2)
+
+
 [node name="Blackboard" type="Node3D" unique_id=2117954484]
+script = ExtResource("1_blackboard")
 
 [node name="blackboard" type="Node3D" parent="." unique_id=1504418037]
 
@@ -98,3 +104,10 @@ mesh = SubResource("ArrayMesh_gre7q")
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0.006688595, 0.004922867, -0.15167749)
 size = Vector3(3.063774, 2, 2.171566)
 texture_albedo = ExtResource("2_bicc1")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=740589586]
+transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, 0, 0.6, 3.2)
+[node name="Body" type="StaticBody3D" parent="." unique_id=740589587]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Body" unique_id=740589588]
+shape = SubResource("BoxShape3D_blackboard")
