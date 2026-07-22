@@ -1,62 +1,45 @@
 extends Interactable
-## Interactive recipe blackboard. Each fruit has a visual fruit and sugar amount.
+## Interactive recipe blackboard. Uses scene-placed Label3D nodes.
 
-const FRUIT_LABELS: Dictionary = {
-	"lemon": "Lemon",
-	"strawberry": "Strawberry",
-	"blueberry": "Blueberry",
-	"peach": "Peach",
-	"watermelon": "Watermelon",
-}
-
-const FRUIT_AMOUNT_LABEL := "fruit .... "
-const SUGAR_AMOUNT_LABEL := "sugar .... "
 const EMPTY_VALUE := "?"
 const CURSOR_BLINK := 0.5
 
-@export var font: FontFile = preload("res://AmaticSC-Bold.ttf")
-@export var font_size: int = 110
-@export var label_pixel_size: float = 0.003
-@export var label_width: float = 0.9
-@export var label_height: float = 1.1
-@export var spacing_x: float = 1.05
-@export var start_offset: Vector3 = Vector3(-2.1, 0.55, 0.08)
+@export var columns: int = 3
+@export var click_collider_size: Vector3 = Vector3(0.9, 0.45, 0.05)
 
 @onready var board_camera: Camera3D = $Camera3D
 
-var _labels: Dictionary = { }
-var _colliders: Dictionary = { }
-var _visual_values: Dictionary = { }
-
-var _editing_fruit := ""
-var _editing_field := "" # "fruit" or "sugar"
+var _label_nodes: Array[Label3D] = []
+var _label_data: Array[Dictionary] = []
+var _label_index := -1
+var _field_index := 0  # 0 = primary, 1 = sugar
 var _edit_buffer := ""
 var _cursor_visible := true
 var _cursor_timer := 0.0
 
 
 func _ready() -> void:
-	_setup_labels()
+	_scan_labels()
 	_refresh_all_labels()
 
 
 func get_hint(_player: Node) -> String:
-	if _editing_fruit != "":
+	if _label_index >= 0:
 		return "Enter: next / Esc: cancel"
 	return "LMB: Edit recipes"
 
 
 func interact(_player: Node) -> void:
-	if _editing_fruit != "":
+	if _label_index >= 0:
 		return
 	var p := _player as Player
 	if p != null and board_camera != null:
 		p.enter_priceboard_focus(board_camera.global_transform)
-	_start_edit(GameState.FRUIT_TYPES[0], "fruit")
+	_start_edit(0, 0)
 
 
 func _input(event: InputEvent) -> void:
-	if _editing_fruit == "":
+	if _label_index < 0:
 		return
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
@@ -68,12 +51,12 @@ func _input(event: InputEvent) -> void:
 		KEY_ENTER, KEY_KP_ENTER:
 			_confirm_and_next()
 		KEY_ESCAPE:
-			_cancel_edit()
+			_finish_edit()
 		KEY_BACKSPACE:
 			_edit_buffer = ""
 			_cursor_visible = true
 			_cursor_timer = 0.0
-			_refresh_label(_editing_fruit)
+			_refresh_label(_label_index)
 		KEY_0, KEY_KP_0:
 			_append_char("0")
 		KEY_1, KEY_KP_1:
@@ -110,147 +93,137 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	if _editing_fruit == "":
+	if _label_index < 0:
 		return
 	_cursor_timer += delta
 	if _cursor_timer >= CURSOR_BLINK:
 		_cursor_timer -= CURSOR_BLINK
 		_cursor_visible = not _cursor_visible
-		_refresh_label(_editing_fruit)
+		_refresh_label(_label_index)
 
 
-func _setup_labels() -> void:
-	for i in range(GameState.FRUIT_TYPES.size()):
-		var ft: String = GameState.FRUIT_TYPES[i]
-		var pos := start_offset + Vector3(i * spacing_x, 0.0, 0.0)
-		var label := Label3D.new()
-		label.name = ft.capitalize() + "Label"
-		label.text = _format_label_text(ft, EMPTY_VALUE, EMPTY_VALUE)
-		label.font = font
-		label.font_size = font_size
-		label.pixel_size = label_pixel_size
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-		label.alpha_cut = Label3D.ALPHA_CUT_HASH
-		label.double_sided = false
-		add_child(label)
-		label.transform.origin = pos
-		_labels[ft] = label
-
-		_visual_values[ft] = { "fruit": "", "sugar": "" }
-
-		var area := Area3D.new()
-		area.name = ft.capitalize() + "Area"
-		area.input_ray_pickable = true
-		var center_offset := Vector3(label_width * 0.5, -label_height * 0.5, 0.0)
-		area.position = pos + center_offset
-		add_child(area)
-		var shape := CollisionShape3D.new()
-		shape.name = "CollisionShape3D"
-		var box := BoxShape3D.new()
-		box.size = Vector3(label_width, label_height, 0.05)
-		shape.shape = box
-		area.add_child(shape)
-		area.input_event.connect(_on_label_clicked.bind(ft))
-		_colliders[ft] = area
+func _scan_labels() -> void:
+	_label_nodes.clear()
+	_label_data.clear()
+	for child in get_children():
+		if child is Label3D:
+			var label := child as Label3D
+			_label_nodes.append(label)
+			var lines := label.text.split("\n")
+			var prefix1 := _extract_prefix(lines[0] if lines.size() > 0 else "")
+			var prefix2 := _extract_prefix(lines[1] if lines.size() > 1 else "")
+			_label_data.append({
+				"name": label.name,
+				"prefix1": prefix1,
+				"prefix2": prefix2,
+				"value1": "",
+				"value2": "",
+			})
+			_add_click_area(label, _label_nodes.size() - 1)
 
 
-func _format_label_text(fruit: String, fruit_value: String, sugar_value: String) -> String:
-	var name_label: String = FRUIT_LABELS.get(fruit, fruit.capitalize())
-	return "%s\n%s%s\n%s%s" % [
-		name_label,
-		FRUIT_AMOUNT_LABEL,
-		fruit_value,
-		SUGAR_AMOUNT_LABEL,
-		sugar_value,
-	]
+func _extract_prefix(line: String) -> String:
+	var idx := line.find(EMPTY_VALUE)
+	if idx < 0:
+		return line
+	return line.substr(0, idx)
+
+
+func _add_click_area(label: Label3D, index: int) -> void:
+	var area := Area3D.new()
+	area.name = label.name + "Area"
+	area.input_ray_pickable = true
+	area.position = label.position
+	add_child(area)
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = click_collider_size
+	shape.shape = box
+	area.add_child(shape)
+	area.input_event.connect(_on_label_clicked.bind(index))
 
 
 func _refresh_all_labels() -> void:
-	for ft in GameState.FRUIT_TYPES:
-		_refresh_label(ft)
+	for i in range(_label_nodes.size()):
+		_refresh_label(i)
 
 
-func _refresh_label(fruit: String) -> String:
-	var label: Label3D = _labels[fruit]
-	var values: Dictionary = _visual_values[fruit]
-	var fruit_value: String = values.get("fruit", "")
-	var sugar_value: String = values.get("sugar", "")
-	var fruit_display := fruit_value if fruit_value != "" else EMPTY_VALUE
-	var sugar_display := sugar_value if sugar_value != "" else EMPTY_VALUE
-
-	if fruit == _editing_fruit:
-		if _editing_field == "fruit":
-			fruit_display = _get_active_display(_edit_buffer)
-		else:
-			sugar_display = _get_active_display(_edit_buffer)
-
-	label.text = _format_label_text(fruit, fruit_display, sugar_display)
-	return label.text
+func _refresh_label(index: int) -> void:
+	var label: Label3D = _label_nodes[index]
+	var data: Dictionary = _label_data[index]
+	var line1 := _build_line(data["prefix1"], data["value1"], 0, index)
+	var line2 := _build_line(data["prefix2"], data["value2"], 1, index)
+	label.text = line1 + "\n" + line2
 
 
-func _get_active_display(buffer: String) -> String:
-	var value := buffer if buffer != "" else EMPTY_VALUE
-	var cursor := "_" if _cursor_visible else " "
-	return value + cursor
+func _build_line(prefix: String, value: String, field: int, index: int) -> String:
+	var is_active := index == _label_index and field == _field_index
+	var display := value if value != "" else EMPTY_VALUE
+	if is_active:
+		var cursor := "_" if _cursor_visible else " "
+		return prefix + display + cursor
+	return prefix + display
 
 
-func _start_edit(fruit: String, field: String) -> void:
-	_editing_fruit = fruit
-	_editing_field = field
-	_edit_buffer = _visual_values[fruit].get(field, "")
+func _start_edit(label_idx: int, field_idx: int) -> void:
+	_label_index = label_idx
+	_field_index = field_idx
+	_edit_buffer = _label_data[label_idx]["value%d" % (field_idx + 1)]
 	_cursor_visible = true
 	_cursor_timer = 0.0
 	_refresh_all_labels()
 
 
 func _confirm_and_next() -> void:
-	if _editing_fruit == "":
-		return
-	_visual_values[_editing_fruit][_editing_field] = _edit_buffer
-
-	var idx := GameState.FRUIT_TYPES.find(_editing_fruit)
-	if _editing_field == "fruit":
-		_start_edit(_editing_fruit, "sugar")
+	_store_buffer()
+	if _field_index == 0:
+		_start_edit(_label_index, 1)
 	else:
-		idx += 1
-		if idx >= GameState.FRUIT_TYPES.size():
+		var next_idx := _label_index + 1
+		if next_idx >= _label_nodes.size():
 			_finish_edit()
 		else:
-			_start_edit(GameState.FRUIT_TYPES[idx], "fruit")
+			_start_edit(next_idx, 0)
 
 
 func _move_horizontal(direction: int) -> void:
-	if _editing_fruit == "":
-		return
-	var idx := GameState.FRUIT_TYPES.find(_editing_fruit)
-	idx = wrapi(idx + direction, 0, GameState.FRUIT_TYPES.size())
-	_visual_values[_editing_fruit][_editing_field] = _edit_buffer
-	_start_edit(GameState.FRUIT_TYPES[idx], _editing_field)
+	_store_buffer()
+	var row := _label_index / columns
+	var col := _label_index % columns
+	col = wrapi(col + direction, 0, columns)
+	var new_index := row * columns + col
+	_start_edit(new_index, _field_index)
 
 
 func _move_vertical(direction: int) -> void:
-	if _editing_fruit == "":
-		return
-	_visual_values[_editing_fruit][_editing_field] = _edit_buffer
-	if _editing_field == "fruit":
+	_store_buffer()
+	var rows := _label_nodes.size() / columns
+	if _field_index == 0:
 		if direction < 0:
-			# From fruit, up goes to the sugar of the previous fruit.
-			var prev_idx := GameState.FRUIT_TYPES.find(_editing_fruit) - 1
-			var idx := wrapi(prev_idx, 0, GameState.FRUIT_TYPES.size())
-			_start_edit(GameState.FRUIT_TYPES[idx], "sugar")
+			# From primary, up goes to sugar of label above.
+			var row := _label_index / columns
+			var col := _label_index % columns
+			row = wrapi(row - 1, 0, rows)
+			_start_edit(row * columns + col, 1)
 		else:
-			# From fruit, down goes to the sugar of the same fruit.
-			_start_edit(_editing_fruit, "sugar")
+			# From primary, down goes to sugar of same label.
+			_start_edit(_label_index, 1)
 	else:
 		if direction > 0:
-			# From sugar, down goes to the fruit of the next fruit.
-			var next_idx := GameState.FRUIT_TYPES.find(_editing_fruit) + 1
-			var idx := wrapi(next_idx, 0, GameState.FRUIT_TYPES.size())
-			_start_edit(GameState.FRUIT_TYPES[idx], "fruit")
+			# From sugar, down goes to primary of label below.
+			var row := _label_index / columns
+			var col := _label_index % columns
+			row = wrapi(row + 1, 0, rows)
+			_start_edit(row * columns + col, 0)
 		else:
-			# From sugar, up goes to the fruit of the same fruit.
-			_start_edit(_editing_fruit, "fruit")
+			# From sugar, up goes to primary of same label.
+			_start_edit(_label_index, 0)
+
+
+func _store_buffer() -> void:
+	if _label_index < 0:
+		return
+	_label_data[_label_index]["value%d" % (_field_index + 1)] = _edit_buffer
 
 
 func _append_char(c: String) -> void:
@@ -259,7 +232,7 @@ func _append_char(c: String) -> void:
 	_edit_buffer = c
 	_cursor_visible = true
 	_cursor_timer = 0.0
-	_refresh_label(_editing_fruit)
+	_refresh_label(_label_index)
 
 
 func _on_label_clicked(
@@ -268,22 +241,19 @@ func _on_label_clicked(
 		_pos: Vector3,
 		_normal: Vector3,
 		_shape: int,
-		fruit: String,
+		index: int,
 ) -> void:
-	if _editing_fruit == "":
+	if _label_index < 0:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_visual_values[_editing_fruit][_editing_field] = _edit_buffer
-		_start_edit(fruit, "fruit")
-
-
-func _cancel_edit() -> void:
-	_finish_edit()
+		_store_buffer()
+		_start_edit(index, 0)
 
 
 func _finish_edit() -> void:
-	_editing_fruit = ""
-	_editing_field = ""
+	_store_buffer()
+	_label_index = -1
+	_field_index = 0
 	_edit_buffer = ""
 	_cursor_visible = true
 	_cursor_timer = 0.0
