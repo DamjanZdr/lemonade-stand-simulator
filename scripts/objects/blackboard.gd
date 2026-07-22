@@ -160,11 +160,10 @@ func _refresh_label(index: int) -> void:
 
 func _build_line(prefix: String, value: String, field: int, index: int) -> String:
 	var is_active := index == _label_index and field == _field_index
-	var display := value if value != "" else EMPTY_VALUE
 	if is_active:
-		display = _edit_buffer if _edit_buffer != "" else EMPTY_VALUE
 		var cursor := "_" if _cursor_visible else " "
-		return prefix + display + cursor
+		return prefix + _edit_buffer + cursor
+	var display := value if value != "" else EMPTY_VALUE
 	return prefix + display
 
 
