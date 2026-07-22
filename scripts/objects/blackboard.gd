@@ -77,13 +77,13 @@ func _input(event: InputEvent) -> void:
 			_append_char("8")
 		KEY_9, KEY_KP_9:
 			_append_char("9")
-		KEY_LEFT:
+		KEY_LEFT, KEY_A:
 			_move_horizontal(-1)
-		KEY_RIGHT:
+		KEY_RIGHT, KEY_D:
 			_move_horizontal(1)
-		KEY_UP:
+		KEY_UP, KEY_W:
 			_move_vertical(-1)
-		KEY_DOWN:
+		KEY_DOWN, KEY_S:
 			_move_vertical(1)
 		_:
 			handled = false
