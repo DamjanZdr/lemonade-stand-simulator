@@ -84,6 +84,10 @@ func _input(event: InputEvent) -> void:
 		_append_char("9")
 	elif key == KEY_PERIOD or key == KEY_KP_PERIOD:
 		_append_char(".")
+	elif key == KEY_UP or key == KEY_W:
+		_move_vertical(-1)
+	elif key == KEY_DOWN or key == KEY_S:
+		_move_vertical(1)
 	else:
 		handled = false
 
@@ -133,13 +137,16 @@ func _start_edit() -> void:
 	_refresh_label()
 
 
-func _confirm_and_next() -> void:
+func _commit_current_price() -> void:
 	if _editing_index < 0 or _editing_index >= GameState.FRUIT_TYPES.size():
 		return
-	var fruit: String = GameState.FRUIT_TYPES[_editing_index]
-	var raw: String = _edit_buffer
+	var raw := _edit_buffer
 	if raw != "" and raw.is_valid_float():
-		GameState.set_price(fruit, float(raw))
+		GameState.set_price(GameState.FRUIT_TYPES[_editing_index], float(raw))
+
+
+func _confirm_and_next() -> void:
+	_commit_current_price()
 	_editing_index += 1
 	if _editing_index >= GameState.FRUIT_TYPES.size():
 		_editing_index = -1
@@ -148,6 +155,17 @@ func _confirm_and_next() -> void:
 			p.exit_priceboard_focus()
 	else:
 		_edit_buffer = ""
+	_cursor_visible = true
+	_cursor_timer = 0.0
+	_refresh_label()
+
+
+func _move_vertical(direction: int) -> void:
+	if _editing_index < 0 or _editing_index >= GameState.FRUIT_TYPES.size():
+		return
+	_commit_current_price()
+	_editing_index = wrapi(_editing_index + direction, 0, GameState.FRUIT_TYPES.size())
+	_edit_buffer = ""
 	_cursor_visible = true
 	_cursor_timer = 0.0
 	_refresh_label()
