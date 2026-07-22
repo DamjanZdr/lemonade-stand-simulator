@@ -15,11 +15,10 @@ var _preview_angle: float = 0.0
 
 
 func _ready() -> void:
-	# Render at 2x the UI display size so the preview is crisp without
-	# excessive downscaling that blurs small details (e.g. strawberry seeds).
-	var w := maxi(160, int(custom_minimum_size.x * 2.0))
-	var h := maxi(100, int(custom_minimum_size.y * 2.0))
-	_viewport.size = Vector2i(w, h)
+	# SubViewportContainer with stretch enabled controls the viewport size,
+	# so just keep the default size and let the container scale it.
+	# Nested SubViewports inside another SubViewport don't get reliable
+	# UPDATE_WHEN_VISIBLE notifications, so render always to avoid white placeholder.
 	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_viewport.own_world_3d = true
 	_viewport.transparent_bg = true
@@ -46,6 +45,16 @@ func _setup_environment() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_sky_contribution = 1.0
 	env.ambient_light_energy = 0.3
+	# Without a filmic tonemap, Environment.TONEMAP_MODE_LINEAR (the default)
+	# hard-clips any channel over 1.0 straight to white. Combined with sky
+	# ambient + direct light, bright/saturated albedos (lemon yellow, peach
+	# skin, etc.) were blowing out to solid white while only very dark
+	# colors stayed visible. tonemap_white must also be raised above its
+	# default of 1.0 (matches world.tscn's Environment_main) - at 1.0 the
+	# Filmic curve has no headroom and still clips almost like Linear.
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_white = 6.0
+	env.tonemap_exposure = 1.1
 
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -73,6 +82,11 @@ func _load_preview_scene(scene: PackedScene) -> void:
 	_camera = _find_camera(_preview_instance)
 	if _camera != null:
 		_camera.current = true
+		# Layer 2 is used by the screen-space outline system for white fill
+		# nodes (see Interactable._apply_outline). Without excluding it here
+		# (same fix as Computer.ScreenCamera), whatever is currently
+		# highlighted in the main game bleeds through as solid white.
+		_camera.cull_mask &= ~2
 
 	_configure_lights(_preview_instance)
 
@@ -90,11 +104,11 @@ func _find_camera(node: Node) -> Camera3D:
 
 
 func _configure_lights(node: Node) -> void:
-	## Enable shadows on any DirectionalLight3D in the preview scene so small
-	## surface details (like strawberry seeds) get visible contrast.
-	if node is DirectionalLight3D:
-		var light := node as DirectionalLight3D
-		light.shadow_enabled = true
+	## NOTE: shadow_enabled was previously forced on here to add contrast for
+	## small surface details, but shadow mapping on a DirectionalLight3D in a
+	## tiny isolated preview World3D was causing the whole model to render
+	## solid white (misbehaving shadow distance/bias at this tiny scale).
+	## Leave shadows off for these preview scenes.
 	for child in node.get_children():
 		_configure_lights(child)
 

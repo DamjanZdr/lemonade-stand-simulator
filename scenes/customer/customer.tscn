@@ -1,8 +1,8 @@
-[gd_scene load_steps=10 format=3 uid="uid://customer001ls"]
+[gd_scene format=3 uid="uid://customer001ls"]
 
-[ext_resource type="Script" path="res://scripts/customer/customer.gd" id="1_customer"]
-[ext_resource type="Script" path="res://scripts/customer/customer_interactable.gd" id="2_cinteract"]
-[ext_resource type="Script" path="res://scripts/customer/emoji_display.gd" id="3_emoji"]
+[ext_resource type="Script" uid="uid://bgvss2ie4t1qh" path="res://scripts/customer/customer.gd" id="1_customer"]
+[ext_resource type="Script" uid="uid://cyettguyulnbw" path="res://scripts/customer/customer_interactable.gd" id="2_cinteract"]
+[ext_resource type="Script" uid="uid://b23pjwbeke5f1" path="res://scripts/customer/emoji_display.gd" id="3_emoji"]
 [ext_resource type="PackedScene" uid="uid://dgiq68gtr7ei4" path="res://npc.tscn" id="4_npc"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_cust"]
@@ -10,84 +10,45 @@ radius = 0.3
 height = 1.6
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_interact"]
-radius = 0.5
 height = 1.6
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_body"]
-top_radius = 0.25
-bottom_radius = 0.25
-height = 1.5
-
-[sub_resource type="BoxMesh" id="BoxMesh_bar"]
-size = Vector3(0.4, 0.04, 0.04)
-
-[sub_resource type="BoxMesh" id="BoxMesh_barbg"]
-size = Vector3(0.4, 0.04, 0.04)
-
-[sub_resource type="StandardMaterial3D" id="Material_barbg"]
-albedo_color = Color(0.2, 0.2, 0.2, 1)
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_order"]
-size = Vector2(0.5, 0.5)
-
-[sub_resource type="StandardMaterial3D" id="Material_order"]
-resource_local_to_scene = true
-albedo_color = Color(1, 1, 1, 0.85)
-billboard_mode = 1
-
-[node name="Customer" type="CharacterBody3D"]
-collision_layer = 2
-collision_mask = 1
+[node name="Customer" type="CharacterBody3D" unique_id=1871087101]
+collision_layer = 16
+collision_mask = 3
 script = ExtResource("1_customer")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1505730177]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.667, 0)
 shape = SubResource("CapsuleShape3D_cust")
-position = Vector3(0, 0.667, 0)
 
-[node name="NPCBody" parent="." instance=ExtResource("4_npc")]
+[node name="NPCBody" parent="." unique_id=1127089760 instance=ExtResource("4_npc")]
 transform = Transform3D(-0.09, 0, 0, 0, 0.09, 0, 0, 0, -0.09, 0, 0.87, 0)
 
-[node name="PatienceBarBG" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_barbg")
-material_override = SubResource("Material_barbg")
-position = Vector3(0, 1.75, 0)
-
-[node name="PatienceBar" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_bar")
-position = Vector3(0, 1.75, 0)
-
-[node name="CustomerInteractable" type="Node3D" parent="."]
+[node name="CustomerInteractable" type="Node3D" parent="." unique_id=459994364]
 script = ExtResource("2_cinteract")
 
-[node name="Physics" type="StaticBody3D" parent="CustomerInteractable"]
+[node name="Physics" type="StaticBody3D" parent="CustomerInteractable" unique_id=909653663]
 collision_layer = 8
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CustomerInteractable/Physics"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CustomerInteractable/Physics" unique_id=235561456]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
 shape = SubResource("CapsuleShape3D_interact")
-position = Vector3(0, 0.8, 0)
 
-[node name="EmojiAnchor" type="Node3D" parent="."]
-position = Vector3(0, 1.7, 0)
+[node name="EmojiAnchor" type="Node3D" parent="." unique_id=1623152685]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 
-[node name="EmojiDisplay" type="Node3D" parent="EmojiAnchor"]
+[node name="EmojiDisplay" type="Node3D" parent="EmojiAnchor" unique_id=1192015605]
 script = ExtResource("3_emoji")
 
-[node name="Label" type="Label3D" parent="EmojiAnchor/EmojiDisplay"]
+[node name="Label" type="Label3D" parent="EmojiAnchor/EmojiDisplay" unique_id=1288909326]
 pixel_size = 0.007
-text = ""
-font_size = 48
 billboard = 1
+font_size = 48
 
-[node name="OrderLabel" type="Label3D" parent="EmojiAnchor"]
+[node name="OrderLabel" type="Label3D" parent="EmojiAnchor" unique_id=804111711]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 0, 0.15)
 pixel_size = 0.006
-text = ""
-font_size = 48
 billboard = 1
+font_size = 48
 outline_size = 2
-outline_color = Color(0, 0, 0, 1)
 
-[node name="OrderPanel" type="MeshInstance3D" parent="EmojiAnchor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 0, 0.05)
-mesh = SubResource("PlaneMesh_order")
-material_override = SubResource("Material_order")

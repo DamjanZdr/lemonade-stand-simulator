@@ -6,6 +6,9 @@ enum HeldItem { NONE, CUP_EMPTY, CUP_FILLED, SUPPLY_BOX, CONTAINER }
 const MOVE_SPEED: float = 5.0
 const MOUSE_SENSITIVITY: float = 0.002
 
+const HINT_GROUND := "Aim at ground to place  |  RMB: Cancel (refund)"
+const HINT_STAND := "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
+
 @export var gravity: float = 9.8
 @export var sprint_multiplier: float = 1.8
 @export var jump_velocity: float = 5.0
@@ -28,11 +31,18 @@ var _ghost_valid: bool = false
 static var _ghost_mat_valid: StandardMaterial3D = null
 static var _ghost_mat_invalid: StandardMaterial3D = null
 
+# --- Box stack wobble ---
+var _stack_target_id: int = -1
+var _stack_offset: Vector3 = Vector3.ZERO
+var _stack_yaw: float = 0.0
+
+const CUP_STACK_SCENE: PackedScene = preload("res://scenes/objects/cup_stack.tscn")
+
 const CONTAINER_SCENES: Dictionary = {
 	"fruit_bin": preload("res://scenes/objects/fruit_bin.tscn"),
 	"sugar_bin": preload("res://scenes/objects/sugar_bin.tscn"),
 	"ice_bin": preload("res://scenes/objects/ice_bin.tscn"),
-	"cup_stack": preload("res://scenes/objects/cup_stack.tscn"),
+	"cup_stack": CUP_STACK_SCENE,
 	"pitcher": preload("res://scenes/objects/pitcher.tscn"),
 	"press": preload("res://scenes/objects/press.tscn"),
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
@@ -49,13 +59,13 @@ const CONTAINER_PLACEMENT_SCALE: Dictionary = {
 	"cup_stack": Vector3.ONE * 0.03, # Smaller cups
 	"pitcher": Vector3.ONE * 0.1575,
 	"press": Vector3.ONE * 0.10,
-	"water_dispenser": Vector3.ONE * 0.08,
+	"water_dispenser": Vector3.ONE * 0.25,
 	"workstation": Vector3.ONE,
 }
 
 const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.tscn")
-const SUPPLY_BOX_BOTTOM_OFFSET: float = 0.13
-const CUP_STACK_SCENE: PackedScene = preload("res://scenes/objects/cup_stack.tscn")
+const STACK_MAX_OFFSET: float = 0.04
+const STACK_MAX_YAW: float = 0.14
 const CUP_SCENE: PackedScene = preload("res://scenes/objects/cup.tscn")
 
 const CONTAINER_HAND_SCALE: Dictionary = {
@@ -65,13 +75,13 @@ const CONTAINER_HAND_SCALE: Dictionary = {
 	"cup_stack": Vector3.ONE * 0.015,
 	"pitcher": Vector3.ONE * 0.08,
 	"press": Vector3.ONE * 0.05,
-	"water_dispenser": Vector3.ONE * 0.04,
+	"water_dispenser": Vector3.ONE * 0.08,
 	"workstation": Vector3.ONE * 0.05,
 }
 
 
 func _get_container_bottom_offset(node: Node, parent_y: float = 0.0) -> float:
-	"""Calculate how far the collision extends below the node's origin."""
+	# Calculate how far the collision extends below the node's origin.
 	if node == null:
 		return 0.0
 	var node_y := parent_y
@@ -97,7 +107,7 @@ func _get_container_bottom_offset(node: Node, parent_y: float = 0.0) -> float:
 
 
 func _get_container_scene(container_type: String) -> PackedScene:
-	"""Return the PackedScene for a container type, handling workstation specially."""
+	# Return the PackedScene for a container type, handling workstation specially.
 	if container_type == "workstation":
 		return _workstation_scene
 	return CONTAINER_SCENES.get(container_type) as PackedScene
@@ -106,6 +116,12 @@ func _get_container_scene(container_type: String) -> PackedScene:
 @onready var head: Node3D = $Head
 @onready var hand_slot: Node3D = $Head/Camera3D/HandSlot
 @onready var ray: RayCast3D = $Head/RayCast3D
+@onready var camera: Camera3D = $Head/Camera3D
+
+var _in_priceboard_mode := false
+var _priceboard_tween: Tween = null
+var _priceboard_camera_original_local: Transform3D
+var _priceboard_camera_original_top_level := false
 
 
 func _ready() -> void:
@@ -114,6 +130,7 @@ func _ready() -> void:
 	# Layer 2 is used by the screen-space outline system for white fill nodes.
 	# The main camera must not render them — only the SubViewport OutlineCamera does.
 	$Head/Camera3D.cull_mask &= ~2
+	$Head/Camera3D.make_current()
 
 	# Smooth movement over small ledges and slopes (sidewalks, curbs, etc.)
 	up_direction = Vector3.UP
@@ -123,12 +140,54 @@ func _ready() -> void:
 	floor_stop_on_slope = false
 	floor_block_on_wall = false
 
+	# Compute the shared box metrics once so grid ghost/placement use correct values.
+	var temp_box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
+	temp_box.update_metrics()
+	temp_box.free()
+
 	# Load the workstation scene at runtime to avoid compile-time preload issues
 	# while the editor imports the new scene/script .uid files.
 	_workstation_scene = load("res://scenes/stand/workstation.tscn") as PackedScene
 
 
+func enter_priceboard_focus(focus_transform: Transform3D) -> void:
+	_in_priceboard_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_priceboard_camera_original_local = camera.transform
+	_priceboard_camera_original_top_level = camera.top_level
+	camera.top_level = true
+	if _priceboard_tween != null and _priceboard_tween.is_valid():
+		_priceboard_tween.kill()
+	_priceboard_tween = create_tween()
+	_priceboard_tween.set_trans(Tween.TRANS_QUAD)
+	_priceboard_tween.set_ease(Tween.EASE_IN_OUT)
+	_priceboard_tween.tween_property(camera, "global_transform", focus_transform, 0.4)
+
+
+func exit_priceboard_focus() -> void:
+	if not _in_priceboard_mode:
+		return
+	var target_global := head.global_transform * _priceboard_camera_original_local
+	if _priceboard_tween != null and _priceboard_tween.is_valid():
+		_priceboard_tween.kill()
+	_priceboard_tween = create_tween()
+	_priceboard_tween.set_trans(Tween.TRANS_QUAD)
+	_priceboard_tween.set_ease(Tween.EASE_IN_OUT)
+	_priceboard_tween.tween_property(camera, "global_transform", target_global, 0.4)
+	_priceboard_tween.finished.connect(_on_priceboard_tween_finished)
+
+
+func _on_priceboard_tween_finished() -> void:
+	camera.top_level = _priceboard_camera_original_top_level
+	camera.transform = _priceboard_camera_original_local
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_in_priceboard_mode = false
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _in_priceboard_mode:
+		return
+
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
@@ -153,6 +212,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _in_priceboard_mode:
+		velocity = Vector3.ZERO
+		move_and_slide()
+		return
+
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
@@ -179,6 +243,13 @@ func _poll_hint() -> void:
 		if _hovered:
 			_hovered.set_highlight(true)
 	var hint := ""
+	# Pedestrians show their own hint (offer / serve) regardless of held item.
+	if interactable is PedestrianInteractable:
+		hint = interactable.get_hint(self)
+		if hint != _last_hint:
+			_last_hint = hint
+			EventBus.interaction_hint_changed.emit(hint)
+		return
 	if held_item == HeldItem.CONTAINER:
 		var container_type: String = held_item_data.get("container_type", "")
 		# Check if looking at water tap with pitcher
@@ -205,27 +276,33 @@ func _poll_hint() -> void:
 				if _ghost_valid:
 					hint = "LMB: Place  |  RMB: Cancel (refund)"
 				else:
-					hint = (
-							"Aim at ground to place  |  RMB: Cancel (refund)"
-							if container_type == "workstation" else "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
-					)
+					if container_type == "workstation":
+						hint = HINT_GROUND
+					else:
+						hint = HINT_STAND
 			elif _ghost_valid:
 				hint = "LMB: Place  |  RMB: Cancel (refund)"
 			else:
 				if held_item_data.get("from_delivery_box", false):
 					hint = "Aim at ground or box to place  |  RMB: Cancel (refund)"
 				else:
-					hint = (
-							"Aim at ground to place  |  RMB: Cancel (refund)"
-							if container_type == "workstation" else "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
-					)
+					if container_type == "workstation":
+						hint = HINT_GROUND
+					else:
+						hint = HINT_STAND
 	elif held_item == HeldItem.SUPPLY_BOX \
 			and held_item_data.get("ingredient_type") == "cups":
 		hint = "LMB: Place 1 cup  |  RMB: Drop box"
+		if _is_aiming_at_grid():
+			hint = "LMB: Place box on grid  |  RMB: Drop box"
+		if interactable is SupplyBox:
+			hint = "LMB: Stack box  |  RMB: Drop box"
 		if interactable is CupStack:
 			hint = "LMB: Add 1 cup  |  RMB: Drop box"
 	elif held_item == HeldItem.SUPPLY_BOX:
 		hint = "LMB: Place box  |  RMB: Drop"
+		if _is_aiming_at_grid():
+			hint = "LMB: Place on grid  |  RMB: Drop"
 		if interactable is SupplyBox:
 			hint = "LMB: Stack on box  |  RMB: Drop"
 	elif held_item == HeldItem.CUP_EMPTY:
@@ -234,6 +311,12 @@ func _poll_hint() -> void:
 			hint = "LMB: Add to stack  |  RMB: Drop"
 	elif held_item == HeldItem.CUP_FILLED:
 		hint = "LMB: Place filled cup  |  RMB: Drop"
+		if ray.is_colliding():
+			var hit_node: Node = ray.get_collider() as Node
+			var has_customer := _find_customer_in_ancestors(hit_node) != null
+			var has_ped := _find_pedestrian_in_ancestors(hit_node) != null
+			if has_customer or has_ped:
+				hint = "LMB: Serve lemonade  |  RMB: Drop"
 	else:
 		hint = interactable.get_hint(self) if interactable else ""
 		# Append pickup hint when looking at a placed container with empty hands
@@ -249,6 +332,12 @@ func _poll_hint() -> void:
 func _primary_interact() -> void:
 	# Check if looking at an interactable first (even when holding items)
 	var interactable := _get_looked_at_interactable()
+
+	# Walking pedestrians take priority: first click starts the offer no matter
+	# what the player is holding. Subsequent clicks serve lemonade.
+	if interactable is PedestrianInteractable:
+		interactable.interact(self)
+		return
 
 	# Handle water tap interaction when holding pitcher - fill directly
 	var container_type: String = ""
@@ -355,12 +444,16 @@ func _primary_interact() -> void:
 
 	# Handle filled cup - serve to customer or place on surface
 	if held_item == HeldItem.CUP_FILLED:
-		# First check if looking at a customer to serve (customer is not an Interactable)
+		# First check if looking at a customer or pedestrian to serve.
 		if ray.is_colliding():
 			var hit_node: Node = ray.get_collider() as Node
 			var customer: Customer = _find_customer_in_ancestors(hit_node)
 			if customer != null:
 				customer.try_serve(self)
+				return
+			var ped: Pedestrian = _find_pedestrian_in_ancestors(hit_node)
+			if ped != null:
+				ped.try_serve(self)
 				return
 		# Then place on surface (only on workstation/stand, not ground)
 		if ray.is_colliding():
@@ -374,6 +467,18 @@ func _primary_interact() -> void:
 	if held_item == HeldItem.SUPPLY_BOX \
 			and held_item_data.get("source") == "delivery" \
 			and held_item_data.get("ingredient_type") == "cups":
+		if ray.is_colliding():
+			var node: Node = ray.get_collider()
+			while node != null:
+				if node is SupplyBox:
+					# Stack the cup box on top of the hovered stack
+					_place_held_supply_box_on_stack(node as SupplyBox)
+					return
+				if node is DeliveryGrid:
+					# Place on the delivery grid
+					_place_held_supply_box_on_grid(node as DeliveryGrid, ray.get_collision_point())
+					return
+				node = node.get_parent()
 		if interactable is CupStack:
 			# Deposit to existing stack
 			last_interact_hit = ray.get_collider()
@@ -386,7 +491,7 @@ func _primary_interact() -> void:
 				if _is_ground_surface(collider):
 					# Floor — drop the box
 					_place_held_supply_box_on(
-						ray.get_collision_point() + Vector3(0, SUPPLY_BOX_BOTTOM_OFFSET, 0),
+						ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0),
 					)
 					return
 				# Workstation/stand — place cup stack
@@ -404,8 +509,10 @@ func _primary_interact() -> void:
 			var node: Node = ray.get_collider()
 			while node != null:
 				if node is SupplyBox:
-					var target_pos := (node as SupplyBox).global_position
-					_place_held_supply_box_on(target_pos + Vector3(0, 0.262, 0))
+					_place_held_supply_box_on_stack(node as SupplyBox)
+					return
+				if node is DeliveryGrid:
+					_place_held_supply_box_on_grid(node as DeliveryGrid, ray.get_collision_point())
 					return
 				node = node.get_parent()
 			# Check if looking at a matching ingredient bin or water dispenser
@@ -445,7 +552,7 @@ func _primary_interact() -> void:
 			if on_surface and not is_equipment:
 				# Place ingredient box on a surface
 				_place_held_supply_box_on(
-					ray.get_collision_point() + Vector3(0, SUPPLY_BOX_BOTTOM_OFFSET, 0),
+					ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0),
 				)
 				return
 		_drop_held_box()
@@ -485,7 +592,7 @@ func _secondary_interact() -> void:
 
 
 func _place_cup_stack_from_box() -> void:
-	"""Place ONE cup on the surface or add to existing stack."""
+	# Place ONE cup on the surface or add to existing stack.
 
 	# Get quantity from held box
 	var qty: int = int(held_item_data.get("amount", 0))
@@ -517,7 +624,7 @@ func _place_cup_stack_from_box() -> void:
 	var stack: Node = CUP_STACK_SCENE.instantiate()
 
 	# Apply smaller placement scale
-	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack")
 	stack.scale = placement_scale
 
 	# Set the count to 1 and max capacity
@@ -546,7 +653,7 @@ func _place_cup_stack_from_box() -> void:
 
 
 func _update_single_cup_ghost() -> void:
-	"""Show ghost preview for single cup placement."""
+	# Show ghost preview for single cup placement.
 	# Destroy ghost if it's the wrong type for current held item
 	if _ghost != null:
 		var is_cup_stack_ghost: bool = _ghost.get_node_or_null("ItemGrid") != null
@@ -569,7 +676,9 @@ func _update_single_cup_ghost() -> void:
 			get_tree().current_scene.add_child(_ghost)
 		else:
 			_ghost = CUP_STACK_SCENE.instantiate()
-			var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
+			var placement_scale: Vector3 = (
+					CONTAINER_PLACEMENT_SCALE.get("cup_stack")
+			)
 			_ghost.scale = placement_scale
 			var bottom_offset := _get_container_bottom_offset(_ghost)
 			_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
@@ -630,7 +739,7 @@ func _update_single_cup_ghost() -> void:
 
 
 func _place_single_cup(_filled: bool) -> void:
-	"""Place a single cup on the surface (creates new stack with 1 cup)."""
+	# Place a single cup on the surface (creates new stack with 1 cup).
 	# Check ghost validity before placing
 	if not _ghost_valid or _ghost == null:
 		EventBus.interaction_hint_changed.emit("Cannot place here - too close to another stack!")
@@ -638,7 +747,7 @@ func _place_single_cup(_filled: bool) -> void:
 
 	var stack: Node = CUP_STACK_SCENE.instantiate()
 
-	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack")
 	stack.scale = placement_scale
 	stack.starting_count = 1
 	stack.max_capacity = 10
@@ -660,7 +769,7 @@ func _place_single_cup(_filled: bool) -> void:
 
 
 func _place_filled_cup() -> void:
-	"""Place a filled cup on the surface for customers to take."""
+	# Place a filled cup on the surface for customers to take.
 	if not _ghost_valid or _ghost == null:
 		EventBus.interaction_hint_changed.emit("Cannot place here - invalid position!")
 		return
@@ -708,8 +817,9 @@ func _place_filled_cup() -> void:
 	EventBus.interaction_hint_changed.emit("Filled cup placed!")
 
 
-func _place_held_supply_box_on(place_pos: Vector3) -> void:
+func _place_held_supply_box_on(place_pos: Vector3, place_rot: Vector3 = Vector3.ZERO) -> SupplyBox:
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
+	box.update_metrics()
 	if held_item_data.get("is_equipment", false):
 		box.is_equipment = true
 		box.equipment_type = held_item_data.get("equipment_type", "")
@@ -718,12 +828,100 @@ func _place_held_supply_box_on(place_pos: Vector3) -> void:
 		box.quantity = held_item_data.get("amount", 1.0)
 	get_parent().add_child(box)
 	box.global_position = place_pos
+	box.global_rotation = place_rot
 	_destroy_ghost()
 	clear_held()
+	return box
+
+
+func _regenerate_stack_offset() -> void:
+	var angle := randf() * TAU
+	var dist := randf() * STACK_MAX_OFFSET
+	_stack_offset = Vector3(cos(angle) * dist, 0.0, sin(angle) * dist)
+	_stack_yaw = randf_range(-STACK_MAX_YAW, STACK_MAX_YAW)
+
+
+func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
+	var top := base
+	var base_pos := base.global_position
+	for node in get_tree().get_nodes_in_group("supply_box"):
+		if not is_instance_valid(node) or node == base:
+			continue
+		var box := node as SupplyBox
+		if box == null:
+			continue
+		var dx := absf(box.global_position.x - base_pos.x)
+		var dz := absf(box.global_position.z - base_pos.z)
+		if dx < SupplyBox.stack_radius and dz < SupplyBox.stack_radius:
+			if box.global_position.y > top.global_position.y:
+				top = box
+	return top
+
+
+func _get_delivery_grid_from_collider(collider: Node) -> DeliveryGrid:
+	var node: Node = collider
+	while node != null:
+		if node is DeliveryGrid:
+			return node as DeliveryGrid
+		node = node.get_parent()
+	return null
+
+
+func _get_delivery_grid() -> DeliveryGrid:
+	if get_tree() == null:
+		return null
+	var grid := get_tree().get_first_node_in_group("delivery_grid") as DeliveryGrid
+	return grid
+
+
+func _is_aiming_at_grid() -> bool:
+	if not ray.is_colliding():
+		return false
+	var collider := ray.get_collider()
+	var grid := _get_delivery_grid_from_collider(collider)
+	if grid == null:
+		return false
+	# Prefer stacking on a box if the ray is actually hitting a box on the grid.
+	var node: Node = collider
+	while node != null:
+		if node is SupplyBox:
+			return false
+		node = node.get_parent()
+	return true
+
+
+func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> void:
+	var cell_idx := grid.get_closest_cell(hit_point)
+	if cell_idx < 0:
+		_drop_held_box()
+		return
+	var slot := grid.reserve_slot(cell_idx)
+	var box := _place_held_supply_box_on(slot["position"], slot["rotation"])
+	box.set_meta("delivery_cell_idx", cell_idx)
+	box.tree_exited.connect(grid.release_slot_index.bind(cell_idx))
+
+
+func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
+	root.update_metrics()
+	var top := _get_topmost_box_in_stack(root)
+	if top.get_instance_id() != _stack_target_id:
+		_stack_target_id = top.get_instance_id()
+		_regenerate_stack_offset()
+	var place_pos := top.global_position + Vector3(0, SupplyBox.stack_height, 0) + _stack_offset
+	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
+	var box := _place_held_supply_box_on(place_pos, place_rot)
+	var cell_idx: int = top.get_meta("delivery_cell_idx", -1) as int
+	if cell_idx >= 0:
+		var grid := _get_delivery_grid()
+		if grid != null:
+			grid.reserve_slot(cell_idx)
+			box.set_meta("delivery_cell_idx", cell_idx)
+			box.tree_exited.connect(grid.release_slot_index.bind(cell_idx))
 
 
 func _drop_held_box() -> void:
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
+	box.update_metrics()
 	if held_item_data.get("is_equipment", false):
 		box.is_equipment = true
 		box.equipment_type = held_item_data.get("equipment_type", "")
@@ -733,7 +931,7 @@ func _drop_held_box() -> void:
 	# Drop exactly where the raycast hits, or 0.8 m ahead if not hitting anything.
 	var drop_pos: Vector3
 	if ray.is_colliding():
-		drop_pos = ray.get_collision_point() + Vector3(0, SUPPLY_BOX_BOTTOM_OFFSET, 0)
+		drop_pos = ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
 	else:
 		drop_pos = global_position + (-transform.basis.z * 0.8) + Vector3(0, 0.15, 0)
 	get_parent().add_child(box)
@@ -995,9 +1193,9 @@ func _create_container_hand_mesh(
 		saved_count: int = 0,
 		from_box: bool = false,
 ) -> Node3D:
-	"""Create a hand mesh for the held container."""
+	# Create a hand mesh for the held container.
 	if from_box:
-		var box_scene: PackedScene = load("res://blender/box.glb") as PackedScene
+		var box_scene: PackedScene = load("res://blender/boxnew.glb") as PackedScene
 		if box_scene:
 			var box_inst: Node3D = box_scene.instantiate() as Node3D
 			box_inst.scale = Vector3.ONE * 0.05
@@ -1032,8 +1230,8 @@ func _set_container_starting_state(
 		saved_count: int,
 		saved_recipe: Dictionary = { },
 ) -> void:
-	"""Set the starting amount/count on a container instance so its own
-	_ready() renders the correct item visibility and label text."""
+	# Set the starting amount/count on a container instance so its own
+	# _ready() renders the correct item visibility and label text.
 	match container_type:
 		"sugar_bin", "ice_bin":
 			if "starting_amount" in inst:
@@ -1083,7 +1281,7 @@ func _refresh_held_container_mesh() -> void:
 
 
 func _disable_hand_collision(node: Node) -> void:
-	"""Recursively disable collision on all physics bodies."""
+	# Recursively disable collision on all physics bodies.
 	if node is CollisionObject3D:
 		var body: CollisionObject3D = node as CollisionObject3D
 		body.collision_layer = 0
@@ -1129,7 +1327,7 @@ func _destroy_ghost() -> void:
 
 
 func _update_cup_box_ghost() -> void:
-	"""Show ghost preview for cup placement when holding cup box."""
+	# Show ghost preview for cup placement when holding cup box.
 	if not ray.is_colliding():
 		_destroy_ghost()
 		_ghost_valid = false
@@ -1138,6 +1336,17 @@ func _update_cup_box_ghost() -> void:
 	var collider := ray.get_collider()
 	var hit_point := ray.get_collision_point()
 	var on_surface := _is_placement_surface(collider)
+
+	# If looking at a supply box, stack like other supply boxes.
+	var node: Node = collider
+	while node != null:
+		if node is SupplyBox:
+			_update_supply_box_ghost()
+			return
+		if node is DeliveryGrid:
+			_update_grid_ghost(node as DeliveryGrid, hit_point)
+			return
+		node = node.get_parent()
 
 	# Check if looking at existing cup stack - hide ghost in that case
 	var interactable := _get_looked_at_interactable()
@@ -1155,7 +1364,7 @@ func _update_cup_box_ghost() -> void:
 	if is_ground:
 		# Floor — show box ghost but invalid (cup boxes can't go on floor)
 		_ensure_box_ghost()
-		_ghost.global_position = hit_point + Vector3(0, SUPPLY_BOX_BOTTOM_OFFSET, 0)
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
 		_ghost.visible = true
 		_ghost_valid = false
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
@@ -1166,7 +1375,7 @@ func _update_cup_box_ghost() -> void:
 		_destroy_ghost()
 		_ghost = CUP_STACK_SCENE.instantiate()
 		_ghost.set_meta("ghost_type", "cup_stack")
-		var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack", Vector3.ONE * 0.03)
+		var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack")
 		_ghost.scale = placement_scale
 		var bottom_offset := _get_container_bottom_offset(_ghost)
 		_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
@@ -1193,9 +1402,25 @@ func _update_cup_box_ghost() -> void:
 		_apply_ghost_material(_ghost, mat)
 
 
+func _update_grid_ghost(grid: DeliveryGrid, hit_point: Vector3) -> void:
+	_ensure_box_ghost()
+	var cell_idx := grid.get_closest_cell(hit_point)
+	var target_id := grid.get_instance_id() + cell_idx
+	if target_id != _stack_target_id:
+		_stack_target_id = target_id
+	_ghost.global_position = grid.get_slot_position(cell_idx)
+	_ghost.global_rotation = grid.get_slot_rotation(cell_idx)
+	_ghost.visible = true
+	_ghost_valid = true
+	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+
+
 func _update_supply_box_ghost() -> void:
+	if _ghost != null and _ghost.get_meta("ghost_type", "") != "box":
+		_destroy_ghost()
 	if _ghost == null:
 		_ghost = SUPPLY_BOX_SCENE.instantiate()
+		_ghost.set_meta("ghost_type", "box")
 		_disable_scripts(_ghost)
 		_disable_physics(_ghost)
 		_ghost.add_to_group("ghost")
@@ -1205,6 +1430,7 @@ func _update_supply_box_ghost() -> void:
 	if not ray.is_colliding():
 		_ghost.visible = false
 		_ghost_valid = false
+		_stack_target_id = -1
 		return
 
 	var collider := ray.get_collider()
@@ -1215,26 +1441,42 @@ func _update_supply_box_ghost() -> void:
 	var target_box: SupplyBox = null
 	while node != null:
 		if node is SupplyBox:
-			target_box = node as SupplyBox
+			target_box = _get_topmost_box_in_stack(node as SupplyBox)
 			break
 		node = node.get_parent()
 
 	if target_box != null:
-		_ghost.global_position = target_box.global_position + Vector3(0, 0.262, 0)
-		_ghost.global_rotation = target_box.global_rotation
+		target_box.update_metrics()
+		var target_id := target_box.get_instance_id()
+		if target_id != _stack_target_id:
+			_stack_target_id = target_id
+			_regenerate_stack_offset()
+		var stack_base := target_box.global_position + Vector3(0, SupplyBox.stack_height, 0)
+		_ghost.global_position = stack_base + _stack_offset
+		_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
 		_ghost.visible = true
 		_ghost_valid = true
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		return
+
+	# Check if looking at the delivery grid — snap to the nearest cell
+	var grid_node: Node = collider
+	while grid_node != null:
+		if grid_node is DeliveryGrid:
+			_update_grid_ghost(grid_node as DeliveryGrid, hit_point)
+			return
+		grid_node = grid_node.get_parent()
 
 	# Otherwise only show ghost on approved placement surfaces (ground, tables, etc.)
 	var on_surface := _is_placement_surface(collider)
 	if not on_surface:
 		_ghost.visible = false
 		_ghost_valid = false
+		_stack_target_id = -1
 		return
 
-	_ghost.global_position = hit_point + Vector3(0, SUPPLY_BOX_BOTTOM_OFFSET, 0)
+	_stack_target_id = -1
+	_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
 	_ghost.visible = true
 	_ghost_valid = true
 	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -1248,6 +1490,7 @@ func _update_equipment_box_ghost() -> void:
 	if not ray.is_colliding():
 		_destroy_ghost()
 		_ghost_valid = false
+		_stack_target_id = -1
 		return
 
 	var collider := ray.get_collider()
@@ -1257,9 +1500,16 @@ func _update_equipment_box_ghost() -> void:
 	var node: Node = collider
 	while node != null:
 		if node is SupplyBox:
+			var target_box := _get_topmost_box_in_stack(node as SupplyBox)
+			target_box.update_metrics()
+			var target_id := target_box.get_instance_id()
+			if target_id != _stack_target_id:
+				_stack_target_id = target_id
+				_regenerate_stack_offset()
 			_ensure_box_ghost()
-			_ghost.global_position = (node as SupplyBox).global_position + Vector3(0, 0.262, 0)
-			_ghost.global_rotation = (node as SupplyBox).global_rotation
+			var stack_base := target_box.global_position + Vector3(0, SupplyBox.stack_height, 0)
+			_ghost.global_position = stack_base + _stack_offset
+			_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
 			_ghost.visible = true
 			_ghost_valid = true
 			_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -1274,10 +1524,12 @@ func _update_equipment_box_ghost() -> void:
 		if not is_ground:
 			_destroy_ghost()
 			_ghost_valid = false
+			_stack_target_id = -1
 			return
 		_ensure_container_ghost(equipment_type)
 		if _ghost == null:
 			_ghost_valid = false
+			_stack_target_id = -1
 			return
 		var ws_offset: float = _ghost.get_meta("bottom_offset", 0.0)
 		_ghost.global_position = hit_point + Vector3(0, -ws_offset, 0)
@@ -1287,26 +1539,30 @@ func _update_equipment_box_ghost() -> void:
 			_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
 		_ghost.visible = true
 		_ghost_valid = true
+		_stack_target_id = -1
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		return
 
 	if not on_surface:
 		_destroy_ghost()
 		_ghost_valid = false
+		_stack_target_id = -1
 		return
 
 	if is_ground:
 		# Floor placement for other equipment — just drop the box
 		_ensure_box_ghost()
-		_ghost.global_position = hit_point + Vector3(0, SUPPLY_BOX_BOTTOM_OFFSET, 0)
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
 		_ghost.visible = true
 		_ghost_valid = true
+		_stack_target_id = -1
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 	else:
 		# Other equipment on a surface — show container ghost
 		_ensure_container_ghost(equipment_type)
 		if _ghost == null:
 			_ghost_valid = false
+			_stack_target_id = -1
 			return
 		var equip_offset: float = _ghost.get_meta("bottom_offset", 0.0)
 		_ghost.global_position = hit_point + Vector3(0, -equip_offset, 0)
@@ -1316,6 +1572,7 @@ func _update_equipment_box_ghost() -> void:
 			_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
 		_ghost.visible = true
 		_ghost_valid = true
+		_stack_target_id = -1
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 
 
@@ -1443,9 +1700,10 @@ func _update_ghost() -> void:
 	var on_surface := _is_placement_surface(collider)
 	var is_ground := _is_ground_surface(collider)
 
-	# Workstations are tables and can only be placed on the ground.
-	# Other containers need an existing stand or workstation surface.
-	if container_type == "workstation":
+	# Workstations and water dispensers are floor-standing equipment and can only
+	# be placed on the ground. Other containers need an existing stand or
+	# workstation surface.
+	if container_type == "workstation" or container_type == "water_dispenser":
 		if not is_ground:
 			_ghost.visible = false
 			_ghost_valid = false
@@ -1468,9 +1726,13 @@ func _update_ghost() -> void:
 	# Check for overlap with existing containers
 	var overlapping := _check_ghost_overlap()
 	# Deployed containers (picked up from workstation) can't go on ground,
-	# except for workstations themselves.
+	# except for workstations and water dispensers, which are floor-standing.
 	var deployed: bool = held_item_data.get("deployed", false)
-	var valid := not overlapping and (not (deployed and is_ground) or container_type == "workstation")
+	var valid := not overlapping and (
+			not (deployed and is_ground)
+			or container_type == "workstation"
+			or container_type == "water_dispenser"
+	)
 
 	_ghost_valid = valid
 	var mat := _get_ghost_mat_valid() if valid else _get_ghost_mat_invalid()
@@ -1483,6 +1745,23 @@ func _try_place_container() -> Node3D:
 		return null
 
 	var container_type: String = held_item_data.get("container_type", "")
+	# Move the existing workstation instead of creating a new one, so attached items follow.
+	if container_type == "workstation":
+		var source_node: Node3D = held_item_data.get("source_node") as Node3D
+		if source_node != null and is_instance_valid(source_node):
+			var source_parent: Node = held_item_data.get("source_parent") as Node
+			if source_parent != null and is_instance_valid(source_parent):
+				source_parent.add_child(source_node)
+			else:
+				get_tree().current_scene.add_child(source_node)
+			source_node.global_transform = _ghost.global_transform
+			_enable_physics(source_node)
+			EventBus.container_placed.emit(container_type, source_node)
+			_destroy_ghost()
+			clear_held()
+			return source_node
+		return null
+
 	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
 		return null
@@ -1550,6 +1829,23 @@ func _try_place_container() -> Node3D:
 func _cancel_container_placement() -> void:
 	var container_type: String = held_item_data.get("container_type", "")
 	var cost := _get_container_cost(container_type)
+	# Restore the moved workstation and its attached items to where they were.
+	var source_node: Node3D = held_item_data.get("source_node") as Node3D
+	if source_node != null and is_instance_valid(source_node):
+		var original: Transform3D = (
+				held_item_data.get(
+					"source_original_transform",
+					source_node.global_transform,
+				) as Transform3D
+		)
+		var source_parent: Node = held_item_data.get("source_parent") as Node
+		if source_node.get_parent() == null:
+			if source_parent != null and is_instance_valid(source_parent):
+				source_parent.add_child(source_node)
+			else:
+				get_tree().current_scene.add_child(source_node)
+		source_node.global_transform = original
+		_enable_physics(source_node)
 	GameState.add_money(cost)
 	_destroy_ghost()
 	clear_held()
@@ -1557,6 +1853,20 @@ func _cancel_container_placement() -> void:
 
 
 func pickup_container(interactable: Interactable, container_type: String) -> void:
+	# Workstations are tables — keep the original instance so items on top move with it.
+	if container_type == "workstation":
+		_attach_items_to_workstation(interactable)
+		_disable_physics(interactable)
+		var source_parent := interactable.get_parent()
+		held_item_data["source_parent"] = source_parent
+		held_item_data["source_original_transform"] = interactable.global_transform
+		source_parent.remove_child(interactable)
+		EventBus.container_picked_up.emit(container_type, interactable)
+		hold_container(container_type, 0.0, 0, false, { })
+		held_item_data["source_node"] = interactable
+		held_item_data["deployed"] = true
+		return
+
 	# Save container state before picking up
 	var saved_amount := 0.0
 	var saved_count := 0
@@ -1597,6 +1907,15 @@ func _find_customer_in_ancestors(node: Node) -> Customer:
 	while current != null:
 		if current is Customer:
 			return current as Customer
+		current = current.get_parent()
+	return null
+
+
+func _find_pedestrian_in_ancestors(node: Node) -> Pedestrian:
+	var current := node
+	while current != null:
+		if current is Pedestrian:
+			return current as Pedestrian
 		current = current.get_parent()
 	return null
 
@@ -1648,8 +1967,8 @@ func _is_ground_surface(collider: Object) -> bool:
 	if node == null:
 		return false
 	for i in range(3):
-		var n: String = node.name
-		if n.to_lower() == "ground" or "ground" in n.to_lower():
+		var lower: String = node.name.to_lower()
+		if "ground" in lower or "floor" in lower or "sidewalk" in lower:
 			return true
 		node = node.get_parent()
 		if node == null:
@@ -1679,7 +1998,7 @@ func _get_container_cost(container_type: String) -> float:
 
 
 func _set_single_cup_visibility(node: Node) -> void:
-	"""Show only the first cup in a cup stack (for ghost preview)."""
+	# Show only the first cup in a cup stack (for ghost preview).
 	var item_grid := node.get_node_or_null("ItemGrid")
 	if item_grid == null:
 		return
@@ -1711,7 +2030,7 @@ func _get_ghost_mat_invalid() -> StandardMaterial3D:
 
 
 func _check_ghost_overlap() -> bool:
-	"""Check if ghost overlaps with any existing placed containers using actual collision shapes."""
+	# Check if ghost overlaps with any existing placed containers using actual collision shapes.
 	if _ghost == null:
 		return false
 
@@ -1746,8 +2065,14 @@ func _check_ghost_overlap() -> bool:
 				return true
 		else:
 			# Fallback to sphere approximation using shape extents
-			var ghost_radius := _get_shape_radius(ghost_shape) * maxf(ghost_transform.basis.get_scale().x, ghost_transform.basis.get_scale().z)
-			var other_radius := _get_shape_radius(other_shape) * maxf(other_transform.basis.get_scale().x, other_transform.basis.get_scale().z)
+			var ghost_radius := _get_shape_radius(ghost_shape) * maxf(
+				ghost_transform.basis.get_scale().x,
+				ghost_transform.basis.get_scale().z,
+			)
+			var other_radius := _get_shape_radius(other_shape) * maxf(
+				other_transform.basis.get_scale().x,
+				other_transform.basis.get_scale().z,
+			)
 			var dist := ghost_transform.origin.distance_to(other_transform.origin)
 			if dist < (ghost_radius + other_radius):
 				return true
@@ -1756,7 +2081,7 @@ func _check_ghost_overlap() -> bool:
 
 
 func _get_collision_shape(node: Node) -> Shape3D:
-	"""Find the first CollisionShape3D in the node hierarchy and return its shape."""
+	# Find the first CollisionShape3D in the node hierarchy and return its shape.
 	for child in node.get_children():
 		if child is CollisionShape3D:
 			return (child as CollisionShape3D).shape
@@ -1767,19 +2092,24 @@ func _get_collision_shape(node: Node) -> Shape3D:
 
 
 func _get_shape_radius(shape: Shape3D) -> float:
-	"""Get approximate radius for a shape."""
+	# Get approximate radius for a shape.
 	if shape is BoxShape3D:
 		var size := (shape as BoxShape3D).size
 		return maxf(size.x, size.z) * 0.5
-	elif shape is CylinderShape3D:
+	if shape is CylinderShape3D:
 		return (shape as CylinderShape3D).radius
-	elif shape is SphereShape3D:
+	if shape is SphereShape3D:
 		return (shape as SphereShape3D).radius
 	return 0.5
 
 
-func _boxes_intersect(a: BoxShape3D, a_transform: Transform3D, b: BoxShape3D, b_transform: Transform3D) -> bool:
-	"""Check if two oriented boxes intersect using AABB approximation."""
+func _boxes_intersect(
+		a: BoxShape3D,
+		a_transform: Transform3D,
+		b: BoxShape3D,
+		b_transform: Transform3D,
+) -> bool:
+	# Check if two oriented boxes intersect using AABB approximation.
 	# Simple AABB check in world space
 	var a_pos := a_transform.origin
 	var a_scale := a_transform.basis.get_scale()
@@ -1800,8 +2130,13 @@ func _boxes_intersect(a: BoxShape3D, a_transform: Transform3D, b: BoxShape3D, b_
 	return true
 
 
-func _cylinders_intersect(a: CylinderShape3D, a_transform: Transform3D, b: CylinderShape3D, b_transform: Transform3D) -> bool:
-	"""Check if two cylinders intersect (horizontal distance check)."""
+func _cylinders_intersect(
+		a: CylinderShape3D,
+		a_transform: Transform3D,
+		b: CylinderShape3D,
+		b_transform: Transform3D,
+) -> bool:
+	# Check if two cylinders intersect (horizontal distance check).
 	var a_pos := a_transform.origin
 	var b_pos := b_transform.origin
 	var a_scale := a_transform.basis.get_scale()
@@ -1850,3 +2185,39 @@ func _disable_physics(node: Node) -> void:
 		(node as CollisionShape3D).disabled = true
 	for child in node.get_children():
 		_disable_physics(child)
+
+
+func _enable_physics(node: Node) -> void:
+	if node is StaticBody3D:
+		(node as StaticBody3D).collision_layer = 1
+		(node as StaticBody3D).collision_mask = 1
+	if node is CollisionShape3D:
+		(node as CollisionShape3D).disabled = false
+	for child in node.get_children():
+		_enable_physics(child)
+
+
+func _set_visual_visible(node: Node, on: bool) -> void:
+	if node is GeometryInstance3D or node is CanvasItem:
+		node.visible = on
+	for child in node.get_children():
+		_set_visual_visible(child, on)
+
+
+func _attach_items_to_workstation(workstation: Node) -> void:
+	var table_pos := (workstation as Node3D).global_position
+	for item in get_tree().get_nodes_in_group("container"):
+		if not is_instance_valid(item):
+			continue
+		if item == workstation or workstation.is_ancestor_of(item):
+			continue
+		if not item is Node3D:
+			continue
+		if (item as Node).get_parent() != get_tree().current_scene:
+			continue
+		var pos := (item as Node3D).global_position
+		if pos.y < table_pos.y + 0.8 or pos.y > table_pos.y + 1.5:
+			continue
+		if absf(pos.x - table_pos.x) > 1.0 or absf(pos.z - table_pos.z) > 1.0:
+			continue
+		(item as Node3D).reparent(workstation, true)

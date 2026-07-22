@@ -26,6 +26,7 @@ signal equipment_order_placed(container_type: String)
 signal supply_box_spawned(box: Node)
 
 # --- Customer ---
+signal pedestrian_spawned(pedestrian: Node)
 signal customer_arrived(customer: Node)
 signal customer_patience_changed(customer: Node, ratio: float)
 signal customer_served(customer: Node, outcome: String)
@@ -41,7 +42,8 @@ signal container_picked_up(container_type: String, container: Node)
 
 # --- Economy ---
 signal money_changed(new_amount: float)
-signal price_changed(new_price: float)
+signal price_changed(fruit_type: String, new_price: float)
+signal recipe_changed(fruit_type: String, recipe: Dictionary)
 signal popularity_changed(new_rating: float)
 
 # --- Upgrades ---
@@ -54,6 +56,7 @@ signal weather_changed(temperature: float)
 # --- Day Cycle ---
 signal day_phase_changed(phase: int, day_number: int)
 signal day_timer_updated(time_left: float, total_time: float)
+signal day_time_over()
 
 # --- Save ---
 signal game_saved()

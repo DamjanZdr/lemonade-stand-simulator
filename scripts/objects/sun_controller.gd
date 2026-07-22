@@ -1,9 +1,17 @@
 extends DirectionalLight3D
-## Rotates the sun across the sky based on the in-game workday (6am → 6pm).
+## Rotates the sun and adjusts its energy across the workday.
 
-var _morning_rot := Vector3(deg_to_rad(-15.0), deg_to_rad(-60.0), 0.0)
-var _noon_rot := Vector3(deg_to_rad(-90.0), 0.0, 0.0)
-var _evening_rot := Vector3(deg_to_rad(-165.0), deg_to_rad(60.0), 0.0)
+## Start of day sun rotation in degrees (x, y, z).
+@export var start_rotation_deg: Vector3 = Vector3(-54.0, -172.0, 158.0)
+## End of day sun rotation in degrees (x, y, z).
+@export var end_rotation_deg: Vector3 = Vector3(-70.0, 42.0, -42.0)
+
+## Light energy at the start of the day.
+@export var energy_start: float = 1.0
+## Peak light energy at midday.
+@export var energy_mid: float = 1.2
+## Light energy at the end of the day.
+@export var energy_end: float = 0.2
 
 var _current_t: float = 0.0
 
@@ -11,28 +19,45 @@ var _current_t: float = 0.0
 func _ready() -> void:
 	EventBus.day_timer_updated.connect(_on_day_timer_updated)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
-	_rotation_for_time(0.0)
+	_update_for_time(0.0)
+	directional_shadow_max_distance = 60.0
 
 
 func _on_day_timer_updated(time_left: float, total_time: float) -> void:
 	if total_time <= 0.0:
 		return
 	var t := clampf(1.0 - (time_left / total_time), 0.0, 1.0)
-	_rotation_for_time(t)
+	_update_for_time(t)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
 	if phase == DayManager.Phase.MORNING:
-		_rotation_for_time(0.0)
+		_update_for_time(0.0)
 	elif phase == DayManager.Phase.EVENING:
-		_rotation_for_time(1.0)
+		_update_for_time(1.0)
 
 
-func _rotation_for_time(t: float) -> void:
-	# t = 0 (6am) → morning, t = 0.5 (noon) → overhead, t = 1 (6pm) → evening
+func _update_for_time(t: float) -> void:
+	# t = 0 (start of day) → start rotation/energy
+	# t = 0.5 (midday) → peak energy
+	# t = 1 (end of day) → end rotation/energy
+	var start_euler := Vector3(
+			deg_to_rad(start_rotation_deg.x),
+			deg_to_rad(start_rotation_deg.y),
+			deg_to_rad(start_rotation_deg.z),
+	)
+	var end_euler := Vector3(
+			deg_to_rad(end_rotation_deg.x),
+			deg_to_rad(end_rotation_deg.y),
+			deg_to_rad(end_rotation_deg.z),
+	)
+	var start_rot := Quaternion.from_euler(start_euler)
+	var end_rot := Quaternion.from_euler(end_euler)
+	rotation = start_rot.slerp(end_rot, t).get_euler()
+
+	var target_energy: float
 	if t < 0.5:
-		var local_t := t * 2.0
-		rotation = _morning_rot.lerp(_noon_rot, local_t)
+		target_energy = lerpf(energy_start, energy_mid, t * 2.0)
 	else:
-		var local_t := (t - 0.5) * 2.0
-		rotation = _noon_rot.lerp(_evening_rot, local_t)
+		target_energy = lerpf(energy_mid, energy_end, (t - 0.5) * 2.0)
+	light_energy = target_energy

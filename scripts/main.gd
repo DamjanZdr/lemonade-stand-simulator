@@ -3,7 +3,6 @@ extends Node
 
 const CASH_PICKUP_SCENE: PackedScene = preload("res://scenes/objects/cash_pickup.tscn")
 const OUTLINE_SCENE: PackedScene = preload("res://scenes/ui/outline_overlay.tscn")
-const MORNING_HUB_SCENE: PackedScene = preload("res://scenes/ui/morning_hub.tscn")
 const DAY_SUMMARY_SCENE: PackedScene = preload("res://scenes/ui/day_summary.tscn")
 const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 
@@ -71,12 +70,12 @@ func _ready() -> void:
 	add_child(outline_sys)
 	outline_sys.setup(player.get_node("Head/Camera3D") as Camera3D)
 
-	# Add MorningHub and DaySummary overlays
-	add_child(MORNING_HUB_SCENE.instantiate())
+	# Add the evening summary overlay
 	add_child(DAY_SUMMARY_SCENE.instantiate())
 
-	# Start the day cycle in morning phase
+	# Start the day cycle — morning setup then immediately begin the day
 	DayManager.start_morning()
+	DayManager.start_day()
 	SaveManager.respawn_placed_containers()
 
 

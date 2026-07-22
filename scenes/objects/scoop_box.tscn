@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cu17c20xq7jkq"]
 
-[ext_resource type="PackedScene" uid="uid://dip2gnypvjfe4" path="res://blender/box.glb" id="1_box"]
+[ext_resource type="PackedScene" uid="uid://ej5ypuknhf5" path="res://blender/boxnew.glb" id="1_box"]
 
 [node name="ScoopBox" type="Node3D"]
 

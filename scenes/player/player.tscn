@@ -14,6 +14,7 @@ size = Vector3(0.6, 1.7, 0.3)
 
 [node name="Player" type="CharacterBody3D" unique_id=1164215171]
 collision_layer = 2
+collision_mask = 9
 script = ExtResource("1_player")
 gravity = 15.0
 sprint_multiplier = 1.4
@@ -41,3 +42,4 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, -0.25, -0.3)
 [node name="RayCast3D" type="RayCast3D" parent="Head" unique_id=113832186]
 target_position = Vector3(0, 0, -5.5)
 collision_mask = 9
+collide_with_areas = true

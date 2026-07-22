@@ -6,11 +6,6 @@ enum CustomerState { WALKING, WAITING, RECEIVING, REACTING, LEAVING }
 
 const GRAVITY: float = 9.8
 
-const ORDER_ICONS: Dictionary = {
-	"lemon": "🍋",
-	"orange": "🍊",
-	"lime": "🍈",
-}
 
 var queue_position: Vector3 = Vector3.ZERO
 var queue_slot: int = 0 # 0 = active (faces counter), 1+ = queued (faces front of queue)
@@ -31,13 +26,20 @@ const _ROTATION_SPEED: float = 10.0
 var _leave_waypoints: Array[PedestrianWaypoint] = []
 var _leave_waypoint_idx: int = 0
 
-@onready var patience_bar: MeshInstance3D = $PatienceBar
-@onready var patience_bar_bg: MeshInstance3D = $PatienceBarBG
+const _ENGAGE_LOOK_RANGE: float = 3.5
+var _engaged_with_player: bool = false
+var _engaged_player: Node3D = null
+var _default_facing_target: Basis = Basis.IDENTITY
+
 @onready var emoji_anchor: Node3D = $EmojiAnchor
 @onready var emoji_display: Node = $EmojiAnchor/EmojiDisplay
 @onready var order_label: Label3D = $EmojiAnchor/OrderLabel
-@onready var order_panel: MeshInstance3D = $EmojiAnchor/OrderPanel
 @onready var _npc: Node3D = $NPCBody
+
+var _order_panel: Sprite3D = null
+
+var _patience_circle: Sprite3D = null
+var _patience_progress: TextureProgressBar = null
 
 var _preserve_appearance: bool = false
 
@@ -61,7 +63,19 @@ func _ready() -> void:
 	if not _preserve_appearance:
 		_npc.randomize_appearance()
 	_npc.play_anim("Walk")
+	_build_order_bubble()
+	_build_patience_circle()
 	_refresh_patience_bar(1.0)
+	# Hide legacy order/patience nodes if they still exist in the scene.
+	for legacy_name in [
+		"PatienceBar",
+		"PatienceBarBG",
+		"EmojiAnchor/OrderLabel",
+		"EmojiAnchor/OrderPanel",
+	]:
+		var node := get_node_or_null(legacy_name)
+		if node:
+			node.visible = false
 	# Ensure both hand-held cash pickups start hidden.
 	for cp_name in ["CashPoint/CashPickup", "CashPoint2/CashPickup"]:
 		var cp := _npc.get_node_or_null(cp_name) as CashPickup
@@ -92,15 +106,26 @@ func _physics_process(delta: float) -> void:
 				state = CustomerState.WAITING
 				_begin_smooth_facing()
 				_npc.play_anim("Idle")
-				order_label.text = ORDER_ICONS.get(expected_fruit, "🥤")
-				order_label.visible = true
-				order_panel.visible = true
+				_default_facing_target = _facing_target
 				EventBus.customer_arrived.emit(self)
 		CustomerState.WAITING:
 			patience -= delta
 			var ratio := patience / patience_max
 			_refresh_patience_bar(ratio)
 			EventBus.customer_patience_changed.emit(self, ratio)
+			if _engaged_with_player:
+				var should_disengage := not is_instance_valid(_engaged_player)
+				if not should_disengage:
+					var dist := global_position.distance_to(_engaged_player.global_position)
+					should_disengage = dist > _ENGAGE_LOOK_RANGE
+				if should_disengage:
+					_disengage_player()
+				else:
+					_facing_target = Basis.looking_at(
+						_engaged_player.global_position - global_position,
+						Vector3.UP,
+					)
+					_is_rotating_to_face = true
 			if patience <= 0.0:
 				_resolve("timeout")
 		CustomerState.LEAVING:
@@ -149,13 +174,15 @@ func try_serve(player: Node) -> void:
 	var recipe: Dictionary = p.held_item_data.get("recipe", { })
 	p.clear_held()
 	state = CustomerState.RECEIVING
-	order_label.visible = false
-	order_panel.visible = false
+	_engaged_with_player = false
+	_engaged_player = null
+	_hide_order_bubble()
 	var wait_ratio := patience / patience_max
+	var price := GameState.get_price(expected_fruit)
 	var outcome := RecipeEvaluator.evaluate(
 		recipe,
 		GameState.temperature,
-		GameState.current_price,
+		price,
 		wait_ratio,
 		expected_fruit,
 	)
@@ -175,8 +202,9 @@ func _resolve(outcome: String) -> void:
 	if outcome != "timeout":
 		# Every served customer pays; wait here until the player processes
 		# change at the register before walking away.
-		var payment := _customer_payment(GameState.current_price)
-		var change_due := roundf((payment - GameState.current_price) * 100.0) / 100.0
+		var price := GameState.get_price(expected_fruit)
+		var payment := _customer_payment(price)
+		var change_due := roundf((payment - price) * 100.0) / 100.0
 		var cp_name: String = _npc.get_cash_point_name()
 		var cash_point := _npc.get_node_or_null(cp_name) as Marker3D
 		var drop_pos := cash_point.global_position if cash_point \
@@ -225,8 +253,9 @@ func _leave_after_change() -> void:
 
 func _start_leaving() -> void:
 	state = CustomerState.LEAVING
-	order_label.visible = false
-	order_panel.visible = false
+	_engaged_with_player = false
+	_engaged_player = null
+	_hide_order_bubble()
 	_npc.stop_payment_pose()
 	var cp_name: String = _npc.get_cash_point_name()
 	var cp := _npc.get_node_or_null(cp_name + "/CashPickup") as CashPickup
@@ -266,8 +295,34 @@ func step_forward(new_pos: Vector3) -> void:
 func start_waiting() -> void:
 	state = CustomerState.WAITING
 	_begin_smooth_facing()
+	_default_facing_target = _facing_target
 	_npc.play_anim("Idle")
 	EventBus.customer_arrived.emit(self)
+
+
+func show_order_to_player(player: Node) -> void:
+	## Called when the player clicks this customer with empty hands.
+	if state != CustomerState.WAITING:
+		return
+	var was_already_engaged := _engaged_with_player
+	_engaged_with_player = true
+	_engaged_player = player
+	_show_order()
+	if not was_already_engaged:
+		_npc.play_anim("Talk")
+	_facing_target = Basis.looking_at(
+		player.global_position - global_position,
+		Vector3.UP,
+	)
+	_is_rotating_to_face = true
+
+
+func _disengage_player() -> void:
+	_engaged_with_player = false
+	_engaged_player = null
+	_npc.play_anim("Idle")
+	_facing_target = _default_facing_target
+	_is_rotating_to_face = true
 
 
 func set_route_continuation(waypoints: Array[PedestrianWaypoint], next_index: int) -> void:
@@ -286,9 +341,156 @@ func _begin_smooth_facing() -> void:
 
 
 func _refresh_patience_bar(ratio: float) -> void:
-	patience_bar.scale.x = maxf(ratio, 0.001)
-	var mat := patience_bar.material_override as StandardMaterial3D
-	if mat == null:
-		mat = StandardMaterial3D.new()
-		patience_bar.material_override = mat
-	mat.albedo_color = Color(1.0 - ratio, ratio, 0.0, 1)
+	if _patience_progress == null:
+		return
+	_patience_progress.value = ratio * _patience_progress.max_value
+
+
+func _show_order() -> void:
+	order_label.text = "One cup %s" % expected_fruit.capitalize()
+	order_label.visible = true
+	if _order_panel:
+		_order_panel.visible = false
+		call_deferred("_resize_order_panel")
+
+
+func _resize_order_panel() -> void:
+	if _order_panel == null or not is_instance_valid(order_label):
+		return
+	var aabb_size := order_label.get_aabb().size
+	var font := order_label.font if order_label.font else ThemeDB.fallback_font
+	var text_height := font.get_height(order_label.font_size) * order_label.pixel_size
+	var pad := Vector2(0.05, 0.035)
+	var panel_size := Vector2(
+		aabb_size.x + pad.x,
+		text_height + pad.y
+	)
+	var panel_px := Vector2i(
+		int(panel_size.x / _order_panel.pixel_size),
+		int(panel_size.y / _order_panel.pixel_size)
+	)
+	panel_px.x = maxi(panel_px.x, 32)
+	panel_px.y = maxi(panel_px.y, 32)
+	var corner_px := clampi(int(mini(panel_px.x, panel_px.y) * 0.15), 8, 32)
+	var panel_color := Color(0.20, 0.22, 0.24, 0.88)
+	_order_panel.texture = _create_rounded_panel_texture(
+		panel_px.x, panel_px.y, panel_color, corner_px
+	)
+	_order_panel.scale = Vector3(1, 1, 1)
+	_order_panel.visible = true
+
+
+func _create_rounded_panel_texture(
+	width: int, height: int, color: Color, corner: int
+) -> ImageTexture:
+	var img := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var r := clampi(corner, 0, int(mini(width, height) / 2.0))
+	for x in range(width):
+		var nx := clampi(x, r, width - r - 1)
+		var dx := x - nx
+		var dx_sq := dx * dx
+		for y in range(height):
+			var ny := clampi(y, r, height - r - 1)
+			var dy := y - ny
+			if dx_sq + dy * dy <= r * r:
+				img.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(img)
+
+
+func _hide_order_bubble() -> void:
+	if _order_panel:
+		_order_panel.visible = false
+	if order_label:
+		order_label.visible = false
+
+
+func _build_order_bubble() -> void:
+	_order_panel = Sprite3D.new()
+	_order_panel.name = "OrderPanel"
+	_order_panel.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_order_panel.double_sided = true
+	_order_panel.no_depth_test = true
+	_order_panel.shaded = false
+	_order_panel.pixel_size = 0.0008
+	_order_panel.texture = _create_white_texture()
+	_order_panel.modulate = Color(1, 1, 1, 0.95)
+	_order_panel.position = Vector3(0, -0.65, -0.01)
+	_order_panel.sorting_offset = -1.0
+	_order_panel.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	emoji_anchor.add_child(_order_panel)
+	emoji_anchor.move_child(order_label, -1)
+
+	order_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	order_label.no_depth_test = true
+	order_label.pixel_size = 0.0008
+	order_label.font_size = 80
+	order_label.outline_size = 8
+	order_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	order_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	order_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	order_label.width = 0
+	order_label.sorting_offset = 1.0
+	order_label.modulate = Color(1, 1, 1, 1)
+	order_label.outline_size = 4
+	order_label.position = Vector3(0, -0.65, 0)
+	order_label.visible = false
+
+
+func _build_patience_circle() -> void:
+	var viewport := SubViewport.new()
+	viewport.name = "PatienceViewport"
+	viewport.transparent_bg = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport.disable_3d = true
+	viewport.size = Vector2i(128, 128)
+	add_child(viewport)
+
+	var tex := _create_ring_texture(128, 0.15)
+
+	_patience_progress = TextureProgressBar.new()
+	_patience_progress.name = "PatienceProgress"
+	_patience_progress.size = Vector2(128, 128)
+	_patience_progress.fill_mode = TextureProgressBar.FILL_CLOCKWISE
+	_patience_progress.nine_patch_stretch = false
+	_patience_progress.texture_progress = tex
+	_patience_progress.tint_progress = Color.WHITE
+	_patience_progress.max_value = 1000.0
+	_patience_progress.value = 1000.0
+	_patience_progress.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport.add_child(_patience_progress)
+
+	_patience_circle = Sprite3D.new()
+	_patience_circle.name = "PatienceCircle"
+	_patience_circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_patience_circle.double_sided = true
+	_patience_circle.no_depth_test = true
+	_patience_circle.shaded = false
+	_patience_circle.pixel_size = 0.0012
+	_patience_circle.position = Vector3(0, 2.2, 0)
+	_patience_circle.texture = viewport.get_texture()
+	add_child(_patience_circle)
+
+
+func _create_white_texture(size: int = 4) -> ImageTexture:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	return ImageTexture.create_from_image(img)
+
+
+func _create_ring_texture(size: int = 128, inner_ratio: float = 0.65) -> ImageTexture:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(1, 1, 1, 0))
+	var center := int(size / 2.0)
+	var outer := int(size / 2.0)
+	var inner := int(outer * inner_ratio)
+	var outer_sq := outer * outer
+	var inner_sq := inner * inner
+	for x in range(size):
+		var dx := x - center
+		var dx_sq := dx * dx
+		for y in range(size):
+			var d_sq := dx_sq + (y - center) * (y - center)
+			if d_sq <= outer_sq and d_sq >= inner_sq:
+				img.set_pixel(x, y, Color.WHITE)
+	return ImageTexture.create_from_image(img)

@@ -17,22 +17,9 @@ const IDEAL_LEMON_RATIO: float = 0.30 # 3 lemon scoops out of 10 total liquid
 # === RECIPE — SUGAR (ratio to liquid volume) ===
 const IDEAL_SUGAR_PER_LIQUID: float = 0.20 # 2 scoops out of 10 liquid = perfect
 
-# === RECIPE — ICE (scales with temperature) ===
-const ICE_MIN_COUNT: float = 0.0
-const ICE_MAX_COUNT: float = 5.0
-const ICE_MIN_TEMP: float = 10.0
-const ICE_MAX_TEMP: float = 40.0
-
-# === RECIPE — SCORING ===
-# Score = 1.0 within IDEAL ± INNER (the sweet spot).
-# Score decays linearly from 1.0 → 0.0 over the next OUTER distance beyond the sweet spot.
-# Combined score = lemon * sugar * ice → probability of "happy" outcome.
-const LEMON_SCORE_INNER: float = 0.06 # ±6%  ratio perfect zone  (0.24–0.36)
-const LEMON_SCORE_OUTER: float = 0.14 # decays to 0 at ratio 0.10 or 0.50
-const SUGAR_SCORE_INNER: float = 0.05 # ±5%  ratio perfect zone  (0.15–0.25)
-const SUGAR_SCORE_OUTER: float = 0.10 # decays to 0 at ratio 0.05 or 0.35
-const ICE_SCORE_INNER: float = 0.5 # ±0.5 scoops perfect zone (2–3 @ 25°C)
-const ICE_SCORE_OUTER: float = 2.0 # decays to 0 over the next ±2 scoops
+# === TEMPERATURE RANGE ===
+const TEMP_MIN: float = 10.0
+const TEMP_MAX: float = 40.0
 
 # === PITCHER ===
 const PITCHER_MAX_LIQUID: float = 10.0
@@ -82,15 +69,6 @@ const POPULARITY_LOSS_TIMEOUT: float = 0.04
 # === UPGRADES ===
 const UPGRADE_TIER1_COST: float = 25.0
 const UPGRADE_TIER2_COST: float = 75.0
-
-
-func ideal_ice_for_temp(temperature: float) -> float:
-	var t: float = clampf(
-		(temperature - ICE_MIN_TEMP) / (ICE_MAX_TEMP - ICE_MIN_TEMP),
-		0.0,
-		1.0,
-	)
-	return lerpf(ICE_MIN_COUNT, ICE_MAX_COUNT, t)
 
 
 static func spawn_interval_for_popularity(popularity: float) -> float:

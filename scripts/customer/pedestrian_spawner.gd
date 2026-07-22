@@ -10,6 +10,7 @@ const PEDESTRIAN_SCENE: PackedScene = preload("res://scenes/customer/pedestrian.
 @export var spawn_interval: float = 3.0
 
 var _customer_spawner: Node = null
+var _managed: bool = false
 var _pedestrians: Array = []
 var _spawn_timer: Timer
 
@@ -20,10 +21,13 @@ func _ready() -> void:
 	_spawn_timer.one_shot = false
 	_spawn_timer.timeout.connect(_try_spawn)
 	add_child(_spawn_timer)
+	add_to_group("pedestrian_spawner")
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
+	if _managed:
+		return
 	if phase == DayManager.Phase.DAY:
 		_spawn_timer.start()
 	else:
@@ -34,7 +38,31 @@ func setup(customer_spawner: Node) -> void:
 	_customer_spawner = customer_spawner
 
 
+func set_managed(enabled: bool) -> void:
+	_managed = enabled
+
+
+func spawn_on_path(path: PedestrianPath) -> void:
+	_pedestrians = _pedestrians.filter(func(p): return is_instance_valid(p))
+	if path == null or path.waypoints.is_empty():
+		push_warning("PedestrianSpawner: cannot spawn on null or empty path.")
+		return
+	_spawn_pedestrian(path)
+
+
+func _spawn_pedestrian(path: PedestrianPath) -> void:
+	var ped: Pedestrian = PEDESTRIAN_SCENE.instantiate()
+	get_parent().add_child(ped)
+	ped.global_position = path.waypoints[0].global_position
+	ped.setup(path.waypoints, 1)
+	ped.wants_to_join.connect(_on_wants_to_join)
+	_pedestrians.append(ped)
+	EventBus.pedestrian_spawned.emit(ped)
+
+
 func _try_spawn() -> void:
+	if _managed:
+		return
 	_pedestrians = _pedestrians.filter(func(p): return is_instance_valid(p))
 	if _pedestrians.size() >= max_pedestrians:
 		return
@@ -59,12 +87,7 @@ func _try_spawn() -> void:
 			chosen = p
 			break
 
-	var ped: Pedestrian = PEDESTRIAN_SCENE.instantiate()
-	get_parent().add_child(ped)
-	ped.global_position = chosen.waypoints[0].global_position
-	ped.setup(chosen.waypoints, 1)
-	ped.wants_to_join.connect(_on_wants_to_join)
-	_pedestrians.append(ped)
+	_spawn_pedestrian(chosen)
 
 
 func _on_wants_to_join(ped: Pedestrian) -> void:

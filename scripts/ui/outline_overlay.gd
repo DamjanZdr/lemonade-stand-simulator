@@ -12,8 +12,6 @@ extends Node
 ## The main Camera3D has bit 2 excluded from its cull_mask, so the fill
 ## nodes are completely invisible in the main view.
 
-const _OUTLINE_SHADER := preload("res://scripts/shaders/outline.gdshader")
-
 @onready var _subvp: SubViewport = $SubViewport
 @onready var _cam: Camera3D = $SubViewport/OutlineCamera
 @onready var _display: TextureRect = $OverlayLayer/DisplayRect
@@ -33,13 +31,22 @@ func _ready() -> void:
 	# Render the outline mask at the project base size so it stretches with the
 	# 3D viewport instead of being treated as an independent UI element.
 	_subvp.size = _get_base_viewport_size()
+	_subvp.world_3d = get_viewport().world_3d
+	_subvp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	get_viewport().size_changed.connect(_update_shader_width)
 
-	# Build the edge-detect material and point it at the SubViewport texture.
-	var mat := ShaderMaterial.new()
-	mat.shader = _OUTLINE_SHADER
-	_display.material = mat
-	_display.texture = _subvp.get_texture()
+	# Make sure the outline camera is the active camera in the SubViewport.
+	if _cam != null:
+		_cam.current = true
+
+	# The edge-detect material uses the SubViewport texture as a shader
+	# parameter. Assign it in code as well so it survives project reloads.
+	if _display != null and _display.material != null:
+		_display.texture = _subvp.get_texture()
+		(_display.material as ShaderMaterial).set_shader_parameter(
+			"outline_texture",
+			_subvp.get_texture(),
+		)
 
 	# Dev panel live controls.
 	EventBus.debug_set_outline_width.connect(_on_set_width)
@@ -83,8 +90,12 @@ func setup(main_cam: Camera3D) -> void:
 
 
 func _on_frame_pre_draw() -> void:
-	if _main_cam == null:
+	if _display == null or get_tree() == null or _main_cam == null:
 		return
+	# Only show the outline overlay when at least one object is highlighted.
+	var active := get_tree().get_first_node_in_group("outline_fill") != null
+	_display.visible = active
+	_subvp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	# Mirror main camera immediately before rendering so the outline mask
 	# never lags behind the main view.
 	_cam.global_transform = _main_cam.global_transform

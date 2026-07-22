@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://dt01trekuy5m7"]
+
+[ext_resource type="Script" path="res://scripts/objects/end_day_trigger.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="mat_panel"]
+albedo_color = Color(0.2, 0.15, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.8, 0.2, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="BoxMesh" id="mesh_panel"]
+size = Vector3(0.6, 0.4, 0.05)
+
+[sub_resource type="BoxShape3D" id="shape_post"]
+size = Vector3(0.6, 1.2, 0.05)
+
+[sub_resource type="BoxShape3D" id="shape_sign"]
+size = Vector3(0.6, 0.4, 0.05)
+
+[node name="EndDayTrigger" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Post" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("mesh_panel")
+
+[node name="PostBody" type="StaticBody3D" parent="Post"]
+
+[node name="PostCol" type="CollisionShape3D" parent="Post/PostBody"]
+shape = SubResource("shape_post")
+
+[node name="Sign" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+
+[node name="Panel" type="MeshInstance3D" parent="Sign"]
+material_override = SubResource("mat_panel")
+mesh = SubResource("mesh_panel")
+
+[node name="SignBody" type="StaticBody3D" parent="Sign/Panel"]
+
+[node name="SignCol" type="CollisionShape3D" parent="Sign/Panel/SignBody"]
+shape = SubResource("shape_sign")

@@ -32,8 +32,8 @@ func _on_day_timer_updated(time_left: float, total_time: float) -> void:
 	if total_time <= 0.0:
 		return
 	var t := clampf(1.0 - (time_left / total_time), 0.0, 1.0)
-	# Map 0→1 to 6:00 → 18:00 (12-hour workday)
-	var total_minutes: float = 6.0 * 60.0 + t * 12.0 * 60.0
+	# Map 0→1 to 9:00 → 18:00 (9-hour workday)
+	var total_minutes: float = 9.0 * 60.0 + t * 9.0 * 60.0
 	var hour: int = int(total_minutes / 60.0)
 	var minute: int = int(total_minutes) % 60
 	var ampm := "AM" if hour < 12 else "PM"

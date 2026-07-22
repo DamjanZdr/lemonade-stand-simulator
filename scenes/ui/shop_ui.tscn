@@ -2,6 +2,9 @@
 
 [ext_resource type="Script" path="res://scripts/ui/shop_ui.gd" id="1_shop"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.12, 0.12, 0.14, 0.95)
+
 [node name="ShopUI" type="CanvasLayer"]
 script = ExtResource("1_shop")
 layer = 10
@@ -14,6 +17,7 @@ offset_left = 40.0
 offset_top = 40.0
 offset_right = -40.0
 offset_bottom = -40.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="VBox" type="VBoxContainer" parent="Panel"]
 layout_mode = 2
@@ -38,27 +42,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Weather: 25°C"
 horizontal_alignment = 2
-
-[node name="Sep1" type="HSeparator" parent="Panel/VBox"]
-layout_mode = 2
-
-[node name="PriceRow" type="HBoxContainer" parent="Panel/VBox"]
-layout_mode = 2
-
-[node name="PriceLabel" type="Label" parent="Panel/VBox/PriceRow"]
-layout_mode = 2
-text = "Cup Price:"
-
-[node name="PriceSlider" type="HSlider" parent="Panel/VBox/PriceRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PriceValue" type="Label" parent="Panel/VBox/PriceRow"]
-layout_mode = 2
-text = "$1.50"
-
-[node name="Sep2" type="HSeparator" parent="Panel/VBox"]
-layout_mode = 2
 
 [node name="ShopLabel" type="Label" parent="Panel/VBox"]
 layout_mode = 2

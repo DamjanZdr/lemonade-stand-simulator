@@ -24,15 +24,21 @@ func set_delivery_zone(pos: Vector3) -> void:
 func _spawn_box(box: SupplyBox) -> void:
 	get_parent().add_child(box)
 
+	# Ensure stacking metrics are derived from the current box mesh scale.
+	box.update_metrics()
+
 	var target := _fallback_zone
 	var cell_idx := -1
+	var rot := Vector3.ZERO
 	if _grid != null:
 		var slot := _grid.reserve_next_slot()
 		cell_idx = slot.get("index", -1)
 		target = slot.get("position", _fallback_zone)
+		rot = slot.get("rotation", Vector3.ZERO)
 
 	var drop_start := target + Vector3(0, Balancing.DELIVERY_DROP_HEIGHT, 0)
 	box.global_position = drop_start
+	box.global_rotation = rot
 	EventBus.supply_box_spawned.emit(box)
 
 	if _grid != null and cell_idx >= 0:

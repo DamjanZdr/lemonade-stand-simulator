@@ -48,6 +48,7 @@ func _spawn_at_slot(slot_index: int) -> void:
 	customer.queue_slot = slot_index
 	customer.queue_position = _queue_spots[slot_index]
 	_apply_facing(customer)
+	customer.expected_fruit = _random_fruit()
 	_queue[slot_index] = customer
 
 
@@ -215,6 +216,12 @@ func get_slot_position(slot_index: int) -> Vector3:
 	return _queue_spots[slot_index]
 
 
+func _random_fruit() -> String:
+	if GameState.FRUIT_TYPES.is_empty():
+		return "lemon"
+	return GameState.FRUIT_TYPES[randi() % GameState.FRUIT_TYPES.size()]
+
+
 ## Called by PedestrianSpawner once the pedestrian has physically walked to the slot.
 ## Clears the reservation and spawns a customer already in WAITING state at the slot.
 ## If [source_pedestrian] is given, the pedestrian's NPCBody is transferred so the
@@ -224,6 +231,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	customer.queue_slot = slot_index
 	customer.queue_position = _queue_spots[slot_index]
 	_apply_facing(customer)
+	customer.expected_fruit = _random_fruit()
 
 	var route_continuation: Dictionary = { }
 	if source_pedestrian != null and is_instance_valid(source_pedestrian):

@@ -23,6 +23,13 @@ var root_node_name: String = ""
 func _ready() -> void:
 	_load_tree()
 	_apply_radial_layout()
+	# Override definitions from UpgradeConfigManager if present.
+	var scene: Node = Engine.get_main_loop().current_scene
+	var cfg: Node = scene.get_node_or_null("Managers/UpgradeConfigManager")
+	if cfg != null and cfg.has_method("get_upgrades"):
+		for def in cfg.get_upgrades():
+			if def != null:
+				definitions[str(def.id)] = def
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 
 

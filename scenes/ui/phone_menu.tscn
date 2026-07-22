@@ -23,17 +23,6 @@ visible = false
 text = "📱 Phone Menu  (Tab to close)"
 theme_override_font_sizes/font_size = 18
 
-[node name="PriceRow" type="HBoxContainer" parent="Panel/VBox"]
-
-[node name="PriceLabel" type="Label" parent="Panel/VBox/PriceRow"]
-text = "Price:"
-
-[node name="PriceSlider" type="HSlider" parent="Panel/VBox/PriceRow"]
-custom_minimum_size = Vector2(160, 0)
-
-[node name="PriceValue" type="Label" parent="Panel/VBox/PriceRow"]
-text = "$1.50"
-
 [node name="Sep" type="HSeparator" parent="Panel/VBox"]
 
 [node name="OrdersLabel" type="Label" parent="Panel/VBox"]

@@ -9,12 +9,6 @@ extends Resource
 ## Display name shown to the player.
 @export var display_name: String = "Lemon"
 
-## How much flavor 1 unit of this fruit contributes to "strength".
-@export var flavor_strength: float = 1.0
-
-## How much sweetness 1 unit of this fruit contributes.
-@export var sweetness: float = 0.0
-
 ## Ideal number of fruits for a standard pitcher.
 @export var ideal_fruit_count: int = 3
 
@@ -27,12 +21,16 @@ extends Resource
 ## How many seconds it takes to press one unit of this fruit.
 @export var press_time_per_fruit: float = 1.0
 
-## Scoring thresholds — how far from ideal before the score drops.
-@export_group("Scoring Tolerance")
-@export var fruit_count_inner: float = 0.5 ## ±0.5 fruits = perfect
-@export var fruit_count_outer: float = 2.0 ## beyond this = 0 score
-@export var sugar_inner: float = 0.5
-@export var sugar_outer: float = 2.0
+## Chance per unit away from ideal that the customer complains (0.0 to 1.0).
+## e.g. 0.3 = 30% chance per wrong unit.
+@export_group("Unhappy Chance Per Unit")
+@export var fruit_unhappy_chance: float = 0.3
+@export var sugar_unhappy_chance: float = 0.3
+
+@export_group("Pricing")
+@export var default_price: float = 1.50
+@export var price_min: float = 0.25
+@export var price_max: float = 5.00
 
 
 func get_ideal_sugar_for(fruit_count: float) -> float:

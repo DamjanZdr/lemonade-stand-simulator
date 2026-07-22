@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dd3ejdat2703n"]
+
+[ext_resource type="Script" path="res://tools/test_grid_tracking.gd" id="1_track"]
+
+[node name="TestGridTracking" type="Node3D"]
+script = ExtResource("1_track")

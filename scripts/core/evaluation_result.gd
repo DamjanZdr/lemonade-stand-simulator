@@ -10,6 +10,11 @@ var sweetness_score: float = 0.0
 var strength_score: float = 0.0
 var temperature_score: float = 0.0
 
+## Units away from ideal for each axis.
+var fruit_delta: float = 0.0
+var sugar_delta: float = 0.0
+var ice_delta: float = 0.0
+
 ## Ordered list of specific complaints, e.g., ["too_sweet", "not_cold_enough"].
 ## Empty if the drink is perfect.
 var complaints: Array[String] = []

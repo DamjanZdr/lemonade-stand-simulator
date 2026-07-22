@@ -100,6 +100,16 @@ var _right_rest_dir := Vector3.ZERO
 var _eye_rot_l := Quaternion.IDENTITY
 var _eye_rot_r := Quaternion.IDENTITY
 var _player_cache: Node3D = null
+var _camera_cache: Camera3D = null
+
+
+func _get_player_camera() -> Camera3D:
+	if _camera_cache and is_instance_valid(_camera_cache):
+		return _camera_cache
+	if _player_cache == null:
+		return null
+	_camera_cache = _player_cache.find_child("Camera3D", true, false) as Camera3D
+	return _camera_cache
 
 
 func randomize_appearance() -> void:
@@ -212,7 +222,8 @@ func _update_eye_look(delta: float) -> void:
 	if _player_cache == null:
 		return
 
-	var aim := _player_cache.global_position + Vector3(0, 1.2, 0)
+	var cam := _get_player_camera()
+	var aim := cam.global_position if cam else _player_cache.global_position + Vector3(0, 1.7, 0)
 	var dist := _left_eye.global_position.distance_to(_player_cache.global_position)
 	var t := clampf(eye_look_speed * delta, 0.0, 1.0)
 

@@ -20,7 +20,7 @@ func _ready() -> void:
 				return
 			_test_payment_cooldown = 1.0
 			# Mirror customer._customer_payment() so the bill reflects the live price.
-			var price := GameState.current_price
+			var price := GameState.get_price("lemon")
 			var payment: float
 			if price <= 1.0:
 				payment = 1.0
@@ -91,7 +91,8 @@ func _ready() -> void:
 			GameState.money = Balancing.STARTING_MONEY
 			GameState.popularity = 0.1
 			GameState.temperature = 25.0
-			GameState.current_price = 1.5
+			for ft in GameState.FRUIT_TYPES:
+				GameState.prices[ft] = 1.50
 			GameState.feedback_tier = 0
 			GameState.customers_served_happy = 0
 			GameState.customers_lost = 0
@@ -107,7 +108,8 @@ func _ready() -> void:
 			EventBus.money_changed.emit(GameState.money)
 			EventBus.popularity_changed.emit(GameState.popularity)
 			EventBus.weather_changed.emit(GameState.temperature)
-			EventBus.price_changed.emit(GameState.current_price)
+			for ft in GameState.FRUIT_TYPES:
+				EventBus.price_changed.emit(ft, GameState.get_price(ft))
 			EventBus.feedback_tier_changed.emit(GameState.feedback_tier)
 	)
 	vbox.add_child(reset_btn)
@@ -141,12 +143,12 @@ func _refresh() -> void:
 	else "No pitcher"
 
 	stats_label.text = (
-			"Money: $%.2f\nPop: %d%%\nTemp: %.0f°C\nTier: %d\nPrice: $%.2f" % [
+			"Money: $%.2f\nPop: %d%%\nTemp: %.0fC\nTier: %d\nPrice: $%.2f (lemon)" % [
 				GameState.money,
 				int(GameState.popularity * 100),
 				GameState.temperature,
 				GameState.feedback_tier,
-				GameState.current_price,
+				GameState.get_price("lemon"),
 			]
 	)
 	verdict_label.text = "Recipe: " + verdict

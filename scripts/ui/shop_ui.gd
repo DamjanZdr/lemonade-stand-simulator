@@ -1,12 +1,10 @@
 extends CanvasLayer
-## Morning shop UI: buy ingredients, set price, then start the day.
+## Morning shop UI: buy ingredients, then start the day.
 
 @onready var panel: PanelContainer = $Panel
 @onready var money_label: Label = $Panel/VBox/Header/MoneyLabel
 @onready var day_label: Label = $Panel/VBox/Header/DayLabel
 @onready var temp_label: Label = $Panel/VBox/Header/TempLabel
-@onready var price_slider: HSlider = $Panel/VBox/PriceRow/PriceSlider
-@onready var price_value: Label = $Panel/VBox/PriceRow/PriceValue
 @onready var grid: GridContainer = $Panel/VBox/Scroll/Grid
 @onready var start_btn: Button = $Panel/VBox/StartBtn
 @onready var status_label: Label = $Panel/VBox/StatusLabel
@@ -28,12 +26,6 @@ const SHOP_ITEMS: Array[Dictionary] = [
 
 func _ready() -> void:
 	panel.visible = false
-	price_slider.min_value = Balancing.PRICE_MIN
-	price_slider.max_value = Balancing.PRICE_MAX
-	price_slider.step = 0.05
-	price_slider.value = GameState.current_price
-	price_value.text = "$%.2f" % GameState.current_price
-	price_slider.value_changed.connect(_on_price_changed)
 	start_btn.pressed.connect(_on_start_day)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.money_changed.connect(_on_money_changed)
@@ -53,6 +45,15 @@ func _on_day_phase_changed(phase: int, day: int) -> void:
 		panel.visible = false
 
 
+func set_auto_show(enabled: bool) -> void:
+	if enabled:
+		if not EventBus.day_phase_changed.is_connected(_on_day_phase_changed):
+			EventBus.day_phase_changed.connect(_on_day_phase_changed)
+	else:
+		if EventBus.day_phase_changed.is_connected(_on_day_phase_changed):
+			EventBus.day_phase_changed.disconnect(_on_day_phase_changed)
+
+
 func _on_money_changed(_amount: float) -> void:
 	if panel.visible:
 		_update_money_label()
@@ -61,11 +62,6 @@ func _on_money_changed(_amount: float) -> void:
 
 func _update_money_label() -> void:
 	money_label.text = "Money: $%.2f" % GameState.money
-
-
-func _on_price_changed(value: float) -> void:
-	price_value.text = "$%.2f" % value
-	EventBus.price_changed.emit(value)
 
 
 func _build_grid() -> void:
@@ -128,6 +124,10 @@ func _update_buttons() -> void:
 		var btn := grid.get_node_or_null("Btn_" + id) as Button
 		if btn:
 			btn.disabled = qty <= 0 or GameState.money < total
+
+
+func update_buttons() -> void:
+	_update_buttons()
 
 
 func _buy_item(id: String) -> void:

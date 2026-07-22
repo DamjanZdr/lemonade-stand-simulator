@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://csb7yl8gpw1q3"]
+
+[ext_resource type="Script" uid="uid://10v3i1d0lyv4" path="res://scripts/objects/computer.gd" id="1_computer"]
+[ext_resource type="PackedScene" uid="uid://do7lxxq3aofc4" path="res://blender/Computer.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://3j1qhop5peqq" path="res://scenes/ui/morning_hub.tscn" id="3_ui"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_computer"]
+resource_local_to_scene = true
+size = Vector2(2.41, 1.51)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_computer"]
+size = Vector3(2.66, 1.6687256, 0.13007812)
+
+[node name="Computer" type="StaticBody3D" unique_id=1111887378]
+collision_mask = 0
+script = ExtResource("1_computer")
+
+[node name="Model" parent="." unique_id=1478077051 instance=ExtResource("2_model")]
+
+[node name="ScreenMesh" type="MeshInstance3D" parent="." unique_id=515252009]
+transform = Transform3D(1, 0, 0, 0, 0.9961947, 0.08715574, 0, -0.08715574, 0.9961947, 0.00242991, 1.1561246, -0.6901735)
+mesh = SubResource("QuadMesh_computer")
+
+[node name="ScreenUI" type="SubViewport" parent="." unique_id=759285602]
+disable_3d = true
+size = Vector2i(1680, 1053)
+render_target_update_mode = 4
+
+[node name="BG" type="ColorRect" parent="ScreenUI" unique_id=27104261]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.022, 0.028, 1)
+
+[node name="MorningHub" parent="ScreenUI" unique_id=2095995234 instance=ExtResource("3_ui")]
+
+[node name="ScreenCamera" type="Camera3D" parent="." unique_id=48626850]
+transform = Transform3D(1, 0, 0, 0, 0.9961947, 0.08715574, 0, -0.08715574, 0.9961947, -0.008969113, 1.3537514, 1.537847)
+fov = 40.0
+metadata/_edit_group_ = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1093135303]
+transform = Transform3D(1, 0, 0, 0, 0.9961947, 0.08715574, 0, -0.08715574, 0.9961947, 0.00242991, 1.1514317, -0.73396623)
+shape = SubResource("BoxShape3D_computer")

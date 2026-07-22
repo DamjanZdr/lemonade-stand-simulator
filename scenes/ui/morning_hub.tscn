@@ -223,7 +223,7 @@ theme_override_constants/separation = 16
 [node name="DayLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.92, 0.85, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 26
 text = "Day 1"
 
 [node name="Spacer" type="Control" parent="MainHBox/Panel/VBox/Header"]
@@ -233,24 +233,70 @@ size_flags_horizontal = 3
 [node name="MoneyLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.28, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Money: $0.00"
 
 [node name="TempLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.70, 0.85, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 18
 text = "25C"
 
 [node name="HeaderSep" type="HSeparator" parent="MainHBox/Panel/VBox"]
 layout_mode = 2
 theme_override_styles/separator = SubResource("header_sep")
 
-[node name="TabTitle" type="Label" parent="MainHBox/Panel/VBox"]
+[node name="FlowIndicator" type="HBoxContainer" parent="MainHBox/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 14
+alignment = 1
+theme_override_constants/separation = 4
+
+[node name="StepPC_analytics" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(130, 44)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_analytics" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_analytics"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 18
 text = "Analytics"
+horizontal_alignment = 1
+
+[node name="StepPC_upgrades" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(130, 44)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_upgrades" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_upgrades"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 18
+text = "Upgrades"
+horizontal_alignment = 1
+
+[node name="StepPC_shop" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(130, 44)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_shop" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_shop"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 18
+text = "Shop"
+horizontal_alignment = 1
+
+[node name="StepPC_recipes" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(130, 44)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_recipes" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_recipes"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_font_sizes/font_size = 18
+text = "Recipes"
 horizontal_alignment = 1
 
 [node name="Content" type="MarginContainer" parent="MainHBox/Panel/VBox"]
@@ -270,7 +316,7 @@ theme_override_constants/separation = 16
 [node name="TodayLabel" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.72, 0.66, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 18
 text = "Day 1  |  $0.00  |  0% pop  |  25C"
 
 [node name="YesterdayBox" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
@@ -305,27 +351,27 @@ theme_override_constants/separation = 4
 [node name="TipTitle" type="Label" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip/TipContent"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.82, 0.25, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 18
 text = "Upgrade Name"
 
 [node name="TipPrice" type="Label" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip/TipContent"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 14
 text = "$0"
 
 [node name="TipDesc" type="Label" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip/TipContent"]
 layout_mode = 2
-custom_minimum_size = Vector2(180, 0)
+custom_minimum_size = Vector2(220, 0)
 theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 14
 text = "Description"
 autowrap_mode = 2
 
 [node name="TipEffect" type="Label" parent="MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree/Tooltip/TipContent"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.85, 0.4, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 14
 text = "Current bonus: +10%"
 
 [node name="ShopPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
@@ -343,7 +389,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
 theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
 theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = SubResource("btn_secondary")
 theme_override_styles/hover = SubResource("btn_secondary_hover")
 theme_override_styles/pressed = SubResource("btn_secondary_pressed")
@@ -354,7 +400,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
 theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
 theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = SubResource("btn_secondary")
 theme_override_styles/hover = SubResource("btn_secondary_hover")
 theme_override_styles/pressed = SubResource("btn_secondary_pressed")
@@ -365,7 +411,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
 theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
 theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = SubResource("btn_secondary")
 theme_override_styles/hover = SubResource("btn_secondary_hover")
 theme_override_styles/pressed = SubResource("btn_secondary_pressed")
@@ -389,7 +435,7 @@ theme_override_constants/v_separation = 10
 columns = 2
 
 [node name="CartPC" type="PanelContainer" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit"]
-custom_minimum_size = Vector2(230, 0)
+custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("cart_panel")
 
@@ -401,7 +447,7 @@ theme_override_constants/separation = 8
 [node name="CartTitle" type="Label" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 text = "Cart"
 horizontal_alignment = 1
 
@@ -422,17 +468,17 @@ theme_override_constants/separation = 6
 [node name="CartTotal" type="Label" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 text = "Total: $0.00"
 horizontal_alignment = 1
 
 [node name="CheckoutBtn" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 44)
 theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
 theme_override_colors/font_hover_color = Color(0.05, 0.05, 0.05, 1)
 theme_override_colors/font_pressed_color = Color(0.95, 0.92, 0.85, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("btn_primary")
 theme_override_styles/hover = SubResource("btn_primary_hover")
 theme_override_styles/pressed = SubResource("btn_primary_pressed")
@@ -446,145 +492,62 @@ size_flags_vertical = 3
 [node name="Label" type="Label" parent="MainHBox/Panel/VBox/Content/ShopPage/EmployeesPlaceholder"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Under Construction"
 horizontal_alignment = 1
 
-[node name="ReadyPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
+[node name="PricesPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="ReadyTitle" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage"]
+[node name="PricesTitle" type="Label" parent="MainHBox/Panel/VBox/Content/PricesPage"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 20
-text = "Ready to Open?"
+theme_override_font_sizes/font_size = 26
+text = "Set Your Prices"
 horizontal_alignment = 1
 
-[node name="WeatherRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ReadyPage"]
+[node name="WeatherRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/PricesPage"]
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 24
 
-[node name="TempInfo" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage/WeatherRow"]
+[node name="TempInfo" type="Label" parent="MainHBox/Panel/VBox/Content/PricesPage/WeatherRow"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.70, 0.85, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 text = "Temperature: 25C"
 
-[node name="PopInfo" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage/WeatherRow"]
+[node name="PopInfo" type="Label" parent="MainHBox/Panel/VBox/Content/PricesPage/WeatherRow"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 text = "Popularity: 10%"
 
-[node name="PriceRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ReadyPage"]
+[node name="PriceSlider" type="HSlider" parent="MainHBox/Panel/VBox/Content/PricesPage"]
+visible = false
 layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 12
 
-[node name="PriceTitle" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage/PriceRow"]
+[node name="PriceListScroll" type="ScrollContainer" parent="MainHBox/Panel/VBox/Content/PricesPage"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 15
-text = "Cup Price:"
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
-[node name="PriceSlider" type="HSlider" parent="MainHBox/Panel/VBox/Content/ReadyPage/PriceRow"]
+[node name="PriceList" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/PricesPage/PriceListScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(200, 0)
-
-[node name="PriceValue" type="Label" parent="MainHBox/Panel/VBox/Content/ReadyPage/PriceRow"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.92, 0.78, 0.28, 1)
-theme_override_font_sizes/font_size = 16
-text = "$0.00"
-
-[node name="StartDayBtn" type="Button" parent="MainHBox/Panel/VBox/Content/ReadyPage"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 50)
-theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
-theme_override_colors/font_hover_color = Color(0.05, 0.05, 0.05, 1)
-theme_override_colors/font_pressed_color = Color(0.95, 0.92, 0.85, 1)
-theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("btn_primary")
-theme_override_styles/hover = SubResource("btn_primary_hover")
-theme_override_styles/pressed = SubResource("btn_primary_pressed")
-text = "Start Day 1"
-
-[node name="FlowIndicator" type="HBoxContainer" parent="MainHBox/Panel/VBox"]
-layout_mode = 2
+theme_override_constants/separation = 16
 alignment = 1
-theme_override_constants/separation = 2
 
-[node name="BackBtn" type="Button" parent="MainHBox/Panel/VBox/FlowIndicator"]
+[node name="RecipesPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
+visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(32, 32)
-theme_override_colors/font_color = Color(0.6, 0.58, 0.52, 1)
-theme_override_colors/font_hover_color = Color(0.85, 0.82, 0.75, 1)
-theme_override_font_sizes/font_size = 16
-theme_override_styles/normal = SubResource("tab_normal")
-theme_override_styles/hover = SubResource("btn_secondary_hover")
-theme_override_styles/pressed = SubResource("btn_secondary_pressed")
-text = "<"
-
-[node name="StepPC_analytics" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 32)
-theme_override_styles/panel = SubResource("tab_normal")
-
-[node name="StepLbl_analytics" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_analytics"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 13
-text = "Analytics"
-
-[node name="StepPC_upgrades" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 32)
-theme_override_styles/panel = SubResource("tab_normal")
-
-[node name="StepLbl_upgrades" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_upgrades"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 13
-text = "Upgrades"
-
-[node name="StepPC_shop" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 32)
-theme_override_styles/panel = SubResource("tab_normal")
-
-[node name="StepLbl_shop" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_shop"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 13
-text = "Shop"
-
-[node name="StepPC_ready" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 32)
-theme_override_styles/panel = SubResource("tab_normal")
-
-[node name="StepLbl_ready" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_ready"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 13
-text = "Ready"
-
-[node name="NextBtn" type="Button" parent="MainHBox/Panel/VBox/FlowIndicator"]
-layout_mode = 2
-custom_minimum_size = Vector2(32, 32)
-theme_override_colors/font_color = Color(0.6, 0.58, 0.52, 1)
-theme_override_colors/font_hover_color = Color(0.85, 0.82, 0.75, 1)
-theme_override_font_sizes/font_size = 16
-theme_override_styles/normal = SubResource("tab_normal")
-theme_override_styles/hover = SubResource("btn_secondary_hover")
-theme_override_styles/pressed = SubResource("btn_secondary_pressed")
-text = ">"
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+alignment = 1
 
 [node name="BottomBar" type="VBoxContainer" parent="MainHBox/Panel/VBox"]
 layout_mode = 2
@@ -593,7 +556,7 @@ theme_override_constants/separation = 4
 [node name="StatusLbl" type="Label" parent="MainHBox/Panel/VBox/BottomBar"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.85, 0.4, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 
 [node name="RightPanel" type="PanelContainer" parent="MainHBox"]
@@ -611,12 +574,12 @@ theme_override_constants/separation = 10
 [node name="PreviewTitle" type="Label" parent="MainHBox/RightPanel/RightVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 18
 text = "Stand Preview"
 horizontal_alignment = 1
 
 [node name="PreviewContainer" type="PanelContainer" parent="MainHBox/RightPanel/RightVBox"]
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 220)
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 1.2
@@ -636,7 +599,7 @@ stretch = true
 
 [node name="PreviewViewport" type="SubViewport" parent="MainHBox/RightPanel/RightVBox/PreviewContainer/AspectRatioContainer/SubViewportContainer"]
 handle_input_locally = false
-size = Vector2i(320, 250)
+size = Vector2i(400, 310)
 render_target_update_mode = 4
 
 [node name="PreviewCamera" type="Camera3D" parent="MainHBox/RightPanel/RightVBox/PreviewContainer/AspectRatioContainer/SubViewportContainer/PreviewViewport"]
@@ -649,7 +612,7 @@ theme_override_styles/separator = SubResource("header_sep")
 [node name="StatsTitle" type="Label" parent="MainHBox/RightPanel/RightVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 18
 text = "Stand Status"
 horizontal_alignment = 1
 

@@ -24,11 +24,6 @@ const ITEM_PREVIEW_SCENES: Dictionary = {
 @onready var backdrop: ColorRect = $Backdrop
 
 @onready var _status_lbl: Label = $MainHBox/Panel/VBox/BottomBar/StatusLbl
-@onready var _back_btn: Button = $MainHBox/Panel/VBox/FlowIndicator/BackBtn
-@onready var _next_btn: Button = $MainHBox/Panel/VBox/FlowIndicator/NextBtn
-@onready var _start_btn: Button = (
-		$MainHBox/Panel/VBox/Content/ReadyPage/StartDayBtn
-)
 @onready var _flow_indicator: HBoxContainer = $MainHBox/Panel/VBox/FlowIndicator
 
 @onready var _cart_list: VBoxContainer = (
@@ -52,12 +47,15 @@ const ITEM_PREVIEW_SCENES: Dictionary = {
 )
 
 var _active_tab: String = "analytics"
-var _flow_tabs: Array[String] = ["analytics", "upgrades", "shop", "ready"]
+var _flow_tabs: Array[String] = ["analytics", "upgrades", "shop", "recipes"]
 var _flow_step: int = 0
 var _cart: Array[Dictionary] = []
 var _preview_angle: float = 0.0
 var _bin_amounts: Dictionary = { }
 var _equipment_counts: Dictionary = { }
+
+var _ice_spin: SpinBox = null
+var _ice_unit: String = "C"
 
 # Upgrade tree pan state
 var _tree_pan_offset: Vector2 = Vector2.ZERO
@@ -133,10 +131,9 @@ var container_items: Array[Dictionary] = [
 func _ready() -> void:
 	panel.visible = false
 	backdrop.visible = false
+	if _right_panel:
+		_right_panel.visible = false
 
-	_back_btn.pressed.connect(_on_nav_back)
-	_next_btn.pressed.connect(_on_next_pressed)
-	_start_btn.pressed.connect(_on_start_day)
 	_checkout_btn.pressed.connect(_checkout_cart)
 
 	# Make tab labels clickable
@@ -163,18 +160,10 @@ func _ready() -> void:
 				child.pressed.connect(func(): _show_shop_category(cat))
 
 	var price_slider := (
-			$MainHBox/Panel/VBox/Content/ReadyPage/PriceRow/PriceSlider as HSlider
+			$MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider
 	)
 	if price_slider:
-		price_slider.min_value = 0.25
-		price_slider.max_value = 10.0
-		price_slider.step = 0.25
-		price_slider.value = GameState.current_price
-		price_slider.value_changed.connect(
-			func(v: float):
-				GameState.current_price = v
-				EventBus.price_changed.emit(v)
-		)
+		pass
 
 	EventBus.price_changed.connect(_on_price_changed)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
@@ -346,7 +335,7 @@ func _ready() -> void:
 						)
 		)
 
-	_scan_stand_state()
+	_build_recipes_page()
 
 	# Fix preview viewport to share the game world
 	var preview_viewport := (
@@ -855,21 +844,21 @@ func _create_item_card(
 
 	var name_lbl := Label.new()
 	name_lbl.text = item["name"]
-	name_lbl.add_theme_font_size_override("font_size", 14)
+	name_lbl.add_theme_font_size_override("font_size", 18)
 	name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
 	right_box.add_child(name_lbl)
 
 	var pack_qty: int = int(item.get("qty", 1))
 	var pack_lbl := Label.new()
 	pack_lbl.text = "%d unit%s" % [pack_qty, "" if pack_qty == 1 else "s"]
-	pack_lbl.add_theme_font_size_override("font_size", 11)
+	pack_lbl.add_theme_font_size_override("font_size", 14)
 	pack_lbl.add_theme_color_override("font_color", Color(0.65, 0.68, 0.75))
 	right_box.add_child(pack_lbl)
 
 	var per_unit: float = item["cost"] / maxi(1, pack_qty)
 	var per_unit_lbl := Label.new()
 	per_unit_lbl.text = "$%.2f / unit" % per_unit
-	per_unit_lbl.add_theme_font_size_override("font_size", 11)
+	per_unit_lbl.add_theme_font_size_override("font_size", 14)
 	per_unit_lbl.add_theme_color_override("font_color", Color(0.55, 0.70, 0.85))
 	right_box.add_child(per_unit_lbl)
 
@@ -881,15 +870,15 @@ func _create_item_card(
 
 	var total_lbl := Label.new()
 	total_lbl.text = "$%.2f" % item["cost"]
-	total_lbl.add_theme_font_size_override("font_size", 14)
+	total_lbl.add_theme_font_size_override("font_size", 18)
 	total_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
 	total_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_row.add_child(total_lbl)
 
 	var add_btn := Button.new()
 	add_btn.text = "+"
-	add_btn.custom_minimum_size = Vector2(32, 32)
-	add_btn.add_theme_font_size_override("font_size", 18)
+	add_btn.custom_minimum_size = Vector2(40, 40)
+	add_btn.add_theme_font_size_override("font_size", 22)
 	_apply_button_style(
 		add_btn,
 		Color(0.14, 0.15, 0.19),
@@ -906,9 +895,6 @@ func _create_item_card(
 
 func _show_tab(tab_name: String) -> void:
 	_active_tab = tab_name
-	var title_lbl := $MainHBox/Panel/VBox/TabTitle as Label
-	if title_lbl:
-		title_lbl.text = tab_name.capitalize()
 	var content := $MainHBox/Panel/VBox/Content as MarginContainer
 	if content:
 		for child in content.get_children():
@@ -923,8 +909,8 @@ func _show_tab(tab_name: String) -> void:
 		_refresh_upgrades()
 	elif tab_name == "shop":
 		_show_shop_category("consumables")
-	elif tab_name == "ready":
-		_refresh_ready_page()
+	elif tab_name == "recipes":
+		_refresh_recipes_page()
 	_update_flow_indicator()
 
 
@@ -936,8 +922,8 @@ func _update_flow_indicator() -> void:
 		if step_pc == null:
 			continue
 		var step_lbl := step_pc.get_node("StepLbl_" + tab) as Label
+		step_pc.visible = true
 		if tab == _active_tab:
-			step_pc.visible = true
 			var active_st := StyleBoxFlat.new()
 			active_st.bg_color = Color(0.88, 0.65, 0.12)
 			active_st.set_corner_radius_all(8)
@@ -951,21 +937,18 @@ func _update_flow_indicator() -> void:
 					Color(0.05, 0.05, 0.05),
 				)
 		else:
-			step_pc.visible = false
-	_back_btn.visible = (_flow_step > 0)
-	_next_btn.visible = (_flow_step < _flow_tabs.size() - 1)
-
-
-func _on_nav_back() -> void:
-	var idx := _flow_tabs.find(_active_tab)
-	if idx > 0:
-		_show_tab(_flow_tabs[idx - 1])
-
-
-func _on_next_pressed() -> void:
-	var idx := _flow_tabs.find(_active_tab)
-	if idx < _flow_tabs.size() - 1:
-		_show_tab(_flow_tabs[idx + 1])
+			var inactive_st := StyleBoxFlat.new()
+			inactive_st.bg_color = Color(0.12, 0.13, 0.17)
+			inactive_st.set_corner_radius_all(8)
+			inactive_st.set_content_margin_all(8)
+			inactive_st.content_margin_left = 12
+			inactive_st.content_margin_right = 12
+			step_pc.add_theme_stylebox_override("panel", inactive_st)
+			if step_lbl:
+				step_lbl.add_theme_color_override(
+					"font_color",
+					Color(0.7, 0.68, 0.62, 1),
+				)
 
 
 func _show_shop_category(cat: String) -> void:
@@ -994,21 +977,60 @@ func _show_shop_category(cat: String) -> void:
 				btn.button_pressed = (btn.name == "Cat_" + cat)
 
 
-func _refresh_ready_page() -> void:
-	var ready := (
-			$MainHBox/Panel/VBox/Content/ReadyPage as VBoxContainer
+func _build_prices_page() -> void:
+	var prices_page := (
+			$MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer
 	)
-	if ready == null:
+	if prices_page == null:
 		return
-	var temp_info := ready.get_node_or_null("WeatherRow/TempInfo") as Label
+	var container := prices_page.get_node_or_null("PriceListScroll/PriceList") as VBoxContainer
+	if container == null:
+		return
+	for ft in GameState.FRUIT_TYPES:
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 12)
+		var name_lbl := Label.new()
+		name_lbl.text = ft.capitalize()
+		name_lbl.custom_minimum_size = Vector2(150, 0)
+		name_lbl.add_theme_font_size_override("font_size", 20)
+		name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
+		row.add_child(name_lbl)
+		var slider := HSlider.new()
+		slider.min_value = Balancing.PRICE_MIN
+		slider.max_value = Balancing.PRICE_MAX
+		slider.step = 0.05
+		slider.value = GameState.get_price(ft)
+		slider.custom_minimum_size = Vector2(260, 0)
+		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(slider)
+		var val_lbl := Label.new()
+		val_lbl.text = "$%.2f" % GameState.get_price(ft)
+		val_lbl.custom_minimum_size = Vector2(80, 0)
+		val_lbl.add_theme_font_size_override("font_size", 20)
+		val_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.28))
+		row.add_child(val_lbl)
+		var ft_ref := ft
+		slider.value_changed.connect(
+			func(v: float):
+				val_lbl.text = "$%.2f" % v
+				GameState.set_price(ft_ref, v)
+		)
+		container.add_child(row)
+
+
+func _refresh_prices_page() -> void:
+	var prices_page := (
+			$MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer
+	)
+	if prices_page == null:
+		return
+	var temp_info := prices_page.get_node_or_null("WeatherRow/TempInfo") as Label
 	if temp_info:
 		temp_info.text = "Temperature: %.0fC" % GameState.temperature
-	var pop_info := ready.get_node_or_null("WeatherRow/PopInfo") as Label
+	var pop_info := prices_page.get_node_or_null("WeatherRow/PopInfo") as Label
 	if pop_info:
 		pop_info.text = "Popularity: %.0f%%" % (GameState.popularity * 100.0)
-	var start_btn := ready.get_node_or_null("StartDayBtn") as Button
-	if start_btn:
-		start_btn.text = "Start Day %d" % DayManager.day_number
 
 
 func _refresh_analytics() -> void:
@@ -1029,7 +1051,7 @@ func _refresh_analytics() -> void:
 		if DayManager.day_number > 1:
 			var h := Label.new()
 			h.text = "Day %d Results" % (DayManager.day_number - 1)
-			h.add_theme_font_size_override("font_size", 16)
+			h.add_theme_font_size_override("font_size", 20)
 			h.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
 			h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			ybox.add_child(h)
@@ -1037,7 +1059,7 @@ func _refresh_analytics() -> void:
 			ybox.add_child(sep)
 			var rev := Label.new()
 			rev.text = "Revenue: $%.2f" % DayManager.day_revenue
-			rev.add_theme_font_size_override("font_size", 15)
+			rev.add_theme_font_size_override("font_size", 18)
 			rev.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 			rev.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			ybox.add_child(rev)
@@ -1046,7 +1068,7 @@ func _refresh_analytics() -> void:
 				DayManager.day_serves,
 				DayManager.day_happy_serves,
 			]
-			s.add_theme_font_size_override("font_size", 13)
+			s.add_theme_font_size_override("font_size", 16)
 			s.add_theme_color_override("font_color", Color(0.7, 0.68, 0.6))
 			s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			ybox.add_child(s)
@@ -1155,7 +1177,7 @@ func _update_cart_ui() -> void:
 		row.add_theme_constant_override("separation", 6)
 		var name_lbl := Label.new()
 		name_lbl.text = item["name"]
-		name_lbl.add_theme_font_size_override("font_size", 14)
+		name_lbl.add_theme_font_size_override("font_size", 18)
 		name_lbl.add_theme_color_override(
 			"font_color",
 			Color(0.92, 0.90, 0.82),
@@ -1164,7 +1186,7 @@ func _update_cart_ui() -> void:
 		row.add_child(name_lbl)
 		var price_lbl := Label.new()
 		price_lbl.text = "$%.2f" % item["cost"]
-		price_lbl.add_theme_font_size_override("font_size", 13)
+		price_lbl.add_theme_font_size_override("font_size", 16)
 		price_lbl.add_theme_color_override(
 			"font_color",
 			Color(0.65, 0.80, 0.45),
@@ -1172,8 +1194,8 @@ func _update_cart_ui() -> void:
 		row.add_child(price_lbl)
 		var rem_btn := Button.new()
 		rem_btn.text = "X"
-		rem_btn.custom_minimum_size = Vector2(28, 24)
-		rem_btn.add_theme_font_size_override("font_size", 12)
+		rem_btn.custom_minimum_size = Vector2(36, 32)
+		rem_btn.add_theme_font_size_override("font_size", 16)
 		_apply_button_style(
 			rem_btn,
 			Color(0.14, 0.12, 0.10),
@@ -1190,7 +1212,7 @@ func _update_cart_ui() -> void:
 	if not has_items:
 		var empty := Label.new()
 		empty.text = "Cart is empty"
-		empty.add_theme_font_size_override("font_size", 14)
+		empty.add_theme_font_size_override("font_size", 18)
 		empty.add_theme_color_override("font_color", Color(0.5, 0.48, 0.42))
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_cart_list.add_child(empty)
@@ -1256,50 +1278,80 @@ func _animate_status() -> void:
 	tween.tween_property(_status_lbl, "modulate", Color(1, 1, 1, 0), 0.5)
 
 
-func _on_price_changed(value: float) -> void:
-	var price_val := (
-			$MainHBox/Panel/VBox/Content/ReadyPage/PriceRow/PriceValue as Label
+func _on_price_changed(fruit_type: String, new_price: float) -> void:
+	var prices_page := (
+			$MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer
 	)
-	if price_val:
-		price_val.text = "$%.2f" % value
+	if prices_page == null:
+		return
+	var container := prices_page.get_node_or_null("PriceListScroll/PriceList") as VBoxContainer
+	if container == null:
+		return
+	for row in container.get_children():
+		var slider := row.get_child(1) as HSlider
+		var val_lbl := row.get_child(2) as Label
+		if slider and val_lbl and slider.value != new_price:
+			slider.set_value_no_signal(new_price)
+			val_lbl.text = "$%.2f" % new_price
 
 
 func _on_day_phase_changed(phase: int, day: int) -> void:
 	if phase == DayManager.Phase.MORNING:
-		# Reset pan/centering so the tree re-centers each morning
-		# (the hub may persist across days).
-		_tree_centered = false
-		_tree_pan_offset = Vector2.ZERO
-		_tree_laid_out = false
-		var day_lbl := $MainHBox/Panel/VBox/Header/DayLabel as Label
-		if day_lbl:
-			day_lbl.text = "Day %d" % day
-		var temp_lbl := $MainHBox/Panel/VBox/Header/TempLabel as Label
-		if temp_lbl:
-			temp_lbl.text = "%.0fC" % GameState.temperature
-		var money_lbl := $MainHBox/Panel/VBox/Header/MoneyLabel as Label
-		if money_lbl:
-			money_lbl.text = "Money: $%.2f" % GameState.money
-		var price_slider := (
-				$MainHBox/Panel/VBox/Content/ReadyPage/PriceRow/PriceSlider as HSlider
-		)
-		if price_slider:
-			price_slider.value = GameState.current_price
-		_show_tab("analytics")
-		panel.visible = true
-		backdrop.visible = true
-		_right_panel.visible = true
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		var tween := create_tween()
-		panel.modulate = Color(1, 1, 1, 0)
-		backdrop.modulate = Color(1, 1, 1, 0)
-		_right_panel.modulate = Color(1, 1, 1, 0)
-		tween.tween_property(backdrop, "modulate", Color(1, 1, 1, 1), 0.2)
-		tween.parallel().tween_property(panel, "modulate", Color(1, 1, 1, 1), 0.3)
-		tween.parallel().tween_property(_right_panel, "modulate", Color(1, 1, 1, 1), 0.3)
+		_update_morning_data(day)
 	else:
-		panel.visible = false
-		backdrop.visible = false
+		_hide_morning_hub()
+
+
+func _update_morning_data(day: int) -> void:
+	# Reset pan/centering so the tree re-centers each morning
+	# (the hub may persist across days).
+	_tree_centered = false
+	_tree_pan_offset = Vector2.ZERO
+	_tree_laid_out = false
+	var day_lbl := $MainHBox/Panel/VBox/Header/DayLabel as Label
+	if day_lbl:
+		day_lbl.text = "Day %d" % day
+	var temp_lbl := $MainHBox/Panel/VBox/Header/TempLabel as Label
+	if temp_lbl:
+		temp_lbl.text = "%.0fC" % GameState.temperature
+	var money_lbl := $MainHBox/Panel/VBox/Header/MoneyLabel as Label
+	if money_lbl:
+		money_lbl.text = "Money: $%.2f" % GameState.money
+	var price_slider := (
+			$MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider
+	)
+	if price_slider:
+		pass
+	_show_tab("analytics")
+
+
+func _show_morning_hub() -> void:
+	_update_morning_data(DayManager.day_number)
+	panel.visible = true
+	backdrop.visible = true
+	if _right_panel:
+		_right_panel.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var tween := create_tween()
+	panel.modulate = Color(1, 1, 1, 0)
+	backdrop.modulate = Color(1, 1, 1, 0)
+	if _right_panel:
+		_right_panel.modulate = Color(1, 1, 1, 0)
+	tween.tween_property(backdrop, "modulate", Color(1, 1, 1, 1), 0.2)
+	tween.parallel().tween_property(panel, "modulate", Color(1, 1, 1, 1), 0.3)
+	if _right_panel:
+		tween.parallel().tween_property(_right_panel, "modulate", Color(1, 1, 1, 1), 0.3)
+
+
+func _hide_morning_hub() -> void:
+	# Reset modulate so the next fade-in starts from fully opaque.
+	panel.modulate = Color(1, 1, 1, 1)
+	backdrop.modulate = Color(1, 1, 1, 1)
+	if _right_panel:
+		_right_panel.modulate = Color(1, 1, 1, 1)
+	panel.visible = false
+	backdrop.visible = false
+	if _right_panel:
 		_right_panel.visible = false
 
 
@@ -1434,21 +1486,21 @@ func _refresh_stats() -> void:
 		c.queue_free()
 	var money_lbl := Label.new()
 	money_lbl.text = "Money: $%.2f" % GameState.money
-	money_lbl.add_theme_font_size_override("font_size", 13)
+	money_lbl.add_theme_font_size_override("font_size", 16)
 	money_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	_stats_vbox.add_child(money_lbl)
 	for itype in _bin_amounts:
 		var amt: float = _bin_amounts[itype]
 		var line := Label.new()
 		line.text = "%s: %.0f" % [itype.capitalize(), amt]
-		line.add_theme_font_size_override("font_size", 12)
+		line.add_theme_font_size_override("font_size", 15)
 		line.add_theme_color_override("font_color", Color(0.6, 0.75, 0.88))
 		_stats_vbox.add_child(line)
 	for etype in _equipment_counts:
 		var cnt: int = _equipment_counts[etype]
 		var line := Label.new()
 		line.text = "%s: %d" % [etype.capitalize().replace("_", " "), cnt]
-		line.add_theme_font_size_override("font_size", 12)
+		line.add_theme_font_size_override("font_size", 15)
 		line.add_theme_color_override("font_color", Color(0.6, 0.58, 0.52))
 		_stats_vbox.add_child(line)
 
@@ -1458,7 +1510,8 @@ func _on_dev_reset() -> void:
 	GameState.money = Balancing.STARTING_MONEY
 	GameState.popularity = 0.1
 	GameState.temperature = 25.0
-	GameState.current_price = 1.50
+	for ft in GameState.FRUIT_TYPES:
+		GameState.prices[ft] = 1.50
 	GameState.feedback_tier = 0
 	GameState.customers_served_happy = 0
 	GameState.customers_lost = 0
@@ -1472,9 +1525,284 @@ func _on_dev_reset() -> void:
 			node.queue_free()
 	EventBus.game_reset.emit()
 	EventBus.money_changed.emit(GameState.money)
-	EventBus.price_changed.emit(GameState.current_price)
+	EventBus.price_changed.emit("lemon", GameState.get_price("lemon"))
 	EventBus.weather_changed.emit(GameState.temperature)
-	DayManager.end_day()
+
+
+func _build_recipes_page() -> void:
+	var recipes_page := $MainHBox/Panel/VBox/Content/RecipesPage as VBoxContainer
+	if recipes_page == null:
+		return
+	var title := Label.new()
+	title.text = "Recipe Book"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25, 1))
+	recipes_page.add_child(title)
+
+	var grid := GridContainer.new()
+	grid.name = "RecipesGrid"
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 18)
+	grid.add_theme_constant_override("v_separation", 18)
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	recipes_page.add_child(grid)
+
+	var fruit_colors: Dictionary = {
+		"lemon": Color(0.95, 0.85, 0.15, 1),
+		"strawberry": Color(0.92, 0.25, 0.35, 1),
+		"blueberry": Color(0.35, 0.55, 0.95, 1),
+		"peach": Color(0.95, 0.65, 0.45, 1),
+		"watermelon": Color(0.35, 0.75, 0.45, 1),
+	}
+
+	for ft in GameState.FRUIT_TYPES:
+		var accent: Color = fruit_colors.get(ft, Color(0.92, 0.78, 0.25, 1))
+		var card := _make_recipe_card(ft, accent)
+		grid.add_child(card)
+		var card_box := card.get_node("Body/Inner") as VBoxContainer
+		var recipe := GameState.get_recipe(ft)
+
+		var fruit_row := _make_spin_row("Fruit", 1, 10, 1, recipe.get("fruit_count", 1.0))
+		card_box.add_child(fruit_row)
+		var fruit_spin := fruit_row.get_node("SpinBox") as SpinBox
+		_style_spinbox(fruit_spin, accent)
+		fruit_spin.value_changed.connect(
+			func(v: float):
+				var r := GameState.get_recipe(ft).duplicate()
+				r["fruit_count"] = v
+				GameState.set_recipe(ft, r)
+		)
+
+		var sugar_row := _make_spin_row("Sugar", 0, 10, 0.1, recipe.get("sugar", 0.0))
+		card_box.add_child(sugar_row)
+		var sugar_spin := sugar_row.get_node("SpinBox") as SpinBox
+		_style_spinbox(sugar_spin, accent)
+		sugar_spin.value_changed.connect(
+			func(v: float):
+				var r := GameState.get_recipe(ft).duplicate()
+				r["sugar"] = v
+				GameState.set_recipe(ft, r)
+		)
+
+	var ice_accent := Color(0.55, 0.70, 0.85, 1)
+	var ice_card := _make_recipe_card("Ice", ice_accent)
+	grid.add_child(ice_card)
+	var ice_box := ice_card.get_node("Body/Inner") as VBoxContainer
+
+	var ice_lbl := Label.new()
+	ice_lbl.text = "Degrees per scoop"
+	ice_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ice_lbl.add_theme_font_size_override("font_size", 16)
+	ice_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
+	ice_box.add_child(ice_lbl)
+
+	var ice_spin := SpinBox.new()
+	ice_spin.name = "IceSpin"
+	ice_spin.min_value = 0.5
+	ice_spin.max_value = 10.0
+	ice_spin.step = 0.1
+	ice_spin.value = GameState.ice_degrees_per_scoop
+	ice_spin.custom_minimum_size = Vector2(120, 40)
+	ice_box.add_child(ice_spin)
+	_ice_spin = ice_spin
+	_style_spinbox(ice_spin, ice_accent)
+
+	var unit_row := HBoxContainer.new()
+	unit_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	unit_row.add_theme_constant_override("separation", 10)
+	ice_box.add_child(unit_row)
+	var c_btn := Button.new()
+	c_btn.text = "C"
+	c_btn.toggle_mode = true
+	c_btn.button_pressed = true
+	var f_btn := Button.new()
+	f_btn.text = "F"
+	f_btn.toggle_mode = true
+	unit_row.add_child(c_btn)
+	unit_row.add_child(f_btn)
+	_style_unit_button(c_btn, ice_accent)
+	_style_unit_button(f_btn, ice_accent)
+
+	var _update_ice_display := func():
+		var c_val: float = GameState.ice_degrees_per_scoop
+		var display: float = c_val * (1.8 if _ice_unit == "F" else 1.0)
+		if _ice_unit == "F":
+			ice_spin.min_value = 0.9
+			ice_spin.max_value = 18.0
+		else:
+			ice_spin.min_value = 0.5
+			ice_spin.max_value = 10.0
+		ice_spin.value = display
+
+	ice_spin.value_changed.connect(
+		func(v: float):
+			var c_val: float = v if _ice_unit == "C" else v / 1.8
+			GameState.ice_degrees_per_scoop = c_val
+			_update_ice_display.call()
+	)
+	c_btn.pressed.connect(
+		func():
+			_ice_unit = "C"
+			c_btn.button_pressed = true
+			f_btn.button_pressed = false
+			_update_ice_display.call()
+	)
+	f_btn.pressed.connect(
+		func():
+			_ice_unit = "F"
+			f_btn.button_pressed = true
+			c_btn.button_pressed = false
+			_update_ice_display.call()
+	)
+	_update_ice_display.call()
+
+
+func _make_recipe_card(title_text: String, accent: Color) -> VBoxContainer:
+	var card := VBoxContainer.new()
+	card.name = "RecipeCard_" + title_text.to_lower()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card.add_theme_constant_override("separation", 0)
+
+	var top_bar := ColorRect.new()
+	top_bar.custom_minimum_size = Vector2(0, 4)
+	top_bar.color = accent
+	card.add_child(top_bar)
+
+	var body := PanelContainer.new()
+	body.name = "Body"
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var body_st := StyleBoxFlat.new()
+	body_st.bg_color = Color(0.08, 0.09, 0.11, 1)
+	body_st.border_color = Color(0.18, 0.19, 0.23, 1)
+	body_st.border_width_left = 1
+	body_st.border_width_top = 0
+	body_st.border_width_right = 1
+	body_st.border_width_bottom = 1
+	body_st.corner_radius_bottom_left = 12
+	body_st.corner_radius_bottom_right = 12
+	body_st.content_margin_left = 14
+	body_st.content_margin_top = 10
+	body_st.content_margin_right = 14
+	body_st.content_margin_bottom = 14
+	body.add_theme_stylebox_override("panel", body_st)
+	card.add_child(body)
+
+	var inner := VBoxContainer.new()
+	inner.name = "Inner"
+	inner.add_theme_constant_override("separation", 12)
+	inner.alignment = BoxContainer.ALIGNMENT_CENTER
+	body.add_child(inner)
+
+	var title_lbl := Label.new()
+	title_lbl.text = title_text.capitalize()
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_font_size_override("font_size", 22)
+	title_lbl.add_theme_color_override("font_color", accent)
+	inner.add_child(title_lbl)
+
+	return card
+
+
+func _make_spin_row(
+		label_text: String,
+		min_v: float,
+		max_v: float,
+		step_v: float,
+		start_v: float,
+) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	var lbl := Label.new()
+	lbl.text = label_text
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color(0.75, 0.76, 0.80, 1))
+	row.add_child(lbl)
+	var spin := SpinBox.new()
+	spin.name = "SpinBox"
+	spin.min_value = min_v
+	spin.max_value = max_v
+	spin.step = step_v
+	spin.value = start_v
+	spin.custom_minimum_size = Vector2(90, 36)
+	row.add_child(spin)
+	return row
+
+
+func _style_spinbox(spin: SpinBox, accent: Color) -> void:
+	spin.add_theme_font_size_override("font_size", 18)
+	var le := spin.get_line_edit() as LineEdit
+	if le == null:
+		return
+	le.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	le.add_theme_font_size_override("font_size", 18)
+	le.add_theme_color_override("font_color", Color(0.95, 0.93, 0.86, 1))
+	var st := StyleBoxFlat.new()
+	st.bg_color = Color(0.12, 0.13, 0.16, 1)
+	st.border_color = accent
+	st.border_width_left = 1
+	st.border_width_top = 1
+	st.border_width_right = 1
+	st.border_width_bottom = 1
+	st.set_corner_radius_all(8)
+	st.content_margin_left = 6
+	st.content_margin_top = 4
+	st.content_margin_right = 6
+	st.content_margin_bottom = 4
+	le.add_theme_stylebox_override("normal", st)
+	var focus_st := StyleBoxFlat.new()
+	focus_st.bg_color = Color(0.16, 0.17, 0.21, 1)
+	focus_st.border_color = Color(0.95, 0.85, 0.45, 1)
+	focus_st.border_width_left = 1
+	focus_st.border_width_top = 1
+	focus_st.border_width_right = 1
+	focus_st.border_width_bottom = 1
+	focus_st.set_corner_radius_all(8)
+	le.add_theme_stylebox_override("focus", focus_st)
+
+
+func _style_unit_button(btn: Button, accent: Color) -> void:
+	btn.custom_minimum_size = Vector2(44, 32)
+	btn.add_theme_font_size_override("font_size", 16)
+	btn.add_theme_color_override("font_color", Color(0.95, 0.93, 0.86, 1))
+	btn.add_theme_color_override("font_pressed_color", Color(0.05, 0.05, 0.05, 1))
+	btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 1))
+	var normal_st := StyleBoxFlat.new()
+	normal_st.bg_color = Color(0.12, 0.13, 0.16, 1)
+	normal_st.border_color = Color(0.35, 0.37, 0.44, 1)
+	normal_st.border_width_left = 1
+	normal_st.border_width_top = 1
+	normal_st.border_width_right = 1
+	normal_st.border_width_bottom = 1
+	normal_st.set_corner_radius_all(8)
+	btn.add_theme_stylebox_override("normal", normal_st)
+	var pressed_st := StyleBoxFlat.new()
+	pressed_st.bg_color = accent
+	pressed_st.border_color = accent
+	pressed_st.border_width_left = 1
+	pressed_st.border_width_top = 1
+	pressed_st.border_width_right = 1
+	pressed_st.border_width_bottom = 1
+	pressed_st.set_corner_radius_all(8)
+	btn.add_theme_stylebox_override("pressed", pressed_st)
+	var hover_st := StyleBoxFlat.new()
+	hover_st.bg_color = Color(0.18, 0.19, 0.23, 1)
+	hover_st.border_color = accent
+	hover_st.border_width_left = 1
+	hover_st.border_width_top = 1
+	hover_st.border_width_right = 1
+	hover_st.border_width_bottom = 1
+	hover_st.set_corner_radius_all(8)
+	btn.add_theme_stylebox_override("hover", hover_st)
+
+
+func _refresh_recipes_page() -> void:
+	if _ice_spin != null:
+		var display: float = GameState.ice_degrees_per_scoop * (1.8 if _ice_unit == "F" else 1.0)
+		_ice_spin.value = display
 
 
 func _on_dev_end_day() -> void:

@@ -1,22 +1,14 @@
 ﻿extends CanvasLayer
-## Phone menu: price slider + supply ordering. Toggle with Tab.
+## Phone menu: supply ordering. Toggle with Tab.
 
 var _visible_panel: bool = false
 
 @onready var panel: PanelContainer = $Panel
-@onready var price_slider: HSlider = $Panel/VBox/PriceRow/PriceSlider
-@onready var price_label: Label = $Panel/VBox/PriceRow/PriceValue
 @onready var order_buttons: VBoxContainer = $Panel/VBox/Orders
 
 
 func _ready() -> void:
 	panel.visible = false
-	price_slider.min_value = Balancing.PRICE_MIN
-	price_slider.max_value = Balancing.PRICE_MAX
-	price_slider.step = 0.05
-	price_slider.value = GameState.current_price
-	price_label.text = "$%.2f" % GameState.current_price
-	price_slider.value_changed.connect(_on_price_changed)
 	_build_order_buttons()
 
 
@@ -33,11 +25,6 @@ func _input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if _visible_panel \
 		else Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
-
-
-func _on_price_changed(value: float) -> void:
-	price_label.text = "$%.2f" % value
-	EventBus.price_changed.emit(value)
 
 
 func _build_order_buttons() -> void:

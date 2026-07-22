@@ -20,10 +20,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -280.0
-offset_top = -220.0
-offset_right = 280.0
-offset_bottom = 220.0
+offset_left = -320.0
+offset_top = -280.0
+offset_right = 320.0
+offset_bottom = 280.0
 
 [node name="VBox" type="VBoxContainer" parent="Panel"]
 layout_mode = 2
@@ -48,22 +48,34 @@ theme_override_font_sizes/font_size = 20
 text = "Revenue: $0.00"
 horizontal_alignment = 1
 
-[node name="ServesLabel" type="Label" parent="Panel/VBox/Stats"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Served: 0 customers"
-horizontal_alignment = 1
-
-[node name="HappyLabel" type="Label" parent="Panel/VBox/Stats"]
+[node name="PedestriansLabel" type="Label" parent="Panel/VBox/Stats"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Happy: 0 | Unhappy: 0"
+text = "Pedestrians: 0"
 horizontal_alignment = 1
 
-[node name="PopularityLabel" type="Label" parent="Panel/VBox/Stats"]
+[node name="ArrivedLabel" type="Label" parent="Panel/VBox/Stats"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Popularity: 10%"
+text = "Came to buy: 0"
+horizontal_alignment = 1
+
+[node name="BoughtLabel" type="Label" parent="Panel/VBox/Stats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Bought: 0"
+horizontal_alignment = 1
+
+[node name="CostsLabel" type="Label" parent="Panel/VBox/Stats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Costs: $0.00"
+horizontal_alignment = 1
+
+[node name="ProfitLabel" type="Label" parent="Panel/VBox/Stats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Profit: $0.00"
 horizontal_alignment = 1
 
 [node name="NextBtn" type="Button" parent="Panel/VBox"]

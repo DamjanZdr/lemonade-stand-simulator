@@ -19,8 +19,6 @@ var fruit_amounts: Dictionary[String, float] = { }
 ## }
 var fruit_grids: Dictionary[String, Dictionary] = { }
 
-@onready var amount_label: Label3D = $AmountLabel
-
 
 func _ready() -> void:
 	add_to_group("bin")
@@ -71,7 +69,6 @@ func _ready() -> void:
 
 
 func update_display() -> void:
-	var lines: Array[String] = []
 	for fruit_type in fruit_grids.keys():
 		var data: Dictionary = fruit_grids[fruit_type]
 		var nodes: Array[Node3D] = data["nodes"]
@@ -80,8 +77,6 @@ func update_display() -> void:
 		var visible_count: int = mini(roundi(amount), cap)
 		for i in range(nodes.size()):
 			nodes[i].visible = i < visible_count
-		lines.append("%s %.0f/%.0f" % [fruit_type, amount, cap])
-	amount_label.text = "\n".join(lines)
 
 
 func add_amount(fruit_type: String, qty: float) -> void:

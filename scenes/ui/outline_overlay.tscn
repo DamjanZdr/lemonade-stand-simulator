@@ -1,6 +1,20 @@
-[gd_scene load_steps=2 format=3 uid="uid://outlineoverlay_ls"]
+[gd_scene load_steps=5 format=3 uid="uid://outlineoverlay_ls"]
 
 [ext_resource type="Script" path="res://scripts/ui/outline_overlay.gd" id="1_ol"]
+[ext_resource type="Shader" uid="uid://dyk6nc7hugrfy" path="res://scripts/shaders/outline.gdshader" id="2_sh"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_ol"]
+resource_local_to_scene = true
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ol"]
+resource_local_to_scene = true
+shader = ExtResource("2_sh")
+shader_parameter/outline_texture = SubResource("ViewportTexture_ol")
+
+[sub_resource type="Environment" id="Environment_ol"]
+background_mode = 0
+bg_color = Color(0, 0, 0, 0)
 
 [node name="OutlineSystem" type="Node"]
 script = ExtResource("1_ol")
@@ -11,14 +25,18 @@ render_target_update_mode = 4
 
 [node name="OutlineCamera" type="Camera3D" parent="SubViewport"]
 cull_mask = 2
+current = true
+environment = SubResource("Environment_ol")
 
 [node name="OverlayLayer" type="CanvasLayer" parent="."]
 layer = 100
 
 [node name="DisplayRect" type="TextureRect" parent="OverlayLayer"]
+visible = false
+material = SubResource("ShaderMaterial_ol")
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-stretch_mode = 0
+stretch_mode = 1
