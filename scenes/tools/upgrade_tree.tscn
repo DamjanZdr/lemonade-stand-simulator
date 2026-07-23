@@ -11,6 +11,8 @@
 [ext_resource type="Resource" path="res://resources/upgrades/demand.tres" id="9_demand"]
 [ext_resource type="Resource" path="res://resources/upgrades/nimbleness.tres" id="10_nimbleness"]
 [ext_resource type="Resource" path="res://resources/upgrades/water_dispenser.tres" id="11_water_dispenser"]
+[ext_resource type="Resource" path="res://resources/upgrades/foot_traffic.tres" id="12_foot_traffic"]
+[ext_resource type="Resource" path="res://resources/upgrades/trash_rebate.tres" id="13_trash_rebate"]
 
 [node name="UpgradeTree" type="Node2D" unique_id=235020644]
 
@@ -317,4 +319,64 @@ cost = 110
 position = Vector2(566.3, -411.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("11_water_dispenser")
+cost = 130
+
+[node name="FootTraffic1" type="Node2D" parent="."]
+position = Vector2(43.3, -133.1)
+script = ExtResource("1_node")
+upgrade = ExtResource("12_foot_traffic")
+cost = 60
+
+[node name="FootTraffic2" type="Node2D" parent="."]
+position = Vector2(86.5, -266.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("12_foot_traffic")
+cost = 80
+
+[node name="FootTraffic3" type="Node2D" parent="."]
+position = Vector2(129.8, -399.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("12_foot_traffic")
+cost = 100
+
+[node name="FootTraffic4" type="Node2D" parent="."]
+position = Vector2(173.0, -532.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("12_foot_traffic")
+cost = 120
+
+[node name="FootTraffic5" type="Node2D" parent="."]
+position = Vector2(216.3, -665.7)
+script = ExtResource("1_node")
+upgrade = ExtResource("12_foot_traffic")
+cost = 140
+
+[node name="TrashRebate1" type="Node2D" parent="."]
+position = Vector2(113.3, -82.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("13_trash_rebate")
+cost = 50
+
+[node name="TrashRebate2" type="Node2D" parent="."]
+position = Vector2(226.5, -164.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("13_trash_rebate")
+cost = 70
+
+[node name="TrashRebate3" type="Node2D" parent="."]
+position = Vector2(339.8, -246.9)
+script = ExtResource("1_node")
+upgrade = ExtResource("13_trash_rebate")
+cost = 90
+
+[node name="TrashRebate4" type="Node2D" parent="."]
+position = Vector2(453.0, -329.2)
+script = ExtResource("1_node")
+upgrade = ExtResource("13_trash_rebate")
+cost = 110
+
+[node name="TrashRebate5" type="Node2D" parent="."]
+position = Vector2(566.3, -411.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("13_trash_rebate")
 cost = 130

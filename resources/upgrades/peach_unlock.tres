@@ -1,11 +1,16 @@
 [gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://xtsesr8jw5vw" path="res://UpgradeIcons/fruitunlock.png" id="icon"]
 
 [resource]
 script = ExtResource("1_script")
 id = &"peach_unlock"
-display_name = "Peach Unlock"
+display_name = "Unlock Peach Lemonade"
+icon = ExtResource("icon")
 description = "Unlock peaches in your recipes."
 category = "recipe"
 effect_per_node = 1.0
+costs = Array[float]([45.0, 65.0, 85.0, 105.0, 125.0])
+effects = Array[float]([1.0, 1.0, 1.0, 1.0, 1.0])
+

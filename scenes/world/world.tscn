@@ -24,7 +24,7 @@
 [ext_resource type="PackedScene" uid="uid://c7ra0ih8gdcs8" path="res://price_board.tscn" id="46_5fxch"]
 [ext_resource type="Resource" path="res://resources/upgrades/press_speed.tres" id="46_press"]
 [ext_resource type="Resource" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
-[ext_resource type="Resource" path="res://resources/upgrades/sunroof.tres" id="48_sunroof"]
+[ext_resource type="Resource" uid="uid://cqgusixkpn6b0" path="res://resources/upgrades/sunroof.tres" id="48_sunroof"]
 [ext_resource type="Resource" path="res://resources/upgrades/larger_crates.tres" id="49_crates"]
 [ext_resource type="Resource" path="res://resources/upgrades/bulk_buy.tres" id="50_bulk"]
 [ext_resource type="Resource" path="res://resources/upgrades/marketing.tres" id="51_mkt"]
@@ -35,7 +35,7 @@
 [ext_resource type="Resource" path="res://resources/upgrades/ice_mastery.tres" id="56_ice"]
 [ext_resource type="Resource" path="res://resources/upgrades/sugar_rush.tres" id="57_sugar"]
 [ext_resource type="Resource" path="res://resources/upgrades/tip_magnet.tres" id="58_tip"]
-[ext_resource type="Resource" path="res://resources/upgrades/demand.tres" id="59_demand"]
+[ext_resource type="Resource" uid="uid://d4ea6ugq701fu" path="res://resources/upgrades/demand.tres" id="59_demand"]
 [ext_resource type="Resource" path="res://resources/upgrades/bin_capacity.tres" id="60_bin"]
 [ext_resource type="Resource" path="res://resources/upgrades/water_dispenser.tres" id="61_water"]
 [ext_resource type="Resource" path="res://resources/upgrades/lemon_unlock.tres" id="62_lemunl"]
@@ -46,6 +46,7 @@
 [ext_resource type="Script" uid="uid://bw5xghgwuppje" path="res://scripts/managers/people_manager.gd" id="68_people"]
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="70_neigh"]
+[ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
 
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
 albedo_color = Color(0.42331815, 0.62640846, 3.85046e-07, 1)
@@ -88,6 +89,12 @@ size = Vector3(2.7165565, 1.725708, 1.3293457)
 [sub_resource type="FogMaterial" id="FogMaterial_g4v7s"]
 density = 0.04
 emission = Color(0.85974914, 0.8806802, 0.8578844, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_yf5fn"]
+size = Vector3(41.872314, 18.523682, 41.272736)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5fxch"]
+size = Vector3(124.999756, 85.6239, 1)
 
 [node name="World" type="Node3D" unique_id=1769167416]
 script = ExtResource("70_neigh")
@@ -248,7 +255,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 10.422926, 2)
 script = ExtResource("10_preview")
 
 [node name="Neighborhood" parent="." unique_id=1396389632 instance=ExtResource("15_mxkvs")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.0071611404, -1.0999998, -8.005645)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.0044355392, -1.0999998, -7.9913626)
 
 [node name="Desk2_0" parent="." unique_id=215635169 instance=ExtResource("14_mxkvs")]
 transform = Transform3D(-3.628045e-08, 0, 0.83, 0, 0.83, 0, -0.83, 0, -3.628045e-08, -1.7846328, 0.041442253, 10.290646)
@@ -279,6 +286,9 @@ script = ExtResource("68_people")
 script = ExtResource("69_time")
 seconds_per_hour = 60.0
 
+[node name="TrashManager" type="Node" parent="Managers" unique_id=1001413376]
+script = ExtResource("71_trash")
+
 [node name="FogVolume" type="FogVolume" parent="." unique_id=829046607]
 transform = Transform3D(1, 0, 0, 0, 0.16174394, 0, 0, 0, 1, -268.22437, -15.5393715, 31)
 size = Vector3(166, 107.12012, 343)
@@ -294,3 +304,29 @@ transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3,
 
 [node name="PriceBoard" parent="." unique_id=2059859859 instance=ExtResource("46_5fxch")]
 transform = Transform3D(-0.18977769, 0, -0.1627404, 0, 0.25, 0, 0.1627404, 0, -0.18977769, 0.13646549, 0.5373678, -1.6013975)
+
+[node name="PlayableArea" type="Area3D" parent="." unique_id=146113540]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlayableArea" unique_id=635766442]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.85266113, 0, -8.432495)
+shape = SubResource("BoxShape3D_yf5fn")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1637452355]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.51418304, 0, 0)
+collision_layer = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=289732322]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 41.246582, 21.303865)
+shape = SubResource("BoxShape3D_5fxch")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="StaticBody3D" unique_id=2044313268]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 41.246582, -30.298359)
+shape = SubResource("BoxShape3D_5fxch")
+
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="StaticBody3D" unique_id=1698946738]
+transform = Transform3D(0, 0, 1.0000001, 0, 1, 0, -1.0000001, 0, 0, 20.11644, 41.246582, -3.6186612)
+shape = SubResource("BoxShape3D_5fxch")
+
+[node name="CollisionShape3D4" type="CollisionShape3D" parent="StaticBody3D" unique_id=245789172]
+transform = Transform3D(0, 0, 1.0000001, 0, 1, 0, -1.0000001, 0, 0, -21.876167, 41.246582, -3.618662)
+shape = SubResource("BoxShape3D_5fxch")

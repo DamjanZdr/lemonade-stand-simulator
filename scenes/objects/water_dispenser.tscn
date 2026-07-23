@@ -316,7 +316,7 @@ blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_a720k")
 
 [sub_resource type="BoxShape3D" id="BoxShape_physics"]
-size = Vector3(2, 8.3365965, 2)
+size = Vector3(2, 8.262049, 2)
 
 [node name="WaterDispenser" type="Node3D" unique_id=1929335132]
 script = ExtResource("1_script")
@@ -373,5 +373,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1785065, 0.78946257)
 [node name="Physics" type="StaticBody3D" parent="." unique_id=999999001]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=999999002]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2288451, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.266119, 0)
 shape = SubResource("BoxShape_physics")

@@ -80,8 +80,8 @@ func _setup_ice_bucket() -> void:
 			temp_cubes.append(child)
 	# Sort by global Y ascending (lowest first)
 	temp_cubes.sort_custom(
-		func(a: MeshInstance3D, b: MeshInstance3D) -> bool:
-			return a.global_position.y < b.global_position.y
+			func(a: MeshInstance3D, b: MeshInstance3D) -> bool:
+				return a.global_position.y < b.global_position.y
 	)
 	for cube in temp_cubes:
 		_ice_cubes.append(cube)
@@ -95,9 +95,9 @@ func _sync_ice_display(animate_add: bool = false) -> void:
 	if _ice_cubes.is_empty():
 		return
 	var target_visible: int = clampi(
-		roundi((current_amount / max_capacity) * float(_ice_cubes.size())),
-		0,
-		_ice_cubes.size(),
+			roundi((current_amount / max_capacity) * float(_ice_cubes.size())),
+			0,
+			_ice_cubes.size(),
 	)
 	var prev_visible := 0
 	for cube in _ice_cubes:
@@ -158,6 +158,7 @@ func take_amount(qty: float) -> float:
 	EventBus.bin_amount_changed.emit(ingredient_type, current_amount)
 	return taken
 
+
 # Local constants matching Player.HeldItem enum (breaks circular dependency)
 const HELD_NONE := 0
 const HELD_CUP_EMPTY := 1
@@ -194,7 +195,8 @@ func interact(player: Node) -> void:
 			if remaining > 0.0:
 				player.update_held_amount(remaining)
 			else:
-				player.clear_held()
+				# Emptied delivery box becomes trash that can be sold at the trashcan.
+				player.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 		return
 
 	# Take one unit OR pick up empty container
@@ -206,13 +208,13 @@ func interact(player: Node) -> void:
 		# Otherwise take a scoop
 		take_amount(Balancing.GRAB_AMOUNT)
 		player.set_held(
-			HELD_SUPPLY_BOX,
-			{
-				"ingredient_type": ingredient_type,
-				"amount": Balancing.GRAB_AMOUNT,
-				"source": "bin_scoop",
-			},
-			_make_hand_mesh(),
+				HELD_SUPPLY_BOX,
+				{
+					"ingredient_type": ingredient_type,
+					"amount": Balancing.GRAB_AMOUNT,
+					"source": "bin_scoop",
+				},
+				_make_hand_mesh(),
 		)
 		EventBus.ingredient_scoop_grabbed.emit(ingredient_type, Balancing.GRAB_AMOUNT)
 
@@ -235,6 +237,8 @@ func get_hint(player: Node) -> String:
 	var data: Dictionary = player.get("held_item_data")
 
 	if held_item == HELD_SUPPLY_BOX:
+		if data.get("is_trash", false):
+			return ""
 		if data.get("source") == "bin_scoop" \
 				and data.get("ingredient_type", "") == ingredient_type:
 			return "Click: return %s to bin" % ingredient_type.capitalize()

@@ -119,7 +119,7 @@ func interact(player: Node) -> void:
 					],
 				)
 			else:
-				p.clear_held()
+				p.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 				EventBus.interaction_hint_changed.emit(
 					"Dispenser refilled! (%d/%d)" % [
 						water_fillings,
@@ -177,6 +177,8 @@ func get_hint(player: Node) -> String:
 		return "Water Dispenser"
 
 	if p.held_item == p.HeldItem.SUPPLY_BOX:
+		if p.held_item_data.get("is_trash", false):
+			return ""
 		var itype: String = p.held_item_data.get("ingredient_type", "")
 		if itype == "water":
 			if water_fillings >= max_fillings:

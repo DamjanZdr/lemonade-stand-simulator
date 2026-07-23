@@ -19,6 +19,20 @@ const ITEM_PREVIEW_SCENES: Dictionary = {
 	"press": preload("res://scenes/ui/shop_previews/press_preview.tscn"),
 }
 
+const BRANCH_COLORS: Array[Color] = [
+	Color(0.95, 0.25, 0.25),
+	Color(0.25, 0.85, 0.25),
+	Color(0.25, 0.35, 0.95),
+	Color(0.95, 0.85, 0.15),
+	Color(0.85, 0.25, 0.85),
+	Color(0.15, 0.85, 0.95),
+	Color(0.95, 0.55, 0.15),
+	Color(0.55, 0.15, 0.95),
+	Color(0.65, 0.95, 0.15),
+	Color(0.95, 0.45, 0.55),
+]
+
+
 @onready var panel: PanelContainer = $MainHBox/Panel
 @onready var vbox: VBoxContainer = $MainHBox/Panel/VBox
 @onready var backdrop: ColorRect = $Backdrop
@@ -75,9 +89,12 @@ class CircleNode extends Control:
 	var fill_color: Color = Color.WHITE
 	var border_color: Color = Color.BLACK
 	var border_width: float = 2.0
+	var is_square: bool = false
+	var _square_style: StyleBoxFlat = null
 
 
 	func _init() -> void:
+		_square_style = StyleBoxFlat.new()
 		custom_minimum_size = Vector2(60, 60)
 		size = Vector2(60, 60)
 		mouse_filter = Control.MOUSE_FILTER_PASS
@@ -88,17 +105,32 @@ class CircleNode extends Control:
 	func _draw() -> void:
 		var radius: float = minf(size.x, size.y) / 2.0
 		var center: Vector2 = size / 2.0
-		draw_circle(center, radius, fill_color)
-		draw_arc(
-			center,
-			radius - border_width / 2.0,
-			0.0,
-			2.0 * PI,
-			32,
-			border_color,
-			border_width,
-			true,
-		)
+		if is_square:
+			_square_style.bg_color = fill_color
+			_square_style.border_color = border_color
+			_square_style.border_width_bottom = int(border_width)
+			var side_width: int = roundi(border_width * 0.7)
+			_square_style.border_width_top = side_width
+			_square_style.border_width_left = side_width
+			_square_style.border_width_right = side_width
+			_square_style.corner_radius_top_left = 6
+			_square_style.corner_radius_top_right = 6
+			_square_style.corner_radius_bottom_left = 6
+			_square_style.corner_radius_bottom_right = 6
+			_square_style.draw(get_canvas_item(), Rect2(Vector2.ZERO, size))
+		else:
+			draw_circle(center, radius, fill_color)
+			if border_width > 0.0:
+				draw_arc(
+					center,
+					radius - border_width / 2.0,
+					0.0,
+					2.0 * PI,
+					32,
+					border_color,
+					border_width,
+					true,
+				)
 
 
 var shop_items: Array[Dictionary] = [
@@ -199,7 +231,10 @@ func _ready() -> void:
 	)
 	if tree_ctrl:
 		_tree_tooltip = tree_ctrl.get_node("Tooltip") as PanelContainer
-		_tree_tooltip.z_index = 1
+		_tree_tooltip.z_index = 100
+		_tree_tooltip.top_level = false
+		tree_ctrl.remove_child(_tree_tooltip)
+		self.add_child(_tree_tooltip)
 
 		var content := Control.new()
 		content.name = "TreeContent"
@@ -237,7 +272,7 @@ func _ready() -> void:
 						tree_ctrl.accept_event()
 					elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
 						var mb_event_up := event as InputEventMouseButton
-						var new_scale_up := clampf(_tree_scale * 1.1, 0.3, 1.5)
+						var new_scale_up := clampf(_tree_scale * 1.1, 0.5, 1.2)
 						var center_up := tree_ctrl.size / 2.0
 						var local_up := (
 								(mb_event_up.position - center_up - _tree_pan_offset)
@@ -251,7 +286,7 @@ func _ready() -> void:
 						tree_ctrl.accept_event()
 					elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 						var mb_event_down := event as InputEventMouseButton
-						var new_scale_down := clampf(_tree_scale / 1.1, 0.3, 1.5)
+						var new_scale_down := clampf(_tree_scale / 1.1, 0.5, 1.2)
 						var center_down := tree_ctrl.size / 2.0
 						var local_down := (
 								(mb_event_down.position - center_down - _tree_pan_offset)
@@ -296,6 +331,14 @@ func _ready() -> void:
 						var to_pos := (
 								_tree_content.position + _tree_content.scale * to_center_local
 						)
+						var to_purchased: bool = (
+								UpgradeManager.is_node_purchased(to_id)
+						)
+						var to_color := (
+								to_node.fill_color
+								if to_purchased
+								else to_node.border_color
+						)
 						if _animating_lines.has(line_key):
 							var progress: float = _animating_lines[line_key]
 							var anim_end: Vector2 = (
@@ -304,8 +347,8 @@ func _ready() -> void:
 							tree_ctrl.draw_line(
 								from_pos,
 								anim_end,
-								Color(1.0, 0.95, 0.5),
-								4.0 * _tree_scale,
+								to_color,
+								12.0 * _tree_scale,
 								true,
 							)
 							continue
@@ -315,17 +358,10 @@ func _ready() -> void:
 								from_id == UpgradeManager.root_node_name
 								or UpgradeManager.is_node_purchased(from_id)
 						)
-						var to_purchased: bool = (
-								UpgradeManager.is_node_purchased(to_id)
-						)
-						var line_color := Color(0.22, 0.24, 0.30)
-						var line_width := 2.0 * _tree_scale
+						var line_color := to_color
+						var line_width := 6.0 * _tree_scale
 						if from_purchased and to_purchased:
-							line_color = Color(0.88, 0.72, 0.18)
-							line_width = 2.5 * _tree_scale
-						elif from_purchased:
-							line_color = Color(0.45, 0.38, 0.15)
-							line_width = 2.0 * _tree_scale
+							line_width = 7.5 * _tree_scale
 						tree_ctrl.draw_line(
 							from_pos,
 							to_pos,
@@ -387,6 +423,9 @@ func _ready() -> void:
 func _show_tree_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	if _tree_tooltip == null:
 		return
+	_build_upgrade_tooltip(node_id, anchor_pos)
+	if _tree_tooltip != null:
+		return
 	var data := UpgradeManager.get_node_data(node_id)
 	var tip_vbox := _tree_tooltip.get_node("TipContent")
 	var title := tip_vbox.get_node("TipTitle") as Label
@@ -414,6 +453,113 @@ func _show_tree_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 		_tree_tooltip.size.x / 2.0,
 		_tree_tooltip.size.y + 10.0,
 	)
+
+
+func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
+	var data := UpgradeManager.get_node_data(node_id)
+	var tip_vbox := _tree_tooltip.get_node("TipContent") as VBoxContainer
+	for child in tip_vbox.get_children():
+		tip_vbox.remove_child(child)
+		child.queue_free()
+	_tree_tooltip.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	tip_vbox.add_theme_constant_override("separation", -16)
+
+	var title_style := StyleBoxFlat.new()
+	title_style.bg_color = _get_node_color(data).lightened(0.12)
+	title_style.set_corner_radius_all(6)
+	title_style.content_margin_left = 10
+	title_style.content_margin_top = 7
+	title_style.content_margin_right = 10
+	title_style.content_margin_bottom = 7
+	var title_panel := PanelContainer.new()
+	title_panel.custom_minimum_size = Vector2(205, 0)
+	title_panel.z_index = 1
+	title_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	title_panel.add_theme_stylebox_override("panel", title_style)
+	var title_vbox := VBoxContainer.new()
+	title_vbox.add_theme_constant_override("separation", 2)
+	title_panel.add_child(title_vbox)
+	var title_lbl := Label.new()
+	title_lbl.text = data.get("name", "???")
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title_lbl.max_lines_visible = 2
+	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_lbl.custom_minimum_size = Vector2(0, 44)
+	title_lbl.add_theme_font_size_override("font_size", 20)
+	title_lbl.add_theme_color_override("font_color", Color.WHITE)
+	title_vbox.add_child(title_lbl)
+	tip_vbox.add_child(title_panel)
+
+	var upgrade_id: String = data.get("upgrade_id", "")
+	var current_effect: float = UpgradeManager.get_effect_total(upgrade_id)
+	var increase: float = data.get("effect", 0.0)
+	var stat_style := StyleBoxFlat.new()
+	stat_style.bg_color = Color(0.93, 0.93, 0.93)
+	stat_style.border_color = Color(0.12, 0.12, 0.12)
+	stat_style.border_width_left = 2
+	stat_style.border_width_top = 2
+	stat_style.border_width_right = 2
+	stat_style.border_width_bottom = 3
+	stat_style.set_corner_radius_all(6)
+	stat_style.content_margin_left = 10
+	stat_style.content_margin_top = 15
+	stat_style.content_margin_right = 10
+	stat_style.content_margin_bottom = 12
+	var stat_panel := PanelContainer.new()
+	stat_panel.custom_minimum_size = Vector2(260, 0)
+	stat_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stat_panel.add_theme_stylebox_override("panel", stat_style)
+	var stat_box := VBoxContainer.new()
+	stat_box.add_theme_constant_override("separation", 0)
+	var increase_label := Label.new()
+	increase_label.text = "+%.0f%%" % (increase * 100)
+	increase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	increase_label.add_theme_font_size_override("font_size", 30)
+	increase_label.add_theme_color_override("font_color", Color(0.16, 0.16, 0.16))
+	stat_box.add_child(increase_label)
+	var change_label := Label.new()
+	change_label.text = "(+%.0f%% → +%.0f%%)" % [
+			current_effect * 100,
+			(current_effect + increase) * 100,
+	]
+	change_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	change_label.add_theme_font_size_override("font_size", 16)
+	change_label.add_theme_color_override("font_color", Color(0.32, 0.32, 0.32))
+	stat_box.add_child(change_label)
+	var divider := HSeparator.new()
+	stat_box.add_child(divider)
+	var price := Label.new()
+	price.text = "$%.0f" % data.get("cost", 0.0)
+	price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	price.add_theme_font_size_override("font_size", 30)
+	price.add_theme_color_override(
+			"font_color",
+			Color(0.16, 0.58, 0.27)
+			if UpgradeManager.can_afford_node(node_id)
+			else Color(0.75, 0.18, 0.18),
+	)
+	price.add_theme_color_override("font_shadow_color", Color(0.05, 0.05, 0.05, 0.65))
+	price.add_theme_constant_override("shadow_offset_x", 0)
+	price.add_theme_constant_override("shadow_offset_y", 1)
+	price.visible = not data.get("purchased", false)
+	stat_box.add_child(price)
+	stat_panel.add_child(stat_box)
+	tip_vbox.add_child(stat_panel)
+
+
+	_tree_tooltip.visible = true
+	_tree_tooltip.reset_size()
+	var tree_ctrl := _tree_content.get_parent() as Control
+	var tip_offset := Vector2(
+			_tree_tooltip.size.x / 2.0,
+			_tree_tooltip.size.y + 10.0,
+	)
+	if tree_ctrl != null:
+		_tree_tooltip.position = tree_ctrl.get_global_transform() * (anchor_pos - tip_offset)
+	else:
+		_tree_tooltip.position = anchor_pos - tip_offset
 
 
 func _hide_tree_tooltip() -> void:
@@ -446,29 +592,45 @@ func _update_tree_visibility(tree_ctrl: Control) -> void:
 	tree_ctrl.queue_redraw()
 
 
+func _update_root_counter(circle: CircleNode) -> void:
+	var root_name := UpgradeManager.root_node_name
+	var purchased := 0
+	var total := 0
+	for id in UpgradeManager.tree_nodes:
+		if id == root_name:
+			continue
+		total += 1
+		if UpgradeManager.is_node_purchased(id):
+			purchased += 1
+	var sym := circle.get_node_or_null("Symbol") as Label
+	if sym != null:
+		sym.text = "%d/%d" % [purchased, total]
+
+
 func _create_tree_root_node(root_name: String) -> CircleNode:
 	var circle := CircleNode.new()
 	circle.name = "TreeNode_" + root_name
 	circle.fill_color = Color(0.88, 0.65, 0.12)
 	circle.border_color = Color(0.95, 0.82, 0.25)
-	circle.border_width = 2.0
-	circle.size = Vector2(55, 55)
-	circle.custom_minimum_size = Vector2(55, 55)
+	circle.border_width = 0.0
+	circle.size = Vector2(70, 70)
+	circle.custom_minimum_size = Vector2(70, 70)
 	circle.anchor_left = 0
 	circle.anchor_top = 0
 	circle.anchor_right = 0
 	circle.anchor_bottom = 0
 	var sym := Label.new()
 	sym.name = "Symbol"
-	sym.text = "S"
 	sym.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sym.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	sym.add_theme_font_size_override("font_size", 28)
+	sym.add_theme_font_size_override("font_size", 20)
 	sym.add_theme_color_override("font_color", Color(0.05, 0.05, 0.05))
 	sym.position = Vector2(0, 0)
-	sym.size = Vector2(55, 55)
+	sym.size = Vector2(70, 70)
 	sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sym.self_modulate = Color(1, 1, 1, 0.6)
 	circle.add_child(sym)
+	_update_root_counter(circle)
 	circle.mouse_entered.connect(func(): _hover_tree_node(circle, true))
 	circle.mouse_exited.connect(func(): _hover_tree_node(circle, false))
 	return circle
@@ -519,23 +681,20 @@ func _create_tree_node(id: String, data: Dictionary) -> CircleNode:
 
 func _style_tree_node(circle: CircleNode, data: Dictionary) -> void:
 	var purchased: bool = data.get("purchased", false)
-	var category: String = data.get("category", "")
 	var can_buy: bool = data.get("can_buy", false)
 	var spoke_index: int = data.get("spoke_index", 0)
-	var cat_color := UpgradeManager.get_category_color(category)
 	if purchased:
-		circle.fill_color = cat_color.lightened(0.15)
-		circle.border_color = Color(0.95, 0.82, 0.25)
-	elif can_buy:
-		circle.fill_color = cat_color
-		circle.border_color = Color(0.95, 0.82, 0.25)
+		circle.fill_color = _get_node_color(data).lightened(0.15)
+		circle.is_square = false
+		circle.border_width = 0.0
 	else:
-		circle.fill_color = cat_color.darkened(0.35)
-		circle.border_color = Color(0.3, 0.3, 0.3)
-	circle.border_width = 2.0
-	var base_size: int = 50
+		circle.fill_color = Color(0.93, 0.93, 0.93)
+		circle.is_square = true
+		circle.border_color = Color(0.12, 0.12, 0.12)
+		circle.border_width = 4.0
+	var base_size: int = 70
 	var shrink: int = 3
-	var node_size: int = maxi(base_size - spoke_index * shrink, 30)
+	var node_size: int = maxi(base_size - spoke_index * shrink, 45)
 	circle.size_flags_horizontal = 0
 	circle.size_flags_vertical = 0
 	circle.custom_minimum_size = Vector2(node_size, node_size)
@@ -543,21 +702,62 @@ func _style_tree_node(circle: CircleNode, data: Dictionary) -> void:
 	circle.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if (
 			not purchased and can_buy
 	) else Control.CURSOR_ARROW
-	var sym := circle.get_node_or_null("Symbol") as Label
-	if sym == null:
-		sym = Label.new()
-		sym.name = "Symbol"
-		sym.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		sym.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		sym.position = Vector2(0, 0)
-		circle.add_child(sym)
-	sym.text = _get_node_symbol(data)
-	sym.size = Vector2(node_size, node_size)
-	var font_size: int = maxi(node_size / 2, 10)
-	sym.add_theme_font_size_override("font_size", font_size)
-	sym.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
+	var icon := _get_node_icon(data)
+	var sym := circle.get_node_or_null("Symbol") as Control
+	if sym != null and (
+			(icon != null and not sym is TextureRect)
+			or (icon == null and not sym is Label)
+	):
+		sym.queue_free()
+		sym = null
+	if icon != null:
+		if sym == null:
+			sym = TextureRect.new()
+			sym.name = "Symbol"
+			sym.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			sym.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			sym.position = Vector2(0, 0)
+			circle.add_child(sym)
+		var tex: TextureRect = sym as TextureRect
+		var icon_size: int = mini(int(node_size * 0.7), 40)
+		tex.texture = icon
+		tex.self_modulate = Color(1, 1, 1, 0.6)
+		tex.size = Vector2(icon_size, icon_size)
+		tex.position = Vector2((node_size - icon_size) / 2.0, (node_size - icon_size) / 2.0)
+	else:
+		if sym == null:
+			sym = Label.new()
+			sym.name = "Symbol"
+			sym.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			sym.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			sym.position = Vector2(0, 0)
+			circle.add_child(sym)
+		var lbl: Label = sym as Label
+		lbl.text = _get_node_symbol(data)
+		lbl.size = Vector2(node_size, node_size)
+		lbl.position = Vector2(0, 0)
+		var font_size: int = maxi(node_size / 2, 10)
+		lbl.add_theme_font_size_override("font_size", font_size)
+		lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
 	circle.queue_redraw()
+
+
+func _get_node_icon(data: Dictionary) -> Texture2D:
+	var id: String = data.get("upgrade_id", "")
+	var cat: String = data.get("category", "")
+	var icon_name := ""
+	if id == "sunroof":
+		icon_name = "patience"
+	elif cat == "recipe" or id.ends_with("_unlock"):
+		icon_name = "fruitunlock"
+	else:
+		icon_name = id.replace("_", "")
+	var path := "res://UpgradeIcons/" + icon_name + ".png"
+	if FileAccess.file_exists(path):
+		return load(path) as Texture2D
+	return null
 
 
 func _get_node_symbol(data: Dictionary) -> String:
@@ -576,14 +776,26 @@ func _get_node_symbol(data: Dictionary) -> String:
 		return "🍑"
 	if "watermelon" in name:
 		return "🍉"
-	if "demand" in name:
-		return "📈"
+	if "negotiation" in name:
+		return "�"
 	if "nimbleness" in name or "nimb" in name:
 		return "👟"
 	if "water" in name or "dispenser" in name:
 		return "💧"
 	var upgrade_id: String = data.get("upgrade_id", "")
 	return upgrade_id.left(1).to_upper() if not upgrade_id.is_empty() else "?"
+
+
+func _get_branch_color(branch_idx: int) -> Color:
+	return BRANCH_COLORS[branch_idx % BRANCH_COLORS.size()]
+
+
+func _get_node_color(data: Dictionary) -> Color:
+	if data.get("is_root", false):
+		return Color(0.92, 0.90, 0.82)
+	var branch_idx: int = data.get("branch_index", 0)
+	var hue: float = fposmod(branch_idx * 0.618, 1.0)
+	return Color.from_hsv(hue, 0.55, 0.72)
 
 
 func _layout_upgrade_tree(tree_ctrl: Control) -> void:
@@ -623,11 +835,11 @@ func _layout_upgrade_tree(tree_ctrl: Control) -> void:
 		node.offset_right = px + sz.x
 		node.offset_bottom = py + sz.y
 	_tree_content.scale = Vector2(_tree_scale, _tree_scale)
-	_tree_content.position = (
-			Vector2(area.x / 2.0, area.y / 2.0)
-			+ _tree_pan_offset
-			- half_content * _tree_scale
-	)
+	var center: Vector2 = area / 2.0
+	var half_scaled: Vector2 = half_content * _tree_scale
+	_tree_pan_offset.x = clampf(_tree_pan_offset.x, -center.x, center.x)
+	_tree_pan_offset.y = clampf(_tree_pan_offset.y, -center.y, center.y)
+	_tree_content.position = center + _tree_pan_offset - half_scaled
 	tree_ctrl.custom_minimum_size = area
 	tree_ctrl.size = area
 	var parent_vbox := tree_ctrl.get_parent() as Container
@@ -1095,6 +1307,9 @@ func _refresh_upgrades() -> void:
 			continue
 		_refresh_tree_node(id, node)
 	_update_tree_visibility(tree_ctrl)
+	var root_node := _tree_content.get_node_or_null("TreeNode_" + root_name) as CircleNode
+	if root_node != null:
+		_update_root_counter(root_node)
 	# Wait until the tree control has its real size before centering.
 	var parent_vbox := tree_ctrl.get_parent() as Container
 	var attempts := 0
@@ -1145,7 +1360,7 @@ func _fit_tree_scale(_tree_ctrl: Control, area: Vector2) -> void:
 	var scale_x: float = avail_x / (max_extent.x * 2.0)
 	var scale_y: float = avail_y / (max_extent.y * 2.0)
 	var fit_scale: float = min(scale_x, scale_y)
-	_tree_scale = clampf(fit_scale, 0.3, 1.5)
+	_tree_scale = clampf(fit_scale, 0.5, 1.2)
 
 
 func _add_to_cart(item: Dictionary) -> void:

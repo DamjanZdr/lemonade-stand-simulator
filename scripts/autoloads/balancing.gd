@@ -48,6 +48,9 @@ const DELIVERY_COST_PER_UNIT: float = 0.20
 const DELIVERY_QUANTITY: float = 10.0
 const DELIVERY_DROP_HEIGHT: float = 4.0
 
+# === TRASH ===
+const TRASH_REFUND_EMPTY_BOX: float = 1.0
+
 # === WATER DISPENSER ===
 const WATER_COST: float = 5.0
 const WATER_BOX_FILLINGS: float = 5.0
@@ -73,6 +76,7 @@ const UPGRADE_TIER2_COST: float = 75.0
 
 static func spawn_interval_for_popularity(popularity: float) -> float:
 	return lerpf(SPAWN_RATE_MAX, SPAWN_RATE_MIN, popularity)
+
 
 # === PEDESTRIANS ===
 ## Chance a pedestrian decides to join the queue when passing a convertable waypoint.

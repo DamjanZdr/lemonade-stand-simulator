@@ -9,7 +9,8 @@ radius = 0.3
 height = 1.6
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_pedi"]
-height = 1.6
+radius = 0.55
+height = 2.2
 
 [node name="Pedestrian" type="CharacterBody3D"]
 collision_layer = 16
@@ -26,9 +27,9 @@ transform = Transform3D(-0.09, 0, 0, 0, 0.09, 0, 0, 0, -0.09, 0, 0.87, 0)
 [node name="PedestrianInteractable" type="Node3D" parent="."]
 script = ExtResource("3_pinter")
 
-[node name="Physics" type="StaticBody3D" parent="PedestrianInteractable"]
+[node name="Physics" type="Area3D" parent="PedestrianInteractable"]
 collision_layer = 8
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PedestrianInteractable/Physics"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
 shape = SubResource("CapsuleShape3D_pedi")

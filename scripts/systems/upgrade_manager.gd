@@ -30,7 +30,11 @@ func _ready() -> void:
 		for def in cfg.get_upgrades():
 			if def != null:
 				definitions[str(def.id)] = def
+	_apply_definition_values()
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+
+
+const RECIPE_ORDER: Array[String] = ["lemon", "strawberry", "blueberry", "peach", "watermelon"]
 
 
 func _load_tree() -> void:
@@ -39,6 +43,7 @@ func _load_tree() -> void:
 		push_error("UpgradeManager: Could not load tree scene at %s" % TREE_SCENE_PATH)
 		return
 	var instance := scene.instantiate()
+	var recipe_candidates: Dictionary = { } # upgrade_id -> { node_name, cost, data, pos, conns }
 	for child in instance.get_children():
 		if not child is UpgradeTreeNode:
 			continue
@@ -64,7 +69,7 @@ func _load_tree() -> void:
 			var target := node.get_node_or_null(path)
 			if target != null:
 				connections.append(str(target.name))
-		tree_nodes[node_name] = {
+		var node_data := {
 			"upgrade_id": upgrade_id,
 			"cost": node.cost,
 			"position": node.position,
@@ -72,11 +77,34 @@ func _load_tree() -> void:
 			"is_root": node.is_root,
 			"category": category,
 		}
+		if node.is_root:
+			root_node_name = node_name
+			tree_nodes[node_name] = node_data
+			tree_positions[node_name] = node.position
+			continue
+		if category == "recipe":
+			var cost: float = node.cost
+			if not recipe_candidates.has(upgrade_id) or cost < recipe_candidates[upgrade_id].cost:
+				recipe_candidates[upgrade_id] = {
+					"node_name": node_name,
+					"cost": cost,
+					"data": node_data,
+					"pos": node.position,
+					"conns": connections,
+				}
+			continue
+		tree_nodes[node_name] = node_data
 		tree_positions[node_name] = node.position
 		if not connections.is_empty():
 			tree_connections[node_name] = connections
 		if node.is_root:
 			root_node_name = node_name
+	for upgrade_id in recipe_candidates:
+		var c: Dictionary = recipe_candidates[upgrade_id]
+		tree_nodes[c["node_name"]] = c["data"]
+		tree_positions[c["node_name"]] = c["pos"]
+		if not c["conns"].is_empty():
+			tree_connections[c["node_name"]] = c["conns"]
 	instance.free()
 
 
@@ -98,11 +126,28 @@ func _apply_radial_layout() -> void:
 		if not groups.has(upgrade_id):
 			groups[upgrade_id] = []
 		groups[upgrade_id].append(node_name)
+
+	# Collapse the recipe fruit unlocks into one ordered branch.
+	var recipe_branch: Array[String] = []
+	for fruit in RECIPE_ORDER:
+		var recipe_id: String = fruit + "_unlock"
+		if not groups.has(recipe_id):
+			continue
+		var list: Array = groups[recipe_id]
+		if not list.is_empty():
+			recipe_branch.append(list[0])
+		groups.erase(recipe_id)
+	if not recipe_branch.is_empty():
+		groups["recipe_unlock"] = recipe_branch
+
 	if groups.is_empty():
 		return
 
 	# Order each group from the node closest to the root outward.
+	# Recipe branch is already ordered and should not be resorted.
 	for id in groups:
+		if id == "recipe_unlock":
+			continue
 		var list: Array = groups[id]
 		list.sort_custom(
 			func(a: String, b: String) -> bool:
@@ -116,15 +161,16 @@ func _apply_radial_layout() -> void:
 	var ids: Array = groups.keys()
 	ids.sort()
 	var angles: Dictionary = { }
-	for i in range(ids.size()):
-		angles[ids[i]] = 2.0 * PI * i / ids.size()
+	for branch_idx in range(ids.size()):
+		angles[ids[branch_idx]] = 2.0 * PI * branch_idx / ids.size()
 
 	# Place nodes along their type spoke with shorter gaps the further out they go.
-	var base_spacing: float = 120.0
-	var spacing_shrink: float = 15.0
-	var min_spacing: float = 50.0
+	var base_spacing: float = 150.0
+	var spacing_shrink: float = 10.0
+	var min_spacing: float = 70.0
 	tree_connections.clear()
-	for id in ids:
+	for branch_idx in range(ids.size()):
+		var id: String = ids[branch_idx]
 		var angle: float = angles[id]
 		var dir := Vector2(cos(angle), sin(angle))
 		var list: Array = groups[id]
@@ -137,6 +183,7 @@ func _apply_radial_layout() -> void:
 
 			var data: Dictionary = tree_nodes[node_name]
 			data["spoke_index"] = i
+			data["branch_index"] = branch_idx
 			var conns: Array[String] = []
 			var prev_name: String = root_node_name if i == 0 else list[i - 1]
 			conns.append(prev_name)
@@ -170,7 +217,8 @@ func can_unlock(node_name: String) -> bool:
 
 func can_afford_node(node_name: String) -> bool:
 	var data: Dictionary = tree_nodes.get(node_name, { })
-	return GameState.money >= data.get("cost", 0.0)
+	var cost: float = data.get("cost", 0.0) * (1.0 - _negotiation_discount())
+	return GameState.money >= cost
 
 
 func is_node_purchased(node_name: String) -> bool:
@@ -189,6 +237,8 @@ func get_node_data(node_name: String) -> Dictionary:
 		data["name"] = def.display_name
 		data["description"] = def.description
 		data["icon"] = def.icon
+		if not data.has("effect"):
+			data["effect"] = def.effect_per_node
 	else:
 		data["name"] = "Root" if data.get("is_root", false) else "???"
 		data["description"] = ""
@@ -200,7 +250,7 @@ func purchase_node(node_name: String) -> bool:
 	if not can_unlock(node_name):
 		return false
 	var data: Dictionary = tree_nodes.get(node_name, { })
-	var cost: float = data.get("cost", 0.0)
+	var cost: float = data.get("cost", 0.0) * (1.0 - _negotiation_discount())
 	if not GameState.spend_money(cost):
 		return false
 	purchased_nodes[node_name] = true
@@ -215,12 +265,13 @@ func get_effect_total(upgrade_id: String) -> float:
 	var def: UpgradeDefinition = definitions.get(upgrade_id)
 	if def == null:
 		return 0.0
-	var count := 0
+	var total := 0.0
 	for node_name in purchased_nodes:
 		var data: Dictionary = tree_nodes.get(node_name, { })
 		if data.get("upgrade_id", "") == upgrade_id:
-			count += 1
-	return count * def.effect_per_node
+			var effect: float = data.get("effect", def.effect_per_node)
+			total += effect
+	return total
 
 
 ## Get how many nodes of a given upgrade type are purchased.
@@ -278,7 +329,9 @@ func get_cost(id: String) -> float:
 		if data.get("upgrade_id", "") == id and not is_node_purchased(node_name):
 			if can_unlock(node_name):
 				cheapest = minf(cheapest, data.get("cost", 0.0))
-	return cheapest if cheapest < 999999.0 else 0.0
+	if cheapest >= 999999.0:
+		return 0.0
+	return cheapest * (1.0 - _negotiation_discount())
 
 
 func is_maxed(id: String) -> bool:
@@ -343,6 +396,22 @@ func apply_all_effects() -> void:
 		_apply_effect(data.get("upgrade_id", ""))
 
 
+func _apply_definition_values() -> void:
+	for node_name in tree_nodes:
+		var data: Dictionary = tree_nodes[node_name]
+		var upgrade_id: String = data.get("upgrade_id", "")
+		var def: UpgradeDefinition = definitions.get(upgrade_id)
+		if def == null:
+			continue
+		var idx: int = data.get("spoke_index", 0)
+		if def.costs.size() > 0:
+			var cost_idx := mini(idx, def.costs.size() - 1)
+			data["cost"] = def.costs[cost_idx]
+		if def.effects.size() > 0:
+			var effect_idx := mini(idx, def.effects.size() - 1)
+			data["effect"] = def.effects[effect_idx]
+
+
 func _on_upgrade_purchased(_id: int, _cost: float) -> void:
 	pass # Legacy signal compatibility
 
@@ -375,3 +444,7 @@ func get_save_data() -> Array:
 
 func reset() -> void:
 	purchased_nodes.clear()
+
+
+func _negotiation_discount() -> float:
+	return clampf(get_effect_total("negotiation"), 0.0, 0.9)

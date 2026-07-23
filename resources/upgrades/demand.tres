@@ -1,11 +1,16 @@
-[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://d4ea6ugq701fu"]
 
-[ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bn2utlgybrcke" path="res://UpgradeIcons/negotiation.png" id="icon"]
+
 
 [resource]
 script = ExtResource("1_script")
-id = &"demand"
-display_name = "Demand"
-description = "Increases customer demand for your lemonade."
-category = "customer"
+id = &"negotiation"
+display_name = "Negotiate Lower Shop Prices"
+icon = ExtResource("icon")
+description = "Lowers the price of supplies, equipment, and upgrades by a bit."
+category = "economy"
 effect_per_node = 0.05
+costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
+effects = Array[float]([0.05, 0.05, 0.05, 0.05, 0.05])

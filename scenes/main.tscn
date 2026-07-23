@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://hud001ls" path="res://scenes/ui/hud.tscn" id="7_hud"]
 [ext_resource type="PackedScene" uid="uid://dp8lh1ptnkcc3" path="res://scenes/ui/debug_panel.tscn" id="9_debug"]
 [ext_resource type="Script" uid="uid://bulmw0nj3xrmn" path="res://scripts/customer/pedestrian_spawner.gd" id="10_pedspawner"]
+[ext_resource type="PackedScene" uid="uid://c7s5b6a8h3q1j" path="res://scenes/systems/trash_spawner.tscn" id="11_trashspawner"]
 
 [node name="Main" type="Node" unique_id=1191278377]
 script = ExtResource("1_main")
@@ -23,6 +24,8 @@ script = ExtResource("5_spawner")
 
 [node name="PedestrianSpawner" type="Node" parent="." unique_id=-1149085277]
 script = ExtResource("10_pedspawner")
+
+[node name="TrashSpawner" parent="." unique_id=987654321 instance=ExtResource("11_trashspawner")]
 
 [node name="DeliverySystem" type="Node" parent="." unique_id=1974616056]
 script = ExtResource("6_delivery")

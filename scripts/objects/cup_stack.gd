@@ -48,7 +48,7 @@ func _update_display() -> void:
 	for i in range(_item_nodes.size()):
 		_item_nodes[i].visible = i < visible_count
 	amount_label.text = _label_format % [current_count, max_capacity]
-	
+
 	# Disable collision and remove from container group when empty
 	if current_count <= 0:
 		if physics != null:
@@ -74,7 +74,7 @@ func _drop_item(index: int) -> void:
 	node.position.y = _item_origins[index].y + drop_height
 	var tween := create_tween()
 	tween.tween_property(node, "position:y", _item_origins[index].y, 0.25) \
-		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 
 
 func interact(player: Node) -> void:
@@ -97,7 +97,7 @@ func interact(player: Node) -> void:
 			if remaining > 0:
 				p.update_held_amount(float(remaining))
 			else:
-				p.clear_held()
+				p.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 			return
 
 	# Return an empty cup back to the stack
@@ -114,7 +114,7 @@ func interact(player: Node) -> void:
 			return
 		current_count -= 1
 		_update_display()
-		p.set_held(p.HeldItem.CUP_EMPTY, {}, Cup.make_hand_mesh(false))
+		p.set_held(p.HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
 
 
 func get_hint(player: Node) -> String:
@@ -124,6 +124,8 @@ func get_hint(player: Node) -> String:
 
 	if p.held_item == p.HeldItem.SUPPLY_BOX:
 		var data := p.held_item_data
+		if data.get("is_trash", false):
+			return ""
 		if data.get("source") == "delivery" \
 				and data.get("ingredient_type", "") == "cups":
 			var space := max_capacity - current_count

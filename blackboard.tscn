@@ -129,6 +129,7 @@ font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="LemonTitle" type="Label3D" parent="." unique_id=2018246616]
 transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, -0.5704755, 1.0285653, 0.032456458)
@@ -140,6 +141,7 @@ font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Lemon" type="Label3D" parent="LemonTitle" unique_id=710531807]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3220579, -0.19467068, 0)
@@ -153,6 +155,7 @@ font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Decal4" type="MeshInstance3D" parent="LemonTitle/Lemon" unique_id=2106742231]
 transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.31616414, -0.2633486, -0.002615381)
@@ -168,6 +171,7 @@ font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Strawberry" type="Label3D" parent="StrawberryTitle" unique_id=963498998]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.34300414, -0.19227779, 0)
@@ -181,6 +185,7 @@ font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Decal2" type="MeshInstance3D" parent="StrawberryTitle/Strawberry" unique_id=1724894750]
 transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.3413127, -0.26334858, -0.002615381)
@@ -196,6 +201,7 @@ font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Blueberry" type="Label3D" parent="BlueberryTitle" unique_id=1496912397]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3333016, -0.19594482, 0)
@@ -209,6 +215,7 @@ font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Decal3" type="MeshInstance3D" parent="BlueberryTitle/Blueberry" unique_id=1360979945]
 transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.32874686, -0.2633486, -0.002615381)
@@ -224,6 +231,7 @@ font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Peach" type="Label3D" parent="PeachTitle" unique_id=1134475254]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33945316, -0.20692348, 0)
@@ -237,6 +245,7 @@ font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Decal6" type="MeshInstance3D" parent="PeachTitle/Peach" unique_id=967695631]
 transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.3328154, -0.25882426, -0.002615381)
@@ -252,6 +261,7 @@ font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Watermelon" type="Label3D" parent="WatermelonTitle" unique_id=1649485860]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3677724, -0.20365375, 0)
@@ -265,6 +275,7 @@ font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Decal5" type="MeshInstance3D" parent="WatermelonTitle/Watermelon" unique_id=385564235]
 transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.35337394, -0.25882435, -0.002615381)
@@ -280,6 +291,7 @@ font = ExtResource("5_ntenn")
 font_size = 170
 outline_size = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Ice" type="Label3D" parent="IceTitle" unique_id=370624161]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.48874533, -0.19970375, 0)
@@ -293,6 +305,7 @@ font_size = 170
 outline_size = 0
 horizontal_alignment = 0
 vertical_alignment = 0
+metadata/no_depth_override = true
 
 [node name="Decal7" type="MeshInstance3D" parent="IceTitle/Ice" unique_id=1498410913]
 transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, -0.9999999, 0, 0.9999999, -4.3711385e-08, 0.4717725, -0.2588243, -0.002615381)

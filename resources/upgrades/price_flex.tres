@@ -5,7 +5,9 @@
 [resource]
 script = ExtResource("1_script")
 id = &"price_flex"
-display_name = "Sales Training"
+display_name = "Price Flexibility"
 description = "Customers tolerate higher prices."
 category = "customer"
 effect_per_node = 0.05
+costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
+effects = Array[float]([0.05, 0.05, 0.05, 0.05, 0.05])

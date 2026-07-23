@@ -3,14 +3,9 @@
 [ext_resource type="Script" path="res://scripts/ui/outline_overlay.gd" id="1_ol"]
 [ext_resource type="Shader" uid="uid://dyk6nc7hugrfy" path="res://scripts/shaders/outline.gdshader" id="2_sh"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_ol"]
-resource_local_to_scene = true
-viewport_path = NodePath("SubViewport")
-
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ol"]
 resource_local_to_scene = true
 shader = ExtResource("2_sh")
-shader_parameter/outline_texture = SubResource("ViewportTexture_ol")
 
 [sub_resource type="Environment" id="Environment_ol"]
 background_mode = 0

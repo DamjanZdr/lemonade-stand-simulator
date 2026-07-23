@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://deltu4c3atb3a" path="res://UpgradeIcons/trashrebate.png" id="icon"]
+
+
+[resource]
+script = ExtResource("1_script")
+id = &"trash_rebate"
+display_name = "Recycling Payout Increase"
+icon = ExtResource("icon")
+description = "Get more money back when you throw away trash."
+category = "economy"
+effect_per_node = 0.1
+costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
+effects = Array[float]([0.1, 0.1, 0.1, 0.1, 0.1])

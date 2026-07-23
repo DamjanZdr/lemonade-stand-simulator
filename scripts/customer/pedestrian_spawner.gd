@@ -23,6 +23,7 @@ func _ready() -> void:
 	add_child(_spawn_timer)
 	add_to_group("pedestrian_spawner")
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
+	_update_spawner()
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
@@ -43,7 +44,8 @@ func set_managed(enabled: bool) -> void:
 
 
 func spawn_on_path(path: PedestrianPath) -> void:
-	_pedestrians = _pedestrians.filter(func(p): return is_instance_valid(p))
+	_pedestrians = _pedestrians.filter(func(p):
+			return is_instance_valid(p))
 	if path == null or path.waypoints.is_empty():
 		push_warning("PedestrianSpawner: cannot spawn on null or empty path.")
 		return
@@ -53,9 +55,12 @@ func spawn_on_path(path: PedestrianPath) -> void:
 func _spawn_pedestrian(path: PedestrianPath) -> void:
 	var ped: Pedestrian = PEDESTRIAN_SCENE.instantiate()
 	get_parent().add_child(ped)
+	ped.collision_layer = 16
+	ped.collision_mask = 3
 	ped.global_position = path.waypoints[0].global_position
 	ped.setup(path.waypoints, 1)
 	ped.wants_to_join.connect(_on_wants_to_join)
+	ped.add_to_group("trash_spawn_candidates")
 	_pedestrians.append(ped)
 	EventBus.pedestrian_spawned.emit(ped)
 
@@ -63,13 +68,16 @@ func _spawn_pedestrian(path: PedestrianPath) -> void:
 func _try_spawn() -> void:
 	if _managed:
 		return
-	_pedestrians = _pedestrians.filter(func(p): return is_instance_valid(p))
+	_update_spawner()
+	_pedestrians = _pedestrians.filter(func(p):
+			return is_instance_valid(p))
 	if _pedestrians.size() >= max_pedestrians:
 		return
 
 	# Gather all paths that have at least one waypoint.
 	var usable: Array = get_tree().get_nodes_in_group("pedestrian_paths").filter(
-		func(p): return not (p as PedestrianPath).waypoints.is_empty()
+		func(p):
+			return not (p as PedestrianPath).waypoints.is_empty()
 	)
 
 	if usable.is_empty():
@@ -103,7 +111,8 @@ func _on_wants_to_join(ped: Pedestrian) -> void:
 	# Slot is reserved. Have the pedestrian walk to it — same NPC walks visibly
 	# to the queue. When it arrives, spawn the customer already in-place (WAITING).
 	var slot_pos: Vector3 = _customer_spawner.get_slot_position(slot)
-	ped.walk_to_queue(slot_pos, func(): _finalize_conversion(ped))
+	ped.walk_to_queue(slot_pos, func():
+			_finalize_conversion(ped))
 
 
 func _finalize_conversion(ped: Pedestrian) -> void:
@@ -121,3 +130,12 @@ func _resume(ped: Pedestrian) -> void:
 	ped._advance_waypoint()
 	if is_instance_valid(ped):
 		ped._npc.play_anim("Walk")
+
+
+func _update_spawner() -> void:
+	var traffic: float = UpgradeManager.get_effect_total("foot_traffic")
+	max_pedestrians = 10 + int(10.0 * traffic)
+	var new_interval: float = spawn_interval / (1.0 + traffic)
+	if new_interval < 0.5:
+		new_interval = 0.5
+	_spawn_timer.wait_time = new_interval

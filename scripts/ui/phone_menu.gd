@@ -57,10 +57,11 @@ func _build_order_buttons() -> void:
 		["press", "Fruit Press", Balancing.CONTAINER_COST_PRESS],
 		["workstation", "Table", Balancing.CONTAINER_COST_WORKSTATION],
 	]
+	var negotiation: float = clampf(UpgradeManager.get_effect_total("negotiation"), 0.0, 0.9)
 	for entry in containers:
 		var ctype: String = entry[0]
 		var label: String = entry[1]
-		var cost: float = entry[2]
+		var cost: float = entry[2] * (1.0 - negotiation)
 		var btn := Button.new()
 		btn.text = "Buy %s  ($%.0f)" % [label, cost]
 		btn.pressed.connect(func(): _buy_container(ctype, cost))
@@ -122,7 +123,9 @@ func _get_delivery_quantity() -> float:
 
 
 func _get_delivery_cost(qty: float) -> float:
-	var discount: float = UpgradeManager.get_effect_total("bulk_buy")
+	var bulk: float = UpgradeManager.get_effect_total("bulk_buy")
+	var haggle: float = UpgradeManager.get_effect_total("negotiation")
+	var discount: float = clampf(bulk + haggle, 0.0, 0.9)
 	return Balancing.DELIVERY_COST_PER_UNIT * qty * (1.0 - discount)
 
 

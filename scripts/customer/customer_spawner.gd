@@ -44,6 +44,9 @@ func set_queue_spots(spots: Array[Vector3], step: Vector3 = Vector3.ZERO) -> voi
 func _spawn_at_slot(slot_index: int) -> void:
 	var customer: Customer = CUSTOMER_SCENE.instantiate()
 	get_parent().add_child(customer)
+	customer.add_to_group("trash_spawn_candidates")
+	customer.collision_layer = 16
+	customer.collision_mask = 3
 	customer.global_position = Vector3(0, 0, Balancing.CUSTOMER_SPAWN_Z)
 	customer.queue_slot = slot_index
 	customer.queue_position = _queue_spots[slot_index]
@@ -247,6 +250,9 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 		route_continuation = source_pedestrian.get_route_continuation()
 
 	get_parent().add_child(customer)
+	customer.add_to_group("trash_spawn_candidates")
+	customer.collision_layer = 16
+	customer.collision_mask = 3
 	if source_pedestrian != null:
 		customer.global_position = source_pedestrian.global_position
 		customer.basis = source_pedestrian.basis

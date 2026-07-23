@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://si4rtu65jvyp" path="res://UpgradeIcons/foottraffic.png" id="icon"]
+
+
+[resource]
+script = ExtResource("1_script")
+id = &"foot_traffic"
+display_name = "More Neighbors Walk Around"
+icon = ExtResource("icon")
+description = "More pedestrians walk past your stand, so your popularity matters more."
+category = "customer"
+effect_per_node = 0.15
+costs = Array[float]([60.0, 80.0, 100.0, 120.0, 140.0])
+effects = Array[float]([0.15, 0.15, 0.15, 0.15, 0.15])

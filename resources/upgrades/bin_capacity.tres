@@ -5,7 +5,9 @@
 [resource]
 script = ExtResource("1_script")
 id = &"bin_capacity"
-display_name = "Bin Capacity"
+display_name = "Ingredient Bin Capacity"
 description = "Ingredient bins hold more units."
 category = "equipment"
 effect_per_node = 5.0
+costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
+effects = Array[float]([5.0, 5.0, 5.0, 5.0, 5.0])

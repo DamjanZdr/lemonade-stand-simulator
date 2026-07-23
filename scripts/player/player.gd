@@ -1,7 +1,7 @@
 class_name Player
 extends CharacterBody3D
 
-enum HeldItem { NONE, CUP_EMPTY, CUP_FILLED, SUPPLY_BOX, CONTAINER }
+enum HeldItem { NONE, CUP_EMPTY, CUP_FILLED, SUPPLY_BOX, CONTAINER, TRASH }
 
 const MOVE_SPEED: float = 5.0
 const MOUSE_SENSITIVITY: float = 0.002
@@ -250,6 +250,15 @@ func _poll_hint() -> void:
 			_last_hint = hint
 			EventBus.interaction_hint_changed.emit(hint)
 		return
+	if held_item_data.get("is_trash", false):
+		if interactable != null and interactable.is_in_group("trashcan"):
+			hint = interactable.get_hint(self)
+		else:
+			hint = "Find a trashcan"
+		if hint != _last_hint:
+			_last_hint = hint
+			EventBus.interaction_hint_changed.emit(hint)
+		return
 	if held_item == HeldItem.CONTAINER:
 		var container_type: String = held_item_data.get("container_type", "")
 		# Check if looking at water tap with pitcher
@@ -337,6 +346,12 @@ func _primary_interact() -> void:
 	# what the player is holding. Subsequent clicks serve lemonade.
 	if interactable is PedestrianInteractable:
 		interactable.interact(self)
+		return
+
+	# Trash items can only be disposed of at a trashcan.
+	if held_item_data.get("is_trash", false):
+		if interactable != null and interactable.is_in_group("trashcan"):
+			interactable.interact(self)
 		return
 
 	# Handle water tap interaction when holding pitcher - fill directly
@@ -981,6 +996,8 @@ func _update_rapid_fire(delta: float) -> void:
 		return
 	if held_item != HeldItem.SUPPLY_BOX:
 		return
+	if held_item_data.get("is_trash", false):
+		return
 	if held_item_data.get("source") != "delivery":
 		return
 
@@ -1124,6 +1141,8 @@ func _apply_hand_offset(item_type: HeldItem, data: Dictionary) -> void:
 			var ctype: String = data.get("container_type", "")
 			if ctype in ["fruit_bin", "sugar_bin", "ice_bin"]:
 				offset = Vector3(0.05, 0.05, 0.0)
+		HeldItem.TRASH:
+			offset = Vector3.ZERO
 	_held_mesh.position = offset
 
 
@@ -1138,6 +1157,27 @@ func update_held_amount(new_amount: float) -> void:
 
 func clear_held() -> void:
 	set_held(HeldItem.NONE, { })
+
+
+func make_held_trash(
+		refund: float,
+		trash_type: String = "empty_box",
+		hand_mesh: Node3D = null,
+) -> void:
+	var data := {
+		"amount": 0.0,
+		"is_trash": true,
+		"trash_value": refund,
+		"trash_type": trash_type,
+	}
+	if hand_mesh == null and trash_type == "empty_box":
+		var box_scene: PackedScene = load("res://blender/boxnew.glb") as PackedScene
+		if box_scene:
+			var box_inst: Node3D = box_scene.instantiate() as Node3D
+			box_inst.scale = Vector3.ONE * 0.05
+			_disable_hand_collision(box_inst)
+			hand_mesh = box_inst
+	set_held(HeldItem.TRASH, data, hand_mesh)
 
 # ==========================================================================
 #  CONTAINER PLACEMENT SYSTEM

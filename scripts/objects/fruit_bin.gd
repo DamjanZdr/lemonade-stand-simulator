@@ -137,6 +137,7 @@ func get_capacity(fruit_type: String) -> int:
 		return 0
 	return fruit_grids[fruit_type]["capacity"]
 
+
 # Local constants matching Player.HeldItem enum
 const HELD_NONE := 0
 const HELD_SUPPLY_BOX := 3
@@ -169,7 +170,7 @@ func interact(player: Node) -> void:
 			if remaining > 0.0:
 				player.update_held_amount(remaining)
 			else:
-				player.clear_held()
+				player.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 		return
 
 	# Take
@@ -185,13 +186,13 @@ func interact(player: Node) -> void:
 			return
 		take_amount(fruit_type, Balancing.GRAB_AMOUNT)
 		player.set_held(
-			HELD_SUPPLY_BOX,
-			{
-				"ingredient_type": fruit_type,
-				"amount": Balancing.GRAB_AMOUNT,
-				"source": "bin_scoop",
-			},
-			_make_hand_mesh(fruit_type),
+				HELD_SUPPLY_BOX,
+				{
+					"ingredient_type": fruit_type,
+					"amount": Balancing.GRAB_AMOUNT,
+					"source": "bin_scoop",
+				},
+				_make_hand_mesh(fruit_type),
 		)
 		EventBus.ingredient_scoop_grabbed.emit(fruit_type, Balancing.GRAB_AMOUNT)
 
@@ -203,6 +204,8 @@ func get_hint(player: Node) -> String:
 	var data: Dictionary = player.get("held_item_data")
 
 	if held_item == HELD_SUPPLY_BOX:
+		if data.get("is_trash", false):
+			return ""
 		var itype: String = data.get("ingredient_type", "")
 		if not fruit_grids.has(itype):
 			return "No %s grid in this bin" % itype.capitalize()

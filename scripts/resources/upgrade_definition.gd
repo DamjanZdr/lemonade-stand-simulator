@@ -23,3 +23,9 @@ extends Resource
 
 ## Maximum number of nodes of this type that can exist in the tree (0 = unlimited).
 @export var max_nodes: int = 0
+
+## Per-node cost. The last value repeats for higher nodes if fewer values are provided than nodes.
+@export var costs: Array[float] = []
+
+## Per-node effect. The last value repeats for higher nodes if fewer values are provided than nodes.
+@export var effects: Array[float] = []

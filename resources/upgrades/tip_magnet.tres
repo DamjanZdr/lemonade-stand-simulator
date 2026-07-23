@@ -9,3 +9,5 @@ display_name = "Tip Magnet"
 description = "Happy customers tip more often."
 category = "economy"
 effect_per_node = 0.10
+costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
+effects = Array[float]([0.10, 0.10, 0.10, 0.10, 0.10])
