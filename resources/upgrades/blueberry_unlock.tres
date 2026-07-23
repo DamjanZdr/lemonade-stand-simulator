@@ -1,16 +1,15 @@
-[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://bu46xbgvvx2ri"]
 
-[ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://xtsesr8jw5vw" path="res://UpgradeIcons/fruitunlock.png" id="icon"]
 
 [resource]
 script = ExtResource("1_script")
 id = &"blueberry_unlock"
 display_name = "Unlock Blueberry Lemonade"
-icon = ExtResource("icon")
 description = "Unlock blueberries in your recipes."
+icon = ExtResource("icon")
 category = "recipe"
 effect_per_node = 1.0
 costs = Array[float]([40.0, 60.0, 80.0, 100.0, 120.0])
 effects = Array[float]([1.0, 1.0, 1.0, 1.0, 1.0])
-

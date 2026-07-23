@@ -10,7 +10,7 @@ var _register_open: bool = false
 var hide_on_interact: bool = false
 
 @onready var body_mesh: MeshInstance3D = $BodyMesh
-@onready var physics: StaticBody3D = $Physics
+@onready var physics: Area3D = $Physics
 @onready var label: Label3D = $Label
 
 
@@ -23,6 +23,18 @@ func setup(pay: float, due: float) -> void:
 
 func _ready() -> void:
 	label.text = "$%.2f" % payment
+	visibility_changed.connect(_on_visibility_changed)
+	_sync_physics_visibility()
+
+
+func _on_visibility_changed() -> void:
+	_sync_physics_visibility()
+
+
+func _sync_physics_visibility() -> void:
+	if physics:
+		physics.monitorable = visible
+		physics.monitoring = visible
 
 
 func interact(_player: Node) -> void:

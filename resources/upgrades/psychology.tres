@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://bc1gpbi3re7ip"]
 
-[ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
 
 [resource]
 script = ExtResource("1_script")

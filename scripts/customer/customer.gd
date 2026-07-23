@@ -81,6 +81,8 @@ func _ready() -> void:
 		var cp := _npc.get_node_or_null(cp_name) as CashPickup
 		if cp:
 			cp.visible = false
+	add_to_group("customers")
+	_ignore_pedestrian_collisions()
 
 
 func _physics_process(delta: float) -> void:
@@ -470,6 +472,17 @@ func _build_patience_circle() -> void:
 	_patience_circle.position = Vector3(0, 2.2, 0)
 	_patience_circle.texture = viewport.get_texture()
 	add_child(_patience_circle)
+
+
+func _ignore_pedestrian_collisions() -> void:
+	if not is_inside_tree():
+		return
+	for node in get_tree().get_nodes_in_group("pedestrians"):
+		var other := node as CollisionObject3D
+		if other == null or not is_instance_valid(other):
+			continue
+		PhysicsServer3D.body_add_collision_exception(get_rid(), other.get_rid())
+		PhysicsServer3D.body_add_collision_exception(other.get_rid(), get_rid())
 
 
 func _create_white_texture(size: int = 4) -> ImageTexture:

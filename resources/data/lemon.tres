@@ -1,17 +1,6 @@
-[gd_resource type="Resource" script_class="IngredientData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="IngredientData" format=3 uid="uid://dcbt63m1d18bs"]
 
-[ext_resource type="Script" path="res://scripts/core/ingredient_data.gd" id="1_ingredient_data"]
+[ext_resource type="Script" uid="uid://bx8ql2bcj8v5" path="res://scripts/core/ingredient_data.gd" id="1_ingredient_data"]
 
 [resource]
 script = ExtResource("1_ingredient_data")
-id = &"lemon"
-display_name = "Lemon"
-ideal_fruit_count = 3
-ideal_water = 7.0
-ideal_sugar = 2.0
-fruit_unhappy_chance = 0.3
-sugar_unhappy_chance = 0.3
-press_time_per_fruit = 1.0
-default_price = 1.50
-price_min = 0.25
-price_max = 5.00

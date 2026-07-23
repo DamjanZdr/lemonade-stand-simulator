@@ -3,13 +3,13 @@
 [ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://jfmfc8fc6o71" path="res://UpgradeIcons/pressspeed.png" id="icon"]
 
-
 [resource]
 script = ExtResource("1_script")
 id = &"press_speed"
 display_name = "Press Fruits Faster"
-icon = ExtResource("icon")
 description = "Press Fruit Faster"
-effect_per_node = 0.08
+icon = ExtResource("icon")
+effect_per_node = 0.2
+max_nodes = 2
 costs = Array[float]([40.0, 60.0, 80.0, 100.0, 120.0])
-effects = Array[float]([0.08, 0.08, 0.08, 0.08, 0.08])
+effects = Array[float]([0.2, 0.2, 0.2, 0.2, 0.2])

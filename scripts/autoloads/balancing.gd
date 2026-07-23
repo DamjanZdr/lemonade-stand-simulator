@@ -80,9 +80,9 @@ static func spawn_interval_for_popularity(popularity: float) -> float:
 
 # === PEDESTRIANS ===
 ## Chance a pedestrian decides to join the queue when passing a convertable waypoint.
-## Scales linearly with popularity: 5 % at 0 %, 65 % at 100 %.
+## Scales linearly with popularity: 5 % at 0 %, 100 % at 100 %.
 const PEDESTRIAN_CONVERT_MIN: float = 0.05
-const PEDESTRIAN_CONVERT_MAX: float = 0.65
+const PEDESTRIAN_CONVERT_MAX: float = 1.0
 
 
 static func pedestrian_convert_chance(popularity: float) -> float:

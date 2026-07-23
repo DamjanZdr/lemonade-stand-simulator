@@ -10,9 +10,18 @@ var prices: Dictionary = { }
 var recipes: Dictionary = { }
 var ice_degrees_per_scoop: float = 4.0
 var feedback_tier: int
+var _debug_popularity: float = -1.0
 
 var customers_served_happy: int = 0
 var customers_lost: int = 0
+
+# Lifetime analytics
+var total_customers_served: int = 0
+var total_cups_sold: int = 0
+var total_money_earned: float = 0.0
+var total_money_spent: float = 0.0
+var highest_purchase: float = 0.0
+var highest_money: float = 0.0
 
 
 func _ready() -> void:
@@ -27,11 +36,16 @@ func _ready() -> void:
 		_init_default_prices()
 		_init_default_recipes()
 		feedback_tier = 0
+	highest_money = money
 
 	EventBus.debug_add_money.connect(_on_debug_add_money)
 	EventBus.debug_set_temperature.connect(_on_debug_set_temperature)
 	EventBus.debug_set_feedback_tier.connect(_on_debug_set_feedback_tier)
-	EventBus.debug_set_popularity.connect(func(v: float): set_popularity(v))
+	EventBus.debug_set_popularity.connect(
+		func(v: float):
+			_debug_popularity = clampf(v, 0.0, 1.0)
+			set_popularity(_debug_popularity)
+	)
 	EventBus.change_finalized.connect(_on_change_finalized)
 	EventBus.price_changed.connect(_on_price_changed)
 	EventBus.recipe_changed.connect(_on_recipe_changed)
@@ -39,14 +53,21 @@ func _ready() -> void:
 	EventBus.weather_changed.connect(_on_weather_changed)
 
 	# Auto-save whenever key state changes.
-	EventBus.money_changed.connect(func(_v: float): EventBus.game_saved.emit())
-	EventBus.popularity_changed.connect(func(_v: float): EventBus.game_saved.emit())
+	EventBus.money_changed.connect(func(_v: float):
+			EventBus.game_saved.emit())
+	EventBus.popularity_changed.connect(func(_v: float):
+			EventBus.game_saved.emit())
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
-	EventBus.feedback_tier_changed.connect(func(_v: int): EventBus.game_saved.emit())
+	EventBus.feedback_tier_changed.connect(func(_v: int):
+			EventBus.game_saved.emit())
+	EventBus.game_reset.connect(_on_game_reset)
 
 
 func add_money(amount: float) -> void:
 	money += amount
+	total_money_earned += amount
+	if money > highest_money:
+		highest_money = money
 	EventBus.money_changed.emit(money)
 
 
@@ -54,12 +75,18 @@ func spend_money(amount: float) -> bool:
 	if money < amount:
 		return false
 	money -= amount
+	total_money_spent += amount
+	if amount > highest_purchase:
+		highest_purchase = amount
 	EventBus.money_changed.emit(money)
 	return true
 
 
 func set_popularity(value: float) -> void:
-	popularity = clampf(value, 0.0, 1.0)
+	if _debug_popularity >= 0.0:
+		popularity = _debug_popularity
+	else:
+		popularity = clampf(value, 0.0, 1.0)
 	EventBus.popularity_changed.emit(popularity)
 
 
@@ -103,9 +130,11 @@ func _on_weather_changed(temp: float) -> void:
 
 
 func _on_customer_served(_customer: Node, outcome: String) -> void:
+	total_customers_served += 1
 	match outcome:
 		"happy":
 			customers_served_happy += 1
+			total_cups_sold += 1
 			set_popularity(popularity + Balancing.POPULARITY_GAIN_HAPPY)
 		"timeout":
 			customers_lost += 1
@@ -159,3 +188,7 @@ func _init_default_prices() -> void:
 func _init_default_recipes() -> void:
 	for ft in FRUIT_TYPES:
 		recipes[ft] = _default_recipe_for(ft)
+
+
+func _on_game_reset() -> void:
+	_debug_popularity = -1.0

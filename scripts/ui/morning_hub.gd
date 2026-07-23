@@ -77,6 +77,7 @@ var _tree_dragging: bool = false
 var _tree_drag_start: Vector2 = Vector2.ZERO
 var _tree_scale: float = 2.5
 var _tree_tooltip: PanelContainer = null
+var _icon_material: ShaderMaterial = null
 var _tree_content: Control = null
 var _tree_centered: bool = false
 var _tree_laid_out: bool = false
@@ -486,7 +487,7 @@ func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	title_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title_lbl.max_lines_visible = 2
 	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_lbl.custom_minimum_size = Vector2(0, 44)
+	title_lbl.custom_minimum_size = Vector2(0, 56)
 	title_lbl.add_theme_font_size_override("font_size", 20)
 	title_lbl.add_theme_color_override("font_color", Color.WHITE)
 	title_vbox.add_child(title_lbl)
@@ -495,9 +496,10 @@ func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	var upgrade_id: String = data.get("upgrade_id", "")
 	var current_effect: float = UpgradeManager.get_effect_total(upgrade_id)
 	var increase: float = data.get("effect", 0.0)
+	var is_unlock := upgrade_id.ends_with("_unlock")
 	var stat_style := StyleBoxFlat.new()
-	stat_style.bg_color = Color(0.93, 0.93, 0.93)
-	stat_style.border_color = Color(0.12, 0.12, 0.12)
+	stat_style.bg_color = Color(0.16, 0.16, 0.16)
+	stat_style.border_color = Color(0.35, 0.35, 0.35)
 	stat_style.border_width_left = 2
 	stat_style.border_width_top = 2
 	stat_style.border_width_right = 2
@@ -514,19 +516,24 @@ func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	var stat_box := VBoxContainer.new()
 	stat_box.add_theme_constant_override("separation", 0)
 	var increase_label := Label.new()
-	increase_label.text = "+%.0f%%" % (increase * 100)
+	increase_label.text = (
+			upgrade_id.replace("_unlock", "").capitalize()
+			if is_unlock
+			else "%+.0f%%" % (increase * 100)
+	)
 	increase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	increase_label.add_theme_font_size_override("font_size", 30)
-	increase_label.add_theme_color_override("font_color", Color(0.16, 0.16, 0.16))
+	increase_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
 	stat_box.add_child(increase_label)
 	var change_label := Label.new()
-	change_label.text = "(+%.0f%% → +%.0f%%)" % [
+	change_label.text = "(%+.0f%% → %+.0f%%)" % [
 			current_effect * 100,
 			(current_effect + increase) * 100,
 	]
+	change_label.visible = not is_unlock
 	change_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	change_label.add_theme_font_size_override("font_size", 16)
-	change_label.add_theme_color_override("font_color", Color(0.32, 0.32, 0.32))
+	change_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
 	stat_box.add_child(change_label)
 	var divider := HSeparator.new()
 	stat_box.add_child(divider)
@@ -536,9 +543,9 @@ func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	price.add_theme_font_size_override("font_size", 30)
 	price.add_theme_color_override(
 			"font_color",
-			Color(0.16, 0.58, 0.27)
+			Color(0.35, 0.9, 0.45)
 			if UpgradeManager.can_afford_node(node_id)
-			else Color(0.75, 0.18, 0.18),
+			else Color(1.0, 0.45, 0.45),
 	)
 	price.add_theme_color_override("font_shadow_color", Color(0.05, 0.05, 0.05, 0.65))
 	price.add_theme_constant_override("shadow_offset_x", 0)
@@ -631,6 +638,8 @@ func _create_tree_root_node(root_name: String) -> CircleNode:
 	sym.self_modulate = Color(1, 1, 1, 0.6)
 	circle.add_child(sym)
 	_update_root_counter(circle)
+	var data := UpgradeManager.get_node_data(root_name)
+	_style_tree_node(circle, data)
 	circle.mouse_entered.connect(func(): _hover_tree_node(circle, true))
 	circle.mouse_exited.connect(func(): _hover_tree_node(circle, false))
 	return circle
@@ -682,19 +691,22 @@ func _create_tree_node(id: String, data: Dictionary) -> CircleNode:
 func _style_tree_node(circle: CircleNode, data: Dictionary) -> void:
 	var purchased: bool = data.get("purchased", false)
 	var can_buy: bool = data.get("can_buy", false)
-	var spoke_index: int = data.get("spoke_index", 0)
-	if purchased:
+	if data.get("is_root", false):
+		circle.fill_color = Color(0.18, 0.18, 0.18)
+		circle.is_square = false
+		circle.border_color = Color(0.7, 0.7, 0.7)
+		circle.border_width = 4.0
+	elif purchased:
 		circle.fill_color = _get_node_color(data).lightened(0.15)
 		circle.is_square = false
 		circle.border_width = 0.0
 	else:
-		circle.fill_color = Color(0.93, 0.93, 0.93)
+		circle.fill_color = Color(0.18, 0.18, 0.18)
 		circle.is_square = true
-		circle.border_color = Color(0.12, 0.12, 0.12)
+		circle.border_color = _get_node_color(data).lightened(0.25)
 		circle.border_width = 4.0
 	var base_size: int = 70
-	var shrink: int = 3
-	var node_size: int = maxi(base_size - spoke_index * shrink, 45)
+	var node_size: int = base_size
 	circle.size_flags_horizontal = 0
 	circle.size_flags_vertical = 0
 	circle.custom_minimum_size = Vector2(node_size, node_size)
@@ -722,7 +734,17 @@ func _style_tree_node(circle: CircleNode, data: Dictionary) -> void:
 		var tex: TextureRect = sym as TextureRect
 		var icon_size: int = mini(int(node_size * 0.7), 40)
 		tex.texture = icon
-		tex.self_modulate = Color(1, 1, 1, 0.6)
+		if _icon_material == null:
+			_icon_material = ShaderMaterial.new()
+			var sh := Shader.new()
+			sh.code = (
+					"shader_type canvas_item; void fragment() { "
+					+ "vec4 c = texture(TEXTURE, UV); "
+					+ "COLOR = vec4(vec3(1.0 - c.rgb), c.a); }"
+			)
+			_icon_material.shader = sh
+		tex.material = _icon_material
+		tex.self_modulate = Color(0.75, 0.75, 0.75, 1.0 if purchased else 0.85)
 		tex.size = Vector2(icon_size, icon_size)
 		tex.position = Vector2((node_size - icon_size) / 2.0, (node_size - icon_size) / 2.0)
 	else:
@@ -735,12 +757,17 @@ func _style_tree_node(circle: CircleNode, data: Dictionary) -> void:
 			sym.position = Vector2(0, 0)
 			circle.add_child(sym)
 		var lbl: Label = sym as Label
-		lbl.text = _get_node_symbol(data)
+		if not data.get("is_root", false):
+			lbl.text = _get_node_symbol(data)
 		lbl.size = Vector2(node_size, node_size)
 		lbl.position = Vector2(0, 0)
-		var font_size: int = maxi(node_size / 2, 10)
+		var font_size: int = 16 if data.get("is_root", false) else maxi(node_size / 2, 10)
+		var font_color := Color(0.92, 0.90, 0.82)
+		if data.get("is_root", false):
+			font_color = Color.WHITE
+			lbl.self_modulate = Color.WHITE
 		lbl.add_theme_font_size_override("font_size", font_size)
-		lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
+		lbl.add_theme_color_override("font_color", font_color)
 	circle.queue_redraw()
 
 
@@ -1245,6 +1272,22 @@ func _refresh_prices_page() -> void:
 		pop_info.text = "Popularity: %.0f%%" % (GameState.popularity * 100.0)
 
 
+func _add_analytics_row(container: VBoxContainer, label: String, value: String) -> void:
+	var row := HBoxContainer.new()
+	var name_lbl := Label.new()
+	name_lbl.text = label + ":"
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_color_override("font_color", Color(0.75, 0.72, 0.66))
+	row.add_child(name_lbl)
+	var val_lbl := Label.new()
+	val_lbl.text = value
+	val_lbl.add_theme_font_size_override("font_size", 16)
+	val_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
+	row.add_child(val_lbl)
+	container.add_child(row)
+
+
 func _refresh_analytics() -> void:
 	var today := $MainHBox/Panel/VBox/Content/AnalyticsPage/TodayLabel as Label
 	if today:
@@ -1284,6 +1327,35 @@ func _refresh_analytics() -> void:
 			s.add_theme_color_override("font_color", Color(0.7, 0.68, 0.6))
 			s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			ybox.add_child(s)
+
+	# Lifetime / all-time analytics
+	var a_page := $MainHBox/Panel/VBox/Content/AnalyticsPage as VBoxContainer
+	var lifetime := a_page.get_node_or_null("LifetimeBox") as VBoxContainer
+	if lifetime == null:
+		lifetime = VBoxContainer.new()
+		lifetime.name = "LifetimeBox"
+		lifetime.size_flags_vertical = 0
+		lifetime.add_theme_constant_override("separation", 8)
+		a_page.add_child(lifetime)
+	while lifetime.get_child_count() > 0:
+		var c := lifetime.get_child(0)
+		lifetime.remove_child(c)
+		c.queue_free()
+	var h2 := Label.new()
+	h2.text = "All-Time Stats"
+	h2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	h2.add_theme_font_size_override("font_size", 20)
+	h2.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
+	lifetime.add_child(h2)
+	lifetime.add_child(HSeparator.new())
+	_add_analytics_row(lifetime, "Customers Served", "%d" % GameState.total_customers_served)
+	_add_analytics_row(lifetime, "Cups Sold", "%d" % GameState.total_cups_sold)
+	_add_analytics_row(lifetime, "Money Made", "$%.2f" % GameState.total_money_earned)
+	_add_analytics_row(lifetime, "Money Spent", "$%.2f" % GameState.total_money_spent)
+	var total_profit: float = GameState.total_money_earned - GameState.total_money_spent
+	_add_analytics_row(lifetime, "Total Profit", "$%.2f" % total_profit)
+	_add_analytics_row(lifetime, "Highest Purchase", "$%.2f" % GameState.highest_purchase)
+	_add_analytics_row(lifetime, "Highest Balance", "$%.2f" % GameState.highest_money)
 
 
 func _refresh_upgrades() -> void:

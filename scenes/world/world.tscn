@@ -14,7 +14,7 @@
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
 [ext_resource type="Script" uid="uid://dklkcjfc1wreh" path="res://scripts/objects/sun_controller.gd" id="37_sun"]
 [ext_resource type="Script" uid="uid://ba3frt220nu7m" path="res://scripts/systems/recipe_manager.gd" id="39_recipe"]
-[ext_resource type="Resource" path="res://resources/data/lemon.tres" id="40_lemon"]
+[ext_resource type="Resource" uid="uid://dcbt63m1d18bs" path="res://resources/data/lemon.tres" id="40_lemon"]
 [ext_resource type="Resource" path="res://resources/data/strawberry.tres" id="41_straw"]
 [ext_resource type="Resource" path="res://resources/data/blueberry.tres" id="42_blue"]
 [ext_resource type="Resource" path="res://resources/data/peach.tres" id="43_peach"]
@@ -22,27 +22,27 @@
 [ext_resource type="PackedScene" uid="uid://cdx1e3dagxpjh" path="res://blackboard.tscn" id="45_kx0xk"]
 [ext_resource type="Script" uid="uid://puonyclrtmxb" path="res://scripts/systems/upgrade_config_manager.gd" id="45_upgcfg"]
 [ext_resource type="PackedScene" uid="uid://c7ra0ih8gdcs8" path="res://price_board.tscn" id="46_5fxch"]
-[ext_resource type="Resource" path="res://resources/upgrades/press_speed.tres" id="46_press"]
-[ext_resource type="Resource" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
+[ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="46_press"]
+[ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
 [ext_resource type="Resource" uid="uid://cqgusixkpn6b0" path="res://resources/upgrades/sunroof.tres" id="48_sunroof"]
-[ext_resource type="Resource" path="res://resources/upgrades/larger_crates.tres" id="49_crates"]
-[ext_resource type="Resource" path="res://resources/upgrades/bulk_buy.tres" id="50_bulk"]
-[ext_resource type="Resource" path="res://resources/upgrades/marketing.tres" id="51_mkt"]
-[ext_resource type="Resource" path="res://resources/upgrades/queue_appeal.tres" id="52_queue"]
-[ext_resource type="Resource" path="res://resources/upgrades/speed_serve.tres" id="53_speed"]
-[ext_resource type="Resource" path="res://resources/upgrades/psychology.tres" id="54_psych"]
-[ext_resource type="Resource" path="res://resources/upgrades/price_flex.tres" id="55_price"]
-[ext_resource type="Resource" path="res://resources/upgrades/ice_mastery.tres" id="56_ice"]
-[ext_resource type="Resource" path="res://resources/upgrades/sugar_rush.tres" id="57_sugar"]
-[ext_resource type="Resource" path="res://resources/upgrades/tip_magnet.tres" id="58_tip"]
+[ext_resource type="Resource" uid="uid://boksdhow4wy5i" path="res://resources/upgrades/larger_crates.tres" id="49_crates"]
+[ext_resource type="Resource" uid="uid://bt1nbebv8rxkw" path="res://resources/upgrades/bulk_buy.tres" id="50_bulk"]
+[ext_resource type="Resource" uid="uid://dpe2rvl38mtc6" path="res://resources/upgrades/marketing.tres" id="51_mkt"]
+[ext_resource type="Resource" uid="uid://dkm7bmcp0fdtp" path="res://resources/upgrades/queue_appeal.tres" id="52_queue"]
+[ext_resource type="Resource" uid="uid://cwkj211dv1ox0" path="res://resources/upgrades/speed_serve.tres" id="53_speed"]
+[ext_resource type="Resource" uid="uid://bc1gpbi3re7ip" path="res://resources/upgrades/psychology.tres" id="54_psych"]
+[ext_resource type="Resource" uid="uid://bloghy56swyp1" path="res://resources/upgrades/price_flex.tres" id="55_price"]
+[ext_resource type="Resource" uid="uid://b2hi13ds6njqg" path="res://resources/upgrades/ice_mastery.tres" id="56_ice"]
+[ext_resource type="Resource" uid="uid://dk5opuesubbg1" path="res://resources/upgrades/sugar_rush.tres" id="57_sugar"]
+[ext_resource type="Resource" uid="uid://by6syp1tp4i6q" path="res://resources/upgrades/tip_magnet.tres" id="58_tip"]
 [ext_resource type="Resource" uid="uid://d4ea6ugq701fu" path="res://resources/upgrades/demand.tres" id="59_demand"]
-[ext_resource type="Resource" path="res://resources/upgrades/bin_capacity.tres" id="60_bin"]
-[ext_resource type="Resource" path="res://resources/upgrades/water_dispenser.tres" id="61_water"]
-[ext_resource type="Resource" path="res://resources/upgrades/lemon_unlock.tres" id="62_lemunl"]
-[ext_resource type="Resource" path="res://resources/upgrades/strawberry_unlock.tres" id="63_strunl"]
-[ext_resource type="Resource" path="res://resources/upgrades/blueberry_unlock.tres" id="64_bluunl"]
-[ext_resource type="Resource" path="res://resources/upgrades/peach_unlock.tres" id="65_peaunl"]
-[ext_resource type="Resource" path="res://resources/upgrades/watermelon_unlock.tres" id="66_watunl"]
+[ext_resource type="Resource" uid="uid://c6kki7aodgms8" path="res://resources/upgrades/bin_capacity.tres" id="60_bin"]
+[ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="61_water"]
+[ext_resource type="Resource" uid="uid://bodfywk634j8m" path="res://resources/upgrades/lemon_unlock.tres" id="62_lemunl"]
+[ext_resource type="Resource" uid="uid://dt47sq4k4v7c" path="res://resources/upgrades/strawberry_unlock.tres" id="63_strunl"]
+[ext_resource type="Resource" uid="uid://bu46xbgvvx2ri" path="res://resources/upgrades/blueberry_unlock.tres" id="64_bluunl"]
+[ext_resource type="Resource" uid="uid://btcdwa0mln6e5" path="res://resources/upgrades/peach_unlock.tres" id="65_peaunl"]
+[ext_resource type="Resource" uid="uid://d1hk0gkktg6me" path="res://resources/upgrades/watermelon_unlock.tres" id="66_watunl"]
 [ext_resource type="Script" uid="uid://bw5xghgwuppje" path="res://scripts/managers/people_manager.gd" id="68_people"]
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="70_neigh"]
@@ -112,7 +112,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9057007, -0.2495, -16.9583
 shape = SubResource("BoxShape3D_ground")
 
 [node name="Stand" parent="." unique_id=1183170314 instance=ExtResource("1_stand")]
-transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.18679726, -2.2)
+transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.18679726, -2.1485605)
 
 [node name="WaterDispenser" parent="." unique_id=1929335132 instance=ExtResource("3_wdispenser")]
 transform = Transform3D(4.8676796e-08, 0, 0.25, 0, 0.25, 0, -0.25, 0, 4.8676796e-08, -1.2000002, 0.25480768, 2.1)
@@ -156,7 +156,6 @@ waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), Node
 [node name="Point 1" type="Marker3D" parent="Routes/Route 1" unique_id=241292620]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.982567, 0, -62.723373)
 script = ExtResource("36_sygq6")
-convertable = true
 
 [node name="Point 2" type="Marker3D" parent="Routes/Route 1" unique_id=1776416609]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.850655, 0, -9.303896)
@@ -188,7 +187,6 @@ waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), Node
 [node name="Point 1" type="Marker3D" parent="Routes/Route 2" unique_id=1893335241]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.982567, 0, -62.723377)
 script = ExtResource("36_sygq6")
-convertable = true
 
 [node name="Point 2" type="Marker3D" parent="Routes/Route 2" unique_id=817177908]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.050652, 0, -4.0038953)
@@ -220,7 +218,6 @@ waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), Node
 [node name="Point 1" type="Marker3D" parent="Routes/Route 3" unique_id=896206468]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -115.98257, 0, 37.276615)
 script = ExtResource("36_sygq6")
-convertable = true
 
 [node name="Point 2" type="Marker3D" parent="Routes/Route 3" unique_id=1330102902]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -116.05065, 0, 5.9960966)
@@ -281,10 +278,11 @@ upgrades = Array[ExtResource("25_4v0p3")]([ExtResource("46_press"), ExtResource(
 
 [node name="PeopleManager" type="Node" parent="Managers" unique_id=1001413374]
 script = ExtResource("68_people")
+total_people = 300
 
 [node name="TimeManager" type="Node" parent="Managers" unique_id=1001413375]
 script = ExtResource("69_time")
-seconds_per_hour = 60.0
+seconds_per_hour = 30.0
 
 [node name="TrashManager" type="Node" parent="Managers" unique_id=1001413376]
 script = ExtResource("71_trash")
@@ -303,7 +301,7 @@ material = SubResource("FogMaterial_g4v7s")
 transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3, 1.8940175, 16.6)
 
 [node name="PriceBoard" parent="." unique_id=2059859859 instance=ExtResource("46_5fxch")]
-transform = Transform3D(-0.18977769, 0, -0.1627404, 0, 0.25, 0, 0.1627404, 0, -0.18977769, 0.13646549, 0.5373678, -1.6013975)
+transform = Transform3D(-0.18977769, 0, -0.1627404, 0, 0.25, 0, 0.1627404, 0, -0.18977769, 0.13646549, 0.5373678, -1.3261083)
 
 [node name="PlayableArea" type="Area3D" parent="." unique_id=146113540]
 
@@ -330,3 +328,8 @@ shape = SubResource("BoxShape3D_5fxch")
 [node name="CollisionShape3D4" type="CollisionShape3D" parent="StaticBody3D" unique_id=245789172]
 transform = Transform3D(0, 0, 1.0000001, 0, 1, 0, -1.0000001, 0, 0, -21.876167, 41.246582, -3.618662)
 shape = SubResource("BoxShape3D_5fxch")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1079704992]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5780778, 3.4851818, 12.612837)
+light_energy = 0.6
+omni_range = 12.76936

@@ -65,6 +65,8 @@ func _ready() -> void:
 	_build_patience_circle()
 	_hide_order_bubble()
 	_patience_circle.visible = false
+	add_to_group("pedestrians")
+	_ignore_customer_collisions()
 
 
 ## Called by PedestrianSpawner right after instantiation.
@@ -133,8 +135,8 @@ func _physics_process(delta: float) -> void:
 			velocity = Vector3.ZERO
 			if is_instance_valid(_offered_by_player):
 				_facing_target = Basis.looking_at(
-						_offered_by_player.global_position - global_position,
-						Vector3.UP,
+					_offered_by_player.global_position - global_position,
+					Vector3.UP,
 				)
 				_is_rotating_to_face = true
 			_offer_patience -= delta
@@ -161,7 +163,7 @@ func _arrive() -> void:
 	var marketing_bonus: float = UpgradeManager.get_effect_total("marketing")
 	if marketing_bonus > 0.0:
 		convert_chance = clampf(convert_chance + marketing_bonus, 0.0, 1.0)
-	if wp.convertable and randf() < convert_chance:
+	if wp.convertable and randf() <= convert_chance:
 		wants_to_join.emit(self)
 		return # spawner will call walk_to_queue() or _resume(); don't advance yet
 
@@ -205,8 +207,8 @@ func offer_free_lemonade(player: Node) -> void:
 	_npc.play_anim("Talk")
 	if _offered_by_player:
 		_facing_target = Basis.looking_at(
-				_offered_by_player.global_position - global_position,
-				Vector3.UP,
+			_offered_by_player.global_position - global_position,
+			Vector3.UP,
 		)
 		_is_rotating_to_face = true
 
@@ -362,25 +364,28 @@ func _resize_order_panel() -> void:
 	if _order_panel == null or _order_label == null:
 		return
 	var font := _order_label.font if _order_label.font else ThemeDB.fallback_font
-	var aabb_size := _order_label.get_aabb().size
-	var line_count := maxi(_order_label.text.split("\n").size(), 1)
-	var line_height := font.get_height(int(_order_label.font_size)) * _order_label.pixel_size
-	var text_height := line_height * line_count
+	var text_px := font.get_multiline_string_size(
+		_order_label.text,
+		HORIZONTAL_ALIGNMENT_CENTER,
+		-1,
+		int(_order_label.font_size),
+	)
+	var text_size := text_px * _order_label.pixel_size
 	var pad := Vector2(0.05, 0.035)
-	var panel_size := Vector2(aabb_size.x + pad.x, text_height + pad.y)
+	var panel_size := text_size + pad
 	var panel_px := Vector2i(
-			int(panel_size.x / _order_panel.pixel_size),
-			int(panel_size.y / _order_panel.pixel_size),
+		int(panel_size.x / _order_panel.pixel_size),
+		int(panel_size.y / _order_panel.pixel_size),
 	)
 	panel_px.x = maxi(panel_px.x, 32)
 	panel_px.y = maxi(panel_px.y, 32)
 	var corner_px := clampi(int(mini(panel_px.x, panel_px.y) * 0.15), 8, 32)
 	var panel_color := Color(0.20, 0.22, 0.24, 0.88)
 	_order_panel.texture = _create_rounded_panel_texture(
-			panel_px.x,
-			panel_px.y,
-			panel_color,
-			corner_px,
+		panel_px.x,
+		panel_px.y,
+		panel_color,
+		corner_px,
 	)
 	_order_panel.scale = Vector3(1, 1, 1)
 	_order_panel.visible = true
@@ -397,6 +402,17 @@ func _refresh_patience_bar(ratio: float) -> void:
 	if _patience_progress == null:
 		return
 	_patience_progress.value = ratio * _patience_progress.max_value
+
+
+func _ignore_customer_collisions() -> void:
+	if not is_inside_tree():
+		return
+	for node in get_tree().get_nodes_in_group("customers"):
+		var other := node as CollisionObject3D
+		if other == null or other == self or not is_instance_valid(other):
+			continue
+		PhysicsServer3D.body_add_collision_exception(get_rid(), other.get_rid())
+		PhysicsServer3D.body_add_collision_exception(other.get_rid(), get_rid())
 
 
 func _create_white_texture(size: int = 4) -> ImageTexture:
@@ -424,10 +440,10 @@ func _create_ring_texture(size: int = 128, inner_ratio: float = 0.15) -> ImageTe
 
 
 func _create_rounded_panel_texture(
-		width: int,
-		height: int,
-		color: Color,
-		corner: int,
+	width: int,
+	height: int,
+	color: Color,
+	corner: int,
 ) -> ImageTexture:
 	var img := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))

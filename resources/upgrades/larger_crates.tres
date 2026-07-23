@@ -1,13 +1,12 @@
-[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://boksdhow4wy5i"]
 
-[ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
 
 [resource]
 script = ExtResource("1_script")
 id = &"larger_crates"
 display_name = "Larger Crates"
 description = "Supply deliveries contain more ingredients."
-category = "equipment"
 effect_per_node = 1.0
 costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
 effects = Array[float]([1.0, 1.0, 1.0, 1.0, 1.0])

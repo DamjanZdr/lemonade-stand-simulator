@@ -166,8 +166,6 @@ func _apply_radial_layout() -> void:
 
 	# Place nodes along their type spoke with shorter gaps the further out they go.
 	var base_spacing: float = 150.0
-	var spacing_shrink: float = 10.0
-	var min_spacing: float = 70.0
 	tree_connections.clear()
 	for branch_idx in range(ids.size()):
 		var id: String = ids[branch_idx]
@@ -177,7 +175,7 @@ func _apply_radial_layout() -> void:
 		var dist: float = 0.0
 		for i in range(list.size()):
 			var node_name: String = list[i]
-			var step: float = maxf(base_spacing - i * spacing_shrink, min_spacing)
+			var step: float = base_spacing
 			dist += step
 			tree_positions[node_name] = root_pos + dir * dist
 

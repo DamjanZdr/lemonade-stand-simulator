@@ -80,6 +80,7 @@ func _ready() -> void:
 	vbox.add_child(time_row)
 	EventBus.debug_set_time_scale.connect(func(s: float): Engine.time_scale = s)
 
+
 	# Reset save button
 	var reset_btn := Button.new()
 	reset_btn.text = "Reset Save"

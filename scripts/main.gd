@@ -14,13 +14,18 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 
 var _cash_drop_pos: Vector3 = Vector3(0, 1.05, -0.4)
 
+var _sky_mat: ShaderMaterial
+var _world_env: WorldEnvironment
+var _default_ambient: float
+var _default_exposure: float
+
 
 func _ready() -> void:
 	# QueueMarkerActive is the spot for the customer currently at the stand.
 	# QueueMarker1 is the first waiting spot (second customer in line).
 	# QueueMarker2 sets the direction and spacing for the rest of the waiting line.
 	# Move/rotate these markers in the editor to reorient the whole queue.
-	# Up to 20 customer slots are generated automatically from that direction.
+	# Up to 299 waiting customer slots are generated automatically from that direction.
 	var m_active: Marker3D = world.get_node_or_null("QueueMarkerActive") as Marker3D
 	var m1: Marker3D = world.get_node_or_null("QueueMarker1") as Marker3D
 	var m2: Marker3D = world.get_node_or_null("QueueMarker2") as Marker3D
@@ -35,9 +40,18 @@ func _ready() -> void:
 			step = m2.global_position - m1.global_position
 	var spots: Array[Vector3] = []
 	spots.append(active_pos)
-	for i in range(20):
+	for i in range(299):
 		spots.append(start + step * float(i))
 	spawner.set_queue_spots(spots, step)
+
+	# Replace the flat procedural sky with the cloud sky shader.
+	_world_env = world.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if _world_env and _world_env.environment and _world_env.environment.sky:
+		_sky_mat = ShaderMaterial.new()
+		_sky_mat.shader = load("res://resources/shaders/cloud_sky.gdshader")
+		_world_env.environment.sky.sky_material = _sky_mat
+		_default_ambient = _world_env.environment.ambient_light_sky_contribution
+		_default_exposure = _world_env.environment.tonemap_exposure
 
 	# Pedestrian spawner reads its PedestrianPath children automatically.
 	# No wiring needed here — add paths in the editor as children of PedestrianSpawner.
@@ -63,6 +77,8 @@ func _ready() -> void:
 
 	# Pitcher is placed in world.tscn — its _ready() captures its own position.
 	EventBus.cash_dropped.connect(_on_cash_dropped)
+	EventBus.day_timer_updated.connect(_on_day_timer_updated)
+	EventBus.debug_set_rain.connect(_on_debug_set_rain)
 
 	# Spawn the screen-space outline overlay and hand it the main camera so it
 	# can mirror the transform every frame.
@@ -88,3 +104,24 @@ func _on_cash_dropped(drop_pos: Vector3, payment: float, change_due: float) -> v
 	# Slight random offset so bills don't stack exactly
 	pickup.position = base_pos + Vector3(randf_range(-0.1, 0.1), 0, randf_range(-0.1, 0.1))
 	add_child(pickup)
+
+
+func _on_day_timer_updated(time_left: float, total_time: float) -> void:
+	if total_time <= 0.0 or _sky_mat == null:
+		return
+	var t := 1.0 - time_left / total_time
+	_sky_mat.set_shader_parameter("time_of_day", t)
+	if _world_env:
+		var brightness := clampf(sin(t * PI), 0.55, 1.0)
+		_world_env.environment.ambient_light_sky_contribution = _default_ambient * brightness
+		_world_env.environment.tonemap_exposure = _default_exposure * brightness
+
+
+func _on_debug_set_rain(enabled: bool) -> void:
+	if _sky_mat:
+		_sky_mat.set_shader_parameter("raining", enabled)
+	if _world_env:
+		var ambient := 0.35 if enabled else _default_ambient
+		var exposure := 0.75 if enabled else _default_exposure
+		_world_env.environment.ambient_light_sky_contribution = ambient
+		_world_env.environment.tonemap_exposure = exposure

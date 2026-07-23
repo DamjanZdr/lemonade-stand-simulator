@@ -51,20 +51,11 @@ func _apply_outline(node: Node, on: bool) -> void:
 			ol.add_to_group("outline_fill")
 			ol.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			ol.skin = mi.skin
+			mi.add_child(ol)
+			ol.transform = Transform3D.IDENTITY
 			var skel := mi.get_node_or_null(mi.skeleton) as Skeleton3D
-			if skel:
-				# For skinned meshes, place the outline under the same skeleton
-				# so it shares the same local space and follows animation.
-				var parent := mi.get_parent() as Node3D
-				if parent == skel:
-					parent.add_child(ol)
-					ol.transform = mi.transform
-					ol.skeleton = NodePath("..")
-				else:
-					mi.add_child(ol)
-					ol.skeleton = ol.get_path_to(skel)
-			else:
-				mi.add_child(ol)
+			if skel != null:
+				ol.skeleton = ol.get_path_to(skel)
 		elif not on and existing != null:
 			existing.queue_free()
 	for child in node.get_children():

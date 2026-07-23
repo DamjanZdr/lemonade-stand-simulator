@@ -18,7 +18,10 @@ script = ExtResource("1_cash")
 material_override = SubResource("Material_bill")
 mesh = SubResource("BoxMesh_bill")
 
-[node name="Physics" type="StaticBody3D" parent="." unique_id=381889252]
+[node name="Physics" type="Area3D" parent="." unique_id=381889252]
+collision_layer = 8
+monitoring = false
+monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=325720818]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.016560059, 0)

@@ -96,12 +96,12 @@ value = 0.0
 [node name="Sep4" type="HSeparator" parent="Panel/VBox"]
 
 [node name="QueueMaxLbl" type="Label" parent="Panel/VBox"]
-text = "Queue Max (1-20):"
+text = "Queue Max (1-300):"
 theme_override_font_sizes/font_size = 8
 
 [node name="QueueMaxSlider" type="HSlider" parent="Panel/VBox"]
 min_value = 1.0
-max_value = 20.0
+max_value = 300.0
 step = 1.0
 value = 3.0
 

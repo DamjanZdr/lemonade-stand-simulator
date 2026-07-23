@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://by6syp1tp4i6q"]
 
-[ext_resource type="Script" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
 
 [resource]
 script = ExtResource("1_script")
@@ -8,6 +8,5 @@ id = &"tip_magnet"
 display_name = "Tip Magnet"
 description = "Happy customers tip more often."
 category = "economy"
-effect_per_node = 0.10
 costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
-effects = Array[float]([0.10, 0.10, 0.10, 0.10, 0.10])
+effects = Array[float]([0.1, 0.1, 0.1, 0.1, 0.1])

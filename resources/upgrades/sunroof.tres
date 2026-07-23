@@ -3,11 +3,10 @@
 [ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://cqmmjyrwxtmeu" path="res://UpgradeIcons/patience.png" id="icon"]
 
-
 [resource]
 script = ExtResource("1_script")
 id = &"sunroof"
-display_name = "Increase Customer's Patience"
-icon = ExtResource("icon")
+display_name = "Increase Customer Patience"
 description = "Customers are more patient in any weather."
+icon = ExtResource("icon")
 category = "customer"

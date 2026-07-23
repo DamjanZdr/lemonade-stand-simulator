@@ -26,12 +26,18 @@ var _pending_supply_box_respawn: Array = []
 func _ready() -> void:
 	EventBus.game_saved.connect(_on_game_saved)
 	EventBus.game_reset.connect(_on_game_reset)
-	EventBus.container_placed.connect(func(_t, _n): save_game())
-	EventBus.container_picked_up.connect(func(_t, _n): save_game())
-	EventBus.supply_box_spawned.connect(func(_b): save_game())
-	EventBus.bin_amount_changed.connect(func(_t, _a): save_game())
-	EventBus.cup_stack_changed.connect(func(_c): save_game())
-	EventBus.pitcher_state_changed.connect(func(_s): save_game())
+	EventBus.container_placed.connect(func(_t, _n):
+			save_game())
+	EventBus.container_picked_up.connect(func(_t, _n):
+			save_game())
+	EventBus.supply_box_spawned.connect(func(_b):
+			save_game())
+	EventBus.bin_amount_changed.connect(func(_t, _a):
+			save_game())
+	EventBus.cup_stack_changed.connect(func(_c):
+			save_game())
+	EventBus.pitcher_state_changed.connect(func(_s):
+			save_game())
 
 	# Load the workstation scene at runtime to avoid compile-time preload issues
 	# while the editor imports the new scene/script .uid files.
@@ -61,7 +67,7 @@ func save_game() -> void:
 		print("Game saved.")
 	else:
 		push_error(
-				"Failed to save game to %s (error %d)" % [SAVE_PATH, FileAccess.get_open_error()]
+			"Failed to save game to %s (error %d)" % [SAVE_PATH, FileAccess.get_open_error()]
 		)
 
 
@@ -116,6 +122,12 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	GameState.feedback_tier = data.get("feedback_tier", 0)
 	GameState.customers_served_happy = data.get("customers_served_happy", 0)
 	GameState.customers_lost = data.get("customers_lost", 0)
+	GameState.total_customers_served = data.get("total_customers_served", 0)
+	GameState.total_cups_sold = data.get("total_cups_sold", 0)
+	GameState.total_money_earned = data.get("total_money_earned", 0.0)
+	GameState.total_money_spent = data.get("total_money_spent", 0.0)
+	GameState.highest_purchase = data.get("highest_purchase", 0.0)
+	GameState.highest_money = data.get("highest_money", GameState.money)
 	DayManager.day_number = data.get("day_number", 1)
 
 	UpgradeManager.reset()
@@ -158,6 +170,12 @@ func _build_save_dict() -> Dictionary:
 		"feedback_tier": GameState.feedback_tier,
 		"customers_served_happy": GameState.customers_served_happy,
 		"customers_lost": GameState.customers_lost,
+		"total_customers_served": GameState.total_customers_served,
+		"total_cups_sold": GameState.total_cups_sold,
+		"total_money_earned": GameState.total_money_earned,
+		"total_money_spent": GameState.total_money_spent,
+		"highest_purchase": GameState.highest_purchase,
+		"highest_money": GameState.highest_money,
 		"day_number": DayManager.day_number,
 		"purchased_nodes": UpgradeManager.get_save_data(),
 		"unlocked_fruits": ["lemon"], # TODO: dynamic
@@ -256,27 +274,27 @@ func _scan_supply_boxes() -> Array:
 		if box == null:
 			continue
 		result.append(
-				{
-					"position": [
-						box.global_position.x,
-						box.global_position.y,
-						box.global_position.z,
-					],
-					"rotation": [
-						box.global_rotation.x,
-						box.global_rotation.y,
-						box.global_rotation.z,
-					],
-					"scale": [
-						box.scale.x,
-						box.scale.y,
-						box.scale.z,
-					],
-					"ingredient_type": box.ingredient_type,
-					"quantity": box.quantity,
-					"is_equipment": box.is_equipment,
-					"equipment_type": box.equipment_type,
-				},
+			{
+				"position": [
+					box.global_position.x,
+					box.global_position.y,
+					box.global_position.z,
+				],
+				"rotation": [
+					box.global_rotation.x,
+					box.global_rotation.y,
+					box.global_rotation.z,
+				],
+				"scale": [
+					box.scale.x,
+					box.scale.y,
+					box.scale.z,
+				],
+				"ingredient_type": box.ingredient_type,
+				"quantity": box.quantity,
+				"is_equipment": box.is_equipment,
+				"equipment_type": box.equipment_type,
+			},
 		)
 	return result
 
@@ -354,9 +372,9 @@ func _do_respawn() -> void:
 			root.add_child(instance)
 			instance.global_position = Vector3(pos[0], pos[1], pos[2])
 			instance.global_rotation = Vector3(
-					rot[0] if rot.size() > 0 else 0.0,
-					rot[1] if rot.size() > 1 else 0.0,
-					rot[2] if rot.size() > 2 else 0.0,
+				rot[0] if rot.size() > 0 else 0.0,
+				rot[1] if rot.size() > 1 else 0.0,
+				rot[2] if rot.size() > 2 else 0.0,
 			)
 			instance.add_to_group("container")
 
@@ -416,9 +434,9 @@ func _do_respawn() -> void:
 			root.add_child(box)
 			box.global_position = Vector3(pos[0], pos[1], pos[2])
 			box.global_rotation = Vector3(
-					rot[0] if rot.size() > 0 else 0.0,
-					rot[1] if rot.size() > 1 else 0.0,
-					rot[2] if rot.size() > 2 else 0.0,
+				rot[0] if rot.size() > 0 else 0.0,
+				rot[1] if rot.size() > 1 else 0.0,
+				rot[2] if rot.size() > 2 else 0.0,
 			)
 			if scl.size() >= 3:
 				box.scale = Vector3(scl[0], scl[1], scl[2])
