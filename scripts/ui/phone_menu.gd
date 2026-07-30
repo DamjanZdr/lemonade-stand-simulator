@@ -24,6 +24,9 @@ func _input(event: InputEvent) -> void:
 		panel.visible = _visible_panel
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if _visible_panel \
 		else Input.MOUSE_MODE_CAPTURED
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("set_hud_visible"):
+			hud.set_hud_visible(not _visible_panel)
 		get_viewport().set_input_as_handled()
 
 

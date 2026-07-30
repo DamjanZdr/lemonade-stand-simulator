@@ -50,4 +50,4 @@ func interact(_player: Node) -> void:
 
 
 func get_hint(_player: Node) -> String:
-	return "Click to open register  ($%.2f bill)" % payment
+	return "Cash | LMB: open register  ($%.2f bill)" % payment

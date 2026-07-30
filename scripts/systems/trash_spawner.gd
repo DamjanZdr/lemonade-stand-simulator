@@ -43,7 +43,8 @@ func _on_timer_timeout() -> void:
 func _spawn_trash() -> void:
 	var candidates := get_tree().get_nodes_in_group("trash_spawn_candidates")
 	candidates = candidates.filter(
-			func(n): return is_instance_valid(n) and n is Node3D and _is_inside_playable_area(n)
+		func(n):
+			return is_instance_valid(n) and n is Node3D and _is_inside_playable_area(n),
 	)
 	if candidates.is_empty():
 		return
@@ -56,15 +57,13 @@ func _spawn_trash() -> void:
 	var feet_y := _get_feet_y(npc)
 	var angle := randf() * TAU
 	var radius := randf() * horizontal_spread
-	var spawn_pos := Vector3(
-			base_pos.x + cos(angle) * radius,
-			feet_y,
-			base_pos.z + sin(angle) * radius,
-	)
+	var spawn_x := base_pos.x + cos(angle) * radius
+	var spawn_z := base_pos.z + sin(angle) * radius
+	var ground_y := _find_ground_y(spawn_x, feet_y + 0.5, spawn_z, feet_y, npc)
 	var trash: Node3D = TRASH_SCENE.instantiate()
 	get_tree().current_scene.add_child(trash)
 	var bottom_offset := _get_collision_bottom_offset(trash)
-	trash.global_position = Vector3(spawn_pos.x, feet_y + bottom_offset, spawn_pos.z)
+	trash.global_position = Vector3(spawn_x, ground_y + bottom_offset, spawn_z)
 	trash.global_rotation = Vector3(0, randf() * TAU, 0)
 
 
@@ -96,6 +95,26 @@ func _get_collision_bottom_offset(trash: Node3D) -> float:
 	elif col.shape is SphereShape3D:
 		half_height = (col.shape as SphereShape3D).radius
 	return half_height - col.position.y
+
+
+func _find_ground_y(
+	x: float,
+	start_y: float,
+	z: float,
+	fallback_y: float,
+	exclude: CollisionObject3D = null,
+) -> float:
+	var space := get_world_3d().direct_space_state
+	var from := Vector3(x, start_y, z)
+	var to := Vector3(x, start_y - 1.0, z)
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = 0xFFFFFFFF
+	if exclude != null:
+		query.exclude = [exclude.get_rid()]
+	var result := space.intersect_ray(query)
+	if result:
+		return result.position.y
+	return fallback_y
 
 
 func _find_playable_area() -> void:

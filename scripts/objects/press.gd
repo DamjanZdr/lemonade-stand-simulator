@@ -39,10 +39,12 @@ var _snapped_pitcher: Pitcher = null
 var _merged_anim: Animation = null
 const MERGED_ANIM_NAME: String = "merged/PressingMerged"
 var _juice_drain_tween: Tween = null
+var _last_juice_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 
 
 func _ready() -> void:
 	add_to_group("press")
+	add_to_group("container")
 	if _progress_bar:
 		_progress_bar.value = 0.0
 	_build_merged_animation()
@@ -62,9 +64,7 @@ func _process(delta: float) -> void:
 			target_pressed = minf(target_pressed, fruit_count)
 			if target_pressed > _pressed_so_far:
 				var to_add := target_pressed - _pressed_so_far
-				print("PRESS _process: adding fruit_type=", fruit_type, " to_add=", to_add, " pitcher_liquid=", _snapped_pitcher.get_liquid_volume())
 				var ok := _snapped_pitcher.add_ingredient(fruit_type, to_add)
-				print("PRESS _process: add_ingredient returned ok=", ok)
 				if ok:
 					_pressed_so_far = target_pressed
 				else:
@@ -99,7 +99,8 @@ func _update_press_animation() -> void:
 func _update_snap() -> void:
 	## Keep snapped pitcher aligned; clear if lost.
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
-		_snapped_pitcher.global_position = _snap_point.global_position
+		if not _snapped_pitcher.global_position.is_equal_approx(_snap_point.global_position):
+			_snapped_pitcher.global_position = _snap_point.global_position
 		return
 	_snapped_pitcher = null
 
@@ -149,6 +150,8 @@ func interact(player: Node) -> void:
 			and not _pressing and has_snapped_pitcher():
 		var pitcher := _snapped_pitcher
 		_snapped_pitcher = null
+		pitcher.visible = false
+		pitcher.set_pitcher_visible(false)
 		p.pickup_container(pitcher, "pitcher")
 		return
 
@@ -182,39 +185,39 @@ func get_hint(player: Node) -> String:
 	if p == null:
 		return ""
 	if _pressing:
-		return "Pressing %s..." % fruit_type.capitalize()
+		return "Press | pressing %s..." % fruit_type.capitalize()
 	if p.held_item == p.HeldItem.SUPPLY_BOX \
 			and p.held_item_data.get("source") == "bin_scoop":
 		var itype: String = p.held_item_data.get("ingredient_type", "")
 		if not _is_fruit(itype):
-			return "Press only accepts fruits"
+			return "Press | only accepts fruits"
 		if fruit_count > 0.0 and fruit_type != itype:
-			return "Cannot mix fruit types in press (has %.0f %s)" % [
+			return "Press | cannot mix fruit types (has %.0f %s)" % [
 				fruit_count,
 				fruit_type.capitalize(),
 			]
-		return "Click: add %s to press (has %.0f %s)" % [
+		return "Press | LMB: add %s (has %.0f %s)" % [
 			itype.capitalize(),
 			fruit_count,
 			fruit_type if fruit_count > 0.0 else "",
 		]
 	if fruit_count > 0.0:
 		if not has_snapped_pitcher():
-			return "Snap a pitcher! (%.0f %s ready)" % [
+			return "Press | snap a pitcher! (%.0f %s ready)" % [
 				fruit_count,
 				fruit_type.capitalize(),
 			]
 		if not _can_press_into_pitcher(_snapped_pitcher):
-			return "Pitcher incompatible%s" % _get_pitcher_hint()
-		return "Click: press %s into pitcher%s | RMB: pick up" % [
+			return "Press | pitcher incompatible%s" % _get_pitcher_hint()
+		return "Press | LMB: press %s into pitcher%s" % [
 			fruit_type.capitalize(),
 			_get_pitcher_hint(),
 		]
 	if fruit_count <= 0.0 and has_snapped_pitcher():
-		return "LMB: pick up pitcher%s | RMB: pick up" % _get_pitcher_hint()
+		return "Pitcher | LMB: pick up%s" % _get_pitcher_hint()
 	if fruit_count <= 0.0 and not has_snapped_pitcher():
-		return "LMB: pick up press | RMB: pick up press"
-	return "Press has fruit or pitcher — cannot pick up"
+		return "Press | LMB: pick up"
+	return "Press | has fruit or pitcher — cannot pick up"
 
 
 func _is_fruit(ingredient_type: String) -> bool:
@@ -293,6 +296,25 @@ func _build_merged_animation() -> void:
 	_anim_player.add_animation_library("merged", merged_lib)
 
 
+func set_highlight(on: bool) -> void:
+	# When a pitcher is snapped, highlight the pitcher (not the press body)
+	# unless the player is holding fruit (in which case highlight the press).
+	if has_snapped_pitcher():
+		var player := get_tree().get_first_node_in_group("player") as Player
+		var holding_fruit := false
+		if player != null and player.held_item == player.HeldItem.SUPPLY_BOX \
+				and player.held_item_data.get("source") == "bin_scoop":
+			holding_fruit = true
+		if holding_fruit:
+			_apply_outline(self, on)
+			_apply_outline(_snapped_pitcher, false)
+		else:
+			_apply_outline(self, false)
+			_apply_outline(_snapped_pitcher, on)
+	else:
+		_apply_outline(self, on)
+
+
 func has_snapped_pitcher() -> bool:
 	return _snapped_pitcher != null and is_instance_valid(_snapped_pitcher)
 
@@ -320,10 +342,10 @@ func can_snap_pitcher(recipe: Dictionary) -> bool:
 
 func get_pitcher_snap_hint(recipe: Dictionary) -> String:
 	if has_snapped_pitcher():
-		return "Press already has a pitcher  |  RMB: Cancel (refund)"
+		return "Press | already has a pitcher"
 	if not can_snap_pitcher(recipe):
-		return "Pitcher incompatible with press  |  RMB: Cancel (refund)"
-	return "LMB: Snap pitcher to press  |  RMB: Cancel (refund)"
+		return "Press | pitcher incompatible"
+	return "Press | LMB: snap pitcher"
 
 
 func get_snap_global_position() -> Vector3:
@@ -348,6 +370,7 @@ func _start_press() -> void:
 	_press_progress = 0.0
 	_pressed_so_far = 0.0
 	_press_duration = _get_press_duration()
+	AudioManager.play_sfx("press_fruits", global_position, _press_duration)
 	if _progress_bar:
 		_progress_bar.visible = true
 		_progress_bar.value = 0.0
@@ -363,7 +386,6 @@ func _start_press() -> void:
 		_juice_mesh.position.y = 0.7
 		_juice_mesh.scale = Vector3.ONE
 		_set_juice_color(fruit_type)
-		print("PRESS _start_press: fruit_type=", fruit_type, " target_color=", FRUIT_COLORS.get(fruit_type, Color(1.0, 0.9, 0.3, 1.0)))
 	# Preview the fruit color on the pitcher so liquid shows correct color immediately
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and fruit_count > 0.0:
 		if _snapped_pitcher.fruit_type == "":
@@ -456,6 +478,9 @@ func _set_juice_color(ftype: String) -> void:
 	if _juice_mesh == null:
 		return
 	var color: Color = FRUIT_COLORS.get(ftype, Color(1.0, 0.9, 0.3, 1.0))
+	if color == _last_juice_color:
+		return
+	_last_juice_color = color
 
 	# Handle CSGCombiner3D first (extends CSGShape3D but has no material)
 	var combiner := _juice_mesh as CSGCombiner3D

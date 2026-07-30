@@ -26,18 +26,30 @@ var _pending_supply_box_respawn: Array = []
 func _ready() -> void:
 	EventBus.game_saved.connect(_on_game_saved)
 	EventBus.game_reset.connect(_on_game_reset)
-	EventBus.container_placed.connect(func(_t, _n):
-			save_game())
-	EventBus.container_picked_up.connect(func(_t, _n):
-			save_game())
-	EventBus.supply_box_spawned.connect(func(_b):
-			save_game())
-	EventBus.bin_amount_changed.connect(func(_t, _a):
-			save_game())
-	EventBus.cup_stack_changed.connect(func(_c):
-			save_game())
-	EventBus.pitcher_state_changed.connect(func(_s):
-			save_game())
+	EventBus.container_placed.connect(
+		func(_t, _n):
+			save_game(),
+	)
+	EventBus.container_picked_up.connect(
+		func(_t, _n):
+			save_game(),
+	)
+	EventBus.supply_box_spawned.connect(
+		func(_b):
+			save_game(),
+	)
+	EventBus.bin_amount_changed.connect(
+		func(_t, _a):
+			save_game(),
+	)
+	EventBus.cup_stack_changed.connect(
+		func(_c):
+			save_game(),
+	)
+	EventBus.pitcher_state_changed.connect(
+		func(_s):
+			save_game(),
+	)
 
 	# Load the workstation scene at runtime to avoid compile-time preload issues
 	# while the editor imports the new scene/script .uid files.
@@ -64,7 +76,6 @@ func save_game() -> void:
 	if file:
 		file.store_string(json)
 		file.close()
-		print("Game saved.")
 	else:
 		push_error(
 			"Failed to save game to %s (error %d)" % [SAVE_PATH, FileAccess.get_open_error()]
@@ -193,6 +204,9 @@ func _scan_placed_containers() -> Array:
 	for node in get_tree().get_nodes_in_group("container"):
 		if not is_instance_valid(node) or node.is_queued_for_deletion():
 			continue
+		# Skip placement-preview ghosts and held items
+		if node.is_in_group("ghost"):
+			continue
 		# Skip containers currently held by the player
 		if player != null and node.is_ancestor_of(player) or _is_child_of_player(node, player):
 			continue
@@ -201,21 +215,9 @@ func _scan_placed_containers() -> Array:
 			continue
 		var entry := {
 			"type": ctype,
-			"position": [
-				node.global_position.x,
-				node.global_position.y,
-				node.global_position.z,
-			],
-			"rotation": [
-				node.global_rotation.x,
-				node.global_rotation.y,
-				node.global_rotation.z,
-			],
-			"scale": [
-				node.scale.x,
-				node.scale.y,
-				node.scale.z,
-			],
+			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
+			"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
+			"scale": [node.scale.x, node.scale.y, node.scale.z],
 		}
 		# Capture container contents
 		if node is FruitBin:
@@ -231,6 +233,11 @@ func _scan_placed_containers() -> Array:
 			entry["ice"] = node.ice
 			entry["pitcher_state"] = int(node.state)
 			entry["cups_poured"] = node.cups_poured
+		elif node is Press:
+			entry["fruit_type"] = node.fruit_type
+			entry["fruit_count"] = node.fruit_count
+		elif node is WaterDispenser:
+			entry["water_fillings"] = node.water_fillings
 		elif node is CupStack:
 			entry["current_count"] = node.current_count
 		result.append(entry)
@@ -270,26 +277,16 @@ func _scan_supply_boxes() -> Array:
 	for node in get_tree().get_nodes_in_group("supply_box"):
 		if not is_instance_valid(node) or node.is_queued_for_deletion():
 			continue
+		if node.is_in_group("ghost"):
+			continue
 		var box := node as SupplyBox
 		if box == null:
 			continue
 		result.append(
 			{
-				"position": [
-					box.global_position.x,
-					box.global_position.y,
-					box.global_position.z,
-				],
-				"rotation": [
-					box.global_rotation.x,
-					box.global_rotation.y,
-					box.global_rotation.z,
-				],
-				"scale": [
-					box.scale.x,
-					box.scale.y,
-					box.scale.z,
-				],
+				"position": [box.global_position.x, box.global_position.y, box.global_position.z],
+				"rotation": [box.global_rotation.x, box.global_rotation.y, box.global_rotation.z],
+				"scale": [box.scale.x, box.scale.y, box.scale.z],
 				"ingredient_type": box.ingredient_type,
 				"quantity": box.quantity,
 				"is_equipment": box.is_equipment,
@@ -367,6 +364,11 @@ func _do_respawn() -> void:
 			# Set state BEFORE add_child so _ready() sees correct values
 			if instance is CupStack:
 				instance.starting_count = entry.get("current_count", instance.starting_count)
+			if instance is WaterDispenser:
+				instance.water_fillings = entry.get("water_fillings", instance.water_fillings)
+			if instance is Press:
+				instance.fruit_type = entry.get("fruit_type", "")
+				instance.fruit_count = entry.get("fruit_count", 0.0)
 			if scl.size() >= 3:
 				instance.scale = Vector3(scl[0], scl[1], scl[2])
 			root.add_child(instance)
@@ -411,6 +413,25 @@ func _do_respawn() -> void:
 					instance.starting_amount = 0.0
 				if "starting_count" in instance:
 					instance.starting_count = 0
+
+		# Link pitchers to presses/water dispensers based on proximity to snap points
+		for container in root.get_tree().get_nodes_in_group("container"):
+			var snap_pos: Vector3 = Vector3.ZERO
+			if container is Press:
+				snap_pos = (container as Press).get_snap_global_position()
+			elif container is WaterDispenser:
+				snap_pos = (container as WaterDispenser).get_snap_global_position()
+			else:
+				continue
+			for pitcher in root.get_tree().get_nodes_in_group("pitcher"):
+				if not (pitcher is Pitcher):
+					continue
+				if pitcher.global_position.is_equal_approx(snap_pos):
+					if container is Press:
+						(container as Press).snap_pitcher(pitcher as Pitcher)
+					elif container is WaterDispenser:
+						(container as WaterDispenser).snap_pitcher(pitcher as Pitcher)
+					break
 
 	# --- Respawn supply boxes ---
 	var sdata: Array = _pending_supply_box_respawn

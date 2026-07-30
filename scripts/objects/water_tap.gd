@@ -63,12 +63,12 @@ func get_hint(player: Node) -> String:
 	if p.held_item == p.HeldItem.CONTAINER and p.held_item_data.get("container_type") == "pitcher":
 		var recipe: Dictionary = p.held_item_data.get("saved_recipe", { })
 		if recipe.get("water", 0.0) > 0.0:
-			return "Pitcher already filled"
-		return "Click: fill pitcher with water"
+			return "Water Tap | pitcher already filled"
+		return "Water Tap | LMB: fill pitcher with water"
 
 	var pitcher := _find_nearby_pitcher()
 	if pitcher == null:
-		return "Water Tap (place pitcher nearby)"
+		return "Water Tap | place pitcher nearby"
 	if pitcher.water > 0.0:
-		return "Pitcher already filled"
-	return "Click: fill pitcher with water"
+		return "Water Tap | pitcher already filled"
+	return "Water Tap | LMB: fill pitcher with water"

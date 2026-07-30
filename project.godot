@@ -26,6 +26,7 @@ DayManager="*res://scripts/systems/day_manager.gd"
 SaveManager="*res://scripts/systems/save_manager.gd"
 UpgradeManager="*res://scripts/systems/upgrade_manager.gd"
 Inventory="*res://scripts/autoloads/inventory.gd"
+AudioManager="*res://scripts/autoloads/audio_manager.gd"
 
 [debug]
 
@@ -84,6 +85,7 @@ jump={
 [physics]
 
 3d/physics_engine="Jolt Physics"
+common/physics_interpolation=true
 
 [rendering]
 

@@ -21,7 +21,7 @@ var _register_slide_pos: Vector3 = Vector3(0, 0, -0.4) # Slide 0.4 units backwar
 
 
 func _ready() -> void:
-	EventBus.sale_initiated.connect(_on_sale_initiated)
+	# Replaced by MoneyController — no longer responds to sale_initiated.
 	EventBus.change_finalized.connect(_on_change_finalized)
 	# Hide all interactive elements at startup
 	_set_active(false)
@@ -39,14 +39,14 @@ func interact(_player: Node) -> void:
 
 func get_hint(_player: Node) -> String:
 	if not is_active:
-		return "Click the bill on the counter to open register"
+		return "Cash Register | click the bill on the counter"
 	var gap := _change_due_cents - _tendered_cents
 	if gap > 0:
-		return "Need $%.2f more change" % (gap / 100.0)
+		return "Cash Register | need $%.2f more change" % (gap / 100.0)
 	if _tendered_cents > _change_due_cents:
-		return "Click register: Give Change  (overpaying $%.2f)" % \
+		return "Cash Register | LMB: give change  (overpaying $%.2f)" % \
 				((_tendered_cents - _change_due_cents) / 100.0)
-	return "Click register: Give Change ✓"
+	return "Cash Register | LMB: give change ✓"
 
 
 func set_highlight(on: bool) -> void:

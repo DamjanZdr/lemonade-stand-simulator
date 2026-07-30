@@ -111,8 +111,11 @@ func _on_wants_to_join(ped: Pedestrian) -> void:
 	# Slot is reserved. Have the pedestrian walk to it — same NPC walks visibly
 	# to the queue. When it arrives, spawn the customer already in-place (WAITING).
 	var slot_pos: Vector3 = _customer_spawner.get_slot_position(slot)
-	ped.walk_to_queue(slot_pos, func():
-			_finalize_conversion(ped))
+	ped.walk_to_queue(
+		slot_pos,
+		func():
+			_finalize_conversion(ped),
+	)
 
 
 func _finalize_conversion(ped: Pedestrian) -> void:

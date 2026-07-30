@@ -25,9 +25,23 @@ func _pick_random_variant() -> void:
 		return
 	_visible_variant = available[randi() % available.size()]
 	_visible_variant.visible = true
+	trash_type = _visible_variant.name
 	var manager := _get_trash_manager()
 	if manager != null:
 		trash_value = manager.get_value(_visible_variant.name)
+
+
+func show_variant(variant_name: String) -> void:
+	for variant_name_ in _VARIANT_NAMES:
+		var node := get_node_or_null(variant_name_) as Node3D
+		if node != null:
+			node.visible = (variant_name_ == variant_name)
+	_visible_variant = get_node_or_null(variant_name) as Node3D
+	if _visible_variant != null:
+		trash_type = variant_name
+		var manager := _get_trash_manager()
+		if manager != null:
+			trash_value = manager.get_value(variant_name)
 
 
 func interact(player: Node) -> void:
@@ -50,7 +64,7 @@ func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null or p.held_item != Player.HeldItem.NONE:
 		return ""
-	return "LMB: Pick up trash"
+	return "Trash | LMB: pick up"
 
 
 func _create_hand_mesh() -> Node3D:

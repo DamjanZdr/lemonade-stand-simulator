@@ -1,382 +1,376 @@
 [gd_scene format=3 uid="uid://cln645chxinxp"]
 
 [ext_resource type="Script" uid="uid://ckhhjvdyos60c" path="res://scripts/tools/upgrade_tree_node.gd" id="1_node"]
-[ext_resource type="Resource" path="res://resources/upgrades/press_speed.tres" id="2_press_speed"]
-[ext_resource type="Resource" path="res://resources/upgrades/sunroof.tres" id="3_sunroof"]
-[ext_resource type="Resource" path="res://resources/upgrades/lemon_unlock.tres" id="4_lemon_unlock"]
-[ext_resource type="Resource" path="res://resources/upgrades/strawberry_unlock.tres" id="5_strawberry_unlock"]
-[ext_resource type="Resource" path="res://resources/upgrades/blueberry_unlock.tres" id="6_blueberry_unlock"]
-[ext_resource type="Resource" path="res://resources/upgrades/peach_unlock.tres" id="7_peach_unlock"]
-[ext_resource type="Resource" path="res://resources/upgrades/watermelon_unlock.tres" id="8_watermelon_unlock"]
-[ext_resource type="Resource" path="res://resources/upgrades/demand.tres" id="9_demand"]
-[ext_resource type="Resource" path="res://resources/upgrades/nimbleness.tres" id="10_nimbleness"]
-[ext_resource type="Resource" path="res://resources/upgrades/water_dispenser.tres" id="11_water_dispenser"]
-[ext_resource type="Resource" path="res://resources/upgrades/foot_traffic.tres" id="12_foot_traffic"]
-[ext_resource type="Resource" path="res://resources/upgrades/trash_rebate.tres" id="13_trash_rebate"]
+[ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="2_press_speed"]
+[ext_resource type="Resource" uid="uid://cqgusixkpn6b0" path="res://resources/upgrades/sunroof.tres" id="3_sunroof"]
+[ext_resource type="Resource" uid="uid://bodfywk634j8m" path="res://resources/upgrades/lemon_unlock.tres" id="4_lemon_unlock"]
+[ext_resource type="Resource" uid="uid://dt47sq4k4v7c" path="res://resources/upgrades/strawberry_unlock.tres" id="5_strawberry_unlock"]
+[ext_resource type="Resource" uid="uid://bu46xbgvvx2ri" path="res://resources/upgrades/blueberry_unlock.tres" id="6_blueberry_unlock"]
+[ext_resource type="Resource" uid="uid://btcdwa0mln6e5" path="res://resources/upgrades/peach_unlock.tres" id="7_peach_unlock"]
+[ext_resource type="Resource" uid="uid://d1hk0gkktg6me" path="res://resources/upgrades/watermelon_unlock.tres" id="8_watermelon_unlock"]
+[ext_resource type="Resource" uid="uid://d4ea6ugq701fu" path="res://resources/upgrades/demand.tres" id="9_demand"]
+[ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="10_nimbleness"]
+[ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="11_water_dispenser"]
+[ext_resource type="Resource" uid="uid://d15hoyn42ngpk" path="res://resources/upgrades/foot_traffic.tres" id="12_foot_traffic"]
+[ext_resource type="Resource" uid="uid://cy4padwttenjf" path="res://resources/upgrades/trash_rebate.tres" id="13_trash_rebate"]
 
 [node name="UpgradeTree" type="Node2D" unique_id=235020644]
 
 [node name="Root" type="Node2D" parent="." unique_id=334159279]
-position = Vector2(0, 0)
 script = ExtResource("1_node")
 is_root = true
 
-[node name="PressSpeed1" type="Node2D" parent="."]
-position = Vector2(140.0, 0.0)
+[node name="PressSpeed1" type="Node2D" parent="." unique_id=1032126256]
+position = Vector2(140, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("2_press_speed")
-cost = 40
+cost = 40.0
 
-[node name="PressSpeed2" type="Node2D" parent="."]
-position = Vector2(280.0, 0.0)
+[node name="PressSpeed2" type="Node2D" parent="." unique_id=272417316]
+position = Vector2(280, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("2_press_speed")
-cost = 60
+cost = 60.0
 
-[node name="PressSpeed3" type="Node2D" parent="."]
-position = Vector2(420.0, 0.0)
+[node name="PressSpeed3" type="Node2D" parent="." unique_id=1485365842]
+position = Vector2(420, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("2_press_speed")
-cost = 80
+cost = 80.0
 
-[node name="PressSpeed4" type="Node2D" parent="."]
-position = Vector2(560.0, 0.0)
+[node name="PressSpeed4" type="Node2D" parent="." unique_id=1123874522]
+position = Vector2(560, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("2_press_speed")
-cost = 100
+cost = 100.0
 
-[node name="PressSpeed5" type="Node2D" parent="."]
-position = Vector2(700.0, 0.0)
+[node name="PressSpeed5" type="Node2D" parent="." unique_id=1884419644]
+position = Vector2(700, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("2_press_speed")
-cost = 120
+cost = 120.0
 
-[node name="Sunroof1" type="Node2D" parent="."]
+[node name="Sunroof1" type="Node2D" parent="." unique_id=2095265425]
 position = Vector2(113.3, 82.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("3_sunroof")
-cost = 50
 
-[node name="Sunroof2" type="Node2D" parent="."]
+[node name="Sunroof2" type="Node2D" parent="." unique_id=1226901287]
 position = Vector2(226.5, 164.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("3_sunroof")
-cost = 70
+cost = 70.0
 
-[node name="Sunroof3" type="Node2D" parent="."]
+[node name="Sunroof3" type="Node2D" parent="." unique_id=1854589336]
 position = Vector2(339.8, 246.9)
 script = ExtResource("1_node")
 upgrade = ExtResource("3_sunroof")
-cost = 90
+cost = 90.0
 
-[node name="Sunroof4" type="Node2D" parent="."]
-position = Vector2(453.0, 329.2)
+[node name="Sunroof4" type="Node2D" parent="." unique_id=593521226]
+position = Vector2(453, 329.2)
 script = ExtResource("1_node")
 upgrade = ExtResource("3_sunroof")
-cost = 110
+cost = 110.0
 
-[node name="Sunroof5" type="Node2D" parent="."]
+[node name="Sunroof5" type="Node2D" parent="." unique_id=801060155]
 position = Vector2(566.3, 411.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("3_sunroof")
-cost = 130
+cost = 130.0
 
-[node name="LemonUnlock1" type="Node2D" parent="."]
+[node name="LemonUnlock1" type="Node2D" parent="." unique_id=1302326020]
 position = Vector2(43.3, 133.1)
 script = ExtResource("1_node")
 upgrade = ExtResource("4_lemon_unlock")
-cost = 30
+cost = 30.0
 
-[node name="LemonUnlock2" type="Node2D" parent="."]
+[node name="LemonUnlock2" type="Node2D" parent="." unique_id=1395161890]
 position = Vector2(86.5, 266.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("4_lemon_unlock")
-cost = 50
 
-[node name="LemonUnlock3" type="Node2D" parent="."]
+[node name="LemonUnlock3" type="Node2D" parent="." unique_id=2069978793]
 position = Vector2(129.8, 399.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("4_lemon_unlock")
-cost = 70
+cost = 70.0
 
-[node name="LemonUnlock4" type="Node2D" parent="."]
-position = Vector2(173.0, 532.6)
+[node name="LemonUnlock4" type="Node2D" parent="." unique_id=839262795]
+position = Vector2(173, 532.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("4_lemon_unlock")
-cost = 90
+cost = 90.0
 
-[node name="LemonUnlock5" type="Node2D" parent="."]
+[node name="LemonUnlock5" type="Node2D" parent="." unique_id=2039548353]
 position = Vector2(216.3, 665.7)
 script = ExtResource("1_node")
 upgrade = ExtResource("4_lemon_unlock")
-cost = 110
+cost = 110.0
 
-[node name="StrawberryUnlock1" type="Node2D" parent="."]
+[node name="StrawberryUnlock1" type="Node2D" parent="." unique_id=887280539]
 position = Vector2(-43.3, 133.1)
 script = ExtResource("1_node")
 upgrade = ExtResource("5_strawberry_unlock")
-cost = 35
+cost = 35.0
 
-[node name="StrawberryUnlock2" type="Node2D" parent="."]
+[node name="StrawberryUnlock2" type="Node2D" parent="." unique_id=1166907363]
 position = Vector2(-86.5, 266.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("5_strawberry_unlock")
-cost = 55
+cost = 55.0
 
-[node name="StrawberryUnlock3" type="Node2D" parent="."]
+[node name="StrawberryUnlock3" type="Node2D" parent="." unique_id=276570440]
 position = Vector2(-129.8, 399.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("5_strawberry_unlock")
-cost = 75
+cost = 75.0
 
-[node name="StrawberryUnlock4" type="Node2D" parent="."]
-position = Vector2(-173.0, 532.6)
+[node name="StrawberryUnlock4" type="Node2D" parent="." unique_id=1515224565]
+position = Vector2(-173, 532.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("5_strawberry_unlock")
-cost = 95
+cost = 95.0
 
-[node name="StrawberryUnlock5" type="Node2D" parent="."]
+[node name="StrawberryUnlock5" type="Node2D" parent="." unique_id=1516255734]
 position = Vector2(-216.3, 665.7)
 script = ExtResource("1_node")
 upgrade = ExtResource("5_strawberry_unlock")
-cost = 115
+cost = 115.0
 
-[node name="BlueberryUnlock1" type="Node2D" parent="."]
+[node name="BlueberryUnlock1" type="Node2D" parent="." unique_id=708388148]
 position = Vector2(-113.3, 82.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("6_blueberry_unlock")
-cost = 40
+cost = 40.0
 
-[node name="BlueberryUnlock2" type="Node2D" parent="."]
+[node name="BlueberryUnlock2" type="Node2D" parent="." unique_id=1926542622]
 position = Vector2(-226.5, 164.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("6_blueberry_unlock")
-cost = 60
+cost = 60.0
 
-[node name="BlueberryUnlock3" type="Node2D" parent="."]
+[node name="BlueberryUnlock3" type="Node2D" parent="." unique_id=700259674]
 position = Vector2(-339.8, 246.9)
 script = ExtResource("1_node")
 upgrade = ExtResource("6_blueberry_unlock")
-cost = 80
+cost = 80.0
 
-[node name="BlueberryUnlock4" type="Node2D" parent="."]
-position = Vector2(-453.0, 329.2)
+[node name="BlueberryUnlock4" type="Node2D" parent="." unique_id=1441608199]
+position = Vector2(-453, 329.2)
 script = ExtResource("1_node")
 upgrade = ExtResource("6_blueberry_unlock")
-cost = 100
+cost = 100.0
 
-[node name="BlueberryUnlock5" type="Node2D" parent="."]
+[node name="BlueberryUnlock5" type="Node2D" parent="." unique_id=208956825]
 position = Vector2(-566.3, 411.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("6_blueberry_unlock")
-cost = 120
+cost = 120.0
 
-[node name="PeachUnlock1" type="Node2D" parent="."]
-position = Vector2(-140.0, 0.0)
+[node name="PeachUnlock1" type="Node2D" parent="." unique_id=1421749507]
+position = Vector2(-140, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("7_peach_unlock")
-cost = 45
+cost = 45.0
 
-[node name="PeachUnlock2" type="Node2D" parent="."]
-position = Vector2(-280.0, 0.0)
+[node name="PeachUnlock2" type="Node2D" parent="." unique_id=1773548939]
+position = Vector2(-280, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("7_peach_unlock")
-cost = 65
+cost = 65.0
 
-[node name="PeachUnlock3" type="Node2D" parent="."]
-position = Vector2(-420.0, 0.0)
+[node name="PeachUnlock3" type="Node2D" parent="." unique_id=2105834622]
+position = Vector2(-420, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("7_peach_unlock")
-cost = 85
+cost = 85.0
 
-[node name="PeachUnlock4" type="Node2D" parent="."]
-position = Vector2(-560.0, 0.0)
+[node name="PeachUnlock4" type="Node2D" parent="." unique_id=941211994]
+position = Vector2(-560, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("7_peach_unlock")
-cost = 105
+cost = 105.0
 
-[node name="PeachUnlock5" type="Node2D" parent="."]
-position = Vector2(-700.0, 0.0)
+[node name="PeachUnlock5" type="Node2D" parent="." unique_id=1057410155]
+position = Vector2(-700, 0)
 script = ExtResource("1_node")
 upgrade = ExtResource("7_peach_unlock")
-cost = 125
+cost = 125.0
 
-[node name="WatermelonUnlock1" type="Node2D" parent="."]
+[node name="WatermelonUnlock1" type="Node2D" parent="." unique_id=1843889356]
 position = Vector2(-113.3, -82.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("8_watermelon_unlock")
-cost = 50
 
-[node name="WatermelonUnlock2" type="Node2D" parent="."]
+[node name="WatermelonUnlock2" type="Node2D" parent="." unique_id=1731706337]
 position = Vector2(-226.5, -164.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("8_watermelon_unlock")
-cost = 70
+cost = 70.0
 
-[node name="WatermelonUnlock3" type="Node2D" parent="."]
+[node name="WatermelonUnlock3" type="Node2D" parent="." unique_id=310598260]
 position = Vector2(-339.8, -246.9)
 script = ExtResource("1_node")
 upgrade = ExtResource("8_watermelon_unlock")
-cost = 90
+cost = 90.0
 
-[node name="WatermelonUnlock4" type="Node2D" parent="."]
-position = Vector2(-453.0, -329.2)
+[node name="WatermelonUnlock4" type="Node2D" parent="." unique_id=1773654306]
+position = Vector2(-453, -329.2)
 script = ExtResource("1_node")
 upgrade = ExtResource("8_watermelon_unlock")
-cost = 110
+cost = 110.0
 
-[node name="WatermelonUnlock5" type="Node2D" parent="."]
+[node name="WatermelonUnlock5" type="Node2D" parent="." unique_id=1639264137]
 position = Vector2(-566.3, -411.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("8_watermelon_unlock")
-cost = 130
+cost = 130.0
 
-[node name="Demand1" type="Node2D" parent="."]
+[node name="Demand1" type="Node2D" parent="." unique_id=136919658]
 position = Vector2(-43.3, -133.1)
 script = ExtResource("1_node")
 upgrade = ExtResource("9_demand")
-cost = 60
+cost = 60.0
 
-[node name="Demand2" type="Node2D" parent="."]
+[node name="Demand2" type="Node2D" parent="." unique_id=542860228]
 position = Vector2(-86.5, -266.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("9_demand")
-cost = 80
+cost = 80.0
 
-[node name="Demand3" type="Node2D" parent="."]
+[node name="Demand3" type="Node2D" parent="." unique_id=1651340032]
 position = Vector2(-129.8, -399.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("9_demand")
-cost = 100
+cost = 100.0
 
-[node name="Demand4" type="Node2D" parent="."]
-position = Vector2(-173.0, -532.6)
+[node name="Demand4" type="Node2D" parent="." unique_id=1600515174]
+position = Vector2(-173, -532.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("9_demand")
-cost = 120
+cost = 120.0
 
-[node name="Demand5" type="Node2D" parent="."]
+[node name="Demand5" type="Node2D" parent="." unique_id=1607704529]
 position = Vector2(-216.3, -665.7)
 script = ExtResource("1_node")
 upgrade = ExtResource("9_demand")
-cost = 140
+cost = 140.0
 
-[node name="Nimbleness1" type="Node2D" parent="."]
+[node name="Nimbleness1" type="Node2D" parent="." unique_id=1359302915]
 position = Vector2(43.3, -133.1)
 script = ExtResource("1_node")
 upgrade = ExtResource("10_nimbleness")
-cost = 40
+cost = 40.0
 
-[node name="Nimbleness2" type="Node2D" parent="."]
+[node name="Nimbleness2" type="Node2D" parent="." unique_id=79689072]
 position = Vector2(86.5, -266.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("10_nimbleness")
-cost = 60
+cost = 60.0
 
-[node name="Nimbleness3" type="Node2D" parent="."]
-position = Vector2(129.8, -399.4)
+[node name="Nimbleness3" type="Node2D" parent="." unique_id=313762149]
+position = Vector2(128.8, -399.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("10_nimbleness")
-cost = 80
+cost = 80.0
 
-[node name="Nimbleness4" type="Node2D" parent="."]
-position = Vector2(173.0, -532.6)
+[node name="Nimbleness4" type="Node2D" parent="." unique_id=2098771573]
+position = Vector2(173, -532.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("10_nimbleness")
-cost = 100
+cost = 100.0
 
-[node name="Nimbleness5" type="Node2D" parent="."]
+[node name="Nimbleness5" type="Node2D" parent="." unique_id=496971441]
 position = Vector2(216.3, -665.7)
 script = ExtResource("1_node")
 upgrade = ExtResource("10_nimbleness")
-cost = 120
+cost = 120.0
 
-[node name="WaterDispenser1" type="Node2D" parent="."]
+[node name="WaterDispenser1" type="Node2D" parent="." unique_id=1071766321]
 position = Vector2(113.3, -82.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("11_water_dispenser")
-cost = 50
 
-[node name="WaterDispenser2" type="Node2D" parent="."]
+[node name="WaterDispenser2" type="Node2D" parent="." unique_id=1274466616]
 position = Vector2(226.5, -164.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("11_water_dispenser")
-cost = 70
+cost = 70.0
 
-[node name="WaterDispenser3" type="Node2D" parent="."]
+[node name="WaterDispenser3" type="Node2D" parent="." unique_id=937770851]
 position = Vector2(339.8, -246.9)
 script = ExtResource("1_node")
 upgrade = ExtResource("11_water_dispenser")
-cost = 90
+cost = 90.0
 
-[node name="WaterDispenser4" type="Node2D" parent="."]
-position = Vector2(453.0, -329.2)
+[node name="WaterDispenser4" type="Node2D" parent="." unique_id=1266064276]
+position = Vector2(453, -329.2)
 script = ExtResource("1_node")
 upgrade = ExtResource("11_water_dispenser")
-cost = 110
+cost = 110.0
 
-[node name="WaterDispenser5" type="Node2D" parent="."]
+[node name="WaterDispenser5" type="Node2D" parent="." unique_id=1631575328]
 position = Vector2(566.3, -411.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("11_water_dispenser")
-cost = 130
+cost = 130.0
 
-[node name="FootTraffic1" type="Node2D" parent="."]
+[node name="FootTraffic1" type="Node2D" parent="." unique_id=1345731433]
 position = Vector2(43.3, -133.1)
 script = ExtResource("1_node")
 upgrade = ExtResource("12_foot_traffic")
-cost = 60
+cost = 60.0
 
-[node name="FootTraffic2" type="Node2D" parent="."]
+[node name="FootTraffic2" type="Node2D" parent="." unique_id=1650457088]
 position = Vector2(86.5, -266.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("12_foot_traffic")
-cost = 80
+cost = 80.0
 
-[node name="FootTraffic3" type="Node2D" parent="."]
+[node name="FootTraffic3" type="Node2D" parent="." unique_id=1605337378]
 position = Vector2(129.8, -399.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("12_foot_traffic")
-cost = 100
+cost = 100.0
 
-[node name="FootTraffic4" type="Node2D" parent="."]
-position = Vector2(173.0, -532.6)
+[node name="FootTraffic4" type="Node2D" parent="." unique_id=474863442]
+position = Vector2(173, -532.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("12_foot_traffic")
-cost = 120
+cost = 120.0
 
-[node name="FootTraffic5" type="Node2D" parent="."]
+[node name="FootTraffic5" type="Node2D" parent="." unique_id=1678558014]
 position = Vector2(216.3, -665.7)
 script = ExtResource("1_node")
 upgrade = ExtResource("12_foot_traffic")
-cost = 140
+cost = 140.0
 
-[node name="TrashRebate1" type="Node2D" parent="."]
+[node name="TrashRebate1" type="Node2D" parent="." unique_id=10523535]
 position = Vector2(113.3, -82.3)
 script = ExtResource("1_node")
 upgrade = ExtResource("13_trash_rebate")
-cost = 50
 
-[node name="TrashRebate2" type="Node2D" parent="."]
+[node name="TrashRebate2" type="Node2D" parent="." unique_id=1978545287]
 position = Vector2(226.5, -164.6)
 script = ExtResource("1_node")
 upgrade = ExtResource("13_trash_rebate")
-cost = 70
+cost = 70.0
 
-[node name="TrashRebate3" type="Node2D" parent="."]
+[node name="TrashRebate3" type="Node2D" parent="." unique_id=1864707379]
 position = Vector2(339.8, -246.9)
 script = ExtResource("1_node")
 upgrade = ExtResource("13_trash_rebate")
-cost = 90
+cost = 90.0
 
-[node name="TrashRebate4" type="Node2D" parent="."]
-position = Vector2(453.0, -329.2)
+[node name="TrashRebate4" type="Node2D" parent="." unique_id=12612676]
+position = Vector2(453, -329.2)
 script = ExtResource("1_node")
 upgrade = ExtResource("13_trash_rebate")
-cost = 110
+cost = 110.0
 
-[node name="TrashRebate5" type="Node2D" parent="."]
+[node name="TrashRebate5" type="Node2D" parent="." unique_id=544170189]
 position = Vector2(566.3, -411.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("13_trash_rebate")
-cost = 130
+cost = 130.0

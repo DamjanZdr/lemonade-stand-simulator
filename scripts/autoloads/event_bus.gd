@@ -25,6 +25,7 @@ signal supply_order_placed(ingredient_type: String, quantity: float, cost: float
 signal trash_disposed(item_type: String, refund: float)
 signal equipment_order_placed(container_type: String)
 signal supply_box_spawned(box: Node)
+signal checkout_completed()
 
 # --- Customer ---
 signal pedestrian_spawned(pedestrian: Node)
@@ -35,6 +36,7 @@ signal customer_left(customer: Node, outcome: String)
 signal cash_dropped(position: Vector3, payment: float, change_due: float)
 signal sale_initiated(payment: float, change_due: float)
 signal change_finalized(earned: float)
+signal change_tendered_updated(tendered_cents: int, change_due_cents: int)
 signal cash_collected(amount: float)
 
 # --- Containers ---
@@ -78,3 +80,6 @@ signal debug_force_happy_serve()
 signal debug_set_popularity(value: float)
 signal debug_set_time_scale(scale: float)
 signal debug_set_rain(enabled: bool)
+signal debug_set_color_roofs(enabled: bool)
+signal debug_set_color_walls(enabled: bool)
+signal debug_house_palette_changed()

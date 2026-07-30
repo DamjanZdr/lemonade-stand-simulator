@@ -13,6 +13,7 @@ var _fill_progress: float = 0.0
 var _fill_amount: float = 0.0
 var _snapped_pitcher: Pitcher = null
 var _tap_tween: Tween = null
+var _last_display_fillings: float = -1000.0
 
 @onready var _water_eraser: CSGBox3D = $CSGCombiner3D/WaterEraser
 @onready var _tap_mesh: MeshInstance3D = $"water dispenser/TapObject"
@@ -26,6 +27,7 @@ const WATER_Y_EMPTY: float = 0.74
 
 func _ready() -> void:
 	add_to_group("water_dispenser")
+	add_to_group("container")
 	_update_water_visual()
 
 
@@ -44,7 +46,8 @@ func _process(delta: float) -> void:
 
 func _update_snap() -> void:
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
-		_snapped_pitcher.global_position = _snap_point.global_position
+		if not _snapped_pitcher.global_position.is_equal_approx(_snap_point.global_position):
+			_snapped_pitcher.global_position = _snap_point.global_position
 		return
 	if _snapped_pitcher != null:
 		_snapped_pitcher = null
@@ -55,14 +58,18 @@ func _update_snap() -> void:
 
 
 func _update_water_visual(display_fillings: float = -1.0) -> void:
-	if _water_eraser:
-		var t: float
-		if display_fillings >= 0.0:
-			t = display_fillings / float(max_fillings)
-		else:
-			t = float(water_fillings) / float(max_fillings)
-		var target_y := lerpf(WATER_Y_EMPTY, WATER_Y_FULL, t)
-		_water_eraser.position.y = target_y
+	if _water_eraser == null:
+		return
+	if display_fillings >= 0.0 and abs(display_fillings - _last_display_fillings) < 0.05:
+		return
+	_last_display_fillings = display_fillings
+	var t: float
+	if display_fillings >= 0.0:
+		t = display_fillings / float(max_fillings)
+	else:
+		t = float(water_fillings) / float(max_fillings)
+	var target_y := lerpf(WATER_Y_EMPTY, WATER_Y_FULL, t)
+	_water_eraser.position.y = target_y
 
 
 func _reset_tap() -> void:
@@ -112,19 +119,13 @@ func interact(player: Node) -> void:
 			if remaining > 0.0:
 				p.update_held_amount(remaining)
 				EventBus.interaction_hint_changed.emit(
-					"Dispenser: %d/%d (box has %.0f left)" % [
-						water_fillings,
-						max_fillings,
-						remaining,
-					],
+					"Dispenser: %d/%d (box has %.0f left)"
+					% [water_fillings, max_fillings, remaining],
 				)
 			else:
 				p.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 				EventBus.interaction_hint_changed.emit(
-					"Dispenser refilled! (%d/%d)" % [
-						water_fillings,
-						max_fillings,
-					],
+					"Dispenser refilled! (%d/%d)" % [water_fillings, max_fillings],
 				)
 			return
 
@@ -182,36 +183,36 @@ func get_hint(player: Node) -> String:
 		var itype: String = p.held_item_data.get("ingredient_type", "")
 		if itype == "water":
 			if water_fillings >= max_fillings:
-				return "Dispenser is full!"
-			return "LMB: refill dispenser (%d/%d)" % [water_fillings, max_fillings]
-		return "Only water boxes refill the dispenser"
+				return "Water Dispenser | full!"
+			return "Water Dispenser | LMB: refill (%d/%d)" % [water_fillings, max_fillings]
+		return "Water Dispenser | only water boxes refill"
 
 	if p.held_item == p.HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		if ctype == "pitcher":
 			if _snapped_pitcher != null:
-				return "Dispenser already has a pitcher"
+				return "Water Dispenser | already has a pitcher"
 			var recipe: Dictionary = p.held_item_data.get("saved_recipe", { })
 			if recipe.get("water", 0.0) > 0.0:
-				return "Pitcher already has water"
+				return "Water Dispenser | pitcher already has water"
 			var liquid: float = recipe.get("fruit_count", recipe.get("lemons", 0.0))
 			if liquid >= Balancing.PITCHER_MAX_LIQUID:
-				return "Pitcher is full"
-			return "LMB: Place pitcher on dispenser"
-		return "Only pitchers can snap here"
+				return "Water Dispenser | pitcher is full"
+			return "Water Dispenser | LMB: place pitcher"
+		return "Water Dispenser | only pitchers can snap here"
 
 	if _is_filling:
-		return "Filling pitcher with water..."
+		return "Water Dispenser | filling pitcher..."
 
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
 		var space := Balancing.PITCHER_MAX_LIQUID - _snapped_pitcher.get_liquid_volume()
 		if space > 0.0:
 			if water_fillings > 0:
-				return "LMB: Fill pitcher  |  RMB: Take pitcher"
-			return "Dispenser empty — buy water  |  RMB: Take pitcher"
-		return "LMB: Take pitcher  |  RMB: Take pitcher"
+				return "Water Dispenser | LMB: fill pitcher"
+			return "Water Dispenser | RMB: take pitcher (empty)"
+		return "Water Dispenser | LMB: take pitcher"
 
-	return "LMB: Pick up dispenser  |  RMB: Pick up dispenser"
+	return "Water Dispenser | LMB: pick up"
 
 
 func snap_pitcher(pitcher: Pitcher) -> void:
@@ -231,6 +232,20 @@ func can_snap_pitcher(pitcher: Pitcher) -> bool:
 	return true
 
 
+func can_snap_pitcher_from_recipe(recipe: Dictionary) -> bool:
+	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
+		return false
+	if recipe.get("water", 0.0) > 0.0:
+		return false
+	var liquid: float = recipe.get("fruit_count", recipe.get("lemons", 0.0)) + recipe.get(
+		"water",
+		0.0,
+	)
+	if liquid >= Balancing.PITCHER_MAX_LIQUID:
+		return false
+	return true
+
+
 func get_snap_global_position() -> Vector3:
 	if _snap_point == null:
 		return global_position
@@ -243,7 +258,7 @@ func _start_fill(water_amount: float) -> void:
 	_is_filling = true
 	_fill_progress = 0.0
 	_fill_amount = water_amount
-	print("DISPENSER _start_fill: water_amount=", water_amount, " pitcher_liquid=", _snapped_pitcher.get_liquid_volume(), " pitcher_water=", _snapped_pitcher.water, " pitcher_fruit_count=", _snapped_pitcher.fruit_count)
+	AudioManager.play_sfx("water_pour_in_pitcher", global_position, fill_time_per_pitcher)
 	# Animate tap to open
 	if _tap_mesh:
 		if _tap_tween and _tap_tween.is_valid():
@@ -265,7 +280,6 @@ func _finish_fill() -> void:
 	_update_water_visual()
 
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
-		print("DISPENSER _finish_fill: adding _fill_amount=", _fill_amount, " to pitcher_water=", _snapped_pitcher.water)
 		_snapped_pitcher.water += _fill_amount
 		# Trigger label/eraser refresh — _update_label is conventionally private
 		# but called across classes for state sync in this codebase

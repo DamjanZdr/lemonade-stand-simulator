@@ -28,5 +28,5 @@ func get_hint(player: Node) -> String:
 		return ""
 	var p := player as Player
 	if p != null and p.held_item == p.HeldItem.CUP_FILLED:
-		return "Click: serve lemonade"
+		return "Customer | LMB: serve lemonade"
 	return ""

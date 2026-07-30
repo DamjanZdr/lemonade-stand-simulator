@@ -80,8 +80,8 @@ func _setup_ice_bucket() -> void:
 			temp_cubes.append(child)
 	# Sort by global Y ascending (lowest first)
 	temp_cubes.sort_custom(
-			func(a: MeshInstance3D, b: MeshInstance3D) -> bool:
-				return a.global_position.y < b.global_position.y
+		func(a: MeshInstance3D, b: MeshInstance3D) -> bool:
+			return a.global_position.y < b.global_position.y,
 	)
 	for cube in temp_cubes:
 		_ice_cubes.append(cube)
@@ -95,9 +95,9 @@ func _sync_ice_display(animate_add: bool = false) -> void:
 	if _ice_cubes.is_empty():
 		return
 	var target_visible: int = clampi(
-			roundi((current_amount / max_capacity) * float(_ice_cubes.size())),
-			0,
-			_ice_cubes.size(),
+		roundi((current_amount / max_capacity) * float(_ice_cubes.size())),
+		0,
+		_ice_cubes.size(),
 	)
 	var prev_visible := 0
 	for cube in _ice_cubes:
@@ -208,13 +208,13 @@ func interact(player: Node) -> void:
 		# Otherwise take a scoop
 		take_amount(Balancing.GRAB_AMOUNT)
 		player.set_held(
-				HELD_SUPPLY_BOX,
-				{
-					"ingredient_type": ingredient_type,
-					"amount": Balancing.GRAB_AMOUNT,
-					"source": "bin_scoop",
-				},
-				_make_hand_mesh(),
+			HELD_SUPPLY_BOX,
+			{
+				"ingredient_type": ingredient_type,
+				"amount": Balancing.GRAB_AMOUNT,
+				"source": "bin_scoop",
+			},
+			_make_hand_mesh(),
 		)
 		EventBus.ingredient_scoop_grabbed.emit(ingredient_type, Balancing.GRAB_AMOUNT)
 
@@ -241,13 +241,21 @@ func get_hint(player: Node) -> String:
 			return ""
 		if data.get("source") == "bin_scoop" \
 				and data.get("ingredient_type", "") == ingredient_type:
-			return "Click: return %s to bin" % ingredient_type.capitalize()
+			return "%s Bin | LMB: return %s" % [
+				ingredient_type.capitalize(),
+				ingredient_type.capitalize(),
+			]
 		if data.get("source") == "delivery" \
 				and data.get("ingredient_type", "") == ingredient_type:
 			var space := max_capacity - current_amount
 			if space <= 0.0:
-				return "Bin full! (%.0f / %.0f)" % [current_amount, max_capacity]
-			return "Click: deposit %s (×%.0f in box)" % [
+				return "%s Bin | full! (%.0f / %.0f)" % [
+					ingredient_type.capitalize(),
+					current_amount,
+					max_capacity,
+				]
+			return "%s Bin | LMB: deposit %s (x%.0f in box)" % [
+				ingredient_type.capitalize(),
 				ingredient_type.capitalize(),
 				data.get("amount", 0.0),
 			]
@@ -255,11 +263,11 @@ func get_hint(player: Node) -> String:
 
 	if held_item == HELD_NONE:
 		if current_amount >= Balancing.GRAB_AMOUNT:
-			return "LMB: take %s  |  RMB: pick up bin  (%.0f left)" % [
+			return "%s Bin | LMB: take %s  |  RMB: pick up  (%.0f left)" % [
 				ingredient_type.capitalize(),
 				current_amount,
 			]
-		return "LMB: pick up empty " + ingredient_type.capitalize() + " bin  |  RMB: pick up"
+		return "%s Bin | LMB: pick up" % ingredient_type.capitalize()
 	return ""
 
 

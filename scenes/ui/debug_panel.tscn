@@ -36,7 +36,7 @@ autowrap_mode = 3
 [node name="Sep1" type="HSeparator" parent="Panel/VBox"]
 
 [node name="BtnMoney" type="Button" parent="Panel/VBox"]
-text = "+$50"
+text = "+$1k"
 theme_override_font_sizes/font_size = 9
 
 [node name="BtnRefill" type="Button" parent="Panel/VBox"]

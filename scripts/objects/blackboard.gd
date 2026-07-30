@@ -25,8 +25,8 @@ func _ready() -> void:
 
 func get_hint(_player: Node) -> String:
 	if _label_index >= 0:
-		return "Enter: next / Esc: cancel"
-	return "LMB: Edit recipes"
+		return "Blackboard | Enter: next / Esc: cancel"
+	return "Blackboard | LMB: edit recipes"
 
 
 func interact(_player: Node) -> void:
@@ -107,21 +107,34 @@ func _scan_labels() -> void:
 	_label_data.clear()
 	for child in find_children("*", "Label3D"):
 		var label := child as Label3D
+		if label.name.ends_with("Locked"):
+			continue
 		if label.text.find(EMPTY_VALUE) < 0:
 			continue
+		var fruit_id := label.name.to_lower()
+		var is_locked := (
+			fruit_id in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(fruit_id)
+		)
 		_label_nodes.append(label)
 		var lines := label.text.split("\n")
 		var prefix1 := _extract_prefix(lines[0] if lines.size() > 0 else "")
 		var prefix2 := _extract_prefix(lines[1] if lines.size() > 1 else "")
 		_label_data.append(
-				{
-					"name": label.name,
-					"prefix1": prefix1,
-					"prefix2": prefix2,
-					"value1": "",
-					"value2": "",
-				}
+			{
+				"name": label.name,
+				"prefix1": prefix1,
+				"prefix2": prefix2,
+				"value1": "",
+				"value2": "",
+				"locked": is_locked,
+			}
 		)
+		if fruit_id in GameState.FRUIT_TYPES:
+			var parent_title := label.get_parent() as Label3D
+			if parent_title != null:
+				var locked_lbl := parent_title.get_node_or_null(label.name + "Locked") as Label3D
+				if locked_lbl != null:
+					locked_lbl.visible = is_locked
 		_add_click_area(label, _label_nodes.size() - 1)
 
 
@@ -154,21 +167,35 @@ func _refresh_all_labels() -> void:
 func _refresh_label(index: int) -> void:
 	var label: Label3D = _label_nodes[index]
 	var data: Dictionary = _label_data[index]
+	if data.get("locked", false):
+		label.text = ""
+		return
 	var line1 := _build_line(data["prefix1"], data["value1"], 0, index)
 	var line2 := _build_line(data["prefix2"], data["value2"], 1, index)
 	label.text = line1 + "\n" + line2
 
 
 func _build_line(prefix: String, value: String, field: int, index: int) -> String:
+	var data: Dictionary = _label_data[index]
+	if data.get("locked", false):
+		return prefix + "Locked"
 	var is_active := index == _label_index and field == _field_index
 	if is_active:
-		var cursor := "_" if _cursor_visible else " "
-		return prefix + _edit_buffer + cursor
+		if _edit_buffer == "":
+			var cursor := "_" if _cursor_visible else " "
+			return prefix + cursor
+		return prefix + _edit_buffer
 	var display := value if value != "" else EMPTY_VALUE
 	return prefix + display
 
 
 func _start_edit(label_idx: int, field_idx: int) -> void:
+	if _label_data[label_idx].get("locked", false):
+		var next := _next_editable_index(label_idx, 1)
+		if next < 0:
+			_finish_edit()
+			return
+		label_idx = next
 	_label_index = label_idx
 	_field_index = field_idx
 	_edit_buffer = _label_data[label_idx]["value%d" % (field_idx + 1)]
@@ -182,8 +209,8 @@ func _confirm_and_next() -> void:
 	if _field_index == 0:
 		_start_edit(_label_index, 1)
 	else:
-		var next_idx := _label_index + 1
-		if next_idx >= _label_nodes.size():
+		var next_idx := _next_editable_index(_label_index, 1)
+		if next_idx < 0:
 			_finish_edit()
 		else:
 			_start_edit(next_idx, 0)
@@ -195,7 +222,8 @@ func _move_horizontal(direction: int) -> void:
 	var col := int(_label_index % columns)
 	col = wrapi(col + direction, 0, columns)
 	var new_index := row * columns + col
-	_start_edit(new_index, _field_index)
+	if new_index < _label_nodes.size():
+		_start_edit(new_index, _field_index)
 
 
 func _move_vertical(direction: int) -> void:
@@ -203,23 +231,23 @@ func _move_vertical(direction: int) -> void:
 	var rows := int(_label_nodes.size() / columns)
 	if _field_index == 0:
 		if direction < 0:
-			# From primary, up goes to sugar of label above.
 			var row := int(_label_index / columns)
 			var col := int(_label_index % columns)
 			row = wrapi(row - 1, 0, rows)
-			_start_edit(row * columns + col, 1)
+			var new_index := row * columns + col
+			if new_index < _label_nodes.size():
+				_start_edit(new_index, 1)
 		else:
-			# From primary, down goes to sugar of same label.
 			_start_edit(_label_index, 1)
 	else:
 		if direction > 0:
-			# From sugar, down goes to primary of label below.
 			var row := int(_label_index / columns)
 			var col := int(_label_index % columns)
 			row = wrapi(row + 1, 0, rows)
-			_start_edit(row * columns + col, 0)
+			var new_index := row * columns + col
+			if new_index < _label_nodes.size():
+				_start_edit(new_index, 0)
 		else:
-			# From sugar, up goes to primary of same label.
 			_start_edit(_label_index, 0)
 
 
@@ -234,15 +262,16 @@ func _append_char(c: String) -> void:
 	_cursor_visible = true
 	_cursor_timer = 0.0
 	_refresh_label(_label_index)
+	_confirm_and_next()
 
 
 func _on_label_clicked(
-		_camera: Node,
-		event: InputEvent,
-		_pos: Vector3,
-		_normal: Vector3,
-		_shape: int,
-		index: int,
+	_camera: Node,
+	event: InputEvent,
+	_pos: Vector3,
+	_normal: Vector3,
+	_shape: int,
+	index: int,
 ) -> void:
 	if _label_index < 0:
 		return
@@ -262,3 +291,13 @@ func _finish_edit() -> void:
 	var p := get_tree().get_first_node_in_group("player") as Player
 	if p != null:
 		p.exit_priceboard_focus()
+
+
+func _next_editable_index(from: int, direction: int) -> int:
+	var count := _label_nodes.size()
+	var idx := from
+	for _i in range(count):
+		idx = wrapi(idx + direction, 0, count)
+		if not _label_data[idx].get("locked", false):
+			return idx
+	return -1

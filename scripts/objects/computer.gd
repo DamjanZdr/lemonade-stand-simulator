@@ -51,22 +51,22 @@ func _setup_screen_material() -> void:
 	# shader so the texture is sampled every frame and always stays valid.
 	var shader := Shader.new()
 	shader.code = (
-			"shader_type spatial;\n"
-			+ "render_mode unshaded, cull_disabled;\n"
-			# filter_linear_mipmap (instead of plain filter_linear) lets the
-			# renderer use mipmaps when the UI is minified onto the quad,
-			# avoiding shimmering/aliasing on small text.
-			+ "uniform sampler2D screen_texture : filter_linear_mipmap;\n"
-			+ "void fragment() {\n"
-			+ "\tvec4 col = texture(screen_texture, UV);\n"
-			# The SubViewport's 2D content is already gamma-encoded (sRGB)
-			# final pixel color. Godot's 3D pipeline treats ALBEDO as linear
-			# and applies a linear->sRGB conversion on output, so writing
-			# the sRGB value directly double-encodes it, washing everything
-			# out. Converting back to linear here cancels that out.
-			+ "\tALBEDO = pow(col.rgb, vec3(2.2));\n"
-			+ "\tALPHA = 1.0;\n"
-			+ "}\n"
+		"shader_type spatial;\n"
+		+ "render_mode unshaded, cull_disabled;\n"
+		# filter_linear_mipmap (instead of plain filter_linear) lets the
+		# renderer use mipmaps when the UI is minified onto the quad,
+		# avoiding shimmering/aliasing on small text.
+		+ "uniform sampler2D screen_texture : filter_linear_mipmap;\n"
+		+ "void fragment() {\n"
+		+ "\tvec4 col = texture(screen_texture, UV);\n"
+		# The SubViewport's 2D content is already gamma-encoded (sRGB)
+		# final pixel color. Godot's 3D pipeline treats ALBEDO as linear
+		# and applies a linear->sRGB conversion on output, so writing
+		# the sRGB value directly double-encodes it, washing everything
+		# out. Converting back to linear here cancels that out.
+		+ "\tALBEDO = pow(col.rgb, vec3(2.2));\n"
+		+ "\tALPHA = 1.0;\n"
+		+ "}\n"
 	)
 	var mat := ShaderMaterial.new()
 	mat.shader = shader
@@ -86,7 +86,7 @@ func interact(player: Node) -> void:
 func get_hint(_hint_player: Node) -> String:
 	if _transitioning:
 		return ""
-	return "E/RMB: Close computer" if _active else "LMB: Use computer"
+	return "Computer | E: close" if _active else "Computer | LMB: use"
 
 
 func _enter(player: Node) -> void:
@@ -116,18 +116,8 @@ func _enter(player: Node) -> void:
 	_zoom_tween = create_tween()
 	_zoom_tween.set_trans(Tween.TRANS_QUAD)
 	_zoom_tween.set_ease(Tween.EASE_IN_OUT)
-	_zoom_tween.tween_property(
-		_screen_camera,
-		"global_transform",
-		_screen_camera_target,
-		0.5,
-	)
-	_zoom_tween.parallel().tween_property(
-		_screen_camera,
-		"fov",
-		_screen_camera_fov,
-		0.5,
-	)
+	_zoom_tween.tween_property(_screen_camera, "global_transform", _screen_camera_target, 0.5)
+	_zoom_tween.parallel().tween_property(_screen_camera, "fov", _screen_camera_fov, 0.5)
 	_zoom_tween.tween_callback(_on_zoom_finished)
 
 
@@ -182,9 +172,8 @@ func _input(event: InputEvent) -> void:
 		return
 
 	var exit_action := (
-			event.is_action_pressed("ui_cancel")
-			or event.is_action_pressed("secondary_interact")
-			or _is_right_click(event)
+		event.is_action_pressed("ui_cancel")
+		or event.is_action_pressed("secondary_interact") or _is_right_click(event)
 	)
 	if exit_action:
 		_exit()
@@ -217,10 +206,7 @@ func _forward_mouse_event(event: InputEvent) -> void:
 		return
 	var size := quad_mesh.size
 
-	var uv := Vector2(
-		(local.x / size.x) + 0.5,
-		-(local.y / size.y) + 0.5,
-	)
+	var uv := Vector2((local.x / size.x) + 0.5, -(local.y / size.y) + 0.5)
 	if uv.x < 0.0 or uv.x > 1.0 or uv.y < 0.0 or uv.y > 1.0:
 		return
 
@@ -237,7 +223,6 @@ func _find_player_camera(player: Node) -> Camera3D:
 
 func _is_right_click(event: InputEvent) -> bool:
 	return (
-			event is InputEventMouseButton
-			and event.button_index == MOUSE_BUTTON_RIGHT
-			and event.pressed
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed
 	)

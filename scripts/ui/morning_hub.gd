@@ -1025,9 +1025,14 @@ func _create_item_card(
 		border: Color,
 ) -> PanelContainer:
 	var id: String = item["id"]
+	var is_locked_fruit: bool = (
+			id in GameState.FRUIT_TYPES
+			and not UpgradeManager.is_fruit_unlocked(id)
+	)
 	var card := PanelContainer.new()
 	card.name = name_prefix + id
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.custom_minimum_size = Vector2(0, 130)
 
 	var st := StyleBoxFlat.new()
 	st.bg_color = bg
@@ -1065,15 +1070,32 @@ func _create_item_card(
 	preview_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	preview_panel.add_child(preview_holder)
 
+	# Always show the 3D preview, even for locked items
 	var preview := ITEM_PREVIEW_WIDGET.instantiate()
 	if id == "workstation":
-		preview.preview_scene = load("res://scenes/ui/shop_previews/workstation_preview.tscn") as PackedScene
+		preview.preview_scene = load(
+				"res://scenes/ui/shop_previews/workstation_preview.tscn"
+		) as PackedScene
 	else:
-		preview.preview_scene = ITEM_PREVIEW_SCENES.get(id, ITEM_PREVIEW_SCENES["cups"])
+		preview.preview_scene = ITEM_PREVIEW_SCENES.get(
+				id, ITEM_PREVIEW_SCENES["cups"]
+		)
 	preview.custom_minimum_size = Vector2(88, 88)
 	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	preview_holder.add_child(preview)
+
+	# Overlay a lock icon on top of the preview for locked items
+	if is_locked_fruit:
+		preview.modulate = Color(0.5, 0.5, 0.5, 0.7)
+		var lock_overlay := Label.new()
+		lock_overlay.text = "LOCKED"
+		lock_overlay.add_theme_font_size_override("font_size", 11)
+		lock_overlay.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+		lock_overlay.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		lock_overlay.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		lock_overlay.z_index = 10
+		preview_panel.add_child(lock_overlay)
 
 	var right_box := VBoxContainer.new()
 	right_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1084,22 +1106,32 @@ func _create_item_card(
 	var name_lbl := Label.new()
 	name_lbl.text = item["name"]
 	name_lbl.add_theme_font_size_override("font_size", 18)
-	name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
+	name_lbl.add_theme_color_override(
+			"font_color",
+			Color(0.45, 0.45, 0.45) if is_locked_fruit else Color(0.92, 0.90, 0.82)
+	)
 	right_box.add_child(name_lbl)
 
-	var pack_qty: int = int(item.get("qty", 1))
-	var pack_lbl := Label.new()
-	pack_lbl.text = "%d unit%s" % [pack_qty, "" if pack_qty == 1 else "s"]
-	pack_lbl.add_theme_font_size_override("font_size", 14)
-	pack_lbl.add_theme_color_override("font_color", Color(0.65, 0.68, 0.75))
-	right_box.add_child(pack_lbl)
+	if is_locked_fruit:
+		var locked_lbl := Label.new()
+		locked_lbl.text = "Locked - research to unlock"
+		locked_lbl.add_theme_font_size_override("font_size", 13)
+		locked_lbl.add_theme_color_override("font_color", Color(0.50, 0.50, 0.50))
+		right_box.add_child(locked_lbl)
+	else:
+		var pack_qty: int = int(item.get("qty", 1))
+		var pack_lbl := Label.new()
+		pack_lbl.text = "%d unit%s" % [pack_qty, "" if pack_qty == 1 else "s"]
+		pack_lbl.add_theme_font_size_override("font_size", 14)
+		pack_lbl.add_theme_color_override("font_color", Color(0.65, 0.68, 0.75))
+		right_box.add_child(pack_lbl)
 
-	var per_unit: float = item["cost"] / maxi(1, pack_qty)
-	var per_unit_lbl := Label.new()
-	per_unit_lbl.text = "$%.2f / unit" % per_unit
-	per_unit_lbl.add_theme_font_size_override("font_size", 14)
-	per_unit_lbl.add_theme_color_override("font_color", Color(0.55, 0.70, 0.85))
-	right_box.add_child(per_unit_lbl)
+		var per_unit: float = item["cost"] / maxi(1, pack_qty)
+		var per_unit_lbl := Label.new()
+		per_unit_lbl.text = "$%.2f / unit" % per_unit
+		per_unit_lbl.add_theme_font_size_override("font_size", 14)
+		per_unit_lbl.add_theme_color_override("font_color", Color(0.55, 0.70, 0.85))
+		right_box.add_child(per_unit_lbl)
 
 	var bottom_row := HBoxContainer.new()
 	bottom_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1107,27 +1139,28 @@ func _create_item_card(
 	bottom_row.add_theme_constant_override("separation", 6)
 	right_box.add_child(bottom_row)
 
-	var total_lbl := Label.new()
-	total_lbl.text = "$%.2f" % item["cost"]
-	total_lbl.add_theme_font_size_override("font_size", 18)
-	total_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
-	total_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bottom_row.add_child(total_lbl)
+	if not is_locked_fruit:
+		var total_lbl := Label.new()
+		total_lbl.text = "$%.2f" % item["cost"]
+		total_lbl.add_theme_font_size_override("font_size", 18)
+		total_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
+		total_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bottom_row.add_child(total_lbl)
 
-	var add_btn := Button.new()
-	add_btn.text = "+"
-	add_btn.custom_minimum_size = Vector2(40, 40)
-	add_btn.add_theme_font_size_override("font_size", 22)
-	_apply_button_style(
-		add_btn,
-		Color(0.14, 0.15, 0.19),
-		Color(0.88, 0.65, 0.12),
-		Color(0.18, 0.20, 0.25),
-		Color(0.92, 0.88, 0.78),
-		6,
-	)
-	add_btn.pressed.connect(func(): _add_to_cart(item))
-	bottom_row.add_child(add_btn)
+		var add_btn := Button.new()
+		add_btn.text = "+"
+		add_btn.custom_minimum_size = Vector2(40, 40)
+		add_btn.add_theme_font_size_override("font_size", 22)
+		_apply_button_style(
+			add_btn,
+			Color(0.14, 0.15, 0.19),
+			Color(0.88, 0.65, 0.12),
+			Color(0.18, 0.20, 0.25),
+			Color(0.92, 0.88, 0.78),
+			6,
+		)
+		add_btn.pressed.connect(func(): _add_to_cart(item))
+		bottom_row.add_child(add_btn)
 
 	return card
 
@@ -1226,6 +1259,8 @@ func _build_prices_page() -> void:
 	if container == null:
 		return
 	for ft in GameState.FRUIT_TYPES:
+		if not UpgradeManager.is_fruit_unlocked(ft):
+			continue
 		var row := HBoxContainer.new()
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		row.add_theme_constant_override("separation", 12)
@@ -1522,6 +1557,7 @@ func _checkout_cart() -> void:
 			for i in range(qty):
 				_buy_container(id, item["cost"])
 	_update_cart_ui()
+	EventBus.checkout_completed.emit()
 
 
 func _is_ingredient(item: Dictionary) -> bool:
@@ -1619,6 +1655,9 @@ func _show_morning_hub() -> void:
 	if _right_panel:
 		_right_panel.visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("set_hud_visible"):
+		hud.set_hud_visible(false)
 	var tween := create_tween()
 	panel.modulate = Color(1, 1, 1, 0)
 	backdrop.modulate = Color(1, 1, 1, 0)
@@ -1640,6 +1679,9 @@ func _hide_morning_hub() -> void:
 	backdrop.visible = false
 	if _right_panel:
 		_right_panel.visible = false
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("set_hud_visible"):
+		hud.set_hud_visible(true)
 
 
 func _on_money_changed(_amount: float) -> void:
@@ -1843,35 +1885,6 @@ func _build_recipes_page() -> void:
 		"watermelon": Color(0.35, 0.75, 0.45, 1),
 	}
 
-	for ft in GameState.FRUIT_TYPES:
-		var accent: Color = fruit_colors.get(ft, Color(0.92, 0.78, 0.25, 1))
-		var card := _make_recipe_card(ft, accent)
-		grid.add_child(card)
-		var card_box := card.get_node("Body/Inner") as VBoxContainer
-		var recipe := GameState.get_recipe(ft)
-
-		var fruit_row := _make_spin_row("Fruit", 1, 10, 1, recipe.get("fruit_count", 1.0))
-		card_box.add_child(fruit_row)
-		var fruit_spin := fruit_row.get_node("SpinBox") as SpinBox
-		_style_spinbox(fruit_spin, accent)
-		fruit_spin.value_changed.connect(
-			func(v: float):
-				var r := GameState.get_recipe(ft).duplicate()
-				r["fruit_count"] = v
-				GameState.set_recipe(ft, r)
-		)
-
-		var sugar_row := _make_spin_row("Sugar", 0, 10, 0.1, recipe.get("sugar", 0.0))
-		card_box.add_child(sugar_row)
-		var sugar_spin := sugar_row.get_node("SpinBox") as SpinBox
-		_style_spinbox(sugar_spin, accent)
-		sugar_spin.value_changed.connect(
-			func(v: float):
-				var r := GameState.get_recipe(ft).duplicate()
-				r["sugar"] = v
-				GameState.set_recipe(ft, r)
-		)
-
 	var ice_accent := Color(0.55, 0.70, 0.85, 1)
 	var ice_card := _make_recipe_card("Ice", ice_accent)
 	grid.add_child(ice_card)
@@ -1944,8 +1957,49 @@ func _build_recipes_page() -> void:
 	)
 	_update_ice_display.call()
 
+	for ft in GameState.FRUIT_TYPES:
+		var locked := not UpgradeManager.is_fruit_unlocked(ft)
+		var accent: Color = fruit_colors.get(ft, Color(0.92, 0.78, 0.25, 1))
+		if locked:
+			accent = Color(0.40, 0.40, 0.40, 1)
+		var card := _make_recipe_card(ft, accent, locked)
+		grid.add_child(card)
+		var card_box := card.get_node("Body/Inner") as VBoxContainer
 
-func _make_recipe_card(title_text: String, accent: Color) -> VBoxContainer:
+		if locked:
+			var lock_lbl := Label.new()
+			lock_lbl.text = "???"
+			lock_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lock_lbl.add_theme_font_size_override("font_size", 18)
+			card_box.add_child(lock_lbl)
+			continue
+
+		var recipe := GameState.get_recipe(ft)
+
+		var fruit_row := _make_spin_row("Fruit", 1, 10, 1, recipe.get("fruit_count", 1.0))
+		card_box.add_child(fruit_row)
+		var fruit_spin := fruit_row.get_node("SpinBox") as SpinBox
+		_style_spinbox(fruit_spin, accent)
+		fruit_spin.value_changed.connect(
+			func(v: float):
+				var r := GameState.get_recipe(ft).duplicate()
+				r["fruit_count"] = v
+				GameState.set_recipe(ft, r)
+		)
+
+		var sugar_row := _make_spin_row("Sugar", 0, 10, 0.1, recipe.get("sugar", 0.0))
+		card_box.add_child(sugar_row)
+		var sugar_spin := sugar_row.get_node("SpinBox") as SpinBox
+		_style_spinbox(sugar_spin, accent)
+		sugar_spin.value_changed.connect(
+			func(v: float):
+				var r := GameState.get_recipe(ft).duplicate()
+				r["sugar"] = v
+				GameState.set_recipe(ft, r)
+		)
+
+
+func _make_recipe_card(title_text: String, accent: Color, locked: bool = false) -> VBoxContainer:
 	var card := VBoxContainer.new()
 	card.name = "RecipeCard_" + title_text.to_lower()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1983,12 +2037,13 @@ func _make_recipe_card(title_text: String, accent: Color) -> VBoxContainer:
 	inner.alignment = BoxContainer.ALIGNMENT_CENTER
 	body.add_child(inner)
 
-	var title_lbl := Label.new()
-	title_lbl.text = title_text.capitalize()
-	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_lbl.add_theme_font_size_override("font_size", 22)
-	title_lbl.add_theme_color_override("font_color", accent)
-	inner.add_child(title_lbl)
+	if not locked:
+		var title_lbl := Label.new()
+		title_lbl.text = title_text.capitalize()
+		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_lbl.add_theme_font_size_override("font_size", 22)
+		title_lbl.add_theme_color_override("font_color", accent)
+		inner.add_child(title_lbl)
 
 	return card
 

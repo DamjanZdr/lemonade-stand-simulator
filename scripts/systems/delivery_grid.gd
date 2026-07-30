@@ -8,6 +8,7 @@ const STACK_MAX_YAW: float = 0.14
 
 @export var grid_width: int = 3
 @export var grid_depth: int = 3
+@export var is_truck_grid: bool = false
 ## Offset from marker to box origin. Set to the box's bottom offset so it sits on the marker.
 
 var _cells: Array[Marker3D] = []
@@ -18,7 +19,41 @@ var _cell_yaws: Dictionary = { }
 
 func _ready() -> void:
 	_find_cells()
-	add_to_group("delivery_grid")
+	if not is_truck_grid:
+		add_to_group("delivery_grid")
+		# Defer counting so save manager has time to respawn boxes
+		get_tree().create_timer(0.5).timeout.connect(_count_existing_boxes)
+
+
+func _count_existing_boxes() -> void:
+	if is_truck_grid:
+		return
+	# Boxes are children of the world root, not the grid.
+	# Search the supply_box group for boxes near this grid's cells.
+	var boxes: Array[Node] = get_tree().get_nodes_in_group("supply_box")
+	for node in boxes:
+		if not is_instance_valid(node) or node is not SupplyBox:
+			continue
+		if node.is_in_group("ghost"):
+			continue
+		var box := node as SupplyBox
+		# Check if this box is on our grid by finding the closest cell
+		var cell_idx := get_closest_cell(box.global_position)
+		if cell_idx < 0:
+			continue
+		# Verify the box is actually near this grid (not just closest by default)
+		var marker := _cells[cell_idx]
+		if marker == null:
+			continue
+		var dx := marker.global_position.x - box.global_position.x
+		var dz := marker.global_position.z - box.global_position.z
+		var dist_sq := dx * dx + dz * dz
+		if dist_sq > 1.0: # within 1 unit of a cell marker
+			continue
+		_stacks[cell_idx] += 1
+		box.set_meta("delivery_cell_idx", cell_idx)
+		if not box.is_connected("tree_exited", release_slot_index):
+			box.tree_exited.connect(release_slot_index.bind(cell_idx))
 
 
 func _find_cells() -> void:
@@ -65,7 +100,10 @@ func get_slot_position(cell_index: int) -> Vector3:
 		return global_position
 	var marker := _cells[cell_index]
 	var base := marker.global_position if marker != null else global_position
-	var height := _stacks[cell_index] * SupplyBox.stack_height + SupplyBox.bottom_offset
+	var grid_scale_y: float = absf(global_transform.basis.y.y)
+	var sh: float = SupplyBox.stack_height * grid_scale_y
+	var bo: float = SupplyBox.bottom_offset * grid_scale_y
+	var height: float = _stacks[cell_index] * sh + bo
 	return base + Vector3(0, height, 0) + _get_cell_offset(cell_index)
 
 
@@ -129,3 +167,10 @@ func release_slot_index(cell_index: int) -> void:
 
 func total_capacity() -> int:
 	return _cells.size()
+
+
+func reset_stacks() -> void:
+	for i in range(_stacks.size()):
+		_stacks[i] = 0
+	_cell_offsets.clear()
+	_cell_yaws.clear()

@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://b3eqd0d3p6wd1"]
+
+[ext_resource type="PackedScene" uid="uid://pa4gtqlyt38c" path="res://decorations/plant 2.glb" id="1_tlb45"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_g4v7s"]
+height = 2.398407
+radius = 1.0439453
+
+[node name="PlantPot1" type="StaticBody3D" unique_id=1904588981]
+
+[node name="plant 2" parent="." unique_id=967032495 instance=ExtResource("1_tlb45")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1762661781]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11418152, 0)
+shape = SubResource("CylinderShape3D_g4v7s")

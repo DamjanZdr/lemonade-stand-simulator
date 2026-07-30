@@ -87,6 +87,19 @@ const CLOTHING_SURFACES: Array[String] = [
 @onready var _woman_left_marker: Marker3D = $woman/Armature/Skeleton3D/Head/LeftEyeFemale/Marker3D
 @onready var _woman_right_marker: Marker3D = $woman/Armature/Skeleton3D/Head/RightEyeFemale/Marker3D
 
+
+func _ready() -> void:
+	_disable_cast_shadows()
+
+
+func _disable_cast_shadows() -> void:
+	## NPCs are small and numerous; shadows from every mesh tank the shadow-map pass.
+	for node: Node in find_children("*", "GeometryInstance3D", true, false):
+		var gi := node as GeometryInstance3D
+		if gi:
+			gi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
 const _EYE_SCALE := 0.30564013
 
 var _active_anim: AnimationPlayer = null
@@ -101,6 +114,8 @@ var _eye_rot_l := Quaternion.IDENTITY
 var _eye_rot_r := Quaternion.IDENTITY
 var _player_cache: Node3D = null
 var _camera_cache: Camera3D = null
+var _is_near_player: bool = true
+var _check_timer: float = 0.0
 
 
 func _get_player_camera() -> Camera3D:
@@ -110,6 +125,21 @@ func _get_player_camera() -> Camera3D:
 		return null
 	_camera_cache = _player_cache.find_child("Camera3D", true, false) as Camera3D
 	return _camera_cache
+
+
+func _ensure_player() -> bool:
+	if _player_cache and is_instance_valid(_player_cache):
+		return true
+	if get_tree().current_scene == null:
+		return false
+	_player_cache = get_tree().current_scene.find_child("Player", true, false) as Node3D
+	return _player_cache != null
+
+
+func _is_player_near() -> bool:
+	if not _ensure_player():
+		return true
+	return global_position.distance_to(_player_cache.global_position) <= 25.0
 
 
 func randomize_appearance() -> void:
@@ -154,6 +184,19 @@ func play_anim(anim_name: String) -> void:
 	}
 	_active_anim.speed_scale = speed_map.get(anim_name, 1.0)
 	_active_anim.play(anim_name)
+
+
+func pause_anim() -> void:
+	if _active_anim != null:
+		_active_anim.playback_active = false
+
+
+func resume_anim(anim_name: String = "Walk") -> void:
+	if _active_anim == null:
+		return
+	if _active_anim.assigned_animation != anim_name:
+		_active_anim.play(anim_name)
+	_active_anim.playback_active = true
 
 
 func get_active_skeleton() -> Skeleton3D:
@@ -210,7 +253,13 @@ func stop_payment_pose() -> void:
 
 
 func _process(delta: float) -> void:
-	_update_eye_look(delta)
+	_check_timer -= delta
+	if _check_timer <= 0.0:
+		_check_timer = 0.2
+		_is_near_player = _is_player_near()
+
+	if _is_near_player:
+		_update_eye_look(delta)
 
 
 func _update_eye_look(delta: float) -> void:
@@ -222,14 +271,25 @@ func _update_eye_look(delta: float) -> void:
 	if _player_cache == null:
 		return
 
+	var dist := _left_eye.global_position.distance_to(_player_cache.global_position)
+	# Far-away NPCs only keep rotating back to neutral; skip math once they're there.
+	if dist > eye_look_range:
+		var left_neutral := absf(_eye_rot_l.dot(Quaternion.IDENTITY)) > 0.9999
+		var right_neutral := absf(_eye_rot_r.dot(Quaternion.IDENTITY)) > 0.9999
+		if left_neutral and right_neutral:
+			return
+
 	var cam := _get_player_camera()
 	var aim := cam.global_position if cam else _player_cache.global_position + Vector3(0, 1.7, 0)
-	var dist := _left_eye.global_position.distance_to(_player_cache.global_position)
 	var t := clampf(eye_look_speed * delta, 0.0, 1.0)
+	var target_l := Quaternion.IDENTITY
+	var target_r := Quaternion.IDENTITY
+	if dist <= eye_look_range:
+		target_l = _target_eye_rot(_left_eye, _left_rest_dir, aim, dist)
+		target_r = _target_eye_rot(_right_eye, _right_rest_dir, aim, dist)
 
-	_eye_rot_l = _eye_rot_l.slerp(_target_eye_rot(_left_eye, _left_rest_dir, aim, dist), t)
-	_eye_rot_r = _eye_rot_r.slerp(_target_eye_rot(_right_eye, _right_rest_dir, aim, dist), t)
-
+	_eye_rot_l = _eye_rot_l.slerp(target_l, t)
+	_eye_rot_r = _eye_rot_r.slerp(target_r, t)
 	_apply_eye(_left_eye, _eye_rot_l)
 	_apply_eye(_right_eye, _eye_rot_r)
 

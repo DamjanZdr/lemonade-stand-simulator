@@ -5,7 +5,10 @@ extends Interactable
 
 const CUP_GLB: PackedScene = preload("res://blender/cup.glb")
 
-enum CupState { EMPTY, FILLED }
+enum CupState {
+	EMPTY,
+	FILLED,
+}
 
 var state: CupState = CupState.EMPTY
 var recipe: Dictionary = { }
@@ -51,7 +54,7 @@ func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null or p.held_item != p.HeldItem.NONE:
 		return ""
-	return "Click: pick up %s cup" % ("filled" if state == CupState.FILLED else "empty")
+	return "Cup | LMB: pick up %s cup" % ("filled" if state == CupState.FILLED else "empty")
 
 
 func _refresh_fill_visibility() -> void:

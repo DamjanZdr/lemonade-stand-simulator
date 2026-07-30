@@ -22,7 +22,7 @@ var _tendered_cents: int = 0
 
 
 func _ready() -> void:
-	EventBus.sale_initiated.connect(_on_sale_initiated)
+	# Replaced by MoneyController — no longer responds to sale_initiated.
 	_clear_btn.pressed.connect(_on_clear_pressed)
 	_give_btn.pressed.connect(_on_give_pressed)
 
@@ -34,7 +34,10 @@ func _ready() -> void:
 	for i in btns.size():
 		var btn := btns[i] as Button
 		var cents := DENOM_CENTS[i]
-		btn.pressed.connect(func(): _add_cents(cents))
+		btn.pressed.connect(
+			func():
+				_add_cents(cents),
+		)
 
 
 func _on_sale_initiated(payment: float, change_due: float) -> void:

@@ -153,7 +153,7 @@ func _apply_radial_layout() -> void:
 			func(a: String, b: String) -> bool:
 				var da: float = tree_positions[a].distance_to(root_pos)
 				var db: float = tree_positions[b].distance_to(root_pos)
-				return da < db
+				return da < db,
 		)
 		groups[id] = list
 
@@ -386,6 +386,20 @@ func _apply_effect(upgrade_id: String) -> void:
 		"psychology":
 			GameState.feedback_tier = 2
 			EventBus.feedback_tier_changed.emit(2)
+
+
+func is_fruit_unlocked(fruit: String) -> bool:
+	if fruit == "lemon":
+		return true
+	return get_purchased_count(fruit + "_unlock") > 0
+
+
+func get_unlocked_fruits() -> Array[String]:
+	var result: Array[String] = []
+	for ft in GameState.FRUIT_TYPES:
+		if is_fruit_unlocked(ft):
+			result.append(ft)
+	return result
 
 
 func apply_all_effects() -> void:

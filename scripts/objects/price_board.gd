@@ -29,8 +29,8 @@ func _ready() -> void:
 
 func get_hint(_player: Node) -> String:
 	if _editing_index >= 0:
-		return "Enter: next / Esc: cancel"
-	return "LMB: Edit prices"
+		return "Price Board | Enter: next / Esc: cancel"
+	return "Price Board | LMB: edit prices"
 
 
 func interact(_player: Node) -> void:
@@ -130,7 +130,7 @@ func _process(delta: float) -> void:
 
 
 func _start_edit() -> void:
-	_editing_index = 0
+	_editing_index = _next_editable_index(-1, 1)
 	_edit_buffer = ""
 	_cursor_visible = true
 	_cursor_timer = 0.0
@@ -147,24 +147,27 @@ func _commit_current_price() -> void:
 
 func _confirm_and_next() -> void:
 	_commit_current_price()
-	_editing_index += 1
-	if _editing_index >= GameState.FRUIT_TYPES.size():
+	var next := _next_editable_index(_editing_index, 1)
+	if next < 0:
 		_editing_index = -1
 		var p := get_tree().get_first_node_in_group("player") as Player
 		if p != null:
 			p.exit_priceboard_focus()
 	else:
+		_editing_index = next
 		_edit_buffer = ""
-	_cursor_visible = true
-	_cursor_timer = 0.0
-	_refresh_label()
+		_cursor_visible = true
+		_cursor_timer = 0.0
+		_refresh_label()
 
 
 func _move_vertical(direction: int) -> void:
 	if _editing_index < 0 or _editing_index >= GameState.FRUIT_TYPES.size():
 		return
 	_commit_current_price()
-	_editing_index = wrapi(_editing_index + direction, 0, GameState.FRUIT_TYPES.size())
+	var next := _next_editable_index(_editing_index, direction)
+	if next >= 0:
+		_editing_index = next
 	_edit_buffer = ""
 	_cursor_visible = true
 	_cursor_timer = 0.0
@@ -197,6 +200,8 @@ func _refresh_label() -> void:
 	var txt := ""
 	for i in range(GameState.FRUIT_TYPES.size()):
 		var ft: String = GameState.FRUIT_TYPES[i]
+		if not UpgradeManager.is_fruit_unlocked(ft):
+			continue
 		var label: String = FRUIT_LABELS.get(ft, ft.capitalize())
 		var prefix: String = _price_prefix.get(ft, label + ".....")
 		if i == _editing_index:
@@ -209,6 +214,17 @@ func _refresh_label() -> void:
 
 func _on_price_changed(_fruit: String, _new_price: float) -> void:
 	_refresh_label()
+
+
+func _next_editable_index(from: int, direction: int) -> int:
+	var count := GameState.FRUIT_TYPES.size()
+	var idx := from
+	for _i in range(count):
+		idx = wrapi(idx + direction, 0, count)
+		var ft: String = GameState.FRUIT_TYPES[idx]
+		if UpgradeManager.is_fruit_unlocked(ft):
+			return idx
+	return -1
 
 
 func _sanitize_price(text: String) -> String:

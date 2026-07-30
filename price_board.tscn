@@ -15,6 +15,8 @@ script = ExtResource("3_priceboard")
 [node name="Label3D" type="Label3D" parent="." unique_id=168577657]
 transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, -1.1784267, 1.0167886, 0.4320824)
 pixel_size = 0.002
+double_sided = false
+alpha_cut = 2
 text = "Lemon..............1.50
 Strawberry..........1.75
 Blueberry...........2.00
@@ -23,21 +25,31 @@ Watermelon........2.50"
 font = ExtResource("3_20abl")
 font_size = 170
 outline_size = 0
-alpha_cut = 2
-double_sided = false
 horizontal_alignment = 0
+vertical_alignment = 0
+metadata/no_depth_override = true
+
+[node name="Label3D3" type="Label3D" parent="." unique_id=1142698117]
+transform = Transform3D(-1, 2.9583347e-08, -8.226522e-08, 0, 0.94100446, 0.33839405, 8.742278e-08, 0.33839405, -0.94100446, 0.00082288944, 0.674291, -0.60375744)
+pixel_size = 0.002
+double_sided = false
+alpha_cut = 2
+text = "Prices"
+font = ExtResource("3_20abl")
+font_size = 250
+outline_size = 0
 vertical_alignment = 0
 metadata/no_depth_override = true
 
 [node name="Label3D2" type="Label3D" parent="." unique_id=1044998885]
 transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, 0.10779387, 1.399737, 0.3164761)
 pixel_size = 0.002
+double_sided = false
+alpha_cut = 2
 text = "Lemonade Prices"
 font = ExtResource("3_20abl")
 font_size = 200
 outline_size = 0
-alpha_cut = 2
-double_sided = false
 metadata/no_depth_override = true
 
 [node name="Body" type="StaticBody3D" parent="." unique_id=2059859860]

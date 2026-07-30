@@ -69,11 +69,7 @@ func _update_shader_width() -> void:
 	var base_size := Vector2(_get_base_viewport_size())
 	var win_size := Vector2(get_window().size)
 	var scale_factor: float = (
-			0.5
-			* (
-					win_size.x / max(1.0, base_size.x)
-					+ win_size.y / max(1.0, base_size.y)
-			)
+		0.5 * (win_size.x / max(1.0, base_size.x) + win_size.y / max(1.0, base_size.y))
 	)
 	(_display.material as ShaderMaterial).set_shader_parameter(
 		"outline_width",
@@ -89,6 +85,14 @@ func setup(main_cam: Camera3D) -> void:
 	_main_cam = main_cam
 
 
+func _process(_delta: float) -> void:
+	if _main_cam == null or _cam == null:
+		return
+	# Sync early so the SubViewport renders with a camera position close to
+	# what the main viewport will use, reducing the one-frame texture lag.
+	_sync_outline_camera()
+
+
 func _on_frame_pre_draw() -> void:
 	if _display == null or get_tree() == null or _main_cam == null:
 		return
@@ -96,8 +100,13 @@ func _on_frame_pre_draw() -> void:
 	var active := get_tree().get_first_node_in_group("outline_fill") != null
 	_display.visible = active
 	_subvp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	# Mirror main camera immediately before rendering so the outline mask
-	# never lags behind the main view.
+	# Final sync right before rendering as a last-chance correction.
+	_sync_outline_camera()
+
+
+func _sync_outline_camera() -> void:
+	if _main_cam == null or _cam == null:
+		return
 	_cam.global_transform = _main_cam.global_transform
 	_cam.fov = _main_cam.fov
 	_cam.near = _main_cam.near

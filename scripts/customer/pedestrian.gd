@@ -38,12 +38,19 @@ const _ROTATION_SPEED: float = 10.0
 
 var _resume_waypoint_idx: int = 0
 var _feedback_timer: float = 0.0
+var _ground_y: float = 0.0
+var _ground_snapped: bool = false
+var _snap_attempts: int = 0
+var _playable_area: Area3D = null
+var _playable_snapped: bool = false
+var _people_manager: Node = null
 
 var _ui_anchor: Node3D = null
 var _order_label: Label3D = null
 var _order_panel: Sprite3D = null
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
+var _last_patience_percent: int = -1
 
 const _OFFER_TEXT := "A free lemonade?\nSure I would love that!"
 
@@ -51,7 +58,8 @@ const _OFFER_TEXT := "A free lemonade?\nSure I would love that!"
 func _ready() -> void:
 	up_direction = Vector3.UP
 	floor_max_angle = deg_to_rad(60.0)
-	floor_snap_length = 0.3
+	floor_snap_length = 1.5
+	_connect_playable_area()
 	floor_constant_speed = true
 	floor_stop_on_slope = false
 	floor_block_on_wall = false
@@ -69,6 +77,27 @@ func _ready() -> void:
 	_ignore_customer_collisions()
 
 
+func _connect_playable_area() -> void:
+	if _playable_area != null:
+		return
+	if get_tree() == null or get_tree().current_scene == null:
+		return
+	_playable_area = get_tree().current_scene.find_child("PlayableArea", true, false) as Area3D
+	if _playable_area == null:
+		return
+	_playable_area.monitoring = true
+	_playable_area.set_collision_mask_value(5, true)
+	_playable_area.body_entered.connect(_on_playable_area_entered)
+
+
+func _on_playable_area_entered(body: Node3D) -> void:
+	if body != self or _playable_snapped:
+		return
+	_playable_snapped = true
+	_ground_snapped = false
+	_snap_attempts = 0
+
+
 ## Called by PedestrianSpawner right after instantiation.
 func setup(waypoints: Array[PedestrianWaypoint], start_index: int = 0) -> void:
 	_waypoints = waypoints
@@ -80,6 +109,8 @@ func setup(waypoints: Array[PedestrianWaypoint], start_index: int = 0) -> void:
 ## [on_arrive] is called once it gets there.
 func walk_to_queue(target: Vector3, on_arrive: Callable) -> void:
 	_routing_to_queue = true
+	_ground_snapped = false
+	_snap_attempts = 0
 	_queue_target = target
 	_queue_arrived_cb = on_arrive
 	_npc.play_anim("Walk")
@@ -97,6 +128,9 @@ func get_route_continuation() -> Dictionary:
 
 
 func _physics_process(delta: float) -> void:
+	if _playable_area == null:
+		_connect_playable_area()
+
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
 
@@ -118,11 +152,11 @@ func _physics_process(delta: float) -> void:
 						_queue_arrived_cb.call()
 				else:
 					_walk_toward(_queue_target, delta)
-				move_and_slide()
+				_apply_motion(delta)
 				return
 
 			if _waypoints.is_empty() or _waypoint_idx >= _waypoints.size():
-				move_and_slide()
+				_apply_motion(delta)
 				return
 
 			var target := _waypoints[_waypoint_idx].global_position
@@ -151,15 +185,50 @@ func _physics_process(delta: float) -> void:
 			if _feedback_timer <= 0.0:
 				_resume_walking()
 
-	move_and_slide()
+	_apply_motion(delta)
+
+
+func _apply_motion(delta: float) -> void:
+	if _routing_to_queue:
+		move_and_slide()
+	elif not _ground_snapped:
+		# Snap to the floor before switching to cheap translation.
+		move_and_slide()
+		_snap_attempts += 1
+		if is_on_floor() or _snap_attempts > 20:
+			_ground_y = global_position.y
+			_ground_snapped = true
+	else:
+		velocity.y = 0.0
+		global_position += velocity * delta
+		global_position.y = _ground_y
+
+
+func _ensure_people_manager() -> bool:
+	if _people_manager != null and is_instance_valid(_people_manager):
+		return true
+	if get_tree() == null or get_tree().current_scene == null:
+		return false
+	_people_manager = get_tree().current_scene.find_child("PeopleManager", true, false)
+	return _people_manager != null
+
+
+func _get_convert_chance() -> float:
+	if _ensure_people_manager():
+		return _people_manager.call("get_pedestrian_convert_chance", GameState.popularity)
+	return Balancing.pedestrian_convert_chance(GameState.popularity)
 
 
 func _arrive() -> void:
+	if _waypoint_idx == 2:
+		_npc.resume_anim("Walk")
+	if _waypoint_idx == 5:
+		_npc.pause_anim()
 	if _state != PedestrianState.WALKING:
 		return
 	var wp := _waypoints[_waypoint_idx]
 
-	var convert_chance: float = Balancing.pedestrian_convert_chance(GameState.popularity)
+	var convert_chance: float = _get_convert_chance()
 	var marketing_bonus: float = UpgradeManager.get_effect_total("marketing")
 	if marketing_bonus > 0.0:
 		convert_chance = clampf(convert_chance + marketing_bonus, 0.0, 1.0)
@@ -329,7 +398,7 @@ func _build_patience_circle() -> void:
 	var viewport := SubViewport.new()
 	viewport.name = "PatienceViewport"
 	viewport.transparent_bg = true
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	viewport.disable_3d = true
 	viewport.size = Vector2i(128, 128)
 	add_child(viewport)
@@ -354,6 +423,7 @@ func _build_patience_circle() -> void:
 	_patience_circle.double_sided = true
 	_patience_circle.no_depth_test = true
 	_patience_circle.shaded = false
+	_patience_circle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_patience_circle.pixel_size = 0.0012
 	_patience_circle.position = Vector3(0, 2.2, 0)
 	_patience_circle.texture = viewport.get_texture()
@@ -401,6 +471,10 @@ func _hide_order_bubble() -> void:
 func _refresh_patience_bar(ratio: float) -> void:
 	if _patience_progress == null:
 		return
+	var percent := int(ratio * 100.0)
+	if percent == _last_patience_percent:
+		return
+	_last_patience_percent = percent
 	_patience_progress.value = ratio * _patience_progress.max_value
 
 

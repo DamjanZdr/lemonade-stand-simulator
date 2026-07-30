@@ -6,8 +6,31 @@ enum HeldItem { NONE, CUP_EMPTY, CUP_FILLED, SUPPLY_BOX, CONTAINER, TRASH }
 const MOVE_SPEED: float = 5.0
 const MOUSE_SENSITIVITY: float = 0.002
 
-const HINT_GROUND := "Aim at ground to place  |  RMB: Cancel (refund)"
-const HINT_STAND := "Aim at stand or workstation to place  |  RMB: Cancel (refund)"
+const HINT_GROUND := "Aim at ground to place"
+const HINT_STAND := "Aim at stand or workstation to place"
+
+
+func _get_held_item_name() -> String:
+	match held_item:
+		HeldItem.CUP_EMPTY:
+			return "Empty Cup"
+		HeldItem.CUP_FILLED:
+			return "Filled Cup"
+		HeldItem.SUPPLY_BOX:
+			var itype: String = held_item_data.get("ingredient_type", "")
+			if held_item_data.get("source") == "bin_scoop":
+				return itype.capitalize()
+			if itype == "cups":
+				return "Cup Box"
+			if held_item_data.get("is_equipment", false):
+				var etype: String = held_item_data.get("equipment_type", "equipment")
+				return etype.capitalize().replace("_", " ") + " Box"
+			return itype.capitalize() + " Box"
+		HeldItem.CONTAINER:
+			return held_item_data.get("container_type", "").capitalize().replace("_", " ")
+		HeldItem.TRASH:
+			return "Trash"
+	return ""
 
 @export var gravity: float = 9.8
 @export var sprint_multiplier: float = 1.8
@@ -18,6 +41,7 @@ var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
 var _last_hint: String = ""
 var _hovered: Interactable = null
+var _last_press_holding_fruit: bool = false
 var last_interact_hit: Node = null
 
 # --- Rapid-fire bin deposit ---
@@ -30,6 +54,12 @@ var _ghost: Node3D = null
 var _ghost_valid: bool = false
 static var _ghost_mat_valid: StandardMaterial3D = null
 static var _ghost_mat_invalid: StandardMaterial3D = null
+var _last_ghost_mat: StandardMaterial3D = null
+
+# --- Per-frame lookup cache (avoids redundant tree walks) ---
+var _frame_press: Press = null
+var _frame_dispenser: WaterDispenser = null
+var _frame_lookups_done: bool = false
 
 # --- Box stack wobble ---
 var _stack_target_id: int = -1
@@ -51,6 +81,9 @@ const CONTAINER_SCENES: Dictionary = {
 # Workstation scene is loaded at runtime to avoid compile-time preload issues
 # while the editor re-imports its new .uid files.
 var _workstation_scene: PackedScene = null
+
+# Shared box glb scene for trash and held boxes (loaded on demand).
+var _trash_box_scene: PackedScene = null
 
 const CONTAINER_PLACEMENT_SCALE: Dictionary = {
 	"fruit_bin": Vector3.ONE * 0.06,
@@ -123,6 +156,15 @@ var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
 var _priceboard_camera_original_top_level := false
 
+var _money_mode: bool = false
+
+
+func set_money_mode(active: bool) -> void:
+	_money_mode = active
+	if active and _hovered and is_instance_valid(_hovered):
+		_hovered.set_highlight(false)
+		_hovered = null
+
 
 func _ready() -> void:
 	add_to_group("player")
@@ -131,6 +173,9 @@ func _ready() -> void:
 	# The main camera must not render them — only the SubViewport OutlineCamera does.
 	$Head/Camera3D.cull_mask &= ~2
 	$Head/Camera3D.make_current()
+	var listener := $Head/Camera3D/AudioListener3D as AudioListener3D
+	if listener:
+		listener.make_current()
 
 	# Smooth movement over small ledges and slopes (sidewalks, curbs, etc.)
 	up_direction = Vector3.UP
@@ -156,6 +201,9 @@ func enter_priceboard_focus(focus_transform: Transform3D) -> void:
 	_priceboard_camera_original_local = camera.transform
 	_priceboard_camera_original_top_level = camera.top_level
 	camera.top_level = true
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("set_hud_visible"):
+		hud.set_hud_visible(false)
 	if _priceboard_tween != null and _priceboard_tween.is_valid():
 		_priceboard_tween.kill()
 	_priceboard_tween = create_tween()
@@ -182,6 +230,9 @@ func _on_priceboard_tween_finished() -> void:
 	camera.transform = _priceboard_camera_original_local
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_in_priceboard_mode = false
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("set_hud_visible"):
+		hud.set_hud_visible(true)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -229,7 +280,9 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()
-	_poll_hint()
+	_frame_lookups_done = false
+	if not _money_mode:
+		_poll_hint()
 	_update_ghost()
 	_update_rapid_fire(delta)
 
@@ -241,6 +294,13 @@ func _poll_hint() -> void:
 			_hovered.set_highlight(false)
 		_hovered = interactable
 		if _hovered:
+			_hovered.set_highlight(true)
+	elif _hovered and is_instance_valid(_hovered) and _hovered is Press:
+		# Re-apply highlight only when held-item state changes (not every frame)
+		var holding_fruit_now: bool = held_item == HeldItem.SUPPLY_BOX \
+				and held_item_data.get("source") == "bin_scoop"
+		if holding_fruit_now != _last_press_holding_fruit:
+			_last_press_holding_fruit = holding_fruit_now
 			_hovered.set_highlight(true)
 	var hint := ""
 	# Pedestrians show their own hint (offer / serve) regardless of held item.
@@ -254,85 +314,92 @@ func _poll_hint() -> void:
 		if interactable != null and interactable.is_in_group("trashcan"):
 			hint = interactable.get_hint(self)
 		else:
-			hint = "Find a trashcan"
+			hint = "Trash | find a trashcan"
 		if hint != _last_hint:
 			_last_hint = hint
 			EventBus.interaction_hint_changed.emit(hint)
 		return
 	if held_item == HeldItem.CONTAINER:
 		var container_type: String = held_item_data.get("container_type", "")
+		# Check if looking at trashcan for recycling
+		if interactable != null and interactable.is_in_group("trashcan"):
+			hint = interactable.get_hint(self)
+			if hint != _last_hint:
+				_last_hint = hint
+				EventBus.interaction_hint_changed.emit(hint)
+			return
 		# Check if looking at water tap with pitcher
 		if interactable is WaterTap:
 			if container_type == "pitcher":
 				var _recipe: Dictionary = held_item_data.get("saved_recipe", { })
 				if _recipe.get("water", 0.0) > 0.0:
-					hint = "Pitcher already has water  |  RMB: Cancel (refund)"
+					hint = "Pitcher | already has water"
 				else:
-					hint = "LMB: Fill pitcher with water  |  RMB: Cancel (refund)"
+					hint = "Pitcher | LMB: fill with water"
 			else:
-				hint = "LMB: Place  |  RMB: Cancel (refund)"
+				hint = "%s | LMB: place" % _get_held_item_name()
 		else:
-			if container_type == "pitcher":
-				var press := _find_looked_at_press()
-				if press != null:
-					var snap_recipe: Dictionary = held_item_data.get("saved_recipe", { })
-					hint = press.get_pitcher_snap_hint(snap_recipe)
-					return
-				var dispenser := _find_looked_at_dispenser()
-				if dispenser != null:
-					hint = dispenser.get_hint(self)
-					return
-				if _ghost_valid:
-					hint = "LMB: Place  |  RMB: Cancel (refund)"
-				else:
-					if container_type == "workstation":
-						hint = HINT_GROUND
-					else:
-						hint = HINT_STAND
-			elif _ghost_valid:
-				hint = "LMB: Place  |  RMB: Cancel (refund)"
+			hint = "%s | LMB: place" % _get_held_item_name()
+		if container_type == "pitcher":
+			var press := _find_looked_at_press()
+			if press != null:
+				var snap_recipe: Dictionary = held_item_data.get("saved_recipe", { })
+				hint = press.get_pitcher_snap_hint(snap_recipe)
+				return
+			var dispenser := _find_looked_at_dispenser()
+			if dispenser != null:
+				hint = dispenser.get_hint(self)
+				return
+		if _ghost_valid:
+			hint = "%s | LMB: place" % _get_held_item_name()
+		else:
+			if container_type == "workstation":
+				hint = HINT_GROUND
 			else:
-				if held_item_data.get("from_delivery_box", false):
-					hint = "Aim at ground or box to place  |  RMB: Cancel (refund)"
-				else:
-					if container_type == "workstation":
-						hint = HINT_GROUND
-					else:
-						hint = HINT_STAND
+				hint = "%s | %s" % [_get_held_item_name(), HINT_STAND]
+	elif held_item == HeldItem.SUPPLY_BOX \
+			and held_item_data.get("source") == "bin_scoop":
+		# Bin scoops can only be deposited into bins/presses/pitchers
+		if interactable != null:
+			hint = interactable.get_hint(self)
+		else:
+			hint = "%s | aim at bin, press, or trash to deposit" % _get_held_item_name()
 	elif held_item == HeldItem.SUPPLY_BOX \
 			and held_item_data.get("ingredient_type") == "cups":
-		hint = "LMB: Place 1 cup  |  RMB: Drop box"
+		var _held_name := _get_held_item_name()
+		hint = "%s | LMB: place 1 cup" % _held_name
 		if _is_aiming_at_grid():
-			hint = "LMB: Place box on grid  |  RMB: Drop box"
+			hint = "%s | LMB: place box on grid" % _held_name
 		if interactable is SupplyBox:
-			hint = "LMB: Stack box  |  RMB: Drop box"
+			hint = "%s | LMB: stack box" % _held_name
 		if interactable is CupStack:
-			hint = "LMB: Add 1 cup  |  RMB: Drop box"
+			hint = "%s | LMB: add 1 cup" % _held_name
 	elif held_item == HeldItem.SUPPLY_BOX:
-		hint = "LMB: Place box  |  RMB: Drop"
+		var _hn := _get_held_item_name()
+		hint = "%s | LMB: place box" % _hn
 		if _is_aiming_at_grid():
-			hint = "LMB: Place on grid  |  RMB: Drop"
+			hint = "%s | LMB: place on grid" % _hn
 		if interactable is SupplyBox:
-			hint = "LMB: Stack on box  |  RMB: Drop"
+			hint = "%s | LMB: stack on box" % _hn
 	elif held_item == HeldItem.CUP_EMPTY:
-		hint = "LMB: Place cup  |  RMB: Drop"
+		hint = "Empty Cup | LMB: place cup"
 		if interactable is CupStack:
-			hint = "LMB: Add to stack  |  RMB: Drop"
+			hint = "Empty Cup | LMB: add to stack"
 	elif held_item == HeldItem.CUP_FILLED:
-		hint = "LMB: Place filled cup  |  RMB: Drop"
+		hint = "Filled Cup | LMB: place filled cup"
 		if ray.is_colliding():
 			var hit_node: Node = ray.get_collider() as Node
 			var has_customer := _find_customer_in_ancestors(hit_node) != null
 			var has_ped := _find_pedestrian_in_ancestors(hit_node) != null
 			if has_customer or has_ped:
-				hint = "LMB: Serve lemonade  |  RMB: Drop"
+				hint = "Filled Cup | LMB: serve lemonade"
 	else:
 		hint = interactable.get_hint(self) if interactable else ""
 		# Append pickup hint when looking at a placed container with empty hands
 		if interactable and held_item == HeldItem.NONE:
 			var ctype := _get_container_type_for_node(interactable)
-			if ctype != "":
-				hint = hint + "  |  RMB: Pick up" if hint != "" else "RMB: Pick up"
+			if ctype != "" and not hint.contains("pick up"):
+				hint = hint + "  |  RMB: pick up" if hint != "" else "RMB: pick up"
 	if hint != _last_hint:
 		_last_hint = hint
 		EventBus.interaction_hint_changed.emit(hint)
@@ -353,6 +420,12 @@ func _primary_interact() -> void:
 		if interactable != null and interactable.is_in_group("trashcan"):
 			interactable.interact(self)
 		return
+
+	# Containers can be recycled at a trashcan for 70% refund.
+	if held_item == HeldItem.CONTAINER:
+		if interactable != null and interactable.is_in_group("trashcan"):
+			interactable.interact(self)
+			return
 
 	# Handle water tap interaction when holding pitcher - fill directly
 	var container_type: String = ""
@@ -398,13 +471,7 @@ func _primary_interact() -> void:
 			var dispenser := _find_looked_at_dispenser()
 			if dispenser != null:
 				var _recipe: Dictionary = held_item_data.get("saved_recipe", { })
-				var temp_pitcher: Pitcher = CONTAINER_SCENES["pitcher"].instantiate() as Pitcher
-				temp_pitcher.fruit_type = _recipe.get("fruit_type", "")
-				temp_pitcher.fruit_count = _recipe.get("fruit_count", _recipe.get("lemons", 0.0))
-				temp_pitcher.water = _recipe.get("water", 0.0)
-				var can_snap := dispenser.can_snap_pitcher(temp_pitcher)
-				temp_pitcher.queue_free()
-				if can_snap:
+				if dispenser.can_snap_pitcher_from_recipe(_recipe):
 					_ghost.global_position = dispenser.get_snap_global_position()
 					_ghost_valid = true
 					var placed := _try_place_container()
@@ -588,17 +655,16 @@ func _secondary_interact() -> void:
 	if interactable:
 		# If hands empty and looking at container, pick it up
 		if held_item == HeldItem.NONE:
+			# Press with snapped pitcher: pick up the pitcher, not the press
+			if interactable is Press and (interactable as Press).has_snapped_pitcher():
+				(interactable as Press).interact(self)
+				return
 			var ctype := _get_container_type_for_node(interactable)
 			if ctype != "":
 				pickup_container(interactable, ctype)
 				return
 		# Otherwise let the interactable handle secondary interact
 		interactable.interact_secondary(self)
-		return
-
-	# Cancel container placement if holding one and not looking at anything
-	if held_item == HeldItem.CONTAINER:
-		_cancel_container_placement()
 		return
 
 	# Drop supply box
@@ -686,7 +752,7 @@ func _update_single_cup_ghost() -> void:
 			_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 			_disable_scripts(_ghost)
 			_disable_physics(_ghost)
-			_ghost.add_to_group("ghost")
+			_mark_ghost(_ghost)
 			_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 			get_tree().current_scene.add_child(_ghost)
 		else:
@@ -699,7 +765,7 @@ func _update_single_cup_ghost() -> void:
 			_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 			_disable_scripts(_ghost)
 			_disable_physics(_ghost)
-			_ghost.add_to_group("ghost")
+			_mark_ghost(_ghost)
 			# Show only 1 cup in ghost
 			_set_single_cup_visibility(_ghost)
 			_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -780,6 +846,7 @@ func _place_single_cup(_filled: bool) -> void:
 
 	_destroy_ghost()
 	clear_held()
+	AudioManager.play_sfx("taking_cup", stack.global_position)
 	EventBus.container_placed.emit("cup_stack", stack)
 
 
@@ -829,6 +896,7 @@ func _place_filled_cup() -> void:
 
 	_destroy_ghost()
 	clear_held()
+	AudioManager.play_sfx("taking_cup", cup.global_position)
 	EventBus.interaction_hint_changed.emit("Filled cup placed!")
 
 
@@ -844,6 +912,7 @@ func _place_held_supply_box_on(place_pos: Vector3, place_rot: Vector3 = Vector3.
 	get_parent().add_child(box)
 	box.global_position = place_pos
 	box.global_rotation = place_rot
+	AudioManager.play_sfx("box_drop", place_pos)
 	_destroy_ghost()
 	clear_held()
 	return box
@@ -951,6 +1020,7 @@ func _drop_held_box() -> void:
 		drop_pos = global_position + (-transform.basis.z * 0.8) + Vector3(0, 0.15, 0)
 	get_parent().add_child(box)
 	box.global_position = drop_pos
+	AudioManager.play_sfx("box_drop", drop_pos)
 	clear_held()
 
 
@@ -1086,35 +1156,58 @@ func _get_looked_at_interactable() -> Interactable:
 
 
 func _find_looked_at_press() -> Press:
+	if _frame_lookups_done:
+		return _frame_press
+	_frame_lookups_done = true
+	_frame_press = null
+	_frame_dispenser = null
 	# Standard interactable lookup
 	var interactable := _get_looked_at_interactable()
 	if interactable is Press:
-		return interactable as Press
+		_frame_press = interactable as Press
+		return _frame_press
+	if interactable is WaterDispenser:
+		_frame_dispenser = interactable as WaterDispenser
 	# Fallback: walk up from direct collider (deeper search)
 	if ray.is_colliding():
 		var node := ray.get_collider()
 		for i in range(6):
 			if node == null:
 				break
-			if node is Press:
-				return node as Press
+			if node is Press and _frame_press == null:
+				_frame_press = node as Press
+			if node is WaterDispenser and _frame_dispenser == null:
+				_frame_dispenser = node as WaterDispenser
+			if _frame_press != null and _frame_dispenser != null:
+				break
 			node = node.get_parent()
-	return null
+	return _frame_press
 
 
 func _find_looked_at_dispenser() -> WaterDispenser:
+	if _frame_lookups_done:
+		return _frame_dispenser
+	_frame_lookups_done = true
+	_frame_press = null
+	_frame_dispenser = null
 	var interactable := _get_looked_at_interactable()
+	if interactable is Press:
+		_frame_press = interactable as Press
 	if interactable is WaterDispenser:
-		return interactable as WaterDispenser
+		_frame_dispenser = interactable as WaterDispenser
 	if ray.is_colliding():
 		var node := ray.get_collider()
 		for i in range(6):
 			if node == null:
 				break
-			if node is WaterDispenser:
-				return node as WaterDispenser
+			if node is Press and _frame_press == null:
+				_frame_press = node as Press
+			if node is WaterDispenser and _frame_dispenser == null:
+				_frame_dispenser = node as WaterDispenser
+			if _frame_press != null and _frame_dispenser != null:
+				break
 			node = node.get_parent()
-	return null
+	return _frame_dispenser
 
 
 func set_held(item_type: HeldItem, data: Dictionary, mesh: Node3D = null) -> void:
@@ -1126,6 +1219,7 @@ func set_held(item_type: HeldItem, data: Dictionary, mesh: Node3D = null) -> voi
 	if mesh:
 		_held_mesh = mesh
 		hand_slot.add_child(mesh)
+		_remove_placement_groups(mesh)
 		_apply_hand_offset(item_type, data)
 	EventBus.held_item_changed.emit(int(item_type), data)
 
@@ -1171,7 +1265,7 @@ func make_held_trash(
 		"trash_type": trash_type,
 	}
 	if hand_mesh == null and trash_type == "empty_box":
-		var box_scene: PackedScene = load("res://blender/boxnew.glb") as PackedScene
+		var box_scene := _get_trash_box_scene()
 		if box_scene:
 			var box_inst: Node3D = box_scene.instantiate() as Node3D
 			box_inst.scale = Vector3.ONE * 0.05
@@ -1225,6 +1319,12 @@ func hold_container(
 	_create_ghost(container_type)
 
 
+func _get_trash_box_scene() -> PackedScene:
+	if _trash_box_scene == null:
+		_trash_box_scene = load("res://blender/boxnew.glb") as PackedScene
+	return _trash_box_scene
+
+
 func _create_container_hand_mesh(
 		container_type: String,
 		_has_liquid: bool,
@@ -1235,7 +1335,7 @@ func _create_container_hand_mesh(
 ) -> Node3D:
 	# Create a hand mesh for the held container.
 	if from_box:
-		var box_scene: PackedScene = load("res://blender/boxnew.glb") as PackedScene
+		var box_scene := _get_trash_box_scene()
 		if box_scene:
 			var box_inst: Node3D = box_scene.instantiate() as Node3D
 			box_inst.scale = Vector3.ONE * 0.05
@@ -1259,6 +1359,9 @@ func _create_container_hand_mesh(
 
 	# Disable collision on hand mesh to prevent pushing player
 	_disable_hand_collision(inst)
+
+	# Hand-held clones must not be counted as real placed objects
+	_remove_placement_groups(inst)
 
 	return inst
 
@@ -1352,17 +1455,38 @@ func _create_ghost(container_type: String) -> void:
 	# Disable all physics on the ghost so it can't collide or be raycast-hit
 	_disable_physics(_ghost)
 	# Add to ghost group for overlap filtering
-	_ghost.add_to_group("ghost")
-	# Make it semi-transparent
-	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+	_mark_ghost(_ghost)
 	get_tree().current_scene.add_child(_ghost)
+	# Apply ghost material AFTER adding to tree so _ready() side effects
+	# (e.g. CSG material setup) don't override the transparent ghost material.
+	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 	_ghost.visible = false
+
+
+func _remove_placement_groups(node: Node) -> void:
+	# Hand or ghost meshes must not be counted as real placed objects.
+	if not is_instance_valid(node):
+		return
+	node.remove_from_group("container")
+	node.remove_from_group("pitcher")
+	node.remove_from_group("press")
+	node.remove_from_group("water_dispenser")
+	node.remove_from_group("supply_box")
+
+
+func _mark_ghost(node: Node) -> void:
+	node.add_to_group("ghost")
+	_remove_placement_groups(node)
+	# _ready() may add the node to placement groups after add_child,
+	# so remove them again once the tree is done setting up.
+	call_deferred("_remove_placement_groups", node)
 
 
 func _destroy_ghost() -> void:
 	if _ghost and is_instance_valid(_ghost):
 		_ghost.queue_free()
 	_ghost = null
+	_last_ghost_mat = null
 	_ghost_valid = false
 
 
@@ -1421,7 +1545,7 @@ func _update_cup_box_ghost() -> void:
 		_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 		_disable_scripts(_ghost)
 		_disable_physics(_ghost)
-		_ghost.add_to_group("ghost")
+		_mark_ghost(_ghost)
 		_set_single_cup_visibility(_ghost)
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		get_tree().current_scene.add_child(_ghost)
@@ -1463,7 +1587,7 @@ func _update_supply_box_ghost() -> void:
 		_ghost.set_meta("ghost_type", "box")
 		_disable_scripts(_ghost)
 		_disable_physics(_ghost)
-		_ghost.add_to_group("ghost")
+		_mark_ghost(_ghost)
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		get_tree().current_scene.add_child(_ghost)
 
@@ -1624,7 +1748,7 @@ func _ensure_box_ghost() -> void:
 	_ghost.set_meta("ghost_type", "box")
 	_disable_scripts(_ghost)
 	_disable_physics(_ghost)
-	_ghost.add_to_group("ghost")
+	_mark_ghost(_ghost)
 	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 	get_tree().current_scene.add_child(_ghost)
 
@@ -1646,12 +1770,17 @@ func _ensure_container_ghost(container_type: String) -> void:
 	var bottom_offset := _get_container_bottom_offset(_ghost)
 	_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 	_disable_physics(_ghost)
-	_ghost.add_to_group("ghost")
+	_mark_ghost(_ghost)
 	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 	get_tree().current_scene.add_child(_ghost)
 
 
 func _update_ghost() -> void:
+	# Bin scoops don't have a placement ghost
+	if held_item == HeldItem.SUPPLY_BOX and held_item_data.get("source") == "bin_scoop":
+		if _ghost != null:
+			_destroy_ghost()
+		return
 	# Handle cup box ghost preview
 	if held_item == HeldItem.SUPPLY_BOX and held_item_data.get("ingredient_type") == "cups":
 		_update_cup_box_ghost()
@@ -1689,28 +1818,14 @@ func _update_ghost() -> void:
 		var dispenser := _find_looked_at_dispenser()
 		if dispenser != null:
 			var _recipe: Dictionary = held_item_data.get("saved_recipe", { })
-			var pitcher_scene: PackedScene = _get_container_scene("pitcher")
-			var pitcher := _ghost as Pitcher
-			if pitcher == null and pitcher_scene != null:
-				_destroy_ghost()
-				_ghost = pitcher_scene.instantiate()
-				_ghost.set_meta("ghost_type", "container")
-				_ghost.set_meta("container_type", "pitcher")
-				get_tree().current_scene.add_child(_ghost)
-				_ghost.scale = CONTAINER_PLACEMENT_SCALE.get("pitcher", Vector3.ONE)
-				pitcher = _ghost as Pitcher
-			var temp_pitcher: Pitcher = pitcher_scene.instantiate() as Pitcher
-			temp_pitcher.fruit_type = _recipe.get("fruit_type", "")
-			temp_pitcher.fruit_count = _recipe.get("fruit_count", _recipe.get("lemons", 0.0))
-			temp_pitcher.water = _recipe.get("water", 0.0)
-			if dispenser.can_snap_pitcher(temp_pitcher):
+			if _ghost == null or _ghost.get_meta("container_type", "") != "pitcher":
+				_create_ghost("pitcher")
+			if _ghost != null and dispenser.can_snap_pitcher_from_recipe(_recipe):
 				_ghost.global_position = dispenser.get_snap_global_position()
 				_ghost.visible = true
 				_ghost_valid = true
 				_apply_ghost_material(_ghost, _get_ghost_mat_valid())
-				temp_pitcher.queue_free()
 				return
-			temp_pitcher.queue_free()
 			# Can't snap — fall through to normal placement below
 
 	if not ray.is_colliding():
@@ -1886,10 +2001,12 @@ func _cancel_container_placement() -> void:
 				get_tree().current_scene.add_child(source_node)
 		source_node.global_transform = original
 		_enable_physics(source_node)
-	GameState.add_money(cost)
 	_destroy_ghost()
-	clear_held()
-	EventBus.interaction_hint_changed.emit("Placement cancelled — $%.0f refunded" % cost)
+	var refund_value := cost * 0.7
+	make_held_trash(refund_value, container_type)
+	EventBus.interaction_hint_changed.emit(
+		"Recycled — take to trashcan for $%.2f" % refund_value,
+	)
 
 
 func pickup_container(interactable: Interactable, container_type: String) -> void:
@@ -2079,6 +2196,12 @@ func _check_ghost_overlap() -> bool:
 	if ghost_shape == null:
 		return false
 	var ghost_transform := _ghost.global_transform
+	var ghost_bounds_radius := _get_shape_radius(ghost_shape) * maxf(
+		ghost_transform.basis.get_scale().x,
+		ghost_transform.basis.get_scale().z,
+	)
+	var ghost_origin := ghost_transform.origin
+	var max_check_dist := ghost_bounds_radius + 2.0
 
 	# Check against all placed containers
 	for node in get_tree().get_nodes_in_group("container"):
@@ -2087,6 +2210,11 @@ func _check_ghost_overlap() -> bool:
 		if node.is_in_group("ghost"):
 			continue # Skip other ghosts
 		if not (node is Node3D):
+			continue
+
+		var other_node := node as Node3D
+		var other_origin := other_node.global_position
+		if ghost_origin.distance_to(other_origin) > max_check_dist:
 			continue
 
 		# Get this container's collision shape
@@ -2121,11 +2249,19 @@ func _check_ghost_overlap() -> bool:
 
 
 func _get_collision_shape(node: Node) -> Shape3D:
-	# Find the first CollisionShape3D in the node hierarchy and return its shape.
+	if node.has_meta("cached_collision_shape"):
+		return node.get_meta("cached_collision_shape")
+	var found := _find_collision_shape(node)
+	if found != null:
+		node.set_meta("cached_collision_shape", found)
+	return found
+
+
+func _find_collision_shape(node: Node) -> Shape3D:
 	for child in node.get_children():
 		if child is CollisionShape3D:
 			return (child as CollisionShape3D).shape
-		var found := _get_collision_shape(child)
+		var found := _find_collision_shape(child)
 		if found != null:
 			return found
 	return null
@@ -2203,10 +2339,19 @@ func _cylinders_intersect(
 
 
 func _apply_ghost_material(node: Node, mat: StandardMaterial3D) -> void:
+	if mat == _last_ghost_mat:
+		return
+	_last_ghost_mat = mat
+	_do_apply_ghost_material(node, mat)
+
+
+func _do_apply_ghost_material(node: Node, mat: StandardMaterial3D) -> void:
 	if node is MeshInstance3D:
 		(node as MeshInstance3D).material_override = mat
+	elif node is CSGShape3D:
+		(node as CSGShape3D).material_override = mat
 	for child in node.get_children():
-		_apply_ghost_material(child, mat)
+		_do_apply_ghost_material(child, mat)
 
 
 func _disable_scripts(node: Node) -> void:

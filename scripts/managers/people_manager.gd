@@ -1,3 +1,4 @@
+class_name PeopleManager
 extends Node
 ## Coordinates pedestrian spawning for a workday.
 ##
@@ -8,6 +9,8 @@ extends Node
 ## Stop scheduling new spawns this many seconds before the day ends.
 @export var spawn_margin: float = 1.0
 @export var pedestrian_spawner_group: StringName = &"pedestrian_spawner"
+@export var convert_chance_at_zero_popularity: float = 0.05
+@export var convert_chance_at_max_popularity: float = 1.0
 
 var _spawner: Node = null
 var _schedule: Array[float] = []
@@ -20,17 +23,22 @@ func _ready() -> void:
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.day_timer_updated.connect(_on_day_timer_updated)
 	call_deferred("_find_spawner")
+	add_to_group("people_manager")
 
 
 func _find_spawner() -> void:
 	_spawner = get_tree().get_first_node_in_group(pedestrian_spawner_group)
 	if _spawner == null:
 		push_warning(
-			"PeopleManager: no PedestrianSpawner found in group '%s'."
-			% pedestrian_spawner_group,
+			"PeopleManager: no PedestrianSpawner found in group '%s'." % pedestrian_spawner_group,
 		)
 	else:
 		_spawner.set_managed(true)
+
+
+func get_pedestrian_convert_chance(popularity: float) -> float:
+	var t := clampf(popularity, 0.0, 1.0)
+	return lerpf(convert_chance_at_zero_popularity, convert_chance_at_max_popularity, t)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
@@ -99,7 +107,8 @@ func _distribute_in_blocks(total: int, shares: Array[float]) -> Array[int]:
 	var indices: Array[int] = []
 	for i in range(shares.size()):
 		indices.append(i)
-	indices.sort_custom(func(a: int, b: int) -> bool: return frac[a] > frac[b])
+	indices.sort_custom(func(a: int, b: int) -> bool:
+			return frac[a] > frac[b])
 	for i in range(remainder):
 		result[indices[i % indices.size()]] += 1
 	return result
@@ -134,7 +143,8 @@ func _fill_hour(start: float, end: float, count: int) -> void:
 
 func _spawn_one() -> void:
 	var paths := get_tree().get_nodes_in_group("pedestrian_paths").filter(
-		func(p): return not (p as PedestrianPath).waypoints.is_empty()
+		func(p):
+			return not (p as PedestrianPath).waypoints.is_empty()
 	)
 	if paths.is_empty():
 		push_warning("PeopleManager: no usable pedestrian paths found.")

@@ -12,6 +12,10 @@ var ice_degrees_per_scoop: float = 4.0
 var feedback_tier: int
 var _debug_popularity: float = -1.0
 
+# Dev panel toggles for house coloring.
+var color_roofs: bool = true
+var color_walls: bool = false
+
 var customers_served_happy: int = 0
 var customers_lost: int = 0
 
@@ -44,7 +48,7 @@ func _ready() -> void:
 	EventBus.debug_set_popularity.connect(
 		func(v: float):
 			_debug_popularity = clampf(v, 0.0, 1.0)
-			set_popularity(_debug_popularity)
+			set_popularity(_debug_popularity),
 	)
 	EventBus.change_finalized.connect(_on_change_finalized)
 	EventBus.price_changed.connect(_on_price_changed)
@@ -53,13 +57,19 @@ func _ready() -> void:
 	EventBus.weather_changed.connect(_on_weather_changed)
 
 	# Auto-save whenever key state changes.
-	EventBus.money_changed.connect(func(_v: float):
-			EventBus.game_saved.emit())
-	EventBus.popularity_changed.connect(func(_v: float):
-			EventBus.game_saved.emit())
+	EventBus.money_changed.connect(
+		func(_v: float):
+			EventBus.game_saved.emit(),
+	)
+	EventBus.popularity_changed.connect(
+		func(_v: float):
+			EventBus.game_saved.emit(),
+	)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
-	EventBus.feedback_tier_changed.connect(func(_v: int):
-			EventBus.game_saved.emit())
+	EventBus.feedback_tier_changed.connect(
+		func(_v: int):
+			EventBus.game_saved.emit(),
+	)
 	EventBus.game_reset.connect(_on_game_reset)
 
 
@@ -160,10 +170,7 @@ func _on_day_phase_changed(phase: int, _day: int) -> void:
 func _default_recipe_for(fruit_type: String) -> Dictionary:
 	var res := load("res://resources/data/" + fruit_type + ".tres") as IngredientData
 	if res:
-		return {
-			"fruit_count": float(res.ideal_fruit_count),
-			"sugar": res.ideal_sugar,
-		}
+		return { "fruit_count": float(res.ideal_fruit_count), "sugar": res.ideal_sugar }
 	return { "fruit_count": 3.0, "sugar": 2.0 }
 
 

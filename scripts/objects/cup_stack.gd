@@ -92,6 +92,7 @@ func interact(player: Node) -> void:
 				return
 			# Only add ONE cup at a time
 			add_cups(1)
+			AudioManager.play_sfx("taking_cup", global_position)
 			EventBus.supply_box_deposited.emit("cups", 1.0)
 			var remaining: int = int(data.get("amount", 0.0)) - 1
 			if remaining > 0:
@@ -103,6 +104,7 @@ func interact(player: Node) -> void:
 	# Return an empty cup back to the stack
 	if p.held_item == p.HeldItem.CUP_EMPTY:
 		add_cups(1)
+		AudioManager.play_sfx("taking_cup", global_position)
 		p.clear_held()
 		return
 
@@ -114,6 +116,7 @@ func interact(player: Node) -> void:
 			return
 		current_count -= 1
 		_update_display()
+		AudioManager.play_sfx("taking_cup", global_position)
 		p.set_held(p.HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
 
 
@@ -130,16 +133,16 @@ func get_hint(player: Node) -> String:
 				and data.get("ingredient_type", "") == "cups":
 			var space := max_capacity - current_count
 			if space <= 0:
-				return "Cup stack full! (%d / %d)" % [current_count, max_capacity]
-			return "Click: add 1 cup (×%.0f in box)" % data.get("amount", 0.0)
+				return "Cup Stack | full! (%d / %d)" % [current_count, max_capacity]
+			return "Cup Stack | LMB: add 1 cup (x%.0f in box)" % data.get("amount", 0.0)
 		return ""
 
 	if p.held_item == p.HeldItem.NONE:
 		if current_count > 0:
-			return "LMB: take a cup  |  RMB: pick up stack  (%d left)" % current_count
-		return "LMB: pick up empty stack  |  RMB: pick up"
+			return "Cup Stack | LMB: take a cup  |  RMB: pick up  (%d left)" % current_count
+		return "Cup Stack | LMB: pick up"
 	if p.held_item == p.HeldItem.CUP_EMPTY:
-		return "Click: return cup"
+		return "Cup Stack | LMB: return cup"
 	return ""
 
 

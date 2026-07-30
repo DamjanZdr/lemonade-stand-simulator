@@ -2,10 +2,15 @@ class_name Customer
 extends CharacterBody3D
 ## Runtime-spawned NPC. Walks to queue spot, waits, receives/rejects lemonade, leaves.
 
-enum CustomerState { WALKING, WAITING, RECEIVING, REACTING, LEAVING }
+enum CustomerState {
+	WALKING,
+	WAITING,
+	RECEIVING,
+	REACTING,
+	LEAVING,
+}
 
 const GRAVITY: float = 9.8
-
 
 var queue_position: Vector3 = Vector3.ZERO
 var queue_slot: int = 0 # 0 = active (faces counter), 1+ = queued (faces front of queue)
@@ -18,6 +23,7 @@ var expected_fruit: String = "lemon"
 var _outcome: String = ""
 var _waiting_for_change: bool = false
 var _change_callable: Callable = Callable()
+var _change_due_cents: int = 0
 var _fallback_tween: Tween = null
 var _facing_target: Basis = Basis.IDENTITY
 var _is_rotating_to_face: bool = false
@@ -40,6 +46,7 @@ var _order_panel: Sprite3D = null
 
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
+var _last_patience_percent: int = -1
 
 var _preserve_appearance: bool = false
 
@@ -91,10 +98,7 @@ func _physics_process(delta: float) -> void:
 
 	if _is_rotating_to_face:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)
-		var q := basis.get_rotation_quaternion().slerp(
-			_facing_target.get_rotation_quaternion(),
-			t,
-		)
+		var q := basis.get_rotation_quaternion().slerp(_facing_target.get_rotation_quaternion(), t)
 		basis = Basis(q)
 		if q.dot(_facing_target.get_rotation_quaternion()) > 0.999:
 			basis = _facing_target
@@ -148,7 +152,18 @@ func _physics_process(delta: float) -> void:
 					if _leave_waypoint_idx >= _leave_waypoints.size():
 						queue_free()
 
-	move_and_slide()
+	_apply_motion(delta)
+
+
+func _apply_motion(delta: float) -> void:
+	# Only walking/leaving customers need collision/floor snap. While waiting/receiving/reacting
+	# the customer is stationary (velocity = 0), so just translate.
+	match state:
+		CustomerState.WAITING, CustomerState.RECEIVING, CustomerState.REACTING:
+			velocity.y = 0.0
+			global_position += velocity * delta
+		_:
+			move_and_slide()
 
 
 func _walk_toward(target: Vector3, delta: float) -> void:
@@ -159,10 +174,7 @@ func _walk_toward(target: Vector3, delta: float) -> void:
 	if dir.length_squared() > 0.01:
 		var target_basis := Basis.looking_at(dir, Vector3.UP)
 		var t := minf(delta * _ROTATION_SPEED, 1.0)
-		var q := basis.get_rotation_quaternion().slerp(
-			target_basis.get_rotation_quaternion(),
-			t,
-		)
+		var q := basis.get_rotation_quaternion().slerp(target_basis.get_rotation_quaternion(), t)
 		basis = Basis(q)
 
 
@@ -202,32 +214,20 @@ func _resolve(outcome: String) -> void:
 	EventBus.customer_served.emit(self, outcome)
 	emoji_display.show_emoji(outcome, GameState.feedback_tier)
 	if outcome != "timeout":
-		# Every served customer pays; wait here until the player processes
-		# change at the register before walking away.
+		# Every served customer pays; the money controller on the player's
+		# camera handles change-making. Emit sale_initiated directly.
 		var price := GameState.get_price(expected_fruit)
 		var payment := _customer_payment(price)
 		var change_due := roundf((payment - price) * 100.0) / 100.0
-		var cp_name: String = _npc.get_cash_point_name()
-		var cash_point := _npc.get_node_or_null(cp_name) as Marker3D
-		var drop_pos := cash_point.global_position if cash_point \
-		else _npc.global_position + Vector3(0, 1.0, 0.5)
-		_npc.start_payment_pose(drop_pos)
-		# Use the pre-placed CashPickup under the gender-specific CashPoint.
-		var cp := _npc.get_node_or_null(cp_name + "/CashPickup") as CashPickup
-		if cp:
-			cp.payment = payment
-			cp.change_due = change_due
-			cp.hide_on_interact = true
-			cp.visible = true
-			if cp.label:
-				cp.label.text = "$%.2f" % payment
-		else:
-			# Fallback: spawn cash at the counter the old way.
-			EventBus.cash_dropped.emit(drop_pos, payment, change_due)
+		_npc.start_payment_pose(_npc.global_position + Vector3(0, 1.0, 0.5))
+		_change_due_cents = roundi(change_due * 100.0)
+		EventBus.change_tendered_updated.connect(_on_change_tendered)
+		EventBus.sale_initiated.emit(payment, change_due)
 		_waiting_for_change = true
-		_change_callable = func(_e: float): _leave_after_change()
+		_change_callable = func(_e: float):
+			_leave_after_change()
 		EventBus.change_finalized.connect(_change_callable, CONNECT_ONE_SHOT)
-		# Fallback: give up after 60 s if the player ignores the register.
+		# Fallback: give up after 60 s if the player ignores the money.
 		_fallback_tween = create_tween()
 		_fallback_tween.tween_interval(60.0)
 		_fallback_tween.tween_callback(_leave_after_change)
@@ -243,10 +243,12 @@ func _leave_after_change() -> void:
 	if not _waiting_for_change:
 		return
 	_waiting_for_change = false
-	# Clean up: disconnect signal if still connected, kill fallback tween.
+	# Clean up: disconnect signals if still connected, kill fallback tween.
 	if _change_callable.is_valid() and EventBus.change_finalized.is_connected(_change_callable):
 		EventBus.change_finalized.disconnect(_change_callable)
 	_change_callable = Callable()
+	if EventBus.change_tendered_updated.is_connected(_on_change_tendered):
+		EventBus.change_tendered_updated.disconnect(_on_change_tendered)
 	if _fallback_tween and _fallback_tween.is_valid():
 		_fallback_tween.kill()
 	_fallback_tween = null
@@ -259,10 +261,6 @@ func _start_leaving() -> void:
 	_engaged_player = null
 	_hide_order_bubble()
 	_npc.stop_payment_pose()
-	var cp_name: String = _npc.get_cash_point_name()
-	var cp := _npc.get_node_or_null(cp_name + "/CashPickup") as CashPickup
-	if cp:
-		cp.visible = false
 	_npc.play_anim("Walk")
 	EventBus.customer_left.emit(self, _outcome)
 
@@ -274,6 +272,22 @@ static func _customer_payment(price: float) -> float:
 	if price <= 5.0:
 		return 5.0
 	return 10.0
+
+
+func _on_change_tendered(tendered_cents: int, _due_cents: int) -> void:
+	var remaining := _change_due_cents - tendered_cents
+	if remaining > 0:
+		order_label.text = "You still owe me $%.2f" % (remaining / 100.0)
+		order_label.visible = true
+		if _order_panel:
+			_order_panel.visible = false
+			call_deferred("_resize_order_panel")
+	else:
+		order_label.text = "Thank you!"
+		order_label.visible = true
+		if _order_panel:
+			_order_panel.visible = false
+			call_deferred("_resize_order_panel")
 
 
 func _on_debug_force_happy() -> void:
@@ -312,10 +326,7 @@ func show_order_to_player(player: Node) -> void:
 	_show_order()
 	if not was_already_engaged:
 		_npc.play_anim("Talk")
-	_facing_target = Basis.looking_at(
-		player.global_position - global_position,
-		Vector3.UP,
-	)
+	_facing_target = Basis.looking_at(player.global_position - global_position, Vector3.UP)
 	_is_rotating_to_face = true
 
 
@@ -345,6 +356,10 @@ func _begin_smooth_facing() -> void:
 func _refresh_patience_bar(ratio: float) -> void:
 	if _patience_progress == null:
 		return
+	var percent := int(ratio * 100.0)
+	if percent == _last_patience_percent:
+		return
+	_last_patience_percent = percent
 	_patience_progress.value = ratio * _patience_progress.max_value
 
 
@@ -363,28 +378,26 @@ func _resize_order_panel() -> void:
 	var font := order_label.font if order_label.font else ThemeDB.fallback_font
 	var text_height := font.get_height(order_label.font_size) * order_label.pixel_size
 	var pad := Vector2(0.05, 0.035)
-	var panel_size := Vector2(
-		aabb_size.x + pad.x,
-		text_height + pad.y
-	)
+	var panel_size := Vector2(aabb_size.x + pad.x, text_height + pad.y)
 	var panel_px := Vector2i(
 		int(panel_size.x / _order_panel.pixel_size),
-		int(panel_size.y / _order_panel.pixel_size)
+		int(panel_size.y / _order_panel.pixel_size),
 	)
 	panel_px.x = maxi(panel_px.x, 32)
 	panel_px.y = maxi(panel_px.y, 32)
 	var corner_px := clampi(int(mini(panel_px.x, panel_px.y) * 0.15), 8, 32)
 	var panel_color := Color(0.20, 0.22, 0.24, 0.88)
 	_order_panel.texture = _create_rounded_panel_texture(
-		panel_px.x, panel_px.y, panel_color, corner_px
+		panel_px.x,
+		panel_px.y,
+		panel_color,
+		corner_px,
 	)
 	_order_panel.scale = Vector3(1, 1, 1)
 	_order_panel.visible = true
 
 
-func _create_rounded_panel_texture(
-	width: int, height: int, color: Color, corner: int
-) -> ImageTexture:
+func _create_rounded_panel_texture(width: int, height: int, color: Color, corner: int) -> ImageTexture:
 	var img := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	var r := clampi(corner, 0, int(mini(width, height) / 2.0))
@@ -443,7 +456,7 @@ func _build_patience_circle() -> void:
 	var viewport := SubViewport.new()
 	viewport.name = "PatienceViewport"
 	viewport.transparent_bg = true
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	viewport.disable_3d = true
 	viewport.size = Vector2i(128, 128)
 	add_child(viewport)
@@ -468,6 +481,7 @@ func _build_patience_circle() -> void:
 	_patience_circle.double_sided = true
 	_patience_circle.no_depth_test = true
 	_patience_circle.shaded = false
+	_patience_circle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_patience_circle.pixel_size = 0.0012
 	_patience_circle.position = Vector3(0, 2.2, 0)
 	_patience_circle.texture = viewport.get_texture()

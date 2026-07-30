@@ -6,7 +6,7 @@
 size = Vector3(2, 2, 2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_press"]
-size = Vector3(9.607452, 13.761932, 4.8134766)
+size = Vector3(4.8038406, 13.761932, 4.5422363)
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_press"]
 viewport_path = NodePath("ProgressBarViewport")
@@ -288,7 +288,7 @@ visible = false
 mesh = SubResource("BoxMesh_press")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=171251141]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9827423, 6.8227997, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9900017, 6.8227997, -0.052124023)
 shape = SubResource("BoxShape3D_press")
 
 [node name="ProgressBarViewport" type="SubViewport" parent="." unique_id=1025494930]

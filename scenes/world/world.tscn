@@ -22,12 +22,16 @@
 [ext_resource type="PackedScene" uid="uid://cdx1e3dagxpjh" path="res://blackboard.tscn" id="45_kx0xk"]
 [ext_resource type="Script" uid="uid://puonyclrtmxb" path="res://scripts/systems/upgrade_config_manager.gd" id="45_upgcfg"]
 [ext_resource type="PackedScene" uid="uid://c7ra0ih8gdcs8" path="res://price_board.tscn" id="46_5fxch"]
+[ext_resource type="Script" uid="uid://bsyvhgcutcvjd" path="res://scripts/managers/color_manager.gd" id="46_fqf7g"]
 [ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="46_press"]
 [ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
 [ext_resource type="Resource" uid="uid://cqgusixkpn6b0" path="res://resources/upgrades/sunroof.tres" id="48_sunroof"]
 [ext_resource type="Resource" uid="uid://boksdhow4wy5i" path="res://resources/upgrades/larger_crates.tres" id="49_crates"]
+[ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
 [ext_resource type="Resource" uid="uid://bt1nbebv8rxkw" path="res://resources/upgrades/bulk_buy.tres" id="50_bulk"]
+[ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
 [ext_resource type="Resource" uid="uid://dpe2rvl38mtc6" path="res://resources/upgrades/marketing.tres" id="51_mkt"]
+[ext_resource type="PackedScene" uid="uid://dk6i3an03mr2w" path="res://scenes/delivery_truck.tscn" id="51_q3hpu"]
 [ext_resource type="Resource" uid="uid://dkm7bmcp0fdtp" path="res://resources/upgrades/queue_appeal.tres" id="52_queue"]
 [ext_resource type="Resource" uid="uid://cwkj211dv1ox0" path="res://resources/upgrades/speed_serve.tres" id="53_speed"]
 [ext_resource type="Resource" uid="uid://bc1gpbi3re7ip" path="res://resources/upgrades/psychology.tres" id="54_psych"]
@@ -72,8 +76,6 @@ background_mode = 2
 sky = SubResource("Sky_main")
 ambient_light_source = 3
 ambient_light_sky_contribution = 0.8
-tonemap_mode = 2
-tonemap_exposure = 1.1
 tonemap_white = 6.0
 ssr_enabled = true
 ssao_enabled = true
@@ -96,6 +98,9 @@ size = Vector3(41.872314, 18.523682, 41.272736)
 [sub_resource type="BoxShape3D" id="BoxShape3D_5fxch"]
 size = Vector3(124.999756, 85.6239, 1)
 
+[sub_resource type="BoxOccluder3D" id="BoxOccluder3D_g4v7s"]
+size = Vector3(18.82469, 15.440681, 5.7122664)
+
 [node name="World" type="Node3D" unique_id=1769167416]
 script = ExtResource("70_neigh")
 
@@ -115,13 +120,13 @@ shape = SubResource("BoxShape3D_ground")
 transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.18679726, -2.1485605)
 
 [node name="WaterDispenser" parent="." unique_id=1929335132 instance=ExtResource("3_wdispenser")]
-transform = Transform3D(4.8676796e-08, 0, 0.25, 0, 0.25, 0, -0.25, 0, 4.8676796e-08, -1.2000002, 0.25480768, 2.1)
+transform = Transform3D(-2.6821102e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -2.6821102e-08, 6.743279, 0.25480768, 1.1123774)
 
 [node name="DeliveryMarker" type="Marker3D" parent="." unique_id=1391857877]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 6.77292, 0.51908034, 0.7752135)
 
 [node name="DeliveryGrid" parent="." unique_id=2063779733 instance=ExtResource("7_dgrid")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.2406344, 0.3128554, 3.5500283)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.225821, 0.3128554, -0.76168585)
 
 [node name="QueueMarkerActive" type="Marker3D" parent="." unique_id=1918688920]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9837594, 0, -2.300959)
@@ -133,13 +138,14 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.0
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.0467854, 0, -2.900959)
 
 [node name="DirectionalLight" type="DirectionalLight3D" parent="." unique_id=285599754]
-transform = Transform3D(0.9720935, 0.04629134, 0.22998103, -0.23423047, 0.24604878, 0.9405297, -0.013048172, -0.9681514, 0.2500253, 0, 10, 0)
+transform = Transform3D(0.41711533, -0.1486572, -0.8966136, 0.8650236, 0.36760288, 0.3414708, 0.2788356, -0.9180246, 0.28192466, 0, 10, 0)
 shadow_enabled = true
 script = ExtResource("37_sun")
+start_rotation_deg = Vector3(-50, 60, -80)
+end_rotation_deg = Vector3(-20, -70, 67)
 
 [node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1098989604]
 transform = Transform3D(-0.866, -0.25, -0.433, 0, 0.866, -0.5, 0.5, -0.433, -0.75, 0, 8, 0)
-visible = false
 light_color = Color(0.7, 0.85, 1, 1)
 light_energy = 0.5
 
@@ -154,7 +160,7 @@ script = ExtResource("36_0wrxw")
 waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
 
 [node name="Point 1" type="Marker3D" parent="Routes/Route 1" unique_id=241292620]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.982567, 0, -62.723373)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.982567, 0, -28.03636)
 script = ExtResource("36_sygq6")
 
 [node name="Point 2" type="Marker3D" parent="Routes/Route 1" unique_id=1776416609]
@@ -176,7 +182,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 128.80246, 0, -9.479488)
 script = ExtResource("36_sygq6")
 
 [node name="Point 6" type="Marker3D" parent="Routes/Route 1" unique_id=608703098]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 129.11417, 0, -62.817154)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 129.11417, 0, -36.53911)
 script = ExtResource("36_sygq6")
 
 [node name="Route 2" type="Marker3D" parent="Routes" unique_id=1609256623 node_paths=PackedStringArray("waypoints")]
@@ -185,7 +191,7 @@ script = ExtResource("36_0wrxw")
 waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
 
 [node name="Point 1" type="Marker3D" parent="Routes/Route 2" unique_id=1893335241]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.982567, 0, -62.723377)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.982574, 0, -23.980904)
 script = ExtResource("36_sygq6")
 
 [node name="Point 2" type="Marker3D" parent="Routes/Route 2" unique_id=817177908]
@@ -207,7 +213,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130.90247, 0, -3.879488)
 script = ExtResource("36_sygq6")
 
 [node name="Point 6" type="Marker3D" parent="Routes/Route 2" unique_id=586515829]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130.91418, 0, -65.41715)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130.91418, 0, -24.222612)
 script = ExtResource("36_sygq6")
 
 [node name="Route 3" type="Marker3D" parent="Routes" unique_id=2036286136 node_paths=PackedStringArray("waypoints")]
@@ -216,11 +222,11 @@ script = ExtResource("36_0wrxw")
 waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
 
 [node name="Point 1" type="Marker3D" parent="Routes/Route 3" unique_id=896206468]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -115.98257, 0, 37.276615)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.948257, 0, 36.27583)
 script = ExtResource("36_sygq6")
 
 [node name="Point 2" type="Marker3D" parent="Routes/Route 3" unique_id=1330102902]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -116.05065, 0, 5.9960966)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.350647, 0, 5.9961042)
 script = ExtResource("36_sygq6")
 
 [node name="Point 3" type="Marker3D" parent="Routes/Route 3" unique_id=1455372659]
@@ -238,7 +244,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 203.90247, 0, 6.1205187)
 script = ExtResource("36_sygq6")
 
 [node name="Point 6" type="Marker3D" parent="Routes/Route 3" unique_id=2035580860]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 201.91418, 0, 30.582848)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 141.51419, 0, 38.582844)
 script = ExtResource("36_sygq6")
 
 [node name="Thermometer" parent="." unique_id=242897628 instance=ExtResource("5_v5dby")]
@@ -278,7 +284,9 @@ upgrades = Array[ExtResource("25_4v0p3")]([ExtResource("46_press"), ExtResource(
 
 [node name="PeopleManager" type="Node" parent="Managers" unique_id=1001413374]
 script = ExtResource("68_people")
-total_people = 300
+total_people = 50
+convert_chance_at_zero_popularity = 0.2
+convert_chance_at_max_popularity = 0.7
 
 [node name="TimeManager" type="Node" parent="Managers" unique_id=1001413375]
 script = ExtResource("69_time")
@@ -286,6 +294,12 @@ seconds_per_hour = 30.0
 
 [node name="TrashManager" type="Node" parent="Managers" unique_id=1001413376]
 script = ExtResource("71_trash")
+
+[node name="ColorManager" type="Node" parent="Managers" unique_id=736981231]
+script = ExtResource("46_fqf7g")
+wall_default_color = Color(1, 1, 1, 1)
+roof_colors = Array[Color]([Color(0.85490197, 0.69803923, 0.827451, 1), Color(0.42352942, 0.9607843, 0.88235295, 1), Color(0.7254902, 0.8509804, 0.43137255, 1), Color(0.92156863, 0.93333334, 0.19215687, 1), Color(0.85882354, 0.5137255, 0.5764706, 1)])
+wall_colors = Array[Color]([Color(0.42265648, 0.96156055, 0.88136154, 1), Color(0.8547164, 0.6989638, 0.8276675, 1), Color(0.7237331, 0.85128987, 0.43169385, 1), Color(0.86031544, 0.51238483, 0.5748986, 1), Color(0.92156863, 0.93333334, 0.19215687, 1)])
 
 [node name="FogVolume" type="FogVolume" parent="." unique_id=829046607]
 transform = Transform3D(1, 0, 0, 0, 0.16174394, 0, 0, 0, 1, -268.22437, -15.5393715, 31)
@@ -333,3 +347,81 @@ shape = SubResource("BoxShape3D_5fxch")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5780778, 3.4851818, 12.612837)
 light_energy = 0.6
 omni_range = 12.76936
+
+[node name="Decorations" type="Node3D" parent="." unique_id=1407390588]
+transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
+
+[node name="PlantPot1" parent="Decorations" unique_id=1904588981 instance=ExtResource("49_l4ul6")]
+transform = Transform3D(0.84171945, 0, 0.53991526, 0, 1, 0, -0.53991526, 0, 0.84171945, -7.764577, 1.3492472, 35.04088)
+
+[node name="PlantPot8" parent="Decorations" unique_id=651441247 instance=ExtResource("49_l4ul6")]
+transform = Transform3D(0.84171945, 0, 0.53991526, 0, 1, 0, -0.53991526, 0, 0.84171945, 22.806116, 1.3492472, 64.299164)
+
+[node name="PlantPot2" parent="Decorations" unique_id=1238950346 instance=ExtResource("49_l4ul6")]
+transform = Transform3D(0.9211762, 0, -0.38914576, 0, 1, 0, 0.38914576, 0, 0.9211762, -7.764577, 1.3492472, 48.597187)
+
+[node name="PlantPot3" parent="Decorations" unique_id=701059214 instance=ExtResource("49_l4ul6")]
+transform = Transform3D(0.86611575, 0, 0.49984348, 0, 1, 0, -0.49984348, 0, 0.86611575, -8.243681, 1.3492472, 52.573715)
+
+[node name="PlantPot4" parent="Decorations" unique_id=471671490 instance=ExtResource("50_q3hpu")]
+transform = Transform3D(0.5868901, 0, 0.80966663, 0, 1, 0, -0.80966663, 0, 0.5868901, -5.804634, 1.3816375, 64.95521)
+
+[node name="PlantPot5" parent="Decorations" unique_id=1322096242 instance=ExtResource("50_q3hpu")]
+transform = Transform3D(0.6472111, 0, -0.76231086, 0, 1, 0, 0.76231086, 0, 0.6472111, 10.350017, 1.3816375, 64.58448)
+
+[node name="PlantPot6" parent="Decorations" unique_id=1339233554 instance=ExtResource("50_q3hpu")]
+transform = Transform3D(0.5868901, 0, 0.80966663, 0, 1, 0, -0.80966663, 0, 0.5868901, -27.828108, 2.1059017, 50.49137)
+
+[node name="PlantPot7" parent="Decorations" unique_id=1493501310 instance=ExtResource("50_q3hpu")]
+transform = Transform3D(0.6472111, 0, -0.76231086, 0, 1, 0, 0.76231086, 0, 0.6472111, -17.328918, 2.1059017, 50.101498)
+
+[node name="TruckRoute" type="Node3D" parent="." unique_id=1371739308]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9.926907)
+
+[node name="PathStart" type="Marker3D" parent="TruckRoute" unique_id=1499543433]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -90.59682, 0, 33.169167)
+
+[node name="PathTurnStart" type="Marker3D" parent="TruckRoute" unique_id=1013049687]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -90.2681, 0, 2.1691666)
+
+[node name="PathTurnEnd" type="Marker3D" parent="TruckRoute" unique_id=1827111290]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -86.02107, 0, 0.098667145)
+
+[node name="PathDrop" type="Marker3D" parent="TruckRoute" unique_id=446033922]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 8.720001, 0, 0.12294769)
+
+[node name="PathEnd" type="Marker3D" parent="TruckRoute" unique_id=347151659]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 393.6401, 0, -1.8308334)
+
+[node name="DeliveryTruck" parent="." unique_id=1680832463 instance=ExtResource("51_q3hpu")]
+transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, -90.6655, 0.9512104, 33.06649)
+
+[node name="Occlusions" type="Node3D" parent="." unique_id=2092071078]
+
+[node name="OccluderInstance3D2" type="OccluderInstance3D" parent="Occlusions" unique_id=1410063400]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.191738, 2.313859, 17.78254)
+occluder = SubResource("BoxOccluder3D_g4v7s")
+
+[node name="OccluderInstance3D3" type="OccluderInstance3D" parent="Occlusions" unique_id=1294211346]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.808262, 2.313859, 17.78254)
+occluder = SubResource("BoxOccluder3D_g4v7s")
+
+[node name="OccluderInstance3D4" type="OccluderInstance3D" parent="Occlusions" unique_id=1968345905]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.808262, 2.313859, -41.21746)
+occluder = SubResource("BoxOccluder3D_g4v7s")
+
+[node name="OccluderInstance3D5" type="OccluderInstance3D" parent="Occlusions" unique_id=2144192711]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.191738, 2.313859, -41.21746)
+occluder = SubResource("BoxOccluder3D_g4v7s")
+
+[node name="OccluderInstance3D6" type="OccluderInstance3D" parent="Occlusions" unique_id=1469577070]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.19174, 2.313859, -41.21746)
+occluder = SubResource("BoxOccluder3D_g4v7s")
+
+[node name="OccluderInstance3D7" type="OccluderInstance3D" parent="Occlusions" unique_id=1305645982]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -60.19174, 2.313859, -41.21746)
+occluder = SubResource("BoxOccluder3D_g4v7s")
+
+[node name="OccluderInstance3D8" type="OccluderInstance3D" parent="Occlusions" unique_id=1479579451]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50.80826, 2.313859, -41.21746)
+occluder = SubResource("BoxOccluder3D_g4v7s")

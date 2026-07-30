@@ -37,26 +37,20 @@ func interact(player: Node) -> void:
 	physics.collision_layer = 0
 
 	if is_equipment:
+		AudioManager.play_sfx("pick_up_box", global_position)
 		p.set_held(
 			p.HeldItem.SUPPLY_BOX,
-			{
-				"source": "delivery",
-				"is_equipment": true,
-				"equipment_type": equipment_type,
-			},
+			{ "source": "delivery", "is_equipment": true, "equipment_type": equipment_type },
 			_make_hand_mesh(),
 		)
 		_make_boxes_above_fall()
 		queue_free()
 		return
 
+	AudioManager.play_sfx("pick_up_box", global_position)
 	p.set_held(
 		p.HeldItem.SUPPLY_BOX,
-		{
-			"ingredient_type": ingredient_type,
-			"amount": quantity,
-			"source": "delivery",
-		},
+		{ "ingredient_type": ingredient_type, "amount": quantity, "source": "delivery" },
 		_make_hand_mesh(),
 	)
 	_make_boxes_above_fall()
@@ -81,13 +75,17 @@ func _make_boxes_above_fall() -> void:
 	# Sort by Y ascending so we animate from bottom to top
 	above.sort_custom(
 		func(a: SupplyBox, b: SupplyBox) -> bool:
-			return a.global_position.y < b.global_position.y
+			return a.global_position.y < b.global_position.y,
 	)
 	for box in above:
 		var target_y := box.global_position.y - stack_height
 		var tween := box.create_tween()
 		tween.tween_property(box, "global_position:y", target_y, 0.25) \
 				.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+		tween.finished.connect(
+			func():
+				AudioManager.play_sfx("box_drop", box.global_position),
+		)
 
 
 func interact_secondary(player: Node) -> void:
@@ -99,10 +97,10 @@ func get_hint(player: Node) -> String:
 	if p == null or p.held_item != p.HeldItem.NONE:
 		return ""
 	if is_equipment:
-		return "Click: pick up %s box" % equipment_type.capitalize().replace("_", " ")
+		return "Supply Box | LMB: pick up %s box" % equipment_type.capitalize().replace("_", " ")
 	if ingredient_type == "cups":
-		return "Click: pick up cup box (x%d cups)" % quantity
-	return "Click: pick up %s box (x%.0f)" % [ingredient_type.capitalize(), quantity]
+		return "Supply Box | LMB: pick up cup box (x%d cups)" % quantity
+	return "Supply Box | LMB: pick up %s box (x%.0f)" % [ingredient_type.capitalize(), quantity]
 
 
 func _apply_tint() -> void:

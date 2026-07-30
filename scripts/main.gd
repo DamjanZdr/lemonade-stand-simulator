@@ -14,9 +14,8 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 
 var _cash_drop_pos: Vector3 = Vector3(0, 1.05, -0.4)
 
-var _sky_mat: ShaderMaterial
 var _world_env: WorldEnvironment
-var _default_ambient: float
+var _default_ambient_color: Color
 var _default_exposure: float
 
 
@@ -44,13 +43,13 @@ func _ready() -> void:
 		spots.append(start + step * float(i))
 	spawner.set_queue_spots(spots, step)
 
-	# Replace the flat procedural sky with the cloud sky shader.
+	# Use the sky material set up in the editor (ProceduralSkyMaterial).
 	_world_env = world.get_node_or_null("WorldEnvironment") as WorldEnvironment
-	if _world_env and _world_env.environment and _world_env.environment.sky:
-		_sky_mat = ShaderMaterial.new()
-		_sky_mat.shader = load("res://resources/shaders/cloud_sky.gdshader")
-		_world_env.environment.sky.sky_material = _sky_mat
-		_default_ambient = _world_env.environment.ambient_light_sky_contribution
+	if _world_env and _world_env.environment:
+		_world_env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		_world_env.environment.ambient_light_color = Color(0.75, 0.75, 0.78, 1)
+		_world_env.environment.ambient_light_sky_contribution = 0.0
+		_default_ambient_color = _world_env.environment.ambient_light_color
 		_default_exposure = _world_env.environment.tonemap_exposure
 
 	# Pedestrian spawner reads its PedestrianPath children automatically.
@@ -107,21 +106,28 @@ func _on_cash_dropped(drop_pos: Vector3, payment: float, change_due: float) -> v
 
 
 func _on_day_timer_updated(time_left: float, total_time: float) -> void:
-	if total_time <= 0.0 or _sky_mat == null:
+	if total_time <= 0.0:
 		return
 	var t := 1.0 - time_left / total_time
-	_sky_mat.set_shader_parameter("time_of_day", t)
 	if _world_env:
-		var brightness := clampf(sin(t * PI), 0.55, 1.0)
-		_world_env.environment.ambient_light_sky_contribution = _default_ambient * brightness
-		_world_env.environment.tonemap_exposure = _default_exposure * brightness
+		# Ambient keeps a much higher floor (0.6 instead of 0.35) so shadowed
+		# building faces at dawn/dusk still show detail instead of going
+		# near-black. Exposure uses its own gentler curve — multiplying it by
+		# the same steep ambient curve compounded the darkening and crushed
+		# shadow detail even further.
+		var ambient_brightness := clampf(sin(t * PI) * 0.4 + 0.6, 0.6, 1.15)
+		var exposure_brightness := clampf(sin(t * PI) * 0.15 + 0.85, 0.85, 1.15)
+		_world_env.environment.ambient_light_color = (_default_ambient_color * ambient_brightness)
+		_world_env.environment.tonemap_exposure = _default_exposure * exposure_brightness
 
 
 func _on_debug_set_rain(enabled: bool) -> void:
-	if _sky_mat:
-		_sky_mat.set_shader_parameter("raining", enabled)
 	if _world_env:
-		var ambient := 0.35 if enabled else _default_ambient
+		var ambient := Color(0.35, 0.35, 0.37, 1) if enabled else _default_ambient_color
 		var exposure := 0.75 if enabled else _default_exposure
-		_world_env.environment.ambient_light_sky_contribution = ambient
+		_world_env.environment.ambient_light_color = ambient
 		_world_env.environment.tonemap_exposure = exposure
+
+
+func _process(_delta: float) -> void:
+	pass

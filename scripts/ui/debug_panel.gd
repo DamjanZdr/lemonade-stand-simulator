@@ -8,8 +8,14 @@ var _refresh_timer: float = 0.0
 var _test_payment_cooldown: float = 0.0
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.is_pressed() and not event.is_echo():
+		if event.keycode == KEY_F1:
+			visible = not visible
+
+
 func _ready() -> void:
-	$Panel/VBox/BtnMoney.pressed.connect(func(): EventBus.debug_add_money.emit(50.0))
+	$Panel/VBox/BtnMoney.pressed.connect(func(): EventBus.debug_add_money.emit(1000.0))
 	$Panel/VBox/BtnRefill.pressed.connect(func(): EventBus.debug_refill_all_bins.emit())
 	$Panel/VBox/BtnEmpty.pressed.connect(func(): EventBus.debug_empty_pitcher.emit())
 	$Panel/VBox/BtnSpawn.pressed.connect(func(): EventBus.debug_force_spawn_customer.emit())
@@ -29,7 +35,7 @@ func _ready() -> void:
 			else:
 				payment = 10.0
 			var change_due := roundf((payment - price) * 100.0) / 100.0
-			EventBus.cash_dropped.emit(Vector3(0.0, 1.054, -0.40), payment, change_due)
+			EventBus.sale_initiated.emit(payment, change_due)
 	)
 	$Panel/VBox/TempSlider.value_changed.connect(
 		func(v: float): EventBus.debug_set_temperature.emit(v)
@@ -79,6 +85,28 @@ func _ready() -> void:
 		time_row.add_child(btn)
 	vbox.add_child(time_row)
 	EventBus.debug_set_time_scale.connect(func(s: float): Engine.time_scale = s)
+
+
+	# House color toggles
+	var roofs_cb := CheckBox.new()
+	roofs_cb.text = "Color Roofs"
+	roofs_cb.button_pressed = GameState.color_roofs
+	roofs_cb.toggled.connect(
+		func(v: bool):
+			GameState.color_roofs = v
+			EventBus.debug_set_color_roofs.emit(v)
+	)
+	vbox.add_child(roofs_cb)
+
+	var walls_cb := CheckBox.new()
+	walls_cb.text = "Color Walls"
+	walls_cb.button_pressed = GameState.color_walls
+	walls_cb.toggled.connect(
+		func(v: bool):
+			GameState.color_walls = v
+			EventBus.debug_set_color_walls.emit(v)
+	)
+	vbox.add_child(walls_cb)
 
 
 	# Reset save button

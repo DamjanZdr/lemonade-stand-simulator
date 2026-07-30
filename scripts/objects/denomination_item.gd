@@ -9,6 +9,7 @@ extends Interactable
 func interact(_player: Node) -> void:
 	var reg := _find_register()
 	if reg:
+		AudioManager.play_sfx("coins" if cents < 100 else "cash", global_position, -1.0, 0.1)
 		reg.add_denomination(cents)
 
 
@@ -16,7 +17,7 @@ func get_hint(_player: Node) -> String:
 	var reg := _find_register()
 	if reg == null or not reg.is_active:
 		return ""
-	return "Add %s" % _label()
+	return "Cash | LMB: add %s" % _label()
 
 
 func set_highlight(on: bool) -> void:

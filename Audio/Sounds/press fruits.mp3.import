@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://q8npf0jo5ssd"
+path="res://.godot/imported/press fruits.mp3-8a88b3cea890dc77b68934488749be50.mp3str"
+
+[deps]
+
+source_file="res://Audio/Sounds/press fruits.mp3"
+dest_files=["res://.godot/imported/press fruits.mp3-8a88b3cea890dc77b68934488749be50.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

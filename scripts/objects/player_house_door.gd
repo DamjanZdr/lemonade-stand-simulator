@@ -19,8 +19,8 @@ func interact(_player: Node) -> void:
 
 func get_hint(_player: Node) -> String:
 	if _ready_to_end:
-		return "LMB: End day"
-	return "It's not 6 PM yet"
+		return "Door | LMB: end day"
+	return "Door | it's not 6 PM yet"
 
 
 func set_highlight(on: bool) -> void:

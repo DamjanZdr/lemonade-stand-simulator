@@ -20,8 +20,8 @@ func interact(_player: Node) -> void:
 
 func get_hint(_player: Node) -> String:
 	if _ready_to_end:
-		return "LMB: End day"
-	return "It's not 6 PM yet"
+		return "Sign | LMB: end day"
+	return "Sign | it's not 6 PM yet"
 
 
 func _on_day_time_over() -> void:

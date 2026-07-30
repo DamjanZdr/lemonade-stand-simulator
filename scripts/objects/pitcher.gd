@@ -6,7 +6,11 @@ extends Interactable
 ## COMPLETE: has lemon+water ready; can still add sugar/ice until first cup poured.
 ## SERVING:  placed anywhere; player with empty cup clicks to fill a cup.
 
-enum PitcherState { PREPPING, COMPLETE, SERVING }
+enum PitcherState {
+	PREPPING,
+	COMPLETE,
+	SERVING,
+}
 
 var state: PitcherState = PitcherState.PREPPING
 var fruit_type: String = "" ## e.g., "lemon"; empty when no fruit added yet.
@@ -27,11 +31,12 @@ var _prep_scale: Vector3 = Vector3.ONE
 @onready var _glass_mesh: MeshInstance3D = $pitcher/Cylinder_001
 @onready var _lemonade_eraser: Node3D = $LemonadeFill/LemonadeEraser
 
-var _fill_stages: Array[Node3D] = []
 var _drop_busy: bool = false # true while a drop animation is playing
 var _eraser_tween: Tween = null
 var _press_eraser_tween: Tween = null
 var _suppress_eraser_updates: bool = false
+var _last_liquid_color: Color = Color(0.0, 0.0, 0.0, -1.0)
+var _last_eraser_target_y: float = -1000.0
 
 const ERASER_Y_EMPTY: float = 1.752
 const ERASER_Y_FULL: float = 5.245
@@ -47,38 +52,17 @@ const MAX_FILL_VOLUME: float = 10.0
 
 # _liquid_material is NOT cached to avoid hot-reload / CSG rebuild resets
 
-const _FILL_PATHS: Array = [
-	"res://blender/lemonade 0.glb",
-	"res://blender/lemonade 1.glb",
-	"res://blender/lemonade 2.glb",
-	"res://blender/lemonade 3.glb",
-	"res://blender/lemonade 4.glb",
-	"res://blender/lemonade 5.glb",
-	"res://blender/lemonade 6.glb",
-	"res://blender/lemonade 7.glb",
-	"res://blender/lemonade 8.glb",
-	"res://blender/lemonade10.glb",
-]
-
 
 func _ready() -> void:
 	add_to_group("pitcher")
 	prep_position = global_position
 	_prep_scale = scale
 	EventBus.debug_empty_pitcher.connect(_on_debug_empty_pitcher)
-	# Hide the original GLB lemonade cylinder.
-	var orig := $lemonade/Cylinder_002 as MeshInstance3D
-	if orig:
-		orig.visible = false
-	# Load each fill-stage model, add as child of $lemonade, start hidden.
-	for path in _FILL_PATHS:
-		var scene := load(path) as PackedScene
-		if scene:
-			var inst := scene.instantiate() as Node3D
-			inst.visible = false
-			inst.scale = Vector3.ONE
-			_lemonade_node.add_child(inst)
-			_fill_stages.append(inst)
+	# Hide the original GLB lemonade cylinders (the CSG fill is used instead).
+	for n in ["Cylinder_002", "Cylinder_003"]:
+		var orig := _lemonade_node.get_node_or_null(n) as MeshInstance3D
+		if orig:
+			orig.visible = false
 	_fix_glass_transparency()
 	_update_eraser_position()
 	update_label()
@@ -110,10 +94,8 @@ func is_fully_empty() -> bool:
 
 
 func add_ingredient(ingredient_type: String, amount: float) -> bool:
-	print("PITCHER add_ingredient called: type=", ingredient_type, " amount=", amount, " | BEFORE state=", state, " fruit_type=", fruit_type, " fruit_count=", fruit_count, " water=", water)
 	# Can only add ingredients in PREPPING or COMPLETE state
 	if state != PitcherState.PREPPING and state != PitcherState.COMPLETE:
-		print("PITCHER add_ingredient REJECTED: wrong state ", state)
 		return false
 
 	# Once cups are poured, can no longer add sugar or ice
@@ -127,18 +109,14 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 		_ when is_fruit:
 			# Can only add fruit in PREPPING state (not COMPLETE)
 			if state == PitcherState.COMPLETE:
-				print("PITCHER add_ingredient REJECTED: cannot add fruit in COMPLETE state")
 				return false
 			if get_liquid_volume() + amount > Balancing.PITCHER_MAX_LIQUID:
-				print("PITCHER add_ingredient REJECTED: would exceed max liquid")
 				return false
 			# Reject mixed fruits in the same pitcher.
 			if fruit_type != "" and fruit_type != ingredient_type:
 				EventBus.interaction_hint_changed.emit(
-					"Cannot mix %s with %s!" % [
-						ingredient_type.capitalize(),
-						fruit_type.capitalize(),
-					],
+					"Cannot mix %s with %s!"
+					% [ingredient_type.capitalize(), fruit_type.capitalize()],
 				)
 				return false
 			if fruit_type == "":
@@ -169,7 +147,6 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 			return false
 	update_label()
 	EventBus.pitcher_ingredient_added.emit(ingredient_type, amount)
-	print("PITCHER add_ingredient: ", ingredient_type, " +", amount, " | state=", state, " fruit_type=", fruit_type, " fruit_count=", fruit_count, " water=", water)
 	return true
 
 
@@ -205,7 +182,7 @@ func pour_portion() -> Dictionary:
 		ice = 0.0
 	update_label()
 	update_liquid_color()
-	print("PITCHER pour_portion: portion removed, fruit_count=", fruit_count, " water=", water, " liquid=", get_liquid_volume())
+	AudioManager.play_sfx("fill_up_cup", global_position)
 	return snap
 
 
@@ -258,11 +235,8 @@ func interact(player: Node) -> void:
 					_animate_drop(itype, amount)
 				else:
 					EventBus.interaction_hint_changed.emit(
-						"Cannot add %s! (State: %s, Cups poured: %d)" % [
-							itype,
-							str(state),
-							cups_poured,
-						],
+						"Cannot add %s! (State: %s, Cups poured: %d)"
+						% [itype, str(state), cups_poured],
 					)
 				return
 			# Fill cup if pitcher has liquid and player holds empty cup
@@ -326,26 +300,22 @@ func get_hint(player: Node) -> String:
 		PitcherState.PREPPING, PitcherState.COMPLETE:
 			if p.held_item == p.HeldItem.SUPPLY_BOX \
 					and p.held_item_data.get("source") == "bin_scoop":
-				return "Click: add %s to pitcher (%s)" % [
-					p.held_item_data.get("ingredient_type", ""),
-					get_contents_string(),
-				]
+				return "Pitcher | LMB: add %s (%s)" % [p.held_item_data.get("ingredient_type", ""), get_contents_string()]
 			if get_liquid_volume() <= 0.0:
-				return "LMB: pick up pitcher  |  RMB: pick up pitcher"
-			# Has liquid, can fill cups or pick up
+				return "Pitcher | LMB: pick up"
 			if p.held_item == p.HeldItem.CUP_EMPTY:
-				return "LMB: fill cup  |  RMB: pick up (%s, %.1f liq)" % [
+				return "Pitcher | LMB: fill cup  |  RMB: pick up (%s, %.1f liq)" % [
 					get_contents_string(),
 					get_liquid_volume(),
 				]
-			return "LMB: pick up pitcher  |  RMB: throw out (%s)" % get_contents_string()
+			return "Pitcher | LMB: pick up  |  RMB: throw out (%s)" % get_contents_string()
 		PitcherState.SERVING:
 			if p.held_item == p.HeldItem.CUP_EMPTY:
-				return "LMB: fill cup  |  RMB: pick up (%s, %.1f liq)" % [
+				return "Pitcher | LMB: fill cup  |  RMB: pick up (%s, %.1f liq)" % [
 					get_contents_string(),
 					get_liquid_volume(),
 				]
-			return "LMB: pick up pitcher  |  RMB: throw out (%s)" % get_contents_string()
+			return "Pitcher | LMB: pick up  |  RMB: throw out (%s)" % get_contents_string()
 	return ""
 
 
@@ -404,6 +374,9 @@ func _update_eraser_position(duration: float = 0.15) -> void:
 	var vol := get_liquid_volume()
 	var t := clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
 	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
+	if abs(target_y - _last_eraser_target_y) < 0.05:
+		return
+	_last_eraser_target_y = target_y
 	if _lemonade_eraser != null:
 		if _eraser_tween and _eraser_tween.is_valid():
 			_eraser_tween.kill()
@@ -520,7 +493,7 @@ func _animate_drop(ingredient_type: String, amount: float) -> void:
 		func():
 			drop_mesh.queue_free()
 			add_ingredient(ingredient_type, amount)
-			_drop_busy = false
+			_drop_busy = false,
 	)
 
 
@@ -574,7 +547,6 @@ func update_liquid_color() -> void:
 			blended = Color(1.0, 0.9, 0.3, 1.0)
 	else:
 		blended = _get_current_liquid_color()
-	print("PITCHER update_liquid_color: liquid=", total, " fruit_type=", fruit_type, " fruit_count=", fruit_count, " water=", water, " blended=", blended)
 	_apply_liquid_color(blended)
 
 
@@ -605,6 +577,9 @@ func _get_fruit_color(ftype: String) -> Color:
 
 
 func _apply_liquid_color(color: Color) -> void:
+	if color == _last_liquid_color:
+		return
+	_last_liquid_color = color
 	var mesh := $LemonadeFill/LemonadeMesh as CSGMesh3D
 	if mesh == null or mesh.mesh == null:
 		return

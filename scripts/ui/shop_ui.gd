@@ -41,8 +41,14 @@ func _on_day_phase_changed(phase: int, day: int) -> void:
 		_reset_quantities()
 		panel.visible = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("set_hud_visible"):
+			hud.set_hud_visible(false)
 	else:
 		panel.visible = false
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("set_hud_visible"):
+			hud.set_hud_visible(true)
 
 
 func set_auto_show(enabled: bool) -> void:
@@ -69,15 +75,26 @@ func _build_grid() -> void:
 	for item in _items:
 		var id: String = item["id"]
 		_quantities[id] = 0
+		var is_locked_fruit := (
+			id in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(id)
+		)
 
 		# Name label
 		var name_lbl := Label.new()
-		name_lbl.text = item["name"]
+		if is_locked_fruit:
+			name_lbl.text = "\U0001F512 " + item["name"]
+			name_lbl.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45))
+		else:
+			name_lbl.text = item["name"]
 		grid.add_child(name_lbl)
 
 		# Cost label
 		var cost_lbl := Label.new()
-		cost_lbl.text = "$%.0f / %d" % [item["cost"], item["qty"]]
+		if is_locked_fruit:
+			cost_lbl.text = "Locked"
+			cost_lbl.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45))
+		else:
+			cost_lbl.text = "$%.0f / %d" % [item["cost"], item["qty"]]
 		cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		grid.add_child(cost_lbl)
 
@@ -88,7 +105,11 @@ func _build_grid() -> void:
 		spin.step = 1
 		spin.value = 0
 		spin.custom_minimum_size = Vector2(80, 0)
-		spin.value_changed.connect(func(v: float): _on_qty_changed(id, v))
+		spin.editable = not is_locked_fruit
+		spin.value_changed.connect(
+			func(v: float):
+				_on_qty_changed(id, v),
+		)
 		spin.name = "Spin_" + id
 		grid.add_child(spin)
 
@@ -96,7 +117,11 @@ func _build_grid() -> void:
 		var btn := Button.new()
 		btn.text = "Buy"
 		btn.name = "Btn_" + id
-		btn.pressed.connect(func(): _buy_item(id))
+		btn.disabled = is_locked_fruit
+		btn.pressed.connect(
+			func():
+				_buy_item(id),
+		)
 		grid.add_child(btn)
 
 
@@ -119,11 +144,14 @@ func _on_qty_changed(id: String, value: float) -> void:
 func _update_buttons() -> void:
 	for item in _items:
 		var id: String = item["id"]
+		var is_locked_fruit := (
+			id in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(id)
+		)
 		var qty: int = _quantities.get(id, 0)
 		var total: float = qty * item["cost"]
 		var btn := grid.get_node_or_null("Btn_" + id) as Button
 		if btn:
-			btn.disabled = qty <= 0 or GameState.money < total
+			btn.disabled = is_locked_fruit or qty <= 0 or GameState.money < total
 
 
 func update_buttons() -> void:

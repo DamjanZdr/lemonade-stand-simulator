@@ -220,9 +220,10 @@ func get_slot_position(slot_index: int) -> Vector3:
 
 
 func _random_fruit() -> String:
-	if GameState.FRUIT_TYPES.is_empty():
+	var unlocked := UpgradeManager.get_unlocked_fruits()
+	if unlocked.is_empty():
 		return "lemon"
-	return GameState.FRUIT_TYPES[randi() % GameState.FRUIT_TYPES.size()]
+	return unlocked[randi() % unlocked.size()]
 
 
 ## Called by PedestrianSpawner once the pedestrian has physically walked to the slot.

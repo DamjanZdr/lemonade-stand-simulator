@@ -7,9 +7,9 @@ extends DirectionalLight3D
 @export var end_rotation_deg: Vector3 = Vector3(-70.0, 42.0, -42.0)
 
 ## Light energy at the start of the day.
-@export var energy_start: float = 1.0
+@export var energy_start: float = 1.1
 ## Peak light energy at midday.
-@export var energy_mid: float = 1.2
+@export var energy_mid: float = 1.05
 ## Light energy at the end of the day.
 @export var energy_end: float = 0.2
 
@@ -20,7 +20,6 @@ func _ready() -> void:
 	EventBus.day_timer_updated.connect(_on_day_timer_updated)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	_update_for_time(0.0)
-	directional_shadow_max_distance = 60.0
 
 
 func _on_day_timer_updated(time_left: float, total_time: float) -> void:
@@ -42,14 +41,14 @@ func _update_for_time(t: float) -> void:
 	# t = 0.5 (midday) → peak energy
 	# t = 1 (end of day) → end rotation/energy
 	var start_euler := Vector3(
-			deg_to_rad(start_rotation_deg.x),
-			deg_to_rad(start_rotation_deg.y),
-			deg_to_rad(start_rotation_deg.z),
+		deg_to_rad(start_rotation_deg.x),
+		deg_to_rad(start_rotation_deg.y),
+		deg_to_rad(start_rotation_deg.z),
 	)
 	var end_euler := Vector3(
-			deg_to_rad(end_rotation_deg.x),
-			deg_to_rad(end_rotation_deg.y),
-			deg_to_rad(end_rotation_deg.z),
+		deg_to_rad(end_rotation_deg.x),
+		deg_to_rad(end_rotation_deg.y),
+		deg_to_rad(end_rotation_deg.z),
 	)
 	var start_rot := Quaternion.from_euler(start_euler)
 	var end_rot := Quaternion.from_euler(end_euler)

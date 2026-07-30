@@ -31,5 +31,5 @@ func get_hint(player: Node) -> String:
 	if p.held_item == p.HeldItem.CONTAINER:
 		var data := p.held_item_data
 		if data.get("container_type", "") == "pitcher":
-			return "Click: place pitcher on counter"
+			return "Counter | LMB: place pitcher"
 	return ""
