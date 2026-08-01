@@ -116,16 +116,19 @@ func _sync_ice_display(animate_add: bool = false) -> void:
 
 func update_display() -> void:
 	if ingredient_type == "ice" and _ice_bucket != null:
-		amount_label.text = _label_format % [current_amount, max_capacity]
+		amount_label.visible = false
 		_sync_ice_display()
 		return
 	var visible_count: int = mini(roundi(current_amount), _item_nodes.size())
 	for i in range(_item_nodes.size()):
 		_item_nodes[i].visible = i < visible_count
-	amount_label.text = _label_format % [current_amount, max_capacity]
+	if ingredient_type == "sugar":
+		amount_label.visible = false
+	else:
+		amount_label.text = _label_format % [current_amount, max_capacity]
 
 
-func add_amount(qty: float) -> void:
+func add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if ingredient_type == "ice" and _ice_bucket != null:
 		current_amount = minf(current_amount + qty, max_capacity)
 		_sync_ice_display(true)
@@ -136,15 +139,19 @@ func add_amount(qty: float) -> void:
 	update_display()
 	var new_count := mini(roundi(current_amount), _item_nodes.size())
 	for i in range(old_count, new_count):
-		_drop_item(i)
+		_drop_item(i, from_pos)
 	EventBus.bin_amount_changed.emit(ingredient_type, current_amount)
 
 
-func _drop_item(index: int) -> void:
+func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 	var node := _item_nodes[index]
-	node.position.y = _item_origins[index].y + drop_height
+	var origin := _item_origins[index]
+	if from_pos != Vector3.ZERO:
+		_animate_throw_arc(node, from_pos, origin)
+		return
+	node.position.y = origin.y + drop_height
 	var tween := create_tween()
-	tween.tween_property(node, "position:y", _item_origins[index].y, 0.25) \
+	tween.tween_property(node, "position:y", origin.y, 0.25) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 
 
@@ -178,7 +185,7 @@ func interact(player: Node) -> void:
 		# Return: player holds a scoop of this same ingredient → put it back
 		if data.get("source") == "bin_scoop" \
 				and data.get("ingredient_type", "") == ingredient_type:
-			add_amount(data.get("amount", Balancing.GRAB_AMOUNT))
+			add_amount(data.get("amount", Balancing.GRAB_AMOUNT), _get_hand_pos(player))
 			player.clear_held()
 			return
 		# Deposit delivery box — 1 unit per click so the player sees the bin fill up.
@@ -189,7 +196,7 @@ func interact(player: Node) -> void:
 			if space <= 0.0:
 				return # hint already says "Bin full"
 			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
-			add_amount(deposited)
+			add_amount(deposited, _get_hand_pos(player))
 			EventBus.supply_box_deposited.emit(ingredient_type, deposited)
 			var remaining: float = to_deposit - deposited
 			if remaining > 0.0:
@@ -263,7 +270,8 @@ func get_hint(player: Node) -> String:
 
 	if held_item == HELD_NONE:
 		if current_amount >= Balancing.GRAB_AMOUNT:
-			return "%s Bin | LMB: take %s  |  RMB: pick up  (%.0f left)" % [
+			return "%s Bin | LMB: take %s (%.0f)  |  RMB: pick up" % [
+				ingredient_type.capitalize(),
 				ingredient_type.capitalize(),
 				current_amount,
 			]

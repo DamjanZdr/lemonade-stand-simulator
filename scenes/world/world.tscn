@@ -76,10 +76,16 @@ background_mode = 2
 sky = SubResource("Sky_main")
 ambient_light_source = 3
 ambient_light_sky_contribution = 0.8
-tonemap_white = 6.0
-ssr_enabled = true
+tonemap_white = 6.01
 ssao_enabled = true
-ssil_enabled = true
+ssao_radius = 1.0
+ssao_intensity = 2.0
+ssao_power = 1.5
+sdfgi_enabled = true
+sdfgi_frames_to_converge = 4
+sdfgi_frames_to_update_light = 2
+sdfgi_ray_count = 1
+sdfgi_probe_bias = 1.1
 volumetric_fog_enabled = true
 volumetric_fog_density = 0.001
 volumetric_fog_emission = Color(0.5780994, 0.8133498, 0.85745275, 1)
@@ -151,6 +157,18 @@ light_energy = 0.5
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=305494689]
 environment = SubResource("Environment_main")
+
+[node name="VoxelGI" type="VoxelGI" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.5, -2)
+size = Vector3(10, 5, 8)
+subdiv = 256
+
+[node name="ReflectionProbe" type="ReflectionProbe" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.5, -2)
+size = Vector3(10, 6, 8)
+update_mode = 0
+intensity = 1.0
+max_distance = 20.0
 
 [node name="Routes" type="Node3D" parent="." unique_id=1364106154]
 
@@ -297,7 +315,7 @@ script = ExtResource("71_trash")
 
 [node name="ColorManager" type="Node" parent="Managers" unique_id=736981231]
 script = ExtResource("46_fqf7g")
-wall_default_color = Color(1, 1, 1, 1)
+wall_default_color = Color(0.78626776, 0.76280415, 0.6887659, 1)
 roof_colors = Array[Color]([Color(0.85490197, 0.69803923, 0.827451, 1), Color(0.42352942, 0.9607843, 0.88235295, 1), Color(0.7254902, 0.8509804, 0.43137255, 1), Color(0.92156863, 0.93333334, 0.19215687, 1), Color(0.85882354, 0.5137255, 0.5764706, 1)])
 wall_colors = Array[Color]([Color(0.42265648, 0.96156055, 0.88136154, 1), Color(0.8547164, 0.6989638, 0.8276675, 1), Color(0.7237331, 0.85128987, 0.43169385, 1), Color(0.86031544, 0.51238483, 0.5748986, 1), Color(0.92156863, 0.93333334, 0.19215687, 1)])
 

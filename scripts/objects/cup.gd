@@ -21,7 +21,7 @@ var _cup_fill_mesh: Node = null
 
 
 func _ready() -> void:
-	_cup_fill_mesh = model.find_child("CupFill", true, false)
+	_cup_fill_mesh = model.find_child("Fill", true, false)
 	_refresh_fill_visibility()
 
 
@@ -65,32 +65,40 @@ func _refresh_fill_visibility() -> void:
 static func make_hand_mesh(filled: bool, color: Color = Color(1.0, 0.9, 0.3, 1.0)) -> Node3D:
 	var inst := CUP_GLB.instantiate() as Node3D
 	inst.scale = Vector3.ONE * 0.05
-	var fill_node := inst.find_child("CupFill", true, false)
+	var fill_node := inst.find_child("Fill", true, false)
 	if fill_node:
 		fill_node.visible = filled
 		if filled:
-			var mesh := fill_node as MeshInstance3D
-			if mesh != null and mesh.mesh != null:
-				var base_mat := mesh.mesh.surface_get_material(0)
+			_apply_fill_color_to_node(fill_node, color)
+	return inst
+
+
+static func _apply_fill_color_to_node(node: Node, color: Color) -> void:
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		if mi.mesh != null:
+			var base_mat := mi.mesh.surface_get_material(0)
+			if base_mat != null:
+				var mat := base_mat.duplicate() as StandardMaterial3D
+				mat.albedo_color = color
+				mi.material_override = mat
+				return
+	# If the node itself isn't a MeshInstance3D, search its children
+	for child in node.get_children(true):
+		if child is MeshInstance3D:
+			var mi := child as MeshInstance3D
+			if mi.mesh != null:
+				var base_mat := mi.mesh.surface_get_material(0)
 				if base_mat != null:
 					var mat := base_mat.duplicate() as StandardMaterial3D
 					mat.albedo_color = color
-					mesh.material_override = mat
-	return inst
+					mi.material_override = mat
 
 
 func apply_fill_color() -> void:
 	if _cup_fill_mesh == null:
 		return
-	var mesh := _cup_fill_mesh as MeshInstance3D
-	if mesh == null or mesh.mesh == null:
-		return
-	var base_mat := mesh.mesh.surface_get_material(0)
-	if base_mat == null:
-		return
-	var mat := base_mat.duplicate() as StandardMaterial3D
-	mat.albedo_color = fill_color
-	mesh.material_override = mat
+	_apply_fill_color_to_node(_cup_fill_mesh, fill_color)
 
 
 func _make_hand_mesh(filled: bool) -> Node3D:

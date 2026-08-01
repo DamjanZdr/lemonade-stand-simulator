@@ -258,21 +258,9 @@ theme_override_styles/panel = SubResource("tab_normal")
 
 [node name="StepLbl_analytics" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_analytics"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Analytics"
-horizontal_alignment = 1
-
-[node name="StepPC_upgrades" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
-layout_mode = 2
-custom_minimum_size = Vector2(130, 44)
-theme_override_styles/panel = SubResource("tab_normal")
-
-[node name="StepLbl_upgrades" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_upgrades"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 18
-text = "Upgrades"
 horizontal_alignment = 1
 
 [node name="StepPC_shop" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
@@ -282,21 +270,33 @@ theme_override_styles/panel = SubResource("tab_normal")
 
 [node name="StepLbl_shop" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_shop"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Shop"
 horizontal_alignment = 1
 
-[node name="StepPC_recipes" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+[node name="StepPC_upgrades" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
 custom_minimum_size = Vector2(130, 44)
 theme_override_styles/panel = SubResource("tab_normal")
 
-[node name="StepLbl_recipes" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_recipes"]
+[node name="StepLbl_upgrades" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_upgrades"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "Recipes"
+text = "Upgrades"
+horizontal_alignment = 1
+
+[node name="StepPC_employees" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
+layout_mode = 2
+custom_minimum_size = Vector2(130, 44)
+theme_override_styles/panel = SubResource("tab_normal")
+
+[node name="StepLbl_employees" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_employees"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Employees"
 horizontal_alignment = 1
 
 [node name="Content" type="MarginContainer" parent="MainHBox/Panel/VBox"]
@@ -380,43 +380,6 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
-[node name="CatRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ShopPage"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Cat_consumables" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/CatRow"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
-theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
-theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 16
-theme_override_styles/normal = SubResource("btn_secondary")
-theme_override_styles/hover = SubResource("btn_secondary_hover")
-theme_override_styles/pressed = SubResource("btn_secondary_pressed")
-text = "Consumables"
-
-[node name="Cat_equipment" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/CatRow"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
-theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
-theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 16
-theme_override_styles/normal = SubResource("btn_secondary")
-theme_override_styles/hover = SubResource("btn_secondary_hover")
-theme_override_styles/pressed = SubResource("btn_secondary_pressed")
-text = "Equipment"
-
-[node name="Cat_employees" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/CatRow"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.88, 0.82, 1)
-theme_override_colors/font_hover_color = Color(0.95, 0.92, 0.85, 1)
-theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 16
-theme_override_styles/normal = SubResource("btn_secondary")
-theme_override_styles/hover = SubResource("btn_secondary_hover")
-theme_override_styles/pressed = SubResource("btn_secondary_pressed")
-text = "Employees"
-
 [node name="ShopSplit" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/ShopPage"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -484,18 +447,6 @@ theme_override_styles/hover = SubResource("btn_primary_hover")
 theme_override_styles/pressed = SubResource("btn_primary_pressed")
 text = "Checkout"
 
-[node name="EmployeesPlaceholder" type="CenterContainer" parent="MainHBox/Panel/VBox/Content/ShopPage"]
-visible = false
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="Label" type="Label" parent="MainHBox/Panel/VBox/Content/ShopPage/EmployeesPlaceholder"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.62, 1)
-theme_override_font_sizes/font_size = 22
-text = "Under Construction"
-horizontal_alignment = 1
-
 [node name="PricesPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
 visible = false
 layout_mode = 2
@@ -542,11 +493,11 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="RecipesPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
+[node name="EmployeesPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 alignment = 1
 
 [node name="BottomBar" type="VBoxContainer" parent="MainHBox/Panel/VBox"]

@@ -21,6 +21,7 @@ var _cursor_timer := 0.0
 func _ready() -> void:
 	_scan_labels()
 	_refresh_all_labels()
+	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 
 
 func get_hint(_player: Node) -> String:
@@ -198,7 +199,7 @@ func _start_edit(label_idx: int, field_idx: int) -> void:
 		label_idx = next
 	_label_index = label_idx
 	_field_index = field_idx
-	_edit_buffer = _label_data[label_idx]["value%d" % (field_idx + 1)]
+	_edit_buffer = ""
 	_cursor_visible = true
 	_cursor_timer = 0.0
 	_refresh_all_labels()
@@ -254,14 +255,14 @@ func _move_vertical(direction: int) -> void:
 func _store_buffer() -> void:
 	if _label_index < 0:
 		return
+	if _edit_buffer == "":
+		return
 	_label_data[_label_index]["value%d" % (_field_index + 1)] = _edit_buffer
 
 
 func _append_char(c: String) -> void:
 	_edit_buffer = c
-	_cursor_visible = true
-	_cursor_timer = 0.0
-	_refresh_label(_label_index)
+	_store_buffer()
 	_confirm_and_next()
 
 
@@ -301,3 +302,21 @@ func _next_editable_index(from: int, direction: int) -> int:
 		if not _label_data[idx].get("locked", false):
 			return idx
 	return -1
+
+
+func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
+	for i in range(_label_data.size()):
+		var data: Dictionary = _label_data[i]
+		var fruit_id: String = data.get("name", "").to_lower()
+		if fruit_id in GameState.FRUIT_TYPES:
+			var was_locked: bool = data.get("locked", false)
+			var now_locked := not UpgradeManager.is_fruit_unlocked(fruit_id)
+			data["locked"] = now_locked
+			if was_locked != now_locked:
+				var label: Label3D = _label_nodes[i]
+				var parent_title := label.get_parent() as Label3D
+				if parent_title != null:
+					var locked_lbl := parent_title.get_node_or_null(label.name + "Locked") as Label3D
+					if locked_lbl != null:
+						locked_lbl.visible = now_locked
+	_refresh_all_labels()

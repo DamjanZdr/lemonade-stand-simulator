@@ -121,10 +121,7 @@ func update_queue_target(target: Vector3) -> void:
 
 
 func get_route_continuation() -> Dictionary:
-	return {
-		"waypoints": _waypoints,
-		"next_index": _waypoint_idx + 1,
-	}
+	return { "waypoints": _waypoints, "next_index": _waypoint_idx + 1 }
 
 
 func _physics_process(delta: float) -> void:
@@ -370,7 +367,7 @@ func _build_order_bubble() -> void:
 	_order_panel.pixel_size = 0.0008
 	_order_panel.texture = _create_white_texture()
 	_order_panel.modulate = Color(1, 1, 1, 0.95)
-	_order_panel.position = Vector3(0, -0.65, -0.01)
+	_order_panel.position = Vector3(0, -0.35, -0.01)
 	_order_panel.sorting_offset = -1.0
 	_order_panel.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	_ui_anchor.add_child(_order_panel)
@@ -388,7 +385,7 @@ func _build_order_bubble() -> void:
 	_order_label.width = 0
 	_order_label.sorting_offset = 1.0
 	_order_label.modulate = Color(1, 1, 1, 1)
-	_order_label.position = Vector3(0, -0.65, 0)
+	_order_label.position = Vector3(0, -0.35, 0)
 	_order_label.visible = false
 	_ui_anchor.add_child(_order_label)
 	_ui_anchor.move_child(_order_label, -1)

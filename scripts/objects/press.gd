@@ -10,6 +10,7 @@ var _pressing: bool = false
 var _press_progress: float = 0.0
 var _press_duration: float = 1.5
 var _pressed_so_far: float = 0.0
+var _drop_busy: bool = false
 
 const SNAP_DISTANCE: float = 1.5
 const ANIM_FPS: float = 30.0
@@ -30,7 +31,6 @@ var _snapped_pitcher: Pitcher = null
 
 @onready var _mesh: Node3D = $PressMesh
 @onready var _juice_mesh: Node3D = $press/JuiceMesh
-@onready var _progress_bar: ProgressBar = $ProgressBarViewport/ProgressBar
 @onready var _snap_point: Marker3D = $PitcherSnapPoint
 @onready var _model: Node3D = $press
 @onready var _anim_player: AnimationPlayer = (
@@ -45,8 +45,6 @@ var _last_juice_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 func _ready() -> void:
 	add_to_group("press")
 	add_to_group("container")
-	if _progress_bar:
-		_progress_bar.value = 0.0
 	_build_merged_animation()
 
 
@@ -55,8 +53,6 @@ func _process(delta: float) -> void:
 
 	if _pressing:
 		_press_progress += delta
-		if _progress_bar:
-			_progress_bar.value = (_press_progress / _press_duration) * 100.0
 		# Incrementally add fruit juice to the pitcher as the press goes down
 		if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and fruit_count > 0.0:
 			var per_fruit := _press_duration / fruit_count
@@ -113,6 +109,8 @@ func interact(player: Node) -> void:
 	# Deposit fruit scoops into press
 	if p.held_item == p.HeldItem.SUPPLY_BOX \
 			and p.held_item_data.get("source") == "bin_scoop":
+		if _drop_busy:
+			return
 		var itype: String = p.held_item_data.get("ingredient_type", "")
 		var amount: float = p.held_item_data.get("amount", 0.0)
 		if not _is_fruit(itype):
@@ -124,12 +122,9 @@ func interact(player: Node) -> void:
 				"Cannot mix %s with %s!" % [itype.capitalize(), fruit_type.capitalize()],
 			)
 			return
-		fruit_type = itype
-		fruit_count += amount
+		var start_pos := _get_hand_pos(player)
 		p.clear_held()
-		EventBus.interaction_hint_changed.emit(
-			"%s in press: %.0f" % [fruit_type.capitalize(), fruit_count],
-		)
+		_animate_fruit_drop(itype, amount, start_pos)
 		return
 
 	# Start pressing if fruits inside, hands empty, and a valid pitcher is snapped
@@ -183,6 +178,8 @@ func _get_pitcher_hint() -> String:
 func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null:
+		return ""
+	if _drop_busy:
 		return ""
 	if _pressing:
 		return "Press | pressing %s..." % fruit_type.capitalize()
@@ -371,9 +368,6 @@ func _start_press() -> void:
 	_pressed_so_far = 0.0
 	_press_duration = _get_press_duration()
 	AudioManager.play_sfx("press_fruits", global_position, _press_duration)
-	if _progress_bar:
-		_progress_bar.visible = true
-		_progress_bar.value = 0.0
 	# Start merged animation at frame 0 and pause so we can drive it manually
 	if _anim_player != null and _merged_anim != null:
 		_anim_player.play(MERGED_ANIM_NAME)
@@ -398,9 +392,6 @@ func _start_press() -> void:
 func _finish_press() -> void:
 	_pressing = false
 	_press_progress = 0.0
-	if _progress_bar:
-		_progress_bar.value = 0.0
-		_progress_bar.visible = false
 	if _mesh:
 		_mesh.position.y = 0.0
 	# Drain JuiceMesh from top to bottom instead of snapping off
@@ -530,3 +521,46 @@ func _set_juice_color(ftype: String) -> void:
 		var dup := mat.duplicate() as StandardMaterial3D
 		dup.albedo_color = color
 		mi.material_override = dup
+
+
+func _animate_fruit_drop(itype: String, amount: float, start_pos: Vector3) -> void:
+	_drop_busy = true
+	var fruit_mesh := _make_fruit_mesh(itype)
+	add_child(fruit_mesh)
+	var target_local := Vector3.ZERO
+	var press_area := _model.get_node_or_null("PressArea") as Node3D
+	if press_area:
+		target_local = to_local(press_area.global_position)
+	var tween := _animate_throw_arc(fruit_mesh, start_pos, target_local)
+	if tween:
+		tween.finished.connect(
+			func():
+				fruit_mesh.queue_free()
+				fruit_type = itype
+				fruit_count += amount
+				_drop_busy = false
+				AudioManager.play_sfx("fruit_in_crate", global_position)
+				EventBus.interaction_hint_changed.emit(
+					"%s in press: %.0f" % [fruit_type.capitalize(), fruit_count],
+				)
+		)
+	else:
+		fruit_mesh.queue_free()
+		fruit_type = itype
+		fruit_count += amount
+		_drop_busy = false
+
+
+func _make_fruit_mesh(itype: String) -> Node3D:
+	var path := "res://blender/%s.glb" % itype
+	var s := load(path) as PackedScene
+	if s:
+		var inst := s.instantiate() as Node3D
+		inst.scale = Vector3.ONE * 0.075
+		return inst
+	var m := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.038
+	sphere.height = 0.076
+	m.mesh = sphere
+	return m

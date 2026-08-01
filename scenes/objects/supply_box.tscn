@@ -94,12 +94,50 @@ transform = Transform3D(1, 0, -1.7484555e-07, 0, 1, 0, 1.7484555e-07, 0, 1, 0, 0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0023315, 0)
 shape = SubResource("BoxShape3D_box")
 
-[node name="Label" type="Label3D" parent="." unique_id=1625588565]
-transform = Transform3D(-2.1855693e-07, 1, 4.371139e-08, 0, -4.371139e-08, 1, 1, 2.1855693e-07, 9.553427e-15, -0.18586174, 0.1324458, -0.08165253)
+[node name="Icons" type="Node3D" parent="." unique_id=1099971471]
+
+[node name="IconSprite_Front" type="Sprite3D" parent="Icons" unique_id=930533307]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -0.0009935535, 0.05401981, -0.30323297)
+pixel_size = 0.000525
+
+[node name="QtyLabel_Front" type="Label3D" parent="Icons" unique_id=1695176271]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -0.00015738979, -0.1481996, -0.3032329)
 pixel_size = 0.0005
-text = "Lemon
-×10"
-font_size = 72
+text = "×10"
+font_size = 150
+outline_size = 16
+
+[node name="IconSprite_Back" type="Sprite3D" parent="Icons" unique_id=1074312664]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0007879101, 0.05281903, 0.30154112)
+pixel_size = 0.000525
+
+[node name="QtyLabel_Back" type="Label3D" parent="Icons" unique_id=509140649]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00015741214, -0.14854416, 0.302387)
+pixel_size = 0.0005
+text = "×10"
+font_size = 150
+outline_size = 16
+
+[node name="IconSprite_Left" type="Sprite3D" parent="Icons" unique_id=677720014]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.39, 0.056151956, 5.801022e-05)
+pixel_size = 0.000525
+
+[node name="QtyLabel_Left" type="Label3D" parent="Icons" unique_id=1881214555]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.38154107, -0.14726414, 0.0007879175)
+pixel_size = 0.0005
+text = "×10"
+font_size = 150
+outline_size = 16
+
+[node name="IconSprite_Right" type="Sprite3D" parent="Icons" unique_id=838475709]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.39, 0.055306077, -5.798787e-05)
+pixel_size = 0.000525
+
+[node name="QtyLabel_Right" type="Label3D" parent="Icons" unique_id=141713741]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.38069522, -0.14811003, 0.0009039007)
+pixel_size = 0.0005
+text = "×10"
+font_size = 150
 outline_size = 16
 
 [node name="box" type="Node3D" parent="." unique_id=1097776573]

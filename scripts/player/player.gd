@@ -164,6 +164,9 @@ func set_money_mode(active: bool) -> void:
 	if active and _hovered and is_instance_valid(_hovered):
 		_hovered.set_highlight(false)
 		_hovered = null
+	if active:
+		_last_hint = ""
+		EventBus.interaction_hint_changed.emit("")
 
 
 func _ready() -> void:
@@ -313,6 +316,8 @@ func _poll_hint() -> void:
 	if held_item_data.get("is_trash", false):
 		if interactable != null and interactable.is_in_group("trashcan"):
 			hint = interactable.get_hint(self)
+		elif held_item_data.get("trash_type", "") == "empty_box":
+			hint = "Trash | LMB: place or use trashcan"
 		else:
 			hint = "Trash | find a trashcan"
 		if hint != _last_hint:
@@ -415,10 +420,33 @@ func _primary_interact() -> void:
 		interactable.interact(self)
 		return
 
-	# Trash items can only be disposed of at a trashcan.
+	# Trash items can be disposed of at a trashcan.
+	# Empty box trash can also be placed on the ground like supply boxes.
 	if held_item_data.get("is_trash", false):
+		var is_box_trash: bool = held_item_data.get("trash_type", "") == "empty_box"
 		if interactable != null and interactable.is_in_group("trashcan"):
 			interactable.interact(self)
+			_destroy_ghost()
+			return
+		# Also check ray collider ancestor chain for trashcan group
+		if ray.is_colliding():
+			var node: Node = ray.get_collider()
+			while node != null:
+				if node is Interactable and node.is_in_group("trashcan"):
+					(node as Interactable).interact(self)
+					_destroy_ghost()
+					return
+				node = node.get_parent()
+		if is_box_trash:
+			if _ghost != null and _ghost_valid:
+				_drop_trash(_ghost.global_position)
+			elif ray.is_colliding() and _is_placement_surface(ray.get_collider()):
+				_drop_trash(
+					ray.get_collision_point()
+						+ Vector3(0, SupplyBox.bottom_offset, 0),
+				)
+			else:
+				_drop_trash()
 		return
 
 	# Containers can be recycled at a trashcan for 70% refund.
@@ -667,9 +695,12 @@ func _secondary_interact() -> void:
 		interactable.interact_secondary(self)
 		return
 
-	# Drop supply box
+	# Drop supply box or empty box trash
 	if held_item == HeldItem.SUPPLY_BOX and held_item_data.get("source") == "delivery":
 		_drop_held_box()
+	elif held_item == HeldItem.TRASH \
+			and held_item_data.get("trash_type", "") == "empty_box":
+		_drop_trash()
 
 
 func _place_cup_stack_from_box() -> void:
@@ -687,7 +718,7 @@ func _place_cup_stack_from_box() -> void:
 		interactable.add_cups(1)
 		update_held_amount(float(qty - 1))
 		if qty - 1 <= 0:
-			clear_held()
+			make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 		EventBus.supply_box_deposited.emit("cups", 1)
 		return
 
@@ -728,7 +759,7 @@ func _place_cup_stack_from_box() -> void:
 	# Deduct one cup from held box
 	update_held_amount(float(qty - 1))
 	if qty - 1 <= 0:
-		clear_held()
+		make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 
 	EventBus.container_placed.emit("cup_stack", stack)
 
@@ -927,6 +958,7 @@ func _regenerate_stack_offset() -> void:
 
 func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
 	var top := base
+	var top_y := _get_box_stack_y(base)
 	var base_pos := base.global_position
 	for node in get_tree().get_nodes_in_group("supply_box"):
 		if not is_instance_valid(node) or node == base:
@@ -937,9 +969,17 @@ func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
 		var dx := absf(box.global_position.x - base_pos.x)
 		var dz := absf(box.global_position.z - base_pos.z)
 		if dx < SupplyBox.stack_radius and dz < SupplyBox.stack_radius:
-			if box.global_position.y > top.global_position.y:
+			var box_y := _get_box_stack_y(box)
+			if box_y > top_y:
 				top = box
+				top_y = box_y
 	return top
+
+
+func _get_box_stack_y(box: SupplyBox) -> float:
+	if box.has_meta("fall_target_y"):
+		return box.get_meta("fall_target_y") as float
+	return box.global_position.y
 
 
 func _get_delivery_grid_from_collider(collider: Node) -> DeliveryGrid:
@@ -991,7 +1031,8 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 	if top.get_instance_id() != _stack_target_id:
 		_stack_target_id = top.get_instance_id()
 		_regenerate_stack_offset()
-	var place_pos := top.global_position + Vector3(0, SupplyBox.stack_height, 0) + _stack_offset
+	var top_y := _get_box_stack_y(top)
+	var place_pos := Vector3(top.global_position.x, top_y, top.global_position.z) + Vector3(0, SupplyBox.stack_height, 0) + _stack_offset
 	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
 	var box := _place_held_supply_box_on(place_pos, place_rot)
 	var cell_idx: int = top.get_meta("delivery_cell_idx", -1) as int
@@ -1021,6 +1062,28 @@ func _drop_held_box() -> void:
 	get_parent().add_child(box)
 	box.global_position = drop_pos
 	AudioManager.play_sfx("box_drop", drop_pos)
+	clear_held()
+
+
+func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
+	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
+	box.update_metrics()
+	box.is_trash_box = true
+	box.ingredient_type = "trash"
+	box.quantity = 0.0
+	box.trash_value = held_item_data.get("trash_value", 0.0)
+	box.trash_type = held_item_data.get("trash_type", "empty_box")
+	var drop_pos: Vector3
+	if place_pos != Vector3.ZERO:
+		drop_pos = place_pos
+	elif ray.is_colliding() and _is_placement_surface(ray.get_collider()):
+		drop_pos = ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
+	else:
+		drop_pos = global_position + (-transform.basis.z * 0.8) + Vector3(0, 0.15, 0)
+	get_parent().add_child(box)
+	box.global_position = drop_pos
+	AudioManager.play_sfx("box_drop", drop_pos)
+	_destroy_ghost()
 	clear_held()
 
 
@@ -1057,7 +1120,7 @@ func _place_equipment_from_box() -> void:
 		instance.call_deferred("update_label")
 		EventBus.pitcher_state_changed.emit(int(instance.state))
 	_destroy_ghost()
-	clear_held()
+	make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 	EventBus.container_placed.emit(equipment_type, instance)
 
 
@@ -1236,16 +1299,23 @@ func _apply_hand_offset(item_type: HeldItem, data: Dictionary) -> void:
 			if ctype in ["fruit_bin", "sugar_bin", "ice_bin"]:
 				offset = Vector3(0.05, 0.05, 0.0)
 		HeldItem.TRASH:
-			offset = Vector3.ZERO
+			offset = Vector3(0.1, 0.1, 0.0)
 	_held_mesh.position = offset
 
 
 func update_held_amount(new_amount: float) -> void:
 	held_item_data["amount"] = new_amount
 	if _held_mesh:
-		var lbl := _held_mesh.get_node_or_null("QuantityLabel") as Label3D
-		if lbl:
-			lbl.text = "×%.0f" % new_amount
+		var mesh_inst := _held_mesh as SupplyBox
+		if mesh_inst and mesh_inst.is_hand_mesh:
+			mesh_inst.quantity = new_amount
+		var qty_text := "×%.0f" % new_amount
+		for fname in ["Front", "Back", "Left", "Right", "Top"]:
+			var lbl := _held_mesh.get_node_or_null("Icons/QtyLabel_" + fname) as Label3D
+			if lbl == null:
+				lbl = _held_mesh.get_node_or_null("QtyLabel_" + fname) as Label3D
+			if lbl:
+				lbl.text = qty_text
 	EventBus.held_item_changed.emit(int(held_item), held_item_data)
 
 
@@ -1264,13 +1334,17 @@ func make_held_trash(
 		"trash_value": refund,
 		"trash_type": trash_type,
 	}
-	if hand_mesh == null and trash_type == "empty_box":
-		var box_scene := _get_trash_box_scene()
-		if box_scene:
-			var box_inst: Node3D = box_scene.instantiate() as Node3D
-			box_inst.scale = Vector3.ONE * 0.05
-			_disable_hand_collision(box_inst)
-			hand_mesh = box_inst
+	if hand_mesh == null:
+		var box_inst: SupplyBox = SUPPLY_BOX_SCENE.instantiate() as SupplyBox
+		box_inst.is_hand_mesh = true
+		box_inst.quantity = 0.0
+		box_inst.ingredient_type = "trash"
+		box_inst.scale = Vector3.ONE * (0.05 / 0.3)
+		var phys := box_inst.get_node_or_null("Physics") as StaticBody3D
+		if phys:
+			phys.collision_layer = 0
+			phys.collision_mask = 0
+		hand_mesh = box_inst
 	set_held(HeldItem.TRASH, data, hand_mesh)
 
 # ==========================================================================
@@ -1335,13 +1409,15 @@ func _create_container_hand_mesh(
 ) -> Node3D:
 	# Create a hand mesh for the held container.
 	if from_box:
-		var box_scene := _get_trash_box_scene()
-		if box_scene:
-			var box_inst: Node3D = box_scene.instantiate() as Node3D
-			box_inst.scale = Vector3.ONE * 0.05
-			_disable_hand_collision(box_inst)
-			return box_inst
-		return null
+		var box_inst: SupplyBox = SUPPLY_BOX_SCENE.instantiate() as SupplyBox
+		box_inst.is_hand_mesh = true
+		box_inst.quantity = 0.0
+		box_inst.scale = Vector3.ONE * (0.05 / 0.3)
+		var phys := box_inst.get_node_or_null("Physics") as StaticBody3D
+		if phys:
+			phys.collision_layer = 0
+			phys.collision_mask = 0
+		return box_inst
 
 	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
@@ -1589,6 +1665,13 @@ func _update_supply_box_ghost() -> void:
 		_disable_physics(_ghost)
 		_mark_ghost(_ghost)
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+		if held_item == HeldItem.TRASH:
+			for child in _ghost.get_children(true):
+				if child is Label3D or child is Sprite3D:
+					child.visible = false
+				for sub in child.get_children(true):
+					if sub is Label3D or sub is Sprite3D:
+						sub.visible = false
 		get_tree().current_scene.add_child(_ghost)
 
 	if not ray.is_colliding():
@@ -1615,7 +1698,10 @@ func _update_supply_box_ghost() -> void:
 		if target_id != _stack_target_id:
 			_stack_target_id = target_id
 			_regenerate_stack_offset()
-		var stack_base := target_box.global_position + Vector3(0, SupplyBox.stack_height, 0)
+		var ghost_y := _get_box_stack_y(target_box)
+		var stack_base := Vector3(
+				target_box.global_position.x, ghost_y, target_box.global_position.z
+		) + Vector3(0, SupplyBox.stack_height, 0)
 		_ghost.global_position = stack_base + _stack_offset
 		_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
 		_ghost.visible = true
@@ -1792,6 +1878,14 @@ func _update_ghost() -> void:
 	# Handle equipment box — show container ghost on workstation, box ghost on floor/boxes
 	if held_item == HeldItem.SUPPLY_BOX and held_item_data.get("is_equipment", false):
 		_update_equipment_box_ghost()
+		return
+	# Handle trash box ghost preview (only for empty box trash)
+	if held_item == HeldItem.TRASH \
+			and held_item_data.get("trash_type", "") == "empty_box":
+		_update_supply_box_ghost()
+		return
+	if held_item == HeldItem.TRASH:
+		_destroy_ghost()
 		return
 	# Handle generic supply box ghost (non-cup ingredient boxes or any supply box)
 	if held_item == HeldItem.SUPPLY_BOX:

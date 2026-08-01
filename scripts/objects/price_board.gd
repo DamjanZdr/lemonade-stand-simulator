@@ -24,6 +24,7 @@ func _ready() -> void:
 	_setup_prices_label()
 	_load_price_prefixes()
 	EventBus.price_changed.connect(_on_price_changed)
+	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 	_refresh_label()
 
 
@@ -213,6 +214,10 @@ func _refresh_label() -> void:
 
 
 func _on_price_changed(_fruit: String, _new_price: float) -> void:
+	_refresh_label()
+
+
+func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 	_refresh_label()
 
 

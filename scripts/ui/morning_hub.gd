@@ -1,22 +1,22 @@
 extends CanvasLayer
 ## Morning hub: Analytics, Shop, Upgrades. Compact, animated, lemonade-stand vibe.
 
-const ITEM_PREVIEW_WIDGET: PackedScene = preload("res://scenes/ui/item_preview_3d.tscn")
-const ITEM_PREVIEW_SCENES: Dictionary = {
-	"lemon": preload("res://scenes/ui/shop_previews/lemon_preview.tscn"),
-	"strawberry": preload("res://scenes/ui/shop_previews/strawberry_preview.tscn"),
-	"blueberry": preload("res://scenes/ui/shop_previews/blueberry_preview.tscn"),
-	"peach": preload("res://scenes/ui/shop_previews/peach_preview.tscn"),
-	"watermelon": preload("res://scenes/ui/shop_previews/watermelon_preview.tscn"),
-	"sugar": preload("res://scenes/ui/shop_previews/sugar_preview.tscn"),
-	"ice": preload("res://scenes/ui/shop_previews/ice_preview.tscn"),
-	"cups": preload("res://scenes/ui/shop_previews/cups_preview.tscn"),
-	"water": preload("res://scenes/ui/shop_previews/water_preview.tscn"),
-	"fruit_bin": preload("res://scenes/ui/shop_previews/fruit_bin_preview.tscn"),
-	"sugar_bin": preload("res://scenes/ui/shop_previews/sugar_bin_preview.tscn"),
-	"ice_bin": preload("res://scenes/ui/shop_previews/ice_bin_preview.tscn"),
-	"pitcher": preload("res://scenes/ui/shop_previews/pitcher_preview.tscn"),
-	"press": preload("res://scenes/ui/shop_previews/press_preview.tscn"),
+const PRODUCT_IMAGES: Dictionary = {
+	"lemon": "res://Product Images/lemon.png",
+	"strawberry": "res://Product Images/strawberry.png",
+	"blueberry": "res://Product Images/blueberry.png",
+	"peach": "res://Product Images/peach.png",
+	"watermelon": "res://Product Images/watermelon.png",
+	"sugar": "res://Product Images/sugar.png",
+	"ice": "res://Product Images/ice.png",
+	"cups": "res://Product Images/cup.png",
+	"water": "res://Product Images/water jug.png",
+	"fruit_bin": "res://Product Images/crate.png",
+	"sugar_bin": "res://Product Images/sugar bin.png",
+	"ice_bin": "res://Product Images/ice bucket.png",
+	"pitcher": "res://Product Images/pitcher.png",
+	"press": "res://Product Images/press.png",
+	"workstation": "res://Product Images/table.png",
 }
 
 const BRANCH_COLORS: Array[Color] = [
@@ -61,7 +61,7 @@ const BRANCH_COLORS: Array[Color] = [
 )
 
 var _active_tab: String = "analytics"
-var _flow_tabs: Array[String] = ["analytics", "upgrades", "shop", "recipes"]
+var _flow_tabs: Array[String] = ["analytics", "shop", "upgrades", "employees"]
 var _flow_step: int = 0
 var _cart: Array[Dictionary] = []
 var _preview_angle: float = 0.0
@@ -183,14 +183,12 @@ func _ready() -> void:
 						if event.button_index == MOUSE_BUTTON_LEFT:
 							_show_tab(t)
 			)
-
-	# Category buttons
-	var cat_row := $MainHBox/Panel/VBox/Content/ShopPage/CatRow as HBoxContainer
-	if cat_row:
-		for child in cat_row.get_children():
-			if child is Button and child.name.begins_with("Cat_"):
-				var cat := child.name.substr(4)
-				child.pressed.connect(func(): _show_shop_category(cat))
+			step_pc.mouse_entered.connect(
+				func(): _on_tab_hover(step_pc, t)
+			)
+			step_pc.mouse_exited.connect(
+				func(): _on_tab_unhover(step_pc, t)
+			)
 
 	var price_slider := (
 			$MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider
@@ -206,25 +204,8 @@ func _ready() -> void:
 	EventBus.bin_amount_changed.connect(func(_t, _a): _scan_stand_state())
 	_show_tab("analytics")
 
-	# Build shop cards
-	var shop_grid := (
-			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2/ShopGrid
-	) as GridContainer
-	if shop_grid:
-		for item in shop_items:
-			shop_grid.add_child(_create_ingredient_card(item))
-		for item in container_items:
-			var card := _create_equipment_card(item)
-			card.visible = false
-			shop_grid.add_child(card)
-
-	# Disable horizontal scrolling in the shop item list
-	var shop_scroll := (
-			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2
-	) as ScrollContainer
-	if shop_scroll:
-		shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		shop_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	# Build shop cards with section headers
+	_build_shop()
 
 	# Build upgrade skill tree (uses pre-existing UpgradeTree Control from scene)
 	var tree_ctrl := (
@@ -309,6 +290,21 @@ func _ready() -> void:
 
 		tree_ctrl.draw.connect(
 			func():
+				var border_style := StyleBoxFlat.new()
+				border_style.bg_color = Color.TRANSPARENT
+				border_style.border_color = Color(0.4, 0.35, 0.25, 0.8)
+				border_style.border_width_bottom = 2
+				border_style.border_width_top = 2
+				border_style.border_width_left = 2
+				border_style.border_width_right = 2
+				border_style.corner_radius_top_left = 6
+				border_style.corner_radius_top_right = 6
+				border_style.corner_radius_bottom_left = 6
+				border_style.corner_radius_bottom_right = 6
+				border_style.draw(
+					tree_ctrl.get_canvas_item(),
+					Rect2(Vector2.ZERO, tree_ctrl.size),
+				)
 				if not _tree_laid_out or _tree_content == null:
 					return
 				for from_id in UpgradeManager.tree_connections:
@@ -372,8 +368,6 @@ func _ready() -> void:
 						)
 		)
 
-	_build_recipes_page()
-
 	# Fix preview viewport to share the game world
 	var preview_viewport := (
 			$MainHBox/RightPanel/RightVBox/PreviewContainer/
@@ -419,6 +413,55 @@ func _ready() -> void:
 	end_btn.text = "End Day Early"
 	end_btn.pressed.connect(_on_dev_end_day)
 	dev_vbox.add_child(end_btn)
+
+
+func _build_shop() -> void:
+	var shop_scroll := (
+			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2
+	) as ScrollContainer
+	if shop_scroll == null:
+		return
+	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	shop_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	var old_list := shop_scroll.get_node_or_null("ShopList") as VBoxContainer
+	if old_list:
+		old_list.queue_free()
+	var old_grid := shop_scroll.get_node_or_null("ShopGrid") as GridContainer
+	if old_grid:
+		old_grid.queue_free()
+	var shop_vbox := VBoxContainer.new()
+	shop_vbox.name = "ShopList"
+	shop_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_vbox.add_theme_constant_override("separation", 12)
+	shop_scroll.add_child(shop_vbox)
+	# Consumables section
+	var consumables_header := Label.new()
+	consumables_header.text = "Consumables"
+	consumables_header.add_theme_font_size_override("font_size", 22)
+	consumables_header.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
+	shop_vbox.add_child(consumables_header)
+	var consumables_grid := GridContainer.new()
+	consumables_grid.columns = 2
+	consumables_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for sep in ["h_separation", "v_separation"]:
+		consumables_grid.add_theme_constant_override(sep, 10)
+	for item in shop_items:
+		consumables_grid.add_child(_create_ingredient_card(item))
+	shop_vbox.add_child(consumables_grid)
+	# Equipment section
+	var equipment_header := Label.new()
+	equipment_header.text = "Equipment"
+	equipment_header.add_theme_font_size_override("font_size", 22)
+	equipment_header.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
+	shop_vbox.add_child(equipment_header)
+	var equipment_grid := GridContainer.new()
+	equipment_grid.columns = 2
+	equipment_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for sep in ["h_separation", "v_separation"]:
+		equipment_grid.add_theme_constant_override(sep, 10)
+	for item in container_items:
+		equipment_grid.add_child(_create_equipment_card(item))
+	shop_vbox.add_child(equipment_grid)
 
 
 func _show_tree_tooltip(node_id: String, anchor_pos: Vector2) -> void:
@@ -911,6 +954,12 @@ func _buy_tree_upgrade(
 	if UpgradeManager.purchase_node(id):
 		_status_lbl.text = "Upgrade purchased!"
 		_animate_status()
+		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(id, {})
+		var uid: String = purchased_data.get("upgrade_id", "")
+		if uid.ends_with("_unlock"):
+			var fruit := uid.substr(0, uid.length() - 7)
+			if fruit in GameState.FRUIT_TYPES:
+				_build_shop()
 		var newly_visible: Array[String] = []
 		for child_id in UpgradeManager.tree_connections.get(id, []):
 			var child_node := _tree_content.get_node_or_null(
@@ -1032,7 +1081,7 @@ func _create_item_card(
 	var card := PanelContainer.new()
 	card.name = name_prefix + id
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.custom_minimum_size = Vector2(0, 130)
+	card.custom_minimum_size = Vector2(130, 130)
 
 	var st := StyleBoxFlat.new()
 	st.bg_color = bg
@@ -1053,6 +1102,7 @@ func _create_item_card(
 
 	var preview_panel := PanelContainer.new()
 	preview_panel.custom_minimum_size = Vector2(96, 96)
+	preview_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var preview_st := StyleBoxFlat.new()
 	preview_st.bg_color = Color(0.08, 0.09, 0.11)
 	preview_st.border_width_left = 1
@@ -1065,29 +1115,27 @@ func _create_item_card(
 	preview_panel.add_theme_stylebox_override("panel", preview_st)
 	inner.add_child(preview_panel)
 
-	var preview_holder := CenterContainer.new()
+	var preview_holder := Control.new()
 	preview_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	preview_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	preview_panel.add_child(preview_holder)
 
-	# Always show the 3D preview, even for locked items
-	var preview := ITEM_PREVIEW_WIDGET.instantiate()
-	if id == "workstation":
-		preview.preview_scene = load(
-				"res://scenes/ui/shop_previews/workstation_preview.tscn"
-		) as PackedScene
-	else:
-		preview.preview_scene = ITEM_PREVIEW_SCENES.get(
-				id, ITEM_PREVIEW_SCENES["cups"]
-		)
-	preview.custom_minimum_size = Vector2(88, 88)
-	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	preview_holder.add_child(preview)
+	# Show product image
+	var img_path: String = PRODUCT_IMAGES.get(id, "")
+	if img_path != "" and FileAccess.file_exists(img_path):
+		var preview := TextureRect.new()
+		preview.texture = load(img_path) as Texture2D
+		preview.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		preview.custom_minimum_size = Vector2(88, 88)
+		preview.size_flags_horizontal = Control.SIZE_FILL
+		preview.size_flags_vertical = Control.SIZE_FILL
+		preview_holder.add_child(preview)
 
 	# Overlay a lock icon on top of the preview for locked items
 	if is_locked_fruit:
-		preview.modulate = Color(0.5, 0.5, 0.5, 0.7)
+		if preview_holder.get_child_count() > 0:
+			preview_holder.get_child(0).modulate = Color(0.5, 0.5, 0.5, 0.7)
 		var lock_overlay := Label.new()
 		lock_overlay.text = "LOCKED"
 		lock_overlay.add_theme_font_size_override("font_size", 11)
@@ -1180,9 +1228,9 @@ func _show_tab(tab_name: String) -> void:
 	elif tab_name == "upgrades":
 		_refresh_upgrades()
 	elif tab_name == "shop":
-		_show_shop_category("consumables")
-	elif tab_name == "recipes":
-		_refresh_recipes_page()
+		pass
+	elif tab_name == "employees":
+		_refresh_employees_page()
 	_update_flow_indicator()
 
 
@@ -1219,34 +1267,46 @@ func _update_flow_indicator() -> void:
 			if step_lbl:
 				step_lbl.add_theme_color_override(
 					"font_color",
-					Color(0.7, 0.68, 0.62, 1),
+					Color(1, 1, 1, 1),
 				)
 
 
-func _show_shop_category(cat: String) -> void:
-	var shop_split := $MainHBox/Panel/VBox/Content/ShopPage/ShopSplit as HBoxContainer
-	var employees_ph := get_node(
-		"MainHBox/Panel/VBox/Content/ShopPage/EmployeesPlaceholder",
-	) as CenterContainer
-	if shop_split:
-		shop_split.visible = (cat != "employees")
-	if employees_ph:
-		employees_ph.visible = (cat == "employees")
+func _on_tab_hover(step_pc: PanelContainer, tab: String) -> void:
+	if tab == _active_tab:
+		return
+	var hover_st := StyleBoxFlat.new()
+	hover_st.bg_color = Color(0.18, 0.19, 0.24)
+	hover_st.set_corner_radius_all(8)
+	hover_st.set_content_margin_all(8)
+	hover_st.content_margin_left = 12
+	hover_st.content_margin_right = 12
+	step_pc.add_theme_stylebox_override("panel", hover_st)
 
-	var grid := (
-			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2/ShopGrid
-	) as GridContainer
-	if grid and cat != "employees":
-		for child in grid.get_children():
-			if child.name.begins_with("Card_"):
-				child.visible = (cat == "consumables")
-			elif child.name.begins_with("EquipCard_"):
-				child.visible = (cat == "equipment")
-	var cat_row := $MainHBox/Panel/VBox/Content/ShopPage/CatRow as HBoxContainer
-	if cat_row:
-		for btn in cat_row.get_children():
-			if btn is Button:
-				btn.button_pressed = (btn.name == "Cat_" + cat)
+
+func _on_tab_unhover(step_pc: PanelContainer, tab: String) -> void:
+	if tab == _active_tab:
+		return
+	_update_flow_indicator()
+
+
+func _refresh_employees_page() -> void:
+	var emp_page := $MainHBox/Panel/VBox/Content/EmployeesPage as VBoxContainer
+	if emp_page == null:
+		return
+	for child in emp_page.get_children():
+		child.queue_free()
+	var title := Label.new()
+	title.text = "Employees"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
+	emp_page.add_child(title)
+	var placeholder := Label.new()
+	placeholder.text = "Under Construction"
+	placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	placeholder.add_theme_font_size_override("font_size", 22)
+	placeholder.add_theme_color_override("font_color", Color(0.7, 0.68, 0.62))
+	emp_page.add_child(placeholder)
 
 
 func _build_prices_page() -> void:
@@ -1255,9 +1315,13 @@ func _build_prices_page() -> void:
 	)
 	if prices_page == null:
 		return
-	var container := prices_page.get_node_or_null("PriceListScroll/PriceList") as VBoxContainer
+	var container := prices_page.get_node_or_null(
+			"PriceListScroll/PriceList",
+	) as VBoxContainer
 	if container == null:
 		return
+	for child in container.get_children():
+		child.queue_free()
 	for ft in GameState.FRUIT_TYPES:
 		if not UpgradeManager.is_fruit_unlocked(ft):
 			continue
@@ -1685,6 +1749,7 @@ func _hide_morning_hub() -> void:
 
 
 func _on_money_changed(_amount: float) -> void:
+	_hide_tree_tooltip()
 	if not panel.visible:
 		return
 	var money_lbl := $MainHBox/Panel/VBox/Header/MoneyLabel as Label
@@ -1735,6 +1800,7 @@ func _apply_button_style(
 	btn.add_theme_color_override("font_color", text)
 	btn.add_theme_color_override("font_hover_color", text)
 	btn.add_theme_color_override("font_pressed_color", text)
+	btn.mouse_entered.connect(func(): AudioManager.play_sfx_ui("button_hover"))
 
 
 func _scan_stand_state() -> void:
@@ -1848,10 +1914,8 @@ func _on_dev_reset() -> void:
 	UpgradeManager.reset()
 	var root := get_tree().current_scene
 	if root:
-		for node in root.get_tree().get_nodes_in_group("container"):
-			node.queue_free()
-		for node in root.get_tree().get_nodes_in_group("supply_box"):
-			node.queue_free()
+		# Respawn scene-placed containers with default state
+		SaveManager.respawn_default_containers()
 	EventBus.game_reset.emit()
 	EventBus.money_changed.emit(GameState.money)
 	EventBus.price_changed.emit("lemon", GameState.get_price("lemon"))
@@ -1862,6 +1926,9 @@ func _build_recipes_page() -> void:
 	var recipes_page := $MainHBox/Panel/VBox/Content/RecipesPage as VBoxContainer
 	if recipes_page == null:
 		return
+	for child in recipes_page.get_children():
+		child.queue_free()
+	_ice_spin = null
 	var title := Label.new()
 	title.text = "Recipe Book"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2139,6 +2206,7 @@ func _style_unit_button(btn: Button, accent: Color) -> void:
 	hover_st.border_width_bottom = 1
 	hover_st.set_corner_radius_all(8)
 	btn.add_theme_stylebox_override("hover", hover_st)
+	btn.mouse_entered.connect(func(): AudioManager.play_sfx_ui("button_hover"))
 
 
 func _refresh_recipes_page() -> void:

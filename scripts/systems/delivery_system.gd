@@ -15,6 +15,7 @@ func _ready() -> void:
 	EventBus.supply_order_placed.connect(_on_supply_order_placed)
 	EventBus.equipment_order_placed.connect(_on_equipment_order_placed)
 	EventBus.checkout_completed.connect(_on_checkout_completed)
+	SupplyBox.pre_render_all()
 
 
 func set_grid(grid: DeliveryGrid) -> void:

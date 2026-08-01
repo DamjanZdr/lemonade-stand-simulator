@@ -8,9 +8,6 @@ size = Vector3(2, 2, 2)
 [sub_resource type="BoxShape3D" id="BoxShape3D_press"]
 size = Vector3(4.8038406, 13.761932, 4.5422363)
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_press"]
-viewport_path = NodePath("ProgressBarViewport")
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nl18l"]
 resource_name = "Material.017"
 cull_mode = 2
@@ -290,20 +287,6 @@ mesh = SubResource("BoxMesh_press")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=171251141]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9900017, 6.8227997, -0.052124023)
 shape = SubResource("BoxShape3D_press")
-
-[node name="ProgressBarViewport" type="SubViewport" parent="." unique_id=1025494930]
-transparent_bg = true
-size = Vector2i(200, 40)
-
-[node name="ProgressBar" type="ProgressBar" parent="ProgressBarViewport" unique_id=203990050]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-
-[node name="ProgressBarSprite" type="Sprite3D" parent="." unique_id=1276521890]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8053794, 0)
-billboard = 1
-texture = SubResource("ViewportTexture_press")
 
 [node name="PitcherSnapPoint" type="Marker3D" parent="." unique_id=999888777]
 

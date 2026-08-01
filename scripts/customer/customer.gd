@@ -18,6 +18,8 @@ var queue_face_dir: Vector3 = Vector3(1, 0, 0) # set by spawner
 var counter_face_dir: Vector3 = Vector3(0, 0, 1) # set by spawner
 var patience_max: float = Balancing.PATIENCE_BASE
 var patience: float = 0.0
+var _order_taken: bool = false
+var serve_patience_max: float = Balancing.PATIENCE_BASE
 var state: CustomerState = CustomerState.WALKING
 var expected_fruit: String = "lemon"
 var _outcome: String = ""
@@ -36,6 +38,8 @@ const _ENGAGE_LOOK_RANGE: float = 3.5
 var _engaged_with_player: bool = false
 var _engaged_player: Node3D = null
 var _default_facing_target: Basis = Basis.IDENTITY
+var _pending_disengage: bool = false
+var _talk_anim_playing: bool = false
 
 @onready var emoji_anchor: Node3D = $EmojiAnchor
 @onready var emoji_display: Node = $EmojiAnchor/EmojiDisplay
@@ -63,8 +67,9 @@ func _ready() -> void:
 	floor_stop_on_slope = false
 	floor_block_on_wall = false
 	var sunroof_bonus: float = UpgradeManager.get_effect_total("sunroof")
-	if sunroof_bonus > 0.0:
-		patience_max *= (1.0 + sunroof_bonus)
+	var bonus: float = 1.0 + sunroof_bonus
+	serve_patience_max = Balancing.PATIENCE_BASE * bonus # Phase 2
+	patience_max = Balancing.PATIENCE_BASE * bonus * 0.5 # Phase 1
 	patience = patience_max
 	EventBus.debug_force_happy_serve.connect(_on_debug_force_happy)
 	if not _preserve_appearance:
@@ -125,7 +130,10 @@ func _physics_process(delta: float) -> void:
 					var dist := global_position.distance_to(_engaged_player.global_position)
 					should_disengage = dist > _ENGAGE_LOOK_RANGE
 				if should_disengage:
-					_disengage_player()
+					if _talk_anim_playing:
+						_pending_disengage = true
+					else:
+						_disengage_player()
 				else:
 					_facing_target = Basis.looking_at(
 						_engaged_player.global_position - global_position,
@@ -212,7 +220,6 @@ func _resolve(outcome: String) -> void:
 	_outcome = outcome
 	state = CustomerState.REACTING
 	EventBus.customer_served.emit(self, outcome)
-	emoji_display.show_emoji(outcome, GameState.feedback_tier)
 	if outcome != "timeout":
 		# Every served customer pays; the money controller on the player's
 		# camera handles change-making. Emit sale_initiated directly.
@@ -266,12 +273,28 @@ func _start_leaving() -> void:
 
 
 static func _customer_payment(price: float) -> float:
-	## Customer pays with smallest bill that covers the price.
-	if price <= 1.0:
-		return 1.0
-	if price <= 5.0:
-		return 5.0
-	return 10.0
+	## Customer pays 10%–100% more than the price, snapped to the closest
+	## available denomination so the player can make change with real bills/coins.
+	const DENOMS: Array[int] = [5, 10, 50, 100, 500, 1000]
+	var price_cents := roundi(price * 100.0)
+	var min_cents := price_cents + int(float(price_cents) * 0.1)
+	var max_cents := price_cents + int(float(price_cents) * 1.0)
+	# Pick a random target in the range, then snap to nearest denomination
+	var target := randi_range(min_cents, max_cents)
+	var best: int = DENOMS[0]
+	var best_diff: int = absi(target - best)
+	for d in DENOMS:
+		var diff := absi(target - d)
+		if diff < best_diff:
+			best = d
+			best_diff = diff
+	# Ensure payment covers the price
+	if best < price_cents:
+		for d in DENOMS:
+			if d >= price_cents:
+				best = d
+				break
+	return float(best) / 100.0
 
 
 func _on_change_tendered(tendered_cents: int, _due_cents: int) -> void:
@@ -326,16 +349,34 @@ func show_order_to_player(player: Node) -> void:
 	_show_order()
 	if not was_already_engaged:
 		_npc.play_anim("Talk")
+		_talk_anim_playing = true
+		# Connect to animation finished to know when Talk ends
+		if not _npc.anim_player.is_connected("animation_finished", _on_talk_finished):
+			_npc.anim_player.connect("animation_finished", _on_talk_finished)
 	_facing_target = Basis.looking_at(player.global_position - global_position, Vector3.UP)
 	_is_rotating_to_face = true
+	# Reset patience for phase 2: waiting to be served
+	if not _order_taken:
+		_order_taken = true
+		patience_max = serve_patience_max
+		patience = patience_max
+		_refresh_patience_bar(1.0)
 
 
 func _disengage_player() -> void:
 	_engaged_with_player = false
 	_engaged_player = null
+	_pending_disengage = false
 	_npc.play_anim("Idle")
 	_facing_target = _default_facing_target
 	_is_rotating_to_face = true
+
+
+func _on_talk_finished(anim_name: String) -> void:
+	if anim_name == "Talk":
+		_talk_anim_playing = false
+		if _pending_disengage:
+			_disengage_player()
 
 
 func set_route_continuation(waypoints: Array[PedestrianWaypoint], next_index: int) -> void:
@@ -397,7 +438,12 @@ func _resize_order_panel() -> void:
 	_order_panel.visible = true
 
 
-func _create_rounded_panel_texture(width: int, height: int, color: Color, corner: int) -> ImageTexture:
+func _create_rounded_panel_texture(
+	width: int,
+	height: int,
+	color: Color,
+	corner: int,
+) -> ImageTexture:
 	var img := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	var r := clampi(corner, 0, int(mini(width, height) / 2.0))
@@ -430,7 +476,7 @@ func _build_order_bubble() -> void:
 	_order_panel.pixel_size = 0.0008
 	_order_panel.texture = _create_white_texture()
 	_order_panel.modulate = Color(1, 1, 1, 0.95)
-	_order_panel.position = Vector3(0, -0.65, -0.01)
+	_order_panel.position = Vector3(0, -0.35, -0.01)
 	_order_panel.sorting_offset = -1.0
 	_order_panel.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	emoji_anchor.add_child(_order_panel)
@@ -448,7 +494,7 @@ func _build_order_bubble() -> void:
 	order_label.sorting_offset = 1.0
 	order_label.modulate = Color(1, 1, 1, 1)
 	order_label.outline_size = 4
-	order_label.position = Vector3(0, -0.65, 0)
+	order_label.position = Vector3(0, -0.35, 0)
 	order_label.visible = false
 
 

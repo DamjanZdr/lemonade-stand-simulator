@@ -46,9 +46,9 @@ func _ready() -> void:
 	# Use the sky material set up in the editor (ProceduralSkyMaterial).
 	_world_env = world.get_node_or_null("WorldEnvironment") as WorldEnvironment
 	if _world_env and _world_env.environment:
-		_world_env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-		_world_env.environment.ambient_light_color = Color(0.75, 0.75, 0.78, 1)
-		_world_env.environment.ambient_light_sky_contribution = 0.0
+		_world_env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		_world_env.environment.ambient_light_color = Color(0.35, 0.35, 0.38, 1)
+		_world_env.environment.ambient_light_sky_contribution = 0.6
 		_default_ambient_color = _world_env.environment.ambient_light_color
 		_default_exposure = _world_env.environment.tonemap_exposure
 
@@ -91,6 +91,7 @@ func _ready() -> void:
 	# Start the day cycle — morning setup then immediately begin the day
 	DayManager.start_morning()
 	DayManager.start_day()
+	SaveManager.capture_default_containers()
 	SaveManager.respawn_placed_containers()
 
 

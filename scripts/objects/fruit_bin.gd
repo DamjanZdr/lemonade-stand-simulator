@@ -79,7 +79,7 @@ func update_display() -> void:
 			nodes[i].visible = i < visible_count
 
 
-func add_amount(fruit_type: String, qty: float) -> void:
+func add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if not fruit_grids.has(fruit_type):
 		return
 	var data: Dictionary = fruit_grids[fruit_type]
@@ -92,19 +92,25 @@ func add_amount(fruit_type: String, qty: float) -> void:
 	var origins: Array[Vector3] = data["origins"]
 	var grid_drop: float = data["drop_height"]
 	for i in range(old_count, new_count):
-		_drop_item(nodes[i], origins[i], grid_drop)
+		_drop_item(nodes[i], origins[i], grid_drop, from_pos)
 	EventBus.bin_amount_changed.emit(fruit_type, fruit_amounts[fruit_type])
 
 
-func _drop_item(node: Node3D, origin: Vector3, item_drop_height: float) -> void:
+func _drop_item(
+	node: Node3D,
+	origin: Vector3,
+	item_drop_height: float,
+	from_pos: Vector3 = Vector3.ZERO,
+) -> void:
+	if from_pos != Vector3.ZERO:
+		_animate_throw_arc(node, from_pos, origin)
+		AudioManager.play_sfx("fruit_in_crate", global_position)
+		return
 	node.position.y = origin.y + item_drop_height
+	AudioManager.play_sfx("fruit_in_crate", global_position)
 	var tween := create_tween()
 	tween.tween_property(node, "position:y", origin.y, 0.25) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	tween.finished.connect(
-		func():
-			AudioManager.play_sfx("fruit_in_crate", global_position),
-	)
 
 
 func take_amount(fruit_type: String, qty: float) -> float:
@@ -158,7 +164,7 @@ func interact(player: Node) -> void:
 			return
 		# Returning a scoop
 		if data.get("source") == "bin_scoop":
-			add_amount(itype, data.get("amount", Balancing.GRAB_AMOUNT))
+			add_amount(itype, data.get("amount", Balancing.GRAB_AMOUNT), _get_hand_pos(player))
 			player.clear_held()
 			return
 		# Depositing from delivery box
@@ -168,7 +174,7 @@ func interact(player: Node) -> void:
 			if space <= 0.0:
 				return
 			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
-			add_amount(itype, deposited)
+			add_amount(itype, deposited, _get_hand_pos(player))
 			EventBus.supply_box_deposited.emit(itype, deposited)
 			var remaining: float = to_deposit - deposited
 			if remaining > 0.0:
@@ -228,14 +234,14 @@ func get_hint(player: Node) -> String:
 		var hit_node: Node = player.get("last_interact_hit")
 		var fruit_type := _get_fruit_type_from_hit(hit_node)
 		if fruit_type != "" and fruit_amounts.get(fruit_type, 0.0) >= Balancing.GRAB_AMOUNT:
-			return "Fruit Bin | LMB: take %s  |  RMB: pick up  (%.0f left)" % [
+			return "Fruit Bin | LMB: take %s (%.0f)  |  RMB: pick up" % [
 				fruit_type.capitalize(),
 				fruit_amounts[fruit_type],
 			]
 		# Fallback to first available
 		fruit_type = _get_first_available_fruit()
 		if fruit_type != "":
-			return "Fruit Bin | LMB: take %s  |  RMB: pick up  (%.0f left)" % [
+			return "Fruit Bin | LMB: take %s (%.0f)  |  RMB: pick up" % [
 				fruit_type.capitalize(),
 				fruit_amounts[fruit_type],
 			]

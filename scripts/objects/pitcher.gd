@@ -231,8 +231,9 @@ func interact(player: Node) -> void:
 				var itype: String = p.held_item_data.get("ingredient_type", "")
 				var amount: float = p.held_item_data.get("amount", 0.0)
 				if _can_add_ingredient(itype, amount):
+					var start_pos := _get_hand_pos(player)
 					p.clear_held()
-					_animate_drop(itype, amount)
+					_animate_drop(itype, amount, start_pos)
 				else:
 					EventBus.interaction_hint_changed.emit(
 						"Cannot add %s! (State: %s, Cups poured: %d)"
@@ -281,8 +282,6 @@ func get_contents_string() -> String:
 	var parts: Array[String] = []
 	if fruit_count > 0.0 and fruit_type != "":
 		parts.append("%.0f %s" % [fruit_count, fruit_type])
-	if water > 0.0:
-		parts.append("%.0f water" % water)
 	if sugar > 0.0:
 		parts.append("%.0f sugar" % sugar)
 	if ice > 0.0:
@@ -296,26 +295,30 @@ func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null:
 		return ""
+	var contents := ""
+	if not get_contents_string() == "empty":
+		contents = "[%s]\n" % get_contents_string()
 	match state:
 		PitcherState.PREPPING, PitcherState.COMPLETE:
 			if p.held_item == p.HeldItem.SUPPLY_BOX \
 					and p.held_item_data.get("source") == "bin_scoop":
-				return "Pitcher | LMB: add %s (%s)" % [p.held_item_data.get("ingredient_type", ""), get_contents_string()]
+				return contents + "Pitcher | LMB: add %s" % p.held_item_data.get(
+					"ingredient_type",
+					"",
+				)
 			if get_liquid_volume() <= 0.0:
 				return "Pitcher | LMB: pick up"
 			if p.held_item == p.HeldItem.CUP_EMPTY:
-				return "Pitcher | LMB: fill cup  |  RMB: pick up (%s, %.1f liq)" % [
-					get_contents_string(),
-					get_liquid_volume(),
-				]
-			return "Pitcher | LMB: pick up  |  RMB: throw out (%s)" % get_contents_string()
+				return contents + (
+					"Pitcher | LMB: fill cup  |  RMB: pick up (%.1f liq)" % get_liquid_volume()
+				)
+			return contents + "Pitcher | LMB: pick up  |  RMB: throw out"
 		PitcherState.SERVING:
 			if p.held_item == p.HeldItem.CUP_EMPTY:
-				return "Pitcher | LMB: fill cup  |  RMB: pick up (%s, %.1f liq)" % [
-					get_contents_string(),
-					get_liquid_volume(),
-				]
-			return "Pitcher | LMB: pick up  |  RMB: throw out (%s)" % get_contents_string()
+				return contents + (
+					"Pitcher | LMB: fill cup  |  RMB: pick up (%.1f liq)" % get_liquid_volume()
+				)
+			return contents + "Pitcher | LMB: pick up  |  RMB: throw out"
 	return ""
 
 
@@ -356,11 +359,10 @@ func update_label() -> void:
 		_:
 			status = ""
 	var fruit_label := fruit_type.capitalize() if fruit_type != "" else "Fruit"
-	contents_label.text = "%s\n%s: %.1f  Water: %.1f\nSugar: %.1f  Ice: %.1f\nCups: %d" % [
+	contents_label.text = "%s\n%s: %.1f  Sugar: %.1f  Ice: %.1f\nCups: %d" % [
 		status,
 		fruit_label,
 		fruit_count,
-		water,
 		sugar,
 		ice,
 		cups_poured,
@@ -478,14 +480,28 @@ func _is_ingredient_fruit(ingredient_type: String) -> bool:
 	return res is IngredientData
 
 
-func _animate_drop(ingredient_type: String, amount: float) -> void:
+func _animate_drop(
+	ingredient_type: String,
+	amount: float,
+	from_pos: Vector3 = Vector3.ZERO,
+) -> void:
 	_drop_busy = true
 	var drop_mesh := _make_drop_mesh(ingredient_type)
 	add_child(drop_mesh)
-	# Position above the pitcher opening in local space.
-	# Pitcher local top is ~Y 3.6; start a bit higher so it visually falls in.
+	if from_pos != Vector3.ZERO:
+		var target_local := Vector3(0.0, 2.0, 0.0)
+		var tween := _animate_throw_arc(drop_mesh, from_pos, target_local)
+		if tween:
+			tween.finished.connect(
+				func():
+					drop_mesh.queue_free()
+					add_ingredient(ingredient_type, amount)
+					_drop_busy = false,
+			)
+			return
+	# Fallback: simple vertical drop from above
 	drop_mesh.position = Vector3(0.0, 5.0, 0.0)
-	var target_y := 2.0 # roughly the liquid surface level in local space
+	var target_y := 2.0
 	var tween := create_tween()
 	tween.tween_property(drop_mesh, "position:y", target_y, 0.3) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)

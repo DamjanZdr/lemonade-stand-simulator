@@ -14,6 +14,8 @@ const ICON_SIZE := 24
 @onready var _hint_label: Label = $HintLabel
 
 var _hint_box: HBoxContainer
+var _hint_container: VBoxContainer
+var _contents_label: Label
 var _mouse_icon_flipped: Texture2D
 
 var _money_label: Label
@@ -48,6 +50,7 @@ func _ready() -> void:
 
 func _on_money(value: float) -> void:
 	if value > _prev_money:
+		EventBus.interaction_hint_changed.emit("")
 		_show_money_gain(value - _prev_money, value)
 	else:
 		_money_label.text = "$%.2f" % value
@@ -81,11 +84,18 @@ func _on_weather(temp: float) -> void:
 
 func _on_hint(hint: String) -> void:
 	_hint_label.text = ""
+	_contents_label.text = ""
 	for child in _hint_box.get_children():
 		child.queue_free()
 	if hint == "":
 		return
-	var parts := hint.split("|", true)
+	# Split off contents line (before \n) if present
+	var hint_line := hint
+	var newline_idx := hint.find("\n")
+	if newline_idx >= 0:
+		_contents_label.text = hint.substr(0, newline_idx)
+		hint_line = hint.substr(newline_idx + 1)
+	var parts := hint_line.split("|", true)
 	for i in range(parts.size()):
 		var part := parts[i].strip_edges()
 		if i > 0:
@@ -296,19 +306,37 @@ func _create_flipped_icon() -> void:
 
 
 func _build_hint_box() -> void:
+	_hint_container = VBoxContainer.new()
+	_hint_container.name = "HintContainer"
+	_hint_container.anchor_left = 0.0
+	_hint_container.anchor_top = 1.0
+	_hint_container.anchor_right = 1.0
+	_hint_container.anchor_bottom = 1.0
+	_hint_container.offset_left = 20.0
+	_hint_container.offset_top = -70.0
+	_hint_container.offset_right = -20.0
+	_hint_container.offset_bottom = -30.0
+	_hint_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	_hint_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_hint_container)
+
+	_contents_label = Label.new()
+	_contents_label.name = "ContentsLabel"
+	_contents_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_contents_label.add_theme_font_override("font", AMATIC_FONT)
+	_contents_label.add_theme_font_size_override("font_size", 22)
+	_contents_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9, 0.85))
+	_contents_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	_contents_label.add_theme_constant_override("shadow_offset_x", 1)
+	_contents_label.add_theme_constant_override("shadow_offset_y", 1)
+	_contents_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint_container.add_child(_contents_label)
+
 	_hint_box = HBoxContainer.new()
 	_hint_box.name = "HintBox"
-	_hint_box.anchor_left = 0.0
-	_hint_box.anchor_top = 1.0
-	_hint_box.anchor_right = 1.0
-	_hint_box.anchor_bottom = 1.0
-	_hint_box.offset_left = 20.0
-	_hint_box.offset_top = -70.0
-	_hint_box.offset_right = -20.0
-	_hint_box.offset_bottom = -30.0
 	_hint_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	_hint_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_hint_box)
+	_hint_container.add_child(_hint_box)
 	_hint_label.visible = false
 
 

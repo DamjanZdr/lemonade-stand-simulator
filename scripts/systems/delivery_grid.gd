@@ -104,7 +104,7 @@ func get_slot_position(cell_index: int) -> Vector3:
 	var sh: float = SupplyBox.stack_height * grid_scale_y
 	var bo: float = SupplyBox.bottom_offset * grid_scale_y
 	var height: float = _stacks[cell_index] * sh + bo
-	return base + Vector3(0, height, 0) + _get_cell_offset(cell_index)
+	return base + Vector3(0, height, 0) + _get_cell_offset(cell_index, _stacks[cell_index])
 
 
 ## Returns the rotation for the next box in a cell without reserving it.
@@ -114,7 +114,7 @@ func get_slot_rotation(cell_index: int) -> Vector3:
 		var marker := _cells[cell_index]
 		if marker != null:
 			base_rot = marker.global_rotation
-	return base_rot + Vector3(0, _get_cell_yaw(cell_index), 0)
+	return base_rot + Vector3(0, _get_cell_yaw(cell_index, _stacks[cell_index]), 0)
 
 
 ## Returns the closest grid cell to the given world point (using X/Z distance).
@@ -134,20 +134,22 @@ func get_closest_cell(point: Vector3) -> int:
 	return best
 
 
-func _get_cell_offset(cell_index: int) -> Vector3:
-	if not _cell_offsets.has(cell_index):
-		_cell_offsets[cell_index] = Vector3(
+func _get_cell_offset(cell_index: int, stack_level: int) -> Vector3:
+	var key := cell_index * 1000 + stack_level
+	if not _cell_offsets.has(key):
+		_cell_offsets[key] = Vector3(
 			randf_range(-STACK_MAX_OFFSET, STACK_MAX_OFFSET),
 			0.0,
 			randf_range(-STACK_MAX_OFFSET, STACK_MAX_OFFSET),
 		)
-	return _cell_offsets[cell_index] as Vector3
+	return _cell_offsets[key] as Vector3
 
 
-func _get_cell_yaw(cell_index: int) -> float:
-	if not _cell_yaws.has(cell_index):
-		_cell_yaws[cell_index] = randf_range(-STACK_MAX_YAW, STACK_MAX_YAW)
-	return _cell_yaws[cell_index] as float
+func _get_cell_yaw(cell_index: int, stack_level: int) -> float:
+	var key := cell_index * 1000 + stack_level
+	if not _cell_yaws.has(key):
+		_cell_yaws[key] = randf_range(-STACK_MAX_YAW, STACK_MAX_YAW)
+	return _cell_yaws[key] as float
 
 
 ## Returns the world position for the next box and reserves that slot.
@@ -161,8 +163,12 @@ func release_slot_index(cell_index: int) -> void:
 		return
 	_stacks[cell_index] = max(0, _stacks[cell_index] - 1)
 	if _stacks[cell_index] == 0:
-		_cell_offsets.erase(cell_index)
-		_cell_yaws.erase(cell_index)
+		for key in _cell_offsets.keys():
+			if key / 1000 == cell_index:
+				_cell_offsets.erase(key)
+		for key in _cell_yaws.keys():
+			if key / 1000 == cell_index:
+				_cell_yaws.erase(key)
 
 
 func total_capacity() -> int:

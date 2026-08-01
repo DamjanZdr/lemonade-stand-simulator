@@ -103,6 +103,10 @@ func _disable_cast_shadows() -> void:
 const _EYE_SCALE := 0.30564013
 
 var _active_anim: AnimationPlayer = null
+
+var anim_player: AnimationPlayer:
+	get:
+		return _active_anim
 var _left_eye: MeshInstance3D = null
 var _right_eye: MeshInstance3D = null
 var _left_marker: Marker3D = null
@@ -153,8 +157,16 @@ func randomize_appearance() -> void:
 	_right_marker = _man_right_marker if male else _woman_right_marker
 	# Capture forward direction in eye-local space from the marker's local position.
 	# This is stable — it doesn't change when the eye mesh rotates.
-	_left_rest_dir = _left_marker.position.normalized() if _left_marker.position.length() > 0.001 else Vector3(0, 0, 1)
-	_right_rest_dir = _right_marker.position.normalized() if _right_marker.position.length() > 0.001 else Vector3(0, 0, 1)
+	_left_rest_dir = (
+		_left_marker.position.normalized()
+		if _left_marker.position.length() > 0.001
+		else Vector3(0, 0, 1)
+	)
+	_right_rest_dir = (
+		_right_marker.position.normalized()
+		if _right_marker.position.length() > 0.001
+		else Vector3(0, 0, 1)
+	)
 	_eye_rot_l = Quaternion.IDENTITY
 	_eye_rot_r = Quaternion.IDENTITY
 
@@ -170,10 +182,13 @@ func play_anim(anim_name: String) -> void:
 		return
 	if not _active_anim.has_animation(anim_name):
 		return
-	# Force loop mode on the animation resource so Walk/Idle repeat continuously.
 	var anim := _active_anim.get_animation(anim_name)
 	if anim:
-		anim.loop_mode = Animation.LOOP_LINEAR
+		# Talk plays once, everything else loops
+		if anim_name == "Talk":
+			anim.loop_mode = Animation.LOOP_NONE
+		else:
+			anim.loop_mode = Animation.LOOP_LINEAR
 	# Apply per-animation speed from exported parameters.
 	var speed_map := {
 		"Walk": walk_speed,
@@ -296,7 +311,12 @@ func _update_eye_look(delta: float) -> void:
 
 ## Computes the world-space rotation that swings the eye's rest-forward toward aim.
 ## Uses parent basis + local rest direction so it's stable under eye rotation.
-func _target_eye_rot(eye: MeshInstance3D, rest_local: Vector3, aim: Vector3, dist: float) -> Quaternion:
+func _target_eye_rot(
+	eye: MeshInstance3D,
+	rest_local: Vector3,
+	aim: Vector3,
+	dist: float,
+) -> Quaternion:
 	if dist > eye_look_range:
 		return Quaternion.IDENTITY
 	var par := eye.get_parent() as Node3D
@@ -327,7 +347,10 @@ func _apply_eye(eye: MeshInstance3D, world_rot: Quaternion) -> void:
 	var P := par.global_transform.basis
 	# Convert world-space rotation to parent-local: L = P⁻¹ · Rw · P
 	var local_rot := P.inverse() * Basis(world_rot) * P
-	eye.transform = Transform3D(local_rot * Basis.from_scale(Vector3.ONE * _EYE_SCALE), eye.transform.origin)
+	eye.transform = Transform3D(
+		local_rot * Basis.from_scale(Vector3.ONE * _EYE_SCALE),
+		eye.transform.origin,
+	)
 
 
 func _pick_hair(hairs: Node3D, color: Color) -> void:

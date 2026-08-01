@@ -51,8 +51,7 @@ func interact(player: Node) -> void:
 	if p.held_item != Player.HeldItem.NONE:
 		return
 	set_highlight(false)
-	var hand_mesh := _create_hand_mesh()
-	p.make_held_trash(trash_value, trash_type, hand_mesh)
+	p.make_held_trash(trash_value, trash_type, _create_hand_mesh())
 	queue_free()
 
 

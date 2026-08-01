@@ -97,36 +97,14 @@ func interact(player: Node) -> void:
 			var space: int = max_fillings - water_fillings
 			if space <= 0:
 				return
+			var start_pos := _get_hand_pos(player)
 			var to_add: int = 1
-			var prev_fillings := water_fillings
-			water_fillings += to_add
-			var start_y := lerpf(
-				WATER_Y_EMPTY,
-				WATER_Y_FULL,
-				float(prev_fillings) / float(max_fillings),
-			)
-			var end_y := lerpf(
-				WATER_Y_EMPTY,
-				WATER_Y_FULL,
-				float(water_fillings) / float(max_fillings),
-			)
-			_water_eraser.position.y = start_y
-			var tween := create_tween()
-			tween.tween_property(_water_eraser, "position:y", end_y, 0.35) \
-					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-			EventBus.supply_box_deposited.emit("water", float(to_add))
 			var remaining: float = qty - float(to_add)
 			if remaining > 0.0:
 				p.update_held_amount(remaining)
-				EventBus.interaction_hint_changed.emit(
-					"Dispenser: %d/%d (box has %.0f left)"
-					% [water_fillings, max_fillings, remaining],
-				)
 			else:
 				p.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
-				EventBus.interaction_hint_changed.emit(
-					"Dispenser refilled! (%d/%d)" % [water_fillings, max_fillings],
-				)
+			_animate_water_drop(start_pos, to_add)
 			return
 
 	# Place pitcher on dispenser — handled by player script ghost placement
@@ -299,3 +277,56 @@ func _finish_fill() -> void:
 			_tap_tween.kill()
 		_tap_tween = create_tween()
 		_tap_tween.tween_property(_tap_mesh, "rotation_degrees:y", TAP_Y_CLOSED, 0.3)
+
+
+func _animate_water_drop(start_pos: Vector3, to_add: int) -> void:
+	var drop_mesh := _make_water_drop_mesh()
+	add_child(drop_mesh)
+	var target_local := Vector3.ZERO
+	if _water_eraser:
+		target_local = to_local(_water_eraser.global_position)
+	var tween := _animate_throw_arc(drop_mesh, start_pos, target_local)
+	if tween:
+		tween.finished.connect(
+			func():
+				drop_mesh.queue_free()
+				var prev_fillings := water_fillings
+				water_fillings += to_add
+				var start_y := lerpf(
+					WATER_Y_EMPTY,
+					WATER_Y_FULL,
+					float(prev_fillings) / float(max_fillings),
+				)
+				var end_y := lerpf(
+					WATER_Y_EMPTY,
+					WATER_Y_FULL,
+					float(water_fillings) / float(max_fillings),
+				)
+				_water_eraser.position.y = start_y
+				var wt := create_tween()
+				wt.tween_property(_water_eraser, "position:y", end_y, 0.35) \
+						.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+				EventBus.supply_box_deposited.emit("water", float(to_add))
+				EventBus.interaction_hint_changed.emit(
+					"Dispenser: %d/%d" % [water_fillings, max_fillings],
+				),
+		)
+	else:
+		drop_mesh.queue_free()
+		water_fillings += to_add
+		_update_water_visual()
+		EventBus.supply_box_deposited.emit("water", float(to_add))
+
+
+func _make_water_drop_mesh() -> Node3D:
+	var m := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.15
+	sphere.height = 0.3
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.4, 0.7, 1.0)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color.a = 0.8
+	sphere.material = mat
+	m.mesh = sphere
+	return m

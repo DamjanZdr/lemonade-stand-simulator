@@ -127,13 +127,12 @@ func _ready() -> void:
 			GameState.customers_lost = 0
 			DayManager.day_number = 1
 			UpgradeManager.reset()
-			# Clear all placed containers and supply boxes from scene
+			# Reset containers to default state and position
 			var root := get_tree().current_scene
 			if root:
-				for node in root.get_tree().get_nodes_in_group("container"):
-					node.queue_free()
 				for node in root.get_tree().get_nodes_in_group("supply_box"):
 					node.queue_free()
+				SaveManager.respawn_default_containers()
 			EventBus.money_changed.emit(GameState.money)
 			EventBus.popularity_changed.emit(GameState.popularity)
 			EventBus.weather_changed.emit(GameState.temperature)

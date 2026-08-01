@@ -1,9 +1,6 @@
 [gd_scene format=4 uid="uid://1v1tem4n2kjm"]
 
-[ext_resource type="PackedScene" uid="uid://dr6hcqf1qa5fg" path="res://scenes/objects/cash_register_prop.tscn" id="4_reg"]
 [ext_resource type="Texture2D" uid="uid://4mtljc43qwpe" path="res://blender/stand_StandTexture.png" id="4_yrfsh"]
-[ext_resource type="PackedScene" uid="uid://dr4k7li21a5fg" path="res://scenes/objects/cash_pickup.tscn" id="5_rhe6q"]
-[ext_resource type="PackedScene" uid="uid://8fx8pc1vgdd7" path="res://blender/moneyshelf.glb" id="10_shelf"]
 
 [sub_resource type="StandardMaterial3D" id="Material_counter"]
 albedo_color = Color(0.82, 0.65, 0.38, 1)
@@ -133,15 +130,6 @@ mesh = SubResource("BoxMesh_post")
 [node name="Col" type="CollisionShape3D" parent="Post_FR" unique_id=1000235213]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.072322845, 2.066036, 0)
 shape = SubResource("BoxShape3D_post")
-
-[node name="CashRegister" parent="." unique_id=808262555 instance=ExtResource("4_reg")]
-transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -0.44949764, 1.3292329, -1.0962787)
-
-[node name="MoneyShelf" parent="CashRegister" unique_id=999999999 instance=ExtResource("10_shelf")]
-transform = Transform3D(0.185, 0, 0, 0, 0.185, 0, 0, 0, 0.185, -0.4668811, -0.041514635, -0.24224448)
-
-[node name="CashPickup" parent="." unique_id=627754851 instance=ExtResource("5_rhe6q")]
-transform = Transform3D(1.257, 0, 0, 0, 1.257, 0, 0, 0, 1.257, -0.284, 1.49, -0.832)
 
 [node name="stand" type="Node3D" parent="." unique_id=752722153]
 transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0.43465924, -0.4)

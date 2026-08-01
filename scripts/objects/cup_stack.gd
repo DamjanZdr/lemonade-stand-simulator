@@ -16,6 +16,7 @@ var current_count: int = 0
 
 var _item_nodes: Array[Node3D] = []
 var _item_origins: Array[Vector3] = []
+var _collider: CollisionShape3D = null
 var _label_format: String = "%.0f / %.0f"
 
 
@@ -27,10 +28,18 @@ func _ready() -> void:
 	_item_origins.clear()
 	for node in _item_nodes:
 		_item_origins.append(node.position)
-		# Hide the CupFill mesh so grid cups always look empty
-		var fill := node.find_child("CupFill", true, false)
+		# Hide the fill mesh so grid cups always look empty
+		var fill := node.find_child("Fill", true, false)
 		if fill:
 			fill.visible = false
+
+	# Grab the existing collider for dynamic resizing
+	_collider = null
+	if physics != null:
+		for child in physics.get_children():
+			if child is CollisionShape3D:
+				_collider = child as CollisionShape3D
+				break
 
 	if Engine.is_editor_hint():
 		for node in _item_nodes:
@@ -49,6 +58,20 @@ func _update_display() -> void:
 		_item_nodes[i].visible = i < visible_count
 	amount_label.text = _label_format % [current_count, max_capacity]
 
+	# Resize the single collider to match visible cups
+	if _collider != null and not _item_origins.is_empty():
+		if visible_count <= 0:
+			_collider.disabled = true
+		else:
+			_collider.disabled = false
+			var bottom_y: float = _item_origins[0].y
+			var top_y: float = _item_origins[visible_count - 1].y + 0.6
+			var grid_y: float = item_grid.position.y
+			var shape := _collider.shape as CylinderShape3D
+			if shape != null:
+				shape.height = top_y - bottom_y
+			_collider.position.y = grid_y + (bottom_y + top_y) * 0.5
+
 	# Disable collision and remove from container group when empty
 	if current_count <= 0:
 		if physics != null:
@@ -56,24 +79,31 @@ func _update_display() -> void:
 			physics.collision_mask = 0
 		remove_from_group("container")
 	else:
+		if physics != null:
+			physics.collision_layer = 1
+			physics.collision_mask = 1
 		add_to_group("container")
 	EventBus.cup_stack_changed.emit(current_count)
 
 
-func add_cups(qty: int) -> void:
+func add_cups(qty: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 	var old_count := mini(current_count, _item_nodes.size())
 	current_count = mini(current_count + qty, max_capacity)
 	_update_display()
 	var new_count := mini(current_count, _item_nodes.size())
 	for i in range(old_count, new_count):
-		_drop_item(i)
+		_drop_item(i, from_pos)
 
 
-func _drop_item(index: int) -> void:
+func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 	var node := _item_nodes[index]
-	node.position.y = _item_origins[index].y + drop_height
+	var origin := _item_origins[index]
+	if from_pos != Vector3.ZERO:
+		_animate_throw_arc(node, from_pos, origin)
+		return
+	node.position.y = origin.y + drop_height
 	var tween := create_tween()
-	tween.tween_property(node, "position:y", _item_origins[index].y, 0.25) \
+	tween.tween_property(node, "position:y", origin.y, 0.25) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 
 
@@ -91,7 +121,7 @@ func interact(player: Node) -> void:
 			if space <= 0:
 				return
 			# Only add ONE cup at a time
-			add_cups(1)
+			add_cups(1, _get_hand_pos(p))
 			AudioManager.play_sfx("taking_cup", global_position)
 			EventBus.supply_box_deposited.emit("cups", 1.0)
 			var remaining: int = int(data.get("amount", 0.0)) - 1
@@ -139,7 +169,7 @@ func get_hint(player: Node) -> String:
 
 	if p.held_item == p.HeldItem.NONE:
 		if current_count > 0:
-			return "Cup Stack | LMB: take a cup  |  RMB: pick up  (%d left)" % current_count
+			return "Cup Stack | LMB: take a cup (%d)  |  RMB: pick up" % current_count
 		return "Cup Stack | LMB: pick up"
 	if p.held_item == p.HeldItem.CUP_EMPTY:
 		return "Cup Stack | LMB: return cup"

@@ -29,6 +29,8 @@ func _preload_all() -> void:
 		"coins": "coins.mp3",
 		"cash": "cash.mp3",
 		"transaction_complete": "transaction complete.mp3",
+		"swoosh": "swoosh.mp3",
+		"button_hover": "button hover.mp3",
 	}
 	for key in files:
 		var path: String = SFX_DIR + files[key]
@@ -85,4 +87,16 @@ func play_sfx(
 			tween.tween_property(player, "volume_db", 0.0, 0.3)
 			return
 
+	player.play()
+
+
+func play_sfx_ui(key: String) -> void:
+	var stream: AudioStream = _streams.get(key)
+	if stream == null:
+		return
+	var player := AudioStreamPlayer.new()
+	player.stream = stream
+	player.pitch_scale = randf_range(1.0 - _PITCH_VARIATION, 1.0 + _PITCH_VARIATION)
+	player.finished.connect(player.queue_free)
+	add_child(player)
 	player.play()

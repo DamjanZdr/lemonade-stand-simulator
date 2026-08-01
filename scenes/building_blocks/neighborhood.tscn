@@ -164,7 +164,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.149878, -0.4460938, -1.149
 shape = SubResource("BoxShape3D_g4v7s")
 
 [node name="Trashcan" parent="Houses/player_house" unique_id=369057143 instance=ExtResource("8_t3nbc")]
-transform = Transform3D(-0.5, 0, 7.54979e-08, 0, 0.5, 0, -7.54979e-08, 0, -0.5, 2.2999985, -1.3802583, 15.252073)
+transform = Transform3D(0.23706862, 0, 0.44022548, 0, 0.5, 0, -0.44022548, 0, 0.23706862, -0.5208144, -1.3802583, 15.252073)
 
 [node name="pickup truck12" parent="Houses/player_house" unique_id=1923883066 instance=ExtResource("21_kyhvj")]
 transform = Transform3D(-0.001943293, 0, -0.29999372, 0, 0.3, 0, 0.29999372, 0, -0.001943293, -7.9648533, -1.252958, 5.199999)
@@ -5729,7 +5729,7 @@ transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-
 transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-08, -6.4509583, 0.099998474, 25)
 
 [node name="13" parent="NonPlayableArea/Mailbox" unique_id=188093175 instance=ExtResource("12_kyhvj")]
-transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-08, -6.4509583, 0.099998474, -3)
+transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-08, -6.4509583, 0.099998474, -5.963625)
 
 [node name="14" parent="NonPlayableArea/Mailbox" unique_id=1293916309 instance=ExtResource("13_uvpv4")]
 transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-08, -6.4509583, 0.099998474, -31)

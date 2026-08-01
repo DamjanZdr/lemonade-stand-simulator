@@ -23,6 +23,13 @@ var root_node_name: String = ""
 func _ready() -> void:
 	_load_tree()
 	_apply_radial_layout()
+	# Auto-purchase the lemon unlock node so the first fruit in the
+	# recipe branch shows as unlocked by default.
+	for node_name in tree_nodes:
+		var data: Dictionary = tree_nodes[node_name]
+		if data.get("upgrade_id", "") == "lemon_unlock":
+			purchased_nodes[node_name] = true
+			break
 	# Override definitions from UpgradeConfigManager if present.
 	var scene: Node = Engine.get_main_loop().current_scene
 	var cfg: Node = scene.get_node_or_null("Managers/UpgradeConfigManager")
@@ -254,6 +261,7 @@ func purchase_node(node_name: String) -> bool:
 	purchased_nodes[node_name] = true
 	var upgrade_id: String = data.get("upgrade_id", "")
 	_apply_effect(upgrade_id)
+	EventBus.upgrade_purchased.emit(data.get("id", 0), cost)
 	EventBus.game_saved.emit()
 	return true
 

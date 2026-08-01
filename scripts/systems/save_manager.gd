@@ -21,6 +21,7 @@ const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.t
 
 var _pending_container_respawn: Array = []
 var _pending_supply_box_respawn: Array = []
+var _default_container_positions: Array = []
 
 
 func _ready() -> void:
@@ -332,6 +333,39 @@ func _get_container_type(node: Node) -> String:
 
 
 func respawn_placed_containers() -> void:
+	call_deferred("_do_respawn")
+
+
+func capture_default_containers() -> void:
+	_default_container_positions = []
+	if get_tree() == null or get_tree().current_scene == null:
+		return
+	for node in get_tree().get_nodes_in_group("container"):
+		if not is_instance_valid(node) or node.is_queued_for_deletion():
+			continue
+		if node.is_in_group("ghost"):
+			continue
+		var ctype := _get_container_type(node)
+		if ctype == "" or not _is_known_container_type(ctype):
+			continue
+		var entry := {
+			"type": ctype,
+			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
+			"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
+			"scale": [node.scale.x, node.scale.y, node.scale.z],
+		}
+		if node is WaterDispenser:
+			entry["water_fillings"] = (node as WaterDispenser).max_fillings
+		elif node is CupStack:
+			entry["current_count"] = (node as CupStack).starting_count
+		elif node is Press:
+			entry["fruit_type"] = ""
+			entry["fruit_count"] = 0.0
+		_default_container_positions.append(entry)
+
+
+func respawn_default_containers() -> void:
+	_pending_container_respawn = _default_container_positions.duplicate(true)
 	call_deferred("_do_respawn")
 
 
