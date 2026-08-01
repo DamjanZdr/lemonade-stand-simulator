@@ -6,6 +6,7 @@
 albedo_color = Color(0.82, 0.65, 0.38, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_counter"]
+add_uv2 = true
 size = Vector3(3, 0.1, 0.7)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_counter"]
@@ -15,6 +16,7 @@ size = Vector3(2.5, 1.7452148, 0.99997866)
 albedo_color = Color(0.55, 0.38, 0.18, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_post"]
+add_uv2 = true
 size = Vector3(0.12, 2.4, 0.12)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_post"]

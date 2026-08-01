@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://1v1tem4n2kjm" path="res://scenes/stand/stand.tscn" id="1_stand"]
 [ext_resource type="PackedScene" uid="uid://bpiux7tbvj0ky" path="res://scenes/objects/water_dispenser.tscn" id="3_wdispenser"]
 [ext_resource type="PackedScene" uid="uid://b5nygw38vywdu" path="res://scenes/objects/thermometer.tscn" id="5_v5dby"]
+[ext_resource type="LightmapGIData" uid="uid://60b7fspwoxly" path="res://scenes/world/world.lmbake" id="6_j0rhc"]
 [ext_resource type="PackedScene" uid="uid://c7m3x1q2y405a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
 [ext_resource type="Script" uid="uid://dcc7v87n0gjjq" path="res://scripts/tools/preview_orbit_camera.gd" id="10_preview"]
 [ext_resource type="PackedScene" uid="uid://vc244erl2bi2" path="res://blender/Desk2.0.glb" id="14_mxkvs"]
@@ -77,16 +78,6 @@ sky = SubResource("Sky_main")
 ambient_light_source = 3
 ambient_light_sky_contribution = 0.8
 tonemap_white = 6.01
-ssao_enabled = true
-ssao_radius = 1.0
-ssao_intensity = 2.0
-ssao_power = 1.5
-sdfgi_enabled = true
-sdfgi_frames_to_converge = 4
-sdfgi_frames_to_update_light = 2
-sdfgi_ray_count = 1
-sdfgi_probe_bias = 1.1
-volumetric_fog_enabled = true
 volumetric_fog_density = 0.001
 volumetric_fog_emission = Color(0.5780994, 0.8133498, 0.85745275, 1)
 volumetric_fog_length = 333.13
@@ -137,6 +128,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.225821, 0.3128554, -0.76168
 [node name="QueueMarkerActive" type="Marker3D" parent="." unique_id=1918688920]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9837594, 0, -2.300959)
 
+[node name="BakeRadius_N" type="Marker3D" parent="." unique_id=1934682381]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 58)
+
+[node name="BakeRadius_S" type="Marker3D" parent="." unique_id=1306865523]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -62)
+
+[node name="BakeRadius_E" type="Marker3D" parent="." unique_id=926451533]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 62, 0, -2)
+
+[node name="BakeRadius_W" type="Marker3D" parent="." unique_id=225236337]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -58, 0, -2)
+
 [node name="QueueMarker1" type="Marker3D" parent="." unique_id=1918688911]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.016240656, 0, -2.900959)
 
@@ -158,17 +161,19 @@ light_energy = 0.5
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=305494689]
 environment = SubResource("Environment_main")
 
-[node name="VoxelGI" type="VoxelGI" parent="."]
+[node name="LightmapGI" type="LightmapGI" parent="." unique_id=1827849850]
+bounces = 4
+directional = true
+light_data = ExtResource("6_j0rhc")
+
+[node name="VoxelGI" type="VoxelGI" parent="." unique_id=1156579838]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.5, -2)
 size = Vector3(10, 5, 8)
-subdiv = 256
 
-[node name="ReflectionProbe" type="ReflectionProbe" parent="."]
+[node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=207345750]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.5, -2)
-size = Vector3(10, 6, 8)
-update_mode = 0
-intensity = 1.0
 max_distance = 20.0
+size = Vector3(10, 6, 8)
 
 [node name="Routes" type="Node3D" parent="." unique_id=1364106154]
 
@@ -364,7 +369,7 @@ shape = SubResource("BoxShape3D_5fxch")
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1079704992]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5780778, 3.4851818, 12.612837)
 light_energy = 0.6
-omni_range = 12.76936
+omni_range = 6.325504
 
 [node name="Decorations" type="Node3D" parent="." unique_id=1407390588]
 transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
