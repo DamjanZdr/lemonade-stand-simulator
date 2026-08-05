@@ -18,6 +18,8 @@ const STOP_DURATION: float = 1.0
 var _target_grid: DeliveryGrid = null
 var _state: String = "idle"
 var _pending_boxes: Array[SupplyBox] = []
+var _engine_player: AudioStreamPlayer3D = null
+var _engine_fade_tween: Tween = null
 var _boxes_transferred: int = 0
 var _post_transfer_timer: float = 0.0
 
@@ -31,10 +33,10 @@ var _path_end: Marker3D = null
 # Driving state
 var _waypoints: Array[Vector3] = []
 var _current_wp: int = 0
-var _scene_y: float = 0.0  # Preserved Y height from scene placement
-var _scene_yaw: float = 0.0  # Preserved Y rotation from scene placement
-var _turn_start_yaw: float = 0.0  # Yaw at start of turn segment
-var _turn_end_yaw: float = 0.0  # Target yaw to face drop point
+var _scene_y: float = 0.0 # Preserved Y height from scene placement
+var _scene_yaw: float = 0.0 # Preserved Y rotation from scene placement
+var _turn_start_yaw: float = 0.0 # Yaw at start of turn segment
+var _turn_end_yaw: float = 0.0 # Target yaw to face drop point
 
 # Indices for turn segment in _waypoints
 const WP_TURN_START: int = 1
@@ -97,6 +99,80 @@ func _find_route_markers() -> void:
 	_path_end = route.get_node_or_null("PathEnd") as Marker3D
 
 
+func _start_engine_sound() -> void:
+	_stop_engine_sound()
+	var stream := load("res://Audio/Sounds/car engine.mp3") as AudioStream
+	if stream == null:
+		return
+	# Duplicate so we can enable looping without affecting the shared resource
+	var orig_len: float = 0.0
+	if stream is AudioStreamMP3:
+		stream = (stream as AudioStreamMP3).duplicate()
+		(stream as AudioStreamMP3).loop = true
+		orig_len = (stream as AudioStreamMP3).get_length()
+	_engine_player = AudioStreamPlayer3D.new()
+	_engine_player.stream = stream
+	_engine_player.unit_size = 12.0
+	_engine_player.max_distance = 60.0
+	_engine_player.autoplay = true
+	_engine_player.volume_db = 3.0
+	add_child(_engine_player)
+	_engine_player.global_position = global_position
+	# Start from the middle of the engine sound and fade in
+	if orig_len > 0.0:
+		_engine_player.play(orig_len * 0.5)
+	_engine_player.volume_db = -20.0
+	var tween := create_tween()
+	tween.tween_property(_engine_player, "volume_db", 3.0, 0.4)
+
+
+func _stop_engine_sound() -> void:
+	if _engine_fade_tween:
+		_engine_fade_tween.kill()
+		_engine_fade_tween = null
+	if _engine_player:
+		_engine_player.queue_free()
+		_engine_player = null
+
+
+func _fade_engine_out(duration: float = 1.0) -> void:
+	if _engine_player == null:
+		return
+	if _engine_fade_tween:
+		_engine_fade_tween.kill()
+	_engine_fade_tween = create_tween()
+	_engine_fade_tween.tween_property(_engine_player, "volume_db", -40.0, duration)
+	_engine_fade_tween.tween_callback(_stop_engine_sound)
+
+
+func _play_beep() -> void:
+	var stream := load("res://Audio/Sounds/car beep.mp3") as AudioStream
+	if stream == null:
+		return
+	var player := AudioStreamPlayer3D.new()
+	player.stream = stream
+	player.unit_size = 12.0
+	player.max_distance = 60.0
+	player.pitch_scale = 1.4
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
+
+
+func _play_start_engine() -> void:
+	var stream := load("res://Audio/Sounds/start engine.mp3") as AudioStream
+	if stream == null:
+		return
+	var player := AudioStreamPlayer3D.new()
+	player.stream = stream
+	player.unit_size = 12.0
+	player.max_distance = 60.0
+	player.volume_db = 3.0
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
+
+
 func set_target_grid(grid: DeliveryGrid) -> void:
 	_target_grid = grid
 
@@ -145,9 +221,13 @@ func start_delivery() -> void:
 	visible = true
 	_current_wp = 1
 	_state = "driving_in"
+	_start_engine_sound()
 
 
 func _process(delta: float) -> void:
+	# Keep engine sound at truck position
+	if _engine_player and is_instance_valid(_engine_player):
+		_engine_player.global_position = global_position
 	match _state:
 		"idle":
 			return
@@ -169,6 +249,9 @@ func _drive_to_waypoint(delta: float) -> void:
 		_state = "stopped"
 		_post_transfer_timer = STOP_DURATION
 		_play_skew_effect()
+		# Fast fade engine out, then beep
+		_fade_engine_out(0.15)
+		get_tree().create_timer(0.25).timeout.connect(_play_beep)
 		return
 
 	var target_pos := _waypoints[_current_wp]
@@ -216,6 +299,7 @@ func _drive_out(delta: float) -> void:
 	if _path_end == null:
 		visible = false
 		_state = "idle"
+		_stop_engine_sound()
 		return
 
 	var target_pos := _path_end.global_position
@@ -227,6 +311,7 @@ func _drive_out(delta: float) -> void:
 	if dist < 0.5:
 		visible = false
 		_state = "idle"
+		_fade_engine_out(0.15)
 		return
 
 	var step := minf(DRIVE_SPEED * delta, dist)
@@ -289,6 +374,10 @@ func _transfer_next_box(index: int) -> void:
 
 	# Arc animation: parabolic path from truck to delivery grid
 	_animate_arc(box, target_pos, target_rot)
+	# Play swoosh sound for this box
+	var am := get_node_or_null("/root/AudioManager")
+	if am:
+		am.play_sfx("swoosh", box_global_pos, -1.0, 0.0, 1.0)
 
 	_boxes_transferred += 1
 	_check_transfer_complete()
@@ -336,6 +425,14 @@ func _rearrange_boxes_reverse() -> void:
 func _drive_away() -> void:
 	_pending_boxes.clear()
 	_current_wp = 0
+	# Play start engine sound, then start looping engine and drive off
+	_play_start_engine()
+	# Stay in current state (transferring) until engine restarts
+	get_tree().create_timer(1.0).timeout.connect(_on_engine_restart_done)
+
+
+func _on_engine_restart_done() -> void:
+	_start_engine_sound()
 	_state = "driving_out"
 
 
@@ -358,22 +455,37 @@ func _play_skew_effect() -> void:
 	tween.set_trans(Tween.TRANS_QUAD)
 
 	# Phase 1: skew to max (0.08s)
-	tween.tween_method(
-		func(v: float) -> void: mi.set_blend_shape_value(blend_idx, v),
-		0.0, 1.0, 0.08
-	).set_ease(Tween.EASE_OUT)
+	tween \
+			.tween_method(
+		func(v: float) -> void:
+			mi.set_blend_shape_value(blend_idx, v),
+		0.0,
+		1.0,
+		0.08,
+	) \
+			.set_ease(Tween.EASE_OUT)
 
 	# Phase 2: overshoot back slightly (0.1s)
-	tween.tween_method(
-		func(v: float) -> void: mi.set_blend_shape_value(blend_idx, v),
-		1.0, -0.15, 0.1
-	).set_ease(Tween.EASE_OUT)
+	tween \
+			.tween_method(
+		func(v: float) -> void:
+			mi.set_blend_shape_value(blend_idx, v),
+		1.0,
+		-0.15,
+		0.1,
+	) \
+			.set_ease(Tween.EASE_OUT)
 
 	# Phase 3: settle back to 0 (0.08s)
-	tween.tween_method(
-		func(v: float) -> void: mi.set_blend_shape_value(blend_idx, v),
-		-0.15, 0.0, 0.08
-	).set_ease(Tween.EASE_IN_OUT)
+	tween \
+			.tween_method(
+		func(v: float) -> void:
+			mi.set_blend_shape_value(blend_idx, v),
+		-0.15,
+		0.0,
+		0.08,
+	) \
+			.set_ease(Tween.EASE_IN_OUT)
 
 
 func _find_mesh_with_blend_shape(node: Node) -> MeshInstance3D:
@@ -424,15 +536,19 @@ func _animate_arc(box: SupplyBox, target_pos: Vector3, target_rot: Vector3) -> v
 	tween.set_parallel(true)
 
 	# Position: cubic bezier start -> cp1 -> cp2 -> target
-	tween.tween_method(
+	tween \
+			.tween_method(
 		func(t: float):
 			var p := start_pos * (1.0 - t) ** 3 \
-				+ cp1 * 3.0 * ((1.0 - t) ** 2) * t \
-				+ cp2 * 3.0 * (1.0 - t) * (t ** 2) \
-				+ target_pos * (t ** 3)
+					+ cp1 * 3.0 * ((1.0 - t) ** 2) * t \
+					+ cp2 * 3.0 * (1.0 - t) * (t ** 2) \
+					+ target_pos * (t ** 3)
 			box.global_position = p,
-		0.0, 1.0, ARC_DURATION,
-	).set_trans(Tween.TRANS_LINEAR)
+		0.0,
+		1.0,
+		ARC_DURATION,
+	) \
+			.set_trans(Tween.TRANS_LINEAR)
 
 	# Rotation: smoothly rotate to target
 	tween.tween_property(box, "global_rotation", target_rot, ARC_DURATION) \
