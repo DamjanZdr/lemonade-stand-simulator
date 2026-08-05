@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c7jkko2efjixb"
+path="res://.godot/imported/car engine.mp3-509b5aa553db609e39f56190f11e5848.mp3str"
+
+[deps]
+
+source_file="res://Audio/Sounds/car engine.mp3"
+dest_files=["res://.godot/imported/car engine.mp3-509b5aa553db609e39f56190f11e5848.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -13,8 +13,8 @@ var feedback_tier: int
 var _debug_popularity: float = -1.0
 
 # Dev panel toggles for house coloring.
-var color_roofs: bool = true
-var color_walls: bool = false
+var color_roofs: bool = false
+var color_walls: bool = true
 
 var customers_served_happy: int = 0
 var customers_lost: int = 0

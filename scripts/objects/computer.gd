@@ -7,6 +7,7 @@ extends Interactable
 @onready var _ui_root: CanvasLayer = $ScreenUI/MorningHub
 @onready var _screen_camera_target: Transform3D = _screen_camera.global_transform
 @onready var _screen_camera_fov: float = _screen_camera.fov
+var _screen_material: ShaderMaterial = null
 
 var _active: bool = false
 var _transitioning: bool = false
@@ -51,27 +52,24 @@ func _setup_screen_material() -> void:
 	# shader so the texture is sampled every frame and always stays valid.
 	var shader := Shader.new()
 	shader.code = (
-		"shader_type spatial;\n"
-		+ "render_mode unshaded, cull_disabled;\n"
-		# filter_linear_mipmap (instead of plain filter_linear) lets the
-		# renderer use mipmaps when the UI is minified onto the quad,
-		# avoiding shimmering/aliasing on small text.
+		"shader_type spatial;\n" + "render_mode unshaded, cull_disabled;\n"
 		+ "uniform sampler2D screen_texture : filter_linear_mipmap;\n"
-		+ "void fragment() {\n"
+		+ "uniform float boost = 1.0;\n" + "void fragment() {\n"
 		+ "\tvec4 col = texture(screen_texture, UV);\n"
-		# The SubViewport's 2D content is already gamma-encoded (sRGB)
-		# final pixel color. Godot's 3D pipeline treats ALBEDO as linear
-		# and applies a linear->sRGB conversion on output, so writing
-		# the sRGB value directly double-encodes it, washing everything
-		# out. Converting back to linear here cancels that out.
-		+ "\tALBEDO = pow(col.rgb, vec3(2.2));\n"
-		+ "\tALPHA = 1.0;\n"
-		+ "}\n"
+		+ "\tALBEDO = pow(col.rgb, vec3(2.2)) * boost;\n" + "\tALPHA = 1.0;\n" + "}\n"
 	)
 	var mat := ShaderMaterial.new()
 	mat.shader = shader
 	mat.set_shader_parameter("screen_texture", vp_tex)
+	mat.set_shader_parameter("boost", 1.0)
 	_screen_mesh.set_surface_override_material(0, mat)
+	_screen_material = mat
+	if not Engine.is_editor_hint():
+		EventBus.exposure_changed.connect(
+			func(exposure: float):
+				if _screen_material:
+					_screen_material.set_shader_parameter("boost", 1.0 / exposure),
+		)
 
 
 func interact(player: Node) -> void:

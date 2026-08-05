@@ -1,9 +1,16 @@
 class_name Player
 extends CharacterBody3D
 
-enum HeldItem { NONE, CUP_EMPTY, CUP_FILLED, SUPPLY_BOX, CONTAINER, TRASH }
+enum HeldItem {
+	NONE,
+	CUP_EMPTY,
+	CUP_FILLED,
+	SUPPLY_BOX,
+	CONTAINER,
+	TRASH,
+}
 
-const MOVE_SPEED: float = 5.0
+@export var move_speed: float = 5.0
 const MOUSE_SENSITIVITY: float = 0.002
 
 const HINT_GROUND := "Aim at ground to place"
@@ -32,6 +39,7 @@ func _get_held_item_name() -> String:
 			return "Trash"
 	return ""
 
+
 @export var gravity: float = 9.8
 @export var sprint_multiplier: float = 1.8
 @export var jump_velocity: float = 5.0
@@ -48,6 +56,12 @@ var last_interact_hit: Node = null
 var _primary_held: bool = false
 var _rapid_fire_timer: float = 0.0
 @export var rapid_fire_interval: float = 0.35
+# Cup stacks have a small collider (matching the real cup's size), so a tiny
+# bit of mouse drift while holding can make the raycast momentarily miss it
+# — especially right after placing the very first cup, when re-aiming is the
+# only way it used to "reconnect". Remember the last cup stack we deposited
+# into and keep targeting it while held, as long as it's still valid.
+var _rapid_fire_cup_target: CupStack = null
 
 # --- Container placement ghost ---
 var _ghost: Node3D = null
@@ -248,9 +262,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotation.x = clampf(head.rotation.x, -PI / 2.1, PI / 2.1)
 
 	if event.is_action_pressed("ui_cancel"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if \
-		Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else \
-		Input.MOUSE_MODE_CAPTURED
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		else:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -259,6 +274,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_primary_interact()
 		elif not event.pressed:
 			_primary_held = false
+			_rapid_fire_cup_target = null
 
 	if event.is_action_pressed("secondary_interact") and \
 			Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -279,7 +295,7 @@ func _physics_process(delta: float) -> void:
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	var speed := MOVE_SPEED * (sprint_multiplier if Input.is_action_pressed("sprint") else 1.0)
+	var speed := move_speed * (sprint_multiplier if Input.is_action_pressed("sprint") else 1.0)
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()
@@ -362,6 +378,8 @@ func _poll_hint() -> void:
 				hint = HINT_GROUND
 			else:
 				hint = "%s | %s" % [_get_held_item_name(), HINT_STAND]
+		if container_type == "pitcher" and _held_pitcher_has_contents():
+			hint += "  |  RMB: empty"
 	elif held_item == HeldItem.SUPPLY_BOX \
 			and held_item_data.get("source") == "bin_scoop":
 		# Bin scoops can only be deposited into bins/presses/pitchers
@@ -441,10 +459,7 @@ func _primary_interact() -> void:
 			if _ghost != null and _ghost_valid:
 				_drop_trash(_ghost.global_position)
 			elif ray.is_colliding() and _is_placement_surface(ray.get_collider()):
-				_drop_trash(
-					ray.get_collision_point()
-						+ Vector3(0, SupplyBox.bottom_offset, 0),
-				)
+				_drop_trash(ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0))
 			else:
 				_drop_trash()
 		return
@@ -492,9 +507,7 @@ func _primary_interact() -> void:
 					if placed is Pitcher:
 						press.snap_pitcher(placed as Pitcher)
 					return
-				EventBus.interaction_hint_changed.emit(
-					press.get_pitcher_snap_hint(snap_recipe),
-				)
+				EventBus.interaction_hint_changed.emit(press.get_pitcher_snap_hint(snap_recipe))
 				return
 			var dispenser := _find_looked_at_dispenser()
 			if dispenser != null:
@@ -591,6 +604,7 @@ func _primary_interact() -> void:
 				node = node.get_parent()
 		if interactable is CupStack:
 			# Deposit to existing stack
+			_rapid_fire_cup_target = interactable as CupStack
 			last_interact_hit = ray.get_collider()
 			interactable.interact(self)
 			last_interact_hit = null
@@ -652,9 +666,12 @@ func _primary_interact() -> void:
 			var on_surface := _is_placement_surface(collider)
 			var is_ground := _is_ground_surface(collider)
 			var equipment_type: String = held_item_data.get("equipment_type", "")
-			if is_equipment and (
+			if (
+				is_equipment
+				and (
 					on_surface and not is_ground and equipment_type != "workstation"
 					or is_ground and equipment_type == "workstation"
+				)
 			):
 				# Place working equipment on workstation (or floor for tables)
 				_place_equipment_from_box()
@@ -679,6 +696,12 @@ func _primary_interact() -> void:
 
 
 func _secondary_interact() -> void:
+	# Holding a pitcher: RMB always empties it, regardless of what's being
+	# looked at.
+	if held_item == HeldItem.CONTAINER and held_item_data.get("container_type", "") == "pitcher":
+		_empty_held_pitcher()
+		return
+
 	var interactable := _get_looked_at_interactable()
 	if interactable:
 		# If hands empty and looking at container, pick it up
@@ -703,6 +726,38 @@ func _secondary_interact() -> void:
 		_drop_trash()
 
 
+func _held_pitcher_has_contents() -> bool:
+	var recipe: Dictionary = held_item_data.get("saved_recipe", { })
+	return (
+		recipe.get("fruit_count", recipe.get("lemons", 0.0)) > 0.0 or recipe.get("water", 0.0) > 0.0
+		or recipe.get("sugar", 0.0) > 0.0 or recipe.get("ice", 0.0) > 0.0
+	)
+
+
+func _empty_held_pitcher() -> void:
+	## Dumps out whatever's currently in the held pitcher. Keeps the pitcher
+	## itself held — only clears its contents.
+	if not _held_pitcher_has_contents():
+		EventBus.interaction_hint_changed.emit("Pitcher is already empty!")
+		return
+
+	held_item_data["saved_recipe"] = { }
+	held_item_data["has_liquid"] = false
+
+	if _held_mesh is Pitcher:
+		var held_pitcher := _held_mesh as Pitcher
+		held_pitcher.fruit_type = ""
+		held_pitcher.fruit_count = 0.0
+		held_pitcher.water = 0.0
+		held_pitcher.sugar = 0.0
+		held_pitcher.ice = 0.0
+		held_pitcher.cups_poured = 0
+		held_pitcher.update_label()
+		held_pitcher.update_liquid_color()
+
+	EventBus.interaction_hint_changed.emit("Pitcher emptied!")
+
+
 func _place_cup_stack_from_box() -> void:
 	# Place ONE cup on the surface or add to existing stack.
 
@@ -715,6 +770,7 @@ func _place_cup_stack_from_box() -> void:
 	var interactable := _get_looked_at_interactable()
 	if interactable is CupStack:
 		# Add one cup to existing stack
+		_rapid_fire_cup_target = interactable as CupStack
 		interactable.add_cups(1)
 		update_held_amount(float(qty - 1))
 		if qty - 1 <= 0:
@@ -761,6 +817,12 @@ func _place_cup_stack_from_box() -> void:
 	if qty - 1 <= 0:
 		make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 
+	# Remember this brand-new stack as the rapid-fire target so holding the
+	# mouse down keeps depositing into it, even before the raycast has had a
+	# chance to register its freshly-added (and quite small) collider.
+	_rapid_fire_cup_target = stack as CupStack
+
+	AudioManager.play_sfx(_get_place_sfx_key("cup_stack"), stack.global_position, -1.0, 0.05, 0.85)
 	EventBus.container_placed.emit("cup_stack", stack)
 
 
@@ -788,9 +850,7 @@ func _update_single_cup_ghost() -> void:
 			get_tree().current_scene.add_child(_ghost)
 		else:
 			_ghost = CUP_STACK_SCENE.instantiate()
-			var placement_scale: Vector3 = (
-					CONTAINER_PLACEMENT_SCALE.get("cup_stack")
-			)
+			var placement_scale: Vector3 = (CONTAINER_PLACEMENT_SCALE.get("cup_stack"))
 			_ghost.scale = placement_scale
 			var bottom_offset := _get_container_bottom_offset(_ghost)
 			_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
@@ -1032,7 +1092,11 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 		_stack_target_id = top.get_instance_id()
 		_regenerate_stack_offset()
 	var top_y := _get_box_stack_y(top)
-	var place_pos := Vector3(top.global_position.x, top_y, top.global_position.z) + Vector3(0, SupplyBox.stack_height, 0) + _stack_offset
+	var place_pos := Vector3(top.global_position.x, top_y, top.global_position.z) + Vector3(
+		0,
+		SupplyBox.stack_height,
+		0,
+	) + _stack_offset
 	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
 	var box := _place_held_supply_box_on(place_pos, place_rot)
 	var cell_idx: int = top.get_meta("delivery_cell_idx", -1) as int
@@ -1087,6 +1151,16 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	clear_held()
 
 
+## Not every container type has its own placement sound recorded — fall back
+## to the generic "table" sound for the ones that don't.
+func _get_place_sfx_key(container_type: String) -> String:
+	match container_type:
+		"pitcher", "press", "fruit_bin":
+			return container_type
+		_:
+			return "table"
+
+
 func _place_equipment_from_box() -> void:
 	if not _ghost_valid or _ghost == null:
 		EventBus.interaction_hint_changed.emit("Can only place on stand or workstation!")
@@ -1121,6 +1195,13 @@ func _place_equipment_from_box() -> void:
 		EventBus.pitcher_state_changed.emit(int(instance.state))
 	_destroy_ghost()
 	make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+	AudioManager.play_sfx(
+		_get_place_sfx_key(equipment_type),
+		instance.global_position,
+		-1.0,
+		0.05,
+		0.85,
+	)
 	EventBus.container_placed.emit(equipment_type, instance)
 
 
@@ -1142,6 +1223,13 @@ func _update_rapid_fire(delta: float) -> void:
 
 	# Handle cup stack deposits
 	var cup_stack := interactable as CupStack
+	if cup_stack != null:
+		_rapid_fire_cup_target = cup_stack
+	elif held_item_data.get("ingredient_type", "") == "cups" \
+			and is_instance_valid(_rapid_fire_cup_target):
+		# Raycast momentarily missed the (small) cup stack collider; keep
+		# depositing into the last one we hit rather than stalling out.
+		cup_stack = _rapid_fire_cup_target
 	if cup_stack != null:
 		if held_item_data.get("ingredient_type", "") != "cups":
 			return
@@ -1324,16 +1412,11 @@ func clear_held() -> void:
 
 
 func make_held_trash(
-		refund: float,
-		trash_type: String = "empty_box",
-		hand_mesh: Node3D = null,
+	refund: float,
+	trash_type: String = "empty_box",
+	hand_mesh: Node3D = null,
 ) -> void:
-	var data := {
-		"amount": 0.0,
-		"is_trash": true,
-		"trash_value": refund,
-		"trash_type": trash_type,
-	}
+	var data := { "amount": 0.0, "is_trash": true, "trash_value": refund, "trash_type": trash_type }
 	if hand_mesh == null:
 		var box_inst: SupplyBox = SUPPLY_BOX_SCENE.instantiate() as SupplyBox
 		box_inst.is_hand_mesh = true
@@ -1353,12 +1436,12 @@ func make_held_trash(
 
 
 func hold_container(
-		container_type: String,
-		saved_amount: float = 0.0,
-		saved_count: int = 0,
-		has_liquid: bool = false,
-		saved_recipe: Dictionary = { },
-		from_box: bool = false,
+	container_type: String,
+	saved_amount: float = 0.0,
+	saved_count: int = 0,
+	has_liquid: bool = false,
+	saved_recipe: Dictionary = { },
+	from_box: bool = false,
 ) -> void:
 	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
@@ -1400,12 +1483,12 @@ func _get_trash_box_scene() -> PackedScene:
 
 
 func _create_container_hand_mesh(
-		container_type: String,
-		_has_liquid: bool,
-		saved_recipe: Dictionary,
-		saved_amount: float = 0.0,
-		saved_count: int = 0,
-		from_box: bool = false,
+	container_type: String,
+	_has_liquid: bool,
+	saved_recipe: Dictionary,
+	saved_amount: float = 0.0,
+	saved_count: int = 0,
+	from_box: bool = false,
 ) -> Node3D:
 	# Create a hand mesh for the held container.
 	if from_box:
@@ -1443,11 +1526,11 @@ func _create_container_hand_mesh(
 
 
 func _set_container_starting_state(
-		inst: Node,
-		container_type: String,
-		saved_amount: float,
-		saved_count: int,
-		saved_recipe: Dictionary = { },
+	inst: Node,
+	container_type: String,
+	saved_amount: float,
+	saved_count: int,
+	saved_recipe: Dictionary = { },
 ) -> void:
 	# Set the starting amount/count on a container instance so its own
 	# _ready() renders the correct item visibility and label text.
@@ -1509,6 +1592,34 @@ func _disable_hand_collision(node: Node) -> void:
 		_disable_hand_collision(child)
 
 
+func _hide_ghost_box_ui(node: Node) -> void:
+	# Remove labels/icons from box ghosts so only the box is shown.
+	if node is Label3D or node is Sprite3D:
+		node.visible = false
+	for child in node.get_children():
+		_hide_ghost_box_ui(child)
+
+
+func _hide_ghost_container_contents(node: Node) -> void:
+	# Hide perishable contents inside bins so the ghost shows only the bin.
+	var n := node.name
+	if n.begins_with("ItemGrid") or n == "AmountLabel" or n == "price tag":
+		node.visible = false
+		return
+	if (
+		n.begins_with("ice cube") or n.begins_with("sugar cube")
+		or n.begins_with("lemon") or n.begins_with("strawberry") or n.begins_with("blueberry")
+		or n.begins_with("peach") or n.begins_with("watermelon")
+	):
+		node.visible = false
+		return
+	if node is MeshInstance3D and n.begins_with("IceCube"):
+		node.visible = false
+		return
+	for child in node.get_children():
+		_hide_ghost_container_contents(child)
+
+
 func _create_ghost(container_type: String) -> void:
 	_destroy_ghost()
 	var scene: PackedScene = _get_container_scene(container_type)
@@ -1532,7 +1643,10 @@ func _create_ghost(container_type: String) -> void:
 	_disable_physics(_ghost)
 	# Add to ghost group for overlap filtering
 	_mark_ghost(_ghost)
+	_disable_scripts(_ghost)
 	get_tree().current_scene.add_child(_ghost)
+	_hide_ghost_box_ui(_ghost)
+	_hide_ghost_container_contents(_ghost)
 	# Apply ghost material AFTER adding to tree so _ready() side effects
 	# (e.g. CSG material setup) don't override the transparent ghost material.
 	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -1665,13 +1779,7 @@ func _update_supply_box_ghost() -> void:
 		_disable_physics(_ghost)
 		_mark_ghost(_ghost)
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
-		if held_item == HeldItem.TRASH:
-			for child in _ghost.get_children(true):
-				if child is Label3D or child is Sprite3D:
-					child.visible = false
-				for sub in child.get_children(true):
-					if sub is Label3D or sub is Sprite3D:
-						sub.visible = false
+		_hide_ghost_box_ui(_ghost)
 		get_tree().current_scene.add_child(_ghost)
 
 	if not ray.is_colliding():
@@ -1700,7 +1808,9 @@ func _update_supply_box_ghost() -> void:
 			_regenerate_stack_offset()
 		var ghost_y := _get_box_stack_y(target_box)
 		var stack_base := Vector3(
-				target_box.global_position.x, ghost_y, target_box.global_position.z
+			target_box.global_position.x,
+			ghost_y,
+			target_box.global_position.z,
 		) + Vector3(0, SupplyBox.stack_height, 0)
 		_ghost.global_position = stack_base + _stack_offset
 		_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
@@ -1765,6 +1875,14 @@ func _update_equipment_box_ghost() -> void:
 			_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 			return
 		node = node.get_parent()
+
+	# Check if looking at the delivery grid — show box ghost on the grid.
+	var grid_node: Node = collider
+	while grid_node != null:
+		if grid_node is DeliveryGrid:
+			_update_grid_ghost(grid_node as DeliveryGrid, hit_point)
+			return
+		grid_node = grid_node.get_parent()
 
 	var on_surface := _is_placement_surface(collider)
 	var is_ground := _is_ground_surface(collider)
@@ -1836,6 +1954,7 @@ func _ensure_box_ghost() -> void:
 	_disable_physics(_ghost)
 	_mark_ghost(_ghost)
 	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+	_hide_ghost_box_ui(_ghost)
 	get_tree().current_scene.add_child(_ghost)
 
 
@@ -1857,8 +1976,11 @@ func _ensure_container_ghost(container_type: String) -> void:
 	_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 	_disable_physics(_ghost)
 	_mark_ghost(_ghost)
-	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+	_disable_scripts(_ghost)
 	get_tree().current_scene.add_child(_ghost)
+	_hide_ghost_box_ui(_ghost)
+	_hide_ghost_container_contents(_ghost)
+	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 
 
 func _update_ghost() -> void:
@@ -1946,6 +2068,15 @@ func _update_ghost() -> void:
 				return
 			node = node.get_parent()
 
+	# Containers cannot be placed on the delivery grid — only boxes can.
+	var grid_node: Node = collider
+	while grid_node != null:
+		if grid_node is DeliveryGrid:
+			_ghost.visible = false
+			_ghost_valid = false
+			return
+		grid_node = grid_node.get_parent()
+
 	var on_surface := _is_placement_surface(collider)
 	var is_ground := _is_ground_surface(collider)
 
@@ -1977,10 +2108,12 @@ func _update_ghost() -> void:
 	# Deployed containers (picked up from workstation) can't go on ground,
 	# except for workstations and water dispensers, which are floor-standing.
 	var deployed: bool = held_item_data.get("deployed", false)
-	var valid := not overlapping and (
-			not (deployed and is_ground)
-			or container_type == "workstation"
+	var valid := (
+		not overlapping
+		and (
+			not (deployed and is_ground) or container_type == "workstation"
 			or container_type == "water_dispenser"
+		)
 	)
 
 	_ghost_valid = valid
@@ -2006,6 +2139,7 @@ func _try_place_container() -> Node3D:
 			source_node.global_transform = _ghost.global_transform
 			_enable_physics(source_node)
 			EventBus.container_placed.emit(container_type, source_node)
+			AudioManager.play_sfx("table", source_node.global_position, -1.0, 0.05, 0.85)
 			_destroy_ghost()
 			clear_held()
 			return source_node
@@ -2072,6 +2206,13 @@ func _try_place_container() -> Node3D:
 	var container_type_str: String = held_item_data.get("container_type", "")
 	clear_held()
 	EventBus.container_placed.emit(container_type_str, instance)
+	AudioManager.play_sfx(
+		_get_place_sfx_key(container_type_str),
+		instance.global_position,
+		-1.0,
+		0.05,
+		0.85,
+	)
 	return instance
 
 
@@ -2082,10 +2223,8 @@ func _cancel_container_placement() -> void:
 	var source_node: Node3D = held_item_data.get("source_node") as Node3D
 	if source_node != null and is_instance_valid(source_node):
 		var original: Transform3D = (
-				held_item_data.get(
-					"source_original_transform",
-					source_node.global_transform,
-				) as Transform3D
+			held_item_data.get("source_original_transform", source_node.global_transform)
+			as Transform3D
 		)
 		var source_parent: Node = held_item_data.get("source_parent") as Node
 		if source_node.get_parent() == null:
@@ -2098,9 +2237,7 @@ func _cancel_container_placement() -> void:
 	_destroy_ghost()
 	var refund_value := cost * 0.7
 	make_held_trash(refund_value, container_type)
-	EventBus.interaction_hint_changed.emit(
-		"Recycled — take to trashcan for $%.2f" % refund_value,
-	)
+	EventBus.interaction_hint_changed.emit("Recycled — take to trashcan for $%.2f" % refund_value)
 
 
 func pickup_container(interactable: Interactable, container_type: String) -> void:
@@ -2111,8 +2248,10 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 		var source_parent := interactable.get_parent()
 		held_item_data["source_parent"] = source_parent
 		held_item_data["source_original_transform"] = interactable.global_transform
+		var pickup_pos := interactable.global_position
 		source_parent.remove_child(interactable)
 		EventBus.container_picked_up.emit(container_type, interactable)
+		AudioManager.play_sfx("table", pickup_pos)
 		hold_container(container_type, 0.0, 0, false, { })
 		held_item_data["source_node"] = interactable
 		held_item_data["deployed"] = true
@@ -2142,11 +2281,13 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 	# Save fruit bin multi-fruit amounts
 	if interactable is FruitBin:
 		var fbin := interactable as FruitBin
-		saved_recipe = {
-			"fruit_amounts": fbin.fruit_amounts.duplicate(),
-		}
+		saved_recipe = { "fruit_amounts": fbin.fruit_amounts.duplicate() }
 
 	EventBus.container_picked_up.emit(container_type, interactable)
+	var pickup_key: String = container_type
+	if pickup_key == "workstation":
+		pickup_key = "table"
+	AudioManager.play_sfx(pickup_key, interactable.global_position)
 	interactable.queue_free()
 	hold_container(container_type, saved_amount, saved_count, has_liquid, saved_recipe)
 	# Mark as deployed (was already placed on a workstation) so it can't go on the floor
@@ -2199,6 +2340,11 @@ func _get_container_type_for_node(node: Node) -> String:
 
 func _is_placement_surface(collider: Object) -> bool:
 	if collider == null:
+		return false
+	if not ray.is_colliding():
+		return false
+	var normal := ray.get_collision_normal()
+	if normal.y <= 0.7:
 		return false
 	var node := collider as Node
 	if node == null:
@@ -2374,10 +2520,10 @@ func _get_shape_radius(shape: Shape3D) -> float:
 
 
 func _boxes_intersect(
-		a: BoxShape3D,
-		a_transform: Transform3D,
-		b: BoxShape3D,
-		b_transform: Transform3D,
+	a: BoxShape3D,
+	a_transform: Transform3D,
+	b: BoxShape3D,
+	b_transform: Transform3D,
 ) -> bool:
 	# Check if two oriented boxes intersect using AABB approximation.
 	# Simple AABB check in world space
@@ -2401,10 +2547,10 @@ func _boxes_intersect(
 
 
 func _cylinders_intersect(
-		a: CylinderShape3D,
-		a_transform: Transform3D,
-		b: CylinderShape3D,
-		b_transform: Transform3D,
+	a: CylinderShape3D,
+	a_transform: Transform3D,
+	b: CylinderShape3D,
+	b_transform: Transform3D,
 ) -> bool:
 	# Check if two cylinders intersect (horizontal distance check).
 	var a_pos := a_transform.origin

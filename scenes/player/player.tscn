@@ -12,7 +12,7 @@
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.35
-height = 2.15
+height = 1.6819336
 
 [sub_resource type="StandardMaterial3D" id="Material_body"]
 albedo_color = Color(0.3, 0.5, 0.9, 1)
@@ -39,7 +39,7 @@ sprint_multiplier = 1.4
 rapid_fire_interval = 0.1
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1015262182]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.075, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8409668, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=276144682]
@@ -50,7 +50,7 @@ cast_shadow = 0
 mesh = SubResource("BoxMesh_body")
 
 [node name="Head" type="Node3D" parent="." unique_id=950411191]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.765, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5525366, 0)
 
 [node name="Camera3D" type="Camera3D" parent="Head" unique_id=1506055023]
 attributes = SubResource("CameraAttributesPractical_4v0p3")

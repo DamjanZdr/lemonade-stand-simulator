@@ -13,10 +13,14 @@ const PALETTE: Array[Color] = [
 ]
 const RED_THRESHOLD := 0.35
 const EXCLUDED: Array[StringName] = [&"pickup truck12"]
-const EXCLUDED_HOUSES: Array[StringName] = [&"player_house"]
+const SKIP_RECOLOR_HOUSES: Array[StringName] = [&"player_house"]
 
 const _FALLBACK_ROOF_DEFAULT: Color = Color(0.15, 0.15, 0.17)
 const _FALLBACK_WALL_DEFAULT: Color = Color.TRANSPARENT
+
+const HOUSE_LOD_SCENE: PackedScene = preload("res://blender/house lod.glb")
+const HOUSE_LOD_DISTANCE: float = 200.0
+const HOUSE_LOD_OVERLAP: float = 2.0
 
 const _DEFAULT_ROOF_COLORS: Array[Color] = [
 	Color(0.5, 0.25, 0.2),
@@ -33,19 +37,23 @@ const _DEFAULT_WALL_COLORS: Array[Color] = [
 	Color(0.75, 0.55, 0.80),
 ]
 
-# Shared across all Neighborhood instances so the whole world gets one 1-2-3-4-5 cycle.
-static var _next_house_index: int = 0
-
 
 func _enter_tree() -> void:
 	add_to_group("neighborhood")
+
+
+var _street_light_omnis: Array[OmniLight3D] = []
+var _bulb_materials: Array[StandardMaterial3D] = []
 
 
 func _ready() -> void:
 	_apply_colors()
 	_apply_grass_shader()
 	_apply_grass_lod()
+	_disable_street_light_gi()
+	_setup_house_lod()
 	if not Engine.is_editor_hint():
+		EventBus.day_timer_updated.connect(_on_day_timer_updated)
 		EventBus.debug_set_color_roofs.connect(
 			func(enabled: bool):
 				GameState.color_roofs = enabled
@@ -57,6 +65,49 @@ func _ready() -> void:
 				_apply_house_colors(),
 		)
 		EventBus.debug_house_palette_changed.connect(_apply_house_colors)
+
+
+func _disable_street_light_gi() -> void:
+	# Find all street light instances recursively — covers both
+	# manually placed lights and generated ones from neighborhood_generator.
+	var street_lights := find_children("*street light*", "", true, true)
+	for sl in street_lights:
+		var omnis := sl.find_children("*", "OmniLight3D", true, false)
+		if omnis.size() > 0:
+			_street_light_omnis.append(omnis[0] as OmniLight3D)
+		for child in sl.find_children("*", "MeshInstance3D", true, false):
+			var mi := child as MeshInstance3D
+			mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+			if mi.name == "Icosphere":
+				var bulb_mat := StandardMaterial3D.new()
+				bulb_mat.albedo_color = Color(0.9, 0.85, 0.6, 1)
+				bulb_mat.metallic = 0.0
+				bulb_mat.roughness = 0.3
+				bulb_mat.emission_enabled = true
+				bulb_mat.emission = Color(1.0, 0.9, 0.5, 1)
+				bulb_mat.emission_energy_multiplier = 8.0
+				bulb_mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+				mi.material_override = bulb_mat
+				_bulb_materials.append(bulb_mat)
+
+
+func _on_day_timer_updated(time_left: float, total_time: float) -> void:
+	if total_time <= 0.0:
+		return
+	var t := clampf(1.0 - time_left / total_time, 0.0, 1.0)
+	# Day maps 0→9am, 1→6pm. 11am≈0.222, 3pm≈0.667
+	var light_on := 0.0
+	if t <= 0.222:
+		var dim := clampf((0.222 - t) / 0.03, 0.0, 1.0)
+		light_on = dim
+	elif t >= 0.667:
+		var ramp := clampf((t - 0.667) / 0.03, 0.0, 1.0)
+		light_on = ramp
+	for omni in _street_light_omnis:
+		omni.light_energy = 10.0 * light_on
+		omni.omni_range = 20.0
+	for mat in _bulb_materials:
+		mat.emission_energy_multiplier = 8.0 * light_on
 
 
 func _apply_grass_shader() -> void:
@@ -99,6 +150,48 @@ func _apply_grass_lod() -> void:
 		mmi.visible = true
 		mmi.visibility_range_end = 80.0
 		mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+
+
+func _setup_house_lod() -> void:
+	if Engine.is_editor_hint():
+		return
+	var houses_groups: Array[Node] = []
+	var local_houses := get_node_or_null("Houses")
+	if local_houses != null:
+		houses_groups.append(local_houses)
+	var np_houses := get_node_or_null("NonPlayableArea/Houses")
+	if np_houses != null:
+		houses_groups.append(np_houses)
+	var nested_houses := get_node_or_null("Neighborhood/Houses")
+	if nested_houses != null:
+		houses_groups.append(nested_houses)
+	var nested_np_houses := get_node_or_null("Neighborhood/NonPlayableArea/Houses")
+	if nested_np_houses != null:
+		houses_groups.append(nested_np_houses)
+
+	for group in houses_groups:
+		for child in group.get_children():
+			if not child.name.to_lower().contains("house"):
+				continue
+			if child.name in SKIP_RECOLOR_HOUSES:
+				continue
+			if child.has_node("LOD"):
+				continue
+			# Collect original meshes before adding LOD child
+			var original_meshes := _find_mesh_instances(child)
+			# Instance LOD at the same position (child of the house, zero offset)
+			var lod_instance := HOUSE_LOD_SCENE.instantiate()
+			lod_instance.name = "LOD"
+			child.add_child(lod_instance)
+			# Original meshes: hide beyond LOD distance
+			for mi in original_meshes:
+				mi.visibility_range_end = HOUSE_LOD_DISTANCE
+				mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+			# LOD meshes: show slightly before LOD distance so there's no gap
+			for mi in _find_mesh_instances(lod_instance):
+				mi.visibility_range_begin = HOUSE_LOD_DISTANCE - HOUSE_LOD_OVERLAP
+				mi.visibility_range_end = 0.0
+				mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 
 
 func _apply_colors() -> void:
@@ -144,12 +237,13 @@ func _apply_house_colors() -> void:
 
 	for group in houses_groups:
 		for child in group.get_children():
-			if child.name.to_lower().contains("house") and not child.name in EXCLUDED_HOUSES:
+			if child.name.to_lower().contains("house"):
 				var house_index: int = child.get_meta("house_color_index", -1)
 				if house_index < 0:
-					house_index = _next_house_index
+					house_index = _house_name_index(child.name)
 					child.set_meta("house_color_index", house_index)
-					_next_house_index += 1
+				if child.name in SKIP_RECOLOR_HOUSES:
+					continue
 				var wall_index: int = child.get_meta("house_wall_index", house_index)
 				var roof_color: Color
 				if color_roofs:
@@ -186,7 +280,7 @@ func randomize_house_colors(target: String = "both") -> void:
 	var prev_wall := -1
 	for group in houses_groups:
 		for child in group.get_children():
-			if child.name.to_lower().contains("house") and not child.name in EXCLUDED_HOUSES:
+			if child.name.to_lower().contains("house"):
 				if target == "roofs" or target == "both":
 					var roof_idx: int = randi() % roof_count
 					while roof_count > 1 and roof_idx == prev_roof:
@@ -217,15 +311,13 @@ func default_house_colors(target: String = "both") -> void:
 	if nested_np_houses != null:
 		houses_groups.append(nested_np_houses)
 
-	var idx := 0
 	for group in houses_groups:
 		for child in group.get_children():
-			if child.name.to_lower().contains("house") and not child.name in EXCLUDED_HOUSES:
+			if child.name.to_lower().contains("house"):
 				if target == "roofs" or target == "both":
-					child.set_meta("house_color_index", idx)
+					child.set_meta("house_color_index", _house_name_index(child.name))
 				if target == "walls" or target == "both":
 					child.remove_meta("house_wall_index")
-				idx += 1
 	_apply_house_colors()
 
 
@@ -234,6 +326,13 @@ func _get_color_manager() -> Node:
 	if tree != null:
 		return tree.get_first_node_in_group("color_manager")
 	return null
+
+
+func _house_name_index(house_name: String) -> int:
+	var m := RegEx.create_from_string("house(\\d+)$").search(house_name)
+	if m == null:
+		return 0
+	return (int(m.get_string(1)) - 1) % 5
 
 
 func _roof_color(index: int) -> Color:

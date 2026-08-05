@@ -51,7 +51,7 @@ func _spawn_at_slot(slot_index: int) -> void:
 	customer.queue_slot = slot_index
 	customer.queue_position = _queue_spots[slot_index]
 	_apply_facing(customer)
-	customer.expected_fruit = _random_fruit()
+	customer.order = _random_order()
 	_queue[slot_index] = customer
 
 
@@ -219,11 +219,20 @@ func get_slot_position(slot_index: int) -> Vector3:
 	return _queue_spots[slot_index]
 
 
-func _random_fruit() -> String:
+## Randomly builds an order: 1-5 distinct fruit types (capped by how many are
+## unlocked), each wanting 1-5 cups.
+func _random_order() -> Dictionary:
 	var unlocked := UpgradeManager.get_unlocked_fruits()
 	if unlocked.is_empty():
-		return "lemon"
-	return unlocked[randi() % unlocked.size()]
+		return { "lemon": 1 }
+	var shuffled := unlocked.duplicate()
+	shuffled.shuffle()
+	var type_count := randi_range(1, mini(5, shuffled.size()))
+	var order: Dictionary = { }
+	for i in range(type_count):
+		var fruit_type: String = shuffled[i]
+		order[fruit_type] = randi_range(1, 5)
+	return order
 
 
 ## Called by PedestrianSpawner once the pedestrian has physically walked to the slot.
@@ -235,7 +244,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	customer.queue_slot = slot_index
 	customer.queue_position = _queue_spots[slot_index]
 	_apply_facing(customer)
-	customer.expected_fruit = _random_fruit()
+	customer.order = _random_order()
 
 	var route_continuation: Dictionary = { }
 	if source_pedestrian != null and is_instance_valid(source_pedestrian):

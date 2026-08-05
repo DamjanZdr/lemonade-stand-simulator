@@ -39,6 +39,7 @@ func interact(player: Node) -> void:
 		if refund > 0.0:
 			GameState.add_money(refund)
 		EventBus.trash_disposed.emit(trash_type, refund)
+		AudioManager.play_sfx("trash", global_position)
 		_spawn_disposed_trash(trash_type)
 		player.clear_held()
 		return
@@ -48,6 +49,7 @@ func interact(player: Node) -> void:
 		if refund > 0.0:
 			GameState.add_money(refund)
 		EventBus.trash_disposed.emit(ctype, refund)
+		AudioManager.play_sfx("trash", global_position)
 		_spawn_disposed_trash(ctype)
 		player.clear_held()
 		return

@@ -7,6 +7,13 @@ extends Node
 
 const SFX_DIR := "res://audio/sounds/"
 const _PITCH_VARIATION: float = 0.05
+const _UI_PITCH_VARIATION: float = 0.02
+## UI sounds (play_sfx_ui) play through a plain, non-positional
+## AudioStreamPlayer with no distance falloff, unlike world SFX (play_sfx)
+## which get quieter with distance via AudioStreamPlayer3D. Without this
+## offset, UI sounds always end up feeling loud relative to world sounds
+## even when the underlying files are normalized to the same level.
+const UI_VOLUME_DB: float = -8.0
 
 var _streams: Dictionary = { }
 
@@ -31,6 +38,14 @@ func _preload_all() -> void:
 		"transaction_complete": "transaction complete.mp3",
 		"swoosh": "swoosh.mp3",
 		"button_hover": "button hover.mp3",
+		"hover": "hover.mp3",
+		"tab_click": "tab click.mp3",
+		"upgrade_bought": "upgradebought.mp3",
+		"pitcher": "pitcher.mp3",
+		"press": "press placed.mp3",
+		"fruit_bin": "fruit bin placed.mp3",
+		"table": "table placed.mp3",
+		"trash": "trash.mp3",
 	}
 	for key in files:
 		var path: String = SFX_DIR + files[key]
@@ -52,6 +67,7 @@ func play_sfx(
 	pos: Vector3 = Vector3.ZERO,
 	duration_match: float = -1.0,
 	pitch_variation: float = _PITCH_VARIATION,
+	base_pitch: float = 1.0,
 ) -> void:
 	var stream: AudioStream = _streams.get(key)
 	if stream == null:
@@ -67,7 +83,7 @@ func play_sfx(
 	player.max_distance = 50.0
 
 	# Pitch variation so each play sounds slightly different
-	var pitch := randf_range(1.0 - pitch_variation, 1.0 + pitch_variation)
+	var pitch := randf_range(base_pitch - pitch_variation, base_pitch + pitch_variation)
 	player.pitch_scale = pitch
 
 	player.finished.connect(player.queue_free)
@@ -90,13 +106,18 @@ func play_sfx(
 	player.play()
 
 
-func play_sfx_ui(key: String) -> void:
+func play_sfx_ui(
+	key: String,
+	base_pitch: float = 1.0,
+	pitch_variation: float = _UI_PITCH_VARIATION,
+) -> void:
 	var stream: AudioStream = _streams.get(key)
 	if stream == null:
 		return
 	var player := AudioStreamPlayer.new()
 	player.stream = stream
-	player.pitch_scale = randf_range(1.0 - _PITCH_VARIATION, 1.0 + _PITCH_VARIATION)
+	player.volume_db = UI_VOLUME_DB
+	player.pitch_scale = randf_range(base_pitch - pitch_variation, base_pitch + pitch_variation)
 	player.finished.connect(player.queue_free)
 	add_child(player)
 	player.play()

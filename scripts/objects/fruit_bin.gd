@@ -103,14 +103,15 @@ func _drop_item(
 	from_pos: Vector3 = Vector3.ZERO,
 ) -> void:
 	if from_pos != Vector3.ZERO:
-		_animate_throw_arc(node, from_pos, origin)
-		AudioManager.play_sfx("fruit_in_crate", global_position)
+		var tween := _animate_throw_arc(node, from_pos, origin)
+		if tween != null:
+			tween.finished.connect(func(): AudioManager.play_sfx("fruit_in_crate", global_position))
 		return
 	node.position.y = origin.y + item_drop_height
-	AudioManager.play_sfx("fruit_in_crate", global_position)
 	var tween := create_tween()
 	tween.tween_property(node, "position:y", origin.y, 0.25) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.finished.connect(func(): AudioManager.play_sfx("fruit_in_crate", global_position))
 
 
 func take_amount(fruit_type: String, qty: float) -> float:

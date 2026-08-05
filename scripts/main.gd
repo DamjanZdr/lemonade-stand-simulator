@@ -18,7 +18,7 @@ var _world_env: WorldEnvironment
 var _default_ambient_color: Color
 var _default_exposure: float
 
-var _enhanced_lighting: bool = false
+var _enhanced_lighting: bool = true
 var _voxel_gi: VoxelGI = null
 var _reflection_probe: ReflectionProbe = null
 var _fill_light: OmniLight3D = null
@@ -26,6 +26,7 @@ var _orig_ssr: bool = false
 var _orig_ssao: bool = false
 var _orig_ssil: bool = false
 var _orig_sdfgi: bool = false
+var _orig_sdfgi_energy: float = 1.0
 var _orig_tonemap_mode: int = 0
 var _orig_tonemap_white: float = 1.0
 var _orig_tonemap_exposure: float = 1.0
@@ -70,6 +71,7 @@ func _ready() -> void:
 		_orig_ssao = _world_env.environment.ssao_enabled
 		_orig_ssil = _world_env.environment.ssil_enabled
 		_orig_sdfgi = _world_env.environment.sdfgi_enabled
+		_orig_sdfgi_energy = _world_env.environment.sdfgi_energy
 		_orig_tonemap_mode = _world_env.environment.tonemap_mode
 		_orig_tonemap_white = _world_env.environment.tonemap_white
 		_orig_tonemap_exposure = _world_env.environment.tonemap_exposure
@@ -126,6 +128,8 @@ func _ready() -> void:
 	SaveManager.respawn_placed_containers()
 	# Mark static meshes for LightmapGI baking
 	_mark_static_gi(world)
+	# Enhanced lighting is on by default; F2 toggles it off
+	_enable_enhanced_lighting()
 
 
 func _on_cash_dropped(drop_pos: Vector3, payment: float, change_due: float) -> void:
@@ -143,16 +147,13 @@ func _on_day_timer_updated(time_left: float, total_time: float) -> void:
 	if total_time <= 0.0:
 		return
 	var t := 1.0 - time_left / total_time
+	var sun_brightness := clampf(sin(t * PI) * 0.5 + 0.5, 0.0, 1.0)
 	if _world_env:
-		# Ambient keeps a much higher floor (0.6 instead of 0.35) so shadowed
-		# building faces at dawn/dusk still show detail instead of going
-		# near-black. Exposure uses its own gentler curve — multiplying it by
-		# the same steep ambient curve compounded the darkening and crushed
-		# shadow detail even further.
 		var ambient_brightness := clampf(sin(t * PI) * 0.4 + 0.6, 0.6, 1.15)
-		var exposure_brightness := clampf(sin(t * PI) * 0.15 + 0.85, 0.85, 1.15)
+		var exposure_brightness := clampf(sin(t * PI) * 0.95 + 0.12, 0.12, 1.15)
 		_world_env.environment.ambient_light_color = (_default_ambient_color * ambient_brightness)
 		_world_env.environment.tonemap_exposure = _default_exposure * exposure_brightness
+		EventBus.exposure_changed.emit(_default_exposure * exposure_brightness)
 
 
 func _on_debug_set_rain(enabled: bool) -> void:
@@ -187,9 +188,9 @@ func _enable_enhanced_lighting() -> void:
 		env.ssao_radius = 0.5
 		env.ssao_intensity = 4.0
 		env.ssao_power = 2.0
-		# SDFGI for subtle bounced light, not flat fill
-		env.sdfgi_enabled = true
-		env.sdfgi_probe_bias = 1.1
+		# VoxelGI only (not SDFGI) — VoxelGI respects gi_mode=DISABLED so grass
+		# ground plane won't contribute green bounced light.
+		env.sdfgi_enabled = false
 		# Filmic tonemapping for natural contrast
 		env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 		env.tonemap_white = 5.0
@@ -197,8 +198,8 @@ func _enable_enhanced_lighting() -> void:
 		env.glow_enabled = false
 		# Very low ambient so shadows are actually dark
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_color = Color(0.12, 0.12, 0.14, 1)
-		env.ambient_light_sky_contribution = 0.3
+		env.ambient_light_color = Color(0.18, 0.18, 0.20, 1)
+		env.ambient_light_sky_contribution = 0.4
 		# Shorter fog for atmosphere without flattening
 		env.volumetric_fog_density = 0.002
 		env.volumetric_fog_length = 64.0
@@ -227,8 +228,8 @@ func _enable_enhanced_lighting() -> void:
 	# VoxelGI: small volume, only for dynamic objects near stand
 	if _voxel_gi == null:
 		_voxel_gi = VoxelGI.new()
-		_voxel_gi.position = Vector3(2, 1.5, -2)
-		_voxel_gi.size = Vector3(8, 4, 6)
+		_voxel_gi.position = Vector3(2, 2, -2)
+		_voxel_gi.size = Vector3(16, 6, 12)
 		_voxel_gi.subdiv = VoxelGI.SUBDIV_256
 		world.add_child(_voxel_gi)
 	_voxel_gi.visible = true
@@ -236,7 +237,7 @@ func _enable_enhanced_lighting() -> void:
 	if _reflection_probe == null:
 		_reflection_probe = ReflectionProbe.new()
 		_reflection_probe.position = Vector3(2, 2.5, -2)
-		_reflection_probe.size = Vector3(8, 5, 6)
+		_reflection_probe.size = Vector3(16, 6, 12)
 		_reflection_probe.update_mode = ReflectionProbe.UPDATE_ONCE
 		_reflection_probe.intensity = 0.5
 		_reflection_probe.max_distance = 15.0
@@ -245,7 +246,7 @@ func _enable_enhanced_lighting() -> void:
 	_reflection_probe.visible = true
 	# Disable GI contribution on grass surfaces to prevent green color bleeding
 	_set_grass_gi(false)
-	print("[Lighting] Enhanced mode ON — High contrast: deep shadows + SDFGI")
+	print("[Lighting] Enhanced mode ON — High contrast: deep shadows + VoxelGI")
 
 
 func _disable_enhanced_lighting() -> void:
@@ -255,6 +256,7 @@ func _disable_enhanced_lighting() -> void:
 		env.ssao_enabled = _orig_ssao
 		env.ssil_enabled = _orig_ssil
 		env.sdfgi_enabled = _orig_sdfgi
+		env.sdfgi_energy = _orig_sdfgi_energy
 		env.tonemap_mode = _orig_tonemap_mode as Environment.ToneMapper
 		env.tonemap_white = _orig_tonemap_white
 		env.tonemap_exposure = _orig_tonemap_exposure
@@ -296,7 +298,17 @@ func _mark_static_gi(node: Node) -> void:
 		var mi := node as MeshInstance3D
 		var parent := mi.get_parent()
 		if parent is StaticBody3D or parent.get_meta("static_gi", false):
-			mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
+			var is_street_light := false
+			var p: Node = mi
+			while p:
+				if p.name.begins_with("street light"):
+					is_street_light = true
+					break
+				p = p.get_parent()
+			if is_street_light:
+				mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+			else:
+				mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
 	for child in node.get_children():
 		_mark_static_gi(child)
 

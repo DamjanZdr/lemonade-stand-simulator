@@ -16,8 +16,17 @@ var current_count: int = 0
 
 var _item_nodes: Array[Node3D] = []
 var _item_origins: Array[Vector3] = []
-var _collider: CollisionShape3D = null
+# One collider per cup slot (instead of a single resized collider), so the
+# clickable area always exactly matches the cups actually present — the same
+# effect as if every cup had its own collision shape.
+var _slot_colliders: Array[CollisionShape3D] = []
 var _label_format: String = "%.0f / %.0f"
+
+# The standalone cup scene defines the correct per-cup collision shape (a cup
+# is much taller than the ~0.6 vertical spacing between nested cups in the
+# stack, since cups nest deep inside each other). Reuse its shape/offset
+# instead of deriving a (much flatter) height from the grid spacing.
+const CUP_SCENE: PackedScene = preload("res://scenes/objects/cup.tscn")
 
 
 func _ready() -> void:
@@ -33,13 +42,7 @@ func _ready() -> void:
 		if fill:
 			fill.visible = false
 
-	# Grab the existing collider for dynamic resizing
-	_collider = null
-	if physics != null:
-		for child in physics.get_children():
-			if child is CollisionShape3D:
-				_collider = child as CollisionShape3D
-				break
+	_build_slot_colliders()
 
 	if Engine.is_editor_hint():
 		for node in _item_nodes:
@@ -52,25 +55,59 @@ func _ready() -> void:
 	EventBus.debug_refill_all_bins.connect(_on_debug_refill)
 
 
+# Replaces the single template CollisionShape3D (from the scene file) with
+# one CollisionShape3D per cup slot, each using the real cup collision shape
+# (from cup.tscn) positioned at that slot's cup origin. This is simpler and
+# far more robust than trying to derive a shape from grid spacing.
+func _build_slot_colliders() -> void:
+	_slot_colliders.clear()
+	if physics == null or _item_origins.is_empty():
+		return
+
+	for child in physics.get_children():
+		if child is CollisionShape3D:
+			child.queue_free()
+
+	var reference := _get_cup_collision_reference()
+	var shape: Shape3D = reference.get("shape")
+	if shape == null:
+		return
+	var offset_y: float = reference.get("offset_y", 0.0)
+
+	var grid_y: float = item_grid.position.y
+	for i in range(_item_origins.size()):
+		var collider := CollisionShape3D.new()
+		# Shared shape resource is fine here since no slot ever mutates it.
+		collider.shape = shape
+		collider.position = Vector3(0.0, grid_y + _item_origins[i].y + offset_y, 0.0)
+		physics.add_child(collider)
+		_slot_colliders.append(collider)
+
+
+# Reads the collision shape and its vertical offset from the standalone cup
+# scene, so the stack's per-cup hitboxes always match the "real" cup.
+func _get_cup_collision_reference() -> Dictionary:
+	var result: Dictionary = { }
+	var temp := CUP_SCENE.instantiate() as Node3D
+	if temp == null:
+		return result
+	var col := temp.get_node_or_null("Physics/CollisionShape3D") as CollisionShape3D
+	if col != null and col.shape != null:
+		result["shape"] = col.shape
+		result["offset_y"] = col.position.y
+	temp.queue_free()
+	return result
+
+
 func _update_display() -> void:
 	var visible_count := mini(current_count, _item_nodes.size())
 	for i in range(_item_nodes.size()):
 		_item_nodes[i].visible = i < visible_count
 	amount_label.text = _label_format % [current_count, max_capacity]
 
-	# Resize the single collider to match visible cups
-	if _collider != null and not _item_origins.is_empty():
-		if visible_count <= 0:
-			_collider.disabled = true
-		else:
-			_collider.disabled = false
-			var bottom_y: float = _item_origins[0].y
-			var top_y: float = _item_origins[visible_count - 1].y + 0.6
-			var grid_y: float = item_grid.position.y
-			var shape := _collider.shape as CylinderShape3D
-			if shape != null:
-				shape.height = top_y - bottom_y
-			_collider.position.y = grid_y + (bottom_y + top_y) * 0.5
+	# Enable only the colliders for cups that are actually present.
+	for i in range(_slot_colliders.size()):
+		_slot_colliders[i].disabled = i >= visible_count
 
 	# Disable collision and remove from container group when empty
 	if current_count <= 0:
@@ -133,7 +170,7 @@ func interact(player: Node) -> void:
 
 	# Return an empty cup back to the stack
 	if p.held_item == p.HeldItem.CUP_EMPTY:
-		add_cups(1)
+		add_cups(1, _get_hand_pos(p))
 		AudioManager.play_sfx("taking_cup", global_position)
 		p.clear_held()
 		return

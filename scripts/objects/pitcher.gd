@@ -173,6 +173,14 @@ func pour_portion() -> Dictionary:
 	sugar -= sugar * portion_ratio
 	ice -= ice * portion_ratio
 	cups_poured += 1 # Track that a cup was poured
+	# Pouring a cup means the pitcher is now actively serving, wherever it is.
+	# Without this, a pitcher poured from while still in the COMPLETE state
+	# (i.e. placed but never explicitly marked SERVING) would be treated as
+	# "not serving" once drained, causing _clear_and_return() to incorrectly
+	# snap it back to its original prep-table position.
+	if state != PitcherState.SERVING:
+		state = PitcherState.SERVING
+		EventBus.pitcher_state_changed.emit(int(state))
 	# Flush floating-point dust
 	if get_liquid_volume() < 0.05:
 		fruit_type = ""
@@ -243,7 +251,12 @@ func interact(player: Node) -> void:
 			# Fill cup if pitcher has liquid and player holds empty cup
 			if p.held_item == p.HeldItem.CUP_EMPTY and get_liquid_volume() > 0.0:
 				var recipe := pour_portion()
-				p.set_held(p.HeldItem.CUP_FILLED, { "recipe": recipe }, _make_filled_cup_mesh())
+				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
+				p.set_held(
+					p.HeldItem.CUP_FILLED,
+					{ "recipe": recipe },
+					_make_filled_cup_mesh(cup_color),
+				)
 				EventBus.pitcher_cup_filled.emit(recipe)
 				if is_fully_empty():
 					_clear_and_return()
@@ -254,17 +267,21 @@ func interact(player: Node) -> void:
 		PitcherState.SERVING:
 			if p.held_item == p.HeldItem.CUP_EMPTY:
 				var recipe := pour_portion()
-				p.set_held(p.HeldItem.CUP_FILLED, { "recipe": recipe }, _make_filled_cup_mesh())
+				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
+				p.set_held(
+					p.HeldItem.CUP_FILLED,
+					{ "recipe": recipe },
+					_make_filled_cup_mesh(cup_color),
+				)
 				EventBus.pitcher_cup_filled.emit(recipe)
 				if is_fully_empty():
 					_clear_and_return()
-
-
-func interact_secondary(player: Node) -> void:
-	# Only throw out if player clicks with empty hands
-	var p := player as Player
-	if p != null and p.held_item == p.HeldItem.NONE:
-		_clear_and_return()
+				return
+			# Pick up: a pitcher that's still serving (not full, cups already
+			# poured from it) should still be pick-up-able with an empty hand,
+			# same as a fresh one in PREPPING/COMPLETE.
+			if p.held_item == p.HeldItem.NONE:
+				p.pickup_container(self, "pitcher")
 
 
 func try_add_ingredient(ingredient_type: String, amount: float) -> bool:
@@ -312,13 +329,13 @@ func get_hint(player: Node) -> String:
 				return contents + (
 					"Pitcher | LMB: fill cup  |  RMB: pick up (%.1f liq)" % get_liquid_volume()
 				)
-			return contents + "Pitcher | LMB: pick up  |  RMB: throw out"
+			return contents + "Pitcher | LMB/RMB: pick up"
 		PitcherState.SERVING:
 			if p.held_item == p.HeldItem.CUP_EMPTY:
 				return contents + (
 					"Pitcher | LMB: fill cup  |  RMB: pick up (%.1f liq)" % get_liquid_volume()
 				)
-			return contents + "Pitcher | LMB: pick up  |  RMB: throw out"
+			return contents + "Pitcher | LMB/RMB: pick up"
 	return ""
 
 
@@ -343,8 +360,12 @@ func _make_hand_mesh() -> Node3D:
 	return container
 
 
-func _make_filled_cup_mesh() -> Node3D:
-	return Cup.make_hand_mesh(true, _get_current_liquid_color())
+func _make_filled_cup_mesh(color: Color = Color(0.0, 0.0, 0.0, -1.0)) -> Node3D:
+	# When a color is supplied (e.g. from a pour_portion() recipe snapshot taken
+	# before the pitcher was drained), use it instead of the pitcher's current
+	# liquid color, which is black once the pitcher has been emptied.
+	var use_color := color if color.a >= 0.0 else _get_current_liquid_color()
+	return Cup.make_hand_mesh(true, use_color)
 
 
 func update_label() -> void:

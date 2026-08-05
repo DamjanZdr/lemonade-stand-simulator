@@ -14,6 +14,7 @@
 [ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
 [ext_resource type="Script" uid="uid://dklkcjfc1wreh" path="res://scripts/objects/sun_controller.gd" id="37_sun"]
+[ext_resource type="Script" path="res://scripts/objects/sky_controller.gd" id="37_sky"]
 [ext_resource type="Script" uid="uid://ba3frt220nu7m" path="res://scripts/systems/recipe_manager.gd" id="39_recipe"]
 [ext_resource type="Resource" uid="uid://dcbt63m1d18bs" path="res://resources/data/lemon.tres" id="40_lemon"]
 [ext_resource type="Resource" path="res://resources/data/strawberry.tres" id="41_straw"]
@@ -53,6 +54,8 @@
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="70_neigh"]
 [ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
 
+[ext_resource type="Shader" path="res://resources/shaders/sky.gdshader" id="sky_shader"]
+
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
 albedo_color = Color(0.42331815, 0.62640846, 3.85046e-07, 1)
 
@@ -62,25 +65,49 @@ size = Vector3(120, 0.1, 120)
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
 size = Vector3(148.4972, 0.59904784, 116.18762)
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_main"]
-sky_top_color = Color(0.35, 0.6, 1, 1)
-sky_horizon_color = Color(0.72, 0.87, 1, 1)
-ground_bottom_color = Color(0.28, 0.38, 0.22, 1)
-ground_horizon_color = Color(0.6, 0.75, 0.5, 1)
-ground_curve = 0.1
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
+shader = ExtResource("sky_shader")
+shader_parameter/day_top_color = Color(0.35, 0.58, 0.85, 1)
+shader_parameter/day_bottom_color = Color(0.78, 0.87, 0.95, 1)
+shader_parameter/sunset_top_color = Color(0.55, 0.55, 0.85, 1)
+shader_parameter/sunset_bottom_color = Color(0.95, 0.55, 0.5, 1)
+shader_parameter/night_top_color = Color(0.02, 0.02, 0.08, 1)
+shader_parameter/night_bottom_color = Color(0.06, 0.06, 0.15, 1)
+shader_parameter/horizon_color = Color(0.5, 0.68, 0.38, 1)
+shader_parameter/horizon_blur = 0.08
+shader_parameter/sun_color = Color(10, 8, 1, 1)
+shader_parameter/sun_sunset_color = Color(10, 0, 0, 1)
+shader_parameter/sun_size = 0.06
+shader_parameter/sun_blur = 10.0
+shader_parameter/moon_size = 0.001
+shader_parameter/moon_blur = 0.1
+shader_parameter/clouds_edge_color = Color(0.8, 0.8, 0.98, 1)
+shader_parameter/clouds_top_color = Color(1, 1, 1, 1)
+shader_parameter/clouds_middle_color = Color(0.92, 0.92, 0.98, 1)
+shader_parameter/clouds_bottom_color = Color(0.83, 0.83, 0.94, 1)
+shader_parameter/clouds_speed = 2.0
+shader_parameter/clouds_direction = 0.2
+shader_parameter/clouds_scale = 1.0
+shader_parameter/clouds_cutoff = 0.35
+shader_parameter/clouds_fuzziness = 0.5
+shader_parameter/clouds_weight = 0.0
+shader_parameter/clouds_blur = 0.25
+shader_parameter/stars_speed = 1.0
+shader_parameter/stars_scale = 1.0
+shader_parameter/stars_opacity = 1.0
 
 [sub_resource type="Sky" id="Sky_main"]
-sky_material = SubResource("ProceduralSkyMaterial_main")
+sky_material = SubResource("ShaderMaterial_sky")
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 2
 sky = SubResource("Sky_main")
 ambient_light_source = 3
-ambient_light_sky_contribution = 0.8
+ambient_light_sky_contribution = 0.4
 tonemap_white = 6.01
 volumetric_fog_density = 0.001
 volumetric_fog_emission = Color(0.5780994, 0.8133498, 0.85745275, 1)
-volumetric_fog_length = 333.13
+volumetric_fog_length = 446.7
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
 size = Vector3(2.7165565, 1.725708, 1.3293457)
@@ -147,7 +174,7 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.0
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.0467854, 0, -2.900959)
 
 [node name="DirectionalLight" type="DirectionalLight3D" parent="." unique_id=285599754]
-transform = Transform3D(0.41711533, -0.1486572, -0.8966136, 0.8650236, 0.36760288, 0.3414708, 0.2788356, -0.9180246, 0.28192466, 0, 10, 0)
+transform = Transform3D(0.81629366, -0.46448538, -0.34339193, 0.33309382, -0.10717513, 0.9367827, -0.47192508, -0.8790716, 0.06723085, 0, 10, 0)
 shadow_enabled = true
 script = ExtResource("37_sun")
 start_rotation_deg = Vector3(-50, 60, -80)
@@ -160,9 +187,12 @@ light_energy = 0.5
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=305494689]
 environment = SubResource("Environment_main")
+script = ExtResource("37_sky")
 
 [node name="LightmapGI" type="LightmapGI" parent="." unique_id=1827849850]
-bounces = 4
+quality = 3
+bounces = 8
+bounce_indirect_energy = 0.4
 directional = true
 light_data = ExtResource("6_j0rhc")
 
@@ -313,20 +343,21 @@ convert_chance_at_max_popularity = 0.7
 
 [node name="TimeManager" type="Node" parent="Managers" unique_id=1001413375]
 script = ExtResource("69_time")
-seconds_per_hour = 30.0
+seconds_per_hour = 40.0
 
 [node name="TrashManager" type="Node" parent="Managers" unique_id=1001413376]
 script = ExtResource("71_trash")
 
 [node name="ColorManager" type="Node" parent="Managers" unique_id=736981231]
 script = ExtResource("46_fqf7g")
+roof_default_color = Color(0.36220014, 0.34826168, 0.34491053, 1)
 wall_default_color = Color(0.78626776, 0.76280415, 0.6887659, 1)
 roof_colors = Array[Color]([Color(0.85490197, 0.69803923, 0.827451, 1), Color(0.42352942, 0.9607843, 0.88235295, 1), Color(0.7254902, 0.8509804, 0.43137255, 1), Color(0.92156863, 0.93333334, 0.19215687, 1), Color(0.85882354, 0.5137255, 0.5764706, 1)])
 wall_colors = Array[Color]([Color(0.42265648, 0.96156055, 0.88136154, 1), Color(0.8547164, 0.6989638, 0.8276675, 1), Color(0.7237331, 0.85128987, 0.43169385, 1), Color(0.86031544, 0.51238483, 0.5748986, 1), Color(0.92156863, 0.93333334, 0.19215687, 1)])
 
 [node name="FogVolume" type="FogVolume" parent="." unique_id=829046607]
 transform = Transform3D(1, 0, 0, 0, 0.16174394, 0, 0, 0, 1, -268.22437, -15.5393715, 31)
-size = Vector3(166, 107.12012, 343)
+size = Vector3(166.2, 107.12, 343)
 material = SubResource("FogMaterial_g4v7s")
 
 [node name="FogVolume2" type="FogVolume" parent="." unique_id=595344647]
@@ -369,7 +400,7 @@ shape = SubResource("BoxShape3D_5fxch")
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1079704992]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5780778, 3.4851818, 12.612837)
 light_energy = 0.6
-omni_range = 6.325504
+omni_range = 10.620017
 
 [node name="Decorations" type="Node3D" parent="." unique_id=1407390588]
 transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)

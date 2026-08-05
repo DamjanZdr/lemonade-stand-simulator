@@ -21,11 +21,29 @@ var patience: float = 0.0
 var _order_taken: bool = false
 var serve_patience_max: float = Balancing.PATIENCE_BASE
 var state: CustomerState = CustomerState.WALKING
-var expected_fruit: String = "lemon"
+## Remaining order: fruit_type -> cups still needed. Set by the spawner
+## before the customer engages; mutated as the price-check removes items
+## and as cups are correctly served.
+var order: Dictionary = { }
+## True once the one-time price-check reaction has run for this visit.
+var _price_checked: bool = false
+## True while the price-check's sequence of "too expensive"/"so cheap"
+## messages is being shown, to block serving/re-triggering.
+var _price_checking: bool = false
+## Sum of the price paid for each correctly-matched cup served so far.
+var _accumulated_price: float = 0.0
+## First quality complaint hit across all correctly-served cups (e.g.
+## too_sweet); empty string means everything served was spot-on so far.
+var _best_complaint: String = ""
 var _outcome: String = ""
 var _waiting_for_change: bool = false
 var _change_callable: Callable = Callable()
 var _change_due_cents: int = 0
+var _last_tendered_cents: int = 0
+## What the customer handed over (in dollars), shown alongside how much is
+## still owed while the player makes change.
+var _payment_amount: float = 0.0
+var _feedback_text: String = ""
 var _fallback_tween: Tween = null
 var _facing_target: Basis = Basis.IDENTITY
 var _is_rotating_to_face: bool = false
@@ -46,7 +64,9 @@ var _talk_anim_playing: bool = false
 @onready var order_label: Label3D = $EmojiAnchor/OrderLabel
 @onready var _npc: Node3D = $NPCBody
 
-var _order_panel: Sprite3D = null
+var _ui_layer: CanvasLayer = null
+var _ui_label: Label = null
+var _ui_panel: Panel = null
 
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
@@ -95,6 +115,11 @@ func _ready() -> void:
 			cp.visible = false
 	add_to_group("customers")
 	_ignore_pedestrian_collisions()
+
+
+func _process(_delta: float) -> void:
+	if _ui_label != null and _ui_label.visible:
+		_update_bubble_screen_pos()
 
 
 func _physics_process(delta: float) -> void:
@@ -190,24 +215,52 @@ func try_serve(player: Node) -> void:
 	## Called when the player (holding CUP_FILLED) clicks this customer.
 	if state != CustomerState.WAITING:
 		return
+	if patience <= 0.0:
+		return
 	var p := player as Player
 	if p == null or p.held_item != p.HeldItem.CUP_FILLED:
 		return
+
+	if not _price_checked:
+		# They haven't reacted to the prices yet — do that first instead of
+		# accepting a cup blind.
+		if not _order_taken:
+			_order_taken = true
+			patience_max = serve_patience_max
+			patience = patience_max
+			_refresh_patience_bar(1.0)
+		_run_price_check_and_show_order()
+		return
+	if _price_checking or order.is_empty():
+		return
+
 	var recipe: Dictionary = p.held_item_data.get("recipe", { })
+	var fruit_type: String = recipe.get("fruit_type", "")
+
+	if not order.has(fruit_type) or order[fruit_type] <= 0:
+		# Wrong item: doesn't count toward the order, and the cup is wasted.
+		p.clear_held()
+		_reject_wrong_item(fruit_type)
+		return
+
 	p.clear_held()
-	state = CustomerState.RECEIVING
+	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, fruit_type)
+	if _best_complaint == "" and not result.complaints.is_empty():
+		_best_complaint = result.complaints[0]
+	_accumulated_price += GameState.get_price(fruit_type)
+	order[fruit_type] -= 1
+	if order[fruit_type] <= 0:
+		order.erase(fruit_type)
+
+	if not order.is_empty():
+		# Still waiting on more cups — stay put and refresh what's left.
+		_show_order()
+		return
+
+	var outcome := "happy" if _best_complaint == "" else _best_complaint
 	_engaged_with_player = false
 	_engaged_player = null
 	_hide_order_bubble()
-	var wait_ratio := patience / patience_max
-	var price := GameState.get_price(expected_fruit)
-	var outcome := RecipeEvaluator.evaluate(
-		recipe,
-		GameState.temperature,
-		price,
-		wait_ratio,
-		expected_fruit,
-	)
 	_resolve(outcome)
 
 
@@ -220,14 +273,19 @@ func _resolve(outcome: String) -> void:
 	_outcome = outcome
 	state = CustomerState.REACTING
 	EventBus.customer_served.emit(self, outcome)
-	if outcome != "timeout":
-		# Every served customer pays; the money controller on the player's
-		# camera handles change-making. Emit sale_initiated directly.
-		var price := GameState.get_price(expected_fruit)
+	_feedback_text = _feedback_for_outcome(outcome)
+	# Only pay for cups actually received — a customer who never got a single
+	# correctly-ordered cup (timeout, or everything priced them out) pays
+	# nothing.
+	if outcome != "timeout" and _accumulated_price > 0.0:
+		# The money controller on the player's camera handles change-making.
+		var price := _accumulated_price
 		var payment := _customer_payment(price)
 		var change_due := roundf((payment - price) * 100.0) / 100.0
 		_npc.start_payment_pose(_npc.global_position + Vector3(0, 1.0, 0.5))
+		_payment_amount = payment
 		_change_due_cents = roundi(change_due * 100.0)
+		_last_tendered_cents = 0
 		EventBus.change_tendered_updated.connect(_on_change_tendered)
 		EventBus.sale_initiated.emit(payment, change_due)
 		_waiting_for_change = true
@@ -259,7 +317,11 @@ func _leave_after_change() -> void:
 	if _fallback_tween and _fallback_tween.is_valid():
 		_fallback_tween.kill()
 	_fallback_tween = null
-	_start_leaving()
+	# Only linger with feedback if the player actually completed the change.
+	if _last_tendered_cents >= _change_due_cents and _change_due_cents >= 0:
+		_show_feedback_then_leave()
+	else:
+		_start_leaving()
 
 
 func _start_leaving() -> void:
@@ -298,24 +360,63 @@ static func _customer_payment(price: float) -> float:
 
 
 func _on_change_tendered(tendered_cents: int, _due_cents: int) -> void:
+	_last_tendered_cents = tendered_cents
 	var remaining := _change_due_cents - tendered_cents
 	if remaining > 0:
-		order_label.text = "You still owe me $%.2f" % (remaining / 100.0)
-		order_label.visible = true
-		if _order_panel:
-			_order_panel.visible = false
-			call_deferred("_resize_order_panel")
+		_set_order_text(
+			"I gave you $%.2f. You still owe me $%.2f" % [_payment_amount, remaining / 100.0]
+		)
 	else:
-		order_label.text = "Thank you!"
-		order_label.visible = true
-		if _order_panel:
-			_order_panel.visible = false
-			call_deferred("_resize_order_panel")
+		_set_order_text("Thank you!")
+
+
+func _show_feedback_then_leave() -> void:
+	_npc.stop_payment_pose()
+	# Hide the hand-held cash pickup on the NPC if it's still visible.
+	for cp_name: String in ["CashPoint/CashPickup", "CashPoint2/CashPickup"]:
+		var cp := _npc.get_node_or_null(cp_name) as CashPickup
+		if cp:
+			cp.visible = false
+	if _feedback_text != "":
+		_npc.play_anim("Talk")
+		_set_order_text(_feedback_text)
+		await get_tree().create_timer(3.0).timeout
+	_start_leaving() # switches to the Walk animation itself
+
+
+func _feedback_for_outcome(outcome: String) -> String:
+	match outcome:
+		"happy":
+			return "Delicious!"
+		"too_strong":
+			return "Too strong."
+		"not_enough_fruit":
+			return "Not enough fruit."
+		"too_sweet":
+			return "Too sweet."
+		"not_sweet_enough":
+			return "Not sweet enough."
+		"too_cold":
+			return "Too cold."
+		"not_cold_enough":
+			return "Not cold enough."
+		"too_expensive":
+			return "Too expensive."
+		"wrong_order":
+			return "That's not what I ordered."
+		_:
+			return ""
 
 
 func _on_debug_force_happy() -> void:
-	if state == CustomerState.WAITING:
-		_resolve("happy")
+	if state != CustomerState.WAITING:
+		return
+	# Simulate paying for whatever's left in the order, skipping the price
+	# check/serving flow entirely — this is a debug shortcut.
+	for fruit_type: String in order.keys():
+		_accumulated_price += GameState.get_price(fruit_type) * order[fruit_type]
+	order.clear()
+	_resolve("happy")
 
 
 func step_forward(new_pos: Vector3) -> void:
@@ -346,7 +447,10 @@ func show_order_to_player(player: Node) -> void:
 	var was_already_engaged := _engaged_with_player
 	_engaged_with_player = true
 	_engaged_player = player
-	_show_order()
+	if not _price_checked:
+		_run_price_check_and_show_order()
+	elif not _price_checking:
+		_show_order()
 	if not was_already_engaged:
 		_npc.play_anim("Talk")
 		_talk_anim_playing = true
@@ -404,38 +508,128 @@ func _refresh_patience_bar(ratio: float) -> void:
 	_patience_progress.value = ratio * _patience_progress.max_value
 
 
+func _set_order_text(text: String) -> void:
+	if _ui_label == null:
+		return
+	_ui_label.text = text
+	_ui_label.visible = true
+	if _ui_panel:
+		# Resize synchronously rather than deferring: _process() runs
+		# _update_bubble_screen_pos() every frame while the label is visible,
+		# and it forces the panel visible again using whatever size it has
+		# *right now* — deferring the resize left a 1-frame window where that
+		# happened with the stale (pre-update) size, which also contributed
+		# to the panel/text looking misaligned right after the text changed.
+		_resize_order_panel()
+
+
+func _update_bubble_screen_pos() -> void:
+	if _ui_panel == null or emoji_anchor == null:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	# Position the order bubble at chest height.
+	var bubble_pos := global_position + Vector3(0, 1.1, 0)
+	if cam.is_position_behind(bubble_pos):
+		_ui_panel.visible = false
+		return
+	_ui_panel.visible = true
+	var screen_pos := cam.unproject_position(bubble_pos)
+	# Scale the screen-space bubble with distance so it doesn't look
+	# huge when the NPC is far away.
+	var dist := cam.global_position.distance_to(bubble_pos)
+	var ui_scale := clampf(4.0 / dist, 0.25, 1.3)
+	_ui_panel.scale = Vector2(ui_scale, ui_scale)
+	var panel_size := _ui_panel.size * ui_scale
+	_ui_panel.position = screen_pos - panel_size * 0.5
+
+
 func _show_order() -> void:
-	order_label.text = "One cup %s" % expected_fruit.capitalize()
-	order_label.visible = true
-	if _order_panel:
-		_order_panel.visible = false
-		call_deferred("_resize_order_panel")
+	if order.is_empty():
+		_set_order_text("")
+		return
+	var parts: Array[String] = []
+	for fruit_type: String in order.keys():
+		var qty: int = order[fruit_type]
+		parts.append("%d %s" % [qty, fruit_type.capitalize()])
+	_set_order_text(", ".join(parts))
+
+
+func _run_price_check_and_show_order() -> void:
+	## Runs once per visit, before the order is ever shown. Each fruit type
+	## in the order is compared against its "ideal" base price; the further
+	## the current price is from that, the higher the chance the customer
+	## reacts (dropping that fruit if it's too expensive, or just commenting
+	## if it's a steal). Reacted-to fruits are shown one at a time for 3s.
+	if _price_checked:
+		if not _price_checking:
+			_show_order()
+		return
+	_price_checked = true
+	_price_checking = true
+
+	var messages: Array[String] = []
+	for fruit_type: String in order.keys().duplicate():
+		var price := GameState.get_price(fruit_type)
+		var base := RecipeEvaluator.get_base_price(fruit_type)
+		if base <= 0.0:
+			continue
+		var deviation := (price - base) / base
+		if deviation > 0.0:
+			if randf() < clampf(deviation, 0.0, 1.0):
+				messages.append("The %s is too expensive!" % fruit_type.capitalize())
+				order.erase(fruit_type)
+		elif deviation < 0.0:
+			if randf() < clampf(-deviation, 0.0, 1.0):
+				messages.append("Wow, %s is so cheap!" % fruit_type.capitalize())
+
+	for msg: String in messages:
+		if not is_inside_tree():
+			return
+		_npc.play_anim("Talk")
+		_set_order_text(msg)
+		await get_tree().create_timer(3.0).timeout
+
+	_price_checking = false
+	if not is_inside_tree():
+		return
+	if order.is_empty():
+		_resolve("too_expensive") # will switch to the Walk animation itself
+		return
+	_npc.play_anim("Idle")
+	_show_order()
+
+
+func _reject_wrong_item(fruit_type: String) -> void:
+	## Serving something the customer didn't ask for: doesn't count toward
+	## the order, doesn't cost them anything either — just a brief callout,
+	## then back to waiting on whatever's still left.
+	state = CustomerState.RECEIVING
+	var label := fruit_type.capitalize() if fruit_type != "" else "that"
+	_npc.play_anim("Talk")
+	_set_order_text("I didn't ask for %s!" % label)
+	await get_tree().create_timer(3.0).timeout
+	if not is_inside_tree():
+		return
+	state = CustomerState.WAITING
+	_npc.play_anim("Idle")
+	_show_order()
 
 
 func _resize_order_panel() -> void:
-	if _order_panel == null or not is_instance_valid(order_label):
+	if _ui_panel == null or _ui_label == null:
 		return
-	var aabb_size := order_label.get_aabb().size
-	var font := order_label.font if order_label.font else ThemeDB.fallback_font
-	var text_height := font.get_height(order_label.font_size) * order_label.pixel_size
-	var pad := Vector2(0.05, 0.035)
-	var panel_size := Vector2(aabb_size.x + pad.x, text_height + pad.y)
-	var panel_px := Vector2i(
-		int(panel_size.x / _order_panel.pixel_size),
-		int(panel_size.y / _order_panel.pixel_size),
-	)
-	panel_px.x = maxi(panel_px.x, 32)
-	panel_px.y = maxi(panel_px.y, 32)
-	var corner_px := clampi(int(mini(panel_px.x, panel_px.y) * 0.15), 8, 32)
-	var panel_color := Color(0.20, 0.22, 0.24, 0.88)
-	_order_panel.texture = _create_rounded_panel_texture(
-		panel_px.x,
-		panel_px.y,
-		panel_color,
-		corner_px,
-	)
-	_order_panel.scale = Vector3(1, 1, 1)
-	_order_panel.visible = true
+	var label_size := _ui_label.get_combined_minimum_size()
+	var pad := Vector2(8, 4)
+	_ui_panel.size = label_size + pad * 2
+	_ui_label.position = pad
+	# The label's own size never got updated here, so as the text got shorter
+	# (e.g. an item removed from the order) it kept centering within its old,
+	# stale bounds instead of the new (smaller) panel — causing the text to
+	# drift out of alignment with the panel around it.
+	_ui_label.size = label_size
+	_ui_panel.visible = true
 
 
 func _create_rounded_panel_texture(
@@ -460,42 +654,45 @@ func _create_rounded_panel_texture(
 
 
 func _hide_order_bubble() -> void:
-	if _order_panel:
-		_order_panel.visible = false
-	if order_label:
-		order_label.visible = false
+	if _ui_panel:
+		_ui_panel.visible = false
+	if _ui_label:
+		_ui_label.visible = false
 
 
 func _build_order_bubble() -> void:
-	_order_panel = Sprite3D.new()
-	_order_panel.name = "OrderPanel"
-	_order_panel.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_order_panel.double_sided = true
-	_order_panel.no_depth_test = true
-	_order_panel.shaded = false
-	_order_panel.pixel_size = 0.0008
-	_order_panel.texture = _create_white_texture()
-	_order_panel.modulate = Color(1, 1, 1, 0.95)
-	_order_panel.position = Vector3(0, -0.35, -0.01)
-	_order_panel.sorting_offset = -1.0
-	_order_panel.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	emoji_anchor.add_child(_order_panel)
-	emoji_anchor.move_child(order_label, -1)
-
-	order_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	order_label.no_depth_test = true
-	order_label.pixel_size = 0.0008
-	order_label.font_size = 80
-	order_label.outline_size = 8
-	order_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	order_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	order_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	order_label.width = 0
-	order_label.sorting_offset = 1.0
-	order_label.modulate = Color(1, 1, 1, 1)
-	order_label.outline_size = 4
-	order_label.position = Vector3(0, -0.35, 0)
+	# Hide the scene's Label3D — we use a CanvasLayer-based label instead
+	# so the text renders above the outline overlay (CanvasLayer layer=100).
 	order_label.visible = false
+
+	_ui_layer = CanvasLayer.new()
+	_ui_layer.name = "OrderBubbleLayer"
+	_ui_layer.layer = 101
+	add_child(_ui_layer)
+
+	_ui_panel = Panel.new()
+	_ui_panel.name = "OrderPanel"
+	_ui_panel.visible = false
+	_ui_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.05, 0.05, 0.8)
+	sb.corner_radius_top_left = 5
+	sb.corner_radius_top_right = 5
+	sb.corner_radius_bottom_left = 5
+	sb.corner_radius_bottom_right = 5
+	_ui_panel.add_theme_stylebox_override("panel", sb)
+	_ui_layer.add_child(_ui_panel)
+
+	_ui_label = Label.new()
+	_ui_label.name = "OrderLabel"
+	_ui_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ui_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_ui_label.add_theme_font_size_override("font_size", 12)
+	_ui_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_ui_label.add_theme_constant_override("outline_size", 2)
+	_ui_label.visible = false
+	_ui_panel.add_child(_ui_label)
 
 
 func _build_patience_circle() -> void:
@@ -532,6 +729,12 @@ func _build_patience_circle() -> void:
 	_patience_circle.position = Vector3(0, 2.2, 0)
 	_patience_circle.texture = viewport.get_texture()
 	add_child(_patience_circle)
+	_apply_ui_tonemap_comp(_patience_circle)
+	if not Engine.is_editor_hint():
+		EventBus.exposure_changed.connect(
+			func(exposure: float):
+				_apply_ui_tonemap_comp(_patience_circle, exposure),
+		)
 
 
 func _ignore_pedestrian_collisions() -> void:
@@ -567,3 +770,26 @@ func _create_ring_texture(size: int = 128, inner_ratio: float = 0.65) -> ImageTe
 			if d_sq <= outer_sq and d_sq >= inner_sq:
 				img.set_pixel(x, y, Color.WHITE)
 	return ImageTexture.create_from_image(img)
+
+
+static var _ui_tonemap_shader: Shader
+
+
+static func get_ui_tonemap_shader() -> Shader:
+	if _ui_tonemap_shader == null:
+		_ui_tonemap_shader = Shader.new()
+		_ui_tonemap_shader.code = (
+			"shader_type spatial;\n" + "render_mode unshaded, cull_disabled;\n"
+			+ "uniform sampler2D tex;\n" + "uniform float boost = 1.0;\n"
+			+ "void fragment() {\n" + "\tvec4 c = texture(tex, UV);\n"
+			+ "\tALBEDO = c.rgb * boost;\n" + "\tALPHA = c.a;\n" + "}\n"
+		)
+	return _ui_tonemap_shader
+
+
+func _apply_ui_tonemap_comp(sprite: Sprite3D, exposure: float = 1.0) -> void:
+	var mat := ShaderMaterial.new()
+	mat.shader = get_ui_tonemap_shader()
+	mat.set_shader_parameter("tex", sprite.texture)
+	mat.set_shader_parameter("boost", 1.0 / exposure)
+	sprite.material_override = mat

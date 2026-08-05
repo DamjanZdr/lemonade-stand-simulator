@@ -130,9 +130,8 @@ func interact(player: Node) -> void:
 			p.pickup_container(pitcher, "pitcher")
 			return
 
-		# Pick up dispenser
-		if _snapped_pitcher == null:
-			p.pickup_container(self, "water_dispenser")
+		# The dispenser itself is a fixed appliance — it can't be picked up
+		# or moved, only pitchers snapped to it can be taken.
 
 
 func interact_secondary(player: Node) -> void:
@@ -145,9 +144,7 @@ func interact_secondary(player: Node) -> void:
 		_snapped_pitcher = null
 		p.pickup_container(pitcher, "pitcher")
 		return
-	# Pick up dispenser
-	if p.held_item == p.HeldItem.NONE and _snapped_pitcher == null:
-		p.pickup_container(self, "water_dispenser")
+	# The dispenser itself is fixed in place — no pickup on RMB either.
 
 
 func get_hint(player: Node) -> String:
@@ -190,7 +187,7 @@ func get_hint(player: Node) -> String:
 			return "Water Dispenser | RMB: take pitcher (empty)"
 		return "Water Dispenser | LMB: take pitcher"
 
-	return "Water Dispenser | LMB: pick up"
+	return "Water Dispenser | fixed in place"
 
 
 func snap_pitcher(pitcher: Pitcher) -> void:

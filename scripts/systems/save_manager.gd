@@ -504,3 +504,13 @@ func _on_game_saved() -> void:
 
 func _on_game_reset() -> void:
 	delete_save()
+	_clear_street_trash()
+
+
+func _clear_street_trash() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	for node in tree.get_nodes_in_group("trash_item"):
+		if is_instance_valid(node):
+			node.queue_free()

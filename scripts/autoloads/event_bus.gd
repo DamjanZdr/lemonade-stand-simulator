@@ -60,6 +60,7 @@ signal weather_changed(temperature: float)
 signal day_phase_changed(phase: int, day_number: int)
 signal day_timer_updated(time_left: float, total_time: float)
 signal day_time_over()
+signal exposure_changed(exposure: float)
 
 # --- Save ---
 signal game_saved()

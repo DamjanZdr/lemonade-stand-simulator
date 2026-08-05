@@ -46,13 +46,14 @@ var _playable_snapped: bool = false
 var _people_manager: Node = null
 
 var _ui_anchor: Node3D = null
-var _order_label: Label3D = null
-var _order_panel: Sprite3D = null
+var _ui_layer: CanvasLayer = null
+var _ui_label: Label = null
+var _ui_panel: Panel = null
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
 var _last_patience_percent: int = -1
 
-const _OFFER_TEXT := "A free lemonade?\nSure I would love that!"
+const _OFFER_TEXT := "A free lemonade? Sure, I would love that!"
 
 
 func _ready() -> void:
@@ -122,6 +123,11 @@ func update_queue_target(target: Vector3) -> void:
 
 func get_route_continuation() -> Dictionary:
 	return { "waypoints": _waypoints, "next_index": _waypoint_idx + 1 }
+
+
+func _process(_delta: float) -> void:
+	if _ui_label != null and _ui_label.visible:
+		_update_bubble_screen_pos()
 
 
 func _physics_process(delta: float) -> void:
@@ -320,14 +326,35 @@ func _resume_walking() -> void:
 
 
 func _show_order_text(text: String) -> void:
-	if _order_label == null:
+	if _ui_label == null:
 		return
-	_order_label.text = text
-	_order_label.visible = true
-	if _order_panel:
-		_order_panel.visible = false
-		await get_tree().process_frame
-		_resize_order_panel()
+	_ui_label.text = text
+	_ui_label.visible = true
+	if _ui_panel:
+		_ui_panel.visible = false
+		call_deferred("_resize_order_panel")
+
+
+func _update_bubble_screen_pos() -> void:
+	if _ui_panel == null or _ui_anchor == null:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	# Position the order bubble at chest height.
+	var bubble_pos := global_position + Vector3(0, 1.1, 0)
+	if cam.is_position_behind(bubble_pos):
+		_ui_panel.visible = false
+		return
+	_ui_panel.visible = true
+	var screen_pos := cam.unproject_position(bubble_pos)
+	# Scale the screen-space bubble with distance so it doesn't look
+	# huge when the NPC is far away.
+	var dist := cam.global_position.distance_to(bubble_pos)
+	var ui_scale := clampf(4.0 / dist, 0.25, 1.3)
+	_ui_panel.scale = Vector2(ui_scale, ui_scale)
+	var panel_size := _ui_panel.size * ui_scale
+	_ui_panel.position = screen_pos - panel_size * 0.5
 
 
 func _feedback_text(result: EvaluationResult) -> String:
@@ -358,37 +385,34 @@ func _complaint_word(complaint: String) -> String:
 
 
 func _build_order_bubble() -> void:
-	_order_panel = Sprite3D.new()
-	_order_panel.name = "OrderPanel"
-	_order_panel.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_order_panel.double_sided = true
-	_order_panel.no_depth_test = true
-	_order_panel.shaded = false
-	_order_panel.pixel_size = 0.0008
-	_order_panel.texture = _create_white_texture()
-	_order_panel.modulate = Color(1, 1, 1, 0.95)
-	_order_panel.position = Vector3(0, -0.35, -0.01)
-	_order_panel.sorting_offset = -1.0
-	_order_panel.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	_ui_anchor.add_child(_order_panel)
+	_ui_layer = CanvasLayer.new()
+	_ui_layer.name = "OrderBubbleLayer"
+	_ui_layer.layer = 101
+	add_child(_ui_layer)
 
-	_order_label = Label3D.new()
-	_order_label.name = "OrderLabel"
-	_order_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_order_label.no_depth_test = true
-	_order_label.pixel_size = 0.0008
-	_order_label.font_size = 80
-	_order_label.outline_size = 4
-	_order_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_order_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_order_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_order_label.width = 0
-	_order_label.sorting_offset = 1.0
-	_order_label.modulate = Color(1, 1, 1, 1)
-	_order_label.position = Vector3(0, -0.35, 0)
-	_order_label.visible = false
-	_ui_anchor.add_child(_order_label)
-	_ui_anchor.move_child(_order_label, -1)
+	_ui_panel = Panel.new()
+	_ui_panel.name = "OrderPanel"
+	_ui_panel.visible = false
+	_ui_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.05, 0.05, 0.8)
+	sb.corner_radius_top_left = 5
+	sb.corner_radius_top_right = 5
+	sb.corner_radius_bottom_left = 5
+	sb.corner_radius_bottom_right = 5
+	_ui_panel.add_theme_stylebox_override("panel", sb)
+	_ui_layer.add_child(_ui_panel)
+
+	_ui_label = Label.new()
+	_ui_label.name = "OrderLabel"
+	_ui_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ui_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_ui_label.add_theme_font_size_override("font_size", 12)
+	_ui_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_ui_label.add_theme_constant_override("outline_size", 2)
+	_ui_label.visible = false
+	_ui_panel.add_child(_ui_label)
 
 
 func _build_patience_circle() -> void:
@@ -425,44 +449,37 @@ func _build_patience_circle() -> void:
 	_patience_circle.position = Vector3(0, 2.2, 0)
 	_patience_circle.texture = viewport.get_texture()
 	add_child(_patience_circle)
+	_apply_ui_tonemap_comp(_patience_circle)
+	if not Engine.is_editor_hint():
+		EventBus.exposure_changed.connect(
+			func(exposure: float):
+				_apply_ui_tonemap_comp(_patience_circle, exposure),
+		)
+
+
+func _apply_ui_tonemap_comp(sprite: Sprite3D, exposure: float = 1.0) -> void:
+	var mat := ShaderMaterial.new()
+	mat.shader = Customer.get_ui_tonemap_shader()
+	mat.set_shader_parameter("tex", sprite.texture)
+	mat.set_shader_parameter("boost", 1.0 / exposure)
+	sprite.material_override = mat
 
 
 func _resize_order_panel() -> void:
-	if _order_panel == null or _order_label == null:
+	if _ui_panel == null or _ui_label == null:
 		return
-	var font := _order_label.font if _order_label.font else ThemeDB.fallback_font
-	var text_px := font.get_multiline_string_size(
-		_order_label.text,
-		HORIZONTAL_ALIGNMENT_CENTER,
-		-1,
-		int(_order_label.font_size),
-	)
-	var text_size := text_px * _order_label.pixel_size
-	var pad := Vector2(0.05, 0.035)
-	var panel_size := text_size + pad
-	var panel_px := Vector2i(
-		int(panel_size.x / _order_panel.pixel_size),
-		int(panel_size.y / _order_panel.pixel_size),
-	)
-	panel_px.x = maxi(panel_px.x, 32)
-	panel_px.y = maxi(panel_px.y, 32)
-	var corner_px := clampi(int(mini(panel_px.x, panel_px.y) * 0.15), 8, 32)
-	var panel_color := Color(0.20, 0.22, 0.24, 0.88)
-	_order_panel.texture = _create_rounded_panel_texture(
-		panel_px.x,
-		panel_px.y,
-		panel_color,
-		corner_px,
-	)
-	_order_panel.scale = Vector3(1, 1, 1)
-	_order_panel.visible = true
+	var label_size := _ui_label.get_combined_minimum_size()
+	var pad := Vector2(8, 4)
+	_ui_panel.size = label_size + pad * 2
+	_ui_label.position = pad
+	_ui_panel.visible = true
 
 
 func _hide_order_bubble() -> void:
-	if _order_panel:
-		_order_panel.visible = false
-	if _order_label:
-		_order_label.visible = false
+	if _ui_panel:
+		_ui_panel.visible = false
+	if _ui_label:
+		_ui_label.visible = false
 
 
 func _refresh_patience_bar(ratio: float) -> void:

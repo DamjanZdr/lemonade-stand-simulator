@@ -181,6 +181,7 @@ func _ready() -> void:
 				func(event: InputEvent):
 					if event is InputEventMouseButton and event.pressed:
 						if event.button_index == MOUSE_BUTTON_LEFT:
+							AudioManager.play_sfx_ui("tab_click")
 							_show_tab(t)
 			)
 			step_pc.mouse_entered.connect(
@@ -683,7 +684,11 @@ func _create_tree_root_node(root_name: String) -> CircleNode:
 	_update_root_counter(circle)
 	var data := UpgradeManager.get_node_data(root_name)
 	_style_tree_node(circle, data)
-	circle.mouse_entered.connect(func(): _hover_tree_node(circle, true))
+	circle.mouse_entered.connect(
+		func():
+			AudioManager.play_sfx_ui("hover")
+			_hover_tree_node(circle, true)
+	)
 	circle.mouse_exited.connect(func(): _hover_tree_node(circle, false))
 	return circle
 
@@ -707,6 +712,7 @@ func _create_tree_node(id: String, data: Dictionary) -> CircleNode:
 	circle.mouse_entered.connect(
 		func():
 			is_hovered = true
+			AudioManager.play_sfx_ui("hover")
 			var top_center_local := (
 					circle.position + Vector2(circle.size.x / 2.0, 0.0)
 			)
@@ -952,6 +958,7 @@ func _buy_tree_upgrade(
 		tween.tween_property(node, "position", orig, 0.05)
 		return
 	if UpgradeManager.purchase_node(id):
+		AudioManager.play_sfx_ui("upgrade_bought")
 		_status_lbl.text = "Upgrade purchased!"
 		_animate_status()
 		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(id, {})
@@ -1205,9 +1212,14 @@ func _create_item_card(
 			Color(0.88, 0.65, 0.12),
 			Color(0.18, 0.20, 0.25),
 			Color(0.92, 0.88, 0.78),
-			6,
+			24,
+			1.15,
 		)
-		add_btn.pressed.connect(func(): _add_to_cart(item))
+		add_btn.pressed.connect(
+			func():
+				AudioManager.play_sfx_ui("tab_click")
+				_add_to_cart(item)
+		)
 		bottom_row.add_child(add_btn)
 
 	return card
@@ -1272,6 +1284,7 @@ func _update_flow_indicator() -> void:
 
 
 func _on_tab_hover(step_pc: PanelContainer, tab: String) -> void:
+	AudioManager.play_sfx_ui("hover")
 	if tab == _active_tab:
 		return
 	var hover_st := StyleBoxFlat.new()
@@ -1588,9 +1601,13 @@ func _update_cart_ui() -> void:
 			Color(0.35, 0.15, 0.12),
 			Color(0.18, 0.14, 0.12),
 			Color(0.95, 0.70, 0.60),
-			6,
+			18,
 		)
-		rem_btn.pressed.connect(func(): _remove_cart_entry(idx))
+		rem_btn.pressed.connect(
+			func():
+				AudioManager.play_sfx_ui("tab_click")
+				_remove_cart_entry(idx)
+		)
 		row.add_child(rem_btn)
 		_cart_list.add_child(row)
 	_cart_total_lbl.text = "Total: $%.2f" % total
@@ -1605,6 +1622,7 @@ func _update_cart_ui() -> void:
 
 
 func _checkout_cart() -> void:
+	AudioManager.play_sfx_ui("coins")
 	var counts: Dictionary = { }
 	var item_lookup: Dictionary = { }
 	for item in _cart:
@@ -1783,6 +1801,7 @@ func _apply_button_style(
 		hover: Color,
 		text: Color,
 		font: int,
+		hover_pitch: float = 1.0,
 ) -> void:
 	btn.add_theme_font_size_override("font_size", font)
 	var st := StyleBoxFlat.new()
@@ -1800,7 +1819,7 @@ func _apply_button_style(
 	btn.add_theme_color_override("font_color", text)
 	btn.add_theme_color_override("font_hover_color", text)
 	btn.add_theme_color_override("font_pressed_color", text)
-	btn.mouse_entered.connect(func(): AudioManager.play_sfx_ui("button_hover"))
+	btn.mouse_entered.connect(func(): AudioManager.play_sfx_ui("hover", hover_pitch))
 
 
 func _scan_stand_state() -> void:
@@ -2206,7 +2225,7 @@ func _style_unit_button(btn: Button, accent: Color) -> void:
 	hover_st.border_width_bottom = 1
 	hover_st.set_corner_radius_all(8)
 	btn.add_theme_stylebox_override("hover", hover_st)
-	btn.mouse_entered.connect(func(): AudioManager.play_sfx_ui("button_hover"))
+	btn.mouse_entered.connect(func(): AudioManager.play_sfx_ui("hover"))
 
 
 func _refresh_recipes_page() -> void:

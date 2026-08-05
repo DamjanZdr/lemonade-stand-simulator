@@ -37,7 +37,7 @@ color = Color(0.02, 0.022, 0.028, 1)
 [node name="MorningHub" parent="ScreenUI" unique_id=2095995234 instance=ExtResource("3_ui")]
 
 [node name="ScreenCamera" type="Camera3D" parent="." unique_id=48626850]
-transform = Transform3D(1, 0, 0, 0, 0.9961947, 0.08715574, 0, -0.08715574, 0.9961947, -0.008969113, 1.3537514, 1.537847)
+transform = Transform3D(1, 0, 0, 0, 0.9961947, 0.08715574, 0, -0.08715574, 0.9961947, -0.008969113, 1.3537514, 1.6722465)
 fov = 40.0
 metadata/_edit_group_ = true
 

@@ -1,32 +1,50 @@
 extends Node
-## Pure static evaluation logic. Uses RecipeManager for per-fruit ideal values.
+## Evaluation logic for served drinks. Registered as an autoload singleton
+## (hence these are plain instance methods, not `static` — Godot warns when
+## a static function is called through a singleton instance). Uses
+## RecipeManager for per-fruit ideal values.
 ##
 ## Returns one of 8 specific customer reactions:
 ##   happy, timeout, too_expensive, wrong_order,
 ##   too_sweet, not_sweet_enough, too_strong, not_enough_fruit,
 ##   too_cold, not_cold_enough
 
-static var _manager: Node = null
+var _manager: Node = null
 
 
-static func set_manager(manager: Node) -> void:
+func set_manager(manager: Node) -> void:
 	_manager = manager
 
 
-static func _get_manager() -> Node:
+func _get_manager() -> Node:
 	if _manager == null:
-		_manager = Engine.get_main_loop().current_scene.get_node_or_null("World/Managers/RecipeManager")
+		_manager = Engine.get_main_loop().current_scene.get_node_or_null(
+			"World/Managers/RecipeManager"
+		)
 		if _manager == null:
 			push_warning("RecipeEvaluator: RecipeManager not found, using fallback values")
 	return _manager
 
 
-static func evaluate(
-		recipe: Dictionary,
-		temperature: float,
-		price: float,
-		wait_ratio: float,
-		expected_fruit_type: String = "",
+func get_base_price(fruit_type: String) -> float:
+	## The "ideal" price customers mentally compare the current price against
+	## when deciding whether it's a rip-off or a steal. Falls back to a
+	## reasonable default if the fruit's data can't be found.
+	var mgr := _get_manager()
+	if mgr == null:
+		return 1.5
+	var data: IngredientData = mgr.get_ingredient_data(fruit_type)
+	if data == null:
+		return 1.5
+	return data.default_price
+
+
+func evaluate(
+	recipe: Dictionary,
+	temperature: float,
+	price: float,
+	wait_ratio: float,
+	expected_fruit_type: String = "",
 ) -> String:
 	## Main entry point. Returns a single string outcome for the customer flow.
 	if wait_ratio <= 0.0:
@@ -41,10 +59,10 @@ static func evaluate(
 	return result.complaints[0]
 
 
-static func evaluate_detailed(
-		recipe: Dictionary,
-		temperature: float,
-		expected_fruit_type: String = "",
+func evaluate_detailed(
+	recipe: Dictionary,
+	temperature: float,
+	expected_fruit_type: String = "",
 ) -> EvaluationResult:
 	## Returns full per-axis scores and an ordered list of complaints.
 	var result := EvaluationResult.new()
@@ -98,9 +116,7 @@ static func evaluate_detailed(
 	result.temperature_score = 1.0 - ice_unhappy
 	result.overall_score = result.strength_score * result.sweetness_score * result.temperature_score
 	result.is_perfect = (
-			result.fruit_delta == 0.0
-			and result.sugar_delta == 0.0
-			and result.ice_delta == 0.0
+		result.fruit_delta == 0.0 and result.sugar_delta == 0.0 and result.ice_delta == 0.0
 	)
 
 	# --- Complaint generation: roll for each axis ---
@@ -126,7 +142,7 @@ static func evaluate_detailed(
 	return result
 
 
-static func get_verdict_string(recipe: Dictionary, temperature: float) -> String:
+func get_verdict_string(recipe: Dictionary, temperature: float) -> String:
 	## Human-readable summary for debug panel.
 	var fruit_type: String = recipe.get("fruit_type", "")
 	var fruit_count: float = recipe.get("fruit_count", recipe.get("lemons", 0.0))

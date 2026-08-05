@@ -14,6 +14,14 @@ var _camera: Camera3D = null
 var _player: Node = null
 var _hovered: MoneyDenomination = null
 
+## Local position when fully shown (captured from the scene at startup).
+var _rest_position: Vector3 = Vector3.ZERO
+## How far below the resting position the tray starts/ends while hidden.
+@export var slide_distance: float = 0.6
+@export var slide_up_duration: float = 0.3
+@export var slide_down_duration: float = 0.25
+var _slide_tween: Tween = null
+
 
 func _ready() -> void:
 	_camera = get_parent() as Camera3D
@@ -25,11 +33,16 @@ func _ready() -> void:
 	# classic FPS viewmodel so it never gets clipped by nearby world geometry.
 	_disable_depth_test_recursive(self)
 
+	_rest_position = position
 	visible = false
 	_set_areas_enabled(false)
 	EventBus.sale_initiated.connect(_on_sale_initiated)
 	EventBus.change_finalized.connect(_on_change_finalized)
 	EventBus.customer_left.connect(_on_customer_left)
+
+
+func _hidden_position() -> Vector3:
+	return _rest_position - Vector3(0.0, slide_distance, 0.0)
 
 
 func _set_areas_enabled(enabled: bool) -> void:
@@ -78,6 +91,9 @@ func _on_sale_initiated(payment: float, change_due: float) -> void:
 	_change_due_cents = roundi(change_due * 100.0)
 	_tendered_cents = 0
 	_active = true
+	if _slide_tween != null and _slide_tween.is_valid():
+		_slide_tween.kill()
+	position = _hidden_position()
 	visible = true
 	_set_areas_enabled(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -86,6 +102,9 @@ func _on_sale_initiated(payment: float, change_due: float) -> void:
 	if _player and _player.has_method("set_money_mode"):
 		_player.set_money_mode(true)
 	EventBus.change_tendered_updated.emit(_tendered_cents, _change_due_cents)
+	_slide_tween = create_tween()
+	_slide_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_slide_tween.tween_property(self, "position", _rest_position, slide_up_duration)
 
 
 func _on_change_finalized(_earned: float) -> void:
@@ -99,7 +118,6 @@ func _on_customer_left(_customer: Node, _outcome: String) -> void:
 
 func _deactivate() -> void:
 	_active = false
-	visible = false
 	_set_areas_enabled(false)
 	if _hovered and is_instance_valid(_hovered):
 		_hovered.set_highlight(false)
@@ -107,6 +125,16 @@ func _deactivate() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if _player and _player.has_method("set_money_mode"):
 		_player.set_money_mode(false)
+
+	if _slide_tween != null and _slide_tween.is_valid():
+		_slide_tween.kill()
+	_slide_tween = create_tween()
+	_slide_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	_slide_tween.tween_property(self, "position", _hidden_position(), slide_down_duration)
+	_slide_tween.tween_callback(
+		func():
+			visible = false,
+	)
 
 
 func _process(_delta: float) -> void:
