@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://38f1ctm47f8y"]
 
-[ext_resource type="PackedScene" uid="uid://k7f3tfy2h2fg" path="res://blender/strawberry.glb" id="1_strawberry"]
+[ext_resource type="PackedScene" uid="uid://k7f3tfy2h2fg" path="res://assets/models/props/strawberry.glb" id="1_strawberry"]
 
 [node name="StrawberryPreview" type="Node3D" unique_id=252193928]
 

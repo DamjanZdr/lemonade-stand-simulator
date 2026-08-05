@@ -3,7 +3,7 @@ extends Node3D
 ## Spawns are anchored to existing NPCs, so they never appear outside the
 ## walkable/playable area.
 
-const TRASH_SCENE: PackedScene = preload("res://trash.tscn")
+const TRASH_SCENE: PackedScene = preload("res://scenes/objects/trash.tscn")
 
 @export var min_interval: float = 10.0
 @export var max_interval: float = 20.0

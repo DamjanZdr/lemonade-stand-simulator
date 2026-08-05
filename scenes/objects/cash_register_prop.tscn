@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://kx04824sehej" path="res://scripts/objects/cash_register_prop.gd" id="1_regprop"]
 [ext_resource type="Script" uid="uid://bj5od8y5abpya" path="res://scripts/objects/denomination_item.gd" id="2_denom"]
-[ext_resource type="PackedScene" uid="uid://b57mt7dy7wnp6" path="res://blender/calculator.glb" id="3_calc"]
+[ext_resource type="PackedScene" uid="uid://b57mt7dy7wnp6" path="res://assets/models/props/calculator.glb" id="3_calc"]
 
 [sub_resource type="BoxShape3D" id="Shape_body"]
 size = Vector3(0.28, 0.24, 0.34594727)

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://r4y66pavg3d5"]
 
-[ext_resource type="PackedScene" uid="uid://dgq6s78nqrt5g" path="res://Visuals/Street/street.glb" id="1_i82vp"]
+[ext_resource type="PackedScene" uid="uid://dgq6s78nqrt5g" path="res://assets/models/environment/street/street.glb" id="1_i82vp"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
 size = Vector3(8, 0.1, 4)

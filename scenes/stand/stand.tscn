@@ -1,6 +1,6 @@
 [gd_scene format=4 uid="uid://1v1tem4n2kjm"]
 
-[ext_resource type="Texture2D" uid="uid://4mtljc43qwpe" path="res://blender/stand_StandTexture.png" id="4_yrfsh"]
+[ext_resource type="Texture2D" uid="uid://4mtljc43qwpe" path="res://assets/textures/props/stand_StandTexture.png" id="4_yrfsh"]
 
 [sub_resource type="StandardMaterial3D" id="Material_counter"]
 albedo_color = Color(0.82, 0.65, 0.38, 1)

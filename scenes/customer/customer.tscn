@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bgvss2ie4t1qh" path="res://scripts/customer/customer.gd" id="1_customer"]
 [ext_resource type="Script" uid="uid://cyettguyulnbw" path="res://scripts/customer/customer_interactable.gd" id="2_cinteract"]
 [ext_resource type="Script" uid="uid://b23pjwbeke5f1" path="res://scripts/customer/emoji_display.gd" id="3_emoji"]
-[ext_resource type="PackedScene" uid="uid://dgiq68gtr7ei4" path="res://npc.tscn" id="4_npc"]
+[ext_resource type="PackedScene" uid="uid://dgiq68gtr7ei4" path="res://scenes/customer/npc.tscn" id="4_npc"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_cust"]
 radius = 0.3

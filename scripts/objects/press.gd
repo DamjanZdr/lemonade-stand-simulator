@@ -552,7 +552,7 @@ func _animate_fruit_drop(itype: String, amount: float, start_pos: Vector3) -> vo
 
 
 func _make_fruit_mesh(itype: String) -> Node3D:
-	var path := "res://blender/%s.glb" % itype
+	var path := "res://assets/models/props/%s.glb" % itype
 	var s := load(path) as PackedScene
 	if s:
 		var inst := s.instantiate() as Node3D

@@ -5,7 +5,7 @@ extends Node
 ##   AudioManager.play_sfx("pick_up_box", global_position)
 ##   AudioManager.play_sfx("press_fruits", global_position, _press_duration)
 
-const SFX_DIR := "res://audio/sounds/"
+const SFX_DIR := "res://assets/audio/sfx/"
 const _PITCH_VARIATION: float = 0.05
 const _UI_PITCH_VARIATION: float = 0.02
 ## UI sounds (play_sfx_ui) play through a plain, non-positional

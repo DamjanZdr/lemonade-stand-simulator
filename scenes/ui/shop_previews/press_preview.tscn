@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://presspreva"]
 
-[ext_resource type="PackedScene" uid="uid://dagbqtfbfhpdb" path="res://blender/press.glb" id="1_model"]
+[ext_resource type="PackedScene" uid="uid://dagbqtfbfhpdb" path="res://assets/models/props/press.glb" id="1_model"]
 
 [node name="PressPreview" type="Node3D" unique_id=1117355384]
 

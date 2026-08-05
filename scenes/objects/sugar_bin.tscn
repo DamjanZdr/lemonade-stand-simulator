@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://desse2tnq7jkq"]
 
 [ext_resource type="Script" uid="uid://15kio5i6ygqt" path="res://scripts/objects/ingredient_bin.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://d26s0baibr53s" path="res://blender/sugar cube.glb" id="2_qsjya"]
-[ext_resource type="PackedScene" uid="uid://bwhavk06obiue" path="res://blender/sugar container.glb" id="2_sugar"]
+[ext_resource type="PackedScene" uid="uid://d26s0baibr53s" path="res://assets/models/props/sugar cube.glb" id="2_qsjya"]
+[ext_resource type="PackedScene" uid="uid://bwhavk06obiue" path="res://assets/models/props/sugar container.glb" id="2_sugar"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_001"]
 size = Vector3(0.42, 0.15, 0.38)

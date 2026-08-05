@@ -6,7 +6,7 @@
 [ext_resource type="LightmapGIData" uid="uid://60b7fspwoxly" path="res://scenes/world/world.lmbake" id="6_j0rhc"]
 [ext_resource type="PackedScene" uid="uid://c7m3x1q2y405a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
 [ext_resource type="Script" uid="uid://dcc7v87n0gjjq" path="res://scripts/tools/preview_orbit_camera.gd" id="10_preview"]
-[ext_resource type="PackedScene" uid="uid://vc244erl2bi2" path="res://blender/Desk2.0.glb" id="14_mxkvs"]
+[ext_resource type="PackedScene" uid="uid://vc244erl2bi2" path="res://assets/models/props/Desk2.0.glb" id="14_mxkvs"]
 [ext_resource type="PackedScene" uid="uid://csb7yl8gpw1q3" path="res://scenes/objects/computer.tscn" id="15_m114p"]
 [ext_resource type="PackedScene" uid="uid://3iu5tq16nvb0" path="res://scenes/building_blocks/neighborhood.tscn" id="15_mxkvs"]
 [ext_resource type="Script" uid="uid://bx8ql2bcj8v5" path="res://scripts/core/ingredient_data.gd" id="18_5fxch"]
@@ -21,9 +21,9 @@
 [ext_resource type="Resource" path="res://resources/data/blueberry.tres" id="42_blue"]
 [ext_resource type="Resource" path="res://resources/data/peach.tres" id="43_peach"]
 [ext_resource type="Resource" path="res://resources/data/watermelon.tres" id="44_water"]
-[ext_resource type="PackedScene" uid="uid://cdx1e3dagxpjh" path="res://blackboard.tscn" id="45_kx0xk"]
+[ext_resource type="PackedScene" uid="uid://cdx1e3dagxpjh" path="res://scenes/objects/blackboard.tscn" id="45_kx0xk"]
 [ext_resource type="Script" uid="uid://puonyclrtmxb" path="res://scripts/systems/upgrade_config_manager.gd" id="45_upgcfg"]
-[ext_resource type="PackedScene" uid="uid://c7ra0ih8gdcs8" path="res://price_board.tscn" id="46_5fxch"]
+[ext_resource type="PackedScene" uid="uid://c7ra0ih8gdcs8" path="res://scenes/objects/price_board.tscn" id="46_5fxch"]
 [ext_resource type="Script" uid="uid://bsyvhgcutcvjd" path="res://scripts/managers/color_manager.gd" id="46_fqf7g"]
 [ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="46_press"]
 [ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
@@ -54,7 +54,7 @@
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="70_neigh"]
 [ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
 
-[ext_resource type="Shader" path="res://resources/shaders/sky.gdshader" id="sky_shader"]
+[ext_resource type="Shader" path="res://assets/shaders/sky.gdshader" id="sky_shader"]
 
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
 albedo_color = Color(0.42331815, 0.62640846, 3.85046e-07, 1)

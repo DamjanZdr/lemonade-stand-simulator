@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://csb7yl8gpw1q3"]
 
 [ext_resource type="Script" uid="uid://10v3i1d0lyv4" path="res://scripts/objects/computer.gd" id="1_computer"]
-[ext_resource type="PackedScene" uid="uid://do7lxxq3aofc4" path="res://blender/Computer.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://do7lxxq3aofc4" path="res://assets/models/props/Computer.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://3j1qhop5peqq" path="res://scenes/ui/morning_hub.tscn" id="3_ui"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_computer"]

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://cy4padwttenjf"]
 
 [ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://deltu4c3atb3a" path="res://UpgradeIcons/trashrebate.png" id="icon"]
+[ext_resource type="Texture2D" uid="uid://deltu4c3atb3a" path="res://assets/textures/ui/upgrades/trashrebate.png" id="icon"]
 
 [resource]
 script = ExtResource("1_script")

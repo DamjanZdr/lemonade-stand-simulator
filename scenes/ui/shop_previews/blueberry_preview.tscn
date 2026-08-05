@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dkyn23raj4cm6"]
 
-[ext_resource type="PackedScene" uid="uid://6g3m2e7xbxut" path="res://blender/blueberry.glb" id="1_blueberry"]
+[ext_resource type="PackedScene" uid="uid://6g3m2e7xbxut" path="res://assets/models/props/blueberry.glb" id="1_blueberry"]
 
 [node name="BlueberryPreview" type="Node3D" unique_id=656123094]
 

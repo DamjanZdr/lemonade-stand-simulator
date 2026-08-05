@@ -1,14 +1,14 @@
 [gd_scene format=4 uid="uid://crlc4ejpqvn4g"]
 
 [ext_resource type="Script" uid="uid://cd23t4s5gn5dx" path="res://scripts/objects/fruit_bin.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://up7xyn0lo0ou" path="res://blender/lemon.glb" id="2_bs7qo"]
-[ext_resource type="PackedScene" uid="uid://mqs45tbggd6p" path="res://blender/fruit crate.glb" id="2_crate"]
-[ext_resource type="Texture2D" uid="uid://cuo5hou4im312" path="res://blender/fruit crate_crate.png" id="2_g3ttd"]
+[ext_resource type="PackedScene" uid="uid://up7xyn0lo0ou" path="res://assets/models/props/lemon.glb" id="2_bs7qo"]
+[ext_resource type="PackedScene" uid="uid://mqs45tbggd6p" path="res://assets/models/props/fruit crate.glb" id="2_crate"]
+[ext_resource type="Texture2D" uid="uid://cuo5hou4im312" path="res://assets/textures/props/fruit crate_crate.png" id="2_g3ttd"]
 [ext_resource type="Script" uid="uid://c3ybsim8kysff" path="res://scripts/objects/item_grid.gd" id="3_gkbo6"]
-[ext_resource type="PackedScene" uid="uid://k7f3tfy2h2fg" path="res://blender/strawberry.glb" id="4_tx33c"]
-[ext_resource type="PackedScene" uid="uid://6g3m2e7xbxut" path="res://blender/blueberry.glb" id="5_gkbo6"]
-[ext_resource type="PackedScene" uid="uid://dd78710vollfc" path="res://blender/peach.glb" id="7_yji4x"]
-[ext_resource type="PackedScene" uid="uid://crdxnotvcd7vg" path="res://blender/watermelon.glb" id="8_g3ttd"]
+[ext_resource type="PackedScene" uid="uid://k7f3tfy2h2fg" path="res://assets/models/props/strawberry.glb" id="4_tx33c"]
+[ext_resource type="PackedScene" uid="uid://6g3m2e7xbxut" path="res://assets/models/props/blueberry.glb" id="5_gkbo6"]
+[ext_resource type="PackedScene" uid="uid://dd78710vollfc" path="res://assets/models/props/peach.glb" id="7_yji4x"]
+[ext_resource type="PackedScene" uid="uid://crdxnotvcd7vg" path="res://assets/models/props/watermelon.glb" id="8_g3ttd"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oqcbc"]
 resource_name = "Material.050"

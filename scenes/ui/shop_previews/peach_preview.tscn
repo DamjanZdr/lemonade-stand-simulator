@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://co27rdu2lfn2c"]
 
-[ext_resource type="PackedScene" uid="uid://dd78710vollfc" path="res://blender/peach.glb" id="1_peach"]
+[ext_resource type="PackedScene" uid="uid://dd78710vollfc" path="res://assets/models/props/peach.glb" id="1_peach"]
 
 [node name="PeachPreview" type="Node3D" unique_id=1125346413]
 

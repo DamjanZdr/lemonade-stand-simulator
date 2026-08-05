@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://brj3o5pdhl8h4"]
 
-[ext_resource type="PackedScene" uid="uid://btcac2dyjetql" path="res://decorations/plant 1.glb" id="1_4fogk"]
+[ext_resource type="PackedScene" uid="uid://btcac2dyjetql" path="res://assets/models/props/decorations/plant 1.glb" id="1_4fogk"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_g4v7s"]
 height = 2.398407

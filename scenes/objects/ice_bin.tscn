@@ -1,8 +1,8 @@
 [gd_scene format=4 uid="uid://icebin001ls"]
 
 [ext_resource type="Script" uid="uid://15kio5i6ygqt" path="res://scripts/objects/ingredient_bin.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://bd4cnpqaahdw1" path="res://blender/ice cube.glb" id="2_0y7tb"]
-[ext_resource type="PackedScene" uid="uid://girp1th3jnox" path="res://blender/price tag.glb" id="4_0d8lj"]
+[ext_resource type="PackedScene" uid="uid://bd4cnpqaahdw1" path="res://assets/models/props/ice cube.glb" id="2_0y7tb"]
+[ext_resource type="PackedScene" uid="uid://girp1th3jnox" path="res://assets/models/props/price tag.glb" id="4_0d8lj"]
 
 [sub_resource type="StandardMaterial3D" id="IceMaterial_001"]
 transparency = 1

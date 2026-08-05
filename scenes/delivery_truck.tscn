@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://dk6i3an03mr2w"]
 
-[ext_resource type="PackedScene" uid="uid://7bukla7g0dec" path="res://blender/surroundings/Vehicles/pickup truck.glb" id="1_gbkk1"]
+[ext_resource type="PackedScene" uid="uid://7bukla7g0dec" path="res://assets/models/environment/surroundings/vehicles/pickup truck.glb" id="1_gbkk1"]
 [ext_resource type="Script" uid="uid://gyiq1jhsrlxw" path="res://scripts/systems/delivery_grid.gd" id="2_x6qr4"]
 [ext_resource type="Script" uid="uid://cp8o80blhptkk" path="res://scripts/systems/delivery_truck.gd" id="3_truck"]
-[ext_resource type="PackedScene" uid="uid://b1f5fsl5gvgd7" path="res://blender/pickup truck2.glb" id="4_4aq80"]
-[ext_resource type="FontFile" uid="uid://bhpvfso21t8k4" path="res://AmaticSC-Bold.ttf" id="5_cke6x"]
+[ext_resource type="PackedScene" uid="uid://b1f5fsl5gvgd7" path="res://assets/models/vehicles/pickup truck2.glb" id="4_4aq80"]
+[ext_resource type="FontFile" uid="uid://bhpvfso21t8k4" path="res://assets/fonts/AmaticSC-Bold.ttf" id="5_cke6x"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_grid"]
 size = Vector3(2, 0.01, 2)

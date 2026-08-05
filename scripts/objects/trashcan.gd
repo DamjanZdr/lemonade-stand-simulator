@@ -4,7 +4,7 @@ extends Interactable
 
 @export var empty_box_refund: float = 1.0
 
-const TRASH_SCENE: PackedScene = preload("res://trash.tscn")
+const TRASH_SCENE: PackedScene = preload("res://scenes/objects/trash.tscn")
 
 
 func _ready() -> void:

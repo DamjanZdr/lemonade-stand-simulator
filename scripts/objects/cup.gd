@@ -3,7 +3,7 @@ extends Interactable
 ## A single paper cup. Starts EMPTY; becomes FILLED when the pitcher pours into it.
 ## Player picks it up and hands it to the customer at the counter.
 
-const CUP_GLB: PackedScene = preload("res://blender/cup.glb")
+const CUP_GLB: PackedScene = preload("res://assets/models/props/cup.glb")
 
 enum CupState {
 	EMPTY,

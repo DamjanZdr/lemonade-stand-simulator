@@ -1,6 +1,6 @@
 [gd_scene format=4 uid="uid://dnt7b803xosyl"]
 
-[ext_resource type="PackedScene" uid="uid://cd8bmc8lfidxa" path="res://blender/surroundings/Trashcans/trashcan.glb" id="2_a3hns"]
+[ext_resource type="PackedScene" uid="uid://cd8bmc8lfidxa" path="res://assets/models/environment/surroundings/trashcans/trashcan.glb" id="2_a3hns"]
 [ext_resource type="Script" uid="uid://cs33wcm3x0hqd" path="res://scripts/objects/trashcan.gd" id="trashcan_gd"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jk54s"]

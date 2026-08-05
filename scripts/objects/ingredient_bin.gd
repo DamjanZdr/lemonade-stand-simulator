@@ -282,13 +282,13 @@ func get_hint(player: Node) -> String:
 func _make_hand_mesh() -> Node3D:
 	match ingredient_type:
 		"lemon":
-			var s := load("res://blender/lemon.glb") as PackedScene
+			var s := load("res://assets/models/props/lemon.glb") as PackedScene
 			if s:
 				var inst := s.instantiate() as Node3D
 				inst.scale = Vector3.ONE * 0.075
 				return inst
 		"sugar":
-			var s := load("res://blender/sugar cube.glb") as PackedScene
+			var s := load("res://assets/models/props/sugar cube.glb") as PackedScene
 			if s:
 				var inst := s.instantiate() as Node3D
 				inst.scale = Vector3.ONE * 0.028

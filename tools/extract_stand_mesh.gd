@@ -1,9 +1,9 @@
 extends SceneTree
 
 func _init() -> void:
-	var ps := load("res://blender/stand.glb") as PackedScene
+	var ps := load("res://assets/models/props/stand.glb") as PackedScene
 	if ps == null:
-		push_error("Failed to load res://blender/stand.glb")
+		push_error("Failed to load res://assets/models/props/stand.glb")
 		quit()
 		return
 
@@ -21,7 +21,7 @@ func _init() -> void:
 		return
 
 	var plank_mat := StandardMaterial3D.new()
-	plank_mat.albedo_texture = load("res://blender/stand_StandTexture.png")
+	plank_mat.albedo_texture = load("res://assets/textures/props/stand_StandTexture.png")
 
 	var metal_mat := StandardMaterial3D.new()
 	metal_mat.albedo_color = Color(0.052, 0.052, 0.052)

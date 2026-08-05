@@ -18,7 +18,7 @@ const SKIP_RECOLOR_HOUSES: Array[StringName] = [&"player_house"]
 const _FALLBACK_ROOF_DEFAULT: Color = Color(0.15, 0.15, 0.17)
 const _FALLBACK_WALL_DEFAULT: Color = Color.TRANSPARENT
 
-const HOUSE_LOD_SCENE: PackedScene = preload("res://blender/house lod.glb")
+const HOUSE_LOD_SCENE: PackedScene = preload("res://assets/models/environment/houses/house lod.glb")
 const HOUSE_LOD_DISTANCE: float = 200.0
 const HOUSE_LOD_OVERLAP: float = 2.0
 

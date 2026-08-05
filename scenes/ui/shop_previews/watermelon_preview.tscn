@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://chovoroa2b2be"]
 
-[ext_resource type="PackedScene" uid="uid://crdxnotvcd7vg" path="res://blender/watermelon.glb" id="1_watermelon"]
+[ext_resource type="PackedScene" uid="uid://crdxnotvcd7vg" path="res://assets/models/props/watermelon.glb" id="1_watermelon"]
 
 [node name="WatermelonPreview" type="Node3D" unique_id=1810907860]
 

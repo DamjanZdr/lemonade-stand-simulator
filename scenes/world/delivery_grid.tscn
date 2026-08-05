@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c7m3x1q2y405a"]
 
 [ext_resource type="Script" uid="uid://gyiq1jhsrlxw" path="res://scripts/systems/delivery_grid.gd" id="1_grid"]
-[ext_resource type="PackedScene" uid="uid://ceavmvtql3d1v" path="res://blender/palette.glb" id="2_vebwt"]
+[ext_resource type="PackedScene" uid="uid://ceavmvtql3d1v" path="res://assets/models/props/palette.glb" id="2_vebwt"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_grid"]
 size = Vector3(2, 0.01, 2)

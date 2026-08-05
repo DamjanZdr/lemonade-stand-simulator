@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://b8n7iqrbpjfbg"]
+
+[ext_resource type="PackedScene" uid="uid://bpajh6l57i4ot" path="res://assets/models/props/trash/apple.glb" id="1_c82h1"]
+[ext_resource type="PackedScene" uid="uid://d0h4vakbfx1jo" path="res://assets/models/props/trash/banana.glb" id="2_aet8u"]
+[ext_resource type="PackedScene" uid="uid://chmgc6ym81tdm" path="res://assets/models/props/trash/can.glb" id="3_pavn5"]
+[ext_resource type="PackedScene" uid="uid://r34p8hgm7gji" path="res://assets/models/props/trash/cigarettes.glb" id="4_twpq8"]
+[ext_resource type="PackedScene" uid="uid://dwsgij0uju838" path="res://assets/models/props/trash/cup.glb" id="5_xgoid"]
+[ext_resource type="Script" uid="uid://b6t8ua6o6f24p" path="res://scripts/objects/trash_item.gd" id="6_item"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
+size = Vector3(0.32836914, 0.16104507, 0.26660156)
+
+[node name="Trash" type="Area3D" unique_id=1821045829]
+script = ExtResource("6_item")
+
+[node name="apple" parent="." unique_id=1129128294 instance=ExtResource("1_c82h1")]
+transform = Transform3D(-3.059797e-09, 0.07, 0, -0.07, -3.059797e-09, 0, 0, 0, 0.07, -0.025597572, -0.12511949, 0)
+
+[node name="banana" parent="." unique_id=228157671 instance=ExtResource("2_aet8u")]
+transform = Transform3D(0.09, 0, 0, 0, 0.123, 0, 0, 0, 0.09, -0.022753775, -0.12130388, 0)
+
+[node name="can" parent="." unique_id=749226613 instance=ExtResource("3_pavn5")]
+transform = Transform3D(-3.0597969e-09, -0.07, 2.2199032e-16, 0.04112389, -1.7975823e-09, -0.0566465, 0.0566465, -2.4760964e-09, 0.04112389, -0.00026643276, -0.11588739, 0.0032512695)
+
+[node name="cigarettes" parent="." unique_id=1959417058 instance=ExtResource("4_twpq8")]
+transform = Transform3D(-2.8412401e-09, -0.065, 2.1649348e-16, 0.065, -2.8412401e-09, 9.463232e-24, -1.6408306e-30, 2.1649348e-16, 0.065, 0.03317994, -0.12265132, 0.016256422)
+
+[node name="cup" parent="." unique_id=1299882216 instance=ExtResource("5_xgoid")]
+transform = Transform3D(0.0060802945, 0.059681598, -0.0010664015, -0.037275188, 0.0046335654, 0.046787716, 0.046621785, -0.00407888, 0.03754693, -0.0065013766, -0.1315321, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1698581307]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.10359969, 0)
+shape = SubResource("BoxShape3D_g4v7s")

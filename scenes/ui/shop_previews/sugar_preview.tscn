@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://ddyrlsoqbiqil"]
 
-[ext_resource type="PackedScene" uid="uid://d26s0baibr53s" path="res://blender/sugar cube.glb" id="1_sugar"]
+[ext_resource type="PackedScene" uid="uid://d26s0baibr53s" path="res://assets/models/props/sugar cube.glb" id="1_sugar"]
 
 [node name="SugarPreview" type="Node3D" unique_id=1381041257]
 

@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://c7ra0ih8gdcs8"]
+
+[ext_resource type="PackedScene" uid="uid://bxrdr6t1xp5j1" path="res://assets/models/props/prices board.glb" id="1_k5uos"]
+[ext_resource type="FontFile" uid="uid://bhpvfso21t8k4" path="res://assets/fonts/AmaticSC-Bold.ttf" id="3_20abl"]
+[ext_resource type="Script" uid="uid://cmtflyabylqtj" path="res://scripts/objects/price_board.gd" id="3_priceboard"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
+size = Vector3(4.0427246, 4.1794434, 0.25732422)
+
+[node name="PriceBoard" type="Node3D" unique_id=2059859859]
+script = ExtResource("3_priceboard")
+
+[node name="prices board" parent="." unique_id=1745317333 instance=ExtResource("1_k5uos")]
+
+[node name="Label3D" type="Label3D" parent="." unique_id=168577657]
+transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, -1.1784267, 1.0167886, 0.4320824)
+pixel_size = 0.002
+double_sided = false
+alpha_cut = 2
+text = "Lemon..............1.50
+Strawberry..........1.75
+Blueberry...........2.00
+Peach...............2.25
+Watermelon........2.50"
+font = ExtResource("3_20abl")
+font_size = 170
+outline_size = 0
+horizontal_alignment = 0
+vertical_alignment = 0
+metadata/no_depth_override = true
+
+[node name="Label3D3" type="Label3D" parent="." unique_id=1142698117]
+transform = Transform3D(-1, 2.9583347e-08, -8.226522e-08, 0, 0.94100446, 0.33839405, 8.742278e-08, 0.33839405, -0.94100446, 0.00082288944, 0.674291, -0.60375744)
+pixel_size = 0.002
+double_sided = false
+alpha_cut = 2
+text = "Prices"
+font = ExtResource("3_20abl")
+font_size = 250
+outline_size = 0
+vertical_alignment = 0
+metadata/no_depth_override = true
+
+[node name="Label3D2" type="Label3D" parent="." unique_id=1044998885]
+transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, 0.10779387, 1.399737, 0.3164761)
+pixel_size = 0.002
+double_sided = false
+alpha_cut = 2
+text = "Lemonade Prices"
+font = ExtResource("3_20abl")
+font_size = 200
+outline_size = 0
+metadata/no_depth_override = true
+
+[node name="Body" type="StaticBody3D" parent="." unique_id=2059859860]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Body" unique_id=1253942971]
+transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, 0, -0.07812142, 0.77694404)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Body" unique_id=220836326]
+transform = Transform3D(1, 0, 0, 0, 0.93969274, -0.34202015, 0, 0.34202015, 0.93969274, 0, -0.07812142, -0.8002808)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1611826796]
+transform = Transform3D(1, 0, 0, 0, 0.94722503, 0.32056946, 0, -0.32056946, 0.94722503, 0, 0.8835449, 3.5806885)

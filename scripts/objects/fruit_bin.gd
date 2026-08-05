@@ -251,7 +251,7 @@ func get_hint(player: Node) -> String:
 
 
 func _make_hand_mesh(fruit_type: String) -> Node3D:
-	var path := "res://blender/%s.glb" % fruit_type
+	var path := "res://assets/models/props/%s.glb" % fruit_type
 	var s := load(path) as PackedScene
 	if s:
 		var inst := s.instantiate() as Node3D

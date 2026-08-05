@@ -1478,7 +1478,7 @@ func hold_container(
 
 func _get_trash_box_scene() -> PackedScene:
 	if _trash_box_scene == null:
-		_trash_box_scene = load("res://blender/boxnew.glb") as PackedScene
+		_trash_box_scene = load("res://assets/models/props/boxnew.glb") as PackedScene
 	return _trash_box_scene
 
 

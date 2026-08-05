@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cv0urclh1fgpj"
+path="res://.godot/imported/water pour in pitcher.mp3-ed0df0e8b5a50572762d8eacabb91338.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/sfx/water pour in pitcher.mp3"
+dest_files=["res://.godot/imported/water pour in pitcher.mp3-ed0df0e8b5a50572762d8eacabb91338.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

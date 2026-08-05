@@ -3,10 +3,10 @@
 [ext_resource type="PackedScene" uid="uid://debrqguawbc46" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="Texture2D" uid="uid://k857mb2vobd3" path="res://scenes/dev_showcase/grid_light.png" id="2_grid"]
 [ext_resource type="Script" uid="uid://dr8e5o2xj2hjx" path="res://scripts/dev_showcase/blockout_npc_spawner.gd" id="3_spawner"]
-[ext_resource type="Texture2D" uid="uid://dqjgnk6fxaecx" path="res://KennyGrid/PNG/Green/texture_10.png" id="3_wkfr2"]
-[ext_resource type="Texture2D" uid="uid://dmniqliu2pu06" path="res://KennyGrid/PNG/Dark/texture_08.png" id="5_wkfr2"]
-[ext_resource type="Texture2D" uid="uid://cxonhqwlne0yc" path="res://KennyGrid/PNG/Light/texture_08.png" id="6_wkfr2"]
-[ext_resource type="Texture2D" uid="uid://p4wyqi1o4g4x" path="res://KennyGrid/PNG/Purple/texture_10.png" id="7_ifshx"]
+[ext_resource type="Texture2D" uid="uid://dqjgnk6fxaecx" path="res://assets/textures/ui/kenny_grid/texture_10.png" id="3_wkfr2"]
+[ext_resource type="Texture2D" uid="uid://dmniqliu2pu06" path="res://assets/textures/ui/kenny_grid/texture_08.png" id="5_wkfr2"]
+[ext_resource type="Texture2D" uid="uid://cxonhqwlne0yc" path="res://assets/textures/ui/kenny_grid/texture_08.png" id="6_wkfr2"]
+[ext_resource type="Texture2D" uid="uid://p4wyqi1o4g4x" path="res://assets/textures/ui/kenny_grid/texture_10.png" id="7_ifshx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_crosshair"]
 bg_color = Color(1, 1, 1, 0.55)

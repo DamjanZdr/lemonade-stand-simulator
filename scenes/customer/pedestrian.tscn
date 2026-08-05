@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b3dp8tqlem5ar"]
 
 [ext_resource type="Script" path="res://scripts/customer/pedestrian.gd" id="1_ped"]
-[ext_resource type="PackedScene" uid="uid://dgiq68gtr7ei4" path="res://npc.tscn" id="2_npc"]
+[ext_resource type="PackedScene" uid="uid://dgiq68gtr7ei4" path="res://scenes/customer/npc.tscn" id="2_npc"]
 [ext_resource type="Script" path="res://scripts/customer/pedestrian_interactable.gd" id="3_pinter"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ped"]

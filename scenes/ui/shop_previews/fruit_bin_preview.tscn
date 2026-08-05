@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bwgm78le5ki4i"]
 
-[ext_resource type="PackedScene" uid="uid://mqs45tbggd6p" path="res://blender/fruit crate.glb" id="1_model"]
+[ext_resource type="PackedScene" uid="uid://mqs45tbggd6p" path="res://assets/models/props/fruit crate.glb" id="1_model"]
 
 [node name="FruitBinPreview" type="Node3D" unique_id=1930931508]
 

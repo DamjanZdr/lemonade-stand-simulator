@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cupstack001ls"]
 
 [ext_resource type="Script" uid="uid://l7r38mf7o68s" path="res://scripts/objects/cup_stack.gd" id="1_stack"]
-[ext_resource type="PackedScene" uid="uid://daobpi7s7leeo" path="res://blender/cup.glb" id="2_cup_glb"]
+[ext_resource type="PackedScene" uid="uid://daobpi7s7leeo" path="res://assets/models/props/cup.glb" id="2_cup_glb"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_71pg2"]
 height = 7.982422

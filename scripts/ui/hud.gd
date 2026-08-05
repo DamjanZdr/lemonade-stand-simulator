@@ -1,8 +1,8 @@
 extends CanvasLayer
 ## Shop-manager style HUD: money, day, time, popularity, and customers.
 
-const AMATIC_FONT := preload("res://AmaticSC-Bold.ttf")
-const MOUSE_ICON := preload("res://UpgradeIcons/mouse indicator.png")
+const AMATIC_FONT := preload("res://assets/fonts/AmaticSC-Bold.ttf")
+const MOUSE_ICON := preload("res://assets/textures/ui/upgrades/mouse indicator.png")
 
 const CIRCLE_SIZE := 120
 const BAR_HEIGHT := 64

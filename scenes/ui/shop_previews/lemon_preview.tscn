@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cfydvflgaqte1"]
 
-[ext_resource type="PackedScene" uid="uid://up7xyn0lo0ou" path="res://blender/lemon.glb" id="1_lemon"]
+[ext_resource type="PackedScene" uid="uid://up7xyn0lo0ou" path="res://assets/models/props/lemon.glb" id="1_lemon"]
 
 [node name="LemonPreview" type="Node3D" unique_id=1438012934]
 

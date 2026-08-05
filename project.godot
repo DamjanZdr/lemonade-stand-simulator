@@ -94,3 +94,21 @@ anti_aliasing/quality/msaa_3d=2
 textures/decals/filter=0
 anti_aliasing/quality/screen_space_aa=2
 occlusion_culling/use_occlusion_culling=true
+[file_customization]
+
+folder_colors={
+"res://_source/": "gray",
+"res://_unused/": "red",
+"res://addons/": "gray",
+"res://assets/": "blue",
+"res://assets/audio/": "teal",
+"res://assets/fonts/": "yellow",
+"res://assets/models/": "green",
+"res://assets/shaders/": "purple",
+"res://assets/textures/": "orange",
+"res://docs/": "gray",
+"res://resources/": "pink",
+"res://scenes/": "purple",
+"res://scripts/": "orange",
+"res://tools/": "gray"
+}

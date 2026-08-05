@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://c7onr7vydi720"]
 
 [ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://jfmfc8fc6o71" path="res://UpgradeIcons/pressspeed.png" id="icon"]
+[ext_resource type="Texture2D" uid="uid://jfmfc8fc6o71" path="res://assets/textures/ui/upgrades/pressspeed.png" id="icon"]
 
 [resource]
 script = ExtResource("1_script")

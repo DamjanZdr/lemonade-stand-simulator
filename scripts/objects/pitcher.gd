@@ -537,19 +537,19 @@ func _animate_drop(
 func _make_drop_mesh(ingredient_type: String) -> Node3D:
 	match ingredient_type:
 		"lemon":
-			var s := load("res://blender/lemon.glb") as PackedScene
+			var s := load("res://assets/models/props/lemon.glb") as PackedScene
 			if s:
 				var inst := s.instantiate() as Node3D
 				inst.scale = Vector3.ONE * 0.35
 				return inst
 		"sugar":
-			var s := load("res://blender/sugar cube.glb") as PackedScene
+			var s := load("res://assets/models/props/sugar cube.glb") as PackedScene
 			if s:
 				var inst := s.instantiate() as Node3D
 				inst.scale = Vector3.ONE * 0.12
 				return inst
 		"ice":
-			var s := load("res://blender/ice cube.glb") as PackedScene
+			var s := load("res://assets/models/props/ice cube.glb") as PackedScene
 			if s:
 				var inst := s.instantiate() as Node3D
 				inst.scale = Vector3.ONE * 0.15

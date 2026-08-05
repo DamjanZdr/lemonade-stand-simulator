@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://icebinpreva"]
 
-[ext_resource type="PackedScene" uid="uid://dthysfy1v8b52" path="res://blender/ice bucket.glb" id="1_model"]
+[ext_resource type="PackedScene" uid="uid://dthysfy1v8b52" path="res://assets/models/props/ice bucket.glb" id="1_model"]
 
 [node name="IceBinPreview" type="Node3D" unique_id=227423066]
 

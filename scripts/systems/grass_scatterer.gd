@@ -106,7 +106,7 @@ func _get_grass_mesh() -> Mesh:
 		return grass_mesh
 	var scene_source := grass_mesh_scene
 	if scene_source == null:
-		scene_source = load("res://Visuals/Grass/grass.glb") as PackedScene
+		scene_source = load("res://assets/models/environment/grass/grass.glb") as PackedScene
 	if scene_source != null:
 		var scene := scene_source.instantiate()
 		var found: Mesh = _extract_first_mesh(scene)
@@ -129,7 +129,7 @@ func _get_grass_material() -> Material:
 	if grass_material != null:
 		return grass_material
 	# Billboard wind shader so the grass blade always faces the camera.
-	var shader := load("res://shaders/grass.gdshader") as Shader
+	var shader := load("res://assets/shaders/grass.gdshader") as Shader
 	if shader != null:
 		var mat := ShaderMaterial.new()
 		mat.shader = shader

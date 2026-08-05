@@ -101,7 +101,7 @@ func _find_route_markers() -> void:
 
 func _start_engine_sound() -> void:
 	_stop_engine_sound()
-	var stream := load("res://Audio/Sounds/car engine.mp3") as AudioStream
+	var stream := load("res://assets/audio/sfx/car engine.mp3") as AudioStream
 	if stream == null:
 		return
 	# Duplicate so we can enable looping without affecting the shared resource
@@ -146,7 +146,7 @@ func _fade_engine_out(duration: float = 1.0) -> void:
 
 
 func _play_beep() -> void:
-	var stream := load("res://Audio/Sounds/car beep.mp3") as AudioStream
+	var stream := load("res://assets/audio/sfx/car beep.mp3") as AudioStream
 	if stream == null:
 		return
 	var player := AudioStreamPlayer3D.new()
@@ -160,7 +160,7 @@ func _play_beep() -> void:
 
 
 func _play_start_engine() -> void:
-	var stream := load("res://Audio/Sounds/start engine.mp3") as AudioStream
+	var stream := load("res://assets/audio/sfx/start engine.mp3") as AudioStream
 	if stream == null:
 		return
 	var player := AudioStreamPlayer3D.new()

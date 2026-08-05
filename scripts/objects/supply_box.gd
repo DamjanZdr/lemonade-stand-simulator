@@ -36,22 +36,22 @@ static var box_aabb: AABB = AABB(Vector3(-0.252, -0.16, -0.2), Vector3(0.504, 0.
 
 # --- Icon system ---
 const INGREDIENT_ICONS: Dictionary = {
-	"lemon": "res://Product Images/lemon.png",
-	"strawberry": "res://Product Images/strawberry.png",
-	"blueberry": "res://Product Images/blueberry.png",
-	"peach": "res://Product Images/peach.png",
-	"watermelon": "res://Product Images/watermelon.png",
-	"sugar": "res://Product Images/sugar.png",
-	"ice": "res://Product Images/ice.png",
-	"cups": "res://Product Images/cup.png",
-	"water": "res://Product Images/water jug.png",
-	"fruit_bin": "res://Product Images/crate.png",
-	"sugar_bin": "res://Product Images/sugar bin.png",
-	"ice_bin": "res://Product Images/ice bucket.png",
-	"pitcher": "res://Product Images/pitcher.png",
-	"press": "res://Product Images/press.png",
-	"workstation": "res://Product Images/table.png",
-	"trash": "res://Product Images/trashcan.png",
+	"lemon": "res://assets/textures/ui/products/lemon.png",
+	"strawberry": "res://assets/textures/ui/products/strawberry.png",
+	"blueberry": "res://assets/textures/ui/products/blueberry.png",
+	"peach": "res://assets/textures/ui/products/peach.png",
+	"watermelon": "res://assets/textures/ui/products/watermelon.png",
+	"sugar": "res://assets/textures/ui/products/sugar.png",
+	"ice": "res://assets/textures/ui/products/ice.png",
+	"cups": "res://assets/textures/ui/products/cup.png",
+	"water": "res://assets/textures/ui/products/water jug.png",
+	"fruit_bin": "res://assets/textures/ui/products/crate.png",
+	"sugar_bin": "res://assets/textures/ui/products/sugar bin.png",
+	"ice_bin": "res://assets/textures/ui/products/ice bucket.png",
+	"pitcher": "res://assets/textures/ui/products/pitcher.png",
+	"press": "res://assets/textures/ui/products/press.png",
+	"workstation": "res://assets/textures/ui/products/table.png",
+	"trash": "res://assets/textures/ui/products/trashcan.png",
 }
 const ICON_SIZE := 128
 static var texture_cache: Dictionary = { }

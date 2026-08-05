@@ -16,39 +16,39 @@ extends Node3D
 
 # --- Resources ---
 const _HOUSE_SCENES: Array[String] = [
-	"res://blender/surroundings/Houses/1.glb",
-	"res://blender/surroundings/Houses/2.glb",
-	"res://blender/surroundings/Houses/3.glb",
-	"res://blender/surroundings/Houses/4.glb",
-	"res://blender/surroundings/Houses/5.glb",
-	"res://blender/surroundings/Houses/6.glb",
-	"res://blender/surroundings/Houses/7.glb",
-	"res://blender/surroundings/Houses/8.glb",
+	"res://assets/models/environment/surroundings/houses/1.glb",
+	"res://assets/models/environment/surroundings/houses/2.glb",
+	"res://assets/models/environment/surroundings/houses/3.glb",
+	"res://assets/models/environment/surroundings/houses/4.glb",
+	"res://assets/models/environment/surroundings/houses/5.glb",
+	"res://assets/models/environment/surroundings/houses/6.glb",
+	"res://assets/models/environment/surroundings/houses/7.glb",
+	"res://assets/models/environment/surroundings/houses/8.glb",
 ]
 const _HOUSE_COL_SCENES: Array[String] = [
-	"res://blender/surroundings/Houses/Skewed/1 skewed - col.glb",
-	"res://blender/surroundings/Houses/Skewed/2 skewed - col.glb",
-	"res://blender/surroundings/Houses/Skewed/3 skewed - col.glb",
-	"res://blender/surroundings/Houses/Skewed/4 skewed - col.glb",
-	"res://blender/surroundings/Houses/Skewed/5 skewed - col.glb",
-	"res://blender/surroundings/Houses/Skewed/6 skewed - col.glb",
-	"res://blender/surroundings/Houses/Skewed/7 skewed - col.glb",
-	"res://blender/surroundings/Houses/Skewed/8 skewed - col.glb",
+	"res://assets/models/environment/surroundings/houses/Skewed/1 skewed - col.glb",
+	"res://assets/models/environment/surroundings/houses/Skewed/2 skewed - col.glb",
+	"res://assets/models/environment/surroundings/houses/Skewed/3 skewed - col.glb",
+	"res://assets/models/environment/surroundings/houses/Skewed/4 skewed - col.glb",
+	"res://assets/models/environment/surroundings/houses/Skewed/5 skewed - col.glb",
+	"res://assets/models/environment/surroundings/houses/Skewed/6 skewed - col.glb",
+	"res://assets/models/environment/surroundings/houses/Skewed/7 skewed - col.glb",
+	"res://assets/models/environment/surroundings/houses/Skewed/8 skewed - col.glb",
 ]
 const _TREE_SCENES: Array[String] = [
-	"res://blender/surroundings/Trees/1.glb",
-	"res://blender/surroundings/Trees/2.glb",
-	"res://blender/surroundings/Trees/3.glb",
-	"res://blender/surroundings/Trees/4.glb",
-	"res://blender/surroundings/Trees/5.glb",
-	"res://blender/surroundings/Trees/6.glb",
-	"res://blender/surroundings/Trees/7.glb",
-	"res://blender/surroundings/Trees/8.glb",
-	"res://blender/surroundings/Trees/9.glb",
+	"res://assets/models/environment/surroundings/trees/1.glb",
+	"res://assets/models/environment/surroundings/trees/2.glb",
+	"res://assets/models/environment/surroundings/trees/3.glb",
+	"res://assets/models/environment/surroundings/trees/4.glb",
+	"res://assets/models/environment/surroundings/trees/5.glb",
+	"res://assets/models/environment/surroundings/trees/6.glb",
+	"res://assets/models/environment/surroundings/trees/7.glb",
+	"res://assets/models/environment/surroundings/trees/8.glb",
+	"res://assets/models/environment/surroundings/trees/9.glb",
 ]
-const _STREET_LIGHT_SCENE := "res://blender/surroundings/StreetLight/street light.glb"
-const _ROAD_TEXTURE := "res://Visuals/Street/street_road base texture.png"
-const _SIDEWALK_TEXTURE := "res://Visuals/Sidewalk/sidewalk_sidewalk base texture.png"
+const _STREET_LIGHT_SCENE := "res://assets/models/environment/surroundings/street_lights/street light.glb"
+const _ROAD_TEXTURE := "res://assets/models/environment/street/street_road base texture.png"
+const _SIDEWALK_TEXTURE := "res://assets/models/environment/sidewalk/sidewalk_sidewalk base texture.png"
 
 var _road_material: StandardMaterial3D
 var _sidewalk_material: StandardMaterial3D

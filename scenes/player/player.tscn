@@ -1,12 +1,12 @@
 [gd_scene format=3 uid="uid://debrqguawbc46"]
 
 [ext_resource type="Script" uid="uid://guyf85iyowlu" path="res://scripts/player/player.gd" id="1_player"]
-[ext_resource type="PackedScene" uid="uid://p4yr54i8mhml" path="res://money/1.glb" id="2_0owmy"]
-[ext_resource type="PackedScene" uid="uid://cx5dnvostacbi" path="res://money/5.glb" id="3_qek5x"]
-[ext_resource type="PackedScene" uid="uid://njhqhkjnftkc" path="res://money/10.glb" id="4_5gtgg"]
-[ext_resource type="PackedScene" uid="uid://dke3nnsc1xchh" path="res://money/c1.glb" id="5_h17s1"]
-[ext_resource type="PackedScene" uid="uid://ce6v7cg1dkx37" path="res://money/c10.glb" id="6_je7p5"]
-[ext_resource type="PackedScene" uid="uid://crlhy1c2uos4" path="res://money/c50.glb" id="7_fm80t"]
+[ext_resource type="PackedScene" uid="uid://p4yr54i8mhml" path="res://assets/models/props/money/1.glb" id="2_0owmy"]
+[ext_resource type="PackedScene" uid="uid://cx5dnvostacbi" path="res://assets/models/props/money/5.glb" id="3_qek5x"]
+[ext_resource type="PackedScene" uid="uid://njhqhkjnftkc" path="res://assets/models/props/money/10.glb" id="4_5gtgg"]
+[ext_resource type="PackedScene" uid="uid://dke3nnsc1xchh" path="res://assets/models/props/money/c1.glb" id="5_h17s1"]
+[ext_resource type="PackedScene" uid="uid://ce6v7cg1dkx37" path="res://assets/models/props/money/c10.glb" id="6_je7p5"]
+[ext_resource type="PackedScene" uid="uid://crlhy1c2uos4" path="res://assets/models/props/money/c50.glb" id="7_fm80t"]
 [ext_resource type="Script" uid="uid://cycxchuulr8p5" path="res://scripts/player/money_controller.gd" id="8_money"]
 [ext_resource type="Script" uid="uid://c6g5g8x5ct4vh" path="res://scripts/player/money_denomination.gd" id="9_denom"]
 

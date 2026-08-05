@@ -1,7 +1,7 @@
 [gd_scene format=4 uid="uid://cp7qs3uvx2d25"]
 
 [ext_resource type="Script" uid="uid://df4ou8mq0yrwh" path="res://scripts/objects/supply_box.gd" id="1_supply"]
-[ext_resource type="Texture2D" uid="uid://ba41k6y8r6dg1" path="res://blender/boxnew_BoxTextureNew.png" id="2_2qs8a"]
+[ext_resource type="Texture2D" uid="uid://ba41k6y8r6dg1" path="res://assets/textures/props/boxnew_BoxTextureNew.png" id="2_2qs8a"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_box"]
 size = Vector3(0.7529297, 0.4765625, 0.5957031)
