@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c6v17g3l47iu"
-path="res://.godot/imported/power box texture.png-19bd2df8a25628713e6b80448bfbc0c0.ctex"
+path="res://.godot/imported/power box texture.png-e970ded2bca83d6a0e00ac83ccd1b267.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/upgrades/power box texture.png"
-dest_files=["res://.godot/imported/power box texture.png-19bd2df8a25628713e6b80448bfbc0c0.ctex"]
+dest_files=["res://.godot/imported/power box texture.png-e970ded2bca83d6a0e00ac83ccd1b267.ctex"]
 
 [params]
 

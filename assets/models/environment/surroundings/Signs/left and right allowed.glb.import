@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dmv8x858ywb73"
-path="res://.godot/imported/left and right allowed.glb-81ddcf361c3fddf0a0c60b2ff4232fcb.scn"
+path="res://.godot/imported/left and right allowed.glb-264b3065780804922f0c5d84a76be44d.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/left and right allowed.glb"
-dest_files=["res://.godot/imported/left and right allowed.glb-81ddcf361c3fddf0a0c60b2ff4232fcb.scn"]
+dest_files=["res://.godot/imported/left and right allowed.glb-264b3065780804922f0c5d84a76be44d.scn"]
 
 [params]
 

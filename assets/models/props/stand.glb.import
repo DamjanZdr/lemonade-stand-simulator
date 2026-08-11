@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bou3sk465l5ij"
-path="res://.godot/imported/stand.glb-436369b04f47ae5cd027788dc7e3689b.scn"
+path="res://.godot/imported/stand.glb-ec4f248a54b0e42c9f51c7dfee16ed28.scn"
 
 [deps]
 
 source_file="res://assets/models/props/stand.glb"
-dest_files=["res://.godot/imported/stand.glb-436369b04f47ae5cd027788dc7e3689b.scn"]
+dest_files=["res://.godot/imported/stand.glb-ec4f248a54b0e42c9f51c7dfee16ed28.scn"]
 
 [params]
 

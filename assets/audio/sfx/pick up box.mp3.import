@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://biwcp2iox4tvp"
-path="res://.godot/imported/pick up box.mp3-b1f6dd69b2bd222caea0271904fb533f.mp3str"
+path="res://.godot/imported/pick up box.mp3-d4339f2c7bca05f7d607f99c4cda7eac.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/pick up box.mp3"
-dest_files=["res://.godot/imported/pick up box.mp3-b1f6dd69b2bd222caea0271904fb533f.mp3str"]
+dest_files=["res://.godot/imported/pick up box.mp3-d4339f2c7bca05f7d607f99c4cda7eac.mp3str"]
 
 [params]
 

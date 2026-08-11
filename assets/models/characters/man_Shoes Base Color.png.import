@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dypa6kron6oro"
-path.s3tc="res://.godot/imported/man_Shoes Base Color.png-5ac05a34376999fe8c7320593b852131.s3tc.ctex"
+path.s3tc="res://.godot/imported/man_Shoes Base Color.png-e7951e2e4e1c97d63aae83ba5ac52a24.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/characters/man_Shoes Base Color.png"
-dest_files=["res://.godot/imported/man_Shoes Base Color.png-5ac05a34376999fe8c7320593b852131.s3tc.ctex"]
+dest_files=["res://.godot/imported/man_Shoes Base Color.png-e7951e2e4e1c97d63aae83ba5ac52a24.s3tc.ctex"]
 
 [params]
 

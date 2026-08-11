@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cpy0vldq41o2v"
-path.s3tc="res://.godot/imported/stop_Stop.png-7dde5e424d26007dea95d5e6aa4804ae.s3tc.ctex"
+path.s3tc="res://.godot/imported/stop_Stop.png-94f1942835419bd70704e9ea06da8d19.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/stop_Stop.png"
-dest_files=["res://.godot/imported/stop_Stop.png-7dde5e424d26007dea95d5e6aa4804ae.s3tc.ctex"]
+dest_files=["res://.godot/imported/stop_Stop.png-94f1942835419bd70704e9ea06da8d19.s3tc.ctex"]
 
 [params]
 

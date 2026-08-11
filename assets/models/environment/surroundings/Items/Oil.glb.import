@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://81kgnm7g4jjo"
-path="res://.godot/imported/Oil.glb-39944bcb80b95351b7d117522c469d79.scn"
+path="res://.godot/imported/Oil.glb-89c3eef663dc9e329d86d45c0ec5c55f.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/Oil.glb"
-dest_files=["res://.godot/imported/Oil.glb-39944bcb80b95351b7d117522c469d79.scn"]
+dest_files=["res://.godot/imported/Oil.glb-89c3eef663dc9e329d86d45c0ec5c55f.scn"]
 
 [params]
 

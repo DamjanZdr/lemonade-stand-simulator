@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dpjlk0xqitc8v"
-path="res://.godot/imported/plants.blend-53ebb10860eeb3bd95e2deb6dfb547cb.scn"
+path="res://.godot/imported/plants.blend-a699b22beb6dd284087c742d430e155c.scn"
 
 [deps]
 
 source_file="res://assets/models/props/decorations/plants.blend"
-dest_files=["res://.godot/imported/plants.blend-53ebb10860eeb3bd95e2deb6dfb547cb.scn"]
+dest_files=["res://.godot/imported/plants.blend-a699b22beb6dd284087c742d430e155c.scn"]
 
 [params]
 

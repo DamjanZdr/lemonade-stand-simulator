@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://xtsesr8jw5vw"
-path="res://.godot/imported/fruitunlock.png-f4cf4a4f1e0d6bcb02011a6b88447f66.ctex"
+path="res://.godot/imported/fruitunlock.png-bdc6c9025af50eec41c69a4653948040.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/upgrades/fruitunlock.png"
-dest_files=["res://.godot/imported/fruitunlock.png-f4cf4a4f1e0d6bcb02011a6b88447f66.ctex"]
+dest_files=["res://.godot/imported/fruitunlock.png-bdc6c9025af50eec41c69a4653948040.ctex"]
 
 [params]
 

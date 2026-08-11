@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://550gir1tsp37"
-path.s3tc="res://.godot/imported/Vert_trees texture.png-3d14450759b6668a5aa7378dec7c40aa.s3tc.ctex"
+path.s3tc="res://.godot/imported/Vert_trees texture.png-9a647243efb95cd200e25f47756fdaaf.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/trees/Purple/Vert_trees texture.png"
-dest_files=["res://.godot/imported/Vert_trees texture.png-3d14450759b6668a5aa7378dec7c40aa.s3tc.ctex"]
+dest_files=["res://.godot/imported/Vert_trees texture.png-9a647243efb95cd200e25f47756fdaaf.s3tc.ctex"]
 
 [params]
 

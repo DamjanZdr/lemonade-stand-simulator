@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://d2kfsbkflp7am"
-path="res://.godot/imported/double pole.glb-86a1e7416c132684e6203648876227f5.scn"
+path="res://.godot/imported/double pole.glb-60297fbe7c48195c61aecf46bf985695.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/ElectricGrid/double pole.glb"
-dest_files=["res://.godot/imported/double pole.glb-86a1e7416c132684e6203648876227f5.scn"]
+dest_files=["res://.godot/imported/double pole.glb-60297fbe7c48195c61aecf46bf985695.scn"]
 
 [params]
 

@@ -13,8 +13,8 @@
 [ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="25_4v0p3"]
 [ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
+[ext_resource type="Script" uid="uid://cp361e4vcklhx" path="res://scripts/objects/sky_controller.gd" id="37_sky"]
 [ext_resource type="Script" uid="uid://dklkcjfc1wreh" path="res://scripts/objects/sun_controller.gd" id="37_sun"]
-[ext_resource type="Script" path="res://scripts/objects/sky_controller.gd" id="37_sky"]
 [ext_resource type="Script" uid="uid://ba3frt220nu7m" path="res://scripts/systems/recipe_manager.gd" id="39_recipe"]
 [ext_resource type="Resource" uid="uid://dcbt63m1d18bs" path="res://resources/data/lemon.tres" id="40_lemon"]
 [ext_resource type="Resource" path="res://resources/data/strawberry.tres" id="41_straw"]
@@ -53,8 +53,7 @@
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="70_neigh"]
 [ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
-
-[ext_resource type="Shader" path="res://assets/shaders/sky.gdshader" id="sky_shader"]
+[ext_resource type="Shader" uid="uid://cslcepwalowji" path="res://assets/shaders/sky.gdshader" id="sky_shader"]
 
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
 albedo_color = Color(0.42331815, 0.62640846, 3.85046e-07, 1)
@@ -79,6 +78,7 @@ shader_parameter/sun_color = Color(10, 8, 1, 1)
 shader_parameter/sun_sunset_color = Color(10, 0, 0, 1)
 shader_parameter/sun_size = 0.06
 shader_parameter/sun_blur = 10.0
+shader_parameter/moon_color = Color(1, 0.95, 0.7, 1)
 shader_parameter/moon_size = 0.001
 shader_parameter/moon_blur = 0.1
 shader_parameter/clouds_edge_color = Color(0.8, 0.8, 0.98, 1)
@@ -95,6 +95,7 @@ shader_parameter/clouds_blur = 0.25
 shader_parameter/stars_speed = 1.0
 shader_parameter/stars_scale = 1.0
 shader_parameter/stars_opacity = 1.0
+shader_parameter/overwritten_time = 0.0
 
 [sub_resource type="Sky" id="Sky_main"]
 sky_material = SubResource("ShaderMaterial_sky")
@@ -337,9 +338,9 @@ upgrades = Array[ExtResource("25_4v0p3")]([ExtResource("46_press"), ExtResource(
 
 [node name="PeopleManager" type="Node" parent="Managers" unique_id=1001413374]
 script = ExtResource("68_people")
-total_people = 50
+total_people = 300
 convert_chance_at_zero_popularity = 0.2
-convert_chance_at_max_popularity = 0.7
+convert_chance_at_max_popularity = 0.9
 
 [node name="TimeManager" type="Node" parent="Managers" unique_id=1001413375]
 script = ExtResource("69_time")

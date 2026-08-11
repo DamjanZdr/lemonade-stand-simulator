@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://up7xyn0lo0ou"
-path="res://.godot/imported/lemon.glb-95ab17050795102d020253342b48bf56.scn"
+path="res://.godot/imported/lemon.glb-9b25b074c230a959f7533a1c8be438b0.scn"
 
 [deps]
 
 source_file="res://assets/models/props/lemon.glb"
-dest_files=["res://.godot/imported/lemon.glb-95ab17050795102d020253342b48bf56.scn"]
+dest_files=["res://.godot/imported/lemon.glb-9b25b074c230a959f7533a1c8be438b0.scn"]
 
 [params]
 

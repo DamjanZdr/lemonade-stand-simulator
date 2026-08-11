@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://dkmgmrgvmqlb2"
-path="res://.godot/imported/fruit in crate.mp3-890b06bdc9d0b60cb080c0772f267d3e.mp3str"
+path="res://.godot/imported/fruit in crate.mp3-a6b287d699d71dbc66e3f8b59b0e4059.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/fruit in crate.mp3"
-dest_files=["res://.godot/imported/fruit in crate.mp3-890b06bdc9d0b60cb080c0772f267d3e.mp3str"]
+dest_files=["res://.godot/imported/fruit in crate.mp3-a6b287d699d71dbc66e3f8b59b0e4059.mp3str"]
 
 [params]
 

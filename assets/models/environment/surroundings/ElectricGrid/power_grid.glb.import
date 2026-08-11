@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://l6tdmuia2418"
-path="res://.godot/imported/power_grid.glb-401a5822fda056d1688afdd190071a32.scn"
+path="res://.godot/imported/power_grid.glb-e443928c6ed77302c1e366f7b53743fd.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/ElectricGrid/power_grid.glb"
-dest_files=["res://.godot/imported/power_grid.glb-401a5822fda056d1688afdd190071a32.scn"]
+dest_files=["res://.godot/imported/power_grid.glb-e443928c6ed77302c1e366f7b53743fd.scn"]
 
 [params]
 

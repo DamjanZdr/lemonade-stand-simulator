@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://bo86lv2h1p7h4"
-path="res://.godot/imported/car beep.mp3-bc9a6f302587d284349a8b2a630c04dd.mp3str"
+path="res://.godot/imported/car beep.mp3-b25e66e59705bd9a95d2f9c7e828a869.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/car beep.mp3"
-dest_files=["res://.godot/imported/car beep.mp3-bc9a6f302587d284349a8b2a630c04dd.mp3str"]
+dest_files=["res://.godot/imported/car beep.mp3-b25e66e59705bd9a95d2f9c7e828a869.mp3str"]
 
 [params]
 

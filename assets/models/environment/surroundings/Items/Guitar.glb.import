@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://det3aa0raqojl"
-path="res://.godot/imported/Guitar.glb-294b6a6392e2f2627e4c0fe781c58c1b.scn"
+path="res://.godot/imported/Guitar.glb-2239c00ec9031758548d9e4e4b52a265.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/Guitar.glb"
-dest_files=["res://.godot/imported/Guitar.glb-294b6a6392e2f2627e4c0fe781c58c1b.scn"]
+dest_files=["res://.godot/imported/Guitar.glb-2239c00ec9031758548d9e4e4b52a265.scn"]
 
 [params]
 

@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dwsgij0uju838"
-path="res://.godot/imported/cup.glb-e00ed5bcdd3fe2e5eeec6c73c8aa94e7.scn"
+path="res://.godot/imported/cup.glb-ca579bc6aefe15fcbef999ca7e97b118.scn"
 
 [deps]
 
 source_file="res://assets/models/props/trash/cup.glb"
-dest_files=["res://.godot/imported/cup.glb-e00ed5bcdd3fe2e5eeec6c73c8aa94e7.scn"]
+dest_files=["res://.godot/imported/cup.glb-ca579bc6aefe15fcbef999ca7e97b118.scn"]
 
 [params]
 

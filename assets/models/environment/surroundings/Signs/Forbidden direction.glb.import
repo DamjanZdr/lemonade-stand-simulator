@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://ph7ngjg4d35d"
-path="res://.godot/imported/Forbidden direction.glb-e62253364e9ec205e4fd4ac2c42f1268.scn"
+path="res://.godot/imported/Forbidden direction.glb-719733edd1da0c6125e08ce71c41b3bf.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/Forbidden direction.glb"
-dest_files=["res://.godot/imported/Forbidden direction.glb-e62253364e9ec205e4fd4ac2c42f1268.scn"]
+dest_files=["res://.godot/imported/Forbidden direction.glb-719733edd1da0c6125e08ce71c41b3bf.scn"]
 
 [params]
 

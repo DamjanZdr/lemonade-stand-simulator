@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://biwch8td3b7j4"
-path.s3tc="res://.godot/imported/9_treematerialgridbirch.png-1a19b9b1ba3946e6748cd285ed2b4a1c.s3tc.ctex"
+path.s3tc="res://.godot/imported/9_treematerialgridbirch.png-dc8aed591532d3df07f60f520dc4fc6c.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/trees/9_treematerialgridbirch.png"
-dest_files=["res://.godot/imported/9_treematerialgridbirch.png-1a19b9b1ba3946e6748cd285ed2b4a1c.s3tc.ctex"]
+dest_files=["res://.godot/imported/9_treematerialgridbirch.png-dc8aed591532d3df07f60f520dc4fc6c.s3tc.ctex"]
 
 [params]
 

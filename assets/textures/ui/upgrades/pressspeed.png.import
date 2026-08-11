@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://jfmfc8fc6o71"
-path="res://.godot/imported/pressspeed.png-984004347357f8d864d89239f79deb8f.ctex"
+path="res://.godot/imported/pressspeed.png-96a8c1941ff96f897dcffa478fedcd7d.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/upgrades/pressspeed.png"
-dest_files=["res://.godot/imported/pressspeed.png-984004347357f8d864d89239f79deb8f.ctex"]
+dest_files=["res://.godot/imported/pressspeed.png-96a8c1941ff96f897dcffa478fedcd7d.ctex"]
 
 [params]
 

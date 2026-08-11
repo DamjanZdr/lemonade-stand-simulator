@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://p4wyqi1o4g4x"
-path.s3tc="res://.godot/imported/texture_10.png-86d938bcdb72bb2b1e93d2332f72b902.s3tc.ctex"
+path.s3tc="res://.godot/imported/texture_10.png-54044fc00fbe2f7db475f6d177836f96.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/kenny_grid/texture_10.png"
-dest_files=["res://.godot/imported/texture_10.png-86d938bcdb72bb2b1e93d2332f72b902.s3tc.ctex"]
+dest_files=["res://.godot/imported/texture_10.png-54044fc00fbe2f7db475f6d177836f96.s3tc.ctex"]
 
 [params]
 

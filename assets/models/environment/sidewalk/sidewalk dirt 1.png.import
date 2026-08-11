@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqlpigldpktbp"
-path.s3tc="res://.godot/imported/sidewalk dirt 1.png-1076f7ac297358b84655ec204c0c42e1.s3tc.ctex"
+path.s3tc="res://.godot/imported/sidewalk dirt 1.png-1c6de7e9a702d3e7d58267ff682dd855.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/environment/sidewalk/sidewalk dirt 1.png"
-dest_files=["res://.godot/imported/sidewalk dirt 1.png-1076f7ac297358b84655ec204c0c42e1.s3tc.ctex"]
+dest_files=["res://.godot/imported/sidewalk dirt 1.png-1c6de7e9a702d3e7d58267ff682dd855.s3tc.ctex"]
 
 [params]
 

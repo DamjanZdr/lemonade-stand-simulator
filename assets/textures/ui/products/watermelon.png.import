@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bpgg1t3b77qax"
-path="res://.godot/imported/watermelon.png-77913d4030d2bb8a62c16313a717c355.ctex"
+path="res://.godot/imported/watermelon.png-86c4ace7ca49d5277b509516fe15f491.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/products/watermelon.png"
-dest_files=["res://.godot/imported/watermelon.png-77913d4030d2bb8a62c16313a717c355.ctex"]
+dest_files=["res://.godot/imported/watermelon.png-86c4ace7ca49d5277b509516fe15f491.ctex"]
 
 [params]
 

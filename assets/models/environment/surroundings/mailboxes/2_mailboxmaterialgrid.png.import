@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://8qtvcq1huhfg"
-path.s3tc="res://.godot/imported/2_mailboxmaterialgrid.png-08f0c2dc7bc4d211d7d731982fa362f0.s3tc.ctex"
+path.s3tc="res://.godot/imported/2_mailboxmaterialgrid.png-76e428b20c4dd19f4deac244aa2474a1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/mailboxes/2_mailboxmaterialgrid.png"
-dest_files=["res://.godot/imported/2_mailboxmaterialgrid.png-08f0c2dc7bc4d211d7d731982fa362f0.s3tc.ctex"]
+dest_files=["res://.godot/imported/2_mailboxmaterialgrid.png-76e428b20c4dd19f4deac244aa2474a1.s3tc.ctex"]
 
 [params]
 

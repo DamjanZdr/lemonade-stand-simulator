@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://c8nymakkd8niq"
-path="res://.godot/imported/Flour.glb-e1a5f564531b2327edc49ad65d442209.scn"
+path="res://.godot/imported/Flour.glb-61e8166272b8d827e43650337d8fe728.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/Flour.glb"
-dest_files=["res://.godot/imported/Flour.glb-e1a5f564531b2327edc49ad65d442209.scn"]
+dest_files=["res://.godot/imported/Flour.glb-61e8166272b8d827e43650337d8fe728.scn"]
 
 [params]
 

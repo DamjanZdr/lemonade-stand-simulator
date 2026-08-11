@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b1vm3sxarb8yi"
-path="res://.godot/imported/footballFieldFence.glb-977a7af90cbf792a10918ec9153f08da.scn"
+path="res://.godot/imported/footballFieldFence.glb-bd72d1dfe5c3703c3e4bfde0cd98e1ef.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Igralishte/footballFieldFence.glb"
-dest_files=["res://.godot/imported/footballFieldFence.glb-977a7af90cbf792a10918ec9153f08da.scn"]
+dest_files=["res://.godot/imported/footballFieldFence.glb-bd72d1dfe5c3703c3e4bfde0cd98e1ef.scn"]
 
 [params]
 

@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dthysfy1v8b52"
-path="res://.godot/imported/ice bucket.glb-7c71ed7cba3b3e46f44ccd6ac787300b.scn"
+path="res://.godot/imported/ice bucket.glb-f0a6695d571c01f7cffbf2eb652eda64.scn"
 
 [deps]
 
 source_file="res://assets/models/props/ice bucket.glb"
-dest_files=["res://.godot/imported/ice bucket.glb-7c71ed7cba3b3e46f44ccd6ac787300b.scn"]
+dest_files=["res://.godot/imported/ice bucket.glb-f0a6695d571c01f7cffbf2eb652eda64.scn"]
 
 [params]
 

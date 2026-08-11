@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bpte633h6rvhj"
-path="res://.godot/imported/LeftRight.001.png-7d044259478817e83866d0f5f1ad8a24.ctex"
+path="res://.godot/imported/LeftRight.001.png-d37f30bb662fd51fa6be814c3d397038.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/textures/LeftRight.001.png"
-dest_files=["res://.godot/imported/LeftRight.001.png-7d044259478817e83866d0f5f1ad8a24.ctex"]
+dest_files=["res://.godot/imported/LeftRight.001.png-d37f30bb662fd51fa6be814c3d397038.ctex"]
 
 [params]
 

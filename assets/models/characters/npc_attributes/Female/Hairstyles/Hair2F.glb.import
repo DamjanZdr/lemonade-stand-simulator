@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b2afnptyfjhid"
-path="res://.godot/imported/Hair2F.glb-6621c45465f4b58c0165b650b2ae6d36.scn"
+path="res://.godot/imported/Hair2F.glb-e6b20453593772d5479f5a1cf5134fe1.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Female/Hairstyles/Hair2F.glb"
-dest_files=["res://.godot/imported/Hair2F.glb-6621c45465f4b58c0165b650b2ae6d36.scn"]
+dest_files=["res://.godot/imported/Hair2F.glb-e6b20453593772d5479f5a1cf5134fe1.scn"]
 
 [params]
 

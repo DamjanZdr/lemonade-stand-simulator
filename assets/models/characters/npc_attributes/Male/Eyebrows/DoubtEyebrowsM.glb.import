@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://cprg5tcii8aws"
-path="res://.godot/imported/DoubtEyebrowsM.glb-fff49c26abff1e7e92fdef17c9b41ae2.scn"
+path="res://.godot/imported/DoubtEyebrowsM.glb-5d82864098d7c8c33ce1f9db959029b8.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Male/Eyebrows/DoubtEyebrowsM.glb"
-dest_files=["res://.godot/imported/DoubtEyebrowsM.glb-fff49c26abff1e7e92fdef17c9b41ae2.scn"]
+dest_files=["res://.godot/imported/DoubtEyebrowsM.glb-5d82864098d7c8c33ce1f9db959029b8.scn"]
 
 [params]
 

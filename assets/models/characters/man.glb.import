@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://ficdyqcr8w1b"
-path="res://.godot/imported/man.glb-f2e67b085fc4563472442311b22d4d83.scn"
+path="res://.godot/imported/man.glb-71da702ae50c222e299950ed009ffd58.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/man.glb"
-dest_files=["res://.godot/imported/man.glb-f2e67b085fc4563472442311b22d4d83.scn"]
+dest_files=["res://.godot/imported/man.glb-71da702ae50c222e299950ed009ffd58.scn"]
 
 [params]
 

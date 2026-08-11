@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://o8jjt2007qs3"
-path.s3tc="res://.godot/imported/8_treematerialgrid.png-098b0c7c3e3af323345e07c44e8d36b2.s3tc.ctex"
+path.s3tc="res://.godot/imported/8_treematerialgrid.png-031c861e7f9849a177ea5ad6b7e162ee.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/trees/8_treematerialgrid.png"
-dest_files=["res://.godot/imported/8_treematerialgrid.png-098b0c7c3e3af323345e07c44e8d36b2.s3tc.ctex"]
+dest_files=["res://.godot/imported/8_treematerialgrid.png-031c861e7f9849a177ea5ad6b7e162ee.s3tc.ctex"]
 
 [params]
 

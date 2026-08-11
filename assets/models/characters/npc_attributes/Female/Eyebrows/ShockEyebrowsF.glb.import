@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://c6p0wbvv8few6"
-path="res://.godot/imported/ShockEyebrowsF.glb-758d3485dfa391f4fcbcbe0d878c8243.scn"
+path="res://.godot/imported/ShockEyebrowsF.glb-7dfc48243ecf785522d1cc15e5319fd2.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Female/Eyebrows/ShockEyebrowsF.glb"
-dest_files=["res://.godot/imported/ShockEyebrowsF.glb-758d3485dfa391f4fcbcbe0d878c8243.scn"]
+dest_files=["res://.godot/imported/ShockEyebrowsF.glb-7dfc48243ecf785522d1cc15e5319fd2.scn"]
 
 [params]
 

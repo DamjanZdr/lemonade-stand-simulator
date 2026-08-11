@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://du4xf7eucsko6"
-path="res://.godot/imported/debug_screen_ui.png-44d00ec7a8c7cc01b5ceeee37741efb4.ctex"
+path="res://.godot/imported/debug_screen_ui.png-ded5e9d0d283974afecceff36ca43f21.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/debug_screen_ui.png"
-dest_files=["res://.godot/imported/debug_screen_ui.png-44d00ec7a8c7cc01b5ceeee37741efb4.ctex"]
+dest_files=["res://.godot/imported/debug_screen_ui.png-ded5e9d0d283974afecceff36ca43f21.ctex"]
 
 [params]
 

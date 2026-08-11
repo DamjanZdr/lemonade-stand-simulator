@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://girp1th3jnox"
-path="res://.godot/imported/price tag.glb-f7c0c693b900c83fda3421277c34879a.scn"
+path="res://.godot/imported/price tag.glb-054b0c30b36850371e95a12e1eb3fc50.scn"
 
 [deps]
 
 source_file="res://assets/models/props/price tag.glb"
-dest_files=["res://.godot/imported/price tag.glb-f7c0c693b900c83fda3421277c34879a.scn"]
+dest_files=["res://.godot/imported/price tag.glb-054b0c30b36850371e95a12e1eb3fc50.scn"]
 
 [params]
 

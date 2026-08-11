@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://2w3whx84t6f7"
-path="res://.godot/imported/NeutralEyebrowsM.glb-e4dee15aa8389432142169d1db18b526.scn"
+path="res://.godot/imported/NeutralEyebrowsM.glb-960b237d50cff6c64162cb9d3d66e188.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Male/Eyebrows/NeutralEyebrowsM.glb"
-dest_files=["res://.godot/imported/NeutralEyebrowsM.glb-e4dee15aa8389432142169d1db18b526.scn"]
+dest_files=["res://.godot/imported/NeutralEyebrowsM.glb-960b237d50cff6c64162cb9d3d66e188.scn"]
 
 [params]
 

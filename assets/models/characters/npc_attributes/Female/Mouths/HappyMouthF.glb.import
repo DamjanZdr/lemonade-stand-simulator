@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://cgygmdsbxl5q8"
-path="res://.godot/imported/HappyMouthF.glb-bb52bfbb9b6fd21cc84398917fcd4ba7.scn"
+path="res://.godot/imported/HappyMouthF.glb-660a803b7552efd69ddb6606f762d73e.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Female/Mouths/HappyMouthF.glb"
-dest_files=["res://.godot/imported/HappyMouthF.glb-bb52bfbb9b6fd21cc84398917fcd4ba7.scn"]
+dest_files=["res://.godot/imported/HappyMouthF.glb-660a803b7552efd69ddb6606f762d73e.scn"]
 
 [params]
 

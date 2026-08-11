@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://d3ht4jv78q5cu"
-path="res://.godot/imported/IgralishteDoor.glb-b536a5da94c8544ba9fd171a10a4e0bc.scn"
+path="res://.godot/imported/IgralishteDoor.glb-723eb91c17538bd5457c83092a9bee81.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Igralishte/IgralishteDoor.glb"
-dest_files=["res://.godot/imported/IgralishteDoor.glb-b536a5da94c8544ba9fd171a10a4e0bc.scn"]
+dest_files=["res://.godot/imported/IgralishteDoor.glb-723eb91c17538bd5457c83092a9bee81.scn"]
 
 [params]
 

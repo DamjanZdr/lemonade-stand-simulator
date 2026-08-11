@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cw2ibgpvsca8m"
-path.s3tc="res://.godot/imported/Forbidden direction_Minus.png-72b61945e2cab3aed72fb188f981eafe.s3tc.ctex"
+path.s3tc="res://.godot/imported/Forbidden direction_Minus.png-4861d09af31d134f6efb858dbe2e22f5.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/Forbidden direction_Minus.png"
-dest_files=["res://.godot/imported/Forbidden direction_Minus.png-72b61945e2cab3aed72fb188f981eafe.s3tc.ctex"]
+dest_files=["res://.godot/imported/Forbidden direction_Minus.png-4861d09af31d134f6efb858dbe2e22f5.s3tc.ctex"]
 
 [params]
 

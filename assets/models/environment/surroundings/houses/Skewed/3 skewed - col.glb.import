@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bfpxxuin8sb2g"
-path="res://.godot/imported/3 skewed - col.glb-1c21d48b86cdc9d4964318cd5d50f457.scn"
+path="res://.godot/imported/3 skewed - col.glb-5035761ec83543299d3b8266a1023634.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/houses/Skewed/3 skewed - col.glb"
-dest_files=["res://.godot/imported/3 skewed - col.glb-1c21d48b86cdc9d4964318cd5d50f457.scn"]
+dest_files=["res://.godot/imported/3 skewed - col.glb-5035761ec83543299d3b8266a1023634.scn"]
 
 [params]
 

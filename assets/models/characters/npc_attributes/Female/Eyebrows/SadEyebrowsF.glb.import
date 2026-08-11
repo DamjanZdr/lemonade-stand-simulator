@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://6lkx6ephxexh"
-path="res://.godot/imported/SadEyebrowsF.glb-35e6a69b6128dfe6c8163b4981988034.scn"
+path="res://.godot/imported/SadEyebrowsF.glb-590e9f6ac1b1813b3c048983884fa7cb.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Female/Eyebrows/SadEyebrowsF.glb"
-dest_files=["res://.godot/imported/SadEyebrowsF.glb-35e6a69b6128dfe6c8163b4981988034.scn"]
+dest_files=["res://.godot/imported/SadEyebrowsF.glb-590e9f6ac1b1813b3c048983884fa7cb.scn"]
 
 [params]
 

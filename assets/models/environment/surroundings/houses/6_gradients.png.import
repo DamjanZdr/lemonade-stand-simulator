@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bsmib4i6vtksi"
-path.s3tc="res://.godot/imported/6_gradients.png-8bc6cc44e5579314ccead560b2a59562.s3tc.ctex"
+path.s3tc="res://.godot/imported/6_gradients.png-d2f26cc56dd5512c54b56229315b4840.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/houses/6_gradients.png"
-dest_files=["res://.godot/imported/6_gradients.png-8bc6cc44e5579314ccead560b2a59562.s3tc.ctex"]
+dest_files=["res://.godot/imported/6_gradients.png-d2f26cc56dd5512c54b56229315b4840.s3tc.ctex"]
 
 [params]
 

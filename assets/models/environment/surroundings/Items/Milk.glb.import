@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bhth8qqectmxc"
-path="res://.godot/imported/Milk.glb-72d9ff0bb86fb2fc450cf1c747a80ba5.scn"
+path="res://.godot/imported/Milk.glb-1c32a08c408c63789b801d095635ae8b.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/Milk.glb"
-dest_files=["res://.godot/imported/Milk.glb-72d9ff0bb86fb2fc450cf1c747a80ba5.scn"]
+dest_files=["res://.godot/imported/Milk.glb-1c32a08c408c63789b801d095635ae8b.scn"]
 
 [params]
 

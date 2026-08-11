@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0l3uhc8f1471"
-path="res://.godot/imported/table.png-b4e761d86fdbcb373e90330c9c523170.ctex"
+path="res://.godot/imported/table.png-1389539fd91c4b0fea0400987af0e238.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/products/table.png"
-dest_files=["res://.godot/imported/table.png-b4e761d86fdbcb373e90330c9c523170.ctex"]
+dest_files=["res://.godot/imported/table.png-1389539fd91c4b0fea0400987af0e238.ctex"]
 
 [params]
 

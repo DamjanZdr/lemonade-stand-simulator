@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://mqs45tbggd6p"
-path="res://.godot/imported/fruit crate.glb-8a9c1c1363fab72fa321ea275148f082.scn"
+path="res://.godot/imported/fruit crate.glb-5ad24933ade2c971261cffbd232aff46.scn"
 
 [deps]
 
 source_file="res://assets/models/props/fruit crate.glb"
-dest_files=["res://.godot/imported/fruit crate.glb-8a9c1c1363fab72fa321ea275148f082.scn"]
+dest_files=["res://.godot/imported/fruit crate.glb-5ad24933ade2c971261cffbd232aff46.scn"]
 
 [params]
 

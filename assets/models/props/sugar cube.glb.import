@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://d26s0baibr53s"
-path="res://.godot/imported/sugar cube.glb-65128350c525e4b7316f23d86b1d8bdd.scn"
+path="res://.godot/imported/sugar cube.glb-896c4f42a4125805c5aa3613eb6338d9.scn"
 
 [deps]
 
 source_file="res://assets/models/props/sugar cube.glb"
-dest_files=["res://.godot/imported/sugar cube.glb-65128350c525e4b7316f23d86b1d8bdd.scn"]
+dest_files=["res://.godot/imported/sugar cube.glb-896c4f42a4125805c5aa3613eb6338d9.scn"]
 
 [params]
 

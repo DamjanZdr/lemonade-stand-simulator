@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://eca6stl7o2ia"
-path.s3tc="res://.godot/imported/blackboard_blackboard.png-0bca4959af5e0340d0574960cb393cd0.s3tc.ctex"
+path.s3tc="res://.godot/imported/blackboard_blackboard.png-356a53f1070588db65dd0229a7bdf549.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/textures/props/blackboard_blackboard.png"
-dest_files=["res://.godot/imported/blackboard_blackboard.png-0bca4959af5e0340d0574960cb393cd0.s3tc.ctex"]
+dest_files=["res://.godot/imported/blackboard_blackboard.png-356a53f1070588db65dd0229a7bdf549.s3tc.ctex"]
 
 [params]
 

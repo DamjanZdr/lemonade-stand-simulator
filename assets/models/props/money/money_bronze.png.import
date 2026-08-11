@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://5ky3xl05361p"
-path.s3tc="res://.godot/imported/money_bronze.png-5687ff3d941fcf3f164efd0874ab9492.s3tc.ctex"
+path.s3tc="res://.godot/imported/money_bronze.png-e6a4846242aecd0c107c618c0208ea0f.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/props/money/money_bronze.png"
-dest_files=["res://.godot/imported/money_bronze.png-5687ff3d941fcf3f164efd0874ab9492.s3tc.ctex"]
+dest_files=["res://.godot/imported/money_bronze.png-e6a4846242aecd0c107c618c0208ea0f.s3tc.ctex"]
 
 [params]
 

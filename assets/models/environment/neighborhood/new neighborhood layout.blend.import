@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dinccwpyr45yi"
-path="res://.godot/imported/new neighborhood layout.blend-c555971e5dff7f22706395adb1db076c.scn"
+path="res://.godot/imported/new neighborhood layout.blend-72450d4d9860233f6dc6d78aef3c99fe.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/neighborhood/new neighborhood layout.blend"
-dest_files=["res://.godot/imported/new neighborhood layout.blend-c555971e5dff7f22706395adb1db076c.scn"]
+dest_files=["res://.godot/imported/new neighborhood layout.blend-72450d4d9860233f6dc6d78aef3c99fe.scn"]
 
 [params]
 

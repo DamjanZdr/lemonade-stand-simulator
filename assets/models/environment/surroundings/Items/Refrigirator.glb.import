@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://cbc2emx3kc2wg"
-path="res://.godot/imported/Refrigirator.glb-a0c17c1a0aaca940e3b2b43941cbe0ee.scn"
+path="res://.godot/imported/Refrigirator.glb-b9f2cdad5012050757a1ac3a75b930a9.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/Refrigirator.glb"
-dest_files=["res://.godot/imported/Refrigirator.glb-a0c17c1a0aaca940e3b2b43941cbe0ee.scn"]
+dest_files=["res://.godot/imported/Refrigirator.glb-b9f2cdad5012050757a1ac3a75b930a9.scn"]
 
 [params]
 

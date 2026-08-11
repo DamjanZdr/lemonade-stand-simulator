@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://be6vdn0oeti0r"
-path.s3tc="res://.godot/imported/only left and right allowed_Minus.png-67106d75e6074742a2f346e48df94c74.s3tc.ctex"
+path.s3tc="res://.godot/imported/only left and right allowed_Minus.png-3a55eb7d6c1a185e9a3d911265cba5c1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/only left and right allowed_Minus.png"
-dest_files=["res://.godot/imported/only left and right allowed_Minus.png-67106d75e6074742a2f346e48df94c74.s3tc.ctex"]
+dest_files=["res://.godot/imported/only left and right allowed_Minus.png-3a55eb7d6c1a185e9a3d911265cba5c1.s3tc.ctex"]
 
 [params]
 

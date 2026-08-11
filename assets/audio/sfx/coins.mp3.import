@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://b50ylxn2mrw1i"
-path="res://.godot/imported/coins.mp3-ba4ff2acb77e2cce58138eac96c90248.mp3str"
+path="res://.godot/imported/coins.mp3-65cb4b9022fadccc227acd7a8069326f.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/coins.mp3"
-dest_files=["res://.godot/imported/coins.mp3-ba4ff2acb77e2cce58138eac96c90248.mp3str"]
+dest_files=["res://.godot/imported/coins.mp3-65cb4b9022fadccc227acd7a8069326f.mp3str"]
 
 [params]
 

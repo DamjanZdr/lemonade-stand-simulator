@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://crdxnotvcd7vg"
-path="res://.godot/imported/watermelon.glb-19635f9f812f6c9974af0e36a9aeaa2e.scn"
+path="res://.godot/imported/watermelon.glb-1ada7c8ae083d89f5d2c2daf4f7a3d06.scn"
 
 [deps]
 
 source_file="res://assets/models/props/watermelon.glb"
-dest_files=["res://.godot/imported/watermelon.glb-19635f9f812f6c9974af0e36a9aeaa2e.scn"]
+dest_files=["res://.godot/imported/watermelon.glb-1ada7c8ae083d89f5d2c2daf4f7a3d06.scn"]
 
 [params]
 

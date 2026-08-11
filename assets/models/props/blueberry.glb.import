@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://6g3m2e7xbxut"
-path="res://.godot/imported/blueberry.glb-e23472bb1caf2f82d2b44882080a2fee.scn"
+path="res://.godot/imported/blueberry.glb-5d3121c4a0c26374687d8f82568f06d4.scn"
 
 [deps]
 
 source_file="res://assets/models/props/blueberry.glb"
-dest_files=["res://.godot/imported/blueberry.glb-e23472bb1caf2f82d2b44882080a2fee.scn"]
+dest_files=["res://.godot/imported/blueberry.glb-5d3121c4a0c26374687d8f82568f06d4.scn"]
 
 [params]
 

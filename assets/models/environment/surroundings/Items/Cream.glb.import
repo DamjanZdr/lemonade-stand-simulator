@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://djpen7dm5748t"
-path="res://.godot/imported/Cream.glb-6ec81cf97ea3ec6439299f600e0a0ec9.scn"
+path="res://.godot/imported/Cream.glb-d9bd1d5bd5212ecb99824faace821a88.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/Cream.glb"
-dest_files=["res://.godot/imported/Cream.glb-6ec81cf97ea3ec6439299f600e0a0ec9.scn"]
+dest_files=["res://.godot/imported/Cream.glb-d9bd1d5bd5212ecb99824faace821a88.scn"]
 
 [params]
 

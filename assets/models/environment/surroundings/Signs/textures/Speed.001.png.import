@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://5x715kol5ggw"
-path.s3tc="res://.godot/imported/Speed.001.png-70b793502886d3fedf34b4eed737dd7a.s3tc.ctex"
+path.s3tc="res://.godot/imported/Speed.001.png-e6387a0afc4b3dea818ee750abc4d876.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/textures/Speed.001.png"
-dest_files=["res://.godot/imported/Speed.001.png-70b793502886d3fedf34b4eed737dd7a.s3tc.ctex"]
+dest_files=["res://.godot/imported/Speed.001.png-e6387a0afc4b3dea818ee750abc4d876.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cq1x1xi0dvdf"
-path.s3tc="res://.godot/imported/only left and right allowed_Stop.png-dbcaa687a8e9bbe671ed5b1935ec0a6b.s3tc.ctex"
+path.s3tc="res://.godot/imported/only left and right allowed_Stop.png-93b1d807412a51cca8e39c6c5f99e4c9.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/only left and right allowed_Stop.png"
-dest_files=["res://.godot/imported/only left and right allowed_Stop.png-dbcaa687a8e9bbe671ed5b1935ec0a6b.s3tc.ctex"]
+dest_files=["res://.godot/imported/only left and right allowed_Stop.png-93b1d807412a51cca8e39c6c5f99e4c9.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://i4ma5pvi2wxb"
-path.s3tc="res://.godot/imported/Minus.png-dc1fc7ce79611cd42135a7fd9c9ee021.s3tc.ctex"
+path.s3tc="res://.godot/imported/Minus.png-adbafb93dd9b2230b700f897e04a932d.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/textures/Minus.png"
-dest_files=["res://.godot/imported/Minus.png-dc1fc7ce79611cd42135a7fd9c9ee021.s3tc.ctex"]
+dest_files=["res://.godot/imported/Minus.png-adbafb93dd9b2230b700f897e04a932d.s3tc.ctex"]
 
 [params]
 

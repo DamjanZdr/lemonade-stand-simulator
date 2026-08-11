@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://cf7yaxoe0iylw"
-path="res://.godot/imported/fruit bin placed.mp3-e170a9d0817dec1e93f432b75737001d.mp3str"
+path="res://.godot/imported/fruit bin placed.mp3-bdc4b9bd22e78b11f5f75ffe4a4551f1.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/fruit bin placed.mp3"
-dest_files=["res://.godot/imported/fruit bin placed.mp3-e170a9d0817dec1e93f432b75737001d.mp3str"]
+dest_files=["res://.godot/imported/fruit bin placed.mp3-bdc4b9bd22e78b11f5f75ffe4a4551f1.mp3str"]
 
 [params]
 

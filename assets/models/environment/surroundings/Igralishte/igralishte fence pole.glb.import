@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://c3bq1c6mht24x"
-path="res://.godot/imported/igralishte fence pole.glb-adeca71e47b536a6e6a1b3b578f0338a.scn"
+path="res://.godot/imported/igralishte fence pole.glb-b5ffb4bf39ddd815c923d74e60437174.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Igralishte/igralishte fence pole.glb"
-dest_files=["res://.godot/imported/igralishte fence pole.glb-adeca71e47b536a6e6a1b3b578f0338a.scn"]
+dest_files=["res://.godot/imported/igralishte fence pole.glb-b5ffb4bf39ddd815c923d74e60437174.scn"]
 
 [params]
 

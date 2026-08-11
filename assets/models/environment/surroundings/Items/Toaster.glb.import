@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dkju6hpbnky8t"
-path="res://.godot/imported/Toaster.glb-837273b2366f9cdc46a89797e47070c9.scn"
+path="res://.godot/imported/Toaster.glb-9bdcbf8a9ba4985c339fa0476b4097da.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/Toaster.glb"
-dest_files=["res://.godot/imported/Toaster.glb-837273b2366f9cdc46a89797e47070c9.scn"]
+dest_files=["res://.godot/imported/Toaster.glb-9bdcbf8a9ba4985c339fa0476b4097da.scn"]
 
 [params]
 

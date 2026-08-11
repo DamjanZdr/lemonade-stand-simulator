@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bhh5g8lokbvcs"
-path="res://.godot/imported/single pole w box.glb-4fd066716d619e7c48f1fc3b25e0aebc.scn"
+path="res://.godot/imported/single pole w box.glb-72b752803a1b20cc634d6b9ab3c3b544.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/ElectricGrid/single pole w box.glb"
-dest_files=["res://.godot/imported/single pole w box.glb-4fd066716d619e7c48f1fc3b25e0aebc.scn"]
+dest_files=["res://.godot/imported/single pole w box.glb-72b752803a1b20cc634d6b9ab3c3b544.scn"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cuxuf7hymfss5"
-path="res://.godot/imported/peach.png-95b003d150e3a35b37a1f3a79f49f235.ctex"
+path="res://.godot/imported/peach.png-f161db0d7fb6ed7fd9d88615a2524f23.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/products/peach.png"
-dest_files=["res://.godot/imported/peach.png-95b003d150e3a35b37a1f3a79f49f235.ctex"]
+dest_files=["res://.godot/imported/peach.png-f161db0d7fb6ed7fd9d88615a2524f23.ctex"]
 
 [params]
 

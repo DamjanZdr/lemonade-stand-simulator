@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://borde5xmrk337"
-path="res://.godot/imported/money.blend-f1e5f7982d164ee68f3c1cbf151d9c05.scn"
+path="res://.godot/imported/money.blend-63c862320650755076b28cbab7f522a8.scn"
 
 [deps]
 
 source_file="res://assets/models/props/money/money.blend"
-dest_files=["res://.godot/imported/money.blend-f1e5f7982d164ee68f3c1cbf151d9c05.scn"]
+dest_files=["res://.godot/imported/money.blend-63c862320650755076b28cbab7f522a8.scn"]
 
 [params]
 

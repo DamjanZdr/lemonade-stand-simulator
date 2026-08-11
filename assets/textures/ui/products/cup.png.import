@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cgduvro5r3yco"
-path="res://.godot/imported/cup.png-175a1974796a16bce675598afcc5035f.ctex"
+path="res://.godot/imported/cup.png-fff50e624779079f66904a13dd98a3e9.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/products/cup.png"
-dest_files=["res://.godot/imported/cup.png-175a1974796a16bce675598afcc5035f.ctex"]
+dest_files=["res://.godot/imported/cup.png-fff50e624779079f66904a13dd98a3e9.ctex"]
 
 [params]
 

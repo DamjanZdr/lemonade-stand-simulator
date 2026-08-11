@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cu0trx3blaxwx"
-path.s3tc="res://.godot/imported/power_grid_Sidewall.png-be6c56225d52fbecb07395d2262231f0.s3tc.ctex"
+path.s3tc="res://.godot/imported/power_grid_Sidewall.png-773c9f9ea1b17a654be3f3b620def9d5.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/ElectricGrid/power_grid_Sidewall.png"
-dest_files=["res://.godot/imported/power_grid_Sidewall.png-be6c56225d52fbecb07395d2262231f0.s3tc.ctex"]
+dest_files=["res://.godot/imported/power_grid_Sidewall.png-773c9f9ea1b17a654be3f3b620def9d5.s3tc.ctex"]
 
 [params]
 

@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://cwuvoujt7xpjx"
-path="res://.godot/imported/fruit pickup from crate.mp3-876ff37603b5122683c0fb60f2fb0e42.mp3str"
+path="res://.godot/imported/fruit pickup from crate.mp3-8ccc36cbedc51652136f5efc5cf4e930.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/fruit pickup from crate.mp3"
-dest_files=["res://.godot/imported/fruit pickup from crate.mp3-876ff37603b5122683c0fb60f2fb0e42.mp3str"]
+dest_files=["res://.godot/imported/fruit pickup from crate.mp3-8ccc36cbedc51652136f5efc5cf4e930.mp3str"]
 
 [params]
 

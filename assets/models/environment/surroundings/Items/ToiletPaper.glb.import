@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dteql7qeh1r4w"
-path="res://.godot/imported/ToiletPaper.glb-7f93a86aeec70492e4526ad894051f77.scn"
+path="res://.godot/imported/ToiletPaper.glb-4a9b32f5f05631c0b852f1efd89ab006.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/ToiletPaper.glb"
-dest_files=["res://.godot/imported/ToiletPaper.glb-7f93a86aeec70492e4526ad894051f77.scn"]
+dest_files=["res://.godot/imported/ToiletPaper.glb-4a9b32f5f05631c0b852f1efd89ab006.scn"]
 
 [params]
 

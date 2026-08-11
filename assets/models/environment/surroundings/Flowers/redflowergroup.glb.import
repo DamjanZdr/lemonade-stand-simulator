@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dghtsesy8dxb5"
-path="res://.godot/imported/redflowergroup.glb-a245851ffb0c531e1eead14b8d58da81.scn"
+path="res://.godot/imported/redflowergroup.glb-d02083b448996f3dc157bda46a8c85ff.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Flowers/redflowergroup.glb"
-dest_files=["res://.godot/imported/redflowergroup.glb-a245851ffb0c531e1eead14b8d58da81.scn"]
+dest_files=["res://.godot/imported/redflowergroup.glb-d02083b448996f3dc157bda46a8c85ff.scn"]
 
 [params]
 

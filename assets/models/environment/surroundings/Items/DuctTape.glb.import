@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b8pslt164uwbs"
-path="res://.godot/imported/DuctTape.glb-5f58fc6f45de3485f5641cc54c589c1e.scn"
+path="res://.godot/imported/DuctTape.glb-5eedc98794df62ab97a3d13f6a947b04.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/DuctTape.glb"
-dest_files=["res://.godot/imported/DuctTape.glb-5f58fc6f45de3485f5641cc54c589c1e.scn"]
+dest_files=["res://.godot/imported/DuctTape.glb-5eedc98794df62ab97a3d13f6a947b04.scn"]
 
 [params]
 

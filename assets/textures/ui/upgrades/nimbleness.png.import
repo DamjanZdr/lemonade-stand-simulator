@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bs0hy04bt5jjr"
-path="res://.godot/imported/nimbleness.png-494f04f83ff954beaa0bdb93cec8d0f7.ctex"
+path="res://.godot/imported/nimbleness.png-e5e1e49053047a6b56282c9bbb7f7f4a.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/upgrades/nimbleness.png"
-dest_files=["res://.godot/imported/nimbleness.png-494f04f83ff954beaa0bdb93cec8d0f7.ctex"]
+dest_files=["res://.godot/imported/nimbleness.png-e5e1e49053047a6b56282c9bbb7f7f4a.ctex"]
 
 [params]
 

@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://hxhernj57qv8"
-path="res://.godot/imported/9.glb-944669af6d5835dccf4c99a0d99ee2c3.scn"
+path="res://.godot/imported/9.glb-405bc240070495709a2535ed0c6d5ead.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/mailboxes/9.glb"
-dest_files=["res://.godot/imported/9.glb-944669af6d5835dccf4c99a0d99ee2c3.scn"]
+dest_files=["res://.godot/imported/9.glb-405bc240070495709a2535ed0c6d5ead.scn"]
 
 [params]
 

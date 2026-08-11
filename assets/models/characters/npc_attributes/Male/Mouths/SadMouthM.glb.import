@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://fg2gqjb0j6dy"
-path="res://.godot/imported/SadMouthM.glb-0d99d9fd19332aa06fc222b2a3e80ddc.scn"
+path="res://.godot/imported/SadMouthM.glb-a0171958ae4b43ae435e1aba236244cf.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Male/Mouths/SadMouthM.glb"
-dest_files=["res://.godot/imported/SadMouthM.glb-0d99d9fd19332aa06fc222b2a3e80ddc.scn"]
+dest_files=["res://.godot/imported/SadMouthM.glb-a0171958ae4b43ae435e1aba236244cf.scn"]
 
 [params]
 

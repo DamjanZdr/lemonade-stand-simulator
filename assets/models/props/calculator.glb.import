@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b57mt7dy7wnp6"
-path="res://.godot/imported/calculator.glb-34863a72757837977ec39491ce5be926.scn"
+path="res://.godot/imported/calculator.glb-3fa330d60bd3a7866c821afa9ce57bf2.scn"
 
 [deps]
 
 source_file="res://assets/models/props/calculator.glb"
-dest_files=["res://.godot/imported/calculator.glb-34863a72757837977ec39491ce5be926.scn"]
+dest_files=["res://.godot/imported/calculator.glb-3fa330d60bd3a7866c821afa9ce57bf2.scn"]
 
 [params]
 

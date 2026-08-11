@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cdf2nmqsa83ag"
-path.s3tc="res://.godot/imported/Sidewalks.png-d14bd5df2a76a76a1b9b9ba99994c19e.s3tc.ctex"
+path.s3tc="res://.godot/imported/Sidewalks.png-27e704c2ff1364648f722cf93643b4a0.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/ElectricGrid/textures/Sidewalks.png"
-dest_files=["res://.godot/imported/Sidewalks.png-d14bd5df2a76a76a1b9b9ba99994c19e.s3tc.ctex"]
+dest_files=["res://.godot/imported/Sidewalks.png-27e704c2ff1364648f722cf93643b4a0.s3tc.ctex"]
 
 [params]
 

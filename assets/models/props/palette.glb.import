@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://ceavmvtql3d1v"
-path="res://.godot/imported/palette.glb-a4f11c7f9d7d78f693b58bcb8124332f.scn"
+path="res://.godot/imported/palette.glb-42ccc1c3bb0c77c35bc8eabad5f8bfb5.scn"
 
 [deps]
 
 source_file="res://assets/models/props/palette.glb"
-dest_files=["res://.godot/imported/palette.glb-a4f11c7f9d7d78f693b58bcb8124332f.scn"]
+dest_files=["res://.godot/imported/palette.glb-42ccc1c3bb0c77c35bc8eabad5f8bfb5.scn"]
 
 [params]
 

@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://gcwdev3vfbpy"
-path="res://.godot/imported/transaction complete.mp3-bd599e53619aacafb7c3d44001480826.mp3str"
+path="res://.godot/imported/transaction complete.mp3-1cc5bfe5a173015d1a5abc86ebe6896b.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/transaction complete.mp3"
-dest_files=["res://.godot/imported/transaction complete.mp3-bd599e53619aacafb7c3d44001480826.mp3str"]
+dest_files=["res://.godot/imported/transaction complete.mp3-1cc5bfe5a173015d1a5abc86ebe6896b.mp3str"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cluxqtgbtqf6l"
-path="res://.godot/imported/water jug.png-b944faaf9e7237939c86d95be4208c63.ctex"
+path="res://.godot/imported/water jug.png-d47fc0acd45bcf2a209ebcffff272db2.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/products/water jug.png"
-dest_files=["res://.godot/imported/water jug.png-b944faaf9e7237939c86d95be4208c63.ctex"]
+dest_files=["res://.godot/imported/water jug.png-d47fc0acd45bcf2a209ebcffff272db2.ctex"]
 
 [params]
 

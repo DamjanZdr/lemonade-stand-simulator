@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://cl4dt76waiejp"
-path="res://.godot/imported/AngryEyebrowsF.glb-b9d57cbf471767f2748d1b1cafb28298.scn"
+path="res://.godot/imported/AngryEyebrowsF.glb-e2d8617902d3b87f1c167ea8804943c7.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Female/Eyebrows/AngryEyebrowsF.glb"
-dest_files=["res://.godot/imported/AngryEyebrowsF.glb-b9d57cbf471767f2748d1b1cafb28298.scn"]
+dest_files=["res://.godot/imported/AngryEyebrowsF.glb-e2d8617902d3b87f1c167ea8804943c7.scn"]
 
 [params]
 

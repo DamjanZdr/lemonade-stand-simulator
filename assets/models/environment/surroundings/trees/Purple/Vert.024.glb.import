@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://d18lrr6tjjf2o"
-path="res://.godot/imported/Vert.024.glb-9162adad63bce08e738e80f5aa63bc63.scn"
+path="res://.godot/imported/Vert.024.glb-8f0cbfd30f4b84a696c657dde8998ecc.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/trees/Purple/Vert.024.glb"
-dest_files=["res://.godot/imported/Vert.024.glb-9162adad63bce08e738e80f5aa63bc63.scn"]
+dest_files=["res://.godot/imported/Vert.024.glb-8f0cbfd30f4b84a696c657dde8998ecc.scn"]
 
 [params]
 

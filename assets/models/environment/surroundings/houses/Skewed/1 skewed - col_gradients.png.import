@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://m4vt4cgi5hk8"
-path.s3tc="res://.godot/imported/1 skewed - col_gradients.png-78964f2a6c84b460fc134597b8f12cd5.s3tc.ctex"
+path.s3tc="res://.godot/imported/1 skewed - col_gradients.png-3926b0d0440588dec2413adfcb1c48e9.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/houses/Skewed/1 skewed - col_gradients.png"
-dest_files=["res://.godot/imported/1 skewed - col_gradients.png-78964f2a6c84b460fc134597b8f12cd5.s3tc.ctex"]
+dest_files=["res://.godot/imported/1 skewed - col_gradients.png-3926b0d0440588dec2413adfcb1c48e9.s3tc.ctex"]
 
 [params]
 

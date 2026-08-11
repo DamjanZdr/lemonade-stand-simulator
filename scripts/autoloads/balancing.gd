@@ -58,7 +58,7 @@ const WATER_BOX_FILLINGS: float = 5.0
 # === CUSTOMERS ===
 const SPAWN_RATE_MIN: float = 5.0
 const SPAWN_RATE_MAX: float = 30.0
-const QUEUE_MAX: int = 6
+const QUEUE_MAX: int = 50
 const CUSTOMER_WALK_SPEED: float = 3.0
 const CUSTOMER_SPAWN_Z: float = -15.0 # debug-spawn only; behind the queue line
 const CUSTOMER_DESPAWN_Z: float = -27.0

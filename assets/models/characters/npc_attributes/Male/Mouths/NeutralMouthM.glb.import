@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b5jdst2qi5yc4"
-path="res://.godot/imported/NeutralMouthM.glb-333a4b2fe067e3a0c4c43cfe0f34da3f.scn"
+path="res://.godot/imported/NeutralMouthM.glb-97968014cda141434892b485cd7fd1b1.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Male/Mouths/NeutralMouthM.glb"
-dest_files=["res://.godot/imported/NeutralMouthM.glb-333a4b2fe067e3a0c4c43cfe0f34da3f.scn"]
+dest_files=["res://.godot/imported/NeutralMouthM.glb-97968014cda141434892b485cd7fd1b1.scn"]
 
 [params]
 

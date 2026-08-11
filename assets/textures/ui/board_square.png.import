@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dik6vlm7o0m05"
-path.s3tc="res://.godot/imported/board square.png-170b6bd247fcc727346446f8c4cfa3c5.s3tc.ctex"
+path.s3tc="res://.godot/imported/board_square.png-c943814c974bbd34f2e207db745254c6.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/board_square.png"
-dest_files=["res://.godot/imported/board square.png-170b6bd247fcc727346446f8c4cfa3c5.s3tc.ctex"]
+dest_files=["res://.godot/imported/board_square.png-c943814c974bbd34f2e207db745254c6.s3tc.ctex"]
 
 [params]
 

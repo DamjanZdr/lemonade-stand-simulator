@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://njhqhkjnftkc"
-path="res://.godot/imported/10.glb-ec470c622243886c388ff8f8b2a8cf15.scn"
+path="res://.godot/imported/10.glb-a7c819635ac86bb44161e31a422ea3a5.scn"
 
 [deps]
 
 source_file="res://assets/models/props/money/10.glb"
-dest_files=["res://.godot/imported/10.glb-ec470c622243886c388ff8f8b2a8cf15.scn"]
+dest_files=["res://.godot/imported/10.glb-a7c819635ac86bb44161e31a422ea3a5.scn"]
 
 [params]
 

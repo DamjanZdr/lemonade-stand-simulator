@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c8lv4whfoq00o"
-path.s3tc="res://.godot/imported/10_10.png-1517bd5193a821c355a755ee9c5f854e.s3tc.ctex"
+path.s3tc="res://.godot/imported/10_10.png-f1a99b5d3c716c718b16737e161133d9.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/props/money/10_10.png"
-dest_files=["res://.godot/imported/10_10.png-1517bd5193a821c355a755ee9c5f854e.s3tc.ctex"]
+dest_files=["res://.godot/imported/10_10.png-f1a99b5d3c716c718b16737e161133d9.s3tc.ctex"]
 
 [params]
 

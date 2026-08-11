@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dd78710vollfc"
-path="res://.godot/imported/peach.glb-91dcd658d2c237c16b4e6e9f2d61d8d9.scn"
+path="res://.godot/imported/peach.glb-768bb8f8ebf3b423eab67ea2b68a99ec.scn"
 
 [deps]
 
 source_file="res://assets/models/props/peach.glb"
-dest_files=["res://.godot/imported/peach.glb-91dcd658d2c237c16b4e6e9f2d61d8d9.scn"]
+dest_files=["res://.godot/imported/peach.glb-768bb8f8ebf3b423eab67ea2b68a99ec.scn"]
 
 [params]
 

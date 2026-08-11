@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://ddg7f2kgffgr4"
-path="res://.godot/imported/speed.glb-c1a587f853bc4a0b182006331cbcf588.scn"
+path="res://.godot/imported/speed.glb-c34a6537ae25ba3b4d5e61edd356e5c6.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Signs/speed.glb"
-dest_files=["res://.godot/imported/speed.glb-c1a587f853bc4a0b182006331cbcf588.scn"]
+dest_files=["res://.godot/imported/speed.glb-c34a6537ae25ba3b4d5e61edd356e5c6.scn"]
 
 [params]
 

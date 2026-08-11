@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bxj42cokmtmp5"
-path="res://.godot/imported/Hair4M.glb-16acc7cfafecd0fa9b759d3384ead695.scn"
+path="res://.godot/imported/Hair4M.glb-c8740c60f625420bffcf47af2bf04e93.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Male/Hairstyles/Hair4M.glb"
-dest_files=["res://.godot/imported/Hair4M.glb-16acc7cfafecd0fa9b759d3384ead695.scn"]
+dest_files=["res://.godot/imported/Hair4M.glb-c8740c60f625420bffcf47af2bf04e93.scn"]
 
 [params]
 

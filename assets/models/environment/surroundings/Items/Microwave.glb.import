@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://cg8y88q3aidm0"
-path="res://.godot/imported/Microwave.glb-eb6f169655d24c1e8fbccbc4c6bbb396.scn"
+path="res://.godot/imported/Microwave.glb-4403822c0866c1fdd0a53ff88cc6ab59.scn"
 
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Items/Microwave.glb"
-dest_files=["res://.godot/imported/Microwave.glb-eb6f169655d24c1e8fbccbc4c6bbb396.scn"]
+dest_files=["res://.godot/imported/Microwave.glb-4403822c0866c1fdd0a53ff88cc6ab59.scn"]
 
 [params]
 

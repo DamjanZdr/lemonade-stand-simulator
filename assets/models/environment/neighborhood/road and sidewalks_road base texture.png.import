@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cd55ov52e1lym"
-path.s3tc="res://.godot/imported/road and sidewalks_road base texture.png-82a489abd4c844f88f8b1a686d8babee.s3tc.ctex"
+path.s3tc="res://.godot/imported/road and sidewalks_road base texture.png-9e4912e417c4dedd88ed7b36f736a81c.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/neighborhood/road and sidewalks_road base texture.png"
-dest_files=["res://.godot/imported/road and sidewalks_road base texture.png-82a489abd4c844f88f8b1a686d8babee.s3tc.ctex"]
+dest_files=["res://.godot/imported/road and sidewalks_road base texture.png-9e4912e417c4dedd88ed7b36f736a81c.s3tc.ctex"]
 
 [params]
 

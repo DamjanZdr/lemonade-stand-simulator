@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://m8x75q3gc5u3"
-path.s3tc="res://.godot/imported/Streets.001.png-c62d782d6ea0db896bda25bdef61f778.s3tc.ctex"
+path.s3tc="res://.godot/imported/Streets.001.png-56d3d5c471bc5678321c663c34ccf728.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/ElectricGrid/textures/Streets.001.png"
-dest_files=["res://.godot/imported/Streets.001.png-c62d782d6ea0db896bda25bdef61f778.s3tc.ctex"]
+dest_files=["res://.godot/imported/Streets.001.png-56d3d5c471bc5678321c663c34ccf728.s3tc.ctex"]
 
 [params]
 

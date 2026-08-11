@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bd4cnpqaahdw1"
-path="res://.godot/imported/ice cube.glb-69befc27b126e62e37a3bc3c8cc9b2bb.scn"
+path="res://.godot/imported/ice cube.glb-073483e180e38badceb633b2c49fe248.scn"
 
 [deps]
 
 source_file="res://assets/models/props/ice cube.glb"
-dest_files=["res://.godot/imported/ice cube.glb-69befc27b126e62e37a3bc3c8cc9b2bb.scn"]
+dest_files=["res://.godot/imported/ice cube.glb-073483e180e38badceb633b2c49fe248.scn"]
 
 [params]
 

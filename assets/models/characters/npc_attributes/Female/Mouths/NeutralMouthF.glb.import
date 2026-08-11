@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://q5gba3u2ulv3"
-path="res://.godot/imported/NeutralMouthF.glb-20d317d0e3cec6d3db75427c0b2f5323.scn"
+path="res://.godot/imported/NeutralMouthF.glb-b550e15eeea50f6dd963e953eecd58cd.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Female/Mouths/NeutralMouthF.glb"
-dest_files=["res://.godot/imported/NeutralMouthF.glb-20d317d0e3cec6d3db75427c0b2f5323.scn"]
+dest_files=["res://.godot/imported/NeutralMouthF.glb-b550e15eeea50f6dd963e953eecd58cd.scn"]
 
 [params]
 

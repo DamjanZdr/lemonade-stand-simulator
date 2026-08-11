@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d3qyuofqxvg8b"
-path="res://.godot/imported/ice bucket.png-a7414996833efc3446a1b6529ad82812.ctex"
+path="res://.godot/imported/ice bucket.png-1390492c6035117e02df88f8f3fb0a0a.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/products/ice bucket.png"
-dest_files=["res://.godot/imported/ice bucket.png-a7414996833efc3446a1b6529ad82812.ctex"]
+dest_files=["res://.godot/imported/ice bucket.png-1390492c6035117e02df88f8f3fb0a0a.ctex"]
 
 [params]
 

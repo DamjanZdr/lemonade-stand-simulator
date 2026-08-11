@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b82dlevskiqy"
-path.s3tc="res://.godot/imported/woman_Shoes Base Color.png-321c7dfd5aba1ee9c1228721316d9603.s3tc.ctex"
+path.s3tc="res://.godot/imported/woman_Shoes Base Color.png-9b7f60f778f73365778c0ee011d242a8.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/characters/woman_Shoes Base Color.png"
-dest_files=["res://.godot/imported/woman_Shoes Base Color.png-321c7dfd5aba1ee9c1228721316d9603.s3tc.ctex"]
+dest_files=["res://.godot/imported/woman_Shoes Base Color.png-9b7f60f778f73365778c0ee011d242a8.s3tc.ctex"]
 
 [params]
 

@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://b5gal4kc3hbcn"
-path="res://.godot/imported/table placed.mp3-f20b6b3b090ed93111ebadfac5f2f30e.mp3str"
+path="res://.godot/imported/table placed.mp3-5e2afae480c45045b10e6fd2486d6e79.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/table placed.mp3"
-dest_files=["res://.godot/imported/table placed.mp3-f20b6b3b090ed93111ebadfac5f2f30e.mp3str"]
+dest_files=["res://.godot/imported/table placed.mp3-5e2afae480c45045b10e6fd2486d6e79.mp3str"]
 
 [params]
 

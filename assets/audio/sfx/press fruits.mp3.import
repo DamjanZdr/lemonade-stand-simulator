@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://q8npf0jo5ssd"
-path="res://.godot/imported/press fruits.mp3-8a88b3cea890dc77b68934488749be50.mp3str"
+path="res://.godot/imported/press fruits.mp3-ba8026585d0671f791243267aaf2bbc9.mp3str"
 
 [deps]
 
 source_file="res://assets/audio/sfx/press fruits.mp3"
-dest_files=["res://.godot/imported/press fruits.mp3-8a88b3cea890dc77b68934488749be50.mp3str"]
+dest_files=["res://.godot/imported/press fruits.mp3-ba8026585d0671f791243267aaf2bbc9.mp3str"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cc1rbu3ogrdsb"
-path="res://.godot/imported/pitcher.png-d9abf14900ae3a8a6e73a7e7f4bad5d4.ctex"
+path="res://.godot/imported/pitcher.png-9519c45208fa9763fe729ff3d0c0ed15.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/products/pitcher.png"
-dest_files=["res://.godot/imported/pitcher.png-d9abf14900ae3a8a6e73a7e7f4bad5d4.ctex"]
+dest_files=["res://.godot/imported/pitcher.png-9519c45208fa9763fe729ff3d0c0ed15.ctex"]
 
 [params]
 

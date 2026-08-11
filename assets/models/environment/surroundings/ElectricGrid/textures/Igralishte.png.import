@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://s8jas81351xw"
-path.s3tc="res://.godot/imported/Igralishte.png-7945ee8a783cdbafd2fd0337c85f6b48.s3tc.ctex"
+path.s3tc="res://.godot/imported/Igralishte.png-2cf18f8f600447d16aaa0d1c34d39aa4.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/ElectricGrid/textures/Igralishte.png"
-dest_files=["res://.godot/imported/Igralishte.png-7945ee8a783cdbafd2fd0337c85f6b48.s3tc.ctex"]
+dest_files=["res://.godot/imported/Igralishte.png-2cf18f8f600447d16aaa0d1c34d39aa4.s3tc.ctex"]
 
 [params]
 

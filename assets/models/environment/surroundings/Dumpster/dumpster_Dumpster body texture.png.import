@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bur86jsgwj3xs"
-path.s3tc="res://.godot/imported/dumpster_Dumpster body texture.png-3446d9ef4ec285290fd4301c6e6e215a.s3tc.ctex"
+path.s3tc="res://.godot/imported/dumpster_Dumpster body texture.png-ebb5973cc62cebd90a846ece3b4543cd.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/surroundings/Dumpster/dumpster_Dumpster body texture.png"
-dest_files=["res://.godot/imported/dumpster_Dumpster body texture.png-3446d9ef4ec285290fd4301c6e6e215a.s3tc.ctex"]
+dest_files=["res://.godot/imported/dumpster_Dumpster body texture.png-ebb5973cc62cebd90a846ece3b4543cd.s3tc.ctex"]
 
 [params]
 

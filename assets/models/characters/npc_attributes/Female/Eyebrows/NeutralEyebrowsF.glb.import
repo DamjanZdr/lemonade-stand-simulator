@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b4ojq5w8fc0lk"
-path="res://.godot/imported/NeutralEyebrowsF.glb-2f29178159d0ad64e50536dd462139c2.scn"
+path="res://.godot/imported/NeutralEyebrowsF.glb-8a8123e1897f5795aef8fa91a3ac6fd6.scn"
 
 [deps]
 
 source_file="res://assets/models/characters/npc_attributes/Female/Eyebrows/NeutralEyebrowsF.glb"
-dest_files=["res://.godot/imported/NeutralEyebrowsF.glb-2f29178159d0ad64e50536dd462139c2.scn"]
+dest_files=["res://.godot/imported/NeutralEyebrowsF.glb-8a8123e1897f5795aef8fa91a3ac6fd6.scn"]
 
 [params]
 
