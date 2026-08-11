@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://cxonhqwlne0yc" path="res://assets/textures/ui/kenny_grid/texture_08.png" id="1_jjtlb"]
 [ext_resource type="PackedScene" uid="uid://debrqguawbc46" path="res://scenes/player/player.tscn" id="2_dtca4"]
 [ext_resource type="Texture2D" uid="uid://xyt3mbbgnyu3" path="res://scenes/player/dani_Glassess.png" id="3_dtca4"]
+[ext_resource type="Script" path="res://scripts/help_me.gd" id="4_helpme"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_jjtlb"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -69,6 +70,7 @@ blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_ov6y6")
 
 [node name="HelpMe" type="Node3D" unique_id=1157522400]
+script = ExtResource("4_helpme")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1459493202]
 environment = SubResource("Environment_6q55f")
