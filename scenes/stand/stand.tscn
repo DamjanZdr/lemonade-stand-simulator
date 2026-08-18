@@ -1,11 +1,13 @@
 [gd_scene format=4 uid="uid://1v1tem4n2kjm"]
 
+[ext_resource type="FontFile" uid="uid://bhpvfso21t8k4" path="res://assets/fonts/AmaticSC-Bold.ttf" id="2_tteb1"]
 [ext_resource type="Texture2D" uid="uid://4mtljc43qwpe" path="res://assets/textures/props/stand_StandTexture.png" id="4_yrfsh"]
 
 [sub_resource type="StandardMaterial3D" id="Material_counter"]
 albedo_color = Color(0.82, 0.65, 0.38, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_counter"]
+lightmap_size_hint = Vector2i(22, 22)
 add_uv2 = true
 size = Vector3(3, 0.1, 0.7)
 
@@ -16,6 +18,7 @@ size = Vector3(2.5, 1.7452148, 0.99997866)
 albedo_color = Color(0.55, 0.38, 0.18, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_post"]
+lightmap_size_hint = Vector2i(5, 30)
 add_uv2 = true
 size = Vector3(0.12, 2.4, 0.12)
 
@@ -91,10 +94,6 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_6fdtf")
 
-[sub_resource type="SystemFont" id="SystemFont_j2gmx"]
-font_names = PackedStringArray("Komika Axis")
-subpixel_positioning = 0
-
 [node name="Stand" type="Node3D" unique_id=410268249]
 
 [node name="Counter" type="StaticBody3D" parent="." unique_id=1852297107 groups=["placement_surface"]]
@@ -141,11 +140,11 @@ transform = Transform3D(6.5, 0, 0, 0, 0.19769484, 0, 0, 0, 2.6000001, 0, 5.09763
 mesh = SubResource("ArrayMesh_ssbif")
 
 [node name="SignLabel" type="Label3D" parent="stand" unique_id=899284364]
-transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 18.44085, 0.742819)
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 19.78406, 0.74281895)
 pixel_size = 0.004
 modulate = Color(0.8862745, 0.9411765, 0, 1)
-text = "🍋 LEMONADE 🍋"
-font = SubResource("SystemFont_j2gmx")
-font_size = 45
-outline_size = 27
+text = "🍋 LEMONADE STAND🍋"
+font = ExtResource("2_tteb1")
+font_size = 73
+outline_size = 0
 metadata/no_depth_override = true

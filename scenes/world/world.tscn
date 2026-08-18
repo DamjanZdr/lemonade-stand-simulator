@@ -239,6 +239,68 @@ script = ExtResource("36_sygq6")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 129.11417, 0, -36.53911)
 script = ExtResource("36_sygq6")
 
+[node name="Route 6" type="Marker3D" parent="Routes" unique_id=748480709 node_paths=PackedStringArray("waypoints")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -62.04986, 0, -4.461447)
+script = ExtResource("36_0wrxw")
+waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
+
+[node name="Point 1" type="Marker3D" parent="Routes/Route 6" unique_id=222996336]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.982567, 0, -28.03636)
+script = ExtResource("36_sygq6")
+
+[node name="Point 2" type="Marker3D" parent="Routes/Route 6" unique_id=1487335809]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.850655, 0, -9.303896)
+script = ExtResource("36_sygq6")
+
+[node name="Point 3" type="Marker3D" parent="Routes/Route 6" unique_id=689516213]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.692078, 0, -9.199999)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 4" type="Marker3D" parent="Routes/Route 6" unique_id=505369480]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 84.516754, 0, -9.167797)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 5" type="Marker3D" parent="Routes/Route 6" unique_id=929168816]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 128.80246, 0, -9.479488)
+script = ExtResource("36_sygq6")
+
+[node name="Point 6" type="Marker3D" parent="Routes/Route 6" unique_id=1147129970]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 129.11417, 0, -36.53911)
+script = ExtResource("36_sygq6")
+
+[node name="Route 7" type="Marker3D" parent="Routes" unique_id=1984958008 node_paths=PackedStringArray("waypoints")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -62.04986, 0, -0.44809103)
+script = ExtResource("36_0wrxw")
+waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
+
+[node name="Point 1" type="Marker3D" parent="Routes/Route 7" unique_id=1713930491]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.982567, 0, -28.03636)
+script = ExtResource("36_sygq6")
+
+[node name="Point 2" type="Marker3D" parent="Routes/Route 7" unique_id=347557146]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.850655, 0, -9.303896)
+script = ExtResource("36_sygq6")
+
+[node name="Point 3" type="Marker3D" parent="Routes/Route 7" unique_id=1340787204]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.692078, 0, -9.199999)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 4" type="Marker3D" parent="Routes/Route 7" unique_id=1179263351]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 84.516754, 0, -9.167797)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 5" type="Marker3D" parent="Routes/Route 7" unique_id=1169712072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 128.80246, 0, -9.479488)
+script = ExtResource("36_sygq6")
+
+[node name="Point 6" type="Marker3D" parent="Routes/Route 7" unique_id=753125208]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 129.11417, 0, -36.53911)
+script = ExtResource("36_sygq6")
+
 [node name="Route 2" type="Marker3D" parent="Routes" unique_id=1609256623 node_paths=PackedStringArray("waypoints")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 51.95014, 0, -10.774675)
 script = ExtResource("36_0wrxw")
@@ -294,10 +356,72 @@ script = ExtResource("36_sygq6")
 convertable = true
 
 [node name="Point 5" type="Marker3D" parent="Routes/Route 3" unique_id=432484928]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 203.90247, 0, 6.1205187)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 139.05713, 0, 6.120513)
 script = ExtResource("36_sygq6")
 
 [node name="Point 6" type="Marker3D" parent="Routes/Route 3" unique_id=2035580860]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 139.22385, 0, 38.582844)
+script = ExtResource("36_sygq6")
+
+[node name="Route 4" type="Marker3D" parent="Routes" unique_id=755055576 node_paths=PackedStringArray("waypoints")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 51.95014, 0, -11.488161)
+script = ExtResource("36_0wrxw")
+waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
+
+[node name="Point 1" type="Marker3D" parent="Routes/Route 4" unique_id=1878013360]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.948257, 0, 36.27583)
+script = ExtResource("36_sygq6")
+
+[node name="Point 2" type="Marker3D" parent="Routes/Route 4" unique_id=1690735685]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.350647, 0, 3.3465614)
+script = ExtResource("36_sygq6")
+
+[node name="Point 3" type="Marker3D" parent="Routes/Route 4" unique_id=2146161310]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.592075, 0, 3.3855038)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 4" type="Marker3D" parent="Routes/Route 4" unique_id=2042409651]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65.41675, 0, 4.0125656)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 5" type="Marker3D" parent="Routes/Route 4" unique_id=1092061806]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 141.06119, 0, 4.7957487)
+script = ExtResource("36_sygq6")
+
+[node name="Point 6" type="Marker3D" parent="Routes/Route 4" unique_id=1242523134]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 141.51419, 0, 38.582844)
+script = ExtResource("36_sygq6")
+
+[node name="Route 5" type="Marker3D" parent="Routes" unique_id=1733989733 node_paths=PackedStringArray("waypoints")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 51.95014, 0, -8.008419)
+script = ExtResource("36_0wrxw")
+waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
+
+[node name="Point 1" type="Marker3D" parent="Routes/Route 5" unique_id=1929901618]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.948257, 0, 36.27583)
+script = ExtResource("36_sygq6")
+
+[node name="Point 2" type="Marker3D" parent="Routes/Route 5" unique_id=1771756958]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.350647, 0, 3.3465614)
+script = ExtResource("36_sygq6")
+
+[node name="Point 3" type="Marker3D" parent="Routes/Route 5" unique_id=1361186799]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.592075, 0, 3.3855038)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 4" type="Marker3D" parent="Routes/Route 5" unique_id=819216145]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65.41675, 0, 4.0125656)
+script = ExtResource("36_sygq6")
+convertable = true
+
+[node name="Point 5" type="Marker3D" parent="Routes/Route 5" unique_id=1817249360]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 141.06119, 0, 4.7957487)
+script = ExtResource("36_sygq6")
+
+[node name="Point 6" type="Marker3D" parent="Routes/Route 5" unique_id=484134398]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 141.51419, 0, 38.582844)
 script = ExtResource("36_sygq6")
 
@@ -338,7 +462,7 @@ upgrades = Array[ExtResource("25_4v0p3")]([ExtResource("46_press"), ExtResource(
 
 [node name="PeopleManager" type="Node" parent="Managers" unique_id=1001413374]
 script = ExtResource("68_people")
-total_people = 300
+total_people = 50
 convert_chance_at_zero_popularity = 0.2
 convert_chance_at_max_popularity = 0.9
 

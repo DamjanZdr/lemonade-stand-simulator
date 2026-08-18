@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://cxonhqwlne0yc" path="res://assets/textures/ui/kenny_grid/texture_08.png" id="1_jjtlb"]
 [ext_resource type="PackedScene" uid="uid://debrqguawbc46" path="res://scenes/player/player.tscn" id="2_dtca4"]
 [ext_resource type="Texture2D" uid="uid://xyt3mbbgnyu3" path="res://scenes/player/dani_Glassess.png" id="3_dtca4"]
-[ext_resource type="Script" path="res://scripts/help_me.gd" id="4_helpme"]
+[ext_resource type="Script" uid="uid://cij1s6kg1ryrv" path="res://scripts/help_me.gd" id="4_helpme"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_jjtlb"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -22,10 +22,22 @@ albedo_texture = ExtResource("1_jjtlb")
 uv1_triplanar = true
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yf5fn"]
+albedo_color = Color(0.078431375, 1, 0.36862746, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_g4v7s"]
+material = SubResource("StandardMaterial3D_yf5fn")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5gr4n"]
+albedo_color = Color(1, 0.13333334, 0.03529412, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_s37dm"]
+material = SubResource("StandardMaterial3D_5gr4n")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5ek1u"]
 albedo_color = Color(0.07450981, 0.48235294, 1, 1)
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_g4v7s"]
-material = SubResource("StandardMaterial3D_yf5fn")
+material = SubResource("StandardMaterial3D_5ek1u")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mvecg"]
 resource_name = "Material.003"
@@ -69,6 +81,8 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_ov6y6")
 
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g4v7s"]
+
 [node name="HelpMe" type="Node3D" unique_id=1157522400]
 script = ExtResource("4_helpme")
 
@@ -84,16 +98,32 @@ use_collision = true
 size = Vector3(370, 1.1021729, 360.80664)
 material = SubResource("StandardMaterial3D_6q55f")
 
-[node name="Marker3D" type="Marker3D" parent="." unique_id=2139689190]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+[node name="StartPoint" type="Marker3D" parent="." unique_id=2139689190]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StartPoint" unique_id=1418172511]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.9308945, 0)
+mesh = SubResource("BoxMesh_g4v7s")
+
+[node name="EndPoint" type="Marker3D" parent="." unique_id=2127761351]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 2, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EndPoint" unique_id=345689675]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.9308945, 0)
+mesh = SubResource("BoxMesh_s37dm")
 
 [node name="Player" parent="." unique_id=1164215171 instance=ExtResource("2_dtca4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.915494)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4.084506)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1688899380]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+[node name="Bean" type="StaticBody3D" parent="." unique_id=420817687]
+
+[node name="Bean" type="MeshInstance3D" parent="Bean" unique_id=1688899380]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 1.5, 0)
 mesh = SubResource("CapsuleMesh_g4v7s")
 
-[node name="Cube_002" type="MeshInstance3D" parent="MeshInstance3D" unique_id=1863102591]
+[node name="Cube_002" type="MeshInstance3D" parent="Bean/Bean" unique_id=1863102591]
 transform = Transform3D(0.5, 0, 0, 0, 0.39962947, 0.021515846, 0, -0.017212678, 0.49953684, 0.022732735, 0.39083767, -0.26627234)
 mesh = SubResource("ArrayMesh_6676m")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bean/Bean" unique_id=1440695207]
+shape = SubResource("CapsuleShape3D_g4v7s")

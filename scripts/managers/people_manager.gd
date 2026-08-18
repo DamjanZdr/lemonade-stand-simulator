@@ -107,8 +107,10 @@ func _distribute_in_blocks(total: int, shares: Array[float]) -> Array[int]:
 	var indices: Array[int] = []
 	for i in range(shares.size()):
 		indices.append(i)
-	indices.sort_custom(func(a: int, b: int) -> bool:
-			return frac[a] > frac[b])
+	indices.sort_custom(
+		func(a: int, b: int) -> bool:
+			return frac[a] > frac[b],
+	)
 	for i in range(remainder):
 		result[indices[i % indices.size()]] += 1
 	return result
@@ -144,7 +146,7 @@ func _fill_hour(start: float, end: float, count: int) -> void:
 func _spawn_one() -> void:
 	var paths := get_tree().get_nodes_in_group("pedestrian_paths").filter(
 		func(p):
-			return not (p as PedestrianPath).waypoints.is_empty()
+			return not (p as PedestrianPath).waypoints.is_empty(),
 	)
 	if paths.is_empty():
 		push_warning("PeopleManager: no usable pedestrian paths found.")
