@@ -53,6 +53,7 @@
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="70_neigh"]
 [ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
+[ext_resource type="Script" path="res://scripts/stand/stand_unit.gd" id="72_standunit"]
 [ext_resource type="Shader" uid="uid://cslcepwalowji" path="res://assets/shaders/sky.gdshader" id="sky_shader"]
 
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
@@ -141,19 +142,22 @@ mesh = SubResource("BoxMesh_ground")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9057007, -0.2495, -16.958313)
 shape = SubResource("BoxShape3D_ground")
 
-[node name="Stand" parent="." unique_id=1183170314 instance=ExtResource("1_stand")]
+[node name="StandUnit" type="Node3D" parent="." unique_id=1000000001]
+script = ExtResource("72_standunit")
+
+[node name="Stand" parent="StandUnit" unique_id=1183170314 instance=ExtResource("1_stand")]
 transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.18679726, -2.1485605)
 
-[node name="WaterDispenser" parent="." unique_id=1929335132 instance=ExtResource("3_wdispenser")]
+[node name="WaterDispenser" parent="StandUnit" unique_id=1929335132 instance=ExtResource("3_wdispenser")]
 transform = Transform3D(-2.6821102e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -2.6821102e-08, 6.743279, 0.25480768, 1.1123774)
 
-[node name="DeliveryMarker" type="Marker3D" parent="." unique_id=1391857877]
+[node name="DeliveryMarker" type="Marker3D" parent="StandUnit" unique_id=1391857877]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 6.77292, 0.51908034, 0.7752135)
 
-[node name="DeliveryGrid" parent="." unique_id=2063779733 instance=ExtResource("7_dgrid")]
+[node name="DeliveryGrid" parent="StandUnit" unique_id=2063779733 instance=ExtResource("7_dgrid")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.225821, 0.3128554, -0.76168585)
 
-[node name="QueueMarkerActive" type="Marker3D" parent="." unique_id=1918688920]
+[node name="QueueMarkerActive" type="Marker3D" parent="StandUnit" unique_id=1918688920]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9837594, 0, -2.300959)
 
 [node name="BakeRadius_N" type="Marker3D" parent="." unique_id=1934682381]
@@ -168,10 +172,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 62, 0, -2)
 [node name="BakeRadius_W" type="Marker3D" parent="." unique_id=225236337]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -58, 0, -2)
 
-[node name="QueueMarker1" type="Marker3D" parent="." unique_id=1918688911]
+[node name="QueueMarker1" type="Marker3D" parent="StandUnit" unique_id=1918688911]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.016240656, 0, -2.900959)
 
-[node name="QueueMarker2" type="Marker3D" parent="." unique_id=920740298]
+[node name="QueueMarker2" type="Marker3D" parent="StandUnit" unique_id=920740298]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.0467854, 0, -2.900959)
 
 [node name="DirectionalLight" type="DirectionalLight3D" parent="." unique_id=285599754]
@@ -425,7 +429,7 @@ script = ExtResource("36_sygq6")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 141.51419, 0, 38.582844)
 script = ExtResource("36_sygq6")
 
-[node name="Thermometer" parent="." unique_id=242897628 instance=ExtResource("5_v5dby")]
+[node name="Thermometer" parent="StandUnit" unique_id=242897628 instance=ExtResource("5_v5dby")]
 transform = Transform3D(0.03671531, 0.002801695, -0.01562486, 0, 0.039372057, 0.007059807, 0.01587406, -0.0064800754, 0.036138933, 2.7120655, 1.3084176, -1.8661408)
 
 [node name="PreviewCenter" type="Marker3D" parent="." unique_id=1183170315]
@@ -493,7 +497,7 @@ material = SubResource("FogMaterial_g4v7s")
 [node name="Blackboard" parent="." unique_id=2117954484 instance=ExtResource("45_kx0xk")]
 transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3, 1.8940175, 16.6)
 
-[node name="PriceBoard" parent="." unique_id=2059859859 instance=ExtResource("46_5fxch")]
+[node name="PriceBoard" parent="StandUnit" unique_id=2059859859 instance=ExtResource("46_5fxch")]
 transform = Transform3D(-0.18977769, 0, -0.1627404, 0, 0.25, 0, 0.1627404, 0, -0.18977769, 0.13646549, 0.5373678, -1.3261083)
 
 [node name="PlayableArea" type="Area3D" parent="." unique_id=146113540]

@@ -11,6 +11,7 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 @onready var spawner: Node = $CustomerSpawner
 @onready var ped_spawner: Node = $PedestrianSpawner
 @onready var delivery: Node = $DeliverySystem
+@onready var stand_unit: StandUnit = world.get_node_or_null("StandUnit") as StandUnit
 
 var _cash_drop_pos: Vector3 = Vector3(0, 1.05, -0.4)
 
@@ -46,23 +47,9 @@ func _ready() -> void:
 	# QueueMarker2 sets the direction and spacing for the rest of the waiting line.
 	# Move/rotate these markers in the editor to reorient the whole queue.
 	# Up to 299 waiting customer slots are generated automatically from that direction.
-	var m_active: Marker3D = world.get_node_or_null("QueueMarkerActive") as Marker3D
-	var m1: Marker3D = world.get_node_or_null("QueueMarker1") as Marker3D
-	var m2: Marker3D = world.get_node_or_null("QueueMarker2") as Marker3D
-	var active_pos := Vector3(0.0, 0.0, -1.0)
-	var start := Vector3(0.0, 0.0, -2.0)
-	var step := Vector3(0.0, 0.0, -1.0)
-	if m_active:
-		active_pos = m_active.global_position
-	if m1:
-		start = m1.global_position
-		if m2:
-			step = m2.global_position - m1.global_position
-	var spots: Array[Vector3] = []
-	spots.append(active_pos)
-	for i in range(299):
-		spots.append(start + step * float(i))
-	spawner.set_queue_spots(spots, step)
+	# (Now sourced from StandUnit so multiple stands can each have their own queue.)
+	if stand_unit:
+		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
 
 	# Use the sky material set up in the editor (ProceduralSkyMaterial).
 	_world_env = world.get_node_or_null("WorldEnvironment") as WorldEnvironment
@@ -89,14 +76,13 @@ func _ready() -> void:
 	# No wiring needed here — add paths in the editor as children of PedestrianSpawner.
 	ped_spawner.setup(spawner)
 
-	# Wire delivery grid
-	var dgrid := world.get_node_or_null("DeliveryGrid") as DeliveryGrid
-	if dgrid == null:
-		var dmarker := world.get_node_or_null("DeliveryMarker") as Marker3D
-		if dmarker:
-			delivery.set_delivery_zone(dmarker.global_position)
-	else:
-		delivery.set_grid(dgrid)
+	# Wire delivery grid (now sourced from StandUnit)
+	if stand_unit:
+		var dgrid := stand_unit.get_delivery_grid()
+		if dgrid == null:
+			delivery.set_delivery_zone(stand_unit.get_delivery_marker_position())
+		else:
+			delivery.set_grid(dgrid)
 
 	# Find the CashPickup placed in the stand scene — use its position, then hide it
 	var cash_template: Node3D = world.find_child("CashPickup", true, false) as Node3D
