@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+NetworkManager="*res://scripts/multiplayer/network_manager.gd"
 EventBus="*res://scripts/autoloads/event_bus.gd"
 Balancing="*res://scripts/autoloads/balancing.gd"
 SaveManager="*res://scripts/systems/save_manager.gd"

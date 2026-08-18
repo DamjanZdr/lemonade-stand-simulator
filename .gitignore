@@ -14,3 +14,8 @@ scenes/ui/*.tscn.backup
 _source/
 _unused/
 *.unwrap_cache
+
+# GodotSteam pre-compiled editor (173MB, not for git)
+tools/godotsteam-editor/*.exe
+tools/godotsteam-editor/*.dll
+tools/godotsteam-editor/steam_appid.txt

@@ -1,0 +1,72 @@
+[gd_scene load_steps=5 format=3 uid="uid://bmptestscene01"]
+
+[ext_resource type="Script" path="res://scripts/multiplayer/multiplayer_test.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/multiplayer/debug_lobby.gd" id="2_debug"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(40, 1, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(40, 1, 40)
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.4, 0.45, 0.5, 1)
+
+[node name="MultiplayerTest" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("BoxMesh_floor")
+material_override = SubResource("Material_floor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, 0.25, -0.433, 0, 0.866, 0.5, 0.5, -0.433, 0.75, 10, 15, 10)
+light_energy = 1.0
+shadow_enabled = true
+
+[node name="Players" type="Node3D" parent="."]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+
+[node name="DebugLobby" type="CanvasLayer" parent="."]
+script = ExtResource("2_debug")
+
+[node name="Control" type="Control" parent="DebugLobby"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="DebugLobby/Control"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 300.0
+offset_bottom = 250.0
+
+[node name="StatusLabel" type="Label" parent="DebugLobby/Control/VBox"]
+text = "Not connected"
+
+[node name="HostButton" type="Button" parent="DebugLobby/Control/VBox"]
+text = "Host Game"
+
+[node name="LobbyIdEdit" type="LineEdit" parent="DebugLobby/Control/VBox"]
+placeholder_text = "Enter lobby ID..."
+
+[node name="JoinButton" type="Button" parent="DebugLobby/Control/VBox"]
+text = "Join Game"
+
+[node name="InviteButton" type="Button" parent="DebugLobby/Control/VBox"]
+text = "Invite Friend"
+
+[node name="LeaveButton" type="Button" parent="DebugLobby/Control/VBox"]
+text = "Leave Game"
