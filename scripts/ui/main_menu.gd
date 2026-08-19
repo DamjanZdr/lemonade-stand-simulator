@@ -4,8 +4,6 @@ extends Control
 ## Also shows a list of active lobbies on the left so you can join without
 ## copying lobby IDs manually.
 
-const VERSION: String = "0.1.0"
-
 @onready var _title_label: Label = $VBox/TitleLabel
 @onready var _host_button: Button = $VBox/HostButton
 @onready var _join_field: LineEdit = $VBox/JoinRow/JoinField
@@ -30,7 +28,7 @@ func _ready() -> void:
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	NetworkManager.lobby_list_received.connect(_on_lobby_list_received)
 	LobbyManager.reset()
-	_version_label.text = "v" + VERSION
+	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	# Auto-search for lobbies on startup so the list is populated immediately
 	_on_refresh_pressed()
 
