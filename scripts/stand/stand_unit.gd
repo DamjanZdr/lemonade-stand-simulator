@@ -43,6 +43,13 @@ var feedback_tier: int = 0
 var prices: Dictionary = { }
 var recipes: Dictionary = { }
 
+## Mirrors UpgradeManager.purchased_nodes (node_name -> true) for this
+## stand. The upgrade TREE STRUCTURE (tree_nodes, connections, positions,
+## definitions) is legitimately shared/global — same tree exists for every
+## stand — only which nodes are purchased is per-stand data. See the
+## TEMPORARY bridge note in _ready() for how this is kept in sync for now.
+var purchased_upgrade_nodes: Dictionary = { }
+
 var customers_served_happy: int = 0
 var customers_lost: int = 0
 var total_customers_served: int = 0
@@ -104,6 +111,16 @@ func _ready() -> void:
 	popularity = GameState.popularity
 	EventBus.popularity_changed.connect(_on_global_popularity_changed_bridge)
 
+	# Upgrades: UpgradeManager.purchased_nodes remains the actual source of
+	# truth for now (the upgrade tree UI reads/writes it directly in many
+	# places). Mirror the whole dict here so future per-stand consumers
+	# (e.g. is_fruit_unlocked checks scoped to a specific stand) already
+	# have something to read. Once a second stand exists and purchases
+	# genuinely need to diverge per stand, UpgradeManager's purchase logic
+	# itself should be parameterized by stand instead of this mirror.
+	purchased_upgrade_nodes = UpgradeManager.purchased_nodes.duplicate()
+	EventBus.upgrade_purchased.connect(_on_global_upgrade_purchased_bridge)
+
 
 func _on_global_money_changed_bridge(new_amount: float) -> void:
 	if is_equal_approx(new_amount, money):
@@ -126,6 +143,10 @@ func _on_global_popularity_changed_bridge(new_rating: float) -> void:
 		return
 	popularity = new_rating
 	popularity_changed.emit(popularity)
+
+
+func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void:
+	purchased_upgrade_nodes = UpgradeManager.purchased_nodes.duplicate()
 
 
 func _init_default_prices() -> void:
