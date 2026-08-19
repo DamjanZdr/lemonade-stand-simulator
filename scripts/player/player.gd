@@ -186,7 +186,11 @@ func _get_container_scene(container_type: String) -> PackedScene:
 
 var _in_priceboard_mode := false
 var _sync_pos_timer: float = 0.0
-const SYNC_INTERVAL: float = 0.15 # ~6.7 updates/sec
+var _last_synced_pos: Vector3 = Vector3.ZERO
+var _last_synced_rot: Vector3 = Vector3.ZERO
+const SYNC_MIN_INTERVAL: float = 0.05 # Max 20 updates/sec while moving
+const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
+const SYNC_ROT_THRESHOLD: float = 0.05 # Min rotation (radians) to trigger sync
 var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
 var _priceboard_camera_original_top_level := false
@@ -381,10 +385,7 @@ func _physics_process(delta: float) -> void:
 	if _in_priceboard_mode:
 		velocity = Vector3.ZERO
 		move_and_slide()
-		_sync_pos_timer += delta
-		if _sync_pos_timer >= SYNC_INTERVAL:
-			_sync_pos_timer = 0.0
-			_sync_position.rpc(global_position, global_rotation)
+		_try_sync_position(delta)
 		return
 
 	if not is_on_floor():
@@ -399,18 +400,29 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()
-	# Send our position to all other peers at a low frequency to avoid
-	# flooding the network. ~7 updates/sec is smooth enough for seeing
-	# another player move around.
-	_sync_pos_timer += delta
-	if _sync_pos_timer >= SYNC_INTERVAL:
-		_sync_pos_timer = 0.0
-		_sync_position.rpc(global_position, global_rotation)
+	_try_sync_position(delta)
 	_frame_lookups_done = false
 	if not _money_mode:
 		_poll_hint()
 	_update_ghost()
 	_update_rapid_fire(delta)
+
+
+## Only sync position when the player has actually moved or rotated
+## beyond a threshold. While standing still, no RPCs are sent at all.
+## While moving, syncs are throttled to max 20/sec (0.05s interval).
+func _try_sync_position(delta: float) -> void:
+	_sync_pos_timer += delta
+	if _sync_pos_timer < SYNC_MIN_INTERVAL:
+		return
+	var pos_delta := global_position.distance_to(_last_synced_pos)
+	var rot_delta := absf(global_rotation.y - _last_synced_rot.y)
+	if pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD:
+		return # Haven't moved enough, skip
+	_sync_pos_timer = 0.0
+	_last_synced_pos = global_position
+	_last_synced_rot = global_rotation
+	_sync_position.rpc(global_position, global_rotation)
 
 
 ## Simple position sync RPC. Only the authority sends; all other peers
