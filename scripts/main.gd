@@ -11,6 +11,7 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 @onready var spawner: Node = $CustomerSpawner
 @onready var ped_spawner: Node = $PedestrianSpawner
 @onready var delivery: Node = $DeliverySystem
+@onready var hud: CanvasLayer = $HUD
 @onready var stand_unit: StandUnit = world.get_node_or_null("StandUnit") as StandUnit
 
 var _cash_drop_pos: Vector3 = Vector3(0, 1.05, -0.4)
@@ -50,6 +51,8 @@ func _ready() -> void:
 	# (Now sourced from StandUnit so multiple stands can each have their own queue.)
 	if stand_unit:
 		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
+		if hud and hud.has_method("set_stand"):
+			hud.set_stand(stand_unit)
 
 	# Use the sky material set up in the editor (ProceduralSkyMaterial).
 	_world_env = world.get_node_or_null("WorldEnvironment") as WorldEnvironment

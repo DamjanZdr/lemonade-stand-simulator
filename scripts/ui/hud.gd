@@ -36,6 +36,13 @@ var _info_col: VBoxContainer
 var _prev_money: float = 0.0
 var _gain_label: Label = null
 
+## Which stand's economy this HUD displays. Assigned by whatever wires up
+## the player-to-stand relationship (main.gd in Stage A; later, whichever
+## system assigns a local player to their controlled StandUnit). Money
+## signals are connected here rather than to the global EventBus, so this
+## HUD only ever reacts to its own stand's money — never another stand's.
+var _stand: StandUnit = null
+
 
 func _ready() -> void:
 	add_to_group("hud")
@@ -239,7 +246,8 @@ func _build_ui() -> void:
 	_info_col.custom_minimum_size = Vector2(MONEY_MIN_WIDTH, 0)
 	_hbox.add_child(_info_col)
 
-	_money_label = _make_label("$%.2f" % GameState.money, 32, font, Color(0.25, 0.95, 0.35))
+	# Placeholder until set_stand() assigns a real stand and refreshes this.
+	_money_label = _make_label("$%.2f" % 0.0, 32, font, Color(0.25, 0.95, 0.35))
 	_money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_info_col.add_child(_money_label)
 
@@ -342,7 +350,9 @@ func _build_hint_box() -> void:
 
 func _add_mouse_icon(flipped: bool) -> void:
 	var icon_h := 22
-	var icon_w := int(float(icon_h) * float(MOUSE_ICON.get_width()) / float(MOUSE_ICON.get_height()))
+	var icon_w := int(
+		float(icon_h) * float(MOUSE_ICON.get_width()) / float(MOUSE_ICON.get_height())
+	)
 	var wrapper := Control.new()
 	wrapper.custom_minimum_size = Vector2(icon_w, icon_h)
 	wrapper.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -384,11 +394,25 @@ func _add_hint_text(text: String) -> void:
 
 
 func _connect_signals() -> void:
-	EventBus.money_changed.connect(_on_money)
+	# Shared/global — the same for every stand (one day cycle, one weather).
 	EventBus.day_timer_updated.connect(_on_day_timer_updated)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.weather_changed.connect(_on_weather)
 	EventBus.interaction_hint_changed.connect(_on_hint)
+
+
+## Assigns which stand this HUD displays and hooks up its per-stand money
+## signal. Call this once the local player's controlled stand is known
+## (main.gd does this right after finding/creating the StandUnit).
+func set_stand(stand: StandUnit) -> void:
+	if _stand and _stand.money_changed.is_connected(_on_money):
+		_stand.money_changed.disconnect(_on_money)
+	_stand = stand
+	if _stand == null:
+		return
+	_stand.money_changed.connect(_on_money)
+	_prev_money = _stand.money
+	_on_money(_stand.money)
 
 
 func _show_money_gain(amount: float, new_total: float) -> void:
@@ -399,28 +423,25 @@ func _show_money_gain(amount: float, new_total: float) -> void:
 		_gain_label.queue_free()
 	# +$X.XX pops in to the right of the money, holds, then fades.
 	# Matches the money label's font size and style.
-	_gain_label = _make_label(
-		"+$%.2f" % amount, 32, AMATIC_FONT, Color(0.3, 1.0, 0.4)
-	)
+	_gain_label = _make_label("+$%.2f" % amount, 32, AMATIC_FONT, Color(0.3, 1.0, 0.4))
 	_gain_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_gain_label.modulate.a = 0.0
 	_gain_label.scale = Vector2.ZERO
 	# Position right after the money panel edge, same vertical position.
 	var money_pos := _money_label.global_position - _main_panel.global_position
-	_gain_label.position = Vector2(
-		_main_panel.size.x + 12.0,
-		money_pos.y
-	)
+	_gain_label.position = Vector2(_main_panel.size.x + 12.0, money_pos.y)
 	_main_panel.add_child(_gain_label)
 	var gt := create_tween()
 	gt.set_parallel(true)
 	gt.tween_property(_gain_label, "modulate:a", 1.0, 0.1)
-	gt.tween_property(
-		_gain_label, "scale", Vector2(1.3, 1.3), 0.15
-	).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	gt.chain().tween_property(
-		_gain_label, "scale", Vector2.ONE, 0.1
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	gt.tween_property(_gain_label, "scale", Vector2(1.3, 1.3), 0.15).set_trans(Tween.TRANS_BACK).set_ease(
+		Tween.EASE_OUT
+	)
+	gt \
+			.chain() \
+			.tween_property(_gain_label, "scale", Vector2.ONE, 0.1) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_OUT)
 	gt.chain().tween_interval(0.3)
 	gt.chain().tween_property(_gain_label, "modulate:a", 0.0, 0.4)
 	gt.chain().tween_callback(_gain_label.queue_free)
@@ -432,16 +453,19 @@ func _show_money_gain(amount: float, new_total: float) -> void:
 	mt.tween_method(
 		func(t: float) -> void:
 			_money_label.text = "$%.2f" % lerpf(old_val, new_total, t),
-		0.0, 1.0, 0.4,
+		0.0,
+		1.0,
+		0.4,
 	)
-	mt.tween_callback(func() -> void:
-		_money_label.text = "$%.2f" % new_total
-		_update_hud_size())
+	mt.tween_callback(
+		func() -> void:
+			_money_label.text = "$%.2f" % new_total
+			_update_hud_size(),
+	)
 
 
 func _refresh() -> void:
-	_prev_money = GameState.money
-	_on_money(GameState.money)
+	# Money is refreshed separately in set_stand() once a stand is assigned.
 	_on_weather(GameState.temperature)
 	_on_day_phase_changed(DayManager.current_phase, DayManager.day_number)
 

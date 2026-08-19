@@ -67,6 +67,33 @@ func _ready() -> void:
 	_init_default_prices()
 	_init_default_recipes()
 	highest_money = money
+	# Sync the initial value — GameState.money is already correctly set by
+	# the time this runs (starting money or loaded save applied during its
+	# own _ready(), which as an autoload always runs before this node's),
+	# but it doesn't emit money_changed for that initial assignment, so we
+	# read it directly here rather than waiting for the first future change.
+	money = GameState.money
+	highest_money = maxf(highest_money, money)
+
+	# TEMPORARY migration bridge: many systems still read/write GameState.money
+	# directly (upgrades, shop/phone purchases, debug panel, save/load, day
+	# summary) rather than going through StandUnit yet. All of those paths
+	# ultimately re-emit the global EventBus.money_changed signal with the
+	# new total, so mirror that value here rather than GameState.money's
+	# actual source of truth for as long as there's only one StandUnit in
+	# the world. Once each of those systems is migrated to operate on a
+	# specific StandUnit directly (tracked in the plan), this bridge — and
+	# GameState's money field entirely — should be removed.
+	EventBus.money_changed.connect(_on_global_money_changed_bridge)
+
+
+func _on_global_money_changed_bridge(new_amount: float) -> void:
+	if is_equal_approx(new_amount, money):
+		return
+	money = new_amount
+	if money > highest_money:
+		highest_money = money
+	money_changed.emit(money)
 
 
 func _init_default_prices() -> void:
