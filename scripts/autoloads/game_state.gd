@@ -29,17 +29,15 @@ var highest_money: float = 0.0
 
 
 func _ready() -> void:
-	# Try loading save; fall back to defaults if none exists.
-	if SaveManager.has_save():
-		var data := SaveManager.load_game()
-		SaveManager.apply_save_to_game_state(data)
-	else:
-		money = Balancing.STARTING_MONEY
-		popularity = 0.1
-		temperature = 25.0
-		_init_default_prices()
-		_init_default_recipes()
-		feedback_tier = 0
+	# Defaults only — the host explicitly loads a save via SaveManager
+	# (start_new_game or load_existing_game) from the Host menu. Clients
+	# receive state from the host via RPCs. Do NOT auto-load here.
+	money = Balancing.STARTING_MONEY
+	popularity = 0.1
+	temperature = 25.0
+	_init_default_prices()
+	_init_default_recipes()
+	feedback_tier = 0
 	highest_money = money
 
 	EventBus.debug_add_money.connect(_on_debug_add_money)

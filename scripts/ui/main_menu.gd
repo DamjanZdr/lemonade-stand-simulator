@@ -36,8 +36,8 @@ func _ready() -> void:
 
 
 func _on_host_pressed() -> void:
-	_set_busy("Creating lobby...")
-	NetworkManager.host_game()
+	# Go to the Host menu where the player picks New Game or Load Game
+	get_tree().change_scene_to_file("res://scenes/ui/host_menu.tscn")
 
 
 func _on_join_pressed() -> void:

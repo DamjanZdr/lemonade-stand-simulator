@@ -1,7 +1,11 @@
 extends Node
-## Save/load game progress to user://save.json.
+## Save/load game progress to user://saves/<slot_name>.json.
+## Supports multiple save slots so the host can start New Game (fresh)
+## or Load Game (pick a previous save).
 
-const SAVE_PATH: String = "user://save.json"
+const SAVE_DIR: String = "user://saves/"
+const LEGACY_SAVE_PATH: String = "user://save.json"
+const MAX_SLOTS: int = 20
 
 const CONTAINER_SCENES: Dictionary = {
 	"fruit_bin": preload("res://scenes/objects/fruit_bin.tscn"),
@@ -22,6 +26,14 @@ const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.t
 var _pending_container_respawn: Array = []
 var _pending_supply_box_respawn: Array = []
 var _default_container_positions: Array = []
+
+## The currently active save slot (set when hosting New Game or Load Game).
+## Empty string means no save loaded (fresh start, no auto-saving).
+var current_slot: String = ""
+
+## When true, auto-save to current_slot on state changes. Only the host
+## should auto-save.
+var auto_save_enabled: bool = false
 
 
 func _ready() -> void:
@@ -56,6 +68,9 @@ func _ready() -> void:
 	# while the editor imports the new scene/script .uid files.
 	_workstation_scene = load("res://scenes/stand/workstation.tscn") as PackedScene
 
+	# Migrate legacy save to slot system if needed
+	_migrate_legacy_save()
+
 
 func _get_container_scene(ctype: String) -> PackedScene:
 	if ctype == "workstation":
@@ -68,25 +83,38 @@ func _is_known_container_type(ctype: String) -> bool:
 
 
 func save_game() -> void:
-	var base_dir := SAVE_PATH.get_base_dir()
-	if not DirAccess.dir_exists_absolute(base_dir):
-		DirAccess.make_dir_recursive_absolute(base_dir)
+	# Only the host auto-saves. Clients receive state via RPCs and
+	# should never write save files (they'd be incomplete/out of sync).
+	if not WorldSync.is_host():
+		return
+	if not auto_save_enabled or current_slot == "":
+		return
+	if not DirAccess.dir_exists_absolute(SAVE_DIR):
+		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	var data := _build_save_dict()
+	data["slot_name"] = current_slot
+	data["saved_at"] = Time.get_unix_time_from_system()
 	var json := JSON.stringify(data)
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var path := _slot_path(current_slot)
+	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		file.store_string(json)
 		file.close()
 	else:
-		push_error(
-			"Failed to save game to %s (error %d)" % [SAVE_PATH, FileAccess.get_open_error()]
-		)
+		push_error("Failed to save game to %s (error %d)" % [path, FileAccess.get_open_error()])
 
 
 func load_game() -> Dictionary:
-	if not FileAccess.file_exists(SAVE_PATH):
+	return load_slot(current_slot)
+
+
+func load_slot(slot_name: String) -> Dictionary:
+	if slot_name == "":
 		return { }
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var path := _slot_path(slot_name)
+	if not FileAccess.file_exists(path):
+		return { }
+	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return { }
 	var json := file.get_as_text()
@@ -98,13 +126,125 @@ func load_game() -> Dictionary:
 
 
 func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	return current_slot != "" and FileAccess.file_exists(_slot_path(current_slot))
 
 
 func delete_save() -> void:
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(SAVE_PATH)
-		print("Save deleted.")
+	if current_slot != "" and FileAccess.file_exists(_slot_path(current_slot)):
+		DirAccess.remove_absolute(_slot_path(current_slot))
+		print("Save deleted: ", current_slot)
+
+
+func delete_slot(slot_name: String) -> void:
+	var path := _slot_path(slot_name)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+		print("Save deleted: ", slot_name)
+
+
+## Returns info about all save slots for the Load Game UI.
+## Each entry: { "slot": String, "name": String, "day": int, "money": float,
+##               "saved_at": float (unix timestamp) }
+func list_saves() -> Array:
+	if not DirAccess.dir_exists_absolute(SAVE_DIR):
+		return []
+	var saves: Array = []
+	var dir := DirAccess.open(SAVE_DIR)
+	if dir == null:
+		return []
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".json"):
+			var slot_name := file_name.get_basename()
+			var data := load_slot(slot_name)
+			if not data.is_empty():
+				saves.append(
+					{
+						"slot": slot_name,
+						"name": data.get("slot_name", slot_name),
+						"day": data.get("day_number", 1),
+						"money": data.get("money", 0.0),
+						"saved_at": data.get("saved_at", 0.0),
+					}
+				)
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	# Sort by most recently saved first
+	saves.sort_custom(
+		func(a, b):
+			return a.get("saved_at", 0.0) > b.get("saved_at", 0.0),
+	)
+	return saves
+
+
+## Start a new game with a fresh save slot. Deletes any existing slot
+## with the same name and initializes defaults.
+func start_new_game(slot_name: String = "") -> void:
+	if slot_name == "":
+		slot_name = "Game " + str(Time.get_datetime_dict_from_system()["day"])
+	current_slot = slot_name
+	auto_save_enabled = true
+	# Reset GameState to defaults
+	GameState.money = Balancing.STARTING_MONEY
+	GameState.popularity = 0.1
+	GameState.temperature = 25.0
+	GameState._init_default_prices()
+	GameState._init_default_recipes()
+	GameState.feedback_tier = 0
+	GameState.highest_money = GameState.money
+	GameState.customers_served_happy = 0
+	GameState.customers_lost = 0
+	GameState.total_customers_served = 0
+	GameState.total_cups_sold = 0
+	GameState.total_money_earned = 0.0
+	GameState.total_money_spent = 0.0
+	GameState.highest_purchase = 0.0
+	DayManager.day_number = 1
+	UpgradeManager.reset()
+	# Save immediately to create the slot
+	save_game()
+
+
+## Load an existing save slot and set it as the current slot.
+func load_existing_game(slot_name: String) -> void:
+	current_slot = slot_name
+	auto_save_enabled = true
+	var data := load_slot(slot_name)
+	if not data.is_empty():
+		apply_save_to_game_state(data)
+
+
+## Stop saving and clear the current slot (e.g. when leaving the game).
+func clear_current_slot() -> void:
+	current_slot = ""
+	auto_save_enabled = false
+
+
+func _slot_path(slot_name: String) -> String:
+	return SAVE_DIR + slot_name + ".json"
+
+
+func _migrate_legacy_save() -> void:
+	# If the old single-save file exists and the new saves dir doesn't,
+	# migrate it to a slot called "Legacy Save".
+	if not FileAccess.file_exists(LEGACY_SAVE_PATH):
+		return
+	if not DirAccess.dir_exists_absolute(SAVE_DIR):
+		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
+	var target := _slot_path("Legacy Save")
+	if FileAccess.file_exists(target):
+		return # Already migrated
+	var file := FileAccess.open(LEGACY_SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var json := file.get_as_text()
+	file.close()
+	var out := FileAccess.open(target, FileAccess.WRITE)
+	if out:
+		out.store_string(json)
+		out.close()
+		print("[SaveManager] Migrated legacy save to slot 'Legacy Save'")
 
 
 func apply_save_to_game_state(data: Dictionary) -> void:
@@ -333,6 +473,10 @@ func _get_container_type(node: Node) -> String:
 
 
 func respawn_placed_containers() -> void:
+	# Only the host respawns saved containers. Clients will receive them
+	# via WorldSync replication.
+	if not WorldSync.is_host():
+		return
 	call_deferred("_do_respawn")
 
 
