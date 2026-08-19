@@ -9,7 +9,9 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 
 @onready var world: Node3D = $World
 @onready var players_node: Node3D = $Players
+@onready var world_objects: Node3D = $WorldObjects
 @onready var player_spawner: MultiplayerSpawner = $MultiplayerSpawner
+@onready var world_spawner: MultiplayerSpawner = $WorldSpawner
 @onready var spawner: Node = $CustomerSpawner
 @onready var spawner2: Node = $CustomerSpawner2
 @onready var ped_spawner: Node = $PedestrianSpawner
@@ -137,6 +139,7 @@ func _ready() -> void:
 	# local player now happen in _on_local_player_ready() once our own
 	# player actually exists, instead of here.
 	_setup_networking()
+	WorldSync.setup(world_objects, world_spawner)
 
 	# Add the evening summary overlay
 	add_child(DAY_SUMMARY_SCENE.instantiate())
@@ -163,6 +166,29 @@ func _ready() -> void:
 func _setup_networking() -> void:
 	player_spawner.spawn_path = players_node.get_path()
 	player_spawner.add_spawnable_scene(PLAYER_SCENE_PATH)
+
+	# WorldSpawner: replicates runtime-spawned world objects (supply boxes,
+	# cups, cash, trash, containers, customers, pedestrians) from host to
+	# clients. Only the host spawns these; the spawner handles replication.
+	world_spawner.spawn_path = world_objects.get_path()
+	for scene_path in [
+		"res://scenes/objects/supply_box.tscn",
+		"res://scenes/objects/cup.tscn",
+		"res://scenes/objects/cup_stack.tscn",
+		"res://scenes/objects/cash_pickup.tscn",
+		"res://scenes/objects/trash.tscn",
+		"res://scenes/objects/fruit_bin.tscn",
+		"res://scenes/objects/sugar_bin.tscn",
+		"res://scenes/objects/ice_bin.tscn",
+		"res://scenes/objects/pitcher.tscn",
+		"res://scenes/objects/press.tscn",
+		"res://scenes/objects/water_dispenser.tscn",
+		"res://scenes/stand/workstation.tscn",
+		"res://scenes/customer/customer.tscn",
+		"res://scenes/customer/pedestrian.tscn",
+	]:
+		world_spawner.add_spawnable_scene(scene_path)
+
 	# When the spawner replicates a player node to us (the client), check
 	# if it's OUR local player and if so run the local-player setup that
 	# the host normally runs in _spawn_player_for_peer. Without this, the
@@ -272,14 +298,19 @@ func _on_local_player_ready(p: Player) -> void:
 
 
 func _on_cash_dropped(drop_pos: Vector3, payment: float, change_due: float) -> void:
-	var pickup: CashPickup = CASH_PICKUP_SCENE.instantiate()
-	pickup.payment = payment
-	pickup.change_due = change_due
+	if not WorldSync.is_host():
+		return
 	# Use the passed drop_pos (e.g. NPC CashPoint) if valid, otherwise fallback to register.
 	var base_pos := drop_pos if drop_pos.length_squared() > 0.001 else _cash_drop_pos
 	# Slight random offset so bills don't stack exactly
-	pickup.position = base_pos + Vector3(randf_range(-0.1, 0.1), 0, randf_range(-0.1, 0.1))
-	add_child(pickup)
+	var pos := base_pos + Vector3(randf_range(-0.1, 0.1), 0, randf_range(-0.1, 0.1))
+	WorldSync.spawn_networked(
+		"res://scenes/objects/cash_pickup.tscn",
+		self,
+		pos,
+		Vector3.ZERO,
+		{ "payment": payment, "change_due": change_due },
+	)
 
 
 func _on_day_timer_updated(time_left: float, total_time: float) -> void:

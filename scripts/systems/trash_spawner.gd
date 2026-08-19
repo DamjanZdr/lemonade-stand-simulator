@@ -60,6 +60,8 @@ func _spawn_trash() -> void:
 	var spawn_x := base_pos.x + cos(angle) * radius
 	var spawn_z := base_pos.z + sin(angle) * radius
 	var ground_y := _find_ground_y(spawn_x, feet_y + 0.5, spawn_z, feet_y, npc)
+	if not WorldSync.is_host():
+		return
 	var trash: Node3D = TRASH_SCENE.instantiate()
 	get_tree().current_scene.add_child(trash)
 	var bottom_offset := _get_collision_bottom_offset(trash)

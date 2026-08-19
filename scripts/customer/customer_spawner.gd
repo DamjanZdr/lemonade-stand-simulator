@@ -52,6 +52,8 @@ func set_queue_spots(spots: Array[Vector3], _step: Vector3 = Vector3.ZERO) -> vo
 
 
 func _spawn_at_slot(slot_index: int) -> void:
+	if not WorldSync.is_host():
+		return
 	var customer: Customer = CUSTOMER_SCENE.instantiate()
 	get_parent().add_child(customer)
 	customer.add_to_group("trash_spawn_candidates")
@@ -263,6 +265,8 @@ func _random_order_full() -> Dictionary:
 ## If [source_pedestrian] is given, the pedestrian's NPCBody is transferred so the
 ## visual appearance stays identical.
 func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> void:
+	if not WorldSync.is_host():
+		return
 	var customer: Customer = CUSTOMER_SCENE.instantiate()
 	customer.queue_slot = slot_index
 	customer.queue_position = _queue_spots[slot_index]

@@ -95,6 +95,8 @@ func _on_checkout_completed() -> void:
 
 
 func _on_supply_order_placed(ingredient_type: String, quantity: float, _cost: float) -> void:
+	if not WorldSync.is_host():
+		return
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	box.ingredient_type = ingredient_type
 	box.quantity = quantity
@@ -102,6 +104,8 @@ func _on_supply_order_placed(ingredient_type: String, quantity: float, _cost: fl
 
 
 func _on_equipment_order_placed(container_type: String) -> void:
+	if not WorldSync.is_host():
+		return
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	box.is_equipment = true
 	box.equipment_type = container_type

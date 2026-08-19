@@ -18,7 +18,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00049734116, 0.013125181, 0
 
 [node name="Players" type="Node3D" parent="." unique_id=581860800]
 
+[node name="WorldObjects" type="Node3D" parent="." unique_id=581860802]
+
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=581860801]
+
+[node name="WorldSpawner" type="MultiplayerSpawner" parent="." unique_id=581860803]
 
 [node name="CustomerSpawner" type="Node" parent="." unique_id=2002667936]
 script = ExtResource("5_spawner")

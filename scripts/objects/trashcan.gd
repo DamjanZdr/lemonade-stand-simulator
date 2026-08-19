@@ -58,6 +58,8 @@ func interact(player: Node) -> void:
 func _spawn_disposed_trash(trash_type: String = "") -> void:
 	if TRASH_SCENE == null:
 		return
+	if not WorldSync.is_host():
+		return
 	var trash := TRASH_SCENE.instantiate() as Node3D
 	if trash == null:
 		return

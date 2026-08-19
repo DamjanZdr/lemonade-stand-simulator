@@ -100,6 +100,8 @@ func spawn_on_path(path: PedestrianPath) -> void:
 
 
 func _spawn_pedestrian(path: PedestrianPath) -> void:
+	if not WorldSync.is_host():
+		return
 	var ped: Pedestrian = PEDESTRIAN_SCENE.instantiate()
 	get_parent().add_child(ped)
 	ped.collision_layer = 16

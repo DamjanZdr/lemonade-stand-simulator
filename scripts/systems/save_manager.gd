@@ -480,6 +480,8 @@ func _do_respawn() -> void:
 			var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
 			if pos.size() < 3:
 				continue
+			if not WorldSync.is_host():
+				continue
 			var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 			# Set properties BEFORE add_child so _ready() uses correct values
 			box.ingredient_type = entry.get("ingredient_type", "lemon")

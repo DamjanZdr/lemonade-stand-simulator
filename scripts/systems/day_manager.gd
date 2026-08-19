@@ -1,7 +1,11 @@
 extends Node
 ## Manages the day cycle: Morning (shop) → Day (serve) → Evening (summary)
 
-enum Phase { MORNING, DAY, EVENING }
+enum Phase {
+	MORNING,
+	DAY,
+	EVENING,
+}
 
 var current_phase: Phase = Phase.MORNING
 
@@ -32,6 +36,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not _day_running:
 		return
+	# Only the host advances the day timer. Clients receive the time
+	# via RPC from the host (see _broadcast_day_timer below).
+	if not multiplayer.is_server():
+		return
 	if not day_time_over:
 		_day_timer -= delta
 		if _day_timer <= 0.0:
@@ -39,6 +47,18 @@ func _process(delta: float) -> void:
 			day_time_over = true
 			_day_running = false
 			EventBus.day_time_over.emit()
+	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
+	if multiplayer.get_peers().size() > 0:
+		_sync_day_timer.rpc(_day_timer, _day_duration, day_time_over)
+
+
+@rpc("authority", "call_local", "unreliable_ordered")
+func _sync_day_timer(timer: float, duration: float, is_over: bool) -> void:
+	if multiplayer.is_server():
+		return
+	_day_timer = timer
+	_day_duration = duration
+	day_time_over = is_over
 	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
 
 

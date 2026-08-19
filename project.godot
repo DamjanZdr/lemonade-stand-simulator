@@ -20,6 +20,7 @@ config/version="0.1.0"
 
 NetworkManager="*res://scripts/multiplayer/network_manager.gd"
 LobbyManager="*res://scripts/multiplayer/lobby_manager.gd"
+WorldSync="*res://scripts/multiplayer/world_sync.gd"
 EventBus="*res://scripts/autoloads/event_bus.gd"
 Balancing="*res://scripts/autoloads/balancing.gd"
 SaveManager="*res://scripts/systems/save_manager.gd"
