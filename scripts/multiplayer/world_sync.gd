@@ -191,15 +191,41 @@ func _despawn_on_clients(parent_path_str: String, obj_name: String) -> void:
 		"[WorldSync] Client received despawn: parent=%s name=%s" % [parent_path_str, obj_name]
 	)
 	var parent := _string_to_node(parent_path_str)
-	if parent == null:
-		GameLog.log("[WorldSync] Client despawn: parent not found: " + parent_path_str)
-		return
-	var obj := parent.get_node_or_null(obj_name)
+	var obj: Node = null
+	if parent:
+		obj = parent.get_node_or_null(obj_name)
+	# Fallback: search the entire scene tree by name in case the object
+	# was re-parented on the host without the client knowing.
+	if obj == null:
+		obj = _find_node_by_name(get_tree().current_scene, obj_name)
 	if obj:
 		obj.queue_free()
 		GameLog.log("[WorldSync] Client despawned %s OK" % obj_name)
 	else:
-		GameLog.log("[WorldSync] Client despawn: object not found: " + obj_name)
+		GameLog.log("[WorldSync] Client despawn: object not found anywhere: " + obj_name)
+
+
+## Recursively search a node tree for a child with the given name.
+func _find_node_by_name(root: Node, target_name: String) -> Node:
+	if root == null:
+		return null
+	if root.name == target_name:
+		return root
+	for child in root.get_children():
+		var found := _find_node_by_name(child, target_name)
+		if found:
+			return found
+	return null
+
+
+## Sync a transform (position + rotation) using unreliable RPCs for
+## high-frequency updates (e.g. moving trucks). Only call this from
+## the host's _process.
+func sync_transform(obj: Node, pos: Vector3, rot: Vector3) -> void:
+	if not is_host() or obj == null or not is_instance_valid(obj):
+		return
+	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	_apply_transform.rpc_id(0, parent_path, obj.name, pos, rot, 1) # 1 = unreliable channel
 
 
 ## Sync a property change on a world object from host to all clients.
@@ -243,6 +269,22 @@ func _apply_property(
 		obj.set(prop, value)
 
 
+@rpc("authority", "call_local", "unreliable")
+func _apply_transform(
+	parent_path_str: String,
+	obj_name: String,
+	pos: Vector3,
+	rot: Vector3,
+	_channel: int,
+) -> void:
+	if is_host():
+		return
+	var obj := _find_node(parent_path_str, obj_name)
+	if obj:
+		obj.global_position = pos
+		obj.global_rotation = rot
+
+
 @rpc("authority", "call_local", "reliable")
 func _apply_properties(parent_path_str: String, obj_name: String, props: Dictionary) -> void:
 	if is_host():
@@ -264,9 +306,13 @@ func _call_method(parent_path_str: String, obj_name: String, method: String, arg
 
 func _find_node(parent_path_str: String, obj_name: String) -> Node:
 	var parent := _string_to_node(parent_path_str)
-	if parent == null:
-		return null
-	return parent.get_node_or_null(obj_name)
+	if parent:
+		var obj := parent.get_node_or_null(obj_name)
+		if obj:
+			return obj
+	# Fallback: search the entire scene tree by name in case the object
+	# was re-parented on the host without the client knowing.
+	return _find_node_by_name(get_tree().current_scene, obj_name)
 
 
 func _get_scene(path: String) -> PackedScene:

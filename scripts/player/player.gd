@@ -229,11 +229,19 @@ func _enter_tree() -> void:
 func _setup_position_replication() -> void:
 	var sync := MultiplayerSynchronizer.new()
 	sync.name = "PositionSync"
+	# Explicitly set the synchronizer's authority to match the player's.
+	# Without this, the synchronizer may not know which peer is the
+	# authority and won't replicate position/rotation to other peers.
+	sync.set_multiplayer_authority(get_multiplayer_authority())
 	add_child(sync)
 	var config := SceneReplicationConfig.new()
 	config.add_property(NodePath("../:position"))
 	config.add_property(NodePath("../:rotation"))
 	sync.replication_config = config
+	GameLog.log(
+		"[Player] PositionSync set up for %s authority=%d"
+		% [name, sync.get_multiplayer_authority()]
+	)
 
 
 func _ready() -> void:
@@ -251,6 +259,18 @@ func _ready() -> void:
 		# This is another peer's player, replicated here so we can see
 		# them — not ours to control. Skip capturing input/camera/audio,
 		# which would otherwise fight with our own local player for them.
+		# Log the initial position so we can see if the synchronizer
+		# is updating it over time.
+		GameLog.log("[Player] Remote player %s initial pos=%s" % [name, str(global_position)])
+		# Set up a one-shot timer to check if position is being updated
+		var timer := get_tree().create_timer(3.0)
+		timer.timeout.connect(
+			func():
+				if is_instance_valid(self):
+					GameLog.log(
+						"[Player] Remote player %s pos after 3s=%s" % [name, str(global_position)]
+					),
+		)
 		return
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Layer 2 is used by the screen-space outline system for white fill nodes.

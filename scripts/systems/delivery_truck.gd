@@ -228,6 +228,10 @@ func _process(delta: float) -> void:
 	# Keep engine sound at truck position
 	if _engine_player and is_instance_valid(_engine_player):
 		_engine_player.global_position = global_position
+	# Only the host drives the truck animation; clients receive position
+	# updates via WorldSync.
+	if not WorldSync.is_host():
+		return
 	match _state:
 		"idle":
 			return
@@ -241,6 +245,9 @@ func _process(delta: float) -> void:
 			pass
 		"driving_out":
 			_drive_out(delta)
+	# Sync truck position to clients while moving
+	if _state != "idle":
+		WorldSync.sync_transform(self, global_position, global_rotation)
 
 
 func _drive_to_waypoint(delta: float) -> void:
