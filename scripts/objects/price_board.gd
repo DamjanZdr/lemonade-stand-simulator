@@ -21,6 +21,11 @@ var _edit_buffer := ""
 var _cursor_visible := true
 var _cursor_timer := 0.0
 var _price_prefix: Dictionary = { }
+## The player who is currently editing prices on this board. Stored so we
+## can release THEM from priceboard focus when editing ends — not just
+## whichever player happens to be first in the "player" group (which in
+## multiplayer would often be the wrong one).
+var _editing_player: Player = null
 const CURSOR_BLINK := 0.5
 
 
@@ -43,6 +48,7 @@ func interact(_player: Node) -> void:
 	if _editing_index < 0:
 		var p := _player as Player
 		if p != null and board_camera != null:
+			_editing_player = p
 			p.enter_priceboard_focus(board_camera.global_transform)
 		_start_edit()
 
@@ -156,9 +162,9 @@ func _confirm_and_next() -> void:
 	var next := _next_editable_index(_editing_index, 1)
 	if next < 0:
 		_editing_index = -1
-		var p := get_tree().get_first_node_in_group("player") as Player
-		if p != null:
-			p.exit_priceboard_focus()
+		if _editing_player != null and is_instance_valid(_editing_player):
+			_editing_player.exit_priceboard_focus()
+		_editing_player = null
 	else:
 		_editing_index = next
 		_edit_buffer = ""
@@ -185,9 +191,9 @@ func _cancel_edit() -> void:
 	_edit_buffer = ""
 	_cursor_visible = true
 	_cursor_timer = 0.0
-	var p := get_tree().get_first_node_in_group("player") as Player
-	if p != null:
-		p.exit_priceboard_focus()
+	if _editing_player != null and is_instance_valid(_editing_player):
+		_editing_player.exit_priceboard_focus()
+	_editing_player = null
 	_refresh_label()
 
 

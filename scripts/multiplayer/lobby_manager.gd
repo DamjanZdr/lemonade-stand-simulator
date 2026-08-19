@@ -36,11 +36,12 @@ func _wait_then_request_register() -> void:
 	var attempts := 0
 	while attempts < 100: # up to ~15 seconds
 		if multiplayer.get_peers().has(1):
+			print("[LobbyManager] Found peer 1, sending register request")
 			_request_register.rpc_id(1, _local_display_name())
 			return
 		attempts += 1
 		await get_tree().create_timer(0.15).timeout
-	push_warning("LobbyManager: gave up waiting for peer 1 to register")
+	push_warning("[LobbyManager] gave up waiting for peer 1 to register")
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
@@ -59,10 +60,18 @@ func reset() -> void:
 	roster.clear()
 
 
+## Re-emits the current roster so a newly-loaded scene (e.g. the Lobby)
+## can refresh its display even if the roster_changed signal fired
+## during the scene transition (before the new scene's _ready connected).
+func request_refresh() -> void:
+	roster_changed.emit()
+
+
 func _register(peer_id: int, player_name: String) -> void:
 	if not multiplayer.is_server():
 		return
 	roster[peer_id] = { "name": player_name, "stand_index": -1, "ready": false }
+	print("[LobbyManager] Registered peer %d as '%s'" % [peer_id, player_name])
 	_broadcast_roster()
 
 
@@ -77,12 +86,17 @@ func _sender_id() -> int:
 
 
 func _broadcast_roster() -> void:
+	print("[LobbyManager] Broadcasting roster: %d players" % roster.size())
 	_apply_roster.rpc(roster)
 
 
-@rpc("authority", "call_local", "reliable")
+@rpc("any_peer", "call_local", "reliable")
 func _apply_roster(new_roster: Dictionary) -> void:
 	roster = new_roster
+	print(
+		"[LobbyManager] Applied roster: %d players, my id=%d"
+		% [roster.size(), multiplayer.get_unique_id()]
+	)
 	roster_changed.emit()
 
 ## --- Local player actions (call these from the lobby UI) ---

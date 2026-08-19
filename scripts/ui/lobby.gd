@@ -19,22 +19,43 @@ const STAND_NAMES: Array[String] = ["Stand 1", "Stand 2"]
 func _ready() -> void:
 	_room_code_label.text = "Room: %d" % NetworkManager.lobby_id
 	_copy_button.pressed.connect(_on_copy_pressed)
-	_invite_button.pressed.connect(func(): NetworkManager.invite_friend())
-	_stand1_button.pressed.connect(func(): LobbyManager.set_my_stand(0))
-	_stand2_button.pressed.connect(func(): LobbyManager.set_my_stand(1))
+	_invite_button.pressed.connect(
+		func():
+			NetworkManager.invite_friend(),
+	)
+	_stand1_button.pressed.connect(
+		func():
+			LobbyManager.set_my_stand(0),
+	)
+	_stand2_button.pressed.connect(
+		func():
+			LobbyManager.set_my_stand(1),
+	)
 	_ready_button.pressed.connect(_on_ready_pressed)
-	_start_button.pressed.connect(func(): LobbyManager.start_game())
+	_start_button.pressed.connect(
+		func():
+			LobbyManager.start_game(),
+	)
 	_leave_button.pressed.connect(_on_leave_pressed)
 	LobbyManager.roster_changed.connect(_refresh)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
-	NetworkManager.peer_disconnected.connect(func(_id): _refresh())
+	NetworkManager.peer_disconnected.connect(
+		func(_id):
+			_refresh(),
+	)
+	# Re-request the current roster in case roster_changed already fired
+	# during the scene transition from MainMenu (before our _ready ran).
+	LobbyManager.request_refresh()
 	_refresh()
 
 
 func _on_copy_pressed() -> void:
 	DisplayServer.clipboard_set(str(NetworkManager.lobby_id))
 	_copy_button.text = "Copied!"
-	get_tree().create_timer(1.5).timeout.connect(func(): _copy_button.text = "Copy")
+	get_tree().create_timer(1.5).timeout.connect(
+		func():
+			_copy_button.text = "Copy",
+	)
 
 
 func _on_ready_pressed() -> void:
@@ -65,10 +86,17 @@ func _refresh() -> void:
 		var entry: Dictionary = LobbyManager.roster[peer_id]
 		var row := Label.new()
 		var stand_idx: int = entry.get("stand_index", -1)
-		var stand_text := STAND_NAMES[stand_idx] if stand_idx >= 0 and stand_idx < STAND_NAMES.size() else "(no stand)"
+		var stand_text := STAND_NAMES[stand_idx] if (
+			stand_idx >= 0 and stand_idx < STAND_NAMES.size()
+		) else "(no stand)"
 		var ready_text := "Ready" if entry.get("ready", false) else "Not ready"
 		var you_text := " (you)" if peer_id == my_id else ""
-		row.text = "%s%s — %s — %s" % [entry.get("name", "Player"), you_text, stand_text, ready_text]
+		row.text = "%s%s — %s — %s" % [
+			entry.get("name", "Player"),
+			you_text,
+			stand_text,
+			ready_text,
+		]
 		_player_list.add_child(row)
 
 	var my_stand: int = mine.get("stand_index", -1)

@@ -89,6 +89,10 @@ var _sync: MultiplayerSynchronizer = null
 func _setup_replication() -> void:
 	_sync = MultiplayerSynchronizer.new()
 	_sync.name = "MultiplayerSynchronizer"
+	# Set authority BEFORE adding to tree and before config, so the
+	# synchronizer knows from the very first frame it is NOT the sender
+	# on client peers (host-authoritative: peer 1 always owns stand state).
+	_sync.set_multiplayer_authority(1)
 	add_child(_sync)
 	var config := SceneReplicationConfig.new()
 	for prop in [
@@ -114,6 +118,23 @@ func _setup_replication() -> void:
 	# play this stand (see controller_id) — the host's simulation is the
 	# single source of truth for every stand's data.
 	set_multiplayer_authority(1)
+	# Diagnostic: verify the synchronizer can actually see our properties.
+	# The "..:money" errors come from the synchronizer being unable to
+	# resolve the parent's property — this print helps confirm whether
+	# the parent reference and property are valid at setup time.
+	if _sync.get_parent() == self:
+		var money_val = _sync.get_parent().get("money")
+		print(
+			"[StandUnit:%s] Sync setup OK — parent has money=%s, authority=%d, is_auth=%s"
+			% [
+				name,
+				str(money_val),
+				_sync.get_multiplayer_authority(),
+				_sync.is_multiplayer_authority(),
+			]
+		)
+	else:
+		push_warning("[StandUnit:%s] Sync parent mismatch!" % name)
 
 
 func _ready() -> void:
