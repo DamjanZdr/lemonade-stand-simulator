@@ -373,12 +373,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
-		# Remote players' position/rotation come from PositionSync
-		# (MultiplayerSynchronizer) instead of local physics simulation.
+		# Remote players' position/rotation come from WorldSync
+		# transform replication instead of local physics simulation.
 		return
 	if _in_priceboard_mode:
 		velocity = Vector3.ZERO
 		move_and_slide()
+		WorldSync.sync_transform(self, global_position, global_rotation)
 		return
 
 	if not is_on_floor():
@@ -393,6 +394,10 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()
+	# Sync our position to all other peers via WorldSync (unreliable,
+	# high-frequency). This is more reliable than MultiplayerSynchronizer
+	# which wasn't replicating at all.
+	WorldSync.sync_transform(self, global_position, global_rotation)
 	_frame_lookups_done = false
 	if not _money_mode:
 		_poll_hint()

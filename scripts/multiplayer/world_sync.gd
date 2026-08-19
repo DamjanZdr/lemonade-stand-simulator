@@ -127,13 +127,25 @@ func spawn_networked(
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
+	# Capture the object's scale after adding to the parent (parent's
+	# transform may affect it). We'll send this to clients so they
+	# match the host's scale.
+	var obj_scale: Vector3 = obj.scale
 	# Broadcast to clients
 	var parent_path := _node_path_to_string(parent.get_path())
 	GameLog.log(
-		"[WorldSync] Host spawned %s name=%s parent=%s pos=%s"
-		% [scene_path, obj.name, parent_path, str(global_pos)]
+		"[WorldSync] Host spawned %s name=%s parent=%s pos=%s scale=%s"
+		% [scene_path, obj.name, parent_path, str(global_pos), str(obj_scale)]
 	)
-	_spawn_on_clients.rpc(scene_path, parent_path, obj.name, global_pos, global_rot, state)
+	_spawn_on_clients.rpc(
+		scene_path,
+		parent_path,
+		obj.name,
+		global_pos,
+		global_rot,
+		obj_scale,
+		state,
+	)
 	return obj
 
 
@@ -157,6 +169,7 @@ func _spawn_on_clients(
 	obj_name: String,
 	global_pos: Vector3,
 	global_rot: Vector3,
+	obj_scale: Vector3,
 	state: Dictionary,
 ) -> void:
 	if is_host():
@@ -180,7 +193,8 @@ func _spawn_on_clients(
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
-	GameLog.log("[WorldSync] Client spawned %s OK" % obj_name)
+	obj.scale = obj_scale
+	GameLog.log("[WorldSync] Client spawned %s OK scale=%s" % [obj_name, str(obj_scale)])
 
 
 @rpc("authority", "call_local", "reliable")
