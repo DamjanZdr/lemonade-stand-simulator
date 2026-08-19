@@ -16,6 +16,14 @@ const MOUSE_SENSITIVITY: float = 0.002
 const HINT_GROUND := "Aim at ground to place"
 const HINT_STAND := "Aim at stand or workstation to place"
 
+## Which stand this player is assigned to (set by whatever assigns players
+## to stands — the lobby, in real multiplayer). Null in solo/offline play,
+## where there's no "your stand vs their stand" concept since only one
+## person is playing — see StandUnit.can_be_served_by() for how this is
+## used to restrict serving another stand's customers in real multiplayer
+## without blocking solo testing of every stand.
+var assigned_stand: StandUnit = null
+
 
 func _get_held_item_name() -> String:
 	match held_item:

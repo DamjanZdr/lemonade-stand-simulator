@@ -431,3 +431,18 @@ func get_delivery_marker_position() -> Vector3:
 	if delivery_marker:
 		return delivery_marker.global_position
 	return global_position
+
+
+## Whether the given player is allowed to serve/interact with this stand's
+## customers. In solo/offline play (no other connected peer) this is
+## always true — there's no "your customers vs their customers" concept
+## with only one person playing, and locking it down would break being
+## able to test every stand locally. In real multiplayer (at least one
+## other peer connected), a player may only interact with the stand they
+## were actually assigned to.
+func can_be_served_by(player: Node) -> bool:
+	if multiplayer.get_peers().is_empty():
+		return true
+	if player == null or not ("assigned_stand" in player):
+		return false
+	return player.assigned_stand == self

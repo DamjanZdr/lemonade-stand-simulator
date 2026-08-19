@@ -236,6 +236,12 @@ func try_serve(player: Node) -> void:
 	var p := player as Player
 	if p == null or p.held_item != p.HeldItem.CUP_FILLED:
 		return
+	if stand != null and not stand.can_be_served_by(p):
+		# Real multiplayer only: this customer belongs to a different
+		# stand than the one this player is assigned to. Silently ignore
+		# — solo/offline play is unaffected (can_be_served_by always
+		# returns true there).
+		return
 
 	if not _price_checked:
 		# They haven't reacted to the prices yet — do that first instead of
@@ -484,6 +490,8 @@ func start_waiting() -> void:
 func show_order_to_player(player: Node) -> void:
 	## Called when the player clicks this customer with empty hands.
 	if state != CustomerState.WAITING:
+		return
+	if stand != null and not stand.can_be_served_by(player):
 		return
 	var was_already_engaged := _engaged_with_player
 	_engaged_with_player = true
