@@ -245,9 +245,6 @@ func _process(delta: float) -> void:
 			pass
 		"driving_out":
 			_drive_out(delta)
-	# Sync truck position to clients while moving
-	if _state != "idle":
-		WorldSync.sync_transform(self, global_position, global_rotation)
 
 
 func _drive_to_waypoint(delta: float) -> void:
