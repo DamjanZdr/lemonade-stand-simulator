@@ -1,0 +1,77 @@
+[gd_scene format=3 uid="uid://dbgconsole01"]
+
+[ext_resource type="Script" path="res://scripts/ui/debug_console.gd" id="1_script"]
+
+[node name="DebugConsole" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Debug Console (F12 to toggle)"
+
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RichLabel" type="RichTextLabel" parent="Panel/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 10
+bbcode_enabled = true
+text = ""
+scroll_following = true
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="CopyButton" type="Button" parent="Panel/Margin/Buttons"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 30)
+text = "Copy"
+
+[node name="ClearButton" type="Button" parent="Panel/Margin/Buttons"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 30)
+text = "Clear"
+
+[node name="CloseButton" type="Button" parent="Panel/Margin/Buttons"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 30)
+text = "Close"

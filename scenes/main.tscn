@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://dp8lh1ptnkcc3" path="res://scenes/ui/debug_panel.tscn" id="9_debug"]
 [ext_resource type="Script" uid="uid://bulmw0nj3xrmn" path="res://scripts/customer/pedestrian_spawner.gd" id="10_pedspawner"]
 [ext_resource type="PackedScene" uid="uid://c7s5b6a8h3q1j" path="res://scenes/systems/trash_spawner.tscn" id="11_trashspawner"]
+[ext_resource type="PackedScene" uid="uid://dbgconsole01" path="res://scenes/ui/debug_console.tscn" id="12_dbgconsole"]
 
 [node name="Main" type="Node" unique_id=1191278377]
 script = ExtResource("1_main")
@@ -46,3 +47,5 @@ script = ExtResource("6_delivery")
 [node name="HUD" parent="." unique_id=1577022415 instance=ExtResource("7_hud")]
 
 [node name="DebugPanel" parent="." unique_id=1101678529 instance=ExtResource("9_debug")]
+
+[node name="DebugConsole" parent="." instance=ExtResource("12_dbgconsole")]

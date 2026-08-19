@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://clobby001"]
 
 [ext_resource type="Script" path="res://scripts/ui/lobby.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://dbgconsole01" path="res://scenes/ui/debug_console.tscn" id="2_dbgconsole"]
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -10,6 +11,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
+
+[node name="DebugConsole" parent="." instance=ExtResource("2_dbgconsole")]
 
 [node name="ColorRect" type="ColorRect" parent="."]
 layout_mode = 1
