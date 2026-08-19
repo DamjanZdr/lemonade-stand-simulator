@@ -80,61 +80,99 @@ var highest_money: float = 0.0
 @onready var stand_mesh: Node3D = $Stand
 
 
-## Networked (Stage B): replicates this stand's economy state from
-## whichever peer has authority over it (the host, in our host-authoritative
-## design — see the plan doc) out to every other connected peer.
-var _sync: MultiplayerSynchronizer = null
+## Networked (Stage B): host-authoritative stand state. Instead of a
+## MultiplayerSynchronizer (which only works reliably for nodes spawned
+## via MultiplayerSpawner, not static scene nodes loaded independently
+## on each peer), we use simple RPCs: the host applies mutations locally
+## and broadcasts the new state to all clients via _push_state().
+## See _setup_replication() and the request_* / _rpc_* methods below.
+const STATE_PROPS: Array[String] = [
+	"money",
+	"popularity",
+	"feedback_tier",
+	"prices",
+	"recipes",
+	"customers_served_happy",
+	"customers_lost",
+	"total_customers_served",
+	"total_cups_sold",
+	"total_money_earned",
+	"total_money_spent",
+	"highest_purchase",
+	"highest_money",
+]
 
 
 func _setup_replication() -> void:
-	_sync = MultiplayerSynchronizer.new()
-	_sync.name = "MultiplayerSynchronizer"
-	# Set authority BEFORE adding to tree and before config, so the
-	# synchronizer knows from the very first frame it is NOT the sender
-	# on client peers (host-authoritative: peer 1 always owns stand state).
-	_sync.set_multiplayer_authority(1)
-	add_child(_sync)
-	var config := SceneReplicationConfig.new()
-	for prop in [
-		"money",
-		"popularity",
-		"feedback_tier",
-		"prices",
-		"recipes",
-		"purchased_upgrade_nodes",
-		"customers_served_happy",
-		"customers_lost",
-		"total_customers_served",
-		"total_cups_sold",
-		"total_money_earned",
-		"total_money_spent",
-		"highest_purchase",
-		"highest_money",
-	]:
-		config.add_property(NodePath("../:" + prop))
-	_sync.replication_config = config
-	# Host-authoritative: this node (and therefore its synchronizer) is
-	# always owned by peer 1, regardless of which player is "assigned" to
-	# play this stand (see controller_id) — the host's simulation is the
-	# single source of truth for every stand's data.
+	# Host-authoritative: peer 1 always owns stand state, regardless of
+	# which player is "assigned" to play this stand (see controller_id).
 	set_multiplayer_authority(1)
-	# Diagnostic: verify the synchronizer can actually see our properties.
-	# The "..:money" errors come from the synchronizer being unable to
-	# resolve the parent's property — this print helps confirm whether
-	# the parent reference and property are valid at setup time.
-	if _sync.get_parent() == self:
-		var money_val = _sync.get_parent().get("money")
-		print(
-			"[StandUnit:%s] Sync setup OK — parent has money=%s, authority=%d, is_auth=%s"
-			% [
-				name,
-				str(money_val),
-				_sync.get_multiplayer_authority(),
-				_sync.is_multiplayer_authority(),
-			]
-		)
-	else:
-		push_warning("[StandUnit:%s] Sync parent mismatch!" % name)
+
+
+## Called by the host after any local state mutation to push the new
+## values to all clients. Clients receive it via _apply_state() and
+## update their local copy + emit signals so UI (HUD, price board, etc.)
+## refreshes. Only the host calls this; only clients apply it (the host
+## already has the correct values locally).
+func _push_state() -> void:
+	if not is_multiplayer_authority():
+		return
+	if multiplayer.get_peers().is_empty():
+		return
+	_apply_state.rpc(
+		money,
+		popularity,
+		feedback_tier,
+		prices.duplicate(true),
+		recipes.duplicate(true),
+		customers_served_happy,
+		customers_lost,
+		total_customers_served,
+		total_cups_sold,
+		total_money_earned,
+		total_money_spent,
+		highest_purchase,
+		highest_money,
+	)
+
+
+@rpc("authority", "call_local", "reliable")
+func _apply_state(
+	new_money: float,
+	new_popularity: float,
+	new_feedback_tier: int,
+	new_prices: Dictionary,
+	new_recipes: Dictionary,
+	new_customers_served_happy: int,
+	new_customers_lost: int,
+	new_total_customers_served: int,
+	new_total_cups_sold: int,
+	new_total_money_earned: float,
+	new_total_money_spent: float,
+	new_highest_purchase: float,
+	new_highest_money: float,
+) -> void:
+	if is_multiplayer_authority():
+		return # Host already has correct values; don't overwrite
+	var changed_money := not is_equal_approx(money, new_money)
+	var changed_pop := not is_equal_approx(popularity, new_popularity)
+	money = new_money
+	popularity = new_popularity
+	feedback_tier = new_feedback_tier
+	prices = new_prices
+	recipes = new_recipes
+	customers_served_happy = new_customers_served_happy
+	customers_lost = new_customers_lost
+	total_customers_served = new_total_customers_served
+	total_cups_sold = new_total_cups_sold
+	total_money_earned = new_total_money_earned
+	total_money_spent = new_total_money_spent
+	highest_purchase = new_highest_purchase
+	highest_money = new_highest_money
+	if changed_money:
+		money_changed.emit(money)
+	if changed_pop:
+		popularity_changed.emit(popularity)
 
 
 func _ready() -> void:
@@ -203,6 +241,7 @@ func _on_global_money_changed_bridge(new_amount: float) -> void:
 	if money > highest_money:
 		highest_money = money
 	money_changed.emit(money)
+	_push_state()
 
 
 func _on_global_price_changed_bridge(fruit_type: String, new_price: float) -> void:
@@ -210,6 +249,7 @@ func _on_global_price_changed_bridge(fruit_type: String, new_price: float) -> vo
 		return
 	prices[fruit_type] = new_price
 	price_changed.emit(fruit_type, new_price)
+	_push_state()
 
 
 func _on_global_popularity_changed_bridge(new_rating: float) -> void:
@@ -217,6 +257,7 @@ func _on_global_popularity_changed_bridge(new_rating: float) -> void:
 		return
 	popularity = new_rating
 	popularity_changed.emit(popularity)
+	_push_state()
 
 
 func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void:
@@ -290,11 +331,11 @@ func get_recipe(fruit_type: String) -> Dictionary:
 ## --- Networked mutation requests (Stage B) ---
 ## Call these instead of the direct methods above so the change is routed
 ## to whichever peer has authority (the host, in our host-authoritative
-## design) via RPC, applied there, and the resulting property change
-## replicated back out to every peer via the MultiplayerSynchronizer.
-## In solo/offline play (no real network peer), rpc_id(1, ...) targeting
-## yourself just runs locally immediately — the same call site works
-## correctly either way, no branching needed at the call site.
+## design) via RPC, applied there, and the resulting state pushed back
+## out to every peer via _push_state(). In solo/offline play (no real
+## network peer), rpc_id(1, ...) targeting yourself just runs locally
+## immediately — the same call site works correctly either way, no
+## branching needed at the call site.
 
 
 func request_add_money(amount: float) -> void:
@@ -306,6 +347,7 @@ func _rpc_add_money(amount: float) -> void:
 	if not is_multiplayer_authority():
 		return
 	add_money(amount)
+	_push_state()
 
 
 func request_set_price(fruit_type: String, new_price: float) -> void:
@@ -317,6 +359,7 @@ func _rpc_set_price(fruit_type: String, new_price: float) -> void:
 	if not is_multiplayer_authority():
 		return
 	set_price(fruit_type, new_price)
+	_push_state()
 
 
 func request_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
@@ -328,6 +371,7 @@ func _rpc_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 	if not is_multiplayer_authority():
 		return
 	set_recipe(fruit_type, recipe)
+	_push_state()
 
 
 func request_customer_served(outcome: String) -> void:
@@ -339,6 +383,7 @@ func _rpc_on_customer_served(outcome: String) -> void:
 	if not is_multiplayer_authority():
 		return
 	on_customer_served(outcome)
+	_push_state()
 
 
 func set_recipe(fruit_type: String, recipe: Dictionary) -> void:
