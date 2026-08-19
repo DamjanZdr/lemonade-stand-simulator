@@ -168,7 +168,8 @@ func _ready() -> void:
 ## everyone already known.
 func _setup_networking() -> void:
 	# Spawner config is set in the scene file (spawn_path + spawnable_scenes).
-	# Just connect the spawned signal for local-player setup on clients.
+	# Set a spawn_function so spawn() works for custom-named player nodes.
+	player_spawner.spawn_function = _spawn_player
 	player_spawner.spawned.connect(_on_spawner_spawned)
 
 	if multiplayer.is_server():
@@ -183,6 +184,16 @@ func _setup_networking() -> void:
 		# spawn immediately instead of waiting for it again.
 		print("[Main] Client requesting spawn from host")
 		_request_spawn.rpc_id(1)
+
+
+## Spawn function for MultiplayerSpawner. Called by the spawner when
+## spawn() is invoked. The data parameter is the peer ID (int).
+func _spawn_player(data: Variant) -> Node:
+	var peer_id: int = int(data)
+	var scene := load(PLAYER_SCENE_PATH) as PackedScene
+	var p: Player = scene.instantiate()
+	p.name = str(peer_id)
+	return p
 
 
 func _host_spawn_players() -> void:
@@ -249,14 +260,12 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 		print("[Main] Spawn skipped — player %d already exists" % peer_id)
 		return
 	var stand := _stand_for_peer(peer_id)
-	# Use the spawner's spawn() method so the node is properly detected
-	# and replicated to all clients. Manually adding to spawn_path doesn't
-	# always trigger replication.
-	var p: Player = player_spawner.spawn(PLAYER_SCENE_PATH) as Player
+	# Use the spawner's spawn() with the peer_id as data. The spawn_function
+	# (_spawn_player) creates the node with the correct name.
+	var p: Player = player_spawner.spawn(peer_id) as Player
 	if p == null:
 		push_warning("[Main] Failed to spawn player for peer %d" % peer_id)
 		return
-	p.name = str(peer_id)
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
