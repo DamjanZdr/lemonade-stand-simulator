@@ -1,14 +1,56 @@
 class_name StandUnit
 extends Node3D
 ## A single, self-contained lemonade stand: counter, price board, delivery
-## grid/marker, thermometer, water dispenser, and customer queue markers.
+## grid/marker, thermometer, water dispenser, and customer queue markers —
+## AND its own independent economy (money, prices, recipes, popularity,
+## upgrades, inventory). Two StandUnit instances can run side-by-side with
+## fully separate economies; nothing here is shared between stands.
 ##
-## Multiple StandUnit instances can exist in the world (one per player/AI).
-## All the nodes below are children of this node so the whole unit can be
-## duplicated and repositioned as a single group. Positions of the children
-## were preserved exactly as they were when they were direct children of
-## World (this node itself has an identity transform), so nothing visually
-## moved when they were grouped here.
+## Signals below are LOCAL to this stand (not the global EventBus). Code
+## that cares about "my stand" connects directly to that stand's StandUnit
+## signals — there is no filtering needed, because you simply never connect
+## to another stand's signals.
+##
+## Cross-stand interactions (e.g. stealing a cup from a rival stand) are
+## handled by code that holds references to both StandUnit instances and
+## calls methods directly on each (e.g. `other_stand.remove_cup()` then
+## `my_stand.add_cup()`), not through these per-stand signals.
+##
+## NOTE: This is Stage A of the Phase 2 migration. GameState/Inventory/
+## UpgradeManager/DeliverySystem still exist as global autoloads and are
+## still the actual source of truth used by the running game. This class
+## currently only mirrors their API additively — nothing yet reads from or
+## writes to it. Migrating each consumer (HUD, price board, save system,
+## etc.) to use a specific StandUnit instead of the globals is future work,
+## tracked in the plan file.
+
+const FRUIT_TYPES: Array[String] = ["lemon", "strawberry", "blueberry", "peach", "watermelon"]
+
+signal money_changed(new_amount: float)
+signal price_changed(fruit_type: String, new_price: float)
+signal recipe_changed(fruit_type: String, recipe: Dictionary)
+signal popularity_changed(new_rating: float)
+signal feedback_tier_changed(new_tier: int)
+
+## Which peer (network) or debug slot controls this stand. -1 = uncontrolled
+## (AI/empty). Set by whatever assigns players to stands (lobby, debug
+## Tab-switch in Stage A, etc.) — this class doesn't decide that itself.
+var controller_id: int = -1
+
+var money: float = 0.0
+var popularity: float = 0.1
+var feedback_tier: int = 0
+var prices: Dictionary = { }
+var recipes: Dictionary = { }
+
+var customers_served_happy: int = 0
+var customers_lost: int = 0
+var total_customers_served: int = 0
+var total_cups_sold: int = 0
+var total_money_earned: float = 0.0
+var total_money_spent: float = 0.0
+var highest_purchase: float = 0.0
+var highest_money: float = 0.0
 
 @onready var delivery_grid: DeliveryGrid = $DeliveryGrid as DeliveryGrid
 @onready var delivery_marker: Marker3D = $DeliveryMarker
@@ -19,6 +61,147 @@ extends Node3D
 @onready var thermometer: Node3D = $Thermometer
 @onready var water_dispenser: Node3D = $WaterDispenser
 @onready var stand_mesh: Node3D = $Stand
+
+
+func _ready() -> void:
+	_init_default_prices()
+	_init_default_recipes()
+	highest_money = money
+
+
+func _init_default_prices() -> void:
+	for ft in FRUIT_TYPES:
+		var res := load("res://resources/data/" + ft + ".tres") as IngredientData
+		prices[ft] = res.default_price if res else 1.50
+
+
+func _init_default_recipes() -> void:
+	for ft in FRUIT_TYPES:
+		recipes[ft] = _default_recipe_for(ft)
+
+
+func _default_recipe_for(fruit_type: String) -> Dictionary:
+	var res := load("res://resources/data/" + fruit_type + ".tres") as IngredientData
+	if res:
+		return { "fruit_count": float(res.ideal_fruit_count), "sugar": res.ideal_sugar }
+	return { "fruit_count": 3.0, "sugar": 2.0 }
+
+## --- Economy API (mirrors GameState's public methods) ---
+
+
+func add_money(amount: float) -> void:
+	money += amount
+	total_money_earned += amount
+	if money > highest_money:
+		highest_money = money
+	money_changed.emit(money)
+
+
+func spend_money(amount: float) -> bool:
+	if money < amount:
+		return false
+	money -= amount
+	total_money_spent += amount
+	if amount > highest_purchase:
+		highest_purchase = amount
+	money_changed.emit(money)
+	return true
+
+
+func set_popularity(value: float) -> void:
+	popularity = clampf(value, 0.0, 1.0)
+	popularity_changed.emit(popularity)
+
+
+func get_price(fruit_type: String) -> float:
+	return prices.get(fruit_type, 1.50)
+
+
+func set_price(fruit_type: String, new_price: float) -> void:
+	prices[fruit_type] = new_price
+	price_changed.emit(fruit_type, new_price)
+
+
+func get_recipe(fruit_type: String) -> Dictionary:
+	return recipes.get(fruit_type, _default_recipe_for(fruit_type))
+
+
+func set_recipe(fruit_type: String, recipe: Dictionary) -> void:
+	recipes[fruit_type] = recipe.duplicate()
+	recipe_changed.emit(fruit_type, recipes[fruit_type])
+
+
+func set_feedback_tier(tier: int) -> void:
+	feedback_tier = clampi(tier, 0, 2)
+	feedback_tier_changed.emit(feedback_tier)
+
+
+func on_customer_served(outcome: String) -> void:
+	total_customers_served += 1
+	match outcome:
+		"happy":
+			customers_served_happy += 1
+			total_cups_sold += 1
+			set_popularity(popularity + Balancing.POPULARITY_GAIN_HAPPY)
+		"timeout":
+			customers_lost += 1
+			set_popularity(popularity - Balancing.POPULARITY_LOSS_TIMEOUT)
+		"too_expensive", "wrong_order":
+			customers_lost += 1
+			set_popularity(popularity - Balancing.POPULARITY_LOSS_EXPENSIVE)
+		_:
+			customers_lost += 1
+			set_popularity(popularity - Balancing.POPULARITY_LOSS_BAD)
+
+
+func reset_daily_stats() -> void:
+	customers_served_happy = 0
+	customers_lost = 0
+
+
+## --- Scoped inventory: totals of items physically placed within THIS
+## stand's subtree only (bins, pitcher, cup stacks, unopened supply boxes,
+## water dispenser), instead of scanning the entire scene tree. ---
+func get_inventory() -> Dictionary:
+	var result := {
+		"lemon": 0,
+		"strawberry": 0,
+		"blueberry": 0,
+		"peach": 0,
+		"watermelon": 0,
+		"sugar": 0.0,
+		"ice": 0.0,
+		"water": 0.0,
+		"cups": 0,
+	}
+	for node in get_tree().get_nodes_in_group("container"):
+		if not is_ancestor_of(node):
+			continue
+		if node is FruitBin:
+			for ftype in node.fruit_amounts:
+				result[ftype] = result.get(ftype, 0) + node.fruit_amounts[ftype]
+		elif node is IngredientBin:
+			var itype: String = node.ingredient_type
+			result[itype] = result.get(itype, 0.0) + node.current_amount
+		elif node is CupStack:
+			result["cups"] = result.get("cups", 0) + node.current_count
+		elif node is Pitcher:
+			if node.fruit_type != "" and node.fruit_count > 0.0:
+				result[node.fruit_type] = result.get(node.fruit_type, 0) + node.fruit_count
+			result["water"] = result.get("water", 0.0) + node.water
+			result["sugar"] = result.get("sugar", 0.0) + node.sugar
+			result["ice"] = result.get("ice", 0.0) + node.ice
+	for node in get_tree().get_nodes_in_group("supply_box"):
+		if not is_ancestor_of(node):
+			continue
+		var box := node as SupplyBox
+		if box == null or box.is_equipment:
+			continue
+		var btype: String = box.ingredient_type
+		result[btype] = result.get(btype, 0.0) + box.quantity
+	if water_dispenser and water_dispenser.has_method("get") and "water_fillings" in water_dispenser:
+		result["water"] = result.get("water", 0.0) + water_dispenser.water_fillings
+	return result
 
 
 ## Returns the customer queue spots (active spot + up to 299 waiting spots),
