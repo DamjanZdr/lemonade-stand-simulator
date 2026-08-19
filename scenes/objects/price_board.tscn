@@ -64,3 +64,4 @@ shape = SubResource("BoxShape3D_g4v7s")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1611826796]
 transform = Transform3D(1, 0, 0, 0, 0.94722503, 0.32056946, 0, -0.32056946, 0.94722503, 0, 0.8835449, 3.5806885)
+current = false

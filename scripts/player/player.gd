@@ -211,6 +211,15 @@ func _enter_tree() -> void:
 	# play using the default OfflineMultiplayerPeer.
 	if name.is_valid_int():
 		set_multiplayer_authority(int(name))
+	print(
+		"[Player] _enter_tree name=%s authority=%d my_id=%d is_auth=%s"
+		% [
+			name,
+			get_multiplayer_authority(),
+			multiplayer.get_unique_id(),
+			is_multiplayer_authority(),
+		]
+	)
 	_setup_position_replication()
 
 
@@ -229,6 +238,15 @@ func _setup_position_replication() -> void:
 
 func _ready() -> void:
 	add_to_group("player")
+	print(
+		"[Player] _ready name=%s authority=%d my_id=%d is_auth=%s"
+		% [
+			name,
+			get_multiplayer_authority(),
+			multiplayer.get_unique_id(),
+			is_multiplayer_authority(),
+		]
+	)
 	if not is_multiplayer_authority():
 		# This is another peer's player, replicated here so we can see
 		# them — not ours to control. Skip capturing input/camera/audio,
@@ -239,6 +257,7 @@ func _ready() -> void:
 	# The main camera must not render them — only the SubViewport OutlineCamera does.
 	$Head/Camera3D.cull_mask &= ~2
 	$Head/Camera3D.make_current()
+	print("[Player] Camera made current for local player %s" % name)
 	var listener := $Head/Camera3D/AudioListener3D as AudioListener3D
 	if listener:
 		listener.make_current()

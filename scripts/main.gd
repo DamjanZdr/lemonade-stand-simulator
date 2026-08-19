@@ -208,7 +208,12 @@ func _push_initial_stand_state() -> void:
 func _on_spawner_spawned(node: Node) -> void:
 	var p := node as Player
 	if p == null:
+		print("[Main] Spawner spawned non-player node: %s" % node.name)
 		return
+	print(
+		"[Main] Spawner spawned player: %s, is_auth=%s, my_id=%d"
+		% [p.name, p.is_multiplayer_authority(), multiplayer.get_unique_id()]
+	)
 	# Only set up local-player stuff for OUR own player (the one we have
 	# authority over). Remote players are just visual representations.
 	if not p.is_multiplayer_authority():
