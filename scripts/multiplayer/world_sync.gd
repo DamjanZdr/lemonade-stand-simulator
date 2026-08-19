@@ -97,7 +97,7 @@ func spawn_networked(
 		return null
 	var scene := _get_scene(scene_path)
 	if scene == null:
-		push_warning("[WorldSync] Failed to load scene: " + scene_path)
+		GameLog.log("[WorldSync] Failed to load scene: " + scene_path)
 		return null
 	var obj := scene.instantiate()
 	# Set state BEFORE adding to tree so _ready() sees configured values
@@ -108,6 +108,10 @@ func spawn_networked(
 	obj.global_rotation = global_rot
 	# Broadcast to clients
 	var parent_path := _node_path_to_string(parent.get_path())
+	GameLog.log(
+		"[WorldSync] Host spawned %s name=%s parent=%s pos=%s"
+		% [scene_path, obj.name, parent_path, str(global_pos)]
+	)
 	_spawn_on_clients.rpc(scene_path, parent_path, obj.name, global_pos, global_rot, state)
 	return obj
 
@@ -135,13 +139,17 @@ func _spawn_on_clients(
 ) -> void:
 	if is_host():
 		return # Host already spawned it locally
+	GameLog.log(
+		"[WorldSync] Client received spawn: %s name=%s parent=%s"
+		% [scene_path, obj_name, parent_path_str]
+	)
 	var parent := _string_to_node(parent_path_str)
 	if parent == null:
-		push_warning("[WorldSync] Client: parent not found: " + parent_path_str)
+		GameLog.log("[WorldSync] Client: parent not found: " + parent_path_str)
 		return
 	var scene := _get_scene(scene_path)
 	if scene == null:
-		push_warning("[WorldSync] Client: scene not found: " + scene_path)
+		GameLog.log("[WorldSync] Client: scene not found: " + scene_path)
 		return
 	var obj := scene.instantiate()
 	for key in state:
@@ -150,6 +158,7 @@ func _spawn_on_clients(
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
+	GameLog.log("[WorldSync] Client spawned %s OK" % obj_name)
 
 
 @rpc("authority", "call_local", "reliable")
