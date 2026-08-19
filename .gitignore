@@ -19,3 +19,9 @@ _unused/
 tools/godotsteam-editor/*.exe
 tools/godotsteam-editor/*.dll
 tools/godotsteam-editor/steam_appid.txt
+
+# GodotSteam export templates (~210MB each, not for git)
+tools/godotsteam-templates/
+
+# Exported game builds (not for git)
+export/

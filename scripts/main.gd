@@ -153,48 +153,40 @@ func _ready() -> void:
 
 
 ## --- Networking / per-peer player spawning ---
-## Solo play auto-hosts immediately (no lobby UI, no waiting) so it feels
-## identical to a plain single-player game; a friend can join the same
-## running session at any time via NetworkManager.invite_friend()/
-## join_game(). Whoever connects (host first, then each joining peer in
-## order) gets their own dynamically-spawned player and the next
-## available stand.
+## By the time this scene loads, hosting/joining already happened back in
+## the MainMenu/Lobby scenes (see main_menu.gd, lobby.gd, lobby_manager.gd)
+## — connections are already established and every connected peer already
+## picked a stand in the lobby (tracked in LobbyManager.roster, which
+## survives the scene change since it's an autoload). So we don't need to
+## wait for lobby_created/peer_connected here; we just spawn a player for
+## everyone already known.
 func _setup_networking() -> void:
 	player_spawner.spawn_path = players_node.get_path()
 	player_spawner.add_spawnable_scene(PLAYER_SCENE_PATH)
-	NetworkManager.lobby_created.connect(_on_lobby_created)
-	NetworkManager.peer_connected.connect(_on_peer_connected)
-	NetworkManager.server_connected.connect(_on_server_connected)
-	NetworkManager.host_game()
+
+	if multiplayer.is_server():
+		if LobbyManager.roster.is_empty():
+			# No lobby was actually used to get here (e.g. testing
+			# main.tscn directly in the editor) — fall back to plain
+			# solo behavior: just spawn ourselves on the primary stand.
+			_spawn_player_for_peer(1)
+		else:
+			for peer_id in LobbyManager.roster.keys():
+				_spawn_player_for_peer(peer_id)
+		NetworkManager.peer_connected.connect(_on_peer_connected)
+	else:
+		# We're a client; our connection to the host was already
+		# established during the lobby phase, so we can request our
+		# spawn immediately instead of waiting for it again.
+		_request_spawn.rpc_id(1)
 
 
-func _on_lobby_created(_lobby_id: int) -> void:
-	# We just became the real host (peer ID 1) — spawn our own player.
-	_spawn_player_for_peer(1)
-
-
+## Handles a peer connecting AFTER we've already loaded into the
+## gameworld (shouldn't normally happen with the lobby-gates-entry flow,
+## but guards against edge cases like a very late straggling connection).
 func _on_peer_connected(peer_id: int) -> void:
 	if multiplayer.is_server():
 		_spawn_player_for_peer(peer_id)
-
-
-func _on_server_connected() -> void:
-	# We're a client that just connected to the host. Wait until the
-	# connection is actually usable for RPCs (see the Phase 1 test scene's
-	# notes on why this can't be assumed immediately), then ask the host
-	# to spawn our player.
-	_wait_for_connection_then_request_spawn()
-
-
-func _wait_for_connection_then_request_spawn() -> void:
-	var attempts := 0
-	while attempts < 100: # up to ~15 seconds
-		if multiplayer.get_peers().has(1):
-			_request_spawn.rpc_id(1)
-			return
-		attempts += 1
-		await get_tree().create_timer(0.15).timeout
-	push_warning("Main: gave up waiting for peer 1 to register — could not request player spawn")
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -207,7 +199,7 @@ func _request_spawn() -> void:
 func _spawn_player_for_peer(peer_id: int) -> void:
 	if players_node.has_node(str(peer_id)):
 		return
-	var stand := _next_unassigned_stand()
+	var stand := _stand_for_peer(peer_id)
 	var scene := load(PLAYER_SCENE_PATH) as PackedScene
 	var p: Player = scene.instantiate()
 	p.name = str(peer_id)
@@ -220,12 +212,17 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 		_on_local_player_ready(p)
 
 
-## Returns the next stand not yet assigned to a connected peer, in a
-## fixed order (primary stand first). Returns null once every known
-## stand already has a player (extra peers currently get no stand —
-## spectator/AI-assignment behavior is future work).
-func _next_unassigned_stand() -> StandUnit:
-	for s in [stand_unit, stand_unit2]:
+## Returns the stand this peer picked in the lobby (LobbyManager.roster),
+## or falls back to "next unassigned stand in a fixed order" if no lobby
+## data exists for them (solo/direct-testing fallback, or a peer who
+## somehow reached the gameworld without picking a stand).
+func _stand_for_peer(peer_id: int) -> StandUnit:
+	var entry: Dictionary = LobbyManager.roster.get(peer_id, { })
+	var stand_index: int = entry.get("stand_index", -1)
+	var stands: Array[StandUnit] = [stand_unit, stand_unit2]
+	if stand_index >= 0 and stand_index < stands.size() and stands[stand_index] != null:
+		return stands[stand_index]
+	for s in stands:
 		if s == null:
 			continue
 		if not _assigned_stands.values().has(s):

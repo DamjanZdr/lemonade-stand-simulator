@@ -1,0 +1,94 @@
+[gd_scene format=3 uid="uid://clobby001"]
+
+[ext_resource type="Script" path="res://scripts/ui/lobby.gd" id="1_script"]
+
+[node name="Lobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.1, 0.08, 1)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -160.0
+offset_right = 180.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="RoomRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="RoomCodeLabel" type="Label" parent="VBox/RoomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Room: ..."
+
+[node name="CopyButton" type="Button" parent="VBox/RoomRow"]
+layout_mode = 2
+text = "Copy"
+
+[node name="InviteButton" type="Button" parent="VBox/RoomRow"]
+layout_mode = 2
+text = "Invite Friend"
+
+[node name="HSeparator1" type="HSeparator" parent="VBox"]
+layout_mode = 2
+
+[node name="PlayerList" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 80)
+
+[node name="HSeparator2" type="HSeparator" parent="VBox"]
+layout_mode = 2
+
+[node name="StandRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Stand1Button" type="Button" parent="VBox/StandRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Stand 1"
+
+[node name="Stand2Button" type="Button" parent="VBox/StandRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Stand 2"
+
+[node name="ReadyRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="ReadyButton" type="Button" parent="VBox/ReadyRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Ready Up"
+
+[node name="StartButton" type="Button" parent="VBox/ReadyRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Game"
+
+[node name="LeaveButton" type="Button" parent="VBox"]
+layout_mode = 2
+text = "Leave Lobby"

@@ -15,11 +15,26 @@ func _input(event: InputEvent) -> void:
 
 
 func _ready() -> void:
-	$Panel/VBox/BtnMoney.pressed.connect(func(): EventBus.debug_add_money.emit(1000.0))
-	$Panel/VBox/BtnRefill.pressed.connect(func(): EventBus.debug_refill_all_bins.emit())
-	$Panel/VBox/BtnEmpty.pressed.connect(func(): EventBus.debug_empty_pitcher.emit())
-	$Panel/VBox/BtnSpawn.pressed.connect(func(): EventBus.debug_force_spawn_customer.emit())
-	$Panel/VBox/BtnForceHappy.pressed.connect(func(): EventBus.debug_force_happy_serve.emit())
+	$Panel/VBox/BtnMoney.pressed.connect(
+		func():
+			EventBus.debug_add_money.emit(1000.0),
+	)
+	$Panel/VBox/BtnRefill.pressed.connect(
+		func():
+			EventBus.debug_refill_all_bins.emit(),
+	)
+	$Panel/VBox/BtnEmpty.pressed.connect(
+		func():
+			EventBus.debug_empty_pitcher.emit(),
+	)
+	$Panel/VBox/BtnSpawn.pressed.connect(
+		func():
+			EventBus.debug_force_spawn_customer.emit(),
+	)
+	$Panel/VBox/BtnForceHappy.pressed.connect(
+		func():
+			EventBus.debug_force_happy_serve.emit(),
+	)
 	$Panel/VBox/BtnTestPayment.pressed.connect(
 		func():
 			if _test_payment_cooldown > 0.0:
@@ -35,25 +50,31 @@ func _ready() -> void:
 			else:
 				payment = 10.0
 			var change_due := roundf((payment - price) * 100.0) / 100.0
-			EventBus.sale_initiated.emit(payment, change_due)
+			EventBus.sale_initiated.emit(payment, change_due),
 	)
 	$Panel/VBox/TempSlider.value_changed.connect(
-		func(v: float): EventBus.debug_set_temperature.emit(v)
+		func(v: float):
+			EventBus.debug_set_temperature.emit(v),
 	)
 	$Panel/VBox/TierSlider.value_changed.connect(
-		func(v: float): EventBus.debug_set_feedback_tier.emit(int(v))
+		func(v: float):
+			EventBus.debug_set_feedback_tier.emit(int(v)),
 	)
 	$Panel/VBox/SpawnSlider.value_changed.connect(
-		func(v: float): EventBus.debug_set_spawn_rate.emit(v)
+		func(v: float):
+			EventBus.debug_set_spawn_rate.emit(v),
 	)
 	$Panel/VBox/QueueMaxSlider.value_changed.connect(
-		func(v: float): EventBus.debug_set_queue_max.emit(int(v))
+		func(v: float):
+			EventBus.debug_set_queue_max.emit(int(v)),
 	)
 	$Panel/VBox/OutlineWidthSlider.value_changed.connect(
-		func(v: float): EventBus.debug_set_outline_width.emit(v)
+		func(v: float):
+			EventBus.debug_set_outline_width.emit(v),
 	)
 	$Panel/VBox/OutlineColorPicker.color_changed.connect(
-		func(c: Color): EventBus.debug_set_outline_color.emit(c)
+		func(c: Color):
+			EventBus.debug_set_outline_color.emit(c),
 	)
 
 	# Popularity override — added in script to avoid editing the .tscn.
@@ -68,7 +89,10 @@ func _ready() -> void:
 	pop_slider.step = 0.01
 	pop_slider.value = GameState.popularity
 	pop_slider.custom_minimum_size = Vector2(0, 12)
-	pop_slider.value_changed.connect(func(v: float): EventBus.debug_set_popularity.emit(v))
+	pop_slider.value_changed.connect(
+		func(v: float):
+			EventBus.debug_set_popularity.emit(v),
+	)
 	vbox.add_child(pop_slider)
 
 	# Time scale buttons
@@ -81,11 +105,16 @@ func _ready() -> void:
 		var btn := Button.new()
 		btn.text = "x%d" % int(speed)
 		btn.add_theme_font_size_override("font_size", 9)
-		btn.pressed.connect(func(): EventBus.debug_set_time_scale.emit(speed))
+		btn.pressed.connect(
+			func():
+				EventBus.debug_set_time_scale.emit(speed),
+		)
 		time_row.add_child(btn)
 	vbox.add_child(time_row)
-	EventBus.debug_set_time_scale.connect(func(s: float): Engine.time_scale = s)
-
+	EventBus.debug_set_time_scale.connect(
+		func(s: float):
+			Engine.time_scale = s,
+	)
 
 	# House color toggles
 	var roofs_cb := CheckBox.new()
@@ -94,7 +123,7 @@ func _ready() -> void:
 	roofs_cb.toggled.connect(
 		func(v: bool):
 			GameState.color_roofs = v
-			EventBus.debug_set_color_roofs.emit(v)
+			EventBus.debug_set_color_roofs.emit(v),
 	)
 	vbox.add_child(roofs_cb)
 
@@ -104,10 +133,9 @@ func _ready() -> void:
 	walls_cb.toggled.connect(
 		func(v: bool):
 			GameState.color_walls = v
-			EventBus.debug_set_color_walls.emit(v)
+			EventBus.debug_set_color_walls.emit(v),
 	)
 	vbox.add_child(walls_cb)
-
 
 	# Reset save button
 	var reset_btn := Button.new()
@@ -138,7 +166,7 @@ func _ready() -> void:
 			EventBus.weather_changed.emit(GameState.temperature)
 			for ft in GameState.FRUIT_TYPES:
 				EventBus.price_changed.emit(ft, GameState.get_price(ft))
-			EventBus.feedback_tier_changed.emit(GameState.feedback_tier)
+			EventBus.feedback_tier_changed.emit(GameState.feedback_tier),
 	)
 	vbox.add_child(reset_btn)
 
@@ -148,7 +176,7 @@ func _ready() -> void:
 	end_day_btn.add_theme_font_size_override("font_size", 9)
 	end_day_btn.pressed.connect(
 		func():
-			DayManager.end_day()
+			DayManager.end_day(),
 	)
 	vbox.add_child(end_day_btn)
 
@@ -167,16 +195,20 @@ func _process(delta: float) -> void:
 func _refresh() -> void:
 	var pitcher: Pitcher = get_tree().get_first_node_in_group("pitcher") as Pitcher
 	var recipe: Dictionary = pitcher.get_recipe_snapshot() if pitcher else { }
-	var verdict := RecipeEvaluator.get_verdict_string(recipe, GameState.temperature) if pitcher \
-	else "No pitcher"
+	var verdict := (
+		RecipeEvaluator.get_verdict_string(recipe, GameState.temperature)
+		if pitcher
+		else "No pitcher"
+	)
 
 	stats_label.text = (
-			"Money: $%.2f\nPop: %d%%\nTemp: %.0fC\nTier: %d\nPrice: $%.2f (lemon)" % [
-				GameState.money,
-				int(GameState.popularity * 100),
-				GameState.temperature,
-				GameState.feedback_tier,
-				GameState.get_price("lemon"),
-			]
+		"Money: $%.2f\nPop: %d%%\nTemp: %.0fC\nTier: %d\nPrice: $%.2f (lemon)"
+		% [
+			GameState.money,
+			int(GameState.popularity * 100),
+			GameState.temperature,
+			GameState.feedback_tier,
+			GameState.get_price("lemon"),
+		]
 	)
 	verdict_label.text = "Recipe: " + verdict

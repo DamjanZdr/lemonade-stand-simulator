@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="Lemonade Stand Simulator"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
 NetworkManager="*res://scripts/multiplayer/network_manager.gd"
+LobbyManager="*res://scripts/multiplayer/lobby_manager.gd"
 EventBus="*res://scripts/autoloads/event_bus.gd"
 Balancing="*res://scripts/autoloads/balancing.gd"
 SaveManager="*res://scripts/systems/save_manager.gd"
