@@ -199,7 +199,7 @@ func get_inventory() -> Dictionary:
 			continue
 		var btype: String = box.ingredient_type
 		result[btype] = result.get(btype, 0.0) + box.quantity
-	if water_dispenser and water_dispenser.has_method("get") and "water_fillings" in water_dispenser:
+	if water_dispenser and "water_fillings" in water_dispenser:
 		result["water"] = result.get("water", 0.0) + water_dispenser.water_fillings
 	return result
 
