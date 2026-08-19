@@ -507,3 +507,5 @@ func _set_material_roughness(node: Node, roughness: float) -> void:
 				mi.set_surface_override_material(i, dup)
 	for child in node.get_children():
 		_set_material_roughness(child, roughness)
+
+
