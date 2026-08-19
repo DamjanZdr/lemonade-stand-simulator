@@ -249,10 +249,14 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 		print("[Main] Spawn skipped — player %d already exists" % peer_id)
 		return
 	var stand := _stand_for_peer(peer_id)
-	var scene := load(PLAYER_SCENE_PATH) as PackedScene
-	var p: Player = scene.instantiate()
+	# Use the spawner's spawn() method so the node is properly detected
+	# and replicated to all clients. Manually adding to spawn_path doesn't
+	# always trigger replication.
+	var p: Player = player_spawner.spawn(PLAYER_SCENE_PATH) as Player
+	if p == null:
+		push_warning("[Main] Failed to spawn player for peer %d" % peer_id)
+		return
 	p.name = str(peer_id)
-	players_node.add_child(p)
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
