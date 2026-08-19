@@ -219,9 +219,21 @@ func get_slot_position(slot_index: int) -> Vector3:
 	return _queue_spots[slot_index]
 
 
+## TEMPORARY (testing): always exactly 1 cup of 1 fruit type, picked from
+## whichever fruits are currently unlocked. Simplifies manually testing
+## price changes end-to-end. Revert to the randomized version below once
+## done testing.
+func _random_order() -> Dictionary:
+	var unlocked := UpgradeManager.get_unlocked_fruits()
+	if unlocked.is_empty():
+		return { "lemon": 1 }
+	var fruit_type: String = unlocked[randi() % unlocked.size()]
+	return { fruit_type: 1 }
+
+
 ## Randomly builds an order: 1-5 distinct fruit types (capped by how many are
 ## unlocked), each wanting 1-5 cups.
-func _random_order() -> Dictionary:
+func _random_order_full() -> Dictionary:
 	var unlocked := UpgradeManager.get_unlocked_fruits()
 	if unlocked.is_empty():
 		return { "lemon": 1 }

@@ -114,7 +114,7 @@ func _scan_labels() -> void:
 			continue
 		var fruit_id := label.name.to_lower()
 		var is_locked := (
-			fruit_id in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(fruit_id)
+			fruit_id in StandUnit.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(fruit_id)
 		)
 		_label_nodes.append(label)
 		var lines := label.text.split("\n")
@@ -130,7 +130,7 @@ func _scan_labels() -> void:
 				"locked": is_locked,
 			}
 		)
-		if fruit_id in GameState.FRUIT_TYPES:
+		if fruit_id in StandUnit.FRUIT_TYPES:
 			var parent_title := label.get_parent() as Label3D
 			if parent_title != null:
 				var locked_lbl := parent_title.get_node_or_null(label.name + "Locked") as Label3D
@@ -308,7 +308,7 @@ func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 	for i in range(_label_data.size()):
 		var data: Dictionary = _label_data[i]
 		var fruit_id: String = data.get("name", "").to_lower()
-		if fruit_id in GameState.FRUIT_TYPES:
+		if fruit_id in StandUnit.FRUIT_TYPES:
 			var was_locked: bool = data.get("locked", false)
 			var now_locked := not UpgradeManager.is_fruit_unlocked(fruit_id)
 			data["locked"] = now_locked

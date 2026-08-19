@@ -11,6 +11,10 @@ const FRUIT_LABELS: Dictionary = {
 
 @onready var label_3d: Label3D = $Label3D
 @onready var board_camera: Camera3D = $Camera3D
+## PriceBoard is a direct child of its StandUnit in the scene, so this is
+## the stand whose prices this board displays/edits — no extra wiring
+## needed from main.gd.
+@onready var _stand: StandUnit = get_parent() as StandUnit
 
 var _editing_index := -1
 var _edit_buffer := ""
@@ -23,7 +27,8 @@ const CURSOR_BLINK := 0.5
 func _ready() -> void:
 	_setup_prices_label()
 	_load_price_prefixes()
-	EventBus.price_changed.connect(_on_price_changed)
+	if _stand:
+		_stand.price_changed.connect(_on_price_changed)
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 	_refresh_label()
 
@@ -113,7 +118,7 @@ func _load_price_prefixes() -> void:
 			prefix += c
 		if prefix == "":
 			continue
-		for ft in GameState.FRUIT_TYPES:
+		for ft in StandUnit.FRUIT_TYPES:
 			var label: String = FRUIT_LABELS.get(ft, ft.capitalize())
 			if prefix.begins_with(label):
 				_price_prefix[ft] = prefix
@@ -139,11 +144,11 @@ func _start_edit() -> void:
 
 
 func _commit_current_price() -> void:
-	if _editing_index < 0 or _editing_index >= GameState.FRUIT_TYPES.size():
+	if _editing_index < 0 or _editing_index >= StandUnit.FRUIT_TYPES.size():
 		return
 	var raw := _edit_buffer
 	if raw != "" and raw.is_valid_float():
-		GameState.set_price(GameState.FRUIT_TYPES[_editing_index], float(raw))
+		_stand.set_price(StandUnit.FRUIT_TYPES[_editing_index], float(raw))
 
 
 func _confirm_and_next() -> void:
@@ -163,7 +168,7 @@ func _confirm_and_next() -> void:
 
 
 func _move_vertical(direction: int) -> void:
-	if _editing_index < 0 or _editing_index >= GameState.FRUIT_TYPES.size():
+	if _editing_index < 0 or _editing_index >= StandUnit.FRUIT_TYPES.size():
 		return
 	_commit_current_price()
 	var next := _next_editable_index(_editing_index, direction)
@@ -199,8 +204,8 @@ func _append_char(c: String) -> void:
 
 func _refresh_label() -> void:
 	var txt := ""
-	for i in range(GameState.FRUIT_TYPES.size()):
-		var ft: String = GameState.FRUIT_TYPES[i]
+	for i in range(StandUnit.FRUIT_TYPES.size()):
+		var ft: String = StandUnit.FRUIT_TYPES[i]
 		if not UpgradeManager.is_fruit_unlocked(ft):
 			continue
 		var label: String = FRUIT_LABELS.get(ft, ft.capitalize())
@@ -209,7 +214,7 @@ func _refresh_label() -> void:
 			var cursor := "_" if _cursor_visible else " "
 			txt += "%s%s%s\n" % [prefix, _edit_buffer, cursor]
 		else:
-			txt += "%s%.2f\n" % [prefix, GameState.get_price(ft)]
+			txt += "%s%.2f\n" % [prefix, _stand.get_price(ft)]
 	label_3d.text = txt
 
 
@@ -222,11 +227,11 @@ func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 
 
 func _next_editable_index(from: int, direction: int) -> int:
-	var count := GameState.FRUIT_TYPES.size()
+	var count := StandUnit.FRUIT_TYPES.size()
 	var idx := from
 	for _i in range(count):
 		idx = wrapi(idx + direction, 0, count)
-		var ft: String = GameState.FRUIT_TYPES[idx]
+		var ft: String = StandUnit.FRUIT_TYPES[idx]
 		if UpgradeManager.is_fruit_unlocked(ft):
 			return idx
 	return -1

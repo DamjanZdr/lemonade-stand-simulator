@@ -86,6 +86,14 @@ func _ready() -> void:
 	# GameState's money field entirely — should be removed.
 	EventBus.money_changed.connect(_on_global_money_changed_bridge)
 
+	# Same reasoning for prices: customer.gd still charges based on
+	# GameState.get_price() at checkout, and morning_hub/debug_panel/
+	# save_manager still read/write GameState.prices directly. Mirror
+	# both directions until those are migrated too.
+	for ft in FRUIT_TYPES:
+		prices[ft] = GameState.get_price(ft)
+	EventBus.price_changed.connect(_on_global_price_changed_bridge)
+
 
 func _on_global_money_changed_bridge(new_amount: float) -> void:
 	if is_equal_approx(new_amount, money):
@@ -94,6 +102,13 @@ func _on_global_money_changed_bridge(new_amount: float) -> void:
 	if money > highest_money:
 		highest_money = money
 	money_changed.emit(money)
+
+
+func _on_global_price_changed_bridge(fruit_type: String, new_price: float) -> void:
+	if is_equal_approx(prices.get(fruit_type, -1.0), new_price):
+		return
+	prices[fruit_type] = new_price
+	price_changed.emit(fruit_type, new_price)
 
 
 func _init_default_prices() -> void:
@@ -147,6 +162,11 @@ func get_price(fruit_type: String) -> float:
 func set_price(fruit_type: String, new_price: float) -> void:
 	prices[fruit_type] = new_price
 	price_changed.emit(fruit_type, new_price)
+	# TEMPORARY: also write through to GameState so customer.gd (still
+	# reading GameState.get_price() at checkout) and other not-yet-migrated
+	# systems see the new price. Remove once checkout is migrated too.
+	GameState.prices[fruit_type] = new_price
+	EventBus.price_changed.emit(fruit_type, new_price)
 
 
 func get_recipe(fruit_type: String) -> Dictionary:
