@@ -80,7 +80,44 @@ var highest_money: float = 0.0
 @onready var stand_mesh: Node3D = $Stand
 
 
+## Networked (Stage B): replicates this stand's economy state from
+## whichever peer has authority over it (the host, in our host-authoritative
+## design — see the plan doc) out to every other connected peer.
+var _sync: MultiplayerSynchronizer = null
+
+
+func _setup_replication() -> void:
+	_sync = MultiplayerSynchronizer.new()
+	_sync.name = "MultiplayerSynchronizer"
+	add_child(_sync)
+	var config := SceneReplicationConfig.new()
+	for prop in [
+		"money",
+		"popularity",
+		"feedback_tier",
+		"prices",
+		"recipes",
+		"purchased_upgrade_nodes",
+		"customers_served_happy",
+		"customers_lost",
+		"total_customers_served",
+		"total_cups_sold",
+		"total_money_earned",
+		"total_money_spent",
+		"highest_purchase",
+		"highest_money",
+	]:
+		config.add_property(NodePath("../:" + prop))
+	_sync.replication_config = config
+	# Host-authoritative: this node (and therefore its synchronizer) is
+	# always owned by peer 1, regardless of which player is "assigned" to
+	# play this stand (see controller_id) — the host's simulation is the
+	# single source of truth for every stand's data.
+	set_multiplayer_authority(1)
+
+
 func _ready() -> void:
+	_setup_replication()
 	_init_default_prices()
 	_init_default_recipes()
 	highest_money = money
@@ -228,6 +265,59 @@ func set_price(fruit_type: String, new_price: float) -> void:
 
 func get_recipe(fruit_type: String) -> Dictionary:
 	return recipes.get(fruit_type, _default_recipe_for(fruit_type))
+
+## --- Networked mutation requests (Stage B) ---
+## Call these instead of the direct methods above so the change is routed
+## to whichever peer has authority (the host, in our host-authoritative
+## design) via RPC, applied there, and the resulting property change
+## replicated back out to every peer via the MultiplayerSynchronizer.
+## In solo/offline play (no real network peer), rpc_id(1, ...) targeting
+## yourself just runs locally immediately — the same call site works
+## correctly either way, no branching needed at the call site.
+
+
+func request_add_money(amount: float) -> void:
+	_rpc_add_money.rpc_id(1, amount)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_add_money(amount: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	add_money(amount)
+
+
+func request_set_price(fruit_type: String, new_price: float) -> void:
+	_rpc_set_price.rpc_id(1, fruit_type, new_price)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_set_price(fruit_type: String, new_price: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	set_price(fruit_type, new_price)
+
+
+func request_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
+	_rpc_set_recipe.rpc_id(1, fruit_type, recipe)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
+	if not is_multiplayer_authority():
+		return
+	set_recipe(fruit_type, recipe)
+
+
+func request_customer_served(outcome: String) -> void:
+	_rpc_on_customer_served.rpc_id(1, outcome)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_on_customer_served(outcome: String) -> void:
+	if not is_multiplayer_authority():
+		return
+	on_customer_served(outcome)
 
 
 func set_recipe(fruit_type: String, recipe: Dictionary) -> void:

@@ -148,7 +148,7 @@ func _commit_current_price() -> void:
 		return
 	var raw := _edit_buffer
 	if raw != "" and raw.is_valid_float():
-		_stand.set_price(StandUnit.FRUIT_TYPES[_editing_index], float(raw))
+		_stand.request_set_price(StandUnit.FRUIT_TYPES[_editing_index], float(raw))
 
 
 func _confirm_and_next() -> void:

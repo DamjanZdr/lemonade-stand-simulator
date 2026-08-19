@@ -292,7 +292,7 @@ func _resolve(outcome: String) -> void:
 	# actually belongs to (see the money routing note below for why
 	# GameState no longer listens to this signal globally).
 	if stand != null and not stand.is_legacy_primary:
-		stand.on_customer_served(outcome)
+		stand.request_customer_served(outcome)
 	else:
 		GameState.on_customer_served(self, outcome)
 	EventBus.customer_served.emit(self, outcome)
@@ -319,7 +319,7 @@ func _resolve(outcome: String) -> void:
 			# pot) — this is now the single place a sale's money is
 			# credited, one way or the other.
 			if stand != null and not stand.is_legacy_primary:
-				stand.add_money(earned)
+				stand.request_add_money(earned)
 			else:
 				GameState.add_money(earned)
 			_leave_after_change()
