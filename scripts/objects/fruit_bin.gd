@@ -94,6 +94,12 @@ func add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO
 	for i in range(old_count, new_count):
 		_drop_item(nodes[i], origins[i], grid_drop, from_pos)
 	EventBus.bin_amount_changed.emit(fruit_type, fruit_amounts[fruit_type])
+	_sync_state_to_peers()
+
+
+func _sync_state_to_peers() -> void:
+	WorldSync.sync_property(self, "fruit_amounts", fruit_amounts.duplicate(true))
+	WorldSync.sync_call(self, "update_display")
 
 
 func _drop_item(
@@ -105,13 +111,19 @@ func _drop_item(
 	if from_pos != Vector3.ZERO:
 		var tween := _animate_throw_arc(node, from_pos, origin)
 		if tween != null:
-			tween.finished.connect(func(): AudioManager.play_sfx("fruit_in_crate", global_position))
+			tween.finished.connect(
+				func():
+					AudioManager.play_sfx("fruit_in_crate", global_position),
+			)
 		return
 	node.position.y = origin.y + item_drop_height
 	var tween := create_tween()
 	tween.tween_property(node, "position:y", origin.y, 0.25) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	tween.finished.connect(func(): AudioManager.play_sfx("fruit_in_crate", global_position))
+	tween.finished.connect(
+		func():
+			AudioManager.play_sfx("fruit_in_crate", global_position),
+	)
 
 
 func take_amount(fruit_type: String, qty: float) -> float:
@@ -121,6 +133,7 @@ func take_amount(fruit_type: String, qty: float) -> float:
 	fruit_amounts[fruit_type] -= taken
 	update_display()
 	EventBus.bin_amount_changed.emit(fruit_type, fruit_amounts[fruit_type])
+	_sync_state_to_peers()
 	return taken
 
 

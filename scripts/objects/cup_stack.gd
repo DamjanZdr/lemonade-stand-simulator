@@ -130,6 +130,8 @@ func add_cups(qty: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 	var new_count := mini(current_count, _item_nodes.size())
 	for i in range(old_count, new_count):
 		_drop_item(i, from_pos)
+	WorldSync.sync_property(self, "current_count", current_count)
+	WorldSync.sync_call(self, "_update_display")
 
 
 func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:
@@ -185,6 +187,8 @@ func interact(player: Node) -> void:
 		_update_display()
 		AudioManager.play_sfx("taking_cup", global_position)
 		p.set_held(p.HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
+		WorldSync.sync_property(self, "current_count", current_count)
+		WorldSync.sync_call(self, "_update_display")
 
 
 func get_hint(player: Node) -> String:

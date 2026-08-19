@@ -230,7 +230,7 @@ func interact(player: Node) -> void:
 		AudioManager.play_sfx("pick_up_box", global_position)
 		p.make_held_trash(trash_value, trash_type, _make_hand_mesh())
 		_make_boxes_above_fall()
-		queue_free()
+		WorldSync.request_despawn(self)
 		return
 
 	if is_equipment:
@@ -241,7 +241,7 @@ func interact(player: Node) -> void:
 			_make_hand_mesh(),
 		)
 		_make_boxes_above_fall()
-		queue_free()
+		WorldSync.request_despawn(self)
 		return
 
 	AudioManager.play_sfx("pick_up_box", global_position)
@@ -251,7 +251,7 @@ func interact(player: Node) -> void:
 		_make_hand_mesh(),
 	)
 	_make_boxes_above_fall()
-	queue_free()
+	WorldSync.request_despawn(self)
 
 
 func _make_boxes_above_fall() -> void:

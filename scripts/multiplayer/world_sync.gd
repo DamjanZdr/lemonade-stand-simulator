@@ -164,6 +164,73 @@ func _despawn_on_clients(parent_path_str: String, obj_name: String) -> void:
 		obj.queue_free()
 
 
+## Sync a property change on a world object from host to all clients.
+## Use this for container contents (fruit amounts, water, sugar, ice,
+## cup counts, etc.) so all peers see the same state.
+func sync_property(obj: Node, prop: String, value: Variant) -> void:
+	if not is_host() or obj == null or not is_instance_valid(obj):
+		return
+	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	_apply_property.rpc(parent_path, obj.name, prop, value)
+
+
+## Sync multiple property changes at once (more efficient than calling
+## sync_property for each one individually).
+func sync_properties(obj: Node, props: Dictionary) -> void:
+	if not is_host() or obj == null or not is_instance_valid(obj):
+		return
+	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	_apply_properties.rpc(parent_path, obj.name, props)
+
+
+## Call a method on a world object on all clients (e.g. update_display).
+func sync_call(obj: Node, method: String, args: Array = []) -> void:
+	if not is_host() or obj == null or not is_instance_valid(obj):
+		return
+	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	_call_method.rpc(parent_path, obj.name, method, args)
+
+
+@rpc("authority", "call_local", "reliable")
+func _apply_property(
+	parent_path_str: String,
+	obj_name: String,
+	prop: String,
+	value: Variant,
+) -> void:
+	if is_host():
+		return
+	var obj := _find_node(parent_path_str, obj_name)
+	if obj:
+		obj.set(prop, value)
+
+
+@rpc("authority", "call_local", "reliable")
+func _apply_properties(parent_path_str: String, obj_name: String, props: Dictionary) -> void:
+	if is_host():
+		return
+	var obj := _find_node(parent_path_str, obj_name)
+	if obj:
+		for key in props:
+			obj.set(key, props[key])
+
+
+@rpc("authority", "call_local", "reliable")
+func _call_method(parent_path_str: String, obj_name: String, method: String, args: Array) -> void:
+	if is_host():
+		return
+	var obj := _find_node(parent_path_str, obj_name)
+	if obj and obj.has_method(method):
+		obj.callv(method, args)
+
+
+func _find_node(parent_path_str: String, obj_name: String) -> Node:
+	var parent := _string_to_node(parent_path_str)
+	if parent == null:
+		return null
+	return parent.get_node_or_null(obj_name)
+
+
 func _get_scene(path: String) -> PackedScene:
 	if _scene_cache.has(path):
 		return _scene_cache[path] as PackedScene

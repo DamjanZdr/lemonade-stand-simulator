@@ -147,6 +147,7 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 			return false
 	update_label()
 	EventBus.pitcher_ingredient_added.emit(ingredient_type, amount)
+	_sync_state_to_peers()
 	return true
 
 
@@ -160,6 +161,25 @@ func get_recipe_snapshot() -> Dictionary:
 		"ice": ice,
 		"color": color,
 	}
+
+
+## Sync this pitcher's state to all peers via WorldSync. Only the host
+## sends; clients receive and update their local copy + refresh display.
+func _sync_state_to_peers() -> void:
+	WorldSync.sync_properties(
+		self,
+		{
+			"fruit_type": fruit_type,
+			"fruit_count": fruit_count,
+			"water": water,
+			"sugar": sugar,
+			"ice": ice,
+			"cups_poured": cups_poured,
+			"state": state,
+		},
+	)
+	WorldSync.sync_call(self, "sync_fill_display")
+	WorldSync.sync_call(self, "update_label")
 
 
 func pour_portion() -> Dictionary:
@@ -191,6 +211,7 @@ func pour_portion() -> Dictionary:
 	update_label()
 	update_liquid_color()
 	AudioManager.play_sfx("fill_up_cup", global_position)
+	_sync_state_to_peers()
 	return snap
 
 
