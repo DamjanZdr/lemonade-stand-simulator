@@ -191,8 +191,38 @@ func set_money_mode(active: bool) -> void:
 		EventBus.interaction_hint_changed.emit("")
 
 
+func _enter_tree() -> void:
+	# Multiplayer authority: nodes spawned via main.gd's per-peer spawning
+	# are named after the owning peer's ID, matching the pattern used by
+	# the Phase 1 networking test scene. A statically-placed Player (e.g.
+	# in an editor preview scene with a non-numeric name) keeps the
+	# default authority (peer 1 / host), which is also correct for solo
+	# play using the default OfflineMultiplayerPeer.
+	if name.is_valid_int():
+		set_multiplayer_authority(int(name))
+	_setup_position_replication()
+
+
+## So other peers can see where a remote player physically is, even
+## though only the authoritative peer drives that player's own movement
+## input/physics locally.
+func _setup_position_replication() -> void:
+	var sync := MultiplayerSynchronizer.new()
+	sync.name = "PositionSync"
+	add_child(sync)
+	var config := SceneReplicationConfig.new()
+	config.add_property(NodePath("../:position"))
+	config.add_property(NodePath("../:rotation"))
+	sync.replication_config = config
+
+
 func _ready() -> void:
 	add_to_group("player")
+	if not is_multiplayer_authority():
+		# This is another peer's player, replicated here so we can see
+		# them — not ours to control. Skip capturing input/camera/audio,
+		# which would otherwise fight with our own local player for them.
+		return
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Layer 2 is used by the screen-space outline system for white fill nodes.
 	# The main camera must not render them — only the SubViewport OutlineCamera does.
@@ -261,6 +291,8 @@ func _on_priceboard_tween_finished() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not is_multiplayer_authority():
+		return
 	if _in_priceboard_mode:
 		return
 
@@ -290,6 +322,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if not is_multiplayer_authority():
+		# Remote players' position/rotation come from PositionSync
+		# (MultiplayerSynchronizer) instead of local physics simulation.
+		return
 	if _in_priceboard_mode:
 		velocity = Vector3.ZERO
 		move_and_slide()

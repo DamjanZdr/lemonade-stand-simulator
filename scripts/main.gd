@@ -4,10 +4,12 @@ extends Node
 const CASH_PICKUP_SCENE: PackedScene = preload("res://scenes/objects/cash_pickup.tscn")
 const OUTLINE_SCENE: PackedScene = preload("res://scenes/ui/outline_overlay.tscn")
 const DAY_SUMMARY_SCENE: PackedScene = preload("res://scenes/ui/day_summary.tscn")
+const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 
 @onready var world: Node3D = $World
-@onready var player: CharacterBody3D = $Player
+@onready var players_node: Node3D = $Players
+@onready var player_spawner: MultiplayerSpawner = $Players/MultiplayerSpawner
 @onready var spawner: Node = $CustomerSpawner
 @onready var spawner2: Node = $CustomerSpawner2
 @onready var ped_spawner: Node = $PedestrianSpawner
@@ -16,6 +18,16 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 @onready var hud: CanvasLayer = $HUD
 @onready var stand_unit: StandUnit = world.get_node_or_null("StandUnit") as StandUnit
 @onready var stand_unit2: StandUnit = world.get_node_or_null("StandUnit2") as StandUnit
+
+## The locally-controlled player, once spawned. Player is now spawned
+## dynamically per connected peer (host + anyone who joins) instead of
+## being a static scene node, so a second real player can get their own
+## instance instead of everyone sharing "the" Player.
+var _local_player: Player = null
+## peer_id -> StandUnit this peer's spawned player was assigned to.
+## Assignment order: the host (peer 1) always gets the primary stand;
+## whoever connects next gets the next stand, and so on.
+var _assigned_stands: Dictionary = { }
 
 var _cash_drop_pos: Vector3 = Vector3(0, 1.05, -0.4)
 
@@ -55,8 +67,6 @@ func _ready() -> void:
 	if stand_unit:
 		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
 		spawner.set_stand(stand_unit)
-		if hud and hud.has_method("set_stand"):
-			hud.set_stand(stand_unit)
 	if stand_unit2:
 		spawner2.set_queue_spots(stand_unit2.get_queue_spots(), stand_unit2.get_queue_step())
 		spawner2.set_stand(stand_unit2)
@@ -121,11 +131,12 @@ func _ready() -> void:
 	EventBus.day_timer_updated.connect(_on_day_timer_updated)
 	EventBus.debug_set_rain.connect(_on_debug_set_rain)
 
-	# Spawn the screen-space outline overlay and hand it the main camera so it
-	# can mirror the transform every frame.
-	var outline_sys: Node = OUTLINE_SCENE.instantiate()
-	add_child(outline_sys)
-	outline_sys.setup(player.get_node("Head/Camera3D") as Camera3D)
+	# Players are now spawned dynamically per connected peer (host + anyone
+	# who joins) instead of being a static scene node. The screen-space
+	# outline overlay, HUD stand assignment, etc. that depend on "the"
+	# local player now happen in _on_local_player_ready() once our own
+	# player actually exists, instead of here.
+	_setup_networking()
 
 	# Add the evening summary overlay
 	add_child(DAY_SUMMARY_SCENE.instantiate())
@@ -139,6 +150,97 @@ func _ready() -> void:
 	_mark_static_gi(world)
 	# Enhanced lighting is on by default; F2 toggles it off
 	_enable_enhanced_lighting()
+
+
+## --- Networking / per-peer player spawning ---
+## Solo play auto-hosts immediately (no lobby UI, no waiting) so it feels
+## identical to a plain single-player game; a friend can join the same
+## running session at any time via NetworkManager.invite_friend()/
+## join_game(). Whoever connects (host first, then each joining peer in
+## order) gets their own dynamically-spawned player and the next
+## available stand.
+func _setup_networking() -> void:
+	player_spawner.spawn_path = players_node.get_path()
+	player_spawner.add_spawnable_scene(PLAYER_SCENE_PATH)
+	NetworkManager.lobby_created.connect(_on_lobby_created)
+	NetworkManager.peer_connected.connect(_on_peer_connected)
+	NetworkManager.server_connected.connect(_on_server_connected)
+	NetworkManager.host_game()
+
+
+func _on_lobby_created(_lobby_id: int) -> void:
+	# We just became the real host (peer ID 1) — spawn our own player.
+	_spawn_player_for_peer(1)
+
+
+func _on_peer_connected(peer_id: int) -> void:
+	if multiplayer.is_server():
+		_spawn_player_for_peer(peer_id)
+
+
+func _on_server_connected() -> void:
+	# We're a client that just connected to the host. Wait until the
+	# connection is actually usable for RPCs (see the Phase 1 test scene's
+	# notes on why this can't be assumed immediately), then ask the host
+	# to spawn our player.
+	_wait_for_connection_then_request_spawn()
+
+
+func _wait_for_connection_then_request_spawn() -> void:
+	var attempts := 0
+	while attempts < 100: # up to ~15 seconds
+		if multiplayer.get_peers().has(1):
+			_request_spawn.rpc_id(1)
+			return
+		attempts += 1
+		await get_tree().create_timer(0.15).timeout
+	push_warning("Main: gave up waiting for peer 1 to register — could not request player spawn")
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _request_spawn() -> void:
+	var sender_id := multiplayer.get_remote_sender_id()
+	if sender_id != 0 and multiplayer.is_server():
+		_spawn_player_for_peer(sender_id)
+
+
+func _spawn_player_for_peer(peer_id: int) -> void:
+	if players_node.has_node(str(peer_id)):
+		return
+	var stand := _next_unassigned_stand()
+	var scene := load(PLAYER_SCENE_PATH) as PackedScene
+	var p: Player = scene.instantiate()
+	p.name = str(peer_id)
+	players_node.add_child(p)
+	_assigned_stands[peer_id] = stand
+	if stand:
+		p.assigned_stand = stand
+		p.global_position = stand.global_position + Vector3(0, 0, 2)
+	if peer_id == multiplayer.get_unique_id():
+		_on_local_player_ready(p)
+
+
+## Returns the next stand not yet assigned to a connected peer, in a
+## fixed order (primary stand first). Returns null once every known
+## stand already has a player (extra peers currently get no stand —
+## spectator/AI-assignment behavior is future work).
+func _next_unassigned_stand() -> StandUnit:
+	for s in [stand_unit, stand_unit2]:
+		if s == null:
+			continue
+		if not _assigned_stands.values().has(s):
+			return s
+	return null
+
+
+func _on_local_player_ready(p: Player) -> void:
+	# Spawn the screen-space outline overlay and hand it the local
+	# player's camera so it can mirror the transform every frame.
+	var outline_sys: Node = OUTLINE_SCENE.instantiate()
+	add_child(outline_sys)
+	outline_sys.setup(p.get_node("Head/Camera3D") as Camera3D)
+	if hud and hud.has_method("set_stand") and p.assigned_stand:
+		hud.set_stand(p.assigned_stand)
 
 
 func _on_cash_dropped(drop_pos: Vector3, payment: float, change_due: float) -> void:

@@ -16,8 +16,9 @@ script = ExtResource("1_main")
 [node name="World" parent="." unique_id=1350432744 instance=ExtResource("2_world")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00049734116, 0.013125181, 0.015693188)
 
-[node name="Player" parent="." unique_id=581860798 instance=ExtResource("3_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+[node name="Players" type="Node3D" parent="." unique_id=581860800]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="Players" unique_id=581860801]
 
 [node name="CustomerSpawner" type="Node" parent="." unique_id=2002667936]
 script = ExtResource("5_spawner")
