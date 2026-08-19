@@ -23,6 +23,10 @@ var _scene_cache: Dictionary = { }
 ## Counter for generating unique object names across all spawned objects.
 var _spawn_counter: int = 0
 
+## Cache of object name -> Node for fast lookup in RPCs. Avoids doing
+## a full scene tree search every frame for transform syncs.
+var _node_cache: Dictionary = { }
+
 
 func setup(world_objects: Node, spawner: MultiplayerSpawner) -> void:
 	# Currently unused (we use RPC-based spawning instead of MultiplayerSpawner),
@@ -194,6 +198,7 @@ func _spawn_on_clients(
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
 	obj.scale = obj_scale
+	_node_cache[obj_name] = obj
 	GameLog.log("[WorldSync] Client spawned %s OK scale=%s" % [obj_name, str(obj_scale)])
 
 
@@ -214,6 +219,7 @@ func _despawn_on_clients(parent_path_str: String, obj_name: String) -> void:
 		obj = _find_node_by_name(get_tree().current_scene, obj_name)
 	if obj:
 		obj.queue_free()
+		_node_cache.erase(obj_name)
 		GameLog.log("[WorldSync] Client despawned %s OK" % obj_name)
 	else:
 		GameLog.log("[WorldSync] Client despawn: object not found anywhere: " + obj_name)
@@ -319,14 +325,25 @@ func _call_method(parent_path_str: String, obj_name: String, method: String, arg
 
 
 func _find_node(parent_path_str: String, obj_name: String) -> Node:
+	# Check cache first
+	if _node_cache.has(obj_name):
+		var cached: Node = _node_cache[obj_name]
+		if is_instance_valid(cached):
+			return cached
+		else:
+			_node_cache.erase(obj_name)
 	var parent := _string_to_node(parent_path_str)
 	if parent:
 		var obj := parent.get_node_or_null(obj_name)
 		if obj:
+			_node_cache[obj_name] = obj
 			return obj
 	# Fallback: search the entire scene tree by name in case the object
 	# was re-parented on the host without the client knowing.
-	return _find_node_by_name(get_tree().current_scene, obj_name)
+	var found := _find_node_by_name(get_tree().current_scene, obj_name)
+	if found:
+		_node_cache[obj_name] = found
+	return found
 
 
 func _get_scene(path: String) -> PackedScene:

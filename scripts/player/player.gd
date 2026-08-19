@@ -185,6 +185,7 @@ func _get_container_scene(container_type: String) -> PackedScene:
 @onready var camera: Camera3D = $Head/Camera3D
 
 var _in_priceboard_mode := false
+var _sync_pos_timer: float = 0.0
 var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
 var _priceboard_camera_original_top_level := false
@@ -379,7 +380,10 @@ func _physics_process(delta: float) -> void:
 	if _in_priceboard_mode:
 		velocity = Vector3.ZERO
 		move_and_slide()
-		WorldSync.sync_transform(self, global_position, global_rotation)
+		_sync_pos_timer += delta
+		if _sync_pos_timer >= 0.05: # 20 updates/sec max
+			WorldSync.sync_transform(self, global_position, global_rotation)
+			_sync_pos_timer = 0.0
 		return
 
 	if not is_on_floor():
@@ -394,10 +398,12 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()
-	# Sync our position to all other peers via WorldSync (unreliable,
-	# high-frequency). This is more reliable than MultiplayerSynchronizer
-	# which wasn't replicating at all.
-	WorldSync.sync_transform(self, global_position, global_rotation)
+	# Sync our position to all other peers via WorldSync (throttled to
+	# ~20 updates/sec to avoid flooding the network).
+	_sync_pos_timer += delta
+	if _sync_pos_timer >= 0.05:
+		WorldSync.sync_transform(self, global_position, global_rotation)
+		_sync_pos_timer = 0.0
 	_frame_lookups_done = false
 	if not _money_mode:
 		_poll_hint()
