@@ -186,6 +186,7 @@ func _get_container_scene(container_type: String) -> PackedScene:
 
 var _in_priceboard_mode := false
 var _sync_pos_timer: float = 0.0
+const SYNC_INTERVAL: float = 0.15 # ~6.7 updates/sec
 var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
 var _priceboard_camera_original_top_level := false
@@ -374,12 +375,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
-		# Remote players' position/rotation come from PositionSync
-		# (MultiplayerSynchronizer) instead of local physics simulation.
+		# Remote players' position/rotation come from RPC sync
+		# instead of local physics simulation.
 		return
 	if _in_priceboard_mode:
 		velocity = Vector3.ZERO
 		move_and_slide()
+		_sync_pos_timer += delta
+		if _sync_pos_timer >= SYNC_INTERVAL:
+			_sync_pos_timer = 0.0
+			_sync_position.rpc(global_position, global_rotation)
 		return
 
 	if not is_on_floor():
@@ -394,11 +399,28 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()
+	# Send our position to all other peers at a low frequency to avoid
+	# flooding the network. ~7 updates/sec is smooth enough for seeing
+	# another player move around.
+	_sync_pos_timer += delta
+	if _sync_pos_timer >= SYNC_INTERVAL:
+		_sync_pos_timer = 0.0
+		_sync_position.rpc(global_position, global_rotation)
 	_frame_lookups_done = false
 	if not _money_mode:
 		_poll_hint()
 	_update_ghost()
 	_update_rapid_fire(delta)
+
+
+## Simple position sync RPC. Only the authority sends; all other peers
+## receive and update the remote player's transform directly.
+@rpc("authority", "call_local", "reliable")
+func _sync_position(pos: Vector3, rot: Vector3) -> void:
+	if is_multiplayer_authority():
+		return # We're the authority, we already have the right position
+	global_position = pos
+	global_rotation = rot
 
 
 func _poll_hint() -> void:
