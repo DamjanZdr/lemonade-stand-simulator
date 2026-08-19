@@ -56,10 +56,10 @@ func _ready() -> void:
 	# which stand it was for would leak into this (primary/legacy) stand's
 	# totals even when the sale was actually for a different stand.
 	# customer.gd now explicitly routes each sale: to GameState directly
-	# (calling _on_change_finalized/_on_customer_served below, unchanged)
-	# when the customer belongs to the primary stand (or no stand, e.g. a
-	# debug-spawned customer), or to that specific StandUnit's own
-	# add_money()/on_customer_served() otherwise.
+	# (calling add_money()/on_customer_served() below) when the customer
+	# belongs to the primary stand (or no stand, e.g. a debug-spawned
+	# customer), or to that specific StandUnit's own add_money()/
+	# on_customer_served() otherwise.
 	EventBus.price_changed.connect(_on_price_changed)
 	EventBus.recipe_changed.connect(_on_recipe_changed)
 	EventBus.weather_changed.connect(_on_weather_changed)
@@ -147,7 +147,10 @@ func _on_weather_changed(temp: float) -> void:
 	temperature = temp
 
 
-func _on_customer_served(_customer: Node, outcome: String) -> void:
+## Public (unlike the other _on_* handlers here) because customer.gd now
+## calls this directly for the primary stand instead of GameState listening
+## to EventBus.customer_served globally — see the note above _ready().
+func on_customer_served(_customer: Node, outcome: String) -> void:
 	total_customers_served += 1
 	match outcome:
 		"happy":

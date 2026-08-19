@@ -294,7 +294,7 @@ func _resolve(outcome: String) -> void:
 	if stand != null and not stand.is_legacy_primary:
 		stand.on_customer_served(outcome)
 	else:
-		GameState._on_customer_served(self, outcome)
+		GameState.on_customer_served(self, outcome)
 	EventBus.customer_served.emit(self, outcome)
 	_feedback_text = _feedback_for_outcome(outcome)
 	# Only pay for cups actually received — a customer who never got a single

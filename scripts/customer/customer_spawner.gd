@@ -41,7 +41,7 @@ func _on_day_phase_changed(phase: int, _day: int) -> void:
 		_reserved_slots.clear()
 
 
-func set_queue_spots(spots: Array[Vector3], step: Vector3 = Vector3.ZERO) -> void:
+func set_queue_spots(spots: Array[Vector3], _step: Vector3 = Vector3.ZERO) -> void:
 	_queue_spots = spots
 	_queue.resize(spots.size())
 	_queue.fill(null)
