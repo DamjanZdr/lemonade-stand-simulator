@@ -12,6 +12,7 @@ extends Control
 @onready var _ready_button: Button = $VBox/ReadyRow/ReadyButton
 @onready var _start_button: Button = $VBox/ReadyRow/StartButton
 @onready var _leave_button: Button = $VBox/LeaveButton
+@onready var _version_label: Label = $VersionLabel
 
 const STAND_NAMES: Array[String] = ["Stand 1", "Stand 2"]
 
@@ -46,6 +47,7 @@ func _ready() -> void:
 	# Re-request the current roster in case roster_changed already fired
 	# during the scene transition from MainMenu (before our _ready ran).
 	LobbyManager.request_refresh()
+	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	_refresh()
 
 
@@ -86,9 +88,11 @@ func _refresh() -> void:
 		var entry: Dictionary = LobbyManager.roster[peer_id]
 		var row := Label.new()
 		var stand_idx: int = entry.get("stand_index", -1)
-		var stand_text := STAND_NAMES[stand_idx] if (
-			stand_idx >= 0 and stand_idx < STAND_NAMES.size()
-		) else "(no stand)"
+		var stand_text := (
+			STAND_NAMES[stand_idx]
+			if (stand_idx >= 0 and stand_idx < STAND_NAMES.size())
+			else "(no stand)"
+		)
 		var ready_text := "Ready" if entry.get("ready", false) else "Not ready"
 		var you_text := " (you)" if peer_id == my_id else ""
 		row.text = "%s%s — %s — %s" % [

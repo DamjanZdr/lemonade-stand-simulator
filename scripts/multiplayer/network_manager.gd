@@ -14,6 +14,7 @@ signal peer_connected(peer_id: int)
 signal peer_disconnected(peer_id: int)
 signal server_connected()
 signal server_disconnected()
+signal lobby_list_received(lobbies: Array)
 
 ## The Steam app ID. 480 = Valve's Spacewar (test app).
 const STEAM_APP_ID: int = 480
@@ -42,6 +43,7 @@ func _connect_signals() -> void:
 	Steam.lobby_created.connect(_on_lobby_created)
 	Steam.lobby_joined.connect(_on_lobby_joined)
 	Steam.join_requested.connect(_on_join_requested)
+	Steam.lobby_match_list.connect(_on_lobby_match_list)
 	# Multiplayer peer signals
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -77,6 +79,29 @@ func invite_friend() -> void:
 	Steam.activateGameOverlayInviteDialog(lobby_id)
 
 
+## Search for lobbies created by this game. Filters by the "game" lobby
+## data key so we only show Lemonade Stand lobbies, not random SpaceWar
+## test lobbies. Results come back via lobby_list_received signal.
+func search_lobbies() -> void:
+	print("[NetworkManager] Searching for lobbies...")
+	Steam.addRequestLobbyListStringFilter("game", "lemonade_stand", Steam.LOBBY_COMPARISON_EQUAL)
+	Steam.addRequestLobbyListResultCountFilter(20)
+	Steam.requestLobbyList()
+
+
+func _on_lobby_match_list(lobbies: Array) -> void:
+	print("[NetworkManager] Found %d lobbies" % lobbies.size())
+	var results: Array = []
+	for lobby_id in lobbies:
+		var name: String = Steam.getLobbyData(lobby_id, "name")
+		var host_name: String = Steam.getLobbyData(lobby_id, "host_name")
+		var member_count: int = Steam.getNumLobbyMembers(lobby_id)
+		results.append(
+			{ "id": lobby_id, "name": name, "host_name": host_name, "member_count": member_count }
+		)
+	lobby_list_received.emit(results)
+
+
 ## Disconnect and clean up.
 func leave_game() -> void:
 	if lobby_id != 0:
@@ -97,8 +122,10 @@ func _on_lobby_created(connect: int, this_lobby_id: int) -> void:
 		return
 	lobby_id = this_lobby_id
 	print("[NetworkManager] Lobby created: ", lobby_id)
-	Steam.setLobbyData(lobby_id, "name", "Lemonade Stand - Test")
+	Steam.setLobbyData(lobby_id, "name", "Lemonade Stand - " + Steam.getPersonaName())
 	Steam.setLobbyData(lobby_id, "host", str(steam_id))
+	Steam.setLobbyData(lobby_id, "host_name", Steam.getPersonaName())
+	Steam.setLobbyData(lobby_id, "game", "lemonade_stand")
 	# Create host peer
 	var peer = SteamMultiplayerPeer.new()
 	peer.create_host(0)
