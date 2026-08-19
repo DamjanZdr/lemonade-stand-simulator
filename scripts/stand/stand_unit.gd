@@ -94,6 +94,16 @@ func _ready() -> void:
 		prices[ft] = GameState.get_price(ft)
 	EventBus.price_changed.connect(_on_global_price_changed_bridge)
 
+	# Popularity: same bridging approach. NOTE: on_customer_served() below is
+	# NOT wired to EventBus.customer_served here on purpose — GameState's own
+	# listener remains the sole place popularity/stats are actually computed
+	# for now (avoiding double-counting), and we just mirror the resulting
+	# value. Once there are multiple stands, customer_served needs to route
+	# to the correct stand's on_customer_served() directly instead — that's
+	# deferred until the second stand exists (tracked in the plan).
+	popularity = GameState.popularity
+	EventBus.popularity_changed.connect(_on_global_popularity_changed_bridge)
+
 
 func _on_global_money_changed_bridge(new_amount: float) -> void:
 	if is_equal_approx(new_amount, money):
@@ -109,6 +119,13 @@ func _on_global_price_changed_bridge(fruit_type: String, new_price: float) -> vo
 		return
 	prices[fruit_type] = new_price
 	price_changed.emit(fruit_type, new_price)
+
+
+func _on_global_popularity_changed_bridge(new_rating: float) -> void:
+	if is_equal_approx(new_rating, popularity):
+		return
+	popularity = new_rating
+	popularity_changed.emit(popularity)
 
 
 func _init_default_prices() -> void:
