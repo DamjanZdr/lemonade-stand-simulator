@@ -31,6 +31,57 @@ func is_host() -> bool:
 	return multiplayer.is_server()
 
 
+## The node where world objects should be added. All spawned world objects
+## go here so they're easy to find and manage.
+func get_world_objects() -> Node:
+	var root := get_tree().current_scene
+	if root == null:
+		return null
+	return root.get_node_or_null("WorldObjects")
+
+
+## Request a spawn from any peer. On the host, spawns directly and returns
+## the node. On a client, sends an RPC to the host to spawn and returns
+## null (the client will receive the replicated object via _spawn_on_clients).
+## All player-placed objects should use this instead of instantiating locally.
+func request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: Dictionary = { }) -> Node:
+	if is_host():
+		return spawn_networked(scene_path, get_world_objects(), pos, rot, state)
+	_rpc_request_spawn.rpc_id(1, scene_path, pos, rot, state)
+	return null
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: Dictionary) -> void:
+	if not is_host():
+		return
+	spawn_networked(scene_path, get_world_objects(), pos, rot, state)
+
+
+## Request a despawn from any peer. On the host, despawns directly.
+## On a client, sends an RPC to the host.
+func request_despawn(obj: Node) -> void:
+	if obj == null or not is_instance_valid(obj):
+		return
+	if is_host():
+		despawn_networked(obj)
+		return
+	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	_rpc_request_despawn.rpc_id(1, parent_path, obj.name)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_despawn(parent_path_str: String, obj_name: String) -> void:
+	if not is_host():
+		return
+	var parent := _string_to_node(parent_path_str)
+	if parent == null:
+		return
+	var obj := parent.get_node_or_null(obj_name)
+	if obj:
+		despawn_networked(obj)
+
+
 ## Spawn a world object on the host and replicate to all clients.
 ## 'state' is a Dictionary of property_name -> value pairs to set on the
 ## object before adding it to the tree (so its _ready sees them).

@@ -100,6 +100,17 @@ const CONTAINER_SCENES: Dictionary = {
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
 }
 
+const CONTAINER_SCENE_PATHS: Dictionary = {
+	"fruit_bin": "res://scenes/objects/fruit_bin.tscn",
+	"sugar_bin": "res://scenes/objects/sugar_bin.tscn",
+	"ice_bin": "res://scenes/objects/ice_bin.tscn",
+	"cup_stack": "res://scenes/objects/cup_stack.tscn",
+	"pitcher": "res://scenes/objects/pitcher.tscn",
+	"press": "res://scenes/objects/press.tscn",
+	"water_dispenser": "res://scenes/objects/water_dispenser.tscn",
+	"workstation": "res://scenes/stand/workstation.tscn",
+}
+
 # Workstation scene is loaded at runtime to avoid compile-time preload issues
 # while the editor re-imports its new .uid files.
 var _workstation_scene: PackedScene = null
@@ -833,28 +844,26 @@ func _place_cup_stack_from_box() -> void:
 					return
 
 	# Place new stack with ONE cup
-	var stack: Node = CUP_STACK_SCENE.instantiate()
-
-	# Apply smaller placement scale
 	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack")
-	stack.scale = placement_scale
-
-	# Set the count to 1 and max capacity
-	stack.starting_count = 1
-	stack.max_capacity = 10
-
-	get_tree().current_scene.add_child(stack)
-	stack.add_to_group("container")
-
-	# Position on surface with collision offset
 	var place_point := ray.get_collision_point()
-	var bottom_offset := _get_container_bottom_offset(stack)
-	stack.global_position = place_point + Vector3(0, -bottom_offset * placement_scale.y, 0)
-	# Face the player
+	var bottom_offset_estimate := 0.5
+	var stack_pos := place_point + Vector3(0, -bottom_offset_estimate * placement_scale.y, 0)
 	var look_dir := global_position - place_point
 	look_dir.y = 0
+	var stack_rot := Vector3.ZERO
 	if look_dir.length_squared() > 0.001:
-		stack.global_rotation.y = atan2(look_dir.x, look_dir.z)
+		stack_rot.y = atan2(look_dir.x, look_dir.z)
+
+	var state: Dictionary = { "starting_count": 1, "max_capacity": 10 }
+	var stack := WorldSync.request_spawn(
+		"res://scenes/objects/cup_stack.tscn",
+		stack_pos,
+		stack_rot,
+		state,
+	) as CupStack
+	if stack:
+		stack.scale = placement_scale
+		stack.add_to_group("container")
 
 	# Deduct one cup from held box
 	update_held_amount(float(qty - 1))
@@ -961,27 +970,30 @@ func _place_single_cup(_filled: bool) -> void:
 		EventBus.interaction_hint_changed.emit("Cannot place here - too close to another stack!")
 		return
 
-	var stack: Node = CUP_STACK_SCENE.instantiate()
-
 	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack")
-	stack.scale = placement_scale
-	stack.starting_count = 1
-	stack.max_capacity = 10
-
-	get_tree().current_scene.add_child(stack)
-	stack.add_to_group("container")
-
 	var hit_point := ray.get_collision_point()
-	var bottom_offset := _get_container_bottom_offset(stack)
-	stack.global_position = hit_point + Vector3(0, -bottom_offset * placement_scale.y, 0)
+	var bottom_offset_estimate := 0.5
+	var stack_pos := hit_point + Vector3(0, -bottom_offset_estimate * placement_scale.y, 0)
 	var look_dir := global_position - hit_point
 	look_dir.y = 0
+	var stack_rot := Vector3.ZERO
 	if look_dir.length_squared() > 0.001:
-		stack.global_rotation.y = atan2(look_dir.x, look_dir.z)
+		stack_rot.y = atan2(look_dir.x, look_dir.z)
+
+	var state: Dictionary = { "starting_count": 1, "max_capacity": 10 }
+	var stack := WorldSync.request_spawn(
+		"res://scenes/objects/cup_stack.tscn",
+		stack_pos,
+		stack_rot,
+		state,
+	) as CupStack
+	if stack:
+		stack.scale = placement_scale
+		stack.add_to_group("container")
 
 	_destroy_ghost()
 	clear_held()
-	AudioManager.play_sfx("taking_cup", stack.global_position)
+	AudioManager.play_sfx("taking_cup", stack_pos)
 	EventBus.container_placed.emit("cup_stack", stack)
 
 
@@ -991,62 +1003,59 @@ func _place_filled_cup() -> void:
 		EventBus.interaction_hint_changed.emit("Cannot place here - invalid position!")
 		return
 
-	var cup: Cup = CUP_SCENE.instantiate() as Cup
-	if cup == null:
-		return
-
-	# Apply scale
-	var placement_scale := Vector3.ONE * 0.03
-	cup.scale = placement_scale
-
-	# Transfer recipe and set state
 	var recipe: Dictionary = held_item_data.get("recipe", { })
-	cup.recipe = recipe
-	cup.fill_color = recipe.get("color", cup.fill_color)
-	cup.state = Cup.CupState.FILLED
-
-	# Add to scene (runs _ready())
-	get_tree().current_scene.add_child(cup)
-	cup.add_to_group("container")
-	cup.apply_fill_color()
-
-	# Ensure collision is active and on the interaction layer
-	if cup.physics != null:
-		cup.physics.collision_layer = 1
-		cup.physics.collision_mask = 1
-		for child in cup.physics.get_children():
-			if child is CollisionShape3D:
-				child.disabled = false
-
-	# Position
+	var placement_scale := Vector3.ONE * 0.03
+	# Calculate position before spawning
 	var hit_point := ray.get_collision_point()
-	var bottom_offset := _get_container_bottom_offset(cup)
-	cup.global_position = hit_point + Vector3(0, -bottom_offset * placement_scale.y, 0)
-
+	# Estimate bottom offset (cup physics shape) for placement
+	var bottom_offset_estimate := 0.5
+	var cup_pos := hit_point + Vector3(0, -bottom_offset_estimate * placement_scale.y, 0)
 	# Face the player
 	var look_dir := global_position - hit_point
 	look_dir.y = 0
+	var cup_rot := Vector3.ZERO
 	if look_dir.length_squared() > 0.001:
-		cup.global_rotation.y = atan2(look_dir.x, look_dir.z)
+		cup_rot.y = atan2(look_dir.x, look_dir.z)
+
+	var state: Dictionary = {
+		"recipe": recipe,
+		"fill_color": recipe.get("color", Color(1.0, 0.9, 0.3, 1.0)),
+		"state": Cup.CupState.FILLED,
+	}
+	var cup := WorldSync.request_spawn("res://scenes/objects/cup.tscn", cup_pos, cup_rot, state) as Cup
+	if cup:
+		cup.scale = placement_scale
+		cup.add_to_group("container")
+		# Ensure collision is active and on the interaction layer
+		if cup.physics != null:
+			cup.physics.collision_layer = 1
+			cup.physics.collision_mask = 1
+			for child in cup.physics.get_children():
+				if child is CollisionShape3D:
+					child.disabled = false
 
 	_destroy_ghost()
 	clear_held()
-	AudioManager.play_sfx("taking_cup", cup.global_position)
+	AudioManager.play_sfx("taking_cup", cup_pos)
 	EventBus.interaction_hint_changed.emit("Filled cup placed!")
 
 
 func _place_held_supply_box_on(place_pos: Vector3, place_rot: Vector3 = Vector3.ZERO) -> SupplyBox:
-	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
-	box.update_metrics()
+	var state: Dictionary = { }
 	if held_item_data.get("is_equipment", false):
-		box.is_equipment = true
-		box.equipment_type = held_item_data.get("equipment_type", "")
+		state["is_equipment"] = true
+		state["equipment_type"] = held_item_data.get("equipment_type", "")
 	else:
-		box.ingredient_type = held_item_data.get("ingredient_type", "lemon")
-		box.quantity = held_item_data.get("amount", 1.0)
-	get_parent().add_child(box)
-	box.global_position = place_pos
-	box.global_rotation = place_rot
+		state["ingredient_type"] = held_item_data.get("ingredient_type", "lemon")
+		state["quantity"] = held_item_data.get("amount", 1.0)
+	var box := WorldSync.request_spawn(
+		"res://scenes/objects/supply_box.tscn",
+		place_pos,
+		place_rot,
+		state,
+	) as SupplyBox
+	if box:
+		box.update_metrics()
 	AudioManager.play_sfx("box_drop", place_pos)
 	_destroy_ghost()
 	clear_held()
@@ -1153,34 +1162,39 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 
 
 func _drop_held_box() -> void:
-	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
-	box.update_metrics()
+	var state: Dictionary = { }
 	if held_item_data.get("is_equipment", false):
-		box.is_equipment = true
-		box.equipment_type = held_item_data.get("equipment_type", "")
+		state["is_equipment"] = true
+		state["equipment_type"] = held_item_data.get("equipment_type", "")
 	else:
-		box.ingredient_type = held_item_data.get("ingredient_type", "lemon")
-		box.quantity = held_item_data.get("amount", 1.0)
+		state["ingredient_type"] = held_item_data.get("ingredient_type", "lemon")
+		state["quantity"] = held_item_data.get("amount", 1.0)
 	# Drop exactly where the raycast hits, or 0.8 m ahead if not hitting anything.
 	var drop_pos: Vector3
 	if ray.is_colliding():
 		drop_pos = ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
 	else:
 		drop_pos = global_position + (-transform.basis.z * 0.8) + Vector3(0, 0.15, 0)
-	get_parent().add_child(box)
-	box.global_position = drop_pos
+	var box := WorldSync.request_spawn(
+		"res://scenes/objects/supply_box.tscn",
+		drop_pos,
+		Vector3.ZERO,
+		state,
+	) as SupplyBox
+	if box:
+		box.update_metrics()
 	AudioManager.play_sfx("box_drop", drop_pos)
 	clear_held()
 
 
 func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
-	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
-	box.update_metrics()
-	box.is_trash_box = true
-	box.ingredient_type = "trash"
-	box.quantity = 0.0
-	box.trash_value = held_item_data.get("trash_value", 0.0)
-	box.trash_type = held_item_data.get("trash_type", "empty_box")
+	var state: Dictionary = {
+		"is_trash_box": true,
+		"ingredient_type": "trash",
+		"quantity": 0.0,
+		"trash_value": held_item_data.get("trash_value", 0.0),
+		"trash_type": held_item_data.get("trash_type", "empty_box"),
+	}
 	var drop_pos: Vector3
 	if place_pos != Vector3.ZERO:
 		drop_pos = place_pos
@@ -1188,8 +1202,14 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 		drop_pos = ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
 	else:
 		drop_pos = global_position + (-transform.basis.z * 0.8) + Vector3(0, 0.15, 0)
-	get_parent().add_child(box)
-	box.global_position = drop_pos
+	var box := WorldSync.request_spawn(
+		"res://scenes/objects/supply_box.tscn",
+		drop_pos,
+		Vector3.ZERO,
+		state,
+	) as SupplyBox
+	if box:
+		box.update_metrics()
 	AudioManager.play_sfx("box_drop", drop_pos)
 	_destroy_ghost()
 	clear_held()
@@ -1210,42 +1230,32 @@ func _place_equipment_from_box() -> void:
 		EventBus.interaction_hint_changed.emit("Can only place on stand or workstation!")
 		return
 	var equipment_type: String = held_item_data.get("equipment_type", "")
-	var scene: PackedScene = _get_container_scene(equipment_type)
-	if scene == null:
+	var scene_path: String = CONTAINER_SCENE_PATHS.get(equipment_type, "")
+	if scene_path == "":
 		push_warning("Unknown equipment type: " + equipment_type)
 		return
-	var instance: Node3D = scene.instantiate() as Node3D
-	# Apply placement scale
-	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
-	instance.scale = placement_scale
-	# Set initial state BEFORE add_child so _ready() sees it
-	if "starting_amount" in instance:
-		instance.starting_amount = 0.0
-	if "starting_count" in instance:
-		instance.starting_count = 0
-	get_tree().current_scene.add_child(instance)
 	# Use same position as ghost (already includes collision offset)
-	instance.global_position = _ghost.global_position
-	instance.global_rotation = _ghost.global_rotation
-	# Add to container group for overlap detection
-	instance.add_to_group("container")
-	# Add pitcher to pitcher group for water tap detection
-	if instance is Pitcher:
-		instance.add_to_group("pitcher")
-		# Initialize pitcher visibility and display
-		instance.set_pitcher_visible(true)
-		instance.sync_fill_display()
-		instance.call_deferred("update_label")
-		EventBus.pitcher_state_changed.emit(int(instance.state))
+	var place_pos := _ghost.global_position
+	var place_rot := _ghost.global_rotation
+	var state: Dictionary = { }
+	# Set initial state so _ready() sees it
+	state["starting_amount"] = 0.0
+	state["starting_count"] = 0
+	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
+	if instance:
+		var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
+		instance.scale = placement_scale
+		instance.add_to_group("container")
+		# Add pitcher to pitcher group for water tap detection
+		if instance is Pitcher:
+			instance.add_to_group("pitcher")
+			instance.set_pitcher_visible(true)
+			instance.sync_fill_display()
+			instance.call_deferred("update_label")
+			EventBus.pitcher_state_changed.emit(int(instance.state))
 	_destroy_ghost()
 	make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
-	AudioManager.play_sfx(
-		_get_place_sfx_key(equipment_type),
-		instance.global_position,
-		-1.0,
-		0.05,
-		0.85,
-	)
+	AudioManager.play_sfx(_get_place_sfx_key(equipment_type), place_pos, -1.0, 0.05, 0.85)
 	EventBus.container_placed.emit(equipment_type, instance)
 
 
@@ -2189,26 +2199,23 @@ func _try_place_container() -> Node3D:
 			return source_node
 		return null
 
-	var scene: PackedScene = _get_container_scene(container_type)
-	if scene == null:
+	var scene_path: String = CONTAINER_SCENE_PATHS.get(container_type, "")
+	if scene_path == "":
 		return null
 
-	var instance: Node = scene.instantiate()
-	# Apply placement scale
-	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
-	instance.scale = placement_scale
 	# Restore saved contents (or empty if none)
 	var saved_amount: float = held_item_data.get("saved_amount", 0.0)
 	var saved_count: int = held_item_data.get("saved_count", 0)
-	if "starting_amount" in instance:
-		instance.starting_amount = saved_amount
-	if "starting_count" in instance:
-		instance.starting_count = saved_count
-	get_tree().current_scene.add_child(instance)
-	# Use same position as ghost (already includes collision offset)
-	instance.global_position = _ghost.global_position
-	instance.global_rotation = _ghost.global_rotation
-	# Add to container group for overlap detection
+	var state: Dictionary = { "starting_amount": saved_amount, "starting_count": saved_count }
+	var place_pos := _ghost.global_position
+	var place_rot := _ghost.global_rotation
+	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
+	if instance == null:
+		_destroy_ghost()
+		clear_held()
+		return null
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
+	instance.scale = placement_scale
 	instance.add_to_group("container")
 	# Add pitcher to pitcher group for water tap detection
 	if instance is Pitcher:
@@ -2250,13 +2257,7 @@ func _try_place_container() -> Node3D:
 	var container_type_str: String = held_item_data.get("container_type", "")
 	clear_held()
 	EventBus.container_placed.emit(container_type_str, instance)
-	AudioManager.play_sfx(
-		_get_place_sfx_key(container_type_str),
-		instance.global_position,
-		-1.0,
-		0.05,
-		0.85,
-	)
+	AudioManager.play_sfx(_get_place_sfx_key(container_type_str), place_pos, -1.0, 0.05, 0.85)
 	return instance
 
 
