@@ -149,6 +149,9 @@ func _ready() -> void:
 	DayManager.start_day()
 	SaveManager.capture_default_containers()
 	SaveManager.respawn_placed_containers()
+	# Push initial stand state to clients (money, prices, etc.)
+	if WorldSync.is_host():
+		call_deferred("_push_initial_stand_state")
 	# Mark static meshes for LightmapGI baking
 	_mark_static_gi(world)
 	# Enhanced lighting is on by default; F2 toggles it off
@@ -164,47 +167,15 @@ func _ready() -> void:
 ## wait for lobby_created/peer_connected here; we just spawn a player for
 ## everyone already known.
 func _setup_networking() -> void:
-	player_spawner.spawn_path = players_node.get_path()
-	player_spawner.add_spawnable_scene(PLAYER_SCENE_PATH)
-
-	# WorldSpawner: replicates runtime-spawned world objects (supply boxes,
-	# cups, cash, trash, containers, customers, pedestrians) from host to
-	# clients. Only the host spawns these; the spawner handles replication.
-	world_spawner.spawn_path = world_objects.get_path()
-	for scene_path in [
-		"res://scenes/objects/supply_box.tscn",
-		"res://scenes/objects/cup.tscn",
-		"res://scenes/objects/cup_stack.tscn",
-		"res://scenes/objects/cash_pickup.tscn",
-		"res://scenes/objects/trash.tscn",
-		"res://scenes/objects/fruit_bin.tscn",
-		"res://scenes/objects/sugar_bin.tscn",
-		"res://scenes/objects/ice_bin.tscn",
-		"res://scenes/objects/pitcher.tscn",
-		"res://scenes/objects/press.tscn",
-		"res://scenes/objects/water_dispenser.tscn",
-		"res://scenes/stand/workstation.tscn",
-		"res://scenes/customer/customer.tscn",
-		"res://scenes/customer/pedestrian.tscn",
-	]:
-		world_spawner.add_spawnable_scene(scene_path)
-
-	# When the spawner replicates a player node to us (the client), check
-	# if it's OUR local player and if so run the local-player setup that
-	# the host normally runs in _spawn_player_for_peer. Without this, the
-	# client's own player would have no outline system, no HUD connection,
-	# no hover highlights, etc.
+	# Spawner config is set in the scene file (spawn_path + spawnable_scenes).
+	# Just connect the spawned signal for local-player setup on clients.
 	player_spawner.spawned.connect(_on_spawner_spawned)
 
 	if multiplayer.is_server():
-		if LobbyManager.roster.is_empty():
-			# No lobby was actually used to get here (e.g. testing
-			# main.tscn directly in the editor) — fall back to plain
-			# solo behavior: just spawn ourselves on the primary stand.
-			_spawn_player_for_peer(1)
-		else:
-			for peer_id in LobbyManager.roster.keys():
-				_spawn_player_for_peer(peer_id)
+		# Defer spawning so the spawner is fully ready before we add nodes
+		# to its spawn_path. Without this, the spawner may not detect
+		# manually-added nodes and fail to replicate them to clients.
+		call_deferred("_host_spawn_players")
 		NetworkManager.peer_connected.connect(_on_peer_connected)
 	else:
 		# We're a client; our connection to the host was already
@@ -212,6 +183,26 @@ func _setup_networking() -> void:
 		# spawn immediately instead of waiting for it again.
 		print("[Main] Client requesting spawn from host")
 		_request_spawn.rpc_id(1)
+
+
+func _host_spawn_players() -> void:
+	if LobbyManager.roster.is_empty():
+		# No lobby was actually used to get here (e.g. testing
+		# main.tscn directly in the editor) — fall back to plain
+		# solo behavior: just spawn ourselves on the primary stand.
+		_spawn_player_for_peer(1)
+	else:
+		for peer_id in LobbyManager.roster.keys():
+			_spawn_player_for_peer(peer_id)
+
+
+func _push_initial_stand_state() -> void:
+	# Push both stands' initial state to clients so they see correct
+	# money, prices, etc. from the start (not just 0).
+	if stand_unit:
+		stand_unit._push_state()
+	if stand_unit2:
+		stand_unit2._push_state()
 
 
 func _on_spawner_spawned(node: Node) -> void:

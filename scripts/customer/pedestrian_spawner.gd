@@ -102,16 +102,22 @@ func spawn_on_path(path: PedestrianPath) -> void:
 func _spawn_pedestrian(path: PedestrianPath) -> void:
 	if not WorldSync.is_host():
 		return
-	var ped: Pedestrian = PEDESTRIAN_SCENE.instantiate()
-	get_parent().add_child(ped)
-	ped.collision_layer = 16
-	ped.collision_mask = 3
-	ped.global_position = path.waypoints[0].global_position
-	ped.setup(path.waypoints, 1)
-	ped.wants_to_join.connect(_on_wants_to_join)
-	ped.add_to_group("trash_spawn_candidates")
-	_pedestrians.append(ped)
-	EventBus.pedestrian_spawned.emit(ped)
+	var spawned := WorldSync.spawn_networked(
+		"res://scenes/customer/pedestrian.tscn",
+		get_parent(),
+		path.waypoints[0].global_position,
+		Vector3.ZERO,
+		{ },
+	) as Pedestrian
+	if spawned == null:
+		return
+	spawned.collision_layer = 16
+	spawned.collision_mask = 3
+	spawned.setup(path.waypoints, 1)
+	spawned.wants_to_join.connect(_on_wants_to_join)
+	spawned.add_to_group("trash_spawn_candidates")
+	_pedestrians.append(spawned)
+	EventBus.pedestrian_spawned.emit(spawned)
 
 
 func _try_spawn() -> void:

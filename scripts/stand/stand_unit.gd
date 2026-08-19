@@ -202,7 +202,9 @@ func _ready() -> void:
 
 	if not is_legacy_primary:
 		# Clean, fully independent stand — no legacy bridge, no GameState
-		# involvement at all. Starts from its own defaults (set above).
+		# involvement at all. Give it starting money from Balancing.
+		money = Balancing.STARTING_MONEY
+		highest_money = money
 		return
 
 	# Sync the initial value — GameState.money is already correctly set by

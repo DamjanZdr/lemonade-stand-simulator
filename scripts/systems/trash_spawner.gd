@@ -62,11 +62,15 @@ func _spawn_trash() -> void:
 	var ground_y := _find_ground_y(spawn_x, feet_y + 0.5, spawn_z, feet_y, npc)
 	if not WorldSync.is_host():
 		return
-	var trash: Node3D = TRASH_SCENE.instantiate()
-	get_tree().current_scene.add_child(trash)
-	var bottom_offset := _get_collision_bottom_offset(trash)
-	trash.global_position = Vector3(spawn_x, ground_y + bottom_offset, spawn_z)
-	trash.global_rotation = Vector3(0, randf() * TAU, 0)
+	var trash_rot := Vector3(0, randf() * TAU, 0)
+	# Use WorldSync to spawn and replicate
+	WorldSync.spawn_networked(
+		"res://scenes/objects/trash.tscn",
+		get_tree().current_scene,
+		Vector3(spawn_x, ground_y, spawn_z),
+		trash_rot,
+		{ },
+	)
 
 
 func _get_feet_y(npc: Node3D) -> float:

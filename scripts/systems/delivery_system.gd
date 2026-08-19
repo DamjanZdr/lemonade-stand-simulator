@@ -57,10 +57,18 @@ func _ensure_truck() -> void:
 
 func _spawn_box_on_truck(box: SupplyBox) -> void:
 	_ensure_truck()
+	if _truck_grid == null:
+		return
 
-	_truck_grid.add_child(box)
-	box.update_metrics()
+	# Build state dict for replication
+	var state: Dictionary = {
+		"ingredient_type": box.ingredient_type,
+		"quantity": box.quantity,
+		"is_equipment": box.is_equipment,
+		"equipment_type": box.equipment_type,
+	}
 
+	# Calculate position on truck grid
 	var target := _truck_grid.global_position
 	var cell_idx := -1
 	var rot := Vector3.ZERO
@@ -69,14 +77,21 @@ func _spawn_box_on_truck(box: SupplyBox) -> void:
 	target = slot.get("position", _truck_grid.global_position)
 	rot = slot.get("rotation", Vector3.ZERO)
 
-	box.global_position = target
-	box.global_rotation = rot
-	EventBus.supply_box_spawned.emit(box)
-
-	if cell_idx >= 0:
-		box.set_meta("truck_cell_idx", cell_idx)
-
-	_batched_boxes.append(box)
+	# Use WorldSync to spawn and replicate to clients
+	var spawned := WorldSync.spawn_networked(
+		"res://scenes/objects/supply_box.tscn",
+		_truck_grid,
+		target,
+		rot,
+		state,
+	)
+	if spawned:
+		box = spawned as SupplyBox
+		box.update_metrics()
+		EventBus.supply_box_spawned.emit(box)
+		if cell_idx >= 0:
+			box.set_meta("truck_cell_idx", cell_idx)
+		_batched_boxes.append(box)
 
 
 func _on_checkout_completed() -> void:

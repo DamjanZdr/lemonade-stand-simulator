@@ -60,23 +60,30 @@ func _spawn_disposed_trash(trash_type: String = "") -> void:
 		return
 	if not WorldSync.is_host():
 		return
-	var trash := TRASH_SCENE.instantiate() as Node3D
+	var start := global_position + Vector3.UP * 1.0
+	var end := global_position + Vector3.UP * 0.2
+	var state: Dictionary = { }
+	if trash_type != "":
+		state["trash_type"] = trash_type
+	var trash := WorldSync.spawn_networked(
+		"res://scenes/objects/trash.tscn",
+		get_tree().current_scene,
+		start,
+		Vector3.ZERO,
+		state,
+	) as Node3D
 	if trash == null:
 		return
 	if trash is Area3D:
 		trash.monitoring = false
 		trash.monitorable = false
-	get_tree().current_scene.add_child(trash)
 	if trash_type != "" and trash.has_method("show_variant"):
 		trash.show_variant(trash_type)
-	var start := global_position + Vector3.UP * 1.0
-	var end := global_position + Vector3.UP * 0.2
-	trash.global_position = start
 	var tw := create_tween()
 	tw.tween_property(trash, "global_position", end, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(
 		Tween.EASE_IN
 	)
-	tw.tween_callback(trash.queue_free)
+	tw.tween_callback(WorldSync.request_despawn.bind(trash))
 
 
 func _is_valid_player(player: Node) -> bool:

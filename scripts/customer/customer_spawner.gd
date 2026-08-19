@@ -54,18 +54,24 @@ func set_queue_spots(spots: Array[Vector3], _step: Vector3 = Vector3.ZERO) -> vo
 func _spawn_at_slot(slot_index: int) -> void:
 	if not WorldSync.is_host():
 		return
-	var customer: Customer = CUSTOMER_SCENE.instantiate()
-	get_parent().add_child(customer)
-	customer.add_to_group("trash_spawn_candidates")
-	customer.collision_layer = 16
-	customer.collision_mask = 3
-	customer.global_position = Vector3(0, 0, Balancing.CUSTOMER_SPAWN_Z)
-	customer.queue_slot = slot_index
-	customer.queue_position = _queue_spots[slot_index]
-	customer.stand = stand
-	_apply_facing(customer)
-	customer.order = _random_order()
-	_queue[slot_index] = customer
+	var state: Dictionary = { "queue_slot": slot_index, "queue_position": _queue_spots[slot_index] }
+	# Customers are parented to get_parent() (usually Main)
+	var spawned := WorldSync.spawn_networked(
+		"res://scenes/customer/customer.tscn",
+		get_parent(),
+		Vector3(0, 0, Balancing.CUSTOMER_SPAWN_Z),
+		Vector3.ZERO,
+		state,
+	) as Customer
+	if spawned == null:
+		return
+	spawned.add_to_group("trash_spawn_candidates")
+	spawned.collision_layer = 16
+	spawned.collision_mask = 3
+	spawned.stand = stand
+	_apply_facing(spawned)
+	spawned.order = _random_order()
+	_queue[slot_index] = spawned
 
 
 func _get_queue_cap() -> int:
