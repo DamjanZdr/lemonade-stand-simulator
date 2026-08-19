@@ -9,7 +9,20 @@ const PEDESTRIAN_SCENE: PackedScene = preload("res://scenes/customer/pedestrian.
 @export var max_pedestrians: int = 10
 @export var spawn_interval: float = 3.0
 
-var _customer_spawner: Node = null
+## Each entry: {"spawner": CustomerSpawner-like Node, "stand": StandUnit or null}.
+## When a pedestrian wants to join a queue, one entry is chosen via a
+## popularity-weighted random pick (higher popularity = more likely to be
+## chosen), so pedestrians naturally distribute across multiple stands
+## roughly proportional to how popular each one currently is. If "stand" is
+## null (e.g. registered via the legacy setup() call), it's treated as a
+## flat weight of 1.0.
+var _stand_entries: Array[Dictionary] = []
+## Tracks which spawner a given pedestrian was routed to, from the moment
+## they're chosen to join until they either finish converting or get
+## rejected — needed since _finalize_conversion/_resume happen later and
+## can no longer just assume "the" single spawner once there's more than one.
+var _ped_spawner_map: Dictionary = { }
+
 var _managed: bool = false
 var _pedestrians: Array = []
 var _spawn_timer: Timer
@@ -35,8 +48,40 @@ func _on_day_phase_changed(phase: int, _day: int) -> void:
 		_spawn_timer.stop()
 
 
+## Legacy single-stand setup. Equivalent to register_stand(spawner, null),
+## i.e. a flat weight of 1.0 (fine as long as it's the only stand).
 func setup(customer_spawner: Node) -> void:
-	_customer_spawner = customer_spawner
+	register_stand(customer_spawner, null)
+
+
+## Registers a stand's customer spawner so pedestrians can be routed to it.
+## Call once per stand (main.gd/world setup does this for each StandUnit).
+func register_stand(customer_spawner: Node, stand: StandUnit) -> void:
+	_stand_entries.append({ "spawner": customer_spawner, "stand": stand })
+
+
+## Popularity-weighted random pick among registered stands. Returns an empty
+## Dictionary if no stands are registered yet.
+func _pick_stand_entry() -> Dictionary:
+	if _stand_entries.is_empty():
+		return { }
+	if _stand_entries.size() == 1:
+		return _stand_entries[0]
+	var weights: Array[float] = []
+	var total := 0.0
+	for entry in _stand_entries:
+		var stand: StandUnit = entry.get("stand")
+		# Floor the weight so a brand-new/unpopular stand can still get a
+		# trickle of customers rather than a hard 0% chance.
+		var w: float = maxf(stand.popularity, 0.01) if stand else 1.0
+		weights.append(w)
+		total += w
+	var roll := randf() * total
+	for i in range(_stand_entries.size()):
+		roll -= weights[i]
+		if roll <= 0.0:
+			return _stand_entries[i]
+	return _stand_entries[-1]
 
 
 func set_managed(enabled: bool) -> void:
@@ -44,8 +89,10 @@ func set_managed(enabled: bool) -> void:
 
 
 func spawn_on_path(path: PedestrianPath) -> void:
-	_pedestrians = _pedestrians.filter(func(p):
-			return is_instance_valid(p))
+	_pedestrians = _pedestrians.filter(
+		func(p):
+			return is_instance_valid(p),
+	)
 	if path == null or path.waypoints.is_empty():
 		push_warning("PedestrianSpawner: cannot spawn on null or empty path.")
 		return
@@ -69,15 +116,17 @@ func _try_spawn() -> void:
 	if _managed:
 		return
 	_update_spawner()
-	_pedestrians = _pedestrians.filter(func(p):
-			return is_instance_valid(p))
+	_pedestrians = _pedestrians.filter(
+		func(p):
+			return is_instance_valid(p),
+	)
 	if _pedestrians.size() >= max_pedestrians:
 		return
 
 	# Gather all paths that have at least one waypoint.
 	var usable: Array = get_tree().get_nodes_in_group("pedestrian_paths").filter(
 		func(p):
-			return not (p as PedestrianPath).waypoints.is_empty()
+			return not (p as PedestrianPath).waypoints.is_empty(),
 	)
 
 	if usable.is_empty():
@@ -99,18 +148,24 @@ func _try_spawn() -> void:
 
 
 func _on_wants_to_join(ped: Pedestrian) -> void:
-	if _customer_spawner == null:
+	var entry := _pick_stand_entry()
+	var spawner: Node = entry.get("spawner")
+	if spawner == null:
 		_resume(ped)
 		return
 
-	var slot: int = _customer_spawner.claim_free_slot(ped)
+	var slot: int = spawner.claim_free_slot(ped)
 	if slot == -1:
 		_resume(ped)
 		return
 
+	# Remember which spawner this pedestrian committed to, so
+	# _finalize_conversion/_resume use the same one later.
+	_ped_spawner_map[ped] = spawner
+
 	# Slot is reserved. Have the pedestrian walk to it — same NPC walks visibly
 	# to the queue. When it arrives, spawn the customer already in-place (WAITING).
-	var slot_pos: Vector3 = _customer_spawner.get_slot_position(slot)
+	var slot_pos: Vector3 = spawner.get_slot_position(slot)
 	ped.walk_to_queue(
 		slot_pos,
 		func():
@@ -119,17 +174,23 @@ func _on_wants_to_join(ped: Pedestrian) -> void:
 
 
 func _finalize_conversion(ped: Pedestrian) -> void:
-	var slot: int = _customer_spawner.get_slot_for_pedestrian(ped)
+	var spawner: Node = _ped_spawner_map.get(ped)
+	if spawner == null:
+		_resume(ped)
+		return
+	var slot: int = spawner.get_slot_for_pedestrian(ped)
 	if slot == -1:
 		_resume(ped)
 		return
-	_customer_spawner.spawn_converted(slot, ped)
+	spawner.spawn_converted(slot, ped)
+	_ped_spawner_map.erase(ped)
 	_pedestrians.erase(ped)
 	ped.queue_free()
 
 
 ## Resumes a pedestrian rejected by a full queue — advance past the convertable waypoint.
 func _resume(ped: Pedestrian) -> void:
+	_ped_spawner_map.erase(ped)
 	ped._advance_waypoint()
 	if is_instance_valid(ped):
 		ped._npc.play_anim("Walk")

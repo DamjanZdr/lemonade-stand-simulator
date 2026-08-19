@@ -77,7 +77,11 @@ func _ready() -> void:
 
 	# Pedestrian spawner reads its PedestrianPath children automatically.
 	# No wiring needed here — add paths in the editor as children of PedestrianSpawner.
-	ped_spawner.setup(spawner)
+	# Registered with its StandUnit so pedestrians are routed here weighted
+	# by this stand's actual popularity once other stands are also
+	# registered (see register_stand()); with only one stand registered,
+	# every pedestrian who wants to join ends up here regardless of weight.
+	ped_spawner.register_stand(spawner, stand_unit)
 
 	# Wire delivery grid (now sourced from StandUnit)
 	if stand_unit:
