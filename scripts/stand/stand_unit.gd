@@ -156,6 +156,19 @@ func _apply_state(
 		return # Host already has correct values; don't overwrite
 	var changed_money := not is_equal_approx(money, new_money)
 	var changed_pop := not is_equal_approx(popularity, new_popularity)
+	var changed_tier := feedback_tier != new_feedback_tier
+	# Detect per-fruit price/recipe changes so we can emit the right signals
+	var changed_prices: Array[String] = []
+	for ft in new_prices:
+		if not is_equal_approx(prices.get(ft, -1.0), new_prices[ft]):
+			changed_prices.append(ft)
+	var changed_recipes: Array[String] = []
+	for ft in new_recipes:
+		var old_r: Dictionary = recipes.get(ft, { })
+		var new_r: Dictionary = new_recipes[ft]
+		if old_r.get("fruit_count", 0.0) != new_r.get("fruit_count", 0.0) \
+				or old_r.get("sugar", 0.0) != new_r.get("sugar", 0.0):
+			changed_recipes.append(ft)
 	money = new_money
 	popularity = new_popularity
 	feedback_tier = new_feedback_tier
@@ -173,6 +186,12 @@ func _apply_state(
 		money_changed.emit(money)
 	if changed_pop:
 		popularity_changed.emit(popularity)
+	if changed_tier:
+		feedback_tier_changed.emit(feedback_tier)
+	for ft in changed_prices:
+		price_changed.emit(ft, prices[ft])
+	for ft in changed_recipes:
+		recipe_changed.emit(ft, recipes[ft])
 
 
 func _ready() -> void:

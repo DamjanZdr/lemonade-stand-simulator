@@ -9,7 +9,7 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 
 @onready var world: Node3D = $World
 @onready var players_node: Node3D = $Players
-@onready var player_spawner: MultiplayerSpawner = $Players/MultiplayerSpawner
+@onready var player_spawner: MultiplayerSpawner = $MultiplayerSpawner
 @onready var spawner: Node = $CustomerSpawner
 @onready var spawner2: Node = $CustomerSpawner2
 @onready var ped_spawner: Node = $PedestrianSpawner
@@ -163,6 +163,12 @@ func _ready() -> void:
 func _setup_networking() -> void:
 	player_spawner.spawn_path = players_node.get_path()
 	player_spawner.add_spawnable_scene(PLAYER_SCENE_PATH)
+	# When the spawner replicates a player node to us (the client), check
+	# if it's OUR local player and if so run the local-player setup that
+	# the host normally runs in _spawn_player_for_peer. Without this, the
+	# client's own player would have no outline system, no HUD connection,
+	# no hover highlights, etc.
+	player_spawner.spawned.connect(_on_spawner_spawned)
 
 	if multiplayer.is_server():
 		if LobbyManager.roster.is_empty():
@@ -178,7 +184,26 @@ func _setup_networking() -> void:
 		# We're a client; our connection to the host was already
 		# established during the lobby phase, so we can request our
 		# spawn immediately instead of waiting for it again.
+		print("[Main] Client requesting spawn from host")
 		_request_spawn.rpc_id(1)
+
+
+func _on_spawner_spawned(node: Node) -> void:
+	var p := node as Player
+	if p == null:
+		return
+	# Only set up local-player stuff for OUR own player (the one we have
+	# authority over). Remote players are just visual representations.
+	if not p.is_multiplayer_authority():
+		return
+	# assigned_stand isn't replicated (only position/rotation are), so
+	# set it locally from the lobby roster.
+	var peer_id := multiplayer.get_unique_id()
+	var stand := _stand_for_peer(peer_id)
+	if stand:
+		p.assigned_stand = stand
+	_assigned_stands[peer_id] = stand
+	_on_local_player_ready(p)
 
 
 ## Handles a peer connecting AFTER we've already loaded into the
@@ -192,12 +217,14 @@ func _on_peer_connected(peer_id: int) -> void:
 @rpc("any_peer", "call_local", "reliable")
 func _request_spawn() -> void:
 	var sender_id := multiplayer.get_remote_sender_id()
+	print("[Main] Host received spawn request from peer %d" % sender_id)
 	if sender_id != 0 and multiplayer.is_server():
 		_spawn_player_for_peer(sender_id)
 
 
 func _spawn_player_for_peer(peer_id: int) -> void:
 	if players_node.has_node(str(peer_id)):
+		print("[Main] Spawn skipped — player %d already exists" % peer_id)
 		return
 	var stand := _stand_for_peer(peer_id)
 	var scene := load(PLAYER_SCENE_PATH) as PackedScene
@@ -208,6 +235,10 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 	if stand:
 		p.assigned_stand = stand
 		p.global_position = stand.global_position + Vector3(0, 0, 2)
+	print(
+		"[Main] Spawned player %d (stand=%s, is_me=%s)"
+		% [peer_id, stand.name if stand else "null", peer_id == multiplayer.get_unique_id()]
+	)
 	if peer_id == multiplayer.get_unique_id():
 		_on_local_player_ready(p)
 
