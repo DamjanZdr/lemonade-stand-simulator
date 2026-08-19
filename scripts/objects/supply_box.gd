@@ -222,6 +222,7 @@ func interact(player: Node) -> void:
 	var p: Player = player as Player
 	if p == null or p.held_item != p.HeldItem.NONE:
 		return
+	GameLog.log("[SupplyBox] interact name=%s is_host=%s" % [name, WorldSync.is_host()])
 	# Hide the box before freeing it so it doesn't flash for a frame.
 	visible = false
 	physics.collision_layer = 0

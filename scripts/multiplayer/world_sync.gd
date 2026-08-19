@@ -20,6 +20,9 @@ signal object_despawned(node_path: String)
 ## scene_path -> PackedScene cache
 var _scene_cache: Dictionary = { }
 
+## Counter for generating unique object names across all spawned objects.
+var _spawn_counter: int = 0
+
 
 func setup(world_objects: Node, spawner: MultiplayerSpawner) -> void:
 	# Currently unused (we use RPC-based spawning instead of MultiplayerSpawner),
@@ -62,11 +65,17 @@ func _rpc_request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: D
 ## On a client, sends an RPC to the host.
 func request_despawn(obj: Node) -> void:
 	if obj == null or not is_instance_valid(obj):
+		GameLog.log("[WorldSync] request_despawn: obj is null/invalid")
 		return
+	GameLog.log("[WorldSync] request_despawn name=%s is_host=%s" % [obj.name, is_host()])
 	if is_host():
 		despawn_networked(obj)
 		return
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	GameLog.log(
+		"[WorldSync] Client sending despawn RPC to host: parent=%s name=%s"
+		% [parent_path, obj.name]
+	)
 	_rpc_request_despawn.rpc_id(1, parent_path, obj.name)
 
 
@@ -74,12 +83,18 @@ func request_despawn(obj: Node) -> void:
 func _rpc_request_despawn(parent_path_str: String, obj_name: String) -> void:
 	if not is_host():
 		return
+	GameLog.log(
+		"[WorldSync] Host received despawn request: parent=%s name=%s" % [parent_path_str, obj_name]
+	)
 	var parent := _string_to_node(parent_path_str)
 	if parent == null:
+		GameLog.log("[WorldSync] Host despawn: parent not found: " + parent_path_str)
 		return
 	var obj := parent.get_node_or_null(obj_name)
 	if obj:
 		despawn_networked(obj)
+	else:
+		GameLog.log("[WorldSync] Host despawn: object not found: " + obj_name)
 
 
 ## Spawn a world object on the host and replicate to all clients.
@@ -103,6 +118,12 @@ func spawn_networked(
 	# Set state BEFORE adding to tree so _ready() sees configured values
 	for key in state:
 		obj.set(key, state[key])
+	# Give the object a unique name so despawn can find it reliably.
+	# Without this, multiple objects of the same type would all be named
+	# e.g. "SupplyBox" and despawn would only find the first one.
+	var base_name := obj.name
+	obj.name = base_name + "_" + str(_spawn_counter)
+	_spawn_counter += 1
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
@@ -124,6 +145,7 @@ func despawn_networked(obj: Node) -> void:
 		return
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	var obj_name := obj.name
+	GameLog.log("[WorldSync] Host despawning %s parent=%s" % [obj_name, parent_path])
 	obj.queue_free()
 	_despawn_on_clients.rpc(parent_path, obj_name)
 
@@ -165,12 +187,19 @@ func _spawn_on_clients(
 func _despawn_on_clients(parent_path_str: String, obj_name: String) -> void:
 	if is_host():
 		return
+	GameLog.log(
+		"[WorldSync] Client received despawn: parent=%s name=%s" % [parent_path_str, obj_name]
+	)
 	var parent := _string_to_node(parent_path_str)
 	if parent == null:
+		GameLog.log("[WorldSync] Client despawn: parent not found: " + parent_path_str)
 		return
 	var obj := parent.get_node_or_null(obj_name)
 	if obj:
 		obj.queue_free()
+		GameLog.log("[WorldSync] Client despawned %s OK" % obj_name)
+	else:
+		GameLog.log("[WorldSync] Client despawn: object not found: " + obj_name)
 
 
 ## Sync a property change on a world object from host to all clients.
