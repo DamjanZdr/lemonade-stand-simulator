@@ -11,6 +11,16 @@ var _counter_face_dir: Vector3 = Vector3(0, 0, 1) # direction slot-0 customer fa
 var _reserved_slots: Dictionary = { } # slot_index -> Pedestrian walking to that slot
 var _queue_max_override: int = 0 # 0 = use Balancing.QUEUE_MAX
 
+## Which stand this spawner's customers belong to. Set once at startup
+## (main.gd) so every customer spawned here can be tagged with the correct
+## stand — needed so payment can be credited to the right stand's money
+## instead of a single shared pot once there's more than one stand.
+var stand: StandUnit = null
+
+
+func set_stand(s: StandUnit) -> void:
+	stand = s
+
 
 func _ready() -> void:
 	EventBus.customer_left.connect(_on_customer_left)
@@ -50,6 +60,7 @@ func _spawn_at_slot(slot_index: int) -> void:
 	customer.global_position = Vector3(0, 0, Balancing.CUSTOMER_SPAWN_Z)
 	customer.queue_slot = slot_index
 	customer.queue_position = _queue_spots[slot_index]
+	customer.stand = stand
 	_apply_facing(customer)
 	customer.order = _random_order()
 	_queue[slot_index] = customer
@@ -255,6 +266,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	var customer: Customer = CUSTOMER_SCENE.instantiate()
 	customer.queue_slot = slot_index
 	customer.queue_position = _queue_spots[slot_index]
+	customer.stand = stand
 	_apply_facing(customer)
 	customer.order = _random_order()
 

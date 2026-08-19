@@ -50,10 +50,18 @@ func _ready() -> void:
 			_debug_popularity = clampf(v, 0.0, 1.0)
 			set_popularity(_debug_popularity),
 	)
-	EventBus.change_finalized.connect(_on_change_finalized)
+	# NOTE: change_finalized and customer_served are deliberately NOT
+	# connected here anymore. With more than one StandUnit in the world,
+	# blindly crediting money/popularity for every sale regardless of
+	# which stand it was for would leak into this (primary/legacy) stand's
+	# totals even when the sale was actually for a different stand.
+	# customer.gd now explicitly routes each sale: to GameState directly
+	# (calling _on_change_finalized/_on_customer_served below, unchanged)
+	# when the customer belongs to the primary stand (or no stand, e.g. a
+	# debug-spawned customer), or to that specific StandUnit's own
+	# add_money()/on_customer_served() otherwise.
 	EventBus.price_changed.connect(_on_price_changed)
 	EventBus.recipe_changed.connect(_on_recipe_changed)
-	EventBus.customer_served.connect(_on_customer_served)
 	EventBus.weather_changed.connect(_on_weather_changed)
 
 	# Auto-save whenever key state changes.

@@ -37,6 +37,16 @@ signal feedback_tier_changed(new_tier: int)
 ## Tab-switch in Stage A, etc.) — this class doesn't decide that itself.
 var controller_id: int = -1
 
+## TEMPORARY (Stage A migration): true for exactly one StandUnit — the
+## original stand that existed before multi-stand support — so it stays
+## mirrored to/from the legacy global GameState/EventBus for systems that
+## haven't been migrated yet (upgrades UI, shop/phone purchases, debug
+## panel, save/load). A second (or third, ...) StandUnit must NOT mirror
+## the legacy globals — it needs to be a fully independent economy from
+## the start, or its money/prices would leak into/from the primary stand's.
+## Set to true only on the primary StandUnit's node in the scene.
+@export var is_legacy_primary: bool = false
+
 var money: float = 0.0
 var popularity: float = 0.1
 var feedback_tier: int = 0
@@ -74,6 +84,12 @@ func _ready() -> void:
 	_init_default_prices()
 	_init_default_recipes()
 	highest_money = money
+
+	if not is_legacy_primary:
+		# Clean, fully independent stand — no legacy bridge, no GameState
+		# involvement at all. Starts from its own defaults (set above).
+		return
+
 	# Sync the initial value — GameState.money is already correctly set by
 	# the time this runs (starting money or loaded save applied during its
 	# own _ready(), which as an autoload always runs before this node's),
@@ -82,14 +98,14 @@ func _ready() -> void:
 	money = GameState.money
 	highest_money = maxf(highest_money, money)
 
-	# TEMPORARY migration bridge: many systems still read/write GameState.money
-	# directly (upgrades, shop/phone purchases, debug panel, save/load, day
-	# summary) rather than going through StandUnit yet. All of those paths
-	# ultimately re-emit the global EventBus.money_changed signal with the
-	# new total, so mirror that value here rather than GameState.money's
-	# actual source of truth for as long as there's only one StandUnit in
-	# the world. Once each of those systems is migrated to operate on a
-	# specific StandUnit directly (tracked in the plan), this bridge — and
+	# TEMPORARY migration bridge (primary stand only): many systems still
+	# read/write GameState.money directly (upgrades, shop/phone purchases,
+	# debug panel, save/load, day summary) rather than going through
+	# StandUnit yet. All of those paths ultimately re-emit the global
+	# EventBus.money_changed signal with the new total, so mirror that
+	# value here rather than GameState.money's actual source of truth.
+	# Once each of those systems is migrated to operate on a specific
+	# StandUnit directly (tracked in the plan), this bridge — and
 	# GameState's money field entirely — should be removed.
 	EventBus.money_changed.connect(_on_global_money_changed_bridge)
 
@@ -200,9 +216,12 @@ func get_price(fruit_type: String) -> float:
 func set_price(fruit_type: String, new_price: float) -> void:
 	prices[fruit_type] = new_price
 	price_changed.emit(fruit_type, new_price)
-	# TEMPORARY: also write through to GameState so customer.gd (still
-	# reading GameState.get_price() at checkout) and other not-yet-migrated
-	# systems see the new price. Remove once checkout is migrated too.
+	if not is_legacy_primary:
+		return
+	# TEMPORARY (primary stand only): also write through to GameState so
+	# other not-yet-migrated systems (morning_hub/debug_panel/save_manager)
+	# see the new price. A non-primary stand's prices are fully local and
+	# must never touch GameState. Remove this once those are migrated too.
 	GameState.prices[fruit_type] = new_price
 	EventBus.price_changed.emit(fruit_type, new_price)
 

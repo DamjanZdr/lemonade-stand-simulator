@@ -25,7 +25,23 @@ var state: CustomerState = CustomerState.WALKING
 ## before the customer engages; mutated as the price-check removes items
 ## and as cups are correctly served.
 var order: Dictionary = { }
+## Which stand this customer is queued at / buying from. Set by the
+## CustomerSpawner that spawned this customer. Used to credit payment to
+## the correct stand instead of a single shared pot once there's more than
+## one stand in the world.
+var stand: StandUnit = null
+
+
+## Price for a fruit type, from this customer's own stand if known,
+## falling back to the global GameState price otherwise (e.g. for
+## debug-spawned customers with no stand assigned).
+func _get_price(fruit_type: String) -> float:
+	if stand:
+		return stand.get_price(fruit_type)
+	return GameState.get_price(fruit_type)
 ## True once the one-time price-check reaction has run for this visit.
+
+
 var _price_checked: bool = false
 ## True while the price-check's sequence of "too expensive"/"so cheap"
 ## messages is being shown, to block serving/re-triggering.
@@ -247,7 +263,7 @@ func try_serve(player: Node) -> void:
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, fruit_type)
 	if _best_complaint == "" and not result.complaints.is_empty():
 		_best_complaint = result.complaints[0]
-	_accumulated_price += GameState.get_price(fruit_type)
+	_accumulated_price += _get_price(fruit_type)
 	order[fruit_type] -= 1
 	if order[fruit_type] <= 0:
 		order.erase(fruit_type)
@@ -272,6 +288,13 @@ func force_timeout() -> void:
 func _resolve(outcome: String) -> void:
 	_outcome = outcome
 	state = CustomerState.REACTING
+	# Explicitly route popularity/stats to whichever stand this customer
+	# actually belongs to (see the money routing note below for why
+	# GameState no longer listens to this signal globally).
+	if stand != null and not stand.is_legacy_primary:
+		stand.on_customer_served(outcome)
+	else:
+		GameState._on_customer_served(self, outcome)
 	EventBus.customer_served.emit(self, outcome)
 	_feedback_text = _feedback_for_outcome(outcome)
 	# Only pay for cups actually received — a customer who never got a single
@@ -289,7 +312,16 @@ func _resolve(outcome: String) -> void:
 		EventBus.change_tendered_updated.connect(_on_change_tendered)
 		EventBus.sale_initiated.emit(payment, change_due)
 		_waiting_for_change = true
-		_change_callable = func(_e: float):
+		_change_callable = func(earned: float):
+			# Explicitly route the money to whichever stand this sale was
+			# actually for. GameState no longer listens to change_finalized
+			# globally (that would credit every stand's sale into the same
+			# pot) — this is now the single place a sale's money is
+			# credited, one way or the other.
+			if stand != null and not stand.is_legacy_primary:
+				stand.add_money(earned)
+			else:
+				GameState.add_money(earned)
 			_leave_after_change()
 		EventBus.change_finalized.connect(_change_callable, CONNECT_ONE_SHOT)
 		# Fallback: give up after 60 s if the player ignores the money.
@@ -335,24 +367,33 @@ func _start_leaving() -> void:
 
 
 static func _customer_payment(price: float) -> float:
-	## Customer pays 10%–100% more than the price, snapped to the closest
-	## available denomination so the player can make change with real bills/coins.
-	const DENOMS: Array[int] = [5, 10, 50, 100, 500, 1000]
+	## Customer pays 10%-100% more than the price, made up of a combination
+	## of real denominations (like handing over a mix of bills/coins) so any
+	## markup amount in that range is achievable — not just whichever single
+	## bill happens to be closest, which for low prices (e.g. a $1 item,
+	## with no denomination between $1 and $5) used to collapse to "pays
+	## exactly the price, no change owed" far too often.
+	const DENOMS: Array[int] = [1000, 500, 100, 50, 10, 5] # largest first
 	var price_cents := roundi(price * 100.0)
 	var min_cents := price_cents + int(float(price_cents) * 0.1)
 	var max_cents := price_cents + int(float(price_cents) * 1.0)
-	# Pick a random target in the range, then snap to nearest denomination
+	if max_cents <= min_cents:
+		max_cents = min_cents + DENOMS[-1]
 	var target := randi_range(min_cents, max_cents)
-	var best: int = DENOMS[0]
-	var best_diff: int = absi(target - best)
+	# Greedily build the payment up to (not exceeding) the target out of
+	# real denominations, largest first — same idea as making change.
+	var best := 0
 	for d in DENOMS:
-		var diff := absi(target - d)
-		if diff < best_diff:
-			best = d
-			best_diff = diff
-	# Ensure payment covers the price
+		while best + d <= target:
+			best += d
+	# Ensure payment covers the price (rare edge case: very cheap items
+	# where even the smallest denomination overshoots the 10%-100% target).
+	# Pick the smallest single denomination that's still >= price_cents —
+	# DENOMS is largest-first, so scan it in reverse (ascending) order.
 	if best < price_cents:
-		for d in DENOMS:
+		var ascending := DENOMS.duplicate()
+		ascending.reverse()
+		for d in ascending:
 			if d >= price_cents:
 				best = d
 				break
@@ -414,7 +455,7 @@ func _on_debug_force_happy() -> void:
 	# Simulate paying for whatever's left in the order, skipping the price
 	# check/serving flow entirely — this is a debug shortcut.
 	for fruit_type: String in order.keys():
-		_accumulated_price += GameState.get_price(fruit_type) * order[fruit_type]
+		_accumulated_price += _get_price(fruit_type) * order[fruit_type]
 	order.clear()
 	_resolve("happy")
 
@@ -571,7 +612,7 @@ func _run_price_check_and_show_order() -> void:
 
 	var messages: Array[String] = []
 	for fruit_type: String in order.keys().duplicate():
-		var price := GameState.get_price(fruit_type)
+		var price := _get_price(fruit_type)
 		var base := RecipeEvaluator.get_base_price(fruit_type)
 		if base <= 0.0:
 			continue

@@ -9,10 +9,13 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 @onready var world: Node3D = $World
 @onready var player: CharacterBody3D = $Player
 @onready var spawner: Node = $CustomerSpawner
+@onready var spawner2: Node = $CustomerSpawner2
 @onready var ped_spawner: Node = $PedestrianSpawner
 @onready var delivery: Node = $DeliverySystem
+@onready var delivery2: Node = $DeliverySystem2
 @onready var hud: CanvasLayer = $HUD
 @onready var stand_unit: StandUnit = world.get_node_or_null("StandUnit") as StandUnit
+@onready var stand_unit2: StandUnit = world.get_node_or_null("StandUnit2") as StandUnit
 
 var _cash_drop_pos: Vector3 = Vector3(0, 1.05, -0.4)
 
@@ -51,8 +54,12 @@ func _ready() -> void:
 	# (Now sourced from StandUnit so multiple stands can each have their own queue.)
 	if stand_unit:
 		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
+		spawner.set_stand(stand_unit)
 		if hud and hud.has_method("set_stand"):
 			hud.set_stand(stand_unit)
+	if stand_unit2:
+		spawner2.set_queue_spots(stand_unit2.get_queue_spots(), stand_unit2.get_queue_step())
+		spawner2.set_stand(stand_unit2)
 
 	# Use the sky material set up in the editor (ProceduralSkyMaterial).
 	_world_env = world.get_node_or_null("WorldEnvironment") as WorldEnvironment
@@ -82,6 +89,8 @@ func _ready() -> void:
 	# registered (see register_stand()); with only one stand registered,
 	# every pedestrian who wants to join ends up here regardless of weight.
 	ped_spawner.register_stand(spawner, stand_unit)
+	if stand_unit2:
+		ped_spawner.register_stand(spawner2, stand_unit2)
 
 	# Wire delivery grid (now sourced from StandUnit)
 	if stand_unit:
@@ -90,6 +99,13 @@ func _ready() -> void:
 			delivery.set_delivery_zone(stand_unit.get_delivery_marker_position())
 		else:
 			delivery.set_grid(dgrid)
+	if stand_unit2:
+		delivery2.set_truck_name("DeliveryTruck2")
+		var dgrid2 := stand_unit2.get_delivery_grid()
+		if dgrid2 == null:
+			delivery2.set_delivery_zone(stand_unit2.get_delivery_marker_position())
+		else:
+			delivery2.set_grid(dgrid2)
 
 	# Find the CashPickup placed in the stand scene — use its position, then hide it
 	var cash_template: Node3D = world.find_child("CashPickup", true, false) as Node3D

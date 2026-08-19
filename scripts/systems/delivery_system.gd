@@ -9,6 +9,12 @@ var _fallback_zone: Vector3 = Vector3(5.0, 0.5, 5.0)
 var _truck: DeliveryTruck = null
 var _truck_grid: DeliveryGrid = null
 var _batched_boxes: Array[SupplyBox] = []
+## Which truck (by node name, searched under the current scene) this
+## DeliverySystem instance should use. Defaults to "DeliveryTruck" for
+## backward compatibility with the single-stand setup; a second
+## DeliverySystem instance (for a second stand) sets this to
+## "DeliveryTruck2" via set_truck_name() before its first delivery.
+var _truck_name: String = "DeliveryTruck"
 
 
 func _ready() -> void:
@@ -26,14 +32,22 @@ func set_delivery_zone(pos: Vector3) -> void:
 	_fallback_zone = pos
 
 
+## Sets which truck (by node name) this DeliverySystem instance targets.
+## Call before the first order for a non-default (second, third, ...)
+## stand's DeliverySystem instance.
+func set_truck_name(truck_name: String) -> void:
+	_truck_name = truck_name
+	_truck = null # force re-lookup with the new name
+
+
 func _ensure_truck() -> void:
 	if _truck != null and is_instance_valid(_truck):
 		return
 	# Find the truck placed in the world scene
 	var world := get_tree().current_scene
-	_truck = world.find_child("DeliveryTruck", true, false) as DeliveryTruck
+	_truck = world.find_child(_truck_name, true, false) as DeliveryTruck
 	if _truck == null:
-		push_warning("DeliverySystem: no DeliveryTruck found in world")
+		push_warning("DeliverySystem: no '%s' found in world" % _truck_name)
 		return
 	_truck_grid = _truck.get_node("DeliveryGrid") as DeliveryGrid
 	# Wire the target grid so the truck knows where to deliver

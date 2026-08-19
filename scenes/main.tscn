@@ -22,12 +22,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
 [node name="CustomerSpawner" type="Node" parent="." unique_id=2002667936]
 script = ExtResource("5_spawner")
 
+[node name="CustomerSpawner2" type="Node" parent="." unique_id=2002667937]
+script = ExtResource("5_spawner")
+
 [node name="PedestrianSpawner" type="Node" parent="." unique_id=-1149085277]
 script = ExtResource("10_pedspawner")
 
 [node name="TrashSpawner" parent="." unique_id=987654321 instance=ExtResource("11_trashspawner")]
 
 [node name="DeliverySystem" type="Node" parent="." unique_id=1974616056]
+script = ExtResource("6_delivery")
+
+[node name="DeliverySystem2" type="Node" parent="." unique_id=1974616057]
 script = ExtResource("6_delivery")
 
 [node name="HUD" parent="." unique_id=1577022415 instance=ExtResource("7_hud")]
