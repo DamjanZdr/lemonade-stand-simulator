@@ -320,6 +320,8 @@ func _ready() -> void:
 func _setup_visuals() -> void:
 	if visuals == null:
 		return
+	# Mark as player visual so eye look-at targets other players, not "Player"
+	visuals.is_player_visual = true
 	# Apply customization from the lobby roster
 	var peer_id := int(name)
 	var entry: Dictionary = LobbyManager.roster.get(peer_id, { })

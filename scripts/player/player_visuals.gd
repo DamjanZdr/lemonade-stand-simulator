@@ -4,6 +4,10 @@ extends Node3D
 ## Picks gender, a hairstyle, hair color, and per-surface clothing color.
 ## Can be randomized or set explicitly for player customization.
 
+## When true, eye look-at targets the closest OTHER player in the "player"
+## group instead of the single "Player" node (NPC behavior).
+@export var is_player_visual: bool = false
+
 # ── Animation speed controls (editable per-instance in the Inspector) ──────────
 @export_group("Animation Speeds")
 @export var walk_speed: float = 1.0
@@ -121,6 +125,8 @@ var _player_cache: Node3D = null
 var _camera_cache: Camera3D = null
 var _is_near_player: bool = true
 var _check_timer: float = 0.0
+var _closest_player_cache: Node3D = null
+var _closest_player_dist: float = INF
 
 
 func _get_player_camera() -> Camera3D:
@@ -141,7 +147,30 @@ func _ensure_player() -> bool:
 	return _player_cache != null
 
 
+## For player visuals: find the closest OTHER player in the "player" group.
+## Skips self (the parent Player node). Returns null if none within range.
+func _find_closest_other_player() -> Node3D:
+	var my_root := get_parent()
+	var best: Node3D = null
+	var best_dist := eye_look_range
+	for node in get_tree().get_nodes_in_group("player"):
+		if node == my_root:
+			continue
+		if not is_instance_valid(node):
+			continue
+		var d := global_position.distance_to(node.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = node
+	_closest_player_dist = best_dist
+	return best
+
+
 func _is_player_near() -> bool:
+	if is_player_visual:
+		var closest := _find_closest_other_player()
+		_closest_player_cache = closest
+		return closest != null
 	if not _ensure_player():
 		return true
 	return global_position.distance_to(_player_cache.global_position) <= 25.0
@@ -487,12 +516,33 @@ func _update_eye_look(delta: float) -> void:
 	if _left_eye == null or _left_rest_dir == Vector3.ZERO:
 		return
 
-	if not is_instance_valid(_player_cache):
-		_player_cache = get_tree().current_scene.find_child("Player", true, false) as Node3D
-	if _player_cache == null:
-		return
+	# Determine the look target: for player visuals, use the closest other
+	# player; for NPC visuals, use the single "Player" node.
+	var target: Node3D = null
+	var dist: float = INF
 
-	var dist := _left_eye.global_position.distance_to(_player_cache.global_position)
+	if is_player_visual:
+		target = _closest_player_cache
+		if target == null or not is_instance_valid(target):
+			# Try a fresh search in case the cache is stale
+			target = _find_closest_other_player()
+		if target == null:
+			# No other player nearby — ease eyes back to neutral
+			var t := clampf(eye_look_speed * delta, 0.0, 1.0)
+			_eye_rot_l = _eye_rot_l.slerp(Quaternion.IDENTITY, t)
+			_eye_rot_r = _eye_rot_r.slerp(Quaternion.IDENTITY, t)
+			_apply_eye(_left_eye, _eye_rot_l)
+			_apply_eye(_right_eye, _eye_rot_r)
+			return
+		dist = _closest_player_dist
+	else:
+		if not is_instance_valid(_player_cache):
+			_player_cache = get_tree().current_scene.find_child("Player", true, false) as Node3D
+		if _player_cache == null:
+			return
+		target = _player_cache
+		dist = _left_eye.global_position.distance_to(target.global_position)
+
 	# Far-away NPCs only keep rotating back to neutral; skip math once they're there.
 	if dist > eye_look_range:
 		var left_neutral := absf(_eye_rot_l.dot(Quaternion.IDENTITY)) > 0.9999
@@ -500,8 +550,15 @@ func _update_eye_look(delta: float) -> void:
 		if left_neutral and right_neutral:
 			return
 
-	var cam := _get_player_camera()
-	var aim := cam.global_position if cam else _player_cache.global_position + Vector3(0, 1.7, 0)
+	# For player visuals, aim at the other player's head/chest height.
+	# For NPC visuals, use the player's camera if available.
+	var aim: Vector3
+	if is_player_visual:
+		aim = target.global_position + Vector3(0, 1.5, 0)
+	else:
+		var cam := _get_player_camera()
+		aim = cam.global_position if cam else target.global_position + Vector3(0, 1.7, 0)
+
 	var t := clampf(eye_look_speed * delta, 0.0, 1.0)
 	var target_l := Quaternion.IDENTITY
 	var target_r := Quaternion.IDENTITY
