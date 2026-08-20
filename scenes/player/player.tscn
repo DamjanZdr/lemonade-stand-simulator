@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://crlhy1c2uos4" path="res://assets/models/props/money/c50.glb" id="7_fm80t"]
 [ext_resource type="Script" uid="uid://cycxchuulr8p5" path="res://scripts/player/money_controller.gd" id="8_money"]
 [ext_resource type="Script" uid="uid://c6g5g8x5ct4vh" path="res://scripts/player/money_denomination.gd" id="9_denom"]
+[ext_resource type="PackedScene" uid="uid://bpv1s2p3k4q5x" path="res://scenes/player/player_visuals.tscn" id="10_pvis"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.35
@@ -44,10 +45,13 @@ shape = SubResource("CapsuleShape3D_body")
 
 [node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=276144682]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
-visible = false
 material_override = SubResource("Material_body")
 cast_shadow = 0
 mesh = SubResource("BoxMesh_body")
+visible = false
+
+[node name="Visuals" parent="." instance=ExtResource("10_pvis")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)
 
 [node name="Head" type="Node3D" parent="." unique_id=950411191]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4472662, 0)

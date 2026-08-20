@@ -183,6 +183,7 @@ func _get_container_scene(container_type: String) -> PackedScene:
 @onready var hand_slot: Node3D = $Head/Camera3D/HandSlot
 @onready var ray: RayCast3D = $Head/RayCast3D
 @onready var camera: Camera3D = $Head/Camera3D
+@onready var visuals: PlayerVisuals = $Visuals
 
 var _in_priceboard_mode := false
 var _sync_pos_timer: float = 0.0
@@ -190,6 +191,10 @@ var _last_synced_pos: Vector3 = Vector3.ZERO
 var _last_synced_rot: Vector3 = Vector3.ZERO
 const SYNC_MIN_INTERVAL: float = 0.05 # Max 20 updates/sec while moving
 const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
+
+# Animation state
+var _current_anim: String = "Idle"
+var _was_moving: bool = false
 const SYNC_ROT_THRESHOLD: float = 0.05 # Min rotation (radians) to trigger sync
 var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
@@ -261,6 +266,7 @@ func _ready() -> void:
 			is_multiplayer_authority(),
 		]
 	)
+	_setup_visuals()
 	if not is_multiplayer_authority():
 		# This is another peer's player, replicated here so we can see
 		# them — not ours to control. Skip capturing input/camera/audio,
@@ -304,6 +310,44 @@ func _ready() -> void:
 	# Load the workstation scene at runtime to avoid compile-time preload issues
 	# while the editor imports the new scene/script .uid files.
 	_workstation_scene = load("res://scenes/stand/workstation.tscn") as PackedScene
+
+
+## Set up the PlayerVisuals: apply customization from the lobby roster,
+## scale the head bone, hide the model for the local player (first-person),
+## and start the idle animation.
+func _setup_visuals() -> void:
+	if visuals == null:
+		return
+	# Apply customization from the lobby roster
+	var peer_id := int(name)
+	var entry: Dictionary = LobbyManager.roster.get(peer_id, { })
+	var custom: Dictionary = entry.get("customization", { })
+	if not custom.is_empty():
+		visuals.apply_customization(custom)
+	else:
+		# No customization data — randomize as fallback
+		visuals.randomize_appearance()
+	# Scale the head bone for cartoony proportions
+	visuals.scale_head_bone(1.3)
+	# Hide visuals for the local player (first-person camera)
+	# Remote players see the full character model
+	visuals.visible = not is_multiplayer_authority()
+	# Start idle animation
+	visuals.play_anim("Idle")
+	_current_anim = "Idle"
+
+
+## Update the player's animation based on movement state.
+func _update_anim() -> void:
+	if visuals == null or not visuals.visible:
+		return
+	var moving := velocity.length() > 0.5 and is_on_floor()
+	if moving and _current_anim != "Walk":
+		visuals.play_anim("Walk")
+		_current_anim = "Walk"
+	elif not moving and _current_anim != "Idle":
+		visuals.play_anim("Idle")
+		_current_anim = "Idle"
 
 
 func enter_priceboard_focus(focus_transform: Transform3D) -> void:
@@ -377,6 +421,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_secondary_interact()
 
 
+func _process(_delta: float) -> void:
+	# Remote players: update animation based on velocity from RPC sync
+	if not is_multiplayer_authority():
+		_update_anim()
+
+
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
 		# Remote players' position/rotation come from RPC sync
@@ -406,6 +456,7 @@ func _physics_process(delta: float) -> void:
 		_poll_hint()
 	_update_ghost()
 	_update_rapid_fire(delta)
+	_update_anim()
 
 
 ## Only sync position when the player has actually moved or rotated

@@ -14,7 +14,7 @@ signal roster_changed()
 signal game_starting()
 
 ## peer_id -> { "name": String, "stand_index": int (-1 = unset, 0/1/...
-## corresponds to the Nth stand), "ready": bool }
+## corresponds to the Nth stand), "ready": bool, "customization": Dictionary }
 var roster: Dictionary = { }
 
 
@@ -70,7 +70,12 @@ func request_refresh() -> void:
 func _register(peer_id: int, player_name: String) -> void:
 	if not multiplayer.is_server():
 		return
-	roster[peer_id] = { "name": player_name, "stand_index": -1, "ready": false }
+	roster[peer_id] = {
+		"name": player_name,
+		"stand_index": -1,
+		"ready": false,
+		"customization": { },
+	}
 	print("[LobbyManager] Registered peer %d as '%s'" % [peer_id, player_name])
 	_broadcast_roster()
 
@@ -118,6 +123,24 @@ func _request_set_stand(stand_index: int) -> void:
 
 func set_my_ready(is_ready: bool) -> void:
 	_request_set_ready.rpc_id(1, is_ready)
+
+
+func set_my_customization(data: Dictionary) -> void:
+	_request_set_customization.rpc_id(1, data)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _request_set_customization(data: Dictionary) -> void:
+	if not multiplayer.is_server():
+		return
+	var id := _sender_id()
+	if roster.has(id):
+		roster[id]["customization"] = data
+		_broadcast_roster()
+
+
+func get_my_customization() -> Dictionary:
+	return get_my_entry().get("customization", { })
 
 
 @rpc("any_peer", "call_local", "reliable")

@@ -2,6 +2,14 @@
 
 [ext_resource type="Script" path="res://scripts/ui/lobby.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dbgconsole01" path="res://scenes/ui/debug_console.tscn" id="2_dbgconsole"]
+[ext_resource type="PackedScene" uid="uid://bpv1s2p3k4q5x" path="res://scenes/player/player_visuals.tscn" id="3_pvis"]
+
+[sub_resource type="Environment" id="Env_lobby"]
+background_mode = 1
+background_color = Color(0.12, 0.1, 0.08, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.7, 0.7, 0.7, 1)
+ambient_light_energy = 0.8
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -23,78 +31,261 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.12, 0.1, 0.08, 1)
 
-[node name="VBox" type="VBoxContainer" parent="."]
+[node name="HBox" type="HBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -160.0
-offset_right = 180.0
-offset_bottom = 160.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="VBox" type="VBoxContainer" parent="HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="RoomRow" type="HBoxContainer" parent="VBox"]
+[node name="RoomRow" type="HBoxContainer" parent="HBox/VBox"]
 layout_mode = 2
 
-[node name="RoomCodeLabel" type="Label" parent="VBox/RoomRow"]
+[node name="RoomCodeLabel" type="Label" parent="HBox/VBox/RoomRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Room: ..."
 
-[node name="CopyButton" type="Button" parent="VBox/RoomRow"]
+[node name="CopyButton" type="Button" parent="HBox/VBox/RoomRow"]
 layout_mode = 2
 text = "Copy"
 
-[node name="InviteButton" type="Button" parent="VBox/RoomRow"]
+[node name="InviteButton" type="Button" parent="HBox/VBox/RoomRow"]
 layout_mode = 2
 text = "Invite Friend"
 
-[node name="HSeparator1" type="HSeparator" parent="VBox"]
+[node name="HSeparator1" type="HSeparator" parent="HBox/VBox"]
 layout_mode = 2
 
-[node name="PlayerList" type="VBoxContainer" parent="VBox"]
+[node name="PlayerList" type="VBoxContainer" parent="HBox/VBox"]
 layout_mode = 2
+size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 80)
 
-[node name="HSeparator2" type="HSeparator" parent="VBox"]
+[node name="HSeparator2" type="HSeparator" parent="HBox/VBox"]
 layout_mode = 2
 
-[node name="StandRow" type="HBoxContainer" parent="VBox"]
+[node name="StandRow" type="HBoxContainer" parent="HBox/VBox"]
 layout_mode = 2
 
-[node name="Stand1Button" type="Button" parent="VBox/StandRow"]
+[node name="Stand1Button" type="Button" parent="HBox/VBox/StandRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Stand 1"
 
-[node name="Stand2Button" type="Button" parent="VBox/StandRow"]
+[node name="Stand2Button" type="Button" parent="HBox/VBox/StandRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Stand 2"
 
-[node name="ReadyRow" type="HBoxContainer" parent="VBox"]
+[node name="ReadyRow" type="HBoxContainer" parent="HBox/VBox"]
 layout_mode = 2
 
-[node name="ReadyButton" type="Button" parent="VBox/ReadyRow"]
+[node name="ReadyButton" type="Button" parent="HBox/VBox/ReadyRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Ready Up"
 
-[node name="StartButton" type="Button" parent="VBox/ReadyRow"]
+[node name="StartButton" type="Button" parent="HBox/VBox/ReadyRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Start Game"
 
-[node name="LeaveButton" type="Button" parent="VBox"]
+[node name="LeaveButton" type="Button" parent="HBox/VBox"]
 layout_mode = 2
 text = "Leave Lobby"
+
+[node name="CustomizePanel" type="VBoxContainer" parent="HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(400, 0)
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HBox/CustomizePanel"]
+layout_mode = 2
+text = "Character Customization"
+horizontal_alignment = 1
+
+[node name="PreviewRect" type="SubViewportContainer" parent="HBox/CustomizePanel"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 300)
+stretch = true
+
+[node name="PreviewVP" type="SubViewport" parent="HBox/CustomizePanel/PreviewRect"]
+size = Vector2i(400, 300)
+transparent_bg = true
+render_target_update_mode = 4
+
+[node name="Camera3D" type="Camera3D" parent="HBox/CustomizePanel/PreviewRect/PreviewVP"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 4)
+fov = 35.0
+environment = SubResource("Env_lobby")
+
+[node name="PlayerVisuals" parent="HBox/CustomizePanel/PreviewRect/PreviewVP" instance=ExtResource("3_pvis")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="GenderRow" type="HBoxContainer" parent="HBox/CustomizePanel"]
+layout_mode = 2
+
+[node name="GenderLabel" type="Label" parent="HBox/CustomizePanel/GenderRow"]
+layout_mode = 2
+text = "Gender:"
+
+[node name="MaleButton" type="Button" parent="HBox/CustomizePanel/GenderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Male"
+
+[node name="FemaleButton" type="Button" parent="HBox/CustomizePanel/GenderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Female"
+
+[node name="HairRow" type="HBoxContainer" parent="HBox/CustomizePanel"]
+layout_mode = 2
+
+[node name="HairLabel" type="Label" parent="HBox/CustomizePanel/HairRow"]
+layout_mode = 2
+text = "Hair:"
+
+[node name="HairPrev" type="Button" parent="HBox/CustomizePanel/HairRow"]
+layout_mode = 2
+text = "<"
+
+[node name="HairName" type="Label" parent="HBox/CustomizePanel/HairRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Style 1"
+horizontal_alignment = 1
+
+[node name="HairNext" type="Button" parent="HBox/CustomizePanel/HairRow"]
+layout_mode = 2
+text = ">"
+
+[node name="HairColorRow" type="HBoxContainer" parent="HBox/CustomizePanel"]
+layout_mode = 2
+
+[node name="HairColorLabel" type="Label" parent="HBox/CustomizePanel/HairColorRow"]
+layout_mode = 2
+text = "Hair Color:"
+
+[node name="HairColorPrev" type="Button" parent="HBox/CustomizePanel/HairColorRow"]
+layout_mode = 2
+text = "<"
+
+[node name="HairColorName" type="Label" parent="HBox/CustomizePanel/HairColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Brown"
+horizontal_alignment = 1
+
+[node name="HairColorNext" type="Button" parent="HBox/CustomizePanel/HairColorRow"]
+layout_mode = 2
+text = ">"
+
+[node name="EyebrowRow" type="HBoxContainer" parent="HBox/CustomizePanel"]
+layout_mode = 2
+
+[node name="EyebrowLabel" type="Label" parent="HBox/CustomizePanel/EyebrowRow"]
+layout_mode = 2
+text = "Eyebrows:"
+
+[node name="EyebrowPrev" type="Button" parent="HBox/CustomizePanel/EyebrowRow"]
+layout_mode = 2
+text = "<"
+
+[node name="EyebrowName" type="Label" parent="HBox/CustomizePanel/EyebrowRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Neutral"
+horizontal_alignment = 1
+
+[node name="EyebrowNext" type="Button" parent="HBox/CustomizePanel/EyebrowRow"]
+layout_mode = 2
+text = ">"
+
+[node name="ShirtColorRow" type="HBoxContainer" parent="HBox/CustomizePanel"]
+layout_mode = 2
+
+[node name="ShirtColorLabel" type="Label" parent="HBox/CustomizePanel/ShirtColorRow"]
+layout_mode = 2
+text = "Shirt:"
+
+[node name="ShirtColorPrev" type="Button" parent="HBox/CustomizePanel/ShirtColorRow"]
+layout_mode = 2
+text = "<"
+
+[node name="ShirtColorName" type="Label" parent="HBox/CustomizePanel/ShirtColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Red"
+horizontal_alignment = 1
+
+[node name="ShirtColorNext" type="Button" parent="HBox/CustomizePanel/ShirtColorRow"]
+layout_mode = 2
+text = ">"
+
+[node name="PantsColorRow" type="HBoxContainer" parent="HBox/CustomizePanel"]
+layout_mode = 2
+
+[node name="PantsColorLabel" type="Label" parent="HBox/CustomizePanel/PantsColorRow"]
+layout_mode = 2
+text = "Pants:"
+
+[node name="PantsColorPrev" type="Button" parent="HBox/CustomizePanel/PantsColorRow"]
+layout_mode = 2
+text = "<"
+
+[node name="PantsColorName" type="Label" parent="HBox/CustomizePanel/PantsColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Blue"
+horizontal_alignment = 1
+
+[node name="PantsColorNext" type="Button" parent="HBox/CustomizePanel/PantsColorRow"]
+layout_mode = 2
+text = ">"
+
+[node name="ShoesColorRow" type="HBoxContainer" parent="HBox/CustomizePanel"]
+layout_mode = 2
+
+[node name="ShoesColorLabel" type="Label" parent="HBox/CustomizePanel/ShoesColorRow"]
+layout_mode = 2
+text = "Shoes:"
+
+[node name="ShoesColorPrev" type="Button" parent="HBox/CustomizePanel/ShoesColorRow"]
+layout_mode = 2
+text = "<"
+
+[node name="ShoesColorName" type="Label" parent="HBox/CustomizePanel/ShoesColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Green"
+horizontal_alignment = 1
+
+[node name="ShoesColorNext" type="Button" parent="HBox/CustomizePanel/ShoesColorRow"]
+layout_mode = 2
+text = ">"
+
+[node name="RandomButton" type="Button" parent="HBox/CustomizePanel"]
+layout_mode = 2
+text = "Randomize"
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1

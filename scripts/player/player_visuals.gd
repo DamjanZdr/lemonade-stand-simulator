@@ -177,6 +177,186 @@ func randomize_appearance() -> void:
 	_pick_hair(hairs, HAIR_COLORS[randi() % HAIR_COLORS.size()])
 	_tint_clothing(body)
 
+# ── Character customization API ──────────────────────────────────────────────
+# These methods allow explicit control over appearance instead of random.
+# Used by the lobby customization UI.
+
+const EYEBROW_NAMES: Array[String] = ["Neutral", "Angry", "Doubt", "Sad", "Shock"]
+
+
+func set_gender(male: bool) -> void:
+	_man.visible = male
+	_woman.visible = not male
+	_active_anim = _man_anim if male else _woman_anim
+	_left_eye = _man_left_eye if male else _woman_left_eye
+	_right_eye = _man_right_eye if male else _woman_right_eye
+	_left_marker = _man_left_marker if male else _woman_left_marker
+	_right_marker = _man_right_marker if male else _woman_right_marker
+	_left_rest_dir = (
+		_left_marker.position.normalized()
+		if _left_marker.position.length() > 0.001
+		else Vector3(0, 0, 1)
+	)
+	_right_rest_dir = (
+		_right_marker.position.normalized()
+		if _right_marker.position.length() > 0.001
+		else Vector3(0, 0, 1)
+	)
+	_eye_rot_l = Quaternion.IDENTITY
+	_eye_rot_r = Quaternion.IDENTITY
+
+
+func is_male() -> bool:
+	return _man.visible
+
+
+func get_hair_count() -> int:
+	var hairs := _man_hairs if _man.visible else _woman_hairs
+	return hairs.get_child_count()
+
+
+func set_hair(index: int, color: Color) -> void:
+	var hairs: Node3D = _man_hairs if _man.visible else _woman_hairs
+	var children := hairs.get_children()
+	if children.is_empty():
+		return
+	index = index % children.size()
+	for i in children.size():
+		var child := children[i] as Node3D
+		if child == null:
+			continue
+		child.visible = i == index
+		if i == index:
+			_tint_meshes_in(child, color)
+
+
+func get_eyebrow_count() -> int:
+	var eb := _get_eyebrows_node()
+	if eb == null:
+		return 0
+	return eb.get_child_count()
+
+
+func set_eyebrow(index: int) -> void:
+	var eb := _get_eyebrows_node()
+	if eb == null:
+		return
+	var children := eb.get_children()
+	if children.is_empty():
+		return
+	index = index % children.size()
+	for i in children.size():
+		var child := children[i] as Node3D
+		if child == null:
+			continue
+		child.visible = i == index
+
+
+func _get_eyebrows_node() -> Node3D:
+	if _man.visible:
+		return get_node_or_null("man/Armature/Skeleton3D/Head/Eyebrows")
+	return get_node_or_null("woman/Armature/Skeleton3D/Head/Eyebrows")
+
+
+func set_hair_color(color: Color) -> void:
+	var hairs: Node3D = _man_hairs if _man.visible else _woman_hairs
+	for child in hairs.get_children():
+		var c := child as Node3D
+		if c and c.visible:
+			_tint_meshes_in(c, color)
+
+
+func set_clothing_color(surface_name: String, color: Color) -> void:
+	var body: MeshInstance3D = _man_mesh if _man.visible else _woman_mesh
+	var mesh := body.mesh as ArrayMesh
+	if mesh == null:
+		return
+	for i in mesh.get_surface_count():
+		if mesh.surface_get_name(i).to_lower() == surface_name.to_lower():
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = color
+			body.set_surface_override_material(i, mat)
+
+
+func set_clothing_colors(colors: Dictionary) -> void:
+	var body: MeshInstance3D = _man_mesh if _man.visible else _woman_mesh
+	var mesh := body.mesh as ArrayMesh
+	if mesh == null:
+		return
+	for i in mesh.get_surface_count():
+		var sname := mesh.surface_get_name(i).to_lower()
+		if sname in CLOTHING_SURFACES and colors.has(sname):
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = colors[sname]
+			body.set_surface_override_material(i, mat)
+
+
+func get_clothing_surface_names() -> Array[String]:
+	var body: MeshInstance3D = _man_mesh if _man.visible else _woman_mesh
+	var mesh := body.mesh as ArrayMesh
+	if mesh == null:
+		return []
+	var result: Array[String] = []
+	for i in mesh.get_surface_count():
+		var sname := mesh.surface_get_name(i).to_lower()
+		if sname in CLOTHING_SURFACES and not result.has(sname):
+			result.append(sname)
+	return result
+
+
+## Apply a customization dictionary (stored in lobby roster) to this visual.
+func apply_customization(data: Dictionary) -> void:
+	var male: bool = data.get("male", true)
+	set_gender(male)
+	var hair_idx: int = data.get("hair_index", 0)
+	var hair_color: Color = data.get("hair_color", HAIR_COLORS[2])
+	set_hair(hair_idx, hair_color)
+	var eb_idx: int = data.get("eyebrow_index", 0)
+	set_eyebrow(eb_idx)
+	var clothing: Dictionary = data.get("clothing_colors", { })
+	if clothing.is_empty():
+		_tint_clothing(_man_mesh if male else _woman_mesh)
+	else:
+		set_clothing_colors(clothing)
+
+
+## Get the current customization as a dictionary (for storing in roster).
+func get_customization() -> Dictionary:
+	var data: Dictionary = { }
+	data["male"] = _man.visible
+	# Find visible hair index
+	var hairs: Node3D = _man_hairs if _man.visible else _woman_hairs
+	var hair_idx := 0
+	for i in hairs.get_children().size():
+		var c := hairs.get_child(i) as Node3D
+		if c and c.visible:
+			hair_idx = i
+			break
+	data["hair_index"] = hair_idx
+	# Find visible eyebrow index
+	var eb := _get_eyebrows_node()
+	var eb_idx := 0
+	if eb:
+		for i in eb.get_children().size():
+			var c := eb.get_child(i) as Node3D
+			if c and c.visible:
+				eb_idx = i
+				break
+	data["eyebrow_index"] = eb_idx
+	return data
+
+
+## Scale the head bone to make it bigger (cartoony proportions).
+func scale_head_bone(scale: float) -> void:
+	var skel := get_active_skeleton()
+	if skel == null:
+		return
+	var head_idx := skel.find_bone("Head")
+	if head_idx >= 0:
+		var pose := skel.get_bone_pose(head_idx)
+		pose = pose.scaled(Vector3.ONE * scale)
+		skel.set_bone_pose(head_idx, pose)
+
 
 func play_anim(anim_name: String) -> void:
 	if _active_anim == null:
