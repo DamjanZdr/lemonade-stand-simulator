@@ -807,11 +807,15 @@ func _primary_interact() -> void:
 			var hit_node: Node = ray.get_collider() as Node
 			var customer: Customer = _find_customer_in_ancestors(hit_node)
 			if customer != null:
-				customer.try_serve(self)
+				var peer_id := int(name)
+				var recipe_data: Dictionary = held_item_data.get("recipe", { })
+				customer.request_serve(peer_id, recipe_data)
 				return
 			var ped: Pedestrian = _find_pedestrian_in_ancestors(hit_node)
 			if ped != null:
-				ped.try_serve(self)
+				var peer_id := int(name)
+				var recipe_data: Dictionary = held_item_data.get("recipe", { })
+				ped.request_serve(peer_id, recipe_data)
 				return
 		# Then place on surface (only on workstation/stand, not ground)
 		if ray.is_colliding():

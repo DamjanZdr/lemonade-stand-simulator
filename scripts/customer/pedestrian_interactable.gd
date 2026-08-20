@@ -11,13 +11,18 @@ func interact(player: Node) -> void:
 	var ped := get_parent() as Pedestrian
 	if ped == null:
 		return
-	# First click always starts the offer, regardless of what the player is holding.
-	if ped.can_interact():
-		ped.offer_free_lemonade(player)
-		return
 	var p := player as Player
-	if p != null and p.held_item == p.HeldItem.CUP_FILLED:
-		ped.try_serve(player)
+	if p == null:
+		return
+	# Route through the host via RPC so the host processes the interaction
+	# and syncs the state change to all clients
+	var peer_id := int(p.name)
+	if ped.can_interact():
+		ped.request_offer(peer_id)
+		return
+	if p.held_item == p.HeldItem.CUP_FILLED:
+		var recipe: Dictionary = p.held_item_data.get("recipe", { })
+		ped.request_serve(peer_id, recipe)
 
 
 func set_highlight(on: bool) -> void:

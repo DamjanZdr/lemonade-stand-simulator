@@ -425,6 +425,57 @@ func can_interact() -> bool:
 	return _state == PedestrianState.WALKING
 
 
+## Client → host: request to offer free lemonade to this pedestrian.
+## The host processes it and syncs the state change back to all clients.
+func request_offer(peer_id: int) -> void:
+	if multiplayer.is_server():
+		# Already the host — process directly
+		var player := _find_player_by_peer(peer_id)
+		if player != null:
+			offer_free_lemonade(player)
+	else:
+		_request_offer.rpc_id(1, peer_id)
+
+
+@rpc("any_peer", "reliable")
+func _request_offer(peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var player := _find_player_by_peer(peer_id)
+	if player != null:
+		offer_free_lemonade(player)
+
+
+## Client → host: request to serve a filled cup to this pedestrian.
+func request_serve(peer_id: int, recipe: Dictionary) -> void:
+	if multiplayer.is_server():
+		var player := _find_player_by_peer(peer_id)
+		if player != null:
+			# Set recipe data on the host's copy of the player for try_serve
+			player.held_item_data["recipe"] = recipe
+			try_serve(player)
+	else:
+		_request_serve.rpc_id(1, peer_id, recipe)
+
+
+@rpc("any_peer", "reliable")
+func _request_serve(peer_id: int, recipe: Dictionary) -> void:
+	if not multiplayer.is_server():
+		return
+	var player := _find_player_by_peer(peer_id)
+	if player != null:
+		player.held_item_data["recipe"] = recipe
+		try_serve(player)
+
+
+## Find a player node by peer ID. Players are named by peer ID under Players/.
+func _find_player_by_peer(peer_id: int) -> Node:
+	var players := get_tree().current_scene.get_node_or_null("Players")
+	if players == null:
+		return null
+	return players.get_node_or_null(str(peer_id))
+
+
 func offer_free_lemonade(player: Node) -> void:
 	if _state != PedestrianState.WALKING or _routing_to_queue:
 		return

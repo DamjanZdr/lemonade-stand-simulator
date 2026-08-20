@@ -283,6 +283,69 @@ func _sync_state(new_state: int, anim: String) -> void:
 	_npc.play_anim(anim)
 
 
+## Host: sync the engaged (talking + facing) state to clients.
+func sync_engaged(player_pos: Vector3) -> void:
+	_sync_engaged.rpc(player_pos)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_engaged(player_pos: Vector3) -> void:
+	if multiplayer.is_server():
+		return
+	_npc.play_anim("Talk")
+	_facing_target = Basis.looking_at(player_pos - global_position, Vector3.UP)
+	_is_rotating_to_face = true
+
+
+## Client → host: request to show order to this customer.
+## The host processes it and syncs the state change back to all clients.
+func request_show_order(peer_id: int) -> void:
+	if multiplayer.is_server():
+		var player := _find_player_by_peer(peer_id)
+		if player != null:
+			show_order_to_player(player)
+	else:
+		_request_show_order.rpc_id(1, peer_id)
+
+
+@rpc("any_peer", "reliable")
+func _request_show_order(peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var player := _find_player_by_peer(peer_id)
+	if player != null:
+		show_order_to_player(player)
+
+
+## Client → host: request to serve a filled cup to this customer.
+func request_serve(peer_id: int, recipe: Dictionary) -> void:
+	if multiplayer.is_server():
+		var player := _find_player_by_peer(peer_id)
+		if player != null:
+			player.held_item_data["recipe"] = recipe
+			try_serve(player)
+	else:
+		_request_serve.rpc_id(1, peer_id, recipe)
+
+
+@rpc("any_peer", "reliable")
+func _request_serve(peer_id: int, recipe: Dictionary) -> void:
+	if not multiplayer.is_server():
+		return
+	var player := _find_player_by_peer(peer_id)
+	if player != null:
+		player.held_item_data["recipe"] = recipe
+		try_serve(player)
+
+
+## Find a player node by peer ID. Players are named by peer ID under Players/.
+func _find_player_by_peer(peer_id: int) -> Node:
+	var players := get_tree().current_scene.get_node_or_null("Players")
+	if players == null:
+		return null
+	return players.get_node_or_null(str(peer_id))
+
+
 func try_serve(player: Node) -> void:
 	## Called when the player (holding CUP_FILLED) clicks this customer.
 	if state != CustomerState.WAITING:
@@ -566,6 +629,8 @@ func show_order_to_player(player: Node) -> void:
 			_npc.anim_player.connect("animation_finished", _on_talk_finished)
 	_facing_target = Basis.looking_at(player.global_position - global_position, Vector3.UP)
 	_is_rotating_to_face = true
+	# Sync Talk animation + facing to clients
+	sync_engaged(player.global_position)
 	# Reset patience for phase 2: waiting to be served
 	if not _order_taken:
 		_order_taken = true
