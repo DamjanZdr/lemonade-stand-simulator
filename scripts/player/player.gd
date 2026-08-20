@@ -195,6 +195,7 @@ const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
 # Animation state
 var _current_anim: String = "Idle"
 var _was_moving: bool = false
+var _prev_sync_pos: Vector3 = Vector3.ZERO
 const SYNC_ROT_THRESHOLD: float = 0.05 # Min rotation (radians) to trigger sync
 var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
@@ -342,7 +343,13 @@ func _setup_visuals() -> void:
 func _update_anim() -> void:
 	if visuals == null or not visuals.visible:
 		return
-	var moving := velocity.length() > 0.5 and is_on_floor()
+	# For remote players, is_on_floor() isn't reliable (no move_and_slide),
+	# so only check velocity for non-authority copies.
+	var moving: bool
+	if is_multiplayer_authority():
+		moving = velocity.length() > 0.5 and is_on_floor()
+	else:
+		moving = velocity.length() > 0.5
 	if moving and _current_anim != "Walk":
 		visuals.play_anim("Walk")
 		_current_anim = "Walk"
@@ -422,9 +429,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_secondary_interact()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	# Remote players: update animation based on velocity from RPC sync
 	if not is_multiplayer_authority():
+		# Decay velocity so remote players stop walking when no new
+		# position RPCs arrive (authority stops sending when standing still)
+		velocity = velocity.move_toward(Vector3.ZERO, 10.0 * delta)
 		_update_anim()
 
 
@@ -483,6 +493,10 @@ func _try_sync_position(delta: float) -> void:
 func _sync_position(pos: Vector3, rot: Vector3) -> void:
 	if is_multiplayer_authority():
 		return # We're the authority, we already have the right position
+	# Compute velocity from position delta so animations work on remote players
+	var delta_pos := pos - _prev_sync_pos
+	velocity = delta_pos / (get_process_delta_time() if get_process_delta_time() > 0 else 0.016)
+	_prev_sync_pos = pos
 	global_position = pos
 	global_rotation = rot
 
