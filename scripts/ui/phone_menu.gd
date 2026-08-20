@@ -22,8 +22,9 @@ func _input(event: InputEvent) -> void:
 			return
 		_visible_panel = !_visible_panel
 		panel.visible = _visible_panel
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if _visible_panel \
-		else Input.MOUSE_MODE_CAPTURED
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		if _visible_panel \
+				else Input.MOUSE_MODE_CAPTURED
 		var hud := get_tree().get_first_node_in_group("hud")
 		if hud and hud.has_method("set_hud_visible"):
 			hud.set_hud_visible(not _visible_panel)
@@ -42,7 +43,10 @@ func _build_order_buttons() -> void:
 		var qty := _get_delivery_quantity()
 		var cost := _get_delivery_cost(qty)
 		btn.text = "Order %s  ($%.0f)" % [itype.capitalize(), cost]
-		btn.pressed.connect(func(): _order(itype))
+		btn.pressed.connect(
+			func():
+				_order(itype),
+		)
 		order_buttons.add_child(btn)
 
 	# --- Containers ---
@@ -67,7 +71,10 @@ func _build_order_buttons() -> void:
 		var cost: float = entry[2] * (1.0 - negotiation)
 		var btn := Button.new()
 		btn.text = "Buy %s  ($%.0f)" % [label, cost]
-		btn.pressed.connect(func(): _buy_container(ctype, cost))
+		btn.pressed.connect(
+			func():
+				_buy_container(ctype, cost),
+		)
 		order_buttons.add_child(btn)
 
 	# --- Upgrades ---
@@ -115,7 +122,10 @@ func _build_order_buttons() -> void:
 				var cost: float = data.get("cost", 0.0)
 				btn.text = "$%.0f" % cost
 				btn.disabled = not UpgradeManager.can_afford(id)
-				btn.pressed.connect(func(): _buy_upgrade(id, btn, name_lbl))
+				btn.pressed.connect(
+					func():
+						_buy_upgrade(id, btn, name_lbl),
+				)
 			row.add_child(btn)
 			order_buttons.add_child(row)
 
@@ -135,33 +145,71 @@ func _get_delivery_cost(qty: float) -> float:
 func _order(itype: String) -> void:
 	var qty := _get_delivery_quantity()
 	var cost := _get_delivery_cost(qty)
-	if not GameState.spend_money(cost):
-		EventBus.interaction_hint_changed.emit("Not enough money!")
-		return
-	EventBus.supply_order_placed.emit(itype, qty, cost)
+	# Route purchases through the host. The host spends the money and
+	# emits the supply_order_placed signal locally, which triggers the
+	# delivery system. Clients send an RPC to the host instead.
+	if WorldSync.is_host():
+		if not GameState.spend_money(cost):
+			EventBus.interaction_hint_changed.emit("Not enough money!")
+			return
+		EventBus.supply_order_placed.emit(itype, qty, cost)
+	else:
+		_request_purchase.rpc_id(1, "supply", itype, qty, cost)
 
 
 func _buy_container(container_type: String, cost: float) -> void:
-	if not GameState.spend_money(cost):
-		EventBus.interaction_hint_changed.emit("Not enough money!")
-		return
-	EventBus.equipment_order_placed.emit(container_type)
+	if WorldSync.is_host():
+		if not GameState.spend_money(cost):
+			EventBus.interaction_hint_changed.emit("Not enough money!")
+			return
+		EventBus.equipment_order_placed.emit(container_type)
+	else:
+		_request_purchase.rpc_id(1, "equipment", container_type, 0.0, cost)
 
 
 func _buy_upgrade(id: String, btn: Button, name_lbl: Label) -> void:
-	if UpgradeManager.purchase(id):
-		EventBus.interaction_hint_changed.emit("Upgrade purchased!")
-		var data := UpgradeManager.get_upgrade_data(id)
-		name_lbl.text = "%s  (Lv %d/%d)" % [
-			data.get("name", "???"),
-			data.get("level", 0),
-			data.get("max_level", 1),
-		]
-		if data.get("maxed", false):
-			btn.text = "Maxed"
-			btn.disabled = true
+	if WorldSync.is_host():
+		if UpgradeManager.purchase(id):
+			EventBus.interaction_hint_changed.emit("Upgrade purchased!")
+			var data := UpgradeManager.get_upgrade_data(id)
+			name_lbl.text = "%s  (Lv %d/%d)" % [
+				data.get("name", "???"),
+				data.get("level", 0),
+				data.get("max_level", 1),
+			]
+			if data.get("maxed", false):
+				btn.text = "Maxed"
+				btn.disabled = true
+			else:
+				btn.text = "$%.0f" % data.get("cost", 0.0)
+				btn.disabled = not UpgradeManager.can_afford(id)
 		else:
-			btn.text = "$%.0f" % data.get("cost", 0.0)
-			btn.disabled = not UpgradeManager.can_afford(id)
+			EventBus.interaction_hint_changed.emit("Not enough money!")
 	else:
-		EventBus.interaction_hint_changed.emit("Not enough money!")
+		_request_purchase.rpc_id(1, "upgrade", id, 0.0, 0.0)
+
+
+## RPC sent by clients to the host to request a purchase.
+## The host validates money and emits the appropriate EventBus signal.
+@rpc("any_peer", "reliable")
+func _request_purchase(category: String, item_id: String, qty: float, cost: float) -> void:
+	if not WorldSync.is_host():
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	GameLog.log(
+		"[PhoneMenu] Host received purchase request from %d: %s/%s" % [sender_id, category, item_id]
+	)
+	match category:
+		"supply":
+			if not GameState.spend_money(cost):
+				return
+			EventBus.supply_order_placed.emit(item_id, qty, cost)
+		"equipment":
+			if not GameState.spend_money(cost):
+				return
+			EventBus.equipment_order_placed.emit(item_id)
+		"upgrade":
+			if UpgradeManager.purchase(item_id):
+				GameLog.log(
+					"[PhoneMenu] Host purchased upgrade %s for peer %d" % [item_id, sender_id]
+				)

@@ -27,13 +27,21 @@ func _get_base_viewport_size() -> Vector2i:
 	)
 
 
+func _get_actual_viewport_size() -> Vector2i:
+	var vp := get_viewport()
+	if vp:
+		return vp.size
+	return _get_base_viewport_size()
+
+
 func _ready() -> void:
-	# Render the outline mask at the project base size so it stretches with the
-	# 3D viewport instead of being treated as an independent UI element.
-	_subvp.size = _get_base_viewport_size()
+	# Render the outline mask at the actual viewport size so it matches
+	# the main view exactly. Using the project base size causes offsets
+	# when the window is a different size (e.g. running outside editor).
+	_subvp.size = _get_actual_viewport_size()
 	_subvp.world_3d = get_viewport().world_3d
 	_subvp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	get_viewport().size_changed.connect(_update_shader_width)
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 	# Make sure the outline camera is the active camera in the SubViewport.
 	if _cam != null:
@@ -63,13 +71,19 @@ func _on_set_width(width: float) -> void:
 	_update_shader_width()
 
 
+func _on_viewport_size_changed() -> void:
+	# Update SubViewport size to match the actual viewport
+	_subvp.size = _get_actual_viewport_size()
+	_update_shader_width()
+
+
 func _update_shader_width() -> void:
 	if _display == null or _display.material == null:
 		return
-	var base_size := Vector2(_get_base_viewport_size())
+	var vp_size := Vector2(_get_actual_viewport_size())
 	var win_size := Vector2(get_window().size)
 	var scale_factor: float = (
-		0.5 * (win_size.x / max(1.0, base_size.x) + win_size.y / max(1.0, base_size.y))
+		0.5 * (win_size.x / max(1.0, vp_size.x) + win_size.y / max(1.0, vp_size.y))
 	)
 	(_display.material as ShaderMaterial).set_shader_parameter(
 		"outline_width",

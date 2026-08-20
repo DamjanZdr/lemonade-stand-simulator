@@ -22,6 +22,9 @@ var _engine_player: AudioStreamPlayer3D = null
 var _engine_fade_tween: Tween = null
 var _boxes_transferred: int = 0
 var _post_transfer_timer: float = 0.0
+var _sync_timer: float = 0.0
+var _last_synced_pos: Vector3 = Vector3.ZERO
+const TRUCK_SYNC_INTERVAL: float = 0.1 # 10 updates/sec while driving
 
 # Waypoint markers (read from children)
 var _path_start: Marker3D = null
@@ -245,6 +248,15 @@ func _process(delta: float) -> void:
 			pass
 		"driving_out":
 			_drive_out(delta)
+	# Sync truck position to clients while moving (event-driven, throttled)
+	if _state != "idle":
+		_sync_timer += delta
+		if _sync_timer >= TRUCK_SYNC_INTERVAL:
+			_sync_timer = 0.0
+			if global_position.distance_to(_last_synced_pos) > 0.1:
+				_last_synced_pos = global_position
+				WorldSync.sync_property(self, "global_position", global_position)
+				WorldSync.sync_property(self, "global_rotation", global_rotation)
 
 
 func _drive_to_waypoint(delta: float) -> void:
