@@ -407,13 +407,14 @@ func play_anim(anim_name: String) -> void:
 		"LookAround": look_around_speed,
 		"Talk": talk_speed,
 	}
-	_active_anim.speed_scale = speed_map.get(anim_name, 1.0)
-	# Stop current animation and play with zero blend for instant switching
-	_active_anim.stop()
-	_active_anim.play(anim_name, 0.0)
+	var s: float = speed_map.get(anim_name, 1.0)
+	# custom_blend=0.0 = instant switch (no blending), custom_speed=s
+	_active_anim.play(anim_name, 0.0, s)
 
 
 ## Play an animation with a custom speed multiplier (overrides the default).
+## Passes speed as custom_speed to play() so it actually takes effect
+## (play()'s custom_speed defaults to 1.0 and overrides speed_scale).
 func play_anim_speed(anim_name: String, speed: float) -> void:
 	if _active_anim == null:
 		return
@@ -425,10 +426,8 @@ func play_anim_speed(anim_name: String, speed: float) -> void:
 			anim.loop_mode = Animation.LOOP_NONE
 		else:
 			anim.loop_mode = Animation.LOOP_LINEAR
-	_active_anim.speed_scale = speed
-	# Stop current animation and play with zero blend for instant switching
-	_active_anim.stop()
-	_active_anim.play(anim_name, 0.0)
+	# custom_blend=0.0 = instant switch (no blending), custom_speed=speed
+	_active_anim.play(anim_name, 0.0, speed)
 
 
 ## Update the speed of the currently playing animation without restarting it.
