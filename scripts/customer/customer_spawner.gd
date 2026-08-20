@@ -47,6 +47,9 @@ func _process(delta: float) -> void:
 			var cust := c as Customer
 			if cust != null:
 				WorldSync.sync_transform(cust, cust.global_position, cust.global_rotation)
+				# Sync patience meter for waiting customers
+				if cust.state == Customer.CustomerState.WAITING and cust.patience_max > 0.0:
+					cust.sync_patience(cust.patience / cust.patience_max)
 	# Also sync leaving customers (no longer in _queue)
 	for i in range(_leaving_customers.size() - 1, -1, -1):
 		var c := _leaving_customers[i]

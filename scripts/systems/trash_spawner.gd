@@ -5,9 +5,10 @@ extends Node3D
 
 const TRASH_SCENE: PackedScene = preload("res://scenes/objects/trash.tscn")
 
-# Meshes inside trash.tscn have their origin ~0.13 below the node origin,
-# so we raise the spawn Y by this much to keep them above ground.
-const TRASH_Y_OFFSET: float = 0.13
+# Offset to put the collision shape bottom at ground level.
+# Calculated from trash.tscn: CollisionShape3D at Y=-0.104, BoxShape3D height=0.161
+# bottom = -0.104 - 0.0805 = -0.1845, so offset = 0.1845
+const TRASH_Y_OFFSET: float = 0.185
 
 @export var min_interval: float = 10.0
 @export var max_interval: float = 20.0
@@ -119,7 +120,7 @@ func _find_ground_y(
 ) -> float:
 	var space := get_world_3d().direct_space_state
 	var from := Vector3(x, start_y, z)
-	var to := Vector3(x, start_y - 1.0, z)
+	var to := Vector3(x, start_y - 2.0, z)
 	var query := PhysicsRayQueryParameters3D.create(from, to)
 	query.collision_mask = 0xFFFFFFFF
 	if exclude != null:

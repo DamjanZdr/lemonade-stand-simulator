@@ -35,6 +35,8 @@ func _sync_physics_visibility() -> void:
 	if physics:
 		physics.monitorable = visible
 		physics.monitoring = visible
+		# Also disable collision_layer so raycasts don't hit invisible pickups
+		physics.collision_layer = 8 if visible else 0
 
 
 func interact(_player: Node) -> void:
@@ -50,4 +52,6 @@ func interact(_player: Node) -> void:
 
 
 func get_hint(_player: Node) -> String:
+	if not visible:
+		return ""
 	return "Cash | LMB: open register  ($%.2f bill)" % payment

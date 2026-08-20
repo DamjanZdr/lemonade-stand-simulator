@@ -413,6 +413,7 @@ func force_timeout() -> void:
 func _resolve(outcome: String) -> void:
 	_outcome = outcome
 	state = CustomerState.REACTING
+	_npc.play_anim("Talk")
 	sync_state(CustomerState.REACTING, "Talk")
 	# Explicitly route popularity/stats to whichever stand this customer
 	# actually belongs to (see the money routing note below for why
@@ -678,6 +679,20 @@ func _refresh_patience_bar(ratio: float) -> void:
 		return
 	_last_patience_percent = percent
 	_patience_progress.value = ratio * _patience_progress.max_value
+
+
+## Host: sync patience ratio to clients so they see the meter deplete.
+func sync_patience(ratio: float) -> void:
+	_sync_patience.rpc(ratio)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_patience(ratio: float) -> void:
+	if multiplayer.is_server():
+		return
+	if _patience_progress != null:
+		_patience_progress.value = ratio * _patience_progress.max_value
+	_last_patience_percent = int(ratio * 100.0)
 
 
 func _set_order_text(text: String) -> void:
