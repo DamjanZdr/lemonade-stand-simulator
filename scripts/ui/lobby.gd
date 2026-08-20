@@ -169,6 +169,17 @@ func _refresh() -> void:
 
 func _setup_customization() -> void:
 	# Initialize the player visuals with default appearance
+	GameLog.log(
+		"[Lobby] PlayerVisuals scale=%s pos=%s"
+		% [str(_player_visuals.scale), str(_player_visuals.position)]
+	)
+	GameLog.log(
+		"[Lobby] Camera pos=%s fov=%s"
+		% [
+			str($HBox/CustomizePanel/PreviewRect/PreviewVP/Camera3D.position),
+			$HBox/CustomizePanel/PreviewRect/PreviewVP/Camera3D.fov,
+		]
+	)
 	_player_visuals.set_gender(_is_male)
 	_player_visuals.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
 	_player_visuals.set_eyebrow(_eyebrow_index)
@@ -305,9 +316,13 @@ func _update_gender_buttons() -> void:
 func _update_all_labels() -> void:
 	_hair_name.text = "Style %d" % (_hair_index + 1)
 	_hair_color_name.text = HAIR_COLOR_NAMES[_hair_color_index]
-	_eyebrow_name.text = PlayerVisuals.EYEBROW_NAMES[_eyebrow_index] if _eyebrow_index < PlayerVisuals \
-			.EYEBROW_NAMES \
-			.size() else "Style %d" % (_eyebrow_index + 1)
+	_eyebrow_name.text = (
+		PlayerVisuals.EYEBROW_NAMES[_eyebrow_index]
+		if _eyebrow_index < PlayerVisuals \
+				.EYEBROW_NAMES \
+				.size()
+		else "Style %d" % (_eyebrow_index + 1)
+	)
 	_shirt_color_name.text = CLOTHING_COLOR_NAMES[_shirt_color_index]
 	_pants_color_name.text = CLOTHING_COLOR_NAMES[_pants_color_index]
 	_shoes_color_name.text = CLOTHING_COLOR_NAMES[_shoes_color_index]
