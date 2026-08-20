@@ -102,12 +102,20 @@ func spawn_on_path(path: PedestrianPath) -> void:
 func _spawn_pedestrian(path: PedestrianPath) -> void:
 	if not WorldSync.is_host():
 		return
+	# Cache waypoint positions for client-side simulation
+	var wp_positions: Array[Vector3] = []
+	for wp in path.waypoints:
+		wp_positions.append(wp.global_position)
+	# Include route data in spawn state so clients get it in _ready()
+	# (avoids race condition where sync_route RPC arrives before the
+	# NPC node exists on the client)
+	var state := { "route_data": { "waypoints": wp_positions, "start_index": 1 } }
 	var spawned := WorldSync.spawn_networked(
 		"res://scenes/customer/pedestrian.tscn",
 		get_parent(),
 		path.waypoints[0].global_position,
 		Vector3.ZERO,
-		{ },
+		state,
 	) as Pedestrian
 	if spawned == null:
 		return
@@ -118,11 +126,6 @@ func _spawn_pedestrian(path: PedestrianPath) -> void:
 	spawned.add_to_group("trash_spawn_candidates")
 	_pedestrians.append(spawned)
 	EventBus.pedestrian_spawned.emit(spawned)
-	# Sync the route to clients so they can simulate walking locally
-	var wp_positions: Array[Vector3] = []
-	for wp in path.waypoints:
-		wp_positions.append(wp.global_position)
-	spawned.sync_route(wp_positions, 1)
 
 
 func _try_spawn() -> void:

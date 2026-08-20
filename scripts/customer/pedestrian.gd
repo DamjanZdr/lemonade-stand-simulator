@@ -65,6 +65,11 @@ var _last_patience_percent: int = -1
 
 const _OFFER_TEXT := "A free lemonade? Sure, I would love that!"
 
+## Set by WorldSync spawn state before _ready() on clients.
+## Contains: {"waypoints": Array[Vector3], "start_index": int}
+## When set, _ready() will configure the route for client-side simulation.
+var route_data: Dictionary = { }
+
 
 func _ready() -> void:
 	up_direction = Vector3.UP
@@ -86,6 +91,14 @@ func _ready() -> void:
 	_patience_circle.visible = false
 	add_to_group("pedestrians")
 	_ignore_customer_collisions()
+	# If route_data was set by WorldSync spawn state (clients), configure route
+	if (
+		not route_data.is_empty() and multiplayer.has_multiplayer_peer()
+		and not multiplayer.is_server()
+	):
+		var wps: Array[Vector3] = route_data.get("waypoints", [])
+		var idx: int = route_data.get("start_index", 0)
+		setup_client(wps, idx)
 
 
 func _connect_playable_area() -> void:
@@ -121,10 +134,14 @@ func setup(waypoints: Array[PedestrianWaypoint], start_index: int = 0) -> void:
 		_waypoint_positions.append(wp.global_position)
 
 
-## Called on clients via RPC to set up the route without needing the actual
+## Called on clients to set up the route without needing the actual
 ## PedestrianWaypoint nodes. The client walks toward these positions.
-func setup_client(waypoint_positions: Array[Vector3], start_index: int) -> void:
-	_waypoint_positions = waypoint_positions
+## Accepts both Array[Vector3] and untyped Array (RPC deserialization
+## may convert typed arrays to untyped).
+func setup_client(waypoint_positions: Array, start_index: int) -> void:
+	_waypoint_positions.clear()
+	for pos in waypoint_positions:
+		_waypoint_positions.append(pos as Vector3)
 	_waypoint_idx = start_index
 	_state = PedestrianState.WALKING
 	_npc.play_anim("Walk")
@@ -290,11 +307,6 @@ func _physics_client(delta: float) -> void:
 
 
 # ── Multiplayer RPCs (host → clients) ────────────────────────────────────────
-## Sync the full route to clients. Called by the spawner after setup().
-func sync_route(waypoint_positions: Array[Vector3], start_index: int) -> void:
-	_sync_route.rpc(waypoint_positions, start_index)
-
-
 ## Host: advance to next waypoint. Synced to clients.
 func _advance_waypoint() -> void:
 	_waypoint_idx += 1
@@ -317,13 +329,6 @@ func sync_serving() -> void:
 ## Host: NPC resumed walking (after offer timeout or serving done). Synced.
 func sync_resume(waypoint_idx: int) -> void:
 	_sync_resume.rpc(waypoint_idx)
-
-
-@rpc("authority", "call_local", "reliable")
-func _sync_route(waypoint_positions: Array[Vector3], start_index: int) -> void:
-	if multiplayer.is_server():
-		return
-	setup_client(waypoint_positions, start_index)
 
 
 @rpc("authority", "call_local", "reliable")
