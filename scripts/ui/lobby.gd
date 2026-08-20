@@ -75,6 +75,9 @@ const CLOTHING_COLOR_NAMES: Array[String] = [
 
 func _ready() -> void:
 	_room_code_label.text = "Room: %d" % NetworkManager.lobby_id
+	# Ensure the SubViewport has the correct size — outside the editor it
+	# may start with a stale/default size, causing the camera to render wrong.
+	_preview_vp.size = Vector2i(430, 656)
 	_copy_button.pressed.connect(_on_copy_pressed)
 	_invite_button.pressed.connect(
 		func():
@@ -104,7 +107,8 @@ func _ready() -> void:
 	# during the scene transition from MainMenu (before our _ready ran).
 	LobbyManager.request_refresh()
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
-	_setup_customization()
+	# Defer customization setup to ensure PlayerVisuals @onready vars are ready
+	call_deferred("_setup_customization")
 	_refresh()
 
 

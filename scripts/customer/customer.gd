@@ -756,7 +756,12 @@ func _sync_show_order(text: String) -> void:
 	if multiplayer.is_server():
 		return
 	if text == "":
-		_hide_order_bubble()
+		# Hide directly — do NOT call _hide_order_bubble() because that
+		# would call sync_show_order("") again → infinite recursion
+		if _ui_panel:
+			_ui_panel.visible = false
+		if _ui_label:
+			_ui_label.visible = false
 	else:
 		_set_order_text(text)
 

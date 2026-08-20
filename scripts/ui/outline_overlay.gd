@@ -154,3 +154,8 @@ func _sync_outline_camera() -> void:
 	_cam.size = _main_cam.size # for orthographic projection
 	_cam.h_offset = _main_cam.h_offset
 	_cam.v_offset = _main_cam.v_offset
+	# Sync camera attributes (exposure, DOF, etc.) — without this the
+	# outline camera may render at a different exposure/aspect, causing
+	# the outline to appear offset from the actual objects.
+	if _main_cam.attributes != null:
+		_cam.attributes = _main_cam.attributes

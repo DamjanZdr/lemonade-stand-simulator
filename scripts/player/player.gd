@@ -247,11 +247,13 @@ func _setup_position_replication() -> void:
 	# Without this, the synchronizer may not know which peer is the
 	# authority and won't replicate position/rotation to other peers.
 	sync.set_multiplayer_authority(get_multiplayer_authority())
-	add_child(sync)
+	# Set replication config BEFORE adding to tree — otherwise the
+	# synchronizer tries to start replication with no config and errors.
 	var config := SceneReplicationConfig.new()
 	config.add_property(NodePath("../:position"))
 	config.add_property(NodePath("../:rotation"))
 	sync.replication_config = config
+	add_child(sync)
 	GameLog.log(
 		"[Player] PositionSync set up for %s authority=%d"
 		% [name, sync.get_multiplayer_authority()]
@@ -1318,6 +1320,8 @@ func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> v
 		return
 	var slot := grid.reserve_slot(cell_idx)
 	var box := _place_held_supply_box_on(slot["position"], slot["rotation"])
+	if box == null:
+		return
 	box.set_meta("delivery_cell_idx", cell_idx)
 	box.tree_exited.connect(grid.release_slot_index.bind(cell_idx))
 
