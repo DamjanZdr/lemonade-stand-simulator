@@ -5,6 +5,10 @@ extends Node3D
 
 const TRASH_SCENE: PackedScene = preload("res://scenes/objects/trash.tscn")
 
+# Meshes inside trash.tscn have their origin ~0.13 below the node origin,
+# so we raise the spawn Y by this much to keep them above ground.
+const TRASH_Y_OFFSET: float = 0.13
+
 @export var min_interval: float = 10.0
 @export var max_interval: float = 20.0
 @export var max_trash_count: int = 20
@@ -70,7 +74,7 @@ func _spawn_trash() -> void:
 	WorldSync.spawn_networked(
 		"res://scenes/objects/trash.tscn",
 		get_tree().current_scene,
-		Vector3(spawn_x, ground_y, spawn_z),
+		Vector3(spawn_x, ground_y + TRASH_Y_OFFSET, spawn_z),
 		trash_rot,
 		{ "trash_variant": variant },
 	)

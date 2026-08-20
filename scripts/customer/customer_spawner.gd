@@ -31,6 +31,7 @@ func _ready() -> void:
 
 var _sync_timer: float = 0.0
 const NPC_SYNC_INTERVAL: float = 0.07 # ~14Hz position sync
+var _leaving_customers: Array[Customer] = [] # tracked for position sync after leaving
 
 
 func _process(delta: float) -> void:
@@ -46,6 +47,13 @@ func _process(delta: float) -> void:
 			var cust := c as Customer
 			if cust != null:
 				WorldSync.sync_transform(cust, cust.global_position, cust.global_rotation)
+	# Also sync leaving customers (no longer in _queue)
+	for i in range(_leaving_customers.size() - 1, -1, -1):
+		var c := _leaving_customers[i]
+		if c == null or not is_instance_valid(c):
+			_leaving_customers.remove_at(i)
+			continue
+		WorldSync.sync_transform(c, c.global_position, c.global_rotation)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
@@ -116,6 +124,11 @@ func _on_customer_left(customer: Node, _outcome: String) -> void:
 		if _queue[i] == customer:
 			_queue[i] = null
 			break
+	# Track leaving customers so we keep syncing their position to clients
+	# until they despawn
+	var cust := customer as Customer
+	if cust != null:
+		_leaving_customers.append(cust)
 	_compact_queue()
 
 
