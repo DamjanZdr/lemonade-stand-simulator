@@ -330,7 +330,9 @@ func _setup_visuals() -> void:
 	if not custom.is_empty():
 		visuals.apply_customization(custom)
 	else:
-		# No customization data — randomize as fallback
+		# No customization data — use a deterministic seed based on peer ID
+		# so all peers see the same random appearance for this player
+		visuals.appearance_seed = peer_id * 2654435761
 		visuals.randomize_appearance()
 	# Scale the head bone for cartoony proportions (from customization or default)
 	var head_size: float = custom.get("head_size", 1.3)

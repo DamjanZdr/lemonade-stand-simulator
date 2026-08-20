@@ -176,8 +176,20 @@ func _is_player_near() -> bool:
 	return global_position.distance_to(_player_cache.global_position) <= 25.0
 
 
+## When non-zero, randomize_appearance() uses this seed for deterministic
+## results across all peers. Set by WorldSync spawn state before _ready().
+var appearance_seed: int = 0
+
+
 func randomize_appearance() -> void:
-	var male := randi() % 2 == 0
+	# Use a seeded RNG if appearance_seed is set (multiplayer sync).
+	# Falls back to the global RNG for single-player.
+	var rng := RandomNumberGenerator.new()
+	if appearance_seed != 0:
+		rng.seed = appearance_seed
+	else:
+		rng.randomize()
+	var male := rng.randi() % 2 == 0
 	_man.visible = male
 	_woman.visible = not male
 	_active_anim = _man_anim if male else _woman_anim
@@ -203,8 +215,8 @@ func randomize_appearance() -> void:
 	var hairs: Node3D = _man_hairs if male else _woman_hairs
 	var body: MeshInstance3D = _man_mesh if male else _woman_mesh
 
-	_pick_hair(hairs, HAIR_COLORS[randi() % HAIR_COLORS.size()])
-	_tint_clothing(body)
+	_pick_hair_seeded(hairs, HAIR_COLORS[rng.randi() % HAIR_COLORS.size()], rng)
+	_tint_clothing_seeded(body, rng)
 
 # ── Character customization API ──────────────────────────────────────────────
 # These methods allow explicit control over appearance instead of random.
@@ -631,6 +643,21 @@ func _pick_hair(hairs: Node3D, color: Color) -> void:
 			_tint_meshes_in(child, color)
 
 
+## Seeded version of _pick_hair for deterministic multiplayer sync.
+func _pick_hair_seeded(hairs: Node3D, color: Color, rng: RandomNumberGenerator) -> void:
+	var children := hairs.get_children()
+	if children.is_empty():
+		return
+	var chosen: int = rng.randi() % children.size()
+	for i in children.size():
+		var child := children[i] as Node3D
+		if child == null:
+			continue
+		child.visible = i == chosen
+		if i == chosen:
+			_tint_meshes_in(child, color)
+
+
 ## Each clothing surface picks its own independent random color.
 func _tint_clothing(body: MeshInstance3D) -> void:
 	var mesh := body.mesh as ArrayMesh
@@ -640,6 +667,18 @@ func _tint_clothing(body: MeshInstance3D) -> void:
 		if mesh.surface_get_name(i).to_lower() in CLOTHING_SURFACES:
 			var mat := StandardMaterial3D.new()
 			mat.albedo_color = CLOTHING_COLORS[randi() % CLOTHING_COLORS.size()]
+			body.set_surface_override_material(i, mat)
+
+
+## Seeded version of _tint_clothing for deterministic multiplayer sync.
+func _tint_clothing_seeded(body: MeshInstance3D, rng: RandomNumberGenerator) -> void:
+	var mesh := body.mesh as ArrayMesh
+	if mesh == null:
+		return
+	for i in mesh.get_surface_count():
+		if mesh.surface_get_name(i).to_lower() in CLOTHING_SURFACES:
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = CLOTHING_COLORS[rng.randi() % CLOTHING_COLORS.size()]
 			body.set_surface_override_material(i, mat)
 
 

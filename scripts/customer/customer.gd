@@ -90,6 +90,10 @@ var _last_patience_percent: int = -1
 
 var _preserve_appearance: bool = false
 
+## Set by WorldSync spawn state before _ready(). Forwarded to NPCBody
+## so all peers see the same hair/clothing/gender.
+var appearance_seed: int = 0
+
 
 func preserve_appearance() -> void:
 	_preserve_appearance = true
@@ -109,6 +113,8 @@ func _ready() -> void:
 	patience = patience_max
 	EventBus.debug_force_happy_serve.connect(_on_debug_force_happy)
 	if not _preserve_appearance:
+		if appearance_seed != 0:
+			_npc.appearance_seed = appearance_seed
 		_npc.randomize_appearance()
 	_npc.play_anim("Walk")
 	_build_order_bubble()
@@ -139,6 +145,12 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Server-authoritative: only the host runs customer simulation.
+	# Clients interpolate toward synced positions.
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		_physics_client_interpolate(delta)
+		return
+
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
 
@@ -225,6 +237,35 @@ func _walk_toward(target: Vector3, delta: float) -> void:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)
 		var q := basis.get_rotation_quaternion().slerp(target_basis.get_rotation_quaternion(), t)
 		basis = Basis(q)
+
+
+# ── Client-side interpolation (server-authoritative) ─────────────────────────
+var _net_target_pos: Vector3 = Vector3.ZERO
+var _net_target_rot: Vector3 = Vector3.ZERO
+var _has_net_target: bool = false
+const _NET_LERP_SPEED: float = 12.0
+
+
+func _physics_client_interpolate(delta: float) -> void:
+	if _is_rotating_to_face:
+		var t := minf(delta * _ROTATION_SPEED, 1.0)
+		var q := basis.get_rotation_quaternion().slerp(_facing_target.get_rotation_quaternion(), t)
+		basis = Basis(q)
+		if q.dot(_facing_target.get_rotation_quaternion()) > 0.999:
+			basis = _facing_target
+			_is_rotating_to_face = false
+	if _has_net_target:
+		var t := clampf(_NET_LERP_SPEED * delta, 0.0, 1.0)
+		global_position = global_position.lerp(_net_target_pos, t)
+		var curr_q := basis.get_rotation_quaternion()
+		var target_q := Quaternion.from_euler(_net_target_rot)
+		basis = Basis(curr_q.slerp(target_q, t))
+
+
+func _net_set_target(pos: Vector3, rot: Vector3) -> void:
+	_net_target_pos = pos
+	_net_target_rot = rot
+	_has_net_target = true
 
 
 func try_serve(player: Node) -> void:

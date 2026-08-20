@@ -125,15 +125,18 @@ func spawn_on_path(path: PedestrianPath) -> void:
 func _spawn_pedestrian(path: PedestrianPath) -> void:
 	if not WorldSync.is_host():
 		return
+	# Generate a deterministic appearance seed so all peers see the same
+	# hair/clothing/gender for this NPC.
+	var seed := randi()
 	# Server-authoritative: spawn on host + replicate to clients via WorldSync.
-	# Position is synced periodically via WorldSync.sync_transform() in _process.
-	# State changes (offered, serving, resume) use RPCs on the NPC itself.
+	# Pass the appearance seed in spawn state so clients randomize identically.
+	var state := { "appearance_seed": seed }
 	var spawned := WorldSync.spawn_networked(
 		"res://scenes/customer/pedestrian.tscn",
 		get_parent(),
 		path.waypoints[0].global_position,
 		Vector3.ZERO,
-		{ },
+		state,
 	) as Pedestrian
 	if spawned == null:
 		return

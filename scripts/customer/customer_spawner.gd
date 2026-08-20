@@ -29,6 +29,25 @@ func _ready() -> void:
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 
 
+var _sync_timer: float = 0.0
+const NPC_SYNC_INTERVAL: float = 0.07 # ~14Hz position sync
+
+
+func _process(delta: float) -> void:
+	# Host: periodically sync all customer positions to clients.
+	if not WorldSync.is_host():
+		return
+	_sync_timer += delta
+	if _sync_timer < NPC_SYNC_INTERVAL:
+		return
+	_sync_timer = 0.0
+	for c in _queue:
+		if c != null and is_instance_valid(c):
+			var cust := c as Customer
+			if cust != null:
+				WorldSync.sync_transform(cust, cust.global_position, cust.global_rotation)
+
+
 func _on_day_phase_changed(phase: int, _day: int) -> void:
 	# During morning/evening, clear any remaining queue
 	if phase != DayManager.Phase.DAY:
@@ -268,46 +287,54 @@ func _random_order_full() -> Dictionary:
 
 ## Called by PedestrianSpawner once the pedestrian has physically walked to the slot.
 ## Clears the reservation and spawns a customer already in WAITING state at the slot.
-## If [source_pedestrian] is given, the pedestrian's NPCBody is transferred so the
-## visual appearance stays identical.
+## Uses WorldSync so the customer is replicated to all clients.
 func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> void:
 	if not WorldSync.is_host():
 		return
-	var customer: Customer = CUSTOMER_SCENE.instantiate()
-	customer.queue_slot = slot_index
-	customer.queue_position = _queue_spots[slot_index]
-	customer.stand = stand
-	_apply_facing(customer)
-	customer.order = _random_order()
+	# Get the appearance seed from the source pedestrian so the customer
+	# looks identical on all peers (no NPCBody transfer needed — the seed
+	# produces the same appearance deterministically).
+	var seed := 0
+	if source_pedestrian != null and is_instance_valid(source_pedestrian):
+		seed = source_pedestrian.appearance_seed
 
+	var spawn_pos: Vector3 = _queue_spots[slot_index]
 	var route_continuation: Dictionary = { }
 	if source_pedestrian != null and is_instance_valid(source_pedestrian):
-		customer.preserve_appearance()
-		var old_npc := customer.get_node_or_null("NPCBody")
-		var new_npc := source_pedestrian.get_node_or_null("NPCBody")
-		if old_npc != null and new_npc != null:
-			source_pedestrian.remove_child(new_npc)
-			customer.remove_child(old_npc)
-			customer.add_child(new_npc)
-			new_npc.owner = customer
-			old_npc.queue_free()
+		spawn_pos = source_pedestrian.global_position
 		route_continuation = source_pedestrian.get_route_continuation()
 
-	get_parent().add_child(customer)
-	customer.add_to_group("trash_spawn_candidates")
-	customer.collision_layer = 16
-	customer.collision_mask = 3
-	if source_pedestrian != null:
-		customer.global_position = source_pedestrian.global_position
-		customer.basis = source_pedestrian.basis
-		customer.state = Customer.CustomerState.WALKING
+	# Build spawn state for WorldSync — clients get appearance_seed + queue data
+	var state: Dictionary = {
+		"appearance_seed": seed,
+		"queue_slot": slot_index,
+		"queue_position": _queue_spots[slot_index],
+	}
+	var spawned := WorldSync.spawn_networked(
+		"res://scenes/customer/customer.tscn",
+		get_parent(),
+		spawn_pos,
+		Vector3.ZERO,
+		state,
+	) as Customer
+	if spawned == null:
+		return
+	spawned.add_to_group("trash_spawn_candidates")
+	spawned.collision_layer = 16
+	spawned.collision_mask = 3
+	spawned.stand = stand
+	_apply_facing(spawned)
+	spawned.order = _random_order()
+	# On the host: set up the customer state
+	if source_pedestrian != null and is_instance_valid(source_pedestrian):
+		spawned.basis = source_pedestrian.basis
+		spawned.state = Customer.CustomerState.WALKING
 		if not route_continuation.is_empty():
 			var route := route_continuation
-			customer.set_route_continuation(route.waypoints, route.next_index)
+			spawned.set_route_continuation(route.waypoints, route.next_index)
 	else:
-		customer.global_position = _queue_spots[slot_index]
-		customer.start_waiting()
-	_queue[slot_index] = customer
+		spawned.start_waiting()
+	_queue[slot_index] = spawned
 	# Clear reservation only AFTER the slot is occupied in _queue so no other
 	# spawn or compact can claim it in between.
 	_reserved_slots.erase(slot_index)

@@ -65,6 +65,10 @@ var _last_patience_percent: int = -1
 
 const _OFFER_TEXT := "A free lemonade? Sure, I would love that!"
 
+## Set by WorldSync spawn state before _ready(). Forwarded to NPCBody
+## so all peers see the same hair/clothing/gender.
+var appearance_seed: int = 0
+
 
 func _ready() -> void:
 	up_direction = Vector3.UP
@@ -74,6 +78,9 @@ func _ready() -> void:
 	floor_constant_speed = true
 	floor_stop_on_slope = false
 	floor_block_on_wall = false
+	# Pass seed to NPCBody before randomizing
+	if appearance_seed != 0:
+		_npc.appearance_seed = appearance_seed
 	_npc.randomize_appearance()
 	_npc.play_anim("Walk")
 	_ui_anchor = Node3D.new()
