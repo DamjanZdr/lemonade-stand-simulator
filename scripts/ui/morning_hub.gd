@@ -32,7 +32,6 @@ const BRANCH_COLORS: Array[Color] = [
 	Color(0.95, 0.45, 0.55),
 ]
 
-
 @onready var panel: PanelContainer = $MainHBox/Panel
 @onready var vbox: VBoxContainer = $MainHBox/Panel/VBox
 @onready var backdrop: ColorRect = $Backdrop
@@ -41,24 +40,22 @@ const BRANCH_COLORS: Array[Color] = [
 @onready var _flow_indicator: HBoxContainer = $MainHBox/Panel/VBox/FlowIndicator
 
 @onready var _cart_list: VBoxContainer = (
-		$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll/CartList
+	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll/CartList
 )
 @onready var _cart_total_lbl: Label = (
-		$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartTotal
+	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartTotal
 )
 @onready var _checkout_btn: Button = (
-		$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CheckoutBtn
+	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CheckoutBtn
 )
 
 @onready var _right_panel: PanelContainer = $MainHBox/RightPanel
 @onready var _preview_camera: Camera3D = (
-		$MainHBox/RightPanel/RightVBox/PreviewContainer/
+	$MainHBox/RightPanel/RightVBox/PreviewContainer/
 		AspectRatioContainer/SubViewportContainer/
 		PreviewViewport/PreviewCamera
 )
-@onready var _stats_vbox: VBoxContainer = (
-		$MainHBox/RightPanel/RightVBox/StatsScroll/StatsVBox
-)
+@onready var _stats_vbox: VBoxContainer = ($MainHBox/RightPanel/RightVBox/StatsScroll/StatsVBox)
 
 var _active_tab: String = "analytics"
 var _flow_tabs: Array[String] = ["analytics", "shop", "upgrades", "employees"]
@@ -171,9 +168,7 @@ func _ready() -> void:
 
 	# Make tab labels clickable
 	for tab in _flow_tabs:
-		var step_pc := _flow_indicator.get_node_or_null(
-			"StepPC_" + tab,
-		) as PanelContainer
+		var step_pc := _flow_indicator.get_node_or_null("StepPC_" + tab) as PanelContainer
 		if step_pc:
 			step_pc.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			var t := tab
@@ -182,36 +177,43 @@ func _ready() -> void:
 					if event is InputEventMouseButton and event.pressed:
 						if event.button_index == MOUSE_BUTTON_LEFT:
 							AudioManager.play_sfx_ui("tab_click")
-							_show_tab(t)
+							_show_tab(t),
 			)
 			step_pc.mouse_entered.connect(
-				func(): _on_tab_hover(step_pc, t)
+				func():
+					_on_tab_hover(step_pc, t),
 			)
 			step_pc.mouse_exited.connect(
-				func(): _on_tab_unhover(step_pc, t)
+				func():
+					_on_tab_unhover(step_pc, t),
 			)
 
-	var price_slider := (
-			$MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider
-	)
+	var price_slider := ($MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
 	if price_slider:
 		pass
 
 	EventBus.price_changed.connect(_on_price_changed)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.money_changed.connect(_on_money_changed)
-	EventBus.container_placed.connect(func(_t, _n): _scan_stand_state())
-	EventBus.container_picked_up.connect(func(_t, _n): _scan_stand_state())
-	EventBus.bin_amount_changed.connect(func(_t, _a): _scan_stand_state())
+	EventBus.container_placed.connect(
+		func(_t, _n):
+			_scan_stand_state(),
+	)
+	EventBus.container_picked_up.connect(
+		func(_t, _n):
+			_scan_stand_state(),
+	)
+	EventBus.bin_amount_changed.connect(
+		func(_t, _a):
+			_scan_stand_state(),
+	)
 	_show_tab("analytics")
 
 	# Build shop cards with section headers
 	_build_shop()
 
 	# Build upgrade skill tree (uses pre-existing UpgradeTree Control from scene)
-	var tree_ctrl := (
-			$MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree as Control
-	)
+	var tree_ctrl := ($MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree as Control)
 	if tree_ctrl:
 		_tree_tooltip = tree_ctrl.get_node("Tooltip") as PanelContainer
 		_tree_tooltip.z_index = 100
@@ -258,11 +260,10 @@ func _ready() -> void:
 						var new_scale_up := clampf(_tree_scale * 1.1, 0.5, 1.2)
 						var center_up := tree_ctrl.size / 2.0
 						var local_up := (
-								(mb_event_up.position - center_up - _tree_pan_offset)
-								/ _tree_scale
+							(mb_event_up.position - center_up - _tree_pan_offset) / _tree_scale
 						)
 						_tree_pan_offset = (
-								mb_event_up.position - center_up - new_scale_up * local_up
+							mb_event_up.position - center_up - new_scale_up * local_up
 						)
 						_tree_scale = new_scale_up
 						_layout_upgrade_tree(tree_ctrl)
@@ -272,13 +273,10 @@ func _ready() -> void:
 						var new_scale_down := clampf(_tree_scale / 1.1, 0.5, 1.2)
 						var center_down := tree_ctrl.size / 2.0
 						var local_down := (
-								(mb_event_down.position - center_down - _tree_pan_offset)
-								/ _tree_scale
+							(mb_event_down.position - center_down - _tree_pan_offset) / _tree_scale
 						)
 						_tree_pan_offset = (
-								mb_event_down.position
-								- center_down
-								- new_scale_down * local_down
+							mb_event_down.position - center_down - new_scale_down * local_down
 						)
 						_tree_scale = new_scale_down
 						_layout_upgrade_tree(tree_ctrl)
@@ -286,7 +284,7 @@ func _ready() -> void:
 				elif event is InputEventMouseMotion and _tree_dragging:
 					_tree_pan_offset = event.position - _tree_drag_start
 					_layout_upgrade_tree(tree_ctrl)
-					tree_ctrl.accept_event()
+					tree_ctrl.accept_event(),
 		)
 
 		tree_ctrl.draw.connect(
@@ -302,46 +300,33 @@ func _ready() -> void:
 				border_style.corner_radius_top_right = 6
 				border_style.corner_radius_bottom_left = 6
 				border_style.corner_radius_bottom_right = 6
-				border_style.draw(
-					tree_ctrl.get_canvas_item(),
-					Rect2(Vector2.ZERO, tree_ctrl.size),
-				)
+				border_style.draw(tree_ctrl.get_canvas_item(), Rect2(Vector2.ZERO, tree_ctrl.size))
 				if not _tree_laid_out or _tree_content == null:
 					return
 				for from_id in UpgradeManager.tree_connections:
-					var from_node := _tree_content.get_node_or_null(
-						"TreeNode_" + from_id,
-					) as CircleNode
+					var from_node := _tree_content.get_node_or_null("TreeNode_" + from_id) as CircleNode
 					if from_node == null or not from_node.visible:
 						continue
 					var from_center_local := from_node.position + from_node.size / 2.0
 					var from_pos := (
-							_tree_content.position + _tree_content.scale * from_center_local
+						_tree_content.position + _tree_content.scale * from_center_local
 					)
 					for to_id in UpgradeManager.tree_connections[from_id]:
 						var line_key: String = from_id + "|" + to_id
-						var to_node := _tree_content.get_node_or_null(
-							"TreeNode_" + to_id,
-						) as CircleNode
+						var to_node := _tree_content.get_node_or_null("TreeNode_" + to_id) as CircleNode
 						if to_node == null:
 							continue
 						var to_center_local := to_node.position + to_node.size / 2.0
 						var to_pos := (
-								_tree_content.position + _tree_content.scale * to_center_local
+							_tree_content.position + _tree_content.scale * to_center_local
 						)
-						var to_purchased: bool = (
-								UpgradeManager.is_node_purchased(to_id)
-						)
-						var to_color := (
-								to_node.fill_color
-								if to_purchased
-								else to_node.border_color
-						)
+						var to_purchased: bool = (UpgradeManager.is_node_purchased(to_id))
+						var to_color := (to_node.fill_color
+							if to_purchased
+							else to_node.border_color)
 						if _animating_lines.has(line_key):
 							var progress: float = _animating_lines[line_key]
-							var anim_end: Vector2 = (
-									from_pos + progress * (to_pos - from_pos)
-							)
+							var anim_end: Vector2 = (from_pos + progress * (to_pos - from_pos))
 							tree_ctrl.draw_line(
 								from_pos,
 								anim_end,
@@ -353,32 +338,25 @@ func _ready() -> void:
 						if not to_node.visible:
 							continue
 						var from_purchased: bool = (
-								from_id == UpgradeManager.root_node_name
-								or UpgradeManager.is_node_purchased(from_id)
+							from_id == UpgradeManager.root_node_name
+							or UpgradeManager.is_node_purchased(from_id)
 						)
 						var line_color := to_color
 						var line_width := 6.0 * _tree_scale
 						if from_purchased and to_purchased:
 							line_width = 7.5 * _tree_scale
-						tree_ctrl.draw_line(
-							from_pos,
-							to_pos,
-							line_color,
-							line_width,
-							true,
-						)
+						tree_ctrl.draw_line(from_pos, to_pos, line_color, line_width, true),
 		)
 
 	# Fix preview viewport to share the game world
 	var preview_viewport := (
-			$MainHBox/RightPanel/RightVBox/PreviewContainer/
-			AspectRatioContainer/SubViewportContainer/PreviewViewport as SubViewport
+		$MainHBox/RightPanel/RightVBox/PreviewContainer/
+			AspectRatioContainer/SubViewportContainer/PreviewViewport
+		as SubViewport
 	)
 	if preview_viewport:
 		preview_viewport.world_3d = get_viewport().world_3d
-		preview_viewport.render_target_update_mode = (
-				SubViewport.UPDATE_WHEN_VISIBLE
-		)
+		preview_viewport.render_target_update_mode = (SubViewport.UPDATE_WHEN_VISIBLE)
 
 	# Dev panel
 	var dev_panel := PanelContainer.new()
@@ -417,9 +395,7 @@ func _ready() -> void:
 
 
 func _build_shop() -> void:
-	var shop_scroll := (
-			$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2
-	) as ScrollContainer
+	var shop_scroll := ($MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2) as ScrollContainer
 	if shop_scroll == null:
 		return
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -561,9 +537,9 @@ func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	stat_box.add_theme_constant_override("separation", 0)
 	var increase_label := Label.new()
 	increase_label.text = (
-			upgrade_id.replace("_unlock", "").capitalize()
-			if is_unlock
-			else "%+.0f%%" % (increase * 100)
+		upgrade_id.replace("_unlock", "").capitalize()
+		if is_unlock
+		else "%+.0f%%" % (increase * 100)
 	)
 	increase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	increase_label.add_theme_font_size_override("font_size", 30)
@@ -571,8 +547,8 @@ func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	stat_box.add_child(increase_label)
 	var change_label := Label.new()
 	change_label.text = "(%+.0f%% → %+.0f%%)" % [
-			current_effect * 100,
-			(current_effect + increase) * 100,
+		current_effect * 100,
+		(current_effect + increase) * 100,
 	]
 	change_label.visible = not is_unlock
 	change_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -586,10 +562,12 @@ func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	price.add_theme_font_size_override("font_size", 30)
 	price.add_theme_color_override(
-			"font_color",
+		"font_color",
+		(
 			Color(0.35, 0.9, 0.45)
 			if UpgradeManager.can_afford_node(node_id)
-			else Color(1.0, 0.45, 0.45),
+			else Color(1.0, 0.45, 0.45)
+		),
 	)
 	price.add_theme_color_override("font_shadow_color", Color(0.05, 0.05, 0.05, 0.65))
 	price.add_theme_constant_override("shadow_offset_x", 0)
@@ -599,14 +577,10 @@ func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
 	stat_panel.add_child(stat_box)
 	tip_vbox.add_child(stat_panel)
 
-
 	_tree_tooltip.visible = true
 	_tree_tooltip.reset_size()
 	var tree_ctrl := _tree_content.get_parent() as Control
-	var tip_offset := Vector2(
-			_tree_tooltip.size.x / 2.0,
-			_tree_tooltip.size.y + 10.0,
-	)
+	var tip_offset := Vector2(_tree_tooltip.size.x / 2.0, _tree_tooltip.size.y + 10.0)
 	if tree_ctrl != null:
 		_tree_tooltip.position = tree_ctrl.get_global_transform() * (anchor_pos - tip_offset)
 	else:
@@ -687,9 +661,12 @@ func _create_tree_root_node(root_name: String) -> CircleNode:
 	circle.mouse_entered.connect(
 		func():
 			AudioManager.play_sfx_ui("hover")
-			_hover_tree_node(circle, true)
+			_hover_tree_node(circle, true),
 	)
-	circle.mouse_exited.connect(func(): _hover_tree_node(circle, false))
+	circle.mouse_exited.connect(
+		func():
+			_hover_tree_node(circle, false),
+	)
 	return circle
 
 
@@ -713,18 +690,16 @@ func _create_tree_node(id: String, data: Dictionary) -> CircleNode:
 		func():
 			is_hovered = true
 			AudioManager.play_sfx_ui("hover")
-			var top_center_local := (
-					circle.position + Vector2(circle.size.x / 2.0, 0.0)
-			)
+			var top_center_local := (circle.position + Vector2(circle.size.x / 2.0, 0.0))
 			var anchor := _tree_content.position + _tree_content.scale * top_center_local
 			_show_tree_tooltip(id, anchor)
-			_hover_tree_node(circle, true)
+			_hover_tree_node(circle, true),
 	)
 	circle.mouse_exited.connect(
 		func():
 			is_hovered = false
 			_hide_tree_tooltip()
-			_hover_tree_node(circle, false)
+			_hover_tree_node(circle, false),
 	)
 	circle.gui_input.connect(
 		func(event: InputEvent):
@@ -732,7 +707,7 @@ func _create_tree_node(id: String, data: Dictionary) -> CircleNode:
 				if event.button_index == MOUSE_BUTTON_LEFT:
 					var end_scale := Vector2(1.08, 1.08) if is_hovered else Vector2(1.0, 1.0)
 					_buy_tree_upgrade(id, circle, end_scale)
-					circle.accept_event()
+					circle.accept_event(),
 	)
 	return circle
 
@@ -760,14 +735,16 @@ func _style_tree_node(circle: CircleNode, data: Dictionary) -> void:
 	circle.size_flags_vertical = 0
 	circle.custom_minimum_size = Vector2(node_size, node_size)
 	circle.size = Vector2(node_size, node_size)
-	circle.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if (
-			not purchased and can_buy
-	) else Control.CURSOR_ARROW
+	circle.mouse_default_cursor_shape = (
+		Control.CURSOR_POINTING_HAND
+		if (not purchased and can_buy)
+		else Control.CURSOR_ARROW
+	)
 	var icon := _get_node_icon(data)
 	var sym := circle.get_node_or_null("Symbol") as Control
-	if sym != null and (
-			(icon != null and not sym is TextureRect)
-			or (icon == null and not sym is Label)
+	if (
+		sym != null
+		and ((icon != null and not sym is TextureRect) or (icon == null and not sym is Label))
 	):
 		sym.queue_free()
 		sym = null
@@ -787,9 +764,8 @@ func _style_tree_node(circle: CircleNode, data: Dictionary) -> void:
 			_icon_material = ShaderMaterial.new()
 			var sh := Shader.new()
 			sh.code = (
-					"shader_type canvas_item; void fragment() { "
-					+ "vec4 c = texture(TEXTURE, UV); "
-					+ "COLOR = vec4(vec3(1.0 - c.rgb), c.a); }"
+				"shader_type canvas_item; void fragment() { " + "vec4 c = texture(TEXTURE, UV); "
+				+ "COLOR = vec4(vec3(1.0 - c.rgb), c.a); }"
 			)
 			_icon_material.shader = sh
 		tex.material = _icon_material
@@ -940,9 +916,9 @@ func _tree_available_area(tree_ctrl: Control) -> Vector2:
 
 
 func _buy_tree_upgrade(
-		id: String,
-		node: CircleNode,
-		end_scale: Vector2 = Vector2(1.0, 1.0),
+	id: String,
+	node: CircleNode,
+	end_scale: Vector2 = Vector2(1.0, 1.0),
 ) -> void:
 	var data := UpgradeManager.get_node_data(id)
 	if data.get("purchased", false):
@@ -957,11 +933,17 @@ func _buy_tree_upgrade(
 		tween.tween_property(node, "position", orig + Vector2(2, 0), 0.05)
 		tween.tween_property(node, "position", orig, 0.05)
 		return
+	# Route upgrade purchases through the host.
+	if not WorldSync.is_host():
+		_request_purchase.rpc_id(1, "upgrade_node", id, 0.0, 0.0)
+		_status_lbl.text = "Upgrade purchased!"
+		_animate_status()
+		return
 	if UpgradeManager.purchase_node(id):
 		AudioManager.play_sfx_ui("upgrade_bought")
 		_status_lbl.text = "Upgrade purchased!"
 		_animate_status()
-		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(id, {})
+		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(id, { })
 		var uid: String = purchased_data.get("upgrade_id", "")
 		if uid.ends_with("_unlock"):
 			var fruit := uid.substr(0, uid.length() - 7)
@@ -969,9 +951,7 @@ func _buy_tree_upgrade(
 				_build_shop()
 		var newly_visible: Array[String] = []
 		for child_id in UpgradeManager.tree_connections.get(id, []):
-			var child_node := _tree_content.get_node_or_null(
-				"TreeNode_" + child_id,
-			) as CircleNode
+			var child_node := _tree_content.get_node_or_null("TreeNode_" + child_id) as CircleNode
 			if child_node != null and not child_node.visible:
 				newly_visible.append(child_id)
 				_animating_lines[id + "|" + child_id] = 0.0
@@ -980,28 +960,20 @@ func _buy_tree_upgrade(
 		node.pivot_offset = node.size / 2.0
 		var tween := create_tween()
 		tween.tween_property(node, "scale", Vector2(1.3, 1.3), 0.1)
-		tween.tween_property(
-			node,
-			"scale",
-			end_scale,
-			0.3,
-		).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
+		tween.tween_property(node, "scale", end_scale, 0.3).set_ease(Tween.EASE_OUT).set_trans(
+			Tween.TRANS_ELASTIC
+		)
 		_animate_next_node_unlock(id, newly_visible)
 
 
-func _animate_next_node_unlock(
-		parent_id: String,
-		newly_visible: Array[String],
-) -> void:
+func _animate_next_node_unlock(parent_id: String, newly_visible: Array[String]) -> void:
 	if newly_visible.is_empty() or _tree_content == null:
 		return
 	var tree_ctrl := _tree_content.get_parent() as Control
 	if tree_ctrl == null:
 		return
 	for child_id in newly_visible:
-		var child_node := _tree_content.get_node_or_null(
-			"TreeNode_" + child_id,
-		) as CircleNode
+		var child_node := _tree_content.get_node_or_null("TreeNode_" + child_id) as CircleNode
 		if child_node == null:
 			continue
 		var line_key: String = parent_id + "|" + child_id
@@ -1022,12 +994,10 @@ func _animate_next_node_unlock(
 				child_node.pivot_offset = child_node.size / 2.0
 				child_node.scale = Vector2(0.05, 0.05)
 				var child_tween := create_tween()
-				child_tween.tween_property(
-					child_node,
-					"scale",
-					Vector2(1.0, 1.0),
-					0.5,
-				).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BOUNCE)
+				child_tween \
+						.tween_property(child_node, "scale", Vector2(1.0, 1.0), 0.5) \
+						.set_ease(Tween.EASE_OUT) \
+						.set_trans(Tween.TRANS_BOUNCE),
 		)
 
 
@@ -1058,11 +1028,7 @@ func _process(delta: float) -> void:
 			base_angle = atan2(off.x, off.z)
 	_preview_angle += delta * 0.5
 	var angle := base_angle + _preview_angle
-	_preview_camera.position = center + Vector3(
-		sin(angle) * h_dist,
-		height,
-		cos(angle) * h_dist,
-	)
+	_preview_camera.position = center + Vector3(sin(angle) * h_dist, height, cos(angle) * h_dist)
 	_preview_camera.look_at(center, Vector3.UP)
 
 
@@ -1075,15 +1041,14 @@ func _create_equipment_card(item: Dictionary) -> PanelContainer:
 
 
 func _create_item_card(
-		item: Dictionary,
-		name_prefix: String,
-		bg: Color,
-		border: Color,
+	item: Dictionary,
+	name_prefix: String,
+	bg: Color,
+	border: Color,
 ) -> PanelContainer:
 	var id: String = item["id"]
 	var is_locked_fruit: bool = (
-			id in GameState.FRUIT_TYPES
-			and not UpgradeManager.is_fruit_unlocked(id)
+		id in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(id)
 	)
 	var card := PanelContainer.new()
 	card.name = name_prefix + id
@@ -1162,8 +1127,8 @@ func _create_item_card(
 	name_lbl.text = item["name"]
 	name_lbl.add_theme_font_size_override("font_size", 18)
 	name_lbl.add_theme_color_override(
-			"font_color",
-			Color(0.45, 0.45, 0.45) if is_locked_fruit else Color(0.92, 0.90, 0.82)
+		"font_color",
+		Color(0.45, 0.45, 0.45) if is_locked_fruit else Color(0.92, 0.90, 0.82),
 	)
 	right_box.add_child(name_lbl)
 
@@ -1218,7 +1183,7 @@ func _create_item_card(
 		add_btn.pressed.connect(
 			func():
 				AudioManager.play_sfx_ui("tab_click")
-				_add_to_cart(item)
+				_add_to_cart(item),
 		)
 		bottom_row.add_child(add_btn)
 
@@ -1264,10 +1229,7 @@ func _update_flow_indicator() -> void:
 			active_st.content_margin_right = 12
 			step_pc.add_theme_stylebox_override("panel", active_st)
 			if step_lbl:
-				step_lbl.add_theme_color_override(
-					"font_color",
-					Color(0.05, 0.05, 0.05),
-				)
+				step_lbl.add_theme_color_override("font_color", Color(0.05, 0.05, 0.05))
 		else:
 			var inactive_st := StyleBoxFlat.new()
 			inactive_st.bg_color = Color(0.12, 0.13, 0.17)
@@ -1277,10 +1239,7 @@ func _update_flow_indicator() -> void:
 			inactive_st.content_margin_right = 12
 			step_pc.add_theme_stylebox_override("panel", inactive_st)
 			if step_lbl:
-				step_lbl.add_theme_color_override(
-					"font_color",
-					Color(1, 1, 1, 1),
-				)
+				step_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 
 
 func _on_tab_hover(step_pc: PanelContainer, tab: String) -> void:
@@ -1323,14 +1282,10 @@ func _refresh_employees_page() -> void:
 
 
 func _build_prices_page() -> void:
-	var prices_page := (
-			$MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer
-	)
+	var prices_page := ($MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
 	if prices_page == null:
 		return
-	var container := prices_page.get_node_or_null(
-			"PriceListScroll/PriceList",
-	) as VBoxContainer
+	var container := prices_page.get_node_or_null("PriceListScroll/PriceList") as VBoxContainer
 	if container == null:
 		return
 	for child in container.get_children():
@@ -1365,15 +1320,13 @@ func _build_prices_page() -> void:
 		slider.value_changed.connect(
 			func(v: float):
 				val_lbl.text = "$%.2f" % v
-				GameState.set_price(ft_ref, v)
+				GameState.set_price(ft_ref, v),
 		)
 		container.add_child(row)
 
 
 func _refresh_prices_page() -> void:
-	var prices_page := (
-			$MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer
-	)
+	var prices_page := ($MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
 	if prices_page == null:
 		return
 	var temp_info := prices_page.get_node_or_null("WeatherRow/TempInfo") as Label
@@ -1471,9 +1424,7 @@ func _refresh_analytics() -> void:
 
 
 func _refresh_upgrades() -> void:
-	var upg_page := (
-			$MainHBox/Panel/VBox/Content/UpgradesPage as VBoxContainer
-	)
+	var upg_page := ($MainHBox/Panel/VBox/Content/UpgradesPage as VBoxContainer)
 	if upg_page == null:
 		return
 	var tree_ctrl := upg_page.get_node_or_null("UpgradeTree") as Control
@@ -1577,19 +1528,13 @@ func _update_cart_ui() -> void:
 		var name_lbl := Label.new()
 		name_lbl.text = item["name"]
 		name_lbl.add_theme_font_size_override("font_size", 18)
-		name_lbl.add_theme_color_override(
-			"font_color",
-			Color(0.92, 0.90, 0.82),
-		)
+		name_lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_lbl)
 		var price_lbl := Label.new()
 		price_lbl.text = "$%.2f" % item["cost"]
 		price_lbl.add_theme_font_size_override("font_size", 16)
-		price_lbl.add_theme_color_override(
-			"font_color",
-			Color(0.65, 0.80, 0.45),
-		)
+		price_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
 		row.add_child(price_lbl)
 		var rem_btn := Button.new()
 		rem_btn.text = "X"
@@ -1606,7 +1551,7 @@ func _update_cart_ui() -> void:
 		rem_btn.pressed.connect(
 			func():
 				AudioManager.play_sfx_ui("tab_click")
-				_remove_cart_entry(idx)
+				_remove_cart_entry(idx),
 		)
 		row.add_child(rem_btn)
 		_cart_list.add_child(row)
@@ -1639,6 +1584,23 @@ func _checkout_cart() -> void:
 			for i in range(qty):
 				_buy_container(id, item["cost"])
 	_update_cart_ui()
+	# Only the host should emit checkout_completed (triggers truck delivery).
+	# Clients' purchases are routed to the host via _request_purchase RPC,
+	# and the host's delivery system handles the actual delivery.
+	if WorldSync.is_host():
+		EventBus.checkout_completed.emit()
+	else:
+		_request_checkout.rpc_id(1)
+
+
+## RPC sent by clients to tell the host that checkout is complete and
+## the truck should drive in to deliver the ordered supplies.
+@rpc("any_peer", "reliable")
+func _request_checkout() -> void:
+	if not WorldSync.is_host():
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	GameLog.log("[MorningHub] Host received checkout from %d" % sender_id)
 	EventBus.checkout_completed.emit()
 
 
@@ -1657,22 +1619,64 @@ func _animate_status_text(msg: String) -> void:
 
 func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
 	var total: float = qty * item["cost"]
-	if not GameState.spend_money(total):
-		return
-	for i in range(qty):
-		EventBus.supply_order_placed.emit(item["id"], item["qty"], item["cost"])
+	# Route purchases through the host. Clients send an RPC; the host
+	# validates money and emits the signal that triggers delivery.
+	if WorldSync.is_host():
+		if not GameState.spend_money(total):
+			return
+		for i in range(qty):
+			EventBus.supply_order_placed.emit(item["id"], item["qty"], item["cost"])
+	else:
+		_request_purchase.rpc_id(1, "supply", item["id"], float(qty), total)
 	_status_lbl.text = "Bought %d %s crate(s)!" % [qty, item["name"]]
 	_animate_status()
 
 
 func _buy_container(container_type: String, cost: float) -> void:
-	if not GameState.spend_money(cost):
-		_status_lbl.text = "Not enough money!"
-		_animate_status()
-		return
-	EventBus.equipment_order_placed.emit(container_type)
+	if WorldSync.is_host():
+		if not GameState.spend_money(cost):
+			_status_lbl.text = "Not enough money!"
+			_animate_status()
+			return
+		EventBus.equipment_order_placed.emit(container_type)
+	else:
+		_request_purchase.rpc_id(1, "equipment", container_type, 0.0, cost)
 	_status_lbl.text = "%s ordered!" % container_type.capitalize().replace("_", " ")
 	_animate_status()
+
+
+## RPC sent by clients to the host to request a purchase from the
+## morning hub (computer screen). The host validates money and emits
+## the appropriate EventBus signal.
+@rpc("any_peer", "reliable")
+func _request_purchase(category: String, item_id: String, qty: float, cost: float) -> void:
+	if not WorldSync.is_host():
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	GameLog.log(
+		"[MorningHub] Host received purchase from %d: %s/%s" % [sender_id, category, item_id]
+	)
+	match category:
+		"supply":
+			if not GameState.spend_money(cost):
+				return
+			# Find the item to get its per-box quantity
+			var per_box: float = qty
+			for item in shop_items:
+				if item.get("id", "") == item_id:
+					per_box = item.get("qty", qty)
+					break
+			for i in range(int(qty)):
+				EventBus.supply_order_placed.emit(item_id, per_box, cost / qty)
+		"equipment":
+			if not GameState.spend_money(cost):
+				return
+			EventBus.equipment_order_placed.emit(item_id)
+		"upgrade_node":
+			UpgradeManager.purchase_node(item_id)
+			GameLog.log(
+				"[MorningHub] Host purchased upgrade node %s for peer %d" % [item_id, sender_id]
+			)
 
 
 func _animate_status() -> void:
@@ -1684,9 +1688,7 @@ func _animate_status() -> void:
 
 
 func _on_price_changed(fruit_type: String, new_price: float) -> void:
-	var prices_page := (
-			$MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer
-	)
+	var prices_page := ($MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
 	if prices_page == null:
 		return
 	var container := prices_page.get_node_or_null("PriceListScroll/PriceList") as VBoxContainer
@@ -1722,9 +1724,7 @@ func _update_morning_data(day: int) -> void:
 	var money_lbl := $MainHBox/Panel/VBox/Header/MoneyLabel as Label
 	if money_lbl:
 		money_lbl.text = "Money: $%.2f" % GameState.money
-	var price_slider := (
-			$MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider
-	)
+	var price_slider := ($MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
 	if price_slider:
 		pass
 	_show_tab("analytics")
@@ -1790,18 +1790,18 @@ func _on_start_day() -> void:
 			backdrop.visible = false
 			_right_panel.visible = false
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			DayManager.start_day()
+			DayManager.start_day(),
 	)
 
 
 func _apply_button_style(
-		btn: Button,
-		bg: Color,
-		fg: Color,
-		hover: Color,
-		text: Color,
-		font: int,
-		hover_pitch: float = 1.0,
+	btn: Button,
+	bg: Color,
+	fg: Color,
+	hover: Color,
+	text: Color,
+	font: int,
+	hover_pitch: float = 1.0,
 ) -> void:
 	btn.add_theme_font_size_override("font_size", font)
 	var st := StyleBoxFlat.new()
@@ -1819,7 +1819,10 @@ func _apply_button_style(
 	btn.add_theme_color_override("font_color", text)
 	btn.add_theme_color_override("font_hover_color", text)
 	btn.add_theme_color_override("font_pressed_color", text)
-	btn.mouse_entered.connect(func(): AudioManager.play_sfx_ui("hover", hover_pitch))
+	btn.mouse_entered.connect(
+		func():
+			AudioManager.play_sfx_ui("hover", hover_pitch),
+	)
 
 
 func _scan_stand_state() -> void:
@@ -1831,38 +1834,20 @@ func _scan_stand_state() -> void:
 	for node in root.get_tree().get_nodes_in_group("container"):
 		if node is FruitBin:
 			for ftype in node.fruit_amounts:
-				_bin_amounts[ftype] = (
-						_bin_amounts.get(ftype, 0)
-						+ node.fruit_amounts[ftype]
-				)
+				_bin_amounts[ftype] = (_bin_amounts.get(ftype, 0) + node.fruit_amounts[ftype])
 		elif node is IngredientBin:
 			var itype: String = node.ingredient_type
 			if itype != "":
-				_bin_amounts[itype] = (
-						_bin_amounts.get(itype, 0.0)
-						+ node.current_amount
-				)
+				_bin_amounts[itype] = (_bin_amounts.get(itype, 0.0) + node.current_amount)
 		elif node is CupStack:
-			_bin_amounts["cups"] = (
-					_bin_amounts.get("cups", 0)
-					+ node.current_count
-			)
+			_bin_amounts["cups"] = (_bin_amounts.get("cups", 0) + node.current_count)
 		elif node is Pitcher:
 			if node.fruit_type != "" and node.fruit_count > 0.0:
 				var prev: float = _bin_amounts.get(node.fruit_type, 0.0)
 				_bin_amounts[node.fruit_type] = prev + node.fruit_count
-			_bin_amounts["water"] = (
-					_bin_amounts.get("water", 0.0)
-					+ node.water
-			)
-			_bin_amounts["sugar"] = (
-					_bin_amounts.get("sugar", 0.0)
-					+ node.sugar
-			)
-			_bin_amounts["ice"] = (
-					_bin_amounts.get("ice", 0.0)
-					+ node.ice
-			)
+			_bin_amounts["water"] = (_bin_amounts.get("water", 0.0) + node.water)
+			_bin_amounts["sugar"] = (_bin_amounts.get("sugar", 0.0) + node.sugar)
+			_bin_amounts["ice"] = (_bin_amounts.get("ice", 0.0) + node.ice)
 	for node in root.get_tree().get_nodes_in_group("supply_box"):
 		var box := node as SupplyBox
 		if box == null or box.is_equipment:
@@ -1872,10 +1857,7 @@ func _scan_stand_state() -> void:
 	for node in root.get_tree().get_nodes_in_group("water_dispenser"):
 		var dispenser := node as WaterDispenser
 		if dispenser != null:
-			_bin_amounts["water"] = (
-					_bin_amounts.get("water", 0.0)
-					+ dispenser.water_fillings
-			)
+			_bin_amounts["water"] = (_bin_amounts.get("water", 0.0) + dispenser.water_fillings)
 	for node in root.get_tree().get_nodes_in_group("container"):
 		var ctype: String = ""
 		if node.has_meta("container_type"):
@@ -2025,21 +2007,21 @@ func _build_recipes_page() -> void:
 		func(v: float):
 			var c_val: float = v if _ice_unit == "C" else v / 1.8
 			GameState.ice_degrees_per_scoop = c_val
-			_update_ice_display.call()
+			_update_ice_display.call(),
 	)
 	c_btn.pressed.connect(
 		func():
 			_ice_unit = "C"
 			c_btn.button_pressed = true
 			f_btn.button_pressed = false
-			_update_ice_display.call()
+			_update_ice_display.call(),
 	)
 	f_btn.pressed.connect(
 		func():
 			_ice_unit = "F"
 			f_btn.button_pressed = true
 			c_btn.button_pressed = false
-			_update_ice_display.call()
+			_update_ice_display.call(),
 	)
 	_update_ice_display.call()
 
@@ -2070,7 +2052,7 @@ func _build_recipes_page() -> void:
 			func(v: float):
 				var r := GameState.get_recipe(ft).duplicate()
 				r["fruit_count"] = v
-				GameState.set_recipe(ft, r)
+				GameState.set_recipe(ft, r),
 		)
 
 		var sugar_row := _make_spin_row("Sugar", 0, 10, 0.1, recipe.get("sugar", 0.0))
@@ -2081,7 +2063,7 @@ func _build_recipes_page() -> void:
 			func(v: float):
 				var r := GameState.get_recipe(ft).duplicate()
 				r["sugar"] = v
-				GameState.set_recipe(ft, r)
+				GameState.set_recipe(ft, r),
 		)
 
 
@@ -2135,11 +2117,11 @@ func _make_recipe_card(title_text: String, accent: Color, locked: bool = false) 
 
 
 func _make_spin_row(
-		label_text: String,
-		min_v: float,
-		max_v: float,
-		step_v: float,
-		start_v: float,
+	label_text: String,
+	min_v: float,
+	max_v: float,
+	step_v: float,
+	start_v: float,
 ) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -2225,7 +2207,10 @@ func _style_unit_button(btn: Button, accent: Color) -> void:
 	hover_st.border_width_bottom = 1
 	hover_st.set_corner_radius_all(8)
 	btn.add_theme_stylebox_override("hover", hover_st)
-	btn.mouse_entered.connect(func(): AudioManager.play_sfx_ui("hover"))
+	btn.mouse_entered.connect(
+		func():
+			AudioManager.play_sfx_ui("hover"),
+	)
 
 
 func _refresh_recipes_page() -> void:

@@ -28,6 +28,12 @@ func _get_base_viewport_size() -> Vector2i:
 
 
 func _get_actual_viewport_size() -> Vector2i:
+	# Use the window size, which is the actual rendered area both in
+	# the editor and in standalone builds. get_viewport().size can
+	# differ in the editor.
+	var win := get_window()
+	if win:
+		return win.size
 	var vp := get_viewport()
 	if vp:
 		return vp.size
