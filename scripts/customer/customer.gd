@@ -172,6 +172,7 @@ func _physics_process(delta: float) -> void:
 				_npc.play_anim("Idle")
 				_default_facing_target = _facing_target
 				EventBus.customer_arrived.emit(self)
+				sync_state(CustomerState.WAITING, "Idle")
 		CustomerState.WAITING:
 			patience -= delta
 			var ratio := patience / patience_max
@@ -268,6 +269,20 @@ func _net_set_target(pos: Vector3, rot: Vector3) -> void:
 	_has_net_target = true
 
 
+## Host: sync a state change + animation to clients.
+## Called when the host changes the customer's state (WALKING→WAITING, etc.)
+func sync_state(new_state: int, anim: String) -> void:
+	_sync_state.rpc(new_state, anim)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_state(new_state: int, anim: String) -> void:
+	if multiplayer.is_server():
+		return
+	state = new_state as CustomerState
+	_npc.play_anim(anim)
+
+
 func try_serve(player: Node) -> void:
 	## Called when the player (holding CUP_FILLED) clicks this customer.
 	if state != CustomerState.WAITING:
@@ -335,6 +350,7 @@ func force_timeout() -> void:
 func _resolve(outcome: String) -> void:
 	_outcome = outcome
 	state = CustomerState.REACTING
+	sync_state(CustomerState.REACTING, "Talk")
 	# Explicitly route popularity/stats to whichever stand this customer
 	# actually belongs to (see the money routing note below for why
 	# GameState no longer listens to this signal globally).
@@ -411,6 +427,7 @@ func _start_leaving() -> void:
 	_npc.stop_payment_pose()
 	_npc.play_anim("Walk")
 	EventBus.customer_left.emit(self, _outcome)
+	sync_state(CustomerState.LEAVING, "Walk")
 
 
 static func _customer_payment(price: float) -> float:
@@ -698,12 +715,14 @@ func _reject_wrong_item(fruit_type: String) -> void:
 	state = CustomerState.RECEIVING
 	var label := fruit_type.capitalize() if fruit_type != "" else "that"
 	_npc.play_anim("Talk")
+	sync_state(CustomerState.RECEIVING, "Talk")
 	_set_order_text("I didn't ask for %s!" % label)
 	await get_tree().create_timer(3.0).timeout
 	if not is_inside_tree():
 		return
 	state = CustomerState.WAITING
 	_npc.play_anim("Idle")
+	sync_state(CustomerState.WAITING, "Idle")
 	_show_order()
 
 

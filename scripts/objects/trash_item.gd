@@ -5,13 +5,30 @@ extends Interactable
 @export var trash_value: float = 1.0
 @export var trash_type: String = "trash"
 
+## Set by WorldSync spawn state before _ready(). When set, the trash uses
+## this variant instead of picking a random one — so all peers see the same.
+var trash_variant: String = ""
+
 var _visible_variant: Node3D = null
 const _VARIANT_NAMES: Array[String] = ["apple", "banana", "can", "cigarettes", "cup"]
 
 
 func _ready() -> void:
 	add_to_group("trash_item")
-	_pick_random_variant()
+	if trash_variant != "":
+		show_variant(trash_variant)
+	else:
+		_pick_random_variant()
+	# Only the host should handle trash interaction. Clients see the trash
+	# but can't pick it up (the host despawns via WorldSync when picked up).
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		# Disable interaction on clients by removing from interactable group
+		# and disabling the collision shape
+		if is_in_group("interactable"):
+			remove_from_group("interactable")
+		var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
+		if col:
+			col.disabled = true
 
 
 func _pick_random_variant() -> void:
@@ -52,7 +69,8 @@ func interact(player: Node) -> void:
 		return
 	set_highlight(false)
 	p.make_held_trash(trash_value, trash_type, _create_hand_mesh())
-	queue_free()
+	# Despawn via WorldSync so clients remove the trash too
+	WorldSync.despawn_networked(self)
 
 
 func interact_secondary(player: Node) -> void:

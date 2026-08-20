@@ -63,13 +63,16 @@ func _spawn_trash() -> void:
 	if not WorldSync.is_host():
 		return
 	var trash_rot := Vector3(0, randf() * TAU, 0)
-	# Use WorldSync to spawn and replicate
+	# Pick a variant deterministically so all clients see the same trash type
+	var variants: Array[String] = ["apple", "banana", "can", "cigarettes", "cup"]
+	var variant := variants[randi() % variants.size()]
+	# Use WorldSync to spawn and replicate; pass variant in spawn state
 	WorldSync.spawn_networked(
 		"res://scenes/objects/trash.tscn",
 		get_tree().current_scene,
 		Vector3(spawn_x, ground_y, spawn_z),
 		trash_rot,
-		{ },
+		{ "trash_variant": variant },
 	)
 
 
