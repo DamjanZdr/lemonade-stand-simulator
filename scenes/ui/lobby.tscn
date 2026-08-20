@@ -13,7 +13,7 @@ colors = PackedColorArray(1.0, 0.92, 0.68, 1, 0.95, 0.82, 0.45, 1)
 gradient = SubResource("Gradient_bg")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_join"]
-bg_color = Color(0.620, 0.490, 0.120, 0.3)
+bg_color = Color(0.620, 0.490, 0.120, 0.25)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
@@ -30,10 +30,14 @@ content_margin_bottom = 4.0
 
 [sub_resource type="Environment" id="Env_lobby"]
 background_mode = 1
-background_color = Color(1.0, 0.96, 0.86, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.85, 0.82, 0.72, 1)
-ambient_light_energy = 1.2
+background_color = Color(0.96, 0.93, 0.84, 1)
+ambient_light_source = 1
+ambient_light_color = Color(0.75, 0.73, 0.65, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.4
+glow_strength = 0.8
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -111,6 +115,8 @@ theme_override_constants/separation = 0
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 4
 
 [node name="Stand1Label" type="Label" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col"]
 layout_mode = 2
@@ -120,10 +126,10 @@ text = "Stand 1"
 
 [node name="Stand1Sep" type="HSeparator" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col"]
 layout_mode = 2
+theme_override_constants/separation = 4
 
 [node name="Stand1List" type="VBoxContainer" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col"]
 layout_mode = 2
-size_flags_vertical = 3
 theme_override_constants/separation = 4
 
 [node name="Stand1Button" type="Button" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col"]
@@ -137,6 +143,10 @@ theme_override_styles/focus = SubResource("StyleBoxFlat_join")
 toggle_mode = true
 text = "Join"
 
+[node name="Spacer1" type="Control" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col"]
+layout_mode = 2
+size_flags_vertical = 3
+
 [node name="VSeparator" type="VSeparator" parent="HBox/LeftPanel/VBox/StandsRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(2, 0)
@@ -145,6 +155,8 @@ custom_minimum_size = Vector2(2, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_right = 8
 
 [node name="Stand2Label" type="Label" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col"]
 layout_mode = 2
@@ -154,10 +166,10 @@ text = "Stand 2"
 
 [node name="Stand2Sep" type="HSeparator" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col"]
 layout_mode = 2
+theme_override_constants/separation = 4
 
 [node name="Stand2List" type="VBoxContainer" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col"]
 layout_mode = 2
-size_flags_vertical = 3
 theme_override_constants/separation = 4
 
 [node name="Stand2Button" type="Button" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col"]
@@ -170,6 +182,10 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_join")
 theme_override_styles/focus = SubResource("StyleBoxFlat_join")
 toggle_mode = true
 text = "Join"
+
+[node name="Spacer2" type="Control" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col"]
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="HSeparator2" type="HSeparator" parent="HBox/LeftPanel/VBox"]
 layout_mode = 2
@@ -201,7 +217,7 @@ text = "Back"
 [node name="RightPanel" type="PanelContainer" parent="HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(420, 0)
+custom_minimum_size = Vector2(440, 0)
 
 [node name="CustomizeHBox" type="HBoxContainer" parent="HBox/RightPanel"]
 layout_mode = 2
@@ -209,7 +225,7 @@ theme_override_constants/separation = 8
 
 [node name="OptionsCol" type="VBoxContainer" parent="HBox/RightPanel/CustomizeHBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(130, 0)
+custom_minimum_size = Vector2(150, 0)
 theme_override_constants/separation = 6
 
 [node name="Title" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol"]
@@ -222,18 +238,13 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="GenderLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Gender:"
-
 [node name="MaleButton" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 30)
 theme_override_font_sizes/font_size = 16
 toggle_mode = true
-text = "M"
+text = "Male"
 
 [node name="FemaleButton" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow"]
 layout_mode = 2
@@ -241,173 +252,155 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 30)
 theme_override_font_sizes/font_size = 16
 toggle_mode = true
-text = "F"
+text = "Female"
 
-[node name="HairRow" type="HBoxContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol"]
+[node name="OptionsGrid" type="GridContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol"]
 layout_mode = 2
-theme_override_constants/separation = 4
+columns = 4
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
 
-[node name="HairLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/HairRow"]
+[node name="HairLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Hair:"
 
-[node name="HairPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/HairRow"]
+[node name="HairPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = "<"
 
-[node name="HairNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/HairRow"]
+[node name="HairNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(24, 0)
 theme_override_font_sizes/font_size = 16
 text = "1"
 horizontal_alignment = 1
 
-[node name="HairNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/HairRow"]
+[node name="HairNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = ">"
 
-[node name="HairColorRow" type="HBoxContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="HairColorLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/HairColorRow"]
+[node name="ColorLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Color:"
 
-[node name="HairColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/HairColorRow"]
+[node name="HairColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = "<"
 
-[node name="HairColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/HairColorRow"]
+[node name="HairColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(24, 0)
 theme_override_font_sizes/font_size = 16
 text = "1"
 horizontal_alignment = 1
 
-[node name="HairColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/HairColorRow"]
+[node name="HairColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = ">"
 
-[node name="EyebrowRow" type="HBoxContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="EyebrowLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/EyebrowRow"]
+[node name="BrowsLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Brows:"
 
-[node name="EyebrowPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/EyebrowRow"]
+[node name="EyebrowPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = "<"
 
-[node name="EyebrowNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/EyebrowRow"]
+[node name="EyebrowNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(24, 0)
 theme_override_font_sizes/font_size = 16
 text = "1"
 horizontal_alignment = 1
 
-[node name="EyebrowNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/EyebrowRow"]
+[node name="EyebrowNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = ">"
 
-[node name="ShirtColorRow" type="HBoxContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="ShirtColorLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/ShirtColorRow"]
+[node name="ShirtLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Shirt:"
 
-[node name="ShirtColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/ShirtColorRow"]
+[node name="ShirtColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = "<"
 
-[node name="ShirtColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/ShirtColorRow"]
+[node name="ShirtColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(24, 0)
 theme_override_font_sizes/font_size = 16
 text = "1"
 horizontal_alignment = 1
 
-[node name="ShirtColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/ShirtColorRow"]
+[node name="ShirtColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = ">"
 
-[node name="PantsColorRow" type="HBoxContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="PantsColorLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/PantsColorRow"]
+[node name="PantsLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Pants:"
 
-[node name="PantsColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/PantsColorRow"]
+[node name="PantsColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = "<"
 
-[node name="PantsColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/PantsColorRow"]
+[node name="PantsColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(24, 0)
 theme_override_font_sizes/font_size = 16
 text = "1"
 horizontal_alignment = 1
 
-[node name="PantsColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/PantsColorRow"]
+[node name="PantsColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = ">"
 
-[node name="ShoesColorRow" type="HBoxContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="ShoesColorLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/ShoesColorRow"]
+[node name="ShoesLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Shoes:"
 
-[node name="ShoesColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/ShoesColorRow"]
+[node name="ShoesColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = "<"
 
-[node name="ShoesColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/ShoesColorRow"]
+[node name="ShoesColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(24, 0)
 theme_override_font_sizes/font_size = 16
 text = "1"
 horizontal_alignment = 1
 
-[node name="ShoesColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/ShoesColorRow"]
+[node name="ShoesColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
 layout_mode = 2
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(28, 30)
 theme_override_font_sizes/font_size = 16
 text = ">"
 
@@ -425,8 +418,20 @@ stretch = true
 [node name="PreviewVP" type="SubViewport" parent="HBox/RightPanel/CustomizeHBox/PreviewRect"]
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(300, 400)
+size = Vector2i(600, 600)
 render_target_update_mode = 4
+msaa_2d = 2
+msaa_3d = 2
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="HBox/RightPanel/CustomizeHBox/PreviewRect/PreviewVP"]
+transform = Transform3D(0.866, 0.25, 0.433, 0, 0.866, -0.5, -0.5, 0.433, 0.75, 4, 8, 4)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="DirectionalLight3D2" type="DirectionalLight3D" parent="HBox/RightPanel/CustomizeHBox/PreviewRect/PreviewVP"]
+transform = Transform3D(-0.866, 0.25, -0.433, 0, 0.866, 0.5, 0.5, -0.433, 0.75, -4, 6, -2)
+light_energy = 0.4
+light_color = Color(1, 0.95, 0.85, 1)
 
 [node name="Camera3D" type="Camera3D" parent="HBox/RightPanel/CustomizeHBox/PreviewRect/PreviewVP"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.36816406, 13.019165)
