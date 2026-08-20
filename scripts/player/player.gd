@@ -370,7 +370,10 @@ func _update_anim() -> void:
 		target_speed = 1.0
 	elif moving:
 		target_anim = "Walk"
-		target_speed = 1.7 if _is_sprinting else 1.0
+		# Walk animation is designed for the model's default facing.
+		# The player model is rotated 180°, so negate speed to match.
+		# Walk = -1.7x (reversed), Sprint = -2.0x
+		target_speed = -(2.0 if _is_sprinting else 1.7)
 	else:
 		target_anim = "Idle"
 		target_speed = 1.0

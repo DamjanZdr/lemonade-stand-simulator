@@ -408,9 +408,9 @@ func play_anim(anim_name: String) -> void:
 		"Talk": talk_speed,
 	}
 	_active_anim.speed_scale = speed_map.get(anim_name, 1.0)
-	# Use BLEND_MODE_IMMEDIATE so animations switch instantly (no waiting
-	# for the current loop to finish) — critical for walk<->idle transitions.
-	_active_anim.play(anim_name, -1.0, -1.0, false)
+	# Stop current animation and play with zero blend for instant switching
+	_active_anim.stop()
+	_active_anim.play(anim_name, 0.0)
 
 
 ## Play an animation with a custom speed multiplier (overrides the default).
@@ -426,7 +426,9 @@ func play_anim_speed(anim_name: String, speed: float) -> void:
 		else:
 			anim.loop_mode = Animation.LOOP_LINEAR
 	_active_anim.speed_scale = speed
-	_active_anim.play(anim_name, -1.0, -1.0, false)
+	# Stop current animation and play with zero blend for instant switching
+	_active_anim.stop()
+	_active_anim.play(anim_name, 0.0)
 
 
 ## Update the speed of the currently playing animation without restarting it.
