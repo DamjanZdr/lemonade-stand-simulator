@@ -169,17 +169,6 @@ func _refresh() -> void:
 
 func _setup_customization() -> void:
 	# Initialize the player visuals with default appearance
-	GameLog.log(
-		"[Lobby] PlayerVisuals scale=%s pos=%s"
-		% [str(_player_visuals.scale), str(_player_visuals.position)]
-	)
-	GameLog.log(
-		"[Lobby] Camera pos=%s fov=%s"
-		% [
-			str($HBox/CustomizePanel/PreviewRect/PreviewVP/Camera3D.position),
-			$HBox/CustomizePanel/PreviewRect/PreviewVP/Camera3D.fov,
-		]
-	)
 	_player_visuals.set_gender(_is_male)
 	_player_visuals.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
 	_player_visuals.set_eyebrow(_eyebrow_index)
@@ -318,7 +307,8 @@ func _update_all_labels() -> void:
 	_hair_color_name.text = HAIR_COLOR_NAMES[_hair_color_index]
 	_eyebrow_name.text = (
 		PlayerVisuals.EYEBROW_NAMES[_eyebrow_index]
-		if _eyebrow_index < PlayerVisuals \
+		if _eyebrow_index
+		< PlayerVisuals \
 				.EYEBROW_NAMES \
 				.size()
 		else "Style %d" % (_eyebrow_index + 1)
@@ -358,9 +348,3 @@ func _get_customization_data() -> Dictionary:
 			"shoes": PlayerVisuals.CLOTHING_COLORS[_shoes_color_index],
 		},
 	}
-
-
-func _process(_delta: float) -> void:
-	# Slowly rotate the preview model so the player can see all sides
-	if is_instance_valid(_player_visuals):
-		_player_visuals.rotate_y(deg_to_rad(15) * _delta)
