@@ -1340,6 +1340,8 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 	) + _stack_offset
 	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
 	var box := _place_held_supply_box_on(place_pos, place_rot)
+	if box == null:
+		return
 	var cell_idx: int = top.get_meta("delivery_cell_idx", -1) as int
 	if cell_idx >= 0:
 		var grid := _get_delivery_grid()
