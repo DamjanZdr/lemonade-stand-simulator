@@ -26,6 +26,8 @@ var _ped_spawner_map: Dictionary = { }
 var _managed: bool = false
 var _pedestrians: Array = []
 var _spawn_timer: Timer
+var _sync_timer: float = 0.0
+const NPC_SYNC_INTERVAL: float = 0.07 # ~14Hz position sync for NPCs
 
 
 func _ready() -> void:
@@ -37,6 +39,27 @@ func _ready() -> void:
 	add_to_group("pedestrian_spawner")
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	_update_spawner()
+
+
+func _process(delta: float) -> void:
+	# Host: periodically sync all pedestrian positions to clients.
+	# Clients interpolate toward these positions smoothly (server-authoritative,
+	# like Schedule 1 / FishNet). Uses unreliable RPCs for bandwidth efficiency.
+	if not WorldSync.is_host():
+		return
+	_sync_timer += delta
+	if _sync_timer < NPC_SYNC_INTERVAL:
+		return
+	_sync_timer = 0.0
+	_pedestrians = _pedestrians.filter(
+		func(p):
+			return is_instance_valid(p),
+	)
+	for ped in _pedestrians:
+		var p := ped as Pedestrian
+		if p == null:
+			continue
+		WorldSync.sync_transform(p, p.global_position, p.global_rotation)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
@@ -102,20 +125,15 @@ func spawn_on_path(path: PedestrianPath) -> void:
 func _spawn_pedestrian(path: PedestrianPath) -> void:
 	if not WorldSync.is_host():
 		return
-	# Cache waypoint positions for client-side simulation
-	var wp_positions: Array[Vector3] = []
-	for wp in path.waypoints:
-		wp_positions.append(wp.global_position)
-	# Include route data in spawn state so clients get it in _ready()
-	# (avoids race condition where sync_route RPC arrives before the
-	# NPC node exists on the client)
-	var state := { "route_data": { "waypoints": wp_positions, "start_index": 1 } }
+	# Server-authoritative: spawn on host + replicate to clients via WorldSync.
+	# Position is synced periodically via WorldSync.sync_transform() in _process.
+	# State changes (offered, serving, resume) use RPCs on the NPC itself.
 	var spawned := WorldSync.spawn_networked(
 		"res://scenes/customer/pedestrian.tscn",
 		get_parent(),
 		path.waypoints[0].global_position,
 		Vector3.ZERO,
-		state,
+		{ },
 	) as Pedestrian
 	if spawned == null:
 		return

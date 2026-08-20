@@ -65,11 +65,6 @@ var _last_patience_percent: int = -1
 
 const _OFFER_TEXT := "A free lemonade? Sure, I would love that!"
 
-## Set by WorldSync spawn state before _ready() on clients.
-## Contains: {"waypoints": Array[Vector3], "start_index": int}
-## When set, _ready() will configure the route for client-side simulation.
-var route_data: Dictionary = { }
-
 
 func _ready() -> void:
 	up_direction = Vector3.UP
@@ -91,14 +86,6 @@ func _ready() -> void:
 	_patience_circle.visible = false
 	add_to_group("pedestrians")
 	_ignore_customer_collisions()
-	# If route_data was set by WorldSync spawn state (clients), configure route
-	if (
-		not route_data.is_empty() and multiplayer.has_multiplayer_peer()
-		and not multiplayer.is_server()
-	):
-		var wps: Array[Vector3] = route_data.get("waypoints", [])
-		var idx: int = route_data.get("start_index", 0)
-		setup_client(wps, idx)
 
 
 func _connect_playable_area() -> void:
@@ -128,23 +115,10 @@ func _on_playable_area_entered(body: Node3D) -> void:
 func setup(waypoints: Array[PedestrianWaypoint], start_index: int = 0) -> void:
 	_waypoints = waypoints
 	_waypoint_idx = start_index
-	# Cache positions for potential client sync
+	# Cache positions (unused on clients now — server-authoritative sync)
 	_waypoint_positions.clear()
 	for wp in waypoints:
 		_waypoint_positions.append(wp.global_position)
-
-
-## Called on clients to set up the route without needing the actual
-## PedestrianWaypoint nodes. The client walks toward these positions.
-## Accepts both Array[Vector3] and untyped Array (RPC deserialization
-## may convert typed arrays to untyped).
-func setup_client(waypoint_positions: Array, start_index: int) -> void:
-	_waypoint_positions.clear()
-	for pos in waypoint_positions:
-		_waypoint_positions.append(pos as Vector3)
-	_waypoint_idx = start_index
-	_state = PedestrianState.WALKING
-	_npc.play_anim("Walk")
 
 
 ## Called by PedestrianSpawner after a slot is reserved.
@@ -176,12 +150,10 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	# Only the host runs the full NPC simulation (convert chances, offers, etc).
-	# Clients run a simplified simulation: walk toward the current target
-	# (waypoint or queue target) using the same walk_speed.
-	var is_client: bool = multiplayer.has_multiplayer_peer() and not multiplayer.is_server()
-	if is_client:
-		_physics_client(delta)
+	# Server-authoritative: only the host runs NPC simulation.
+	# Clients receive position+rotation via WorldSync and interpolate.
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		_physics_client_interpolate(delta)
 		return
 
 	if _playable_area == null:
@@ -260,14 +232,22 @@ func _apply_motion(delta: float) -> void:
 		global_position.y = _ground_y
 
 
-# ── Client-side simulation ───────────────────────────────────────────────────
-## Simplified physics for clients: walk toward the current target (waypoint
-## or queue target) at walk_speed. No convert chances, no offers, no
-## state transitions — just visual walking until the host sends a state RPC.
-func _physics_client(delta: float) -> void:
-	if not is_on_floor():
-		velocity.y -= GRAVITY * delta
+# ── Client-side interpolation ─────────────────────────────────────────────────
+## Server-authoritative approach (like Schedule 1 / FishNet):
+## The host runs all NPC logic and periodically syncs position+rotation
+## via WorldSync.sync_transform(). Clients interpolate smoothly toward
+## the received position. No client-side simulation — just interpolation.
+## State changes (offered, serving, resume) use separate RPCs.
 
+## Target position/rotation received from host via WorldSync.
+## Client interpolates global_position toward this every frame.
+var _net_target_pos: Vector3 = Vector3.ZERO
+var _net_target_rot: Vector3 = Vector3.ZERO
+var _has_net_target: bool = false
+const _NET_LERP_SPEED: float = 12.0 # How fast to interpolate toward target
+
+
+func _physics_client_interpolate(delta: float) -> void:
 	# Handle facing rotation (e.g. when offered/serving)
 	if _is_rotating_to_face:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)
@@ -277,43 +257,40 @@ func _physics_client(delta: float) -> void:
 			basis = _facing_target
 			_is_rotating_to_face = false
 
-	match _state:
-		PedestrianState.WALKING:
-			if _routing_to_queue:
-				if global_position.distance_to(_queue_target) < 0.35:
-					_routing_to_queue = false
-					velocity = Vector3.ZERO
-				else:
-					_walk_toward(_queue_target, delta)
-			elif not _waypoint_positions.is_empty() and _waypoint_idx < _waypoint_positions.size():
-				var target := _waypoint_positions[_waypoint_idx]
-				if global_position.distance_to(target) < 0.55:
-					# Reached a waypoint on the client — advance locally.
-					# The host will send an RPC if the NPC converts or does
-					# something special; otherwise we just advance.
-					_waypoint_idx += 1
-					if _waypoint_idx >= _waypoint_positions.size():
-						# End of route — host will despawn via WorldSync
-						velocity = Vector3.ZERO
-				else:
-					_walk_toward(target, delta)
-			else:
-				velocity = Vector3.ZERO
+	# Interpolate position toward the last received target from the host
+	if _has_net_target:
+		var t := clampf(_NET_LERP_SPEED * delta, 0.0, 1.0)
+		global_position = global_position.lerp(_net_target_pos, t)
+		# Smoothly rotate toward target rotation
+		var curr_q := basis.get_rotation_quaternion()
+		var target_q := Quaternion.from_euler(_net_target_rot)
+		basis = Basis(curr_q.slerp(target_q, t))
 
-		PedestrianState.OFFERED, PedestrianState.SERVING:
-			velocity = Vector3.ZERO
+	# When walking, keep the walk animation playing; when stopped, idle
+	if _state == PedestrianState.WALKING:
+		var dist_to_target := global_position.distance_to(_net_target_pos)
+		if dist_to_target > 0.05:
+			_npc.play_anim("Walk")
+		else:
+			_npc.play_anim("Idle")
 
-	_apply_motion(delta)
+
+## Called by WorldSync when a transform sync arrives. Sets the
+## interpolation target instead of snapping position directly.
+func _net_set_target(pos: Vector3, rot: Vector3) -> void:
+	_net_target_pos = pos
+	_net_target_rot = rot
+	_has_net_target = true
 
 
 # ── Multiplayer RPCs (host → clients) ────────────────────────────────────────
-## Host: advance to next waypoint. Synced to clients.
+## Host: advance to next waypoint. Clients don't need this — they follow
+## the host's position via WorldSync.sync_transform() interpolation.
 func _advance_waypoint() -> void:
 	_waypoint_idx += 1
 	if _waypoint_idx >= _waypoints.size():
 		queue_free()
 		return
-	_sync_advance_waypoint.rpc(_waypoint_idx)
 
 
 ## Host: NPC was offered a free lemonade and stopped. Synced to clients.
@@ -329,13 +306,6 @@ func sync_serving() -> void:
 ## Host: NPC resumed walking (after offer timeout or serving done). Synced.
 func sync_resume(waypoint_idx: int) -> void:
 	_sync_resume.rpc(waypoint_idx)
-
-
-@rpc("authority", "call_local", "reliable")
-func _sync_advance_waypoint(new_idx: int) -> void:
-	if multiplayer.is_server():
-		return
-	_waypoint_idx = new_idx
 
 
 @rpc("authority", "call_local", "reliable")

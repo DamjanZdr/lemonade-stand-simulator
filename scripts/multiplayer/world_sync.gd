@@ -327,8 +327,13 @@ func _apply_transform(
 		return
 	var obj := _find_node(parent_path_str, obj_name)
 	if obj:
-		obj.global_position = pos
-		obj.global_rotation = rot
+		# If the object supports interpolation (e.g. NPCs), set the target
+		# instead of snapping position directly
+		if obj.has_method("_net_set_target"):
+			obj._net_set_target(pos, rot)
+		else:
+			obj.global_position = pos
+			obj.global_rotation = rot
 
 
 @rpc("authority", "call_local", "reliable")
