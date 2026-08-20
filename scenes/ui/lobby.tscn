@@ -131,7 +131,7 @@ transparent_bg = true
 render_target_update_mode = 4
 
 [node name="Camera3D" type="Camera3D" parent="HBox/CustomizePanel/PreviewRect/PreviewVP"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 7)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 16)
 fov = 35.0
 environment = SubResource("Env_lobby")
 
