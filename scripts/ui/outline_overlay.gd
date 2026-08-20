@@ -83,14 +83,17 @@ func _on_viewport_size_changed() -> void:
 func _update_shader_width() -> void:
 	if _display == null or _display.material == null:
 		return
+	# Scale outline width based on the ratio of actual viewport size to
+	# the project base size. This keeps the outline width consistent
+	# regardless of resolution.
 	var vp_size := Vector2(_get_actual_viewport_size())
-	var win_size := Vector2(get_window().size)
+	var base_size := Vector2(_get_base_viewport_size())
 	var scale_factor: float = (
-		0.5 * (win_size.x / max(1.0, vp_size.x) + win_size.y / max(1.0, vp_size.y))
+		0.5 * (vp_size.x / max(1.0, base_size.x) + vp_size.y / max(1.0, base_size.y))
 	)
 	(_display.material as ShaderMaterial).set_shader_parameter(
 		"outline_width",
-		_target_width / scale_factor,
+		_target_width / max(0.01, scale_factor),
 	)
 
 
@@ -124,6 +127,12 @@ func _on_frame_pre_draw() -> void:
 	var active := get_tree().get_first_node_in_group("outline_fill") != null
 	_display.visible = active
 	_subvp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# Update SubViewport size right before rendering so the outline
+	# camera's projection matches the main camera's projection exactly.
+	var vp_size := _get_actual_viewport_size()
+	if _subvp.size != vp_size:
+		_subvp.size = vp_size
+		_update_shader_width()
 	# Final sync right before rendering as a last-chance correction.
 	_sync_outline_camera()
 

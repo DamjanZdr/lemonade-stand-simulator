@@ -255,8 +255,19 @@ func _process(delta: float) -> void:
 			_sync_timer = 0.0
 			if global_position.distance_to(_last_synced_pos) > 0.1:
 				_last_synced_pos = global_position
-				WorldSync.sync_property(self, "global_position", global_position)
-				WorldSync.sync_property(self, "global_rotation", global_rotation)
+				_sync_truck.rpc(global_position, global_rotation)
+
+
+## Direct RPC to update the truck's position on all clients.
+## Uses a direct RPC on the truck node instead of WorldSync.sync_property
+## because the truck is a scene node (not spawned via WorldSync) and
+## may not be in the node cache.
+@rpc("authority", "call_local", "reliable")
+func _sync_truck(pos: Vector3, rot: Vector3) -> void:
+	if is_multiplayer_authority():
+		return # Host already has the right position
+	global_position = pos
+	global_rotation = rot
 
 
 func _drive_to_waypoint(delta: float) -> void:
