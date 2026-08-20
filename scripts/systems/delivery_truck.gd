@@ -255,6 +255,10 @@ func _process(delta: float) -> void:
 			_sync_timer = 0.0
 			if global_position.distance_to(_last_synced_pos) > 0.1:
 				_last_synced_pos = global_position
+				GameLog.log(
+					"[DeliveryTruck] %s sending sync pos=%s state=%s"
+					% [name, str(global_position), _state]
+				)
 				_sync_truck.rpc(global_position, global_rotation)
 
 
@@ -266,6 +270,7 @@ func _process(delta: float) -> void:
 func _sync_truck(pos: Vector3, rot: Vector3) -> void:
 	if is_multiplayer_authority():
 		return # Host already has the right position
+	GameLog.log("[DeliveryTruck] %s received sync pos=%s" % [name, str(pos)])
 	global_position = pos
 	global_rotation = rot
 

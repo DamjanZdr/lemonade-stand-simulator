@@ -28,9 +28,14 @@ func _get_base_viewport_size() -> Vector2i:
 
 
 func _get_actual_viewport_size() -> Vector2i:
-	# get_viewport() returns the game viewport both in the editor and
-	# in standalone builds. In the editor, this is the SubViewport the
-	# game runs in. In standalone, this is the window's viewport.
+	# Use the main camera's viewport if available — that's the actual
+	# game viewport the player sees. This is more reliable than
+	# get_viewport() which might return a different viewport in some
+	# contexts (e.g. editor SubViewports).
+	if _main_cam != null and is_instance_valid(_main_cam):
+		var vp := _main_cam.get_viewport()
+		if vp:
+			return vp.size
 	var vp := get_viewport()
 	if vp:
 		return vp.size
@@ -144,3 +149,8 @@ func _sync_outline_camera() -> void:
 	_cam.fov = _main_cam.fov
 	_cam.near = _main_cam.near
 	_cam.far = _main_cam.far
+	_cam.keep_aspect = _main_cam.keep_aspect
+	_cam.projection = _main_cam.projection
+	_cam.size = _main_cam.size # for orthographic projection
+	_cam.h_offset = _main_cam.h_offset
+	_cam.v_offset = _main_cam.v_offset
