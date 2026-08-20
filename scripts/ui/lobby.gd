@@ -145,10 +145,10 @@ func _refresh() -> void:
 		# Skip players who haven't selected a stand — they don't appear in either list.
 		if stand_idx < 0:
 			continue
-		var ready_text := "✓" if entry.get("ready", false) else "..."
+		var ready_mark := "✓ " if entry.get("ready", false) else ""
 		var you_text := " (you)" if peer_id == my_id else ""
 		var row := Label.new()
-		row.text = "%s%s\n%s" % [entry.get("name", "Player"), you_text, ready_text]
+		row.text = "%s%s%s" % [ready_mark, entry.get("name", "Player"), you_text]
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		row.add_theme_font_size_override("font_size", 16)
 		if stand_idx == 0:
@@ -174,6 +174,7 @@ func _setup_customization() -> void:
 	_player_visuals.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
 	_player_visuals.set_eyebrow(_eyebrow_index)
 	_apply_clothing_colors()
+	_player_visuals.scale_head_bone(1.3)
 	_player_visuals.play_anim("Idle")
 	_update_all_labels()
 
@@ -281,6 +282,7 @@ func _on_customization_changed() -> void:
 	_player_visuals.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
 	_player_visuals.set_eyebrow(_eyebrow_index)
 	_apply_clothing_colors()
+	_player_visuals.scale_head_bone(1.3)
 	_player_visuals.play_anim("Idle")
 	_update_all_labels()
 	_update_gender_buttons()
