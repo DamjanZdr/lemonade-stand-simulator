@@ -160,12 +160,18 @@ func get_my_entry() -> Dictionary:
 
 
 func all_ready() -> bool:
-	if roster.is_empty():
-		return false
+	# Only players who have selected a stand count toward the ready check.
+	# Players without a stand (stand_index < 0) are ignored — the host can
+	# start without them and they won't spawn in.
+	var has_stand_players := false
 	for id in roster:
+		var stand_idx: int = roster[id].get("stand_index", -1)
+		if stand_idx < 0:
+			continue
+		has_stand_players = true
 		if not roster[id].get("ready", false):
 			return false
-	return true
+	return has_stand_players
 
 ## --- Starting the game (host only) ---
 

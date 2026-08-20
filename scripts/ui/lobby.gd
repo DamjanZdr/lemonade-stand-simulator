@@ -16,16 +16,16 @@ extends Control
 @onready var _version_label: Label = $VersionLabel
 
 # Customization UI
-@onready var _preview_vp: SubViewport = $HBox/RightPanel/CustomizePanel/PreviewRect/PreviewVP
-@onready var _player_visuals: PlayerVisuals = $HBox/RightPanel/CustomizePanel/PreviewRect/PreviewVP/PlayerVisuals
-@onready var _male_button: Button = $HBox/RightPanel/CustomizePanel/GenderRow/MaleButton
-@onready var _female_button: Button = $HBox/RightPanel/CustomizePanel/GenderRow/FemaleButton
-@onready var _hair_name: Label = $HBox/RightPanel/CustomizePanel/HairRow/HairName
-@onready var _hair_color_name: Label = $HBox/RightPanel/CustomizePanel/HairColorRow/HairColorName
-@onready var _eyebrow_name: Label = $HBox/RightPanel/CustomizePanel/EyebrowRow/EyebrowName
-@onready var _shirt_color_name: Label = $HBox/RightPanel/CustomizePanel/ShirtColorRow/ShirtColorName
-@onready var _pants_color_name: Label = $HBox/RightPanel/CustomizePanel/PantsColorRow/PantsColorName
-@onready var _shoes_color_name: Label = $HBox/RightPanel/CustomizePanel/ShoesColorRow/ShoesColorName
+@onready var _preview_vp: SubViewport = $HBox/RightPanel/CustomizeHBox/PreviewRect/PreviewVP
+@onready var _player_visuals: PlayerVisuals = $HBox/RightPanel/CustomizeHBox/PreviewRect/PreviewVP/PlayerVisuals
+@onready var _male_button: Button = $HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow/MaleButton
+@onready var _female_button: Button = $HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow/FemaleButton
+@onready var _hair_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/HairRow/HairNum
+@onready var _hair_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/HairColorRow/HairColorNum
+@onready var _eyebrow_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/EyebrowRow/EyebrowNum
+@onready var _shirt_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/ShirtColorRow/ShirtColorNum
+@onready var _pants_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/PantsColorRow/PantsColorNum
+@onready var _shoes_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/ShoesColorRow/ShoesColorNum
 
 const STAND_NAMES: Array[String] = ["Stand 1", "Stand 2"]
 
@@ -142,6 +142,9 @@ func _refresh() -> void:
 	for peer_id in LobbyManager.roster:
 		var entry: Dictionary = LobbyManager.roster[peer_id]
 		var stand_idx: int = entry.get("stand_index", -1)
+		# Skip players who haven't selected a stand — they don't appear in either list.
+		if stand_idx < 0:
+			continue
 		var ready_text := "✓" if entry.get("ready", false) else "..."
 		var you_text := " (you)" if peer_id == my_id else ""
 		var row := Label.new()
@@ -152,13 +155,6 @@ func _refresh() -> void:
 			_stand1_list.add_child(row)
 		elif stand_idx == 1:
 			_stand2_list.add_child(row)
-		else:
-			# No stand chosen yet — show in both lists as unassigned
-			var row2 := Label.new()
-			row2.text = "%s%s\n(no stand)" % [entry.get("name", "Player"), you_text]
-			row2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			row2.add_theme_font_size_override("font_size", 16)
-			_stand1_list.add_child(row2)
 
 	var my_stand: int = mine.get("stand_index", -1)
 	_stand1_button.button_pressed = my_stand == 0
@@ -194,87 +190,87 @@ func _setup_customization() -> void:
 	)
 
 	# Hair style buttons
-	$HBox/RightPanel/CustomizePanel/HairRow/HairPrev.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/HairRow/HairPrev.pressed.connect(
 		func():
 			_hair_index = (_hair_index - 1 + _player_visuals.get_hair_count()) % _player_visuals.get_hair_count()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizePanel/HairRow/HairNext.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/HairRow/HairNext.pressed.connect(
 		func():
 			_hair_index = (_hair_index + 1) % _player_visuals.get_hair_count()
 			_on_customization_changed(),
 	)
 
 	# Hair color buttons
-	$HBox/RightPanel/CustomizePanel/HairColorRow/HairColorPrev.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/HairColorRow/HairColorPrev.pressed.connect(
 		func():
 			_hair_color_index = (_hair_color_index - 1 + PlayerVisuals.HAIR_COLORS.size()) % PlayerVisuals \
 					.HAIR_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizePanel/HairColorRow/HairColorNext.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/HairColorRow/HairColorNext.pressed.connect(
 		func():
 			_hair_color_index = (_hair_color_index + 1) % PlayerVisuals.HAIR_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Eyebrow buttons
-	$HBox/RightPanel/CustomizePanel/EyebrowRow/EyebrowPrev.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/EyebrowRow/EyebrowPrev.pressed.connect(
 		func():
 			_eyebrow_index = (_eyebrow_index - 1 + _player_visuals.get_eyebrow_count()) % _player_visuals.get_eyebrow_count()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizePanel/EyebrowRow/EyebrowNext.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/EyebrowRow/EyebrowNext.pressed.connect(
 		func():
 			_eyebrow_index = (_eyebrow_index + 1) % _player_visuals.get_eyebrow_count()
 			_on_customization_changed(),
 	)
 
 	# Shirt color buttons
-	$HBox/RightPanel/CustomizePanel/ShirtColorRow/ShirtColorPrev.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/ShirtColorRow/ShirtColorPrev.pressed.connect(
 		func():
 			_shirt_color_index = (_shirt_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizePanel/ShirtColorRow/ShirtColorNext.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/ShirtColorRow/ShirtColorNext.pressed.connect(
 		func():
 			_shirt_color_index = (_shirt_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Pants color buttons
-	$HBox/RightPanel/CustomizePanel/PantsColorRow/PantsColorPrev.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/PantsColorRow/PantsColorPrev.pressed.connect(
 		func():
 			_pants_color_index = (_pants_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizePanel/PantsColorRow/PantsColorNext.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/PantsColorRow/PantsColorNext.pressed.connect(
 		func():
 			_pants_color_index = (_pants_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Shoes color buttons
-	$HBox/RightPanel/CustomizePanel/ShoesColorRow/ShoesColorPrev.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/ShoesColorRow/ShoesColorPrev.pressed.connect(
 		func():
 			_shoes_color_index = (_shoes_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizePanel/ShoesColorRow/ShoesColorNext.pressed.connect(
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/ShoesColorRow/ShoesColorNext.pressed.connect(
 		func():
 			_shoes_color_index = (_shoes_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Randomize button
-	$HBox/RightPanel/CustomizePanel/RandomButton.pressed.connect(_on_randomize)
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/RandomButton.pressed.connect(_on_randomize)
 
 	# Update gender button states
 	_update_gender_buttons()
@@ -308,19 +304,12 @@ func _update_gender_buttons() -> void:
 
 
 func _update_all_labels() -> void:
-	_hair_name.text = "Style %d" % (_hair_index + 1)
-	_hair_color_name.text = HAIR_COLOR_NAMES[_hair_color_index]
-	_eyebrow_name.text = (
-		PlayerVisuals.EYEBROW_NAMES[_eyebrow_index]
-		if _eyebrow_index
-		< PlayerVisuals \
-				.EYEBROW_NAMES \
-				.size()
-		else "Style %d" % (_eyebrow_index + 1)
-	)
-	_shirt_color_name.text = CLOTHING_COLOR_NAMES[_shirt_color_index]
-	_pants_color_name.text = CLOTHING_COLOR_NAMES[_pants_color_index]
-	_shoes_color_name.text = CLOTHING_COLOR_NAMES[_shoes_color_index]
+	_hair_num.text = str(_hair_index + 1)
+	_hair_color_num.text = str(_hair_color_index + 1)
+	_eyebrow_num.text = str(_eyebrow_index + 1)
+	_shirt_color_num.text = str(_shirt_color_index + 1)
+	_pants_color_num.text = str(_pants_color_index + 1)
+	_shoes_color_num.text = str(_shoes_color_index + 1)
 
 
 func _on_randomize() -> void:
