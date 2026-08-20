@@ -196,6 +196,7 @@ const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
 var _current_anim: String = "Idle"
 var _was_moving: bool = false
 var _prev_sync_pos: Vector3 = Vector3.ZERO
+var _is_sprinting: bool = false
 const SYNC_ROT_THRESHOLD: float = 0.05 # Min rotation (radians) to trigger sync
 var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
@@ -340,22 +341,45 @@ func _setup_visuals() -> void:
 
 
 ## Update the player's animation based on movement state.
+## Walk = 1.7x speed, Sprint = 2.0x speed, Jump = idle for now.
+## Animations switch immediately (no waiting for current loop to finish).
 func _update_anim() -> void:
 	if visuals == null or not visuals.visible:
 		return
-	# For remote players, is_on_floor() isn't reliable (no move_and_slide),
-	# so only check velocity for non-authority copies.
-	var moving: bool
+
+	# Determine state
+	var on_floor: bool
 	if is_multiplayer_authority():
-		moving = velocity.length() > 0.5 and is_on_floor()
+		on_floor = is_on_floor()
 	else:
-		moving = velocity.length() > 0.5
-	if moving and _current_anim != "Walk":
-		visuals.play_anim("Walk")
-		_current_anim = "Walk"
-	elif not moving and _current_anim != "Idle":
-		visuals.play_anim("Idle")
-		_current_anim = "Idle"
+		# Remote players don't run move_and_slide, so estimate from velocity.y
+		on_floor = absf(velocity.y) < 1.0
+
+	var horizontal_vel := Vector3(velocity.x, 0, velocity.z).length()
+	var moving := horizontal_vel > 0.5 and on_floor
+
+	# Determine target animation and speed
+	var target_anim: String
+	var target_speed: float = 1.0
+
+	if not on_floor:
+		# Jumping/falling — play idle for now
+		target_anim = "Idle"
+		target_speed = 1.0
+	elif moving:
+		target_anim = "Walk"
+		target_speed = 1.7 if _is_sprinting else 1.0
+	else:
+		target_anim = "Idle"
+		target_speed = 1.0
+
+	# Always apply — even if same anim, speed may have changed (walk<->sprint)
+	if _current_anim != target_anim:
+		visuals.play_anim_speed(target_anim, target_speed)
+		_current_anim = target_anim
+	elif target_anim == "Walk":
+		# Same anim but speed might have changed (started/stopped sprinting)
+		visuals.set_anim_speed(target_speed)
 
 
 func enter_priceboard_focus(focus_transform: Transform3D) -> void:
@@ -457,7 +481,8 @@ func _physics_process(delta: float) -> void:
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	var speed := move_speed * (sprint_multiplier if Input.is_action_pressed("sprint") else 1.0)
+	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
+	var speed := move_speed * (sprint_multiplier if _is_sprinting else 1.0)
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()
@@ -484,19 +509,20 @@ func _try_sync_position(delta: float) -> void:
 	_sync_pos_timer = 0.0
 	_last_synced_pos = global_position
 	_last_synced_rot = global_rotation
-	_sync_position.rpc(global_position, global_rotation)
+	_sync_position.rpc(global_position, global_rotation, _is_sprinting)
 
 
 ## Simple position sync RPC. Only the authority sends; all other peers
 ## receive and update the remote player's transform directly.
 @rpc("authority", "call_local", "reliable")
-func _sync_position(pos: Vector3, rot: Vector3) -> void:
+func _sync_position(pos: Vector3, rot: Vector3, sprinting: bool = false) -> void:
 	if is_multiplayer_authority():
 		return # We're the authority, we already have the right position
 	# Compute velocity from position delta so animations work on remote players
 	var delta_pos := pos - _prev_sync_pos
 	velocity = delta_pos / (get_process_delta_time() if get_process_delta_time() > 0 else 0.016)
 	_prev_sync_pos = pos
+	_is_sprinting = sprinting
 	global_position = pos
 	global_rotation = rot
 
