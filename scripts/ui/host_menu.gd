@@ -1,42 +1,115 @@
 extends Control
-## Host menu: choose between New Game (fresh start) or Load Game (pick a
-## previous save slot). After choosing, creates a Steam lobby and goes to
+## Host menu: 5 save slots displayed as cards. Empty slots start a new game,
+## used slots load the existing save. Used slots can be deleted with a
+## confirmation dialog. After choosing, creates a Steam lobby and goes to
 ## the Lobby scene.
 
-@onready var _new_game_button: Button = $CenterBox/NewGameButton
-@onready var _back_button: Button = $CenterBox/BackButton
-@onready var _save_list: VBoxContainer = $SaveScroll/SaveList
-@onready var _refresh_button: Button = $SaveScroll/RefreshButton
+const SLOT_NAMES: Array[String] = ["Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5"]
+
+@onready var _slots_row: HBoxContainer = $CenterBox/SlotsRow
 @onready var _status_label: Label = $CenterBox/StatusLabel
+@onready var _back_button: Button = $CenterBox/BackButton
 @onready var _version_label: Label = $VersionLabel
+@onready var _confirm_dialog: ConfirmationDialog = $ConfirmDialog
+
+var _slot_buttons: Array[Button] = []
+var _slot_infos: Array[Label] = []
+var _delete_buttons: Array[Button] = []
+var _saves_by_slot: Dictionary = { } # slot_name -> save dict
+var _pending_delete: String = ""
 
 
 func _ready() -> void:
-	_new_game_button.pressed.connect(_on_new_game)
 	_back_button.pressed.connect(_on_back)
-	_refresh_button.pressed.connect(_refresh_saves)
 	NetworkManager.lobby_created.connect(_on_lobby_created)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
+	_confirm_dialog.confirmed.connect(_on_confirm_delete)
+	_confirm_dialog.canceled.connect(
+		func():
+			_pending_delete = "",
+	)
+	_collect_slot_nodes()
 	_refresh_saves()
 
 
-func _on_new_game() -> void:
-	_set_busy("Starting new game...")
-	# Generate a unique slot name based on timestamp
-	var slot_name := "Game_%s" % str(int(Time.get_unix_time_from_system()))
-	SaveManager.start_new_game(slot_name)
-	_start_hosting()
+func _collect_slot_nodes() -> void:
+	_slot_buttons.clear()
+	_slot_infos.clear()
+	_delete_buttons.clear()
+	for i in SLOT_NAMES.size():
+		var slot_node := _slots_row.get_child(i) as VBoxContainer
+		_slot_buttons.append(slot_node.get_node("SlotButton") as Button)
+		_slot_infos.append(slot_node.get_node("SlotInfo") as Label)
+		_delete_buttons.append(slot_node.get_node("DeleteButton") as Button)
 
 
-func _on_load_save(slot_name: String) -> void:
-	_set_busy("Loading save '%s'..." % slot_name)
-	SaveManager.load_existing_game(slot_name)
-	_start_hosting()
+func _refresh_saves() -> void:
+	_saves_by_slot.clear()
+	# Build a lookup of existing saves by slot name
+	for save in SaveManager.list_saves():
+		var slot: String = save.get("slot", "")
+		if SLOT_NAMES.has(slot):
+			_saves_by_slot[slot] = save
+
+	# Update UI for each slot
+	for i in SLOT_NAMES.size():
+		var slot_name := SLOT_NAMES[i]
+		var btn := _slot_buttons[i]
+		var info := _slot_infos[i]
+		var del_btn := _delete_buttons[i]
+		if _saves_by_slot.has(slot_name):
+			var save: Dictionary = _saves_by_slot[slot_name]
+			var display_name: String = save.get("name", slot_name)
+			var day: int = save.get("day", 1)
+			var money: float = save.get("money", 0.0)
+			var saved_at: float = save.get("saved_at", 0.0)
+			var date_text := ""
+			if saved_at > 0:
+				var dict := Time.get_datetime_dict_from_unix_time(int(saved_at))
+				date_text = "%02d/%02d %02d:%02d" % [
+					dict["month"],
+					dict["day"],
+					dict["hour"],
+					dict["minute"],
+				]
+			btn.text = display_name
+			info.text = "Day %d  |  $%.2f\n%s" % [day, money, date_text]
+			del_btn.visible = true
+		else:
+			btn.text = "New Game"
+			info.text = ""
+			del_btn.visible = false
+		# Connect button (disconnect first to avoid duplicates)
+		if not btn.pressed.is_connected(_on_slot_pressed):
+			btn.pressed.connect(_on_slot_pressed.bind(slot_name))
+		if not del_btn.pressed.is_connected(_on_delete_pressed):
+			del_btn.pressed.connect(_on_delete_pressed.bind(slot_name))
 
 
-func _start_hosting() -> void:
+func _on_slot_pressed(slot_name: String) -> void:
+	if _saves_by_slot.has(slot_name):
+		_set_busy("Loading %s..." % _saves_by_slot[slot_name].get("name", slot_name))
+		SaveManager.load_existing_game(slot_name)
+	else:
+		_set_busy("Starting new game...")
+		SaveManager.start_new_game(slot_name)
 	NetworkManager.host_game()
+
+
+func _on_delete_pressed(slot_name: String) -> void:
+	_pending_delete = slot_name
+	var display_name: String = _saves_by_slot.get(slot_name, { }).get("name", slot_name)
+	_confirm_dialog.dialog_text = "Delete '%s'? This cannot be undone." % display_name
+	_confirm_dialog.popup_centered()
+
+
+func _on_confirm_delete() -> void:
+	if _pending_delete == "":
+		return
+	SaveManager.delete_slot(_pending_delete)
+	_pending_delete = ""
+	_refresh_saves()
 
 
 func _on_lobby_created(_lobby_id: int) -> void:
@@ -45,8 +118,7 @@ func _on_lobby_created(_lobby_id: int) -> void:
 
 func _on_connection_failed(reason: String) -> void:
 	_status_label.text = "Failed: %s" % reason
-	_new_game_button.disabled = false
-	_back_button.disabled = false
+	_set_enabled(true)
 
 
 func _on_back() -> void:
@@ -55,79 +127,13 @@ func _on_back() -> void:
 
 func _set_busy(text: String) -> void:
 	_status_label.text = text
-	_new_game_button.disabled = true
-	_back_button.disabled = true
+	_set_enabled(false)
 
 
-func _refresh_saves() -> void:
-	_refresh_button.disabled = true
-	_refresh_button.text = "Loading..."
-	for child in _save_list.get_children():
-		child.queue_free()
-	var saves := SaveManager.list_saves()
-	if saves.is_empty():
-		var label := Label.new()
-		label.text = "No saved games yet"
-		label.add_theme_font_size_override("font_size", 10)
-		_save_list.add_child(label)
-	else:
-		for save in saves:
-			_add_save_row(save)
-	_refresh_button.disabled = false
-	_refresh_button.text = "Refresh"
-
-
-func _add_save_row(save: Dictionary) -> void:
-	var row := HBoxContainer.new()
-	_save_list.add_child(row)
-
-	var info := VBoxContainer.new()
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(info)
-
-	var name_label := Label.new()
-	name_label.text = save.get("name", save.get("slot", "Unknown"))
-	name_label.add_theme_font_size_override("font_size", 12)
-	info.add_child(name_label)
-
-	var detail_label := Label.new()
-	var day_text := "Day %d" % save.get("day", 1)
-	var money_text := "$%.2f" % save.get("money", 0.0)
-	var saved_at: float = save.get("saved_at", 0.0)
-	var date_text := ""
-	if saved_at > 0:
-		var dict := Time.get_datetime_dict_from_unix_time(int(saved_at))
-		date_text = "%04d-%02d-%02d %02d:%02d" % [
-			dict["year"],
-			dict["month"],
-			dict["day"],
-			dict["hour"],
-			dict["minute"],
-		]
-	detail_label.text = "%s  |  %s  |  %s" % [day_text, money_text, date_text]
-	detail_label.add_theme_font_size_override("font_size", 10)
-	detail_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	info.add_child(detail_label)
-
-	var load_btn := Button.new()
-	load_btn.text = "Load"
-	load_btn.add_theme_font_size_override("font_size", 10)
-	var slot_name: String = save.get("slot", "")
-	load_btn.pressed.connect(
-		func():
-			_on_load_save(slot_name),
-	)
-	row.add_child(load_btn)
-
-	var delete_btn := Button.new()
-	delete_btn.text = "Delete"
-	delete_btn.add_theme_font_size_override("font_size", 10)
-	delete_btn.pressed.connect(
-		func():
-			SaveManager.delete_slot(slot_name)
-			_refresh_saves(),
-	)
-	row.add_child(delete_btn)
+func _set_enabled(enabled: bool) -> void:
+	for btn in _slot_buttons:
+		btn.disabled = not enabled
+	_back_button.disabled = not enabled
 
 
 func _go_to_lobby() -> void:

@@ -6,12 +6,13 @@ extends Control
 @onready var _room_code_label: Label = $HBox/LeftPanel/VBox/RoomRow/RoomCodeLabel
 @onready var _copy_button: Button = $HBox/LeftPanel/VBox/RoomRow/CopyButton
 @onready var _invite_button: Button = $HBox/LeftPanel/VBox/RoomRow/InviteButton
-@onready var _player_list: VBoxContainer = $HBox/LeftPanel/VBox/PlayerList
-@onready var _stand1_button: Button = $HBox/LeftPanel/VBox/StandRow/Stand1Button
-@onready var _stand2_button: Button = $HBox/LeftPanel/VBox/StandRow/Stand2Button
-@onready var _ready_button: Button = $HBox/LeftPanel/VBox/ReadyRow/ReadyButton
-@onready var _start_button: Button = $HBox/LeftPanel/VBox/ReadyRow/StartButton
-@onready var _leave_button: Button = $HBox/LeftPanel/VBox/LeaveButton
+@onready var _stand1_list: VBoxContainer = $HBox/LeftPanel/VBox/StandsRow/Stand1Col/Stand1List
+@onready var _stand2_list: VBoxContainer = $HBox/LeftPanel/VBox/StandsRow/Stand2Col/Stand2List
+@onready var _stand1_button: Button = $HBox/LeftPanel/VBox/StandsRow/Stand1Col/Stand1Button
+@onready var _stand2_button: Button = $HBox/LeftPanel/VBox/StandsRow/Stand2Col/Stand2Button
+@onready var _ready_button: Button = $HBox/LeftPanel/VBox/BottomRow/ReadyButton
+@onready var _start_button: Button = $HBox/LeftPanel/VBox/BottomRow/StartButton
+@onready var _back_button: Button = $HBox/LeftPanel/VBox/BottomRow/BackButton
 @onready var _version_label: Label = $VersionLabel
 
 # Customization UI
@@ -86,7 +87,7 @@ func _ready() -> void:
 		func():
 			LobbyManager.start_game(),
 	)
-	_leave_button.pressed.connect(_on_leave_pressed)
+	_back_button.pressed.connect(_on_leave_pressed)
 	LobbyManager.roster_changed.connect(_refresh)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
 	NetworkManager.peer_disconnected.connect(
@@ -130,7 +131,9 @@ func _on_server_disconnected() -> void:
 
 
 func _refresh() -> void:
-	for child in _player_list.get_children():
+	for child in _stand1_list.get_children():
+		child.queue_free()
+	for child in _stand2_list.get_children():
 		child.queue_free()
 
 	var my_id := multiplayer.get_unique_id()
@@ -138,22 +141,24 @@ func _refresh() -> void:
 
 	for peer_id in LobbyManager.roster:
 		var entry: Dictionary = LobbyManager.roster[peer_id]
-		var row := Label.new()
 		var stand_idx: int = entry.get("stand_index", -1)
-		var stand_text := (
-			STAND_NAMES[stand_idx]
-			if (stand_idx >= 0 and stand_idx < STAND_NAMES.size())
-			else "(no stand)"
-		)
-		var ready_text := "Ready" if entry.get("ready", false) else "Not ready"
+		var ready_text := "✓" if entry.get("ready", false) else "..."
 		var you_text := " (you)" if peer_id == my_id else ""
-		row.text = "%s%s — %s — %s" % [
-			entry.get("name", "Player"),
-			you_text,
-			stand_text,
-			ready_text,
-		]
-		_player_list.add_child(row)
+		var row := Label.new()
+		row.text = "%s%s\n%s" % [entry.get("name", "Player"), you_text, ready_text]
+		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		row.add_theme_font_size_override("font_size", 16)
+		if stand_idx == 0:
+			_stand1_list.add_child(row)
+		elif stand_idx == 1:
+			_stand2_list.add_child(row)
+		else:
+			# No stand chosen yet — show in both lists as unassigned
+			var row2 := Label.new()
+			row2.text = "%s%s\n(no stand)" % [entry.get("name", "Player"), you_text]
+			row2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			row2.add_theme_font_size_override("font_size", 16)
+			_stand1_list.add_child(row2)
 
 	var my_stand: int = mine.get("stand_index", -1)
 	_stand1_button.button_pressed = my_stand == 0
