@@ -327,8 +327,9 @@ func _setup_visuals() -> void:
 	else:
 		# No customization data — randomize as fallback
 		visuals.randomize_appearance()
-	# Scale the head bone for cartoony proportions
-	visuals.scale_head_bone(1.3)
+	# Scale the head bone for cartoony proportions (from customization or default)
+	var head_size: float = custom.get("head_size", 1.3)
+	visuals.scale_head_bone(head_size)
 	# Hide visuals for the local player (first-person camera)
 	# Remote players see the full character model
 	visuals.visible = not is_multiplayer_authority()

@@ -26,6 +26,7 @@ extends Control
 @onready var _shirt_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/ShirtColorNum
 @onready var _pants_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/PantsColorNum
 @onready var _shoes_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/ShoesColorNum
+@onready var _head_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HeadNum
 
 const STAND_NAMES: Array[String] = ["Stand 1", "Stand 2"]
 
@@ -37,6 +38,11 @@ var _eyebrow_index: int = 0
 var _shirt_color_index: int = 0
 var _pants_color_index: int = 1
 var _shoes_color_index: int = 2
+var _head_size_index: int = 4 # 0-8, maps to 0.5x - 2.0x (index 4 = 1.3x default)
+
+const HEAD_SIZE_MIN: float = 0.5
+const HEAD_SIZE_MAX: float = 2.0
+const HEAD_SIZE_STEPS: int = 9 # 0.5, 0.7, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.0
 
 const HAIR_COLOR_NAMES: Array[String] = [
 	"Black",
@@ -174,7 +180,7 @@ func _setup_customization() -> void:
 	_player_visuals.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
 	_player_visuals.set_eyebrow(_eyebrow_index)
 	_apply_clothing_colors()
-	_player_visuals.scale_head_bone(1.3)
+	_player_visuals.scale_head_bone(_head_size_to_scale())
 	_player_visuals.play_anim("Idle")
 	_update_all_labels()
 
@@ -270,6 +276,18 @@ func _setup_customization() -> void:
 			_on_customization_changed(),
 	)
 
+	# Head size buttons
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HeadPrev.pressed.connect(
+		func():
+			_head_size_index = max(0, _head_size_index - 1)
+			_on_customization_changed(),
+	)
+	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HeadNext.pressed.connect(
+		func():
+			_head_size_index = min(HEAD_SIZE_STEPS - 1, _head_size_index + 1)
+			_on_customization_changed(),
+	)
+
 	# Randomize button
 	$HBox/RightPanel/CustomizeHBox/OptionsCol/RandomButton.pressed.connect(_on_randomize)
 
@@ -282,11 +300,16 @@ func _on_customization_changed() -> void:
 	_player_visuals.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
 	_player_visuals.set_eyebrow(_eyebrow_index)
 	_apply_clothing_colors()
-	_player_visuals.scale_head_bone(1.3)
+	_player_visuals.scale_head_bone(_head_size_to_scale())
 	_player_visuals.play_anim("Idle")
 	_update_all_labels()
 	_update_gender_buttons()
 	_broadcast_customization()
+
+
+func _head_size_to_scale() -> float:
+	var step: float = (HEAD_SIZE_MAX - HEAD_SIZE_MIN) / float(HEAD_SIZE_STEPS - 1)
+	return HEAD_SIZE_MIN + step * _head_size_index
 
 
 func _apply_clothing_colors() -> void:
@@ -312,6 +335,7 @@ func _update_all_labels() -> void:
 	_shirt_color_num.text = str(_shirt_color_index + 1)
 	_pants_color_num.text = str(_pants_color_index + 1)
 	_shoes_color_num.text = str(_shoes_color_index + 1)
+	_head_num.text = str(_head_size_index + 1)
 
 
 func _on_randomize() -> void:
@@ -322,6 +346,7 @@ func _on_randomize() -> void:
 	_shirt_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
 	_pants_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
 	_shoes_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
+	_head_size_index = randi() % HEAD_SIZE_STEPS
 	_on_customization_changed()
 
 
@@ -336,6 +361,7 @@ func _get_customization_data() -> Dictionary:
 		"hair_index": _hair_index,
 		"hair_color": PlayerVisuals.HAIR_COLORS[_hair_color_index],
 		"eyebrow_index": _eyebrow_index,
+		"head_size": _head_size_to_scale(),
 		"clothing_colors": {
 			"shirt": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
 			"top": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
