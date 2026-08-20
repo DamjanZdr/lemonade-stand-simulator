@@ -720,12 +720,30 @@ func _update_bubble_screen_pos() -> void:
 func _show_order() -> void:
 	if order.is_empty():
 		_set_order_text("")
+		sync_show_order("")
 		return
 	var parts: Array[String] = []
 	for fruit_type: String in order.keys():
 		var qty: int = order[fruit_type]
 		parts.append("%d %s" % [qty, fruit_type.capitalize()])
-	_set_order_text(", ".join(parts))
+	var text := ", ".join(parts)
+	_set_order_text(text)
+	sync_show_order(text)
+
+
+## Host: sync the order bubble text to clients so they see it too.
+func sync_show_order(text: String) -> void:
+	_sync_show_order.rpc(text)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_show_order(text: String) -> void:
+	if multiplayer.is_server():
+		return
+	if text == "":
+		_hide_order_bubble()
+	else:
+		_set_order_text(text)
 
 
 func _run_price_check_and_show_order() -> void:
@@ -832,6 +850,7 @@ func _hide_order_bubble() -> void:
 		_ui_panel.visible = false
 	if _ui_label:
 		_ui_label.visible = false
+	sync_show_order("")
 
 
 func _build_order_bubble() -> void:
