@@ -222,7 +222,9 @@ func _finalize_conversion(ped: Pedestrian) -> void:
 	spawner.spawn_converted(slot, ped)
 	_ped_spawner_map.erase(ped)
 	_pedestrians.erase(ped)
-	ped.queue_free()
+	# Despawn via WorldSync so clients remove the pedestrian too
+	# (queue_free() only frees on the host)
+	WorldSync.despawn_networked(ped)
 
 
 ## Resumes a pedestrian rejected by a full queue — advance past the convertable waypoint.

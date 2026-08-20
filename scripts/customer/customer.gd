@@ -202,16 +202,16 @@ func _physics_process(delta: float) -> void:
 					delta,
 				)
 				if global_position.z <= Balancing.CUSTOMER_DESPAWN_Z:
-					queue_free()
+					WorldSync.despawn_networked(self)
 			elif _leave_waypoint_idx >= _leave_waypoints.size():
-				queue_free()
+				WorldSync.despawn_networked(self)
 			else:
 				var target := _leave_waypoints[_leave_waypoint_idx].global_position
 				_walk_toward(target, delta)
 				if global_position.distance_to(target) < 0.55:
 					_leave_waypoint_idx += 1
 					if _leave_waypoint_idx >= _leave_waypoints.size():
-						queue_free()
+						WorldSync.despawn_networked(self)
 
 	_apply_motion(delta)
 

@@ -296,7 +296,8 @@ func _net_set_target(pos: Vector3, rot: Vector3) -> void:
 func _advance_waypoint() -> void:
 	_waypoint_idx += 1
 	if _waypoint_idx >= _waypoints.size():
-		queue_free()
+		# Despawn via WorldSync so clients remove this pedestrian too
+		WorldSync.despawn_networked(self)
 		return
 
 
