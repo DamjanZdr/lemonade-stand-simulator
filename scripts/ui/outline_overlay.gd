@@ -28,12 +28,9 @@ func _get_base_viewport_size() -> Vector2i:
 
 
 func _get_actual_viewport_size() -> Vector2i:
-	# Use the window size, which is the actual rendered area both in
-	# the editor and in standalone builds. get_viewport().size can
-	# differ in the editor.
-	var win := get_window()
-	if win:
-		return win.size
+	# get_viewport() returns the game viewport both in the editor and
+	# in standalone builds. In the editor, this is the SubViewport the
+	# game runs in. In standalone, this is the window's viewport.
 	var vp := get_viewport()
 	if vp:
 		return vp.size
@@ -108,6 +105,13 @@ func setup(main_cam: Camera3D) -> void:
 func _process(_delta: float) -> void:
 	if _main_cam == null or _cam == null:
 		return
+	# Update SubViewport size to match the actual viewport every frame.
+	# This catches size changes from window resize, editor startup,
+	# fullscreen toggles, etc. that the size_changed signal might miss.
+	var vp_size := _get_actual_viewport_size()
+	if _subvp.size != vp_size:
+		_subvp.size = vp_size
+		_update_shader_width()
 	# Sync early so the SubViewport renders with a camera position close to
 	# what the main viewport will use, reducing the one-frame texture lag.
 	_sync_outline_camera()

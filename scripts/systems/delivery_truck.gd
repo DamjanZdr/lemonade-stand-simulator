@@ -548,6 +548,13 @@ func _animate_arc(box: SupplyBox, target_pos: Vector3, target_rot: Vector3) -> v
 	var cp1 := start_pos + Vector3(0, ARC_HEIGHT * 1.5, 0)
 	var cp2 := target_pos + Vector3(0, ARC_HEIGHT * 1.5, 0)
 
+	# Reparent the box on clients too (from truck grid to world).
+	# The host already did this; clients need to match so the box
+	# isn't stuck on the truck grid visually.
+	if WorldSync.is_host():
+		var parent_path := WorldSync._node_path_to_string(get_tree().current_scene.get_path())
+		WorldSync._reparent_on_clients.rpc(parent_path, box.name)
+
 	var tween := box.create_tween()
 	tween.set_parallel(true)
 
@@ -559,7 +566,9 @@ func _animate_arc(box: SupplyBox, target_pos: Vector3, target_rot: Vector3) -> v
 					+ cp1 * 3.0 * ((1.0 - t) ** 2) * t \
 					+ cp2 * 3.0 * (1.0 - t) * (t ** 2) \
 					+ target_pos * (t ** 3)
-			box.global_position = p,
+			box.global_position = p
+			# Sync box position to clients during the arc
+			WorldSync.sync_property(box, "global_position", p),
 		0.0,
 		1.0,
 		ARC_DURATION,

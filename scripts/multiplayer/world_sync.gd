@@ -166,6 +166,32 @@ func despawn_networked(obj: Node) -> void:
 	_despawn_on_clients.rpc(parent_path, obj_name)
 
 
+## Tell all clients to reparent an object to a new parent. Used when
+## the host moves an object (e.g. a supply box from the truck grid to
+## the world) and clients need to match the hierarchy.
+@rpc("authority", "call_local", "reliable")
+func _reparent_on_clients(new_parent_path_str: String, obj_name: String) -> void:
+	if is_host():
+		return
+	var obj := _find_node("", obj_name)
+	if obj == null:
+		GameLog.log("[WorldSync] Client reparent: object not found: " + obj_name)
+		return
+	var new_parent := _string_to_node(new_parent_path_str)
+	if new_parent == null:
+		GameLog.log("[WorldSync] Client reparent: parent not found: " + new_parent_path_str)
+		return
+	var old_pos: Vector3 = obj.global_position
+	var old_rot: Vector3 = obj.global_rotation
+	obj.get_parent().remove_child(obj)
+	new_parent.add_child(obj)
+	obj.global_position = old_pos
+	obj.global_rotation = old_rot
+	# Update cache
+	_node_cache[obj_name] = obj
+	GameLog.log("[WorldSync] Client reparented %s to %s" % [obj_name, new_parent_path_str])
+
+
 @rpc("authority", "call_local", "reliable")
 func _spawn_on_clients(
 	scene_path: String,
