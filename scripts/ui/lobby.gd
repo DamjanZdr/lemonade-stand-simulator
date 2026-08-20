@@ -3,28 +3,28 @@ extends Control
 ## pick a stand and ready up, and lets the host start the game once
 ## everyone's ready. Also includes character customization with a 3D preview.
 
-@onready var _room_code_label: Label = $HBox/VBox/RoomRow/RoomCodeLabel
-@onready var _copy_button: Button = $HBox/VBox/RoomRow/CopyButton
-@onready var _invite_button: Button = $HBox/VBox/RoomRow/InviteButton
-@onready var _player_list: VBoxContainer = $HBox/VBox/PlayerList
-@onready var _stand1_button: Button = $HBox/VBox/StandRow/Stand1Button
-@onready var _stand2_button: Button = $HBox/VBox/StandRow/Stand2Button
-@onready var _ready_button: Button = $HBox/VBox/ReadyRow/ReadyButton
-@onready var _start_button: Button = $HBox/VBox/ReadyRow/StartButton
-@onready var _leave_button: Button = $HBox/VBox/LeaveButton
+@onready var _room_code_label: Label = $HBox/LeftPanel/VBox/RoomRow/RoomCodeLabel
+@onready var _copy_button: Button = $HBox/LeftPanel/VBox/RoomRow/CopyButton
+@onready var _invite_button: Button = $HBox/LeftPanel/VBox/RoomRow/InviteButton
+@onready var _player_list: VBoxContainer = $HBox/LeftPanel/VBox/PlayerList
+@onready var _stand1_button: Button = $HBox/LeftPanel/VBox/StandRow/Stand1Button
+@onready var _stand2_button: Button = $HBox/LeftPanel/VBox/StandRow/Stand2Button
+@onready var _ready_button: Button = $HBox/LeftPanel/VBox/ReadyRow/ReadyButton
+@onready var _start_button: Button = $HBox/LeftPanel/VBox/ReadyRow/StartButton
+@onready var _leave_button: Button = $HBox/LeftPanel/VBox/LeaveButton
 @onready var _version_label: Label = $VersionLabel
 
 # Customization UI
-@onready var _preview_vp: SubViewport = $HBox/CustomizePanel/PreviewRect/PreviewVP
-@onready var _player_visuals: PlayerVisuals = $HBox/CustomizePanel/PreviewRect/PreviewVP/PlayerVisuals
-@onready var _male_button: Button = $HBox/CustomizePanel/GenderRow/MaleButton
-@onready var _female_button: Button = $HBox/CustomizePanel/GenderRow/FemaleButton
-@onready var _hair_name: Label = $HBox/CustomizePanel/HairRow/HairName
-@onready var _hair_color_name: Label = $HBox/CustomizePanel/HairColorRow/HairColorName
-@onready var _eyebrow_name: Label = $HBox/CustomizePanel/EyebrowRow/EyebrowName
-@onready var _shirt_color_name: Label = $HBox/CustomizePanel/ShirtColorRow/ShirtColorName
-@onready var _pants_color_name: Label = $HBox/CustomizePanel/PantsColorRow/PantsColorName
-@onready var _shoes_color_name: Label = $HBox/CustomizePanel/ShoesColorRow/ShoesColorName
+@onready var _preview_vp: SubViewport = $HBox/RightPanel/CustomizePanel/PreviewRect/PreviewVP
+@onready var _player_visuals: PlayerVisuals = $HBox/RightPanel/CustomizePanel/PreviewRect/PreviewVP/PlayerVisuals
+@onready var _male_button: Button = $HBox/RightPanel/CustomizePanel/GenderRow/MaleButton
+@onready var _female_button: Button = $HBox/RightPanel/CustomizePanel/GenderRow/FemaleButton
+@onready var _hair_name: Label = $HBox/RightPanel/CustomizePanel/HairRow/HairName
+@onready var _hair_color_name: Label = $HBox/RightPanel/CustomizePanel/HairColorRow/HairColorName
+@onready var _eyebrow_name: Label = $HBox/RightPanel/CustomizePanel/EyebrowRow/EyebrowName
+@onready var _shirt_color_name: Label = $HBox/RightPanel/CustomizePanel/ShirtColorRow/ShirtColorName
+@onready var _pants_color_name: Label = $HBox/RightPanel/CustomizePanel/PantsColorRow/PantsColorName
+@onready var _shoes_color_name: Label = $HBox/RightPanel/CustomizePanel/ShoesColorRow/ShoesColorName
 
 const STAND_NAMES: Array[String] = ["Stand 1", "Stand 2"]
 
@@ -189,87 +189,87 @@ func _setup_customization() -> void:
 	)
 
 	# Hair style buttons
-	$HBox/CustomizePanel/HairRow/HairPrev.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/HairRow/HairPrev.pressed.connect(
 		func():
 			_hair_index = (_hair_index - 1 + _player_visuals.get_hair_count()) % _player_visuals.get_hair_count()
 			_on_customization_changed(),
 	)
-	$HBox/CustomizePanel/HairRow/HairNext.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/HairRow/HairNext.pressed.connect(
 		func():
 			_hair_index = (_hair_index + 1) % _player_visuals.get_hair_count()
 			_on_customization_changed(),
 	)
 
 	# Hair color buttons
-	$HBox/CustomizePanel/HairColorRow/HairColorPrev.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/HairColorRow/HairColorPrev.pressed.connect(
 		func():
 			_hair_color_index = (_hair_color_index - 1 + PlayerVisuals.HAIR_COLORS.size()) % PlayerVisuals \
 					.HAIR_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/CustomizePanel/HairColorRow/HairColorNext.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/HairColorRow/HairColorNext.pressed.connect(
 		func():
 			_hair_color_index = (_hair_color_index + 1) % PlayerVisuals.HAIR_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Eyebrow buttons
-	$HBox/CustomizePanel/EyebrowRow/EyebrowPrev.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/EyebrowRow/EyebrowPrev.pressed.connect(
 		func():
 			_eyebrow_index = (_eyebrow_index - 1 + _player_visuals.get_eyebrow_count()) % _player_visuals.get_eyebrow_count()
 			_on_customization_changed(),
 	)
-	$HBox/CustomizePanel/EyebrowRow/EyebrowNext.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/EyebrowRow/EyebrowNext.pressed.connect(
 		func():
 			_eyebrow_index = (_eyebrow_index + 1) % _player_visuals.get_eyebrow_count()
 			_on_customization_changed(),
 	)
 
 	# Shirt color buttons
-	$HBox/CustomizePanel/ShirtColorRow/ShirtColorPrev.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/ShirtColorRow/ShirtColorPrev.pressed.connect(
 		func():
 			_shirt_color_index = (_shirt_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/CustomizePanel/ShirtColorRow/ShirtColorNext.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/ShirtColorRow/ShirtColorNext.pressed.connect(
 		func():
 			_shirt_color_index = (_shirt_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Pants color buttons
-	$HBox/CustomizePanel/PantsColorRow/PantsColorPrev.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/PantsColorRow/PantsColorPrev.pressed.connect(
 		func():
 			_pants_color_index = (_pants_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/CustomizePanel/PantsColorRow/PantsColorNext.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/PantsColorRow/PantsColorNext.pressed.connect(
 		func():
 			_pants_color_index = (_pants_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Shoes color buttons
-	$HBox/CustomizePanel/ShoesColorRow/ShoesColorPrev.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/ShoesColorRow/ShoesColorPrev.pressed.connect(
 		func():
 			_shoes_color_index = (_shoes_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/CustomizePanel/ShoesColorRow/ShoesColorNext.pressed.connect(
+	$HBox/RightPanel/CustomizePanel/ShoesColorRow/ShoesColorNext.pressed.connect(
 		func():
 			_shoes_color_index = (_shoes_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Randomize button
-	$HBox/CustomizePanel/RandomButton.pressed.connect(_on_randomize)
+	$HBox/RightPanel/CustomizePanel/RandomButton.pressed.connect(_on_randomize)
 
 	# Update gender button states
 	_update_gender_buttons()

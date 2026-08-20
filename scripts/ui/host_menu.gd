@@ -3,11 +3,11 @@ extends Control
 ## previous save slot). After choosing, creates a Steam lobby and goes to
 ## the Lobby scene.
 
-@onready var _new_game_button: Button = $VBox/NewGameButton
-@onready var _back_button: Button = $VBox/BackButton
+@onready var _new_game_button: Button = $CenterBox/NewGameButton
+@onready var _back_button: Button = $CenterBox/BackButton
 @onready var _save_list: VBoxContainer = $SaveScroll/SaveList
 @onready var _refresh_button: Button = $SaveScroll/RefreshButton
-@onready var _status_label: Label = $VBox/StatusLabel
+@onready var _status_label: Label = $CenterBox/StatusLabel
 @onready var _version_label: Label = $VersionLabel
 
 
@@ -97,7 +97,13 @@ func _add_save_row(save: Dictionary) -> void:
 	var date_text := ""
 	if saved_at > 0:
 		var dict := Time.get_datetime_dict_from_unix_time(int(saved_at))
-		date_text = "%04d-%02d-%02d %02d:%02d" % [dict["year"], dict["month"], dict["day"], dict["hour"], dict["minute"]]
+		date_text = "%04d-%02d-%02d %02d:%02d" % [
+			dict["year"],
+			dict["month"],
+			dict["day"],
+			dict["hour"],
+			dict["minute"],
+		]
 	detail_label.text = "%s  |  %s  |  %s" % [day_text, money_text, date_text]
 	detail_label.add_theme_font_size_override("font_size", 10)
 	detail_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
@@ -107,7 +113,10 @@ func _add_save_row(save: Dictionary) -> void:
 	load_btn.text = "Load"
 	load_btn.add_theme_font_size_override("font_size", 10)
 	var slot_name: String = save.get("slot", "")
-	load_btn.pressed.connect(func(): _on_load_save(slot_name))
+	load_btn.pressed.connect(
+		func():
+			_on_load_save(slot_name),
+	)
 	row.add_child(load_btn)
 
 	var delete_btn := Button.new()

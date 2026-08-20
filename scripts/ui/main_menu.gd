@@ -4,12 +4,12 @@ extends Control
 ## Also shows a list of active lobbies on the left so you can join without
 ## copying lobby IDs manually.
 
-@onready var _title_label: Label = $VBox/TitleLabel
-@onready var _host_button: Button = $VBox/HostButton
-@onready var _join_field: LineEdit = $VBox/JoinRow/JoinField
-@onready var _join_button: Button = $VBox/JoinRow/JoinButton
-@onready var _status_label: Label = $VBox/StatusLabel
-@onready var _quit_button: Button = $VBox/QuitButton
+@onready var _title_label: Label = $CenterBox/TitleLabel
+@onready var _host_button: Button = $CenterBox/HostButton
+@onready var _join_field: LineEdit = $CenterBox/JoinRow/JoinField
+@onready var _join_button: Button = $CenterBox/JoinRow/JoinButton
+@onready var _status_label: Label = $CenterBox/StatusLabel
+@onready var _quit_button: Button = $CenterBox/QuitButton
 @onready var _lobby_list: VBoxContainer = $LobbyScroll/LobbyList
 @onready var _refresh_button: Button = $LobbyScroll/RefreshButton
 @onready var _version_label: Label = $VersionLabel
