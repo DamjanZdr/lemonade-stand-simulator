@@ -26,6 +26,8 @@ var _ped_spawner_map: Dictionary = { }
 var _managed: bool = false
 var _pedestrians: Array = []
 var _spawn_timer: Timer
+var _sync_timer: float = 0.0
+const NPC_SYNC_INTERVAL: float = 0.07 # ~14Hz position sync for NPCs
 
 
 func _ready() -> void:
@@ -37,6 +39,25 @@ func _ready() -> void:
 	add_to_group("pedestrian_spawner")
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	_update_spawner()
+
+
+func _process(delta: float) -> void:
+	# Host: periodically sync all pedestrian positions to clients
+	if not WorldSync.is_host():
+		return
+	_sync_timer += delta
+	if _sync_timer < NPC_SYNC_INTERVAL:
+		return
+	_sync_timer = 0.0
+	_pedestrians = _pedestrians.filter(
+		func(p):
+			return is_instance_valid(p),
+	)
+	for ped in _pedestrians:
+		var p := ped as Pedestrian
+		if p == null:
+			continue
+		WorldSync.sync_transform(p, p.global_position, p.global_rotation)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:

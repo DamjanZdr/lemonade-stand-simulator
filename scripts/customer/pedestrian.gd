@@ -131,6 +131,11 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Only the host runs NPC simulation; clients receive positions via
+	# WorldSync.sync_transform() from the pedestrian spawner.
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+
 	if _playable_area == null:
 		_connect_playable_area()
 
