@@ -347,15 +347,15 @@ func get_customization() -> Dictionary:
 
 
 ## Scale the head bone to make it bigger (cartoony proportions).
+## Uses set_bone_pose_scale so only the scale changes (not position),
+## and it's an absolute set so repeated calls don't compound.
 func scale_head_bone(scale: float) -> void:
 	var skel := get_active_skeleton()
 	if skel == null:
 		return
 	var head_idx := skel.find_bone("Head")
 	if head_idx >= 0:
-		var pose := skel.get_bone_pose(head_idx)
-		pose = pose.scaled(Vector3.ONE * scale)
-		skel.set_bone_pose(head_idx, pose)
+		skel.set_bone_pose_scale(head_idx, Vector3.ONE * scale)
 
 
 func play_anim(anim_name: String) -> void:
