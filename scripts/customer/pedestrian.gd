@@ -4,6 +4,12 @@ extends CharacterBody3D
 ## At convertable waypoints it rolls a popularity-based chance to join the queue.
 ## On success it walks directly to the reserved queue slot (same NPC, visually continuous)
 ## and signals the spawner when it arrives. After the last waypoint it despawns.
+##
+## Multiplayer: the host is authoritative for all NPC state. Clients receive
+## state-change RPCs (spawn, waypoint advance, queue routing, offer, serve,
+## resume, despawn) and simulate walking locally between state changes.
+## This avoids syncing positions every frame — clients walk independently
+## until the host tells them something changed.
 
 const GRAVITY := 9.8
 
@@ -13,6 +19,10 @@ signal wants_to_join(pedestrian: Pedestrian)
 
 var _waypoints: Array[PedestrianWaypoint] = []
 var _waypoint_idx: int = 0
+
+## Cached waypoint world-positions for client-side simulation (no need to
+## reference the actual PedestrianWaypoint nodes on clients).
+var _waypoint_positions: Array[Vector3] = []
 
 ## When true the pedestrian has diverted to a queue slot and ignores waypoints.
 var _routing_to_queue: bool = false
@@ -100,9 +110,24 @@ func _on_playable_area_entered(body: Node3D) -> void:
 
 
 ## Called by PedestrianSpawner right after instantiation.
+## On the host: sets up waypoints and syncs the route to clients.
+## On clients: called with empty waypoints; use setup_client() instead.
 func setup(waypoints: Array[PedestrianWaypoint], start_index: int = 0) -> void:
 	_waypoints = waypoints
 	_waypoint_idx = start_index
+	# Cache positions for potential client sync
+	_waypoint_positions.clear()
+	for wp in waypoints:
+		_waypoint_positions.append(wp.global_position)
+
+
+## Called on clients via RPC to set up the route without needing the actual
+## PedestrianWaypoint nodes. The client walks toward these positions.
+func setup_client(waypoint_positions: Array[Vector3], start_index: int) -> void:
+	_waypoint_positions = waypoint_positions
+	_waypoint_idx = start_index
+	_state = PedestrianState.WALKING
+	_npc.play_anim("Walk")
 
 
 ## Called by PedestrianSpawner after a slot is reserved.
@@ -115,10 +140,13 @@ func walk_to_queue(target: Vector3, on_arrive: Callable) -> void:
 	_queue_target = target
 	_queue_arrived_cb = on_arrive
 	_npc.play_anim("Walk")
+	_sync_walk_to_queue.rpc(target)
 
 
+## Update queue target position (host only). Syncs to clients.
 func update_queue_target(target: Vector3) -> void:
 	_queue_target = target
+	_sync_queue_target.rpc(target)
 
 
 func get_route_continuation() -> Dictionary:
@@ -131,9 +159,12 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	# Only the host runs NPC simulation; clients receive positions via
-	# WorldSync.sync_transform() from the pedestrian spawner.
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+	# Only the host runs the full NPC simulation (convert chances, offers, etc).
+	# Clients run a simplified simulation: walk toward the current target
+	# (waypoint or queue target) using the same walk_speed.
+	var is_client: bool = multiplayer.has_multiplayer_peer() and not multiplayer.is_server()
+	if is_client:
+		_physics_client(delta)
 		return
 
 	if _playable_area == null:
@@ -212,6 +243,154 @@ func _apply_motion(delta: float) -> void:
 		global_position.y = _ground_y
 
 
+# ── Client-side simulation ───────────────────────────────────────────────────
+## Simplified physics for clients: walk toward the current target (waypoint
+## or queue target) at walk_speed. No convert chances, no offers, no
+## state transitions — just visual walking until the host sends a state RPC.
+func _physics_client(delta: float) -> void:
+	if not is_on_floor():
+		velocity.y -= GRAVITY * delta
+
+	# Handle facing rotation (e.g. when offered/serving)
+	if _is_rotating_to_face:
+		var t := minf(delta * _ROTATION_SPEED, 1.0)
+		var q := basis.get_rotation_quaternion().slerp(_facing_target.get_rotation_quaternion(), t)
+		basis = Basis(q)
+		if q.dot(_facing_target.get_rotation_quaternion()) > 0.999:
+			basis = _facing_target
+			_is_rotating_to_face = false
+
+	match _state:
+		PedestrianState.WALKING:
+			if _routing_to_queue:
+				if global_position.distance_to(_queue_target) < 0.35:
+					_routing_to_queue = false
+					velocity = Vector3.ZERO
+				else:
+					_walk_toward(_queue_target, delta)
+			elif not _waypoint_positions.is_empty() and _waypoint_idx < _waypoint_positions.size():
+				var target := _waypoint_positions[_waypoint_idx]
+				if global_position.distance_to(target) < 0.55:
+					# Reached a waypoint on the client — advance locally.
+					# The host will send an RPC if the NPC converts or does
+					# something special; otherwise we just advance.
+					_waypoint_idx += 1
+					if _waypoint_idx >= _waypoint_positions.size():
+						# End of route — host will despawn via WorldSync
+						velocity = Vector3.ZERO
+				else:
+					_walk_toward(target, delta)
+			else:
+				velocity = Vector3.ZERO
+
+		PedestrianState.OFFERED, PedestrianState.SERVING:
+			velocity = Vector3.ZERO
+
+	_apply_motion(delta)
+
+
+# ── Multiplayer RPCs (host → clients) ────────────────────────────────────────
+## Sync the full route to clients. Called by the spawner after setup().
+func sync_route(waypoint_positions: Array[Vector3], start_index: int) -> void:
+	_sync_route.rpc(waypoint_positions, start_index)
+
+
+## Host: advance to next waypoint. Synced to clients.
+func _advance_waypoint() -> void:
+	_waypoint_idx += 1
+	if _waypoint_idx >= _waypoints.size():
+		queue_free()
+		return
+	_sync_advance_waypoint.rpc(_waypoint_idx)
+
+
+## Host: NPC was offered a free lemonade and stopped. Synced to clients.
+func sync_offered(player_pos: Vector3) -> void:
+	_sync_offered.rpc(player_pos)
+
+
+## Host: NPC was served and is now in serving state. Synced to clients.
+func sync_serving() -> void:
+	_sync_serving.rpc()
+
+
+## Host: NPC resumed walking (after offer timeout or serving done). Synced.
+func sync_resume(waypoint_idx: int) -> void:
+	_sync_resume.rpc(waypoint_idx)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_route(waypoint_positions: Array[Vector3], start_index: int) -> void:
+	if multiplayer.is_server():
+		return
+	setup_client(waypoint_positions, start_index)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_advance_waypoint(new_idx: int) -> void:
+	if multiplayer.is_server():
+		return
+	_waypoint_idx = new_idx
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_walk_to_queue(target: Vector3) -> void:
+	if multiplayer.is_server():
+		return
+	_routing_to_queue = true
+	_ground_snapped = false
+	_snap_attempts = 0
+	_queue_target = target
+	_npc.play_anim("Walk")
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_queue_target(target: Vector3) -> void:
+	if multiplayer.is_server():
+		return
+	_queue_target = target
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_offered(player_pos: Vector3) -> void:
+	if multiplayer.is_server():
+		return
+	_state = PedestrianState.OFFERED
+	velocity = Vector3.ZERO
+	_facing_target = Basis.looking_at(player_pos - global_position, Vector3.UP)
+	_is_rotating_to_face = true
+	_show_order_text(_OFFER_TEXT)
+	if _patience_circle:
+		_patience_circle.visible = true
+		_refresh_patience_bar(1.0)
+	_npc.play_anim("Talk")
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_serving() -> void:
+	if multiplayer.is_server():
+		return
+	_state = PedestrianState.SERVING
+	velocity = Vector3.ZERO
+	_hide_order_bubble()
+	if _patience_circle:
+		_patience_circle.visible = false
+	_npc.play_anim("Talk")
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_resume(waypoint_idx: int) -> void:
+	if multiplayer.is_server():
+		return
+	_state = PedestrianState.WALKING
+	_is_rotating_to_face = false
+	_waypoint_idx = waypoint_idx
+	_hide_order_bubble()
+	if _patience_circle:
+		_patience_circle.visible = false
+	_npc.play_anim("Walk")
+
+
 func _ensure_people_manager() -> bool:
 	if _people_manager != null and is_instance_valid(_people_manager):
 		return true
@@ -245,12 +424,6 @@ func _arrive() -> void:
 		return # spawner will call walk_to_queue() or _resume(); don't advance yet
 
 	_advance_waypoint()
-
-
-func _advance_waypoint() -> void:
-	_waypoint_idx += 1
-	if _waypoint_idx >= _waypoints.size():
-		queue_free()
 
 
 func _walk_toward(target: Vector3, delta: float) -> void:
@@ -288,6 +461,8 @@ func offer_free_lemonade(player: Node) -> void:
 			Vector3.UP,
 		)
 		_is_rotating_to_face = true
+	# Sync to clients
+	sync_offered(_offered_by_player.global_position if _offered_by_player else global_position)
 
 
 func try_serve(player: Node) -> void:
@@ -309,6 +484,8 @@ func try_serve(player: Node) -> void:
 	_show_order_text(feedback)
 	_npc.play_anim("Talk")
 	_feedback_timer = 2.5
+	# Sync to clients
+	sync_serving()
 
 
 func _offer_timeout() -> void:
@@ -328,6 +505,8 @@ func _resume_walking() -> void:
 	if _patience_circle:
 		_patience_circle.visible = false
 	_npc.play_anim("Walk")
+	# Sync to clients
+	sync_resume(_waypoint_idx)
 
 
 func _show_order_text(text: String) -> void:
