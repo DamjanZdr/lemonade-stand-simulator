@@ -225,6 +225,8 @@ func start_delivery() -> void:
 	_current_wp = 1
 	_state = "driving_in"
 	_start_engine_sound()
+	# Tell clients to make the truck visible
+	_set_truck_visible.rpc(true)
 
 
 func _process(delta: float) -> void:
@@ -270,9 +272,19 @@ func _process(delta: float) -> void:
 func _sync_truck(pos: Vector3, rot: Vector3) -> void:
 	if is_multiplayer_authority():
 		return # Host already has the right position
-	GameLog.log("[DeliveryTruck] %s received sync pos=%s" % [name, str(pos)])
+	GameLog.log("[DeliveryTruck] %s received sync pos=%s visible=%s" % [name, str(pos), visible])
 	global_position = pos
 	global_rotation = rot
+
+
+## Tell clients to show or hide the truck. The truck starts invisible
+## and only becomes visible when the host starts a delivery.
+@rpc("authority", "call_local", "reliable")
+func _set_truck_visible(is_visible: bool) -> void:
+	if is_multiplayer_authority():
+		return # Host already set it locally
+	visible = is_visible
+	GameLog.log("[DeliveryTruck] %s visibility set to %s" % [name, is_visible])
 
 
 func _drive_to_waypoint(delta: float) -> void:
@@ -332,6 +344,7 @@ func _drive_out(delta: float) -> void:
 		visible = false
 		_state = "idle"
 		_stop_engine_sound()
+		_set_truck_visible.rpc(false)
 		return
 
 	var target_pos := _path_end.global_position
@@ -344,6 +357,7 @@ func _drive_out(delta: float) -> void:
 		visible = false
 		_state = "idle"
 		_fade_engine_out(0.15)
+		_set_truck_visible.rpc(false)
 		return
 
 	var step := minf(DRIVE_SPEED * delta, dist)
