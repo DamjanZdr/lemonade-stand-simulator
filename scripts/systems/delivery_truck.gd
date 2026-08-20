@@ -24,7 +24,14 @@ var _boxes_transferred: int = 0
 var _post_transfer_timer: float = 0.0
 var _sync_timer: float = 0.0
 var _last_synced_pos: Vector3 = Vector3.ZERO
-const TRUCK_SYNC_INTERVAL: float = 0.1 # 10 updates/sec while driving
+const TRUCK_SYNC_INTERVAL: float = 0.05 # 20 updates/sec while driving
+
+# ── Client-side interpolation (server-authoritative) ─────────────────────────
+## Clients interpolate smoothly toward the host's position/rotation.
+## Without this, the truck snaps every sync frame and looks very choppy.
+var _net_target_pos: Vector3 = Vector3.ZERO
+var _net_target_rot: Vector3 = Vector3.ZERO
+const _NET_LERP_SPEED: float = 10.0
 
 # Waypoint markers (read from children)
 var _path_start: Marker3D = null
@@ -233,9 +240,9 @@ func _process(delta: float) -> void:
 	# Keep engine sound at truck position
 	if _engine_player and is_instance_valid(_engine_player):
 		_engine_player.global_position = global_position
-	# Only the host drives the truck animation; clients receive position
-	# updates via WorldSync.
+	# Clients interpolate toward the host's position for smooth movement
 	if not WorldSync.is_host():
+		_physics_client_interpolate(delta)
 		return
 	match _state:
 		"idle":
@@ -257,24 +264,26 @@ func _process(delta: float) -> void:
 			_sync_timer = 0.0
 			if global_position.distance_to(_last_synced_pos) > 0.1:
 				_last_synced_pos = global_position
-				GameLog.log(
-					"[DeliveryTruck] %s sending sync pos=%s state=%s"
-					% [name, str(global_position), _state]
-				)
-				_sync_truck.rpc(global_position, global_rotation)
+				WorldSync.sync_transform(self, global_position, global_rotation)
 
 
-## Direct RPC to update the truck's position on all clients.
-## Uses a direct RPC on the truck node instead of WorldSync.sync_property
-## because the truck is a scene node (not spawned via WorldSync) and
-## may not be in the node cache.
-@rpc("authority", "call_local", "reliable")
-func _sync_truck(pos: Vector3, rot: Vector3) -> void:
-	if is_multiplayer_authority():
-		return # Host already has the right position
-	GameLog.log("[DeliveryTruck] %s received sync pos=%s visible=%s" % [name, str(pos), visible])
-	global_position = pos
-	global_rotation = rot
+## Client-side interpolation: smoothly move toward the target position
+## received from the host via WorldSync.sync_transform().
+func _physics_client_interpolate(delta: float) -> void:
+	var t := clampf(_NET_LERP_SPEED * delta, 0.0, 1.0)
+	global_position = global_position.lerp(_net_target_pos, t)
+	# Smoothly interpolate rotation using quaternions
+	var current_q := Quaternion.from_euler(global_rotation)
+	var target_q := Quaternion.from_euler(_net_target_rot)
+	global_rotation = current_q.slerp(target_q, t).get_euler()
+
+
+## Called by WorldSync._apply_transform when the object supports
+## interpolation. Sets the target position/rotation that
+## _physics_client_interpolate moves toward.
+func _net_set_target(pos: Vector3, rot: Vector3) -> void:
+	_net_target_pos = pos
+	_net_target_rot = rot
 
 
 ## Tell clients to show or hide the truck. The truck starts invisible
@@ -284,6 +293,11 @@ func _set_truck_visible(is_visible: bool) -> void:
 	if is_multiplayer_authority():
 		return # Host already set it locally
 	visible = is_visible
+	if is_visible:
+		# Initialize interpolation target to current position so the truck
+		# doesn't snap/jump when the first sync_transform arrives
+		_net_target_pos = global_position
+		_net_target_rot = global_rotation
 	GameLog.log("[DeliveryTruck] %s visibility set to %s" % [name, is_visible])
 
 
