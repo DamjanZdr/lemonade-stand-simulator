@@ -154,6 +154,8 @@ func spawn_networked(
 
 
 ## Despawn a world object on the host and tell all clients to despawn it too.
+## If the object is a SupplyBox, also makes boxes above fall on the host
+## and tells clients to do the same.
 func despawn_networked(obj: Node) -> void:
 	if not is_host():
 		return
@@ -162,8 +164,19 @@ func despawn_networked(obj: Node) -> void:
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	var obj_name := obj.name
 	GameLog.log("[WorldSync] Host despawning %s parent=%s" % [obj_name, parent_path])
+	# If this is a supply box, make boxes above fall on the host AND clients
+	if obj is SupplyBox:
+		SupplyBox.make_boxes_above_pos_fall(obj.global_position)
+		_sync_boxes_fall.rpc(obj.global_position)
 	obj.queue_free()
 	_despawn_on_clients.rpc(parent_path, obj_name)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_boxes_fall(box_pos: Vector3) -> void:
+	if is_host():
+		return
+	SupplyBox.make_boxes_above_pos_fall(box_pos)
 
 
 ## Tell all clients to reparent an object to a new parent. Used when

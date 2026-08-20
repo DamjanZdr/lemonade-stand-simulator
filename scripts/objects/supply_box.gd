@@ -230,7 +230,7 @@ func interact(player: Node) -> void:
 	if is_trash_box:
 		AudioManager.play_sfx("pick_up_box", global_position)
 		p.make_held_trash(trash_value, trash_type, _make_hand_mesh())
-		_make_boxes_above_fall()
+		# Boxes above fall is handled by WorldSync.despawn_networked()
 		WorldSync.request_despawn(self)
 		return
 
@@ -241,7 +241,6 @@ func interact(player: Node) -> void:
 			{ "source": "delivery", "is_equipment": true, "equipment_type": equipment_type },
 			_make_hand_mesh(),
 		)
-		_make_boxes_above_fall()
 		WorldSync.request_despawn(self)
 		return
 
@@ -251,22 +250,23 @@ func interact(player: Node) -> void:
 		{ "ingredient_type": ingredient_type, "amount": quantity, "source": "delivery" },
 		_make_hand_mesh(),
 	)
-	_make_boxes_above_fall()
 	WorldSync.request_despawn(self)
 
 
-func _make_boxes_above_fall() -> void:
-	var my_pos := global_position
+## Static method: find all supply boxes above the given world position
+## and animate them falling down by one stack height. Called locally
+## on the host and via RPC on clients when a box is picked up.
+static func make_boxes_above_pos_fall(box_pos: Vector3) -> void:
 	var above: Array[SupplyBox] = []
-	for node in get_tree().get_nodes_in_group("supply_box"):
-		if node == self or not is_instance_valid(node):
+	for node in Engine.get_main_loop().get_nodes_in_group("supply_box"):
+		if not is_instance_valid(node):
 			continue
 		var box := node as SupplyBox
 		if box == null:
 			continue
-		var dx := absf(box.global_position.x - my_pos.x)
-		var dz := absf(box.global_position.z - my_pos.z)
-		if dx < stack_radius and dz < stack_radius and box.global_position.y > my_pos.y:
+		var dx := absf(box.global_position.x - box_pos.x)
+		var dz := absf(box.global_position.z - box_pos.z)
+		if dx < stack_radius and dz < stack_radius and box.global_position.y > box_pos.y:
 			above.append(box)
 	if above.is_empty():
 		return
