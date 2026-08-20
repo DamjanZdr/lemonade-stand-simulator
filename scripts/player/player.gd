@@ -197,6 +197,7 @@ var _current_anim: String = "Idle"
 var _was_moving: bool = false
 var _prev_sync_pos: Vector3 = Vector3.ZERO
 var _is_sprinting: bool = false
+var _time_since_sync: float = 0.0
 const SYNC_ROT_THRESHOLD: float = 0.05 # Min rotation (radians) to trigger sync
 var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
@@ -461,9 +462,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	# Remote players: update animation based on velocity from RPC sync
 	if not is_multiplayer_authority():
-		# Decay velocity so remote players stop walking when no new
-		# position RPCs arrive (authority stops sending when standing still)
-		velocity = velocity.move_toward(Vector3.ZERO, 10.0 * delta)
+		_time_since_sync += delta
+		# If no position RPC arrived recently, the authority has stopped
+		# moving — snap velocity to zero immediately so walk->idle is instant
+		if _time_since_sync > 0.15:
+			velocity = Vector3.ZERO
+		else:
+			# Decay velocity for smooth interpolation between RPCs
+			velocity = velocity.move_toward(Vector3.ZERO, 30.0 * delta)
 		_update_anim()
 
 
@@ -528,6 +534,7 @@ func _sync_position(pos: Vector3, rot: Vector3, sprinting: bool = false) -> void
 	velocity = delta_pos / (get_process_delta_time() if get_process_delta_time() > 0 else 0.016)
 	_prev_sync_pos = pos
 	_is_sprinting = sprinting
+	_time_since_sync = 0.0
 	global_position = pos
 	global_rotation = rot
 
