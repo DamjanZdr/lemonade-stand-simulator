@@ -413,27 +413,27 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = ">"
 
-[node name="HeadLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
+[node name="HeadLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=211746385]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Head:"
 
-[node name="HeadPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
-layout_mode = 2
+[node name="HeadPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=262543001]
 custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "<"
 
-[node name="HeadNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
-layout_mode = 2
+[node name="HeadNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=239324649]
 custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "5"
 horizontal_alignment = 1
 
-[node name="HeadNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid"]
-layout_mode = 2
+[node name="HeadNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=242600388]
 custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = ">"
 
@@ -467,7 +467,7 @@ light_color = Color(1, 0.95, 0.85, 1)
 light_energy = 0.4
 
 [node name="Camera3D" type="Camera3D" parent="HBox/RightPanel/CustomizeHBox/PreviewRect/PreviewVP" unique_id=17446747]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 2.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.086511254, 2.8607483)
 environment = SubResource("Env_lobby")
 fov = 35.0
 

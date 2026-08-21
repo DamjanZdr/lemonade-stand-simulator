@@ -35,7 +35,7 @@
 [ext_resource type="PackedScene" uid="uid://fg2gqjb0j6dy" path="res://assets/models/characters/npc_attributes/Male/Mouths/SadMouthM.glb" id="m_mouth_sad"]
 [ext_resource type="PackedScene" uid="uid://d00rlmnk1gym4" path="res://assets/models/characters/npc_attributes/Male/Mouths/SadTalkingMouthM.glb" id="m_mouth_sadtalk"]
 [ext_resource type="PackedScene" uid="uid://b0dr2sv2th8e0" path="res://assets/models/characters/npc_attributes/Male/Mouths/TalkingMouthM.glb" id="m_mouth_talk"]
-[ext_resource type="Script" path="res://scripts/player/player_visuals.gd" id="npc_appear"]
+[ext_resource type="Script" uid="uid://cr38wjgjae5yt" path="res://scripts/player/player_visuals.gd" id="npc_appear"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0nj48"]
 resource_name = "Skin"
@@ -3357,9 +3357,6 @@ _data = {
 &"Walk": SubResource("Animation_ual8i")
 }
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_2a7ac"]
-size = Vector3(7.515869, 23.576538, 5.4970703)
-
 [node name="PlayerVisuals" type="Node3D" unique_id=789160888]
 script = ExtResource("npc_appear")
 walk_speed = 2.0
@@ -3367,6 +3364,7 @@ eye_look_max_deg = 90.0
 eye_look_speed = 5.0
 
 [node name="man" type="Node3D" parent="." unique_id=1019095832]
+transform = Transform3D(1.04, 0, 0, 0, 1.04, 0, 0, 0, 1.04, 0, 0, 0)
 
 [node name="Armature" type="Node3D" parent="man" unique_id=741721365]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8318386, 0)

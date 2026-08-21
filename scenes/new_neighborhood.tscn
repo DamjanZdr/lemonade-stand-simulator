@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://g4sj0xvpwogo"]
+
+[ext_resource type="PackedScene" uid="uid://b0vveq8txkrb6" path="res://assets/models/environment/neighborhood/new neighborhood layout.glb" id="1_d31ws"]
+[ext_resource type="PackedScene" uid="uid://djfao0o4txdq6" path="res://_source/blender/house.glb" id="2_qstd8"]
+
+[node name="NewNeighborhood" type="Node3D" unique_id=78984145]
+
+[node name="new neighborhood layout" parent="." unique_id=439024250 instance=ExtResource("1_d31ws")]
+
+[node name="house" parent="new neighborhood layout" unique_id=1118536857 instance=ExtResource("2_qstd8")]
+transform = Transform3D(-0.08715578, 0, -0.9961947, 0, 1, 0, 0.9961947, 0, -0.08715578, -30.109657, 3.0890126, -9.2)
