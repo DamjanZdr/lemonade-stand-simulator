@@ -28,17 +28,17 @@ func _get_base_viewport_size() -> Vector2i:
 
 
 func _get_actual_viewport_size() -> Vector2i:
-	# Use the main camera's viewport if available — that's the actual
-	# game viewport the player sees. This is more reliable than
-	# get_viewport() which might return a different viewport in some
-	# contexts (e.g. editor SubViewports).
-	if _main_cam != null and is_instance_valid(_main_cam):
-		var vp := _main_cam.get_viewport()
-		if vp:
-			return vp.size
-	var vp := get_viewport()
-	if vp:
-		return vp.size
+	# The project uses canvas_items stretch mode with expand aspect.
+	# The DisplayRect is a canvas item laid out at the BASE resolution
+	# (1280x720) and then scaled to the window. The SubViewport texture
+	# is displayed on this canvas item. If the SubViewport is at the
+	# actual window size (e.g. 1920x1080), the texture gets squeezed
+	# into 1280x720 canvas space and stretched back, causing a scale
+	# mismatch that makes outlines appear larger than the objects.
+	#
+	# Fix: render the SubViewport at the BASE resolution so it matches
+	# the canvas coordinate system 1:1. The 3D aspect ratio is the same
+	# (both 16:9), so the projection matches the main camera.
 	return _get_base_viewport_size()
 
 
@@ -88,18 +88,9 @@ func _on_viewport_size_changed() -> void:
 func _update_shader_width() -> void:
 	if _display == null or _display.material == null:
 		return
-	# Scale outline width based on the ratio of actual viewport size to
-	# the project base size. This keeps the outline width consistent
-	# regardless of resolution.
-	var vp_size := Vector2(_get_actual_viewport_size())
-	var base_size := Vector2(_get_base_viewport_size())
-	var scale_factor: float = (
-		0.5 * (vp_size.x / max(1.0, base_size.x) + vp_size.y / max(1.0, base_size.y))
-	)
-	(_display.material as ShaderMaterial).set_shader_parameter(
-		"outline_width",
-		_target_width / max(0.01, scale_factor),
-	)
+	# SubViewport is now at base resolution, matching the canvas 1:1,
+	# so no scaling is needed — just use the target width directly.
+	(_display.material as ShaderMaterial).set_shader_parameter("outline_width", _target_width)
 
 
 func _on_set_color(color: Color) -> void:
@@ -164,8 +155,3 @@ func _sync_outline_camera() -> void:
 	_cam.size = _main_cam.size # for orthographic projection
 	_cam.h_offset = _main_cam.h_offset
 	_cam.v_offset = _main_cam.v_offset
-	# Sync camera attributes (exposure, DOF, etc.) — without this the
-	# outline camera may render at a different exposure/aspect, causing
-	# the outline to appear offset from the actual objects.
-	if _main_cam.attributes != null:
-		_cam.attributes = _main_cam.attributes

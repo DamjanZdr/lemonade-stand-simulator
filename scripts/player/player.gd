@@ -1040,7 +1040,11 @@ func _place_cup_stack_from_box() -> void:
 	if look_dir.length_squared() > 0.001:
 		stack_rot.y = atan2(look_dir.x, look_dir.z)
 
-	var state: Dictionary = { "starting_count": 1, "max_capacity": 10 }
+	var state: Dictionary = {
+		"starting_count": 1,
+		"max_capacity": 10,
+		"_net_groups": ["container"],
+	}
 	var stack := WorldSync.request_spawn(
 		"res://scenes/objects/cup_stack.tscn",
 		stack_pos,
@@ -1166,7 +1170,11 @@ func _place_single_cup(_filled: bool) -> void:
 	if look_dir.length_squared() > 0.001:
 		stack_rot.y = atan2(look_dir.x, look_dir.z)
 
-	var state: Dictionary = { "starting_count": 1, "max_capacity": 10 }
+	var state: Dictionary = {
+		"starting_count": 1,
+		"max_capacity": 10,
+		"_net_groups": ["container"],
+	}
 	var stack := WorldSync.request_spawn(
 		"res://scenes/objects/cup_stack.tscn",
 		stack_pos,
@@ -1207,6 +1215,7 @@ func _place_filled_cup() -> void:
 		"recipe": recipe,
 		"fill_color": recipe.get("color", Color(1.0, 0.9, 0.3, 1.0)),
 		"state": Cup.CupState.FILLED,
+		"_net_groups": ["container"],
 	}
 	var cup := WorldSync.request_spawn("res://scenes/objects/cup.tscn", cup_pos, cup_rot, state) as Cup
 	if cup:
@@ -1431,6 +1440,7 @@ func _place_equipment_from_box() -> void:
 	# Set initial state so _ready() sees it
 	state["starting_amount"] = 0.0
 	state["starting_count"] = 0
+	state["_net_groups"] = ["container"]
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance:
 		var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
@@ -2396,7 +2406,11 @@ func _try_place_container() -> Node3D:
 	# Restore saved contents (or empty if none)
 	var saved_amount: float = held_item_data.get("saved_amount", 0.0)
 	var saved_count: int = held_item_data.get("saved_count", 0)
-	var state: Dictionary = { "starting_amount": saved_amount, "starting_count": saved_count }
+	var state: Dictionary = {
+		"starting_amount": saved_amount,
+		"starting_count": saved_count,
+		"_net_groups": ["container"],
+	}
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D

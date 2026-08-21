@@ -119,9 +119,14 @@ func spawn_networked(
 		GameLog.log("[WorldSync] Failed to load scene: " + scene_path)
 		return null
 	var obj := scene.instantiate()
-	# Set state BEFORE adding to tree so _ready() sees configured values
-	for key in state:
-		obj.set(key, state[key])
+	# Set state BEFORE adding to tree so _ready() sees configured values.
+	# Special key "_net_groups" is not a property — it's a list of groups
+	# to add the object to after spawning (so clients match the host).
+	var net_groups: Array = state.get("_net_groups", [])
+	var clean_state := state.duplicate()
+	clean_state.erase("_net_groups")
+	for key in clean_state:
+		obj.set(key, clean_state[key])
 	# Give the object a unique name so despawn can find it reliably.
 	# Without this, multiple objects of the same type would all be named
 	# e.g. "SupplyBox" and despawn would only find the first one.
@@ -230,13 +235,22 @@ func _spawn_on_clients(
 		GameLog.log("[WorldSync] Client: scene not found: " + scene_path)
 		return
 	var obj := scene.instantiate()
-	for key in state:
-		obj.set(key, state[key])
+	# Set state BEFORE adding to tree so _ready() sees configured values.
+	# Special key "_net_groups" is not a property — it's a list of groups
+	# to add the object to after spawning (so clients match the host).
+	var net_groups: Array = state.get("_net_groups", [])
+	var clean_state := state.duplicate()
+	clean_state.erase("_net_groups")
+	for key in clean_state:
+		obj.set(key, clean_state[key])
 	obj.name = obj_name
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
 	obj.scale = obj_scale
+	# Add to groups after spawning so clients match the host
+	for g in net_groups:
+		obj.add_to_group(g)
 	_node_cache[obj_name] = obj
 	GameLog.log("[WorldSync] Client spawned %s OK scale=%s" % [obj_name, str(obj_scale)])
 
