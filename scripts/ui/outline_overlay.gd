@@ -108,10 +108,19 @@ func _on_set_color(color: Color) -> void:
 
 func setup(main_cam: Camera3D) -> void:
 	_main_cam = main_cam
+	# Sync immediately so the outline camera matches the main camera
+	# from the very first frame — otherwise the default FOV (75) makes
+	# objects appear larger than they are in the main view (FOV 90).
+	_sync_outline_camera()
+	# Also update the SubViewport size now that we have the main camera
+	var vp_size := _get_actual_viewport_size()
+	if _subvp.size != vp_size:
+		_subvp.size = vp_size
+		_update_shader_width()
 
 
 func _process(_delta: float) -> void:
-	if _main_cam == null or _cam == null:
+	if _main_cam == null or not is_instance_valid(_main_cam) or _cam == null:
 		return
 	# Update SubViewport size to match the actual viewport every frame.
 	# This catches size changes from window resize, editor startup,
@@ -126,7 +135,8 @@ func _process(_delta: float) -> void:
 
 
 func _on_frame_pre_draw() -> void:
-	if _display == null or get_tree() == null or _main_cam == null:
+	if _display == null or get_tree() == null or _main_cam == null \
+			or not is_instance_valid(_main_cam):
 		return
 	# Only show the outline overlay when at least one object is highlighted.
 	var active := get_tree().get_first_node_in_group("outline_fill") != null
@@ -143,7 +153,7 @@ func _on_frame_pre_draw() -> void:
 
 
 func _sync_outline_camera() -> void:
-	if _main_cam == null or _cam == null:
+	if _main_cam == null or not is_instance_valid(_main_cam) or _cam == null:
 		return
 	_cam.global_transform = _main_cam.global_transform
 	_cam.fov = _main_cam.fov
