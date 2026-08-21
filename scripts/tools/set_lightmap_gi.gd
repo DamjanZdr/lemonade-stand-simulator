@@ -7,7 +7,7 @@ extends EditorScript
 ## This prevents the bake from processing the entire 2000+ node neighborhood
 ## and crashing — only nearby geometry gets baked.
 
-const BAKE_RADIUS := 100.0
+const BAKE_RADIUS := 70.0
 const STAND_POSITIONS := [
 	Vector3(2.0, 0.0, -2.0), # StandUnit (at origin)
 	Vector3(-8.1, 0.0, -24.0), # StandUnit2
