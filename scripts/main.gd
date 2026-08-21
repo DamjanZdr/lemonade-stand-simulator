@@ -18,8 +18,8 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 @onready var delivery: Node = $DeliverySystem
 @onready var delivery2: Node = $DeliverySystem2
 @onready var hud: CanvasLayer = $HUD
-@onready var stand_unit: StandUnit = world.get_node_or_null("StandUnit") as StandUnit
-@onready var stand_unit2: StandUnit = world.get_node_or_null("StandUnit2") as StandUnit
+@onready var stand_unit: StandUnit = world.find_child("StandUnit", true, false) as StandUnit
+@onready var stand_unit2: StandUnit = world.find_child("StandUnit2", true, false) as StandUnit
 
 ## The locally-controlled player, once spawned. Player is now spawned
 ## dynamically per connected peer (host + anyone who joins) instead of
@@ -74,7 +74,7 @@ func _ready() -> void:
 		spawner2.set_stand(stand_unit2)
 
 	# Use the sky material set up in the editor (ProceduralSkyMaterial).
-	_world_env = world.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	_world_env = world.find_child("WorldEnvironment", true, false) as WorldEnvironment
 	if _world_env and _world_env.environment:
 		_orig_ssr = _world_env.environment.ssr_enabled
 		_orig_ssao = _world_env.environment.ssao_enabled
@@ -383,7 +383,7 @@ func _enable_enhanced_lighting() -> void:
 		env.volumetric_fog_density = 0.002
 		env.volumetric_fog_length = 64.0
 	# Sun: sharper, stronger shadows for clear definition
-	var sun := world.get_node_or_null("DirectionalLight") as DirectionalLight3D
+	var sun := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
 	if sun:
 		_orig_shadow_blur = sun.shadow_blur
 		_orig_shadow_normal_bias = sun.shadow_normal_bias
@@ -399,7 +399,7 @@ func _enable_enhanced_lighting() -> void:
 		sun.directional_shadow_fade_start = 0.9
 		sun.directional_shadow_max_distance = 60.0
 	# Kill the fill light — we want dark shadows, not flat fill
-	var fill := world.get_node_or_null("FillLight") as DirectionalLight3D
+	var fill := world.find_child("FillLight", true, false) as DirectionalLight3D
 	if fill:
 		_orig_fill_energy = fill.light_energy
 		fill.visible = false
@@ -445,12 +445,12 @@ func _disable_enhanced_lighting() -> void:
 		env.ambient_light_sky_contribution = _orig_ambient_sky
 		env.volumetric_fog_density = 0.001
 		env.volumetric_fog_length = 333.13
-	var sun := world.get_node_or_null("DirectionalLight") as DirectionalLight3D
+	var sun := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
 	if sun:
 		sun.shadow_blur = _orig_shadow_blur
 		sun.shadow_normal_bias = _orig_shadow_normal_bias
 		sun.shadow_bias = _orig_shadow_bias
-	var fill := world.get_node_or_null("FillLight") as DirectionalLight3D
+	var fill := world.find_child("FillLight", true, false) as DirectionalLight3D
 	if fill:
 		fill.visible = true
 		fill.light_energy = _orig_fill_energy
@@ -487,7 +487,7 @@ func _mark_static_gi(node: Node) -> void:
 			if is_street_light:
 				mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 			else:
-				mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
+				mi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC
 	for child in node.get_children():
 		_mark_static_gi(child)
 
