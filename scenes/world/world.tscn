@@ -3,7 +3,6 @@
 [ext_resource type="PackedScene" uid="uid://1v1tem4n2kjm" path="res://scenes/stand/stand.tscn" id="1_stand"]
 [ext_resource type="PackedScene" uid="uid://bpiux7tbvj0ky" path="res://scenes/objects/water_dispenser.tscn" id="3_wdispenser"]
 [ext_resource type="PackedScene" uid="uid://b5nygw38vywdu" path="res://scenes/objects/thermometer.tscn" id="5_v5dby"]
-[ext_resource type="LightmapGIData" uid="uid://60b7fspwoxly" path="res://scenes/world/world.lmbake" id="6_j0rhc"]
 [ext_resource type="PackedScene" uid="uid://c7m3x1q2y405a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
 [ext_resource type="Script" uid="uid://dcc7v87n0gjjq" path="res://scripts/tools/preview_orbit_camera.gd" id="10_preview"]
 [ext_resource type="PackedScene" uid="uid://vc244erl2bi2" path="res://assets/models/props/Desk2.0.glb" id="14_mxkvs"]
@@ -207,11 +206,14 @@ quality = 3
 bounces = 8
 bounce_indirect_energy = 0.4
 directional = true
-light_data = ExtResource("6_j0rhc")
 
 [node name="VoxelGI" type="VoxelGI" parent="." unique_id=1156579838]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.5, -2)
-size = Vector3(10, 5, 8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, -2)
+size = Vector3(20, 8, 20)
+
+[node name="VoxelGI2" type="VoxelGI" parent="." unique_id=1156579839]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.1, 2, -24)
+size = Vector3(20, 8, 20)
 
 [node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=207345750]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.5, -2)
