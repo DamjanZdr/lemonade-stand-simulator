@@ -32,7 +32,7 @@ func _ready() -> void:
 			break
 	# Override definitions from UpgradeConfigManager if present.
 	var scene: Node = Engine.get_main_loop().current_scene
-	var cfg: Node = scene.get_node_or_null("Managers/UpgradeConfigManager")
+	var cfg: Node = scene.find_child("UpgradeConfigManager", true, false)
 	if cfg != null and cfg.has_method("get_upgrades"):
 		for def in cfg.get_upgrades():
 			if def != null:

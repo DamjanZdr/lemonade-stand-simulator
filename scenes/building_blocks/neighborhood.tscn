@@ -50,6 +50,8 @@
 [ext_resource type="Texture2D" uid="uid://dypa6kron6oro" path="res://assets/models/characters/man_Shoes Base Color.png" id="44_7iotn"]
 [ext_resource type="PackedScene" uid="uid://dr4k7li21a5fg" path="res://scenes/objects/cash_pickup.tscn" id="45_i4fc3"]
 [ext_resource type="Script" uid="uid://e7o24oyy11ah" path="res://scripts/objects/cup.gd" id="46_myl1y"]
+[ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
+[ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g4v7s"]
 albedo_color = Color(0.7921569, 1, 0.19607843, 1)
@@ -1877,6 +1879,7 @@ size = Vector2(26.35, 12)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_82vox"]
 size = Vector2(10, 2.2)
+
 
 [node name="Neighborhood" type="Node3D" unique_id=1396389632]
 script = ExtResource("22_neigh")
@@ -8876,3 +8879,30 @@ omni_range = 20.0
 
 [node name="Sketchfab_Scene" parent="." unique_id=1396670853 instance=ExtResource("30_wewmw")]
 transform = Transform3D(-0.023428977, 0.35000592, 0.9364544, 0.68654084, 0.6865408, -0.23942263, -0.7267135, 0.6373048, -0.25637838, -22.460365, 11.3622265, 2.0936258)
+
+[node name="Decorations" type="Node3D" parent="." unique_id=1407390588]
+transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
+
+[node name="PlantPot1" parent="Decorations" unique_id=1904588981 instance=ExtResource("49_l4ul6")]
+transform = Transform3D(0.84171945, 0, 0.53991526, 0, 1, 0, -0.53991526, 0, 0.84171945, -7.764577, 1.3492472, 35.04088)
+
+[node name="PlantPot8" parent="Decorations" unique_id=651441247 instance=ExtResource("49_l4ul6")]
+transform = Transform3D(0.84171945, 0, 0.53991526, 0, 1, 0, -0.53991526, 0, 0.84171945, 22.806116, 1.3492472, 64.299164)
+
+[node name="PlantPot2" parent="Decorations" unique_id=1238950346 instance=ExtResource("49_l4ul6")]
+transform = Transform3D(0.9211762, 0, -0.38914576, 0, 1, 0, 0.38914576, 0, 0.9211762, -7.764577, 1.3492472, 48.597187)
+
+[node name="PlantPot3" parent="Decorations" unique_id=701059214 instance=ExtResource("49_l4ul6")]
+transform = Transform3D(0.86611575, 0, 0.49984348, 0, 1, 0, -0.49984348, 0, 0.86611575, -8.243681, 1.3492472, 52.573715)
+
+[node name="PlantPot4" parent="Decorations" unique_id=471671490 instance=ExtResource("50_q3hpu")]
+transform = Transform3D(0.5868901, 0, 0.80966663, 0, 1, 0, -0.80966663, 0, 0.5868901, -5.804634, 1.3816375, 64.95521)
+
+[node name="PlantPot5" parent="Decorations" unique_id=1322096242 instance=ExtResource("50_q3hpu")]
+transform = Transform3D(0.6472111, 0, -0.76231086, 0, 1, 0, 0.76231086, 0, 0.6472111, 10.350017, 1.3816375, 64.58448)
+
+[node name="PlantPot6" parent="Decorations" unique_id=1339233554 instance=ExtResource("50_q3hpu")]
+transform = Transform3D(0.5868901, 0, 0.80966663, 0, 1, 0, -0.80966663, 0, 0.5868901, -27.828108, 2.1059017, 50.49137)
+
+[node name="PlantPot7" parent="Decorations" unique_id=1493501310 instance=ExtResource("50_q3hpu")]
+transform = Transform3D(0.6472111, 0, -0.76231086, 0, 1, 0, 0.76231086, 0, 0.6472111, -17.328918, 2.1059017, 50.101498)

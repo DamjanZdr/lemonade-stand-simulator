@@ -11,6 +11,41 @@
 [ext_resource type="PackedScene" uid="uid://c7s5b6a8h3q1j" path="res://scenes/systems/trash_spawner.tscn" id="11_trashspawner"]
 [ext_resource type="PackedScene" uid="uid://dbgconsole01" path="res://scenes/ui/debug_console.tscn" id="12_dbgconsole"]
 
+[ext_resource type="Resource" uid="uid://cqgusixkpn6b0" path="res://resources/upgrades/sunroof.tres" id="48_sunroof"]
+[ext_resource type="Resource" path="res://resources/data/peach.tres" id="43_peach"]
+[ext_resource type="Script" uid="uid://bx8ql2bcj8v5" path="res://scripts/core/ingredient_data.gd" id="18_5fxch"]
+[ext_resource type="Resource" uid="uid://bu46xbgvvx2ri" path="res://resources/upgrades/blueberry_unlock.tres" id="64_bluunl"]
+[ext_resource type="Resource" uid="uid://by6syp1tp4i6q" path="res://resources/upgrades/tip_magnet.tres" id="58_tip"]
+[ext_resource type="Resource" uid="uid://dkm7bmcp0fdtp" path="res://resources/upgrades/queue_appeal.tres" id="52_queue"]
+[ext_resource type="Resource" uid="uid://dt47sq4k4v7c" path="res://resources/upgrades/strawberry_unlock.tres" id="63_strunl"]
+[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="25_4v0p3"]
+[ext_resource type="Resource" uid="uid://boksdhow4wy5i" path="res://resources/upgrades/larger_crates.tres" id="49_crates"]
+[ext_resource type="Script" uid="uid://puonyclrtmxb" path="res://scripts/systems/upgrade_config_manager.gd" id="45_upgcfg"]
+[ext_resource type="Resource" uid="uid://bt1nbebv8rxkw" path="res://resources/upgrades/bulk_buy.tres" id="50_bulk"]
+[ext_resource type="Script" uid="uid://bw5xghgwuppje" path="res://scripts/managers/people_manager.gd" id="68_people"]
+[ext_resource type="Resource" uid="uid://dcbt63m1d18bs" path="res://resources/data/lemon.tres" id="40_lemon"]
+[ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
+[ext_resource type="Resource" path="res://resources/data/watermelon.tres" id="44_water"]
+[ext_resource type="Resource" uid="uid://d1hk0gkktg6me" path="res://resources/upgrades/watermelon_unlock.tres" id="66_watunl"]
+[ext_resource type="Resource" uid="uid://bodfywk634j8m" path="res://resources/upgrades/lemon_unlock.tres" id="62_lemunl"]
+[ext_resource type="Resource" uid="uid://d4ea6ugq701fu" path="res://resources/upgrades/demand.tres" id="59_demand"]
+[ext_resource type="Resource" uid="uid://btcdwa0mln6e5" path="res://resources/upgrades/peach_unlock.tres" id="65_peaunl"]
+[ext_resource type="Resource" uid="uid://cwkj211dv1ox0" path="res://resources/upgrades/speed_serve.tres" id="53_speed"]
+[ext_resource type="Script" uid="uid://bsyvhgcutcvjd" path="res://scripts/managers/color_manager.gd" id="46_fqf7g"]
+[ext_resource type="Resource" uid="uid://b2hi13ds6njqg" path="res://resources/upgrades/ice_mastery.tres" id="56_ice"]
+[ext_resource type="Script" uid="uid://ba3frt220nu7m" path="res://scripts/systems/recipe_manager.gd" id="39_recipe"]
+[ext_resource type="Resource" uid="uid://dk5opuesubbg1" path="res://resources/upgrades/sugar_rush.tres" id="57_sugar"]
+[ext_resource type="Resource" path="res://resources/data/strawberry.tres" id="41_straw"]
+[ext_resource type="Resource" uid="uid://c6kki7aodgms8" path="res://resources/upgrades/bin_capacity.tres" id="60_bin"]
+[ext_resource type="Resource" path="res://resources/data/blueberry.tres" id="42_blue"]
+[ext_resource type="Resource" uid="uid://dpe2rvl38mtc6" path="res://resources/upgrades/marketing.tres" id="51_mkt"]
+[ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
+[ext_resource type="Resource" uid="uid://bloghy56swyp1" path="res://resources/upgrades/price_flex.tres" id="55_price"]
+[ext_resource type="Resource" uid="uid://bc1gpbi3re7ip" path="res://resources/upgrades/psychology.tres" id="54_psych"]
+[ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="61_water"]
+[ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
+[ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="46_press"]
+
 [node name="Main" type="Node" unique_id=1191278377]
 script = ExtResource("1_main")
 
@@ -47,5 +82,36 @@ script = ExtResource("6_delivery")
 [node name="HUD" parent="." unique_id=1577022415 instance=ExtResource("7_hud")]
 
 [node name="DebugPanel" parent="." unique_id=1101678529 instance=ExtResource("9_debug")]
+
+
+[node name="Managers" type="Node" parent="." unique_id=1001413373]
+
+[node name="RecipeManager" type="Node" parent="Managers" unique_id=593663804]
+script = ExtResource("39_recipe")
+fruit_recipes = Array[ExtResource("18_5fxch")]([ExtResource("40_lemon"), ExtResource("41_straw"), ExtResource("42_blue"), ExtResource("43_peach"), ExtResource("44_water")])
+
+[node name="UpgradeConfigManager" type="Node" parent="Managers" unique_id=386669270]
+script = ExtResource("45_upgcfg")
+upgrades = Array[ExtResource("25_4v0p3")]([ExtResource("46_press"), ExtResource("47_nimble"), ExtResource("48_sunroof"), ExtResource("49_crates"), ExtResource("50_bulk"), ExtResource("51_mkt"), ExtResource("52_queue"), ExtResource("53_speed"), ExtResource("54_psych"), ExtResource("55_price"), ExtResource("56_ice"), ExtResource("57_sugar"), ExtResource("58_tip"), ExtResource("59_demand"), ExtResource("60_bin"), ExtResource("61_water"), ExtResource("62_lemunl"), ExtResource("63_strunl"), ExtResource("64_bluunl"), ExtResource("65_peaunl"), ExtResource("66_watunl")])
+
+[node name="PeopleManager" type="Node" parent="Managers" unique_id=1001413374]
+script = ExtResource("68_people")
+total_people = 50
+convert_chance_at_zero_popularity = 0.2
+convert_chance_at_max_popularity = 0.9
+
+[node name="TimeManager" type="Node" parent="Managers" unique_id=1001413375]
+script = ExtResource("69_time")
+seconds_per_hour = 40.0
+
+[node name="TrashManager" type="Node" parent="Managers" unique_id=1001413376]
+script = ExtResource("71_trash")
+
+[node name="ColorManager" type="Node" parent="Managers" unique_id=736981231]
+script = ExtResource("46_fqf7g")
+roof_default_color = Color(0.36220014, 0.34826168, 0.34491053, 1)
+wall_default_color = Color(0.78626776, 0.76280415, 0.6887659, 1)
+roof_colors = Array[Color]([Color(0.85490197, 0.69803923, 0.827451, 1), Color(0.42352942, 0.9607843, 0.88235295, 1), Color(0.7254902, 0.8509804, 0.43137255, 1), Color(0.92156863, 0.93333334, 0.19215687, 1), Color(0.85882354, 0.5137255, 0.5764706, 1)])
+wall_colors = Array[Color]([Color(0.42265648, 0.96156055, 0.88136154, 1), Color(0.8547164, 0.6989638, 0.8276675, 1), Color(0.7237331, 0.85128987, 0.43169385, 1), Color(0.86031544, 0.51238483, 0.5748986, 1), Color(0.92156863, 0.93333334, 0.19215687, 1)])
 
 [node name="DebugConsole" parent="." instance=ExtResource("12_dbgconsole")]

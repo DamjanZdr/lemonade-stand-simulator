@@ -135,9 +135,7 @@ func _find_playable_area() -> void:
 	var current := get_tree().current_scene
 	if current == null:
 		return
-	_playable_area = current.get_node_or_null("World/PlayableArea") as Area3D
-	if _playable_area == null:
-		_playable_area = current.get_node_or_null("PlayableArea") as Area3D
+	_playable_area = current.find_child("PlayableArea", true, false) as Area3D
 
 
 func _is_inside_playable_area(npc: Node3D) -> bool:

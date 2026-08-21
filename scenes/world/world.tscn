@@ -9,50 +9,14 @@
 [ext_resource type="PackedScene" uid="uid://vc244erl2bi2" path="res://assets/models/props/Desk2.0.glb" id="14_mxkvs"]
 [ext_resource type="PackedScene" uid="uid://csb7yl8gpw1q3" path="res://scenes/objects/computer.tscn" id="15_m114p"]
 [ext_resource type="PackedScene" uid="uid://3iu5tq16nvb0" path="res://scenes/building_blocks/neighborhood.tscn" id="15_mxkvs"]
-[ext_resource type="Script" uid="uid://bx8ql2bcj8v5" path="res://scripts/core/ingredient_data.gd" id="18_5fxch"]
-[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="25_4v0p3"]
 [ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
 [ext_resource type="Script" uid="uid://cp361e4vcklhx" path="res://scripts/objects/sky_controller.gd" id="37_sky"]
 [ext_resource type="Script" uid="uid://dklkcjfc1wreh" path="res://scripts/objects/sun_controller.gd" id="37_sun"]
-[ext_resource type="Script" uid="uid://ba3frt220nu7m" path="res://scripts/systems/recipe_manager.gd" id="39_recipe"]
-[ext_resource type="Resource" uid="uid://dcbt63m1d18bs" path="res://resources/data/lemon.tres" id="40_lemon"]
-[ext_resource type="Resource" path="res://resources/data/strawberry.tres" id="41_straw"]
-[ext_resource type="Resource" path="res://resources/data/blueberry.tres" id="42_blue"]
-[ext_resource type="Resource" path="res://resources/data/peach.tres" id="43_peach"]
-[ext_resource type="Resource" path="res://resources/data/watermelon.tres" id="44_water"]
 [ext_resource type="PackedScene" uid="uid://cdx1e3dagxpjh" path="res://scenes/objects/blackboard.tscn" id="45_kx0xk"]
-[ext_resource type="Script" uid="uid://puonyclrtmxb" path="res://scripts/systems/upgrade_config_manager.gd" id="45_upgcfg"]
 [ext_resource type="PackedScene" uid="uid://c7ra0ih8gdcs8" path="res://scenes/objects/price_board.tscn" id="46_5fxch"]
-[ext_resource type="Script" uid="uid://bsyvhgcutcvjd" path="res://scripts/managers/color_manager.gd" id="46_fqf7g"]
-[ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="46_press"]
-[ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
-[ext_resource type="Resource" uid="uid://cqgusixkpn6b0" path="res://resources/upgrades/sunroof.tres" id="48_sunroof"]
-[ext_resource type="Resource" uid="uid://boksdhow4wy5i" path="res://resources/upgrades/larger_crates.tres" id="49_crates"]
-[ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
-[ext_resource type="Resource" uid="uid://bt1nbebv8rxkw" path="res://resources/upgrades/bulk_buy.tres" id="50_bulk"]
-[ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
-[ext_resource type="Resource" uid="uid://dpe2rvl38mtc6" path="res://resources/upgrades/marketing.tres" id="51_mkt"]
 [ext_resource type="PackedScene" uid="uid://dk6i3an03mr2w" path="res://scenes/delivery_truck.tscn" id="51_q3hpu"]
-[ext_resource type="Resource" uid="uid://dkm7bmcp0fdtp" path="res://resources/upgrades/queue_appeal.tres" id="52_queue"]
-[ext_resource type="Resource" uid="uid://cwkj211dv1ox0" path="res://resources/upgrades/speed_serve.tres" id="53_speed"]
-[ext_resource type="Resource" uid="uid://bc1gpbi3re7ip" path="res://resources/upgrades/psychology.tres" id="54_psych"]
-[ext_resource type="Resource" uid="uid://bloghy56swyp1" path="res://resources/upgrades/price_flex.tres" id="55_price"]
-[ext_resource type="Resource" uid="uid://b2hi13ds6njqg" path="res://resources/upgrades/ice_mastery.tres" id="56_ice"]
-[ext_resource type="Resource" uid="uid://dk5opuesubbg1" path="res://resources/upgrades/sugar_rush.tres" id="57_sugar"]
-[ext_resource type="Resource" uid="uid://by6syp1tp4i6q" path="res://resources/upgrades/tip_magnet.tres" id="58_tip"]
-[ext_resource type="Resource" uid="uid://d4ea6ugq701fu" path="res://resources/upgrades/demand.tres" id="59_demand"]
-[ext_resource type="Resource" uid="uid://c6kki7aodgms8" path="res://resources/upgrades/bin_capacity.tres" id="60_bin"]
-[ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="61_water"]
-[ext_resource type="Resource" uid="uid://bodfywk634j8m" path="res://resources/upgrades/lemon_unlock.tres" id="62_lemunl"]
-[ext_resource type="Resource" uid="uid://dt47sq4k4v7c" path="res://resources/upgrades/strawberry_unlock.tres" id="63_strunl"]
-[ext_resource type="Resource" uid="uid://bu46xbgvvx2ri" path="res://resources/upgrades/blueberry_unlock.tres" id="64_bluunl"]
-[ext_resource type="Resource" uid="uid://btcdwa0mln6e5" path="res://resources/upgrades/peach_unlock.tres" id="65_peaunl"]
-[ext_resource type="Resource" uid="uid://d1hk0gkktg6me" path="res://resources/upgrades/watermelon_unlock.tres" id="66_watunl"]
-[ext_resource type="Script" uid="uid://bw5xghgwuppje" path="res://scripts/managers/people_manager.gd" id="68_people"]
-[ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="70_neigh"]
-[ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
 [ext_resource type="Script" uid="uid://b05w6bsuafqhd" path="res://scripts/stand/stand_unit.gd" id="72_standunit"]
 [ext_resource type="Shader" uid="uid://cslcepwalowji" path="res://assets/shaders/sky.gdshader" id="sky_shader"]
 
@@ -130,120 +94,126 @@ size = Vector3(18.82469, 15.440681, 5.7122664)
 [node name="World" type="Node3D" unique_id=1769167416]
 script = ExtResource("70_neigh")
 
-[node name="DefaultGround" type="StaticBody3D" parent="." unique_id=622270793]
+[node name="Environment" type="Node3D" parent="."]
+[node name="Stands" type="Node3D" parent="."]
+[node name="Ground" type="Node3D" parent="."]
+[node name="Props" type="Node3D" parent="."]
+[node name="Trucks" type="Node3D" parent="."]
+[node name="Misc" type="Node3D" parent="."]
+[node name="DefaultGround" type="StaticBody3D" parent="Ground" unique_id=622270793]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
 
-[node name="Mesh" type="MeshInstance3D" parent="DefaultGround" unique_id=1497984592]
+[node name="Mesh" type="MeshInstance3D" parent="Ground/DefaultGround" unique_id=1497984592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.011994839, -9.364746, -0.020724297)
 material_override = SubResource("Material_ground")
 mesh = SubResource("BoxMesh_ground")
 
-[node name="Col" type="CollisionShape3D" parent="DefaultGround" unique_id=1231860438]
+[node name="Col" type="CollisionShape3D" parent="Ground/DefaultGround" unique_id=1231860438]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9057007, -0.2495, -16.958313)
 shape = SubResource("BoxShape3D_ground")
 
-[node name="StandUnit" type="Node3D" parent="." unique_id=1000000001]
+[node name="StandUnit" type="Node3D" parent="Stands" unique_id=1000000001]
 script = ExtResource("72_standunit")
 is_legacy_primary = true
 
-[node name="Stand" parent="StandUnit" unique_id=1183170314 instance=ExtResource("1_stand")]
+[node name="Stand" parent="Stands/StandUnit" unique_id=1183170314 instance=ExtResource("1_stand")]
 transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.18679726, -2.1485605)
 
-[node name="WaterDispenser" parent="StandUnit" unique_id=1929335132 instance=ExtResource("3_wdispenser")]
+[node name="WaterDispenser" parent="Stands/StandUnit" unique_id=1929335132 instance=ExtResource("3_wdispenser")]
 transform = Transform3D(-2.6821102e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -2.6821102e-08, 6.743279, 0.25480768, 1.1123774)
 
-[node name="DeliveryMarker" type="Marker3D" parent="StandUnit" unique_id=1391857877]
+[node name="DeliveryMarker" type="Marker3D" parent="Stands/StandUnit" unique_id=1391857877]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 6.77292, 0.51908034, 0.7752135)
 
-[node name="DeliveryGrid" parent="StandUnit" unique_id=2063779733 instance=ExtResource("7_dgrid")]
+[node name="DeliveryGrid" parent="Stands/StandUnit" unique_id=2063779733 instance=ExtResource("7_dgrid")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.225821, 0.3128554, -0.76168585)
 
-[node name="QueueMarkerActive" type="Marker3D" parent="StandUnit" unique_id=1918688920]
+[node name="QueueMarkerActive" type="Marker3D" parent="Stands/StandUnit" unique_id=1918688920]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9837594, 0, -2.300959)
 
-[node name="QueueMarker1" type="Marker3D" parent="StandUnit" unique_id=1918688911]
+[node name="QueueMarker1" type="Marker3D" parent="Stands/StandUnit" unique_id=1918688911]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.016240656, 0, -2.900959)
 
-[node name="QueueMarker2" type="Marker3D" parent="StandUnit" unique_id=920740298]
+[node name="QueueMarker2" type="Marker3D" parent="Stands/StandUnit" unique_id=920740298]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.0467854, 0, -2.900959)
 
-[node name="Thermometer" parent="StandUnit" unique_id=242897628 instance=ExtResource("5_v5dby")]
+[node name="Thermometer" parent="Stands/StandUnit" unique_id=242897628 instance=ExtResource("5_v5dby")]
 transform = Transform3D(0.03671531, 0.002801695, -0.01562486, 0, 0.039372057, 0.007059807, 0.01587406, -0.0064800754, 0.036138933, 2.7120655, 1.3084176, -1.8661408)
 
-[node name="PriceBoard" parent="StandUnit" unique_id=2059859859 instance=ExtResource("46_5fxch")]
+[node name="PriceBoard" parent="Stands/StandUnit" unique_id=2059859859 instance=ExtResource("46_5fxch")]
 transform = Transform3D(-0.18977769, 0, -0.1627404, 0, 0.25, 0, 0.1627404, 0, -0.18977769, 0.13646549, 0.5373678, -1.3261083)
 
-[node name="BakeRadius_N" type="Marker3D" parent="." unique_id=1934682381]
+[node name="BakeRadius_N" type="Marker3D" parent="Misc" unique_id=1934682381]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 58)
 
-[node name="BakeRadius_S" type="Marker3D" parent="." unique_id=1306865523]
+[node name="BakeRadius_S" type="Marker3D" parent="Misc" unique_id=1306865523]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -62)
 
-[node name="BakeRadius_E" type="Marker3D" parent="." unique_id=926451533]
+[node name="BakeRadius_E" type="Marker3D" parent="Misc" unique_id=926451533]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 62, 0, -2)
 
-[node name="BakeRadius_W" type="Marker3D" parent="." unique_id=225236337]
+[node name="BakeRadius_W" type="Marker3D" parent="Misc" unique_id=225236337]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -58, 0, -2)
 
-[node name="StandUnit2" type="Node3D" parent="." unique_id=2000000000]
+[node name="StandUnit2" type="Node3D" parent="Stands" unique_id=2000000000]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -8.1, 0, -24)
 script = ExtResource("72_standunit")
 
-[node name="Stand" parent="StandUnit2" unique_id=2000000001 instance=ExtResource("1_stand")]
+[node name="Stand" parent="Stands/StandUnit2" unique_id=2000000001 instance=ExtResource("1_stand")]
 transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.18679726, -2.1485605)
 
-[node name="WaterDispenser" parent="StandUnit2" unique_id=2000000002 instance=ExtResource("3_wdispenser")]
+[node name="WaterDispenser" parent="Stands/StandUnit2" unique_id=2000000002 instance=ExtResource("3_wdispenser")]
 transform = Transform3D(-2.6821102e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -2.6821102e-08, 6.743279, 0.25480768, 1.1123774)
 
-[node name="DeliveryMarker" type="Marker3D" parent="StandUnit2" unique_id=2000000003]
+[node name="DeliveryMarker" type="Marker3D" parent="Stands/StandUnit2" unique_id=2000000003]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 6.77292, 0.51908034, 0.7752135)
 
-[node name="DeliveryGrid" parent="StandUnit2" unique_id=2000000004 instance=ExtResource("7_dgrid")]
+[node name="DeliveryGrid" parent="Stands/StandUnit2" unique_id=2000000004 instance=ExtResource("7_dgrid")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.225821, 0.3128554, -0.76168585)
 
-[node name="QueueMarkerActive" type="Marker3D" parent="StandUnit2" unique_id=2000000005]
+[node name="QueueMarkerActive" type="Marker3D" parent="Stands/StandUnit2" unique_id=2000000005]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9837594, 0, -2.300959)
 
-[node name="QueueMarker1" type="Marker3D" parent="StandUnit2" unique_id=2000000006]
+[node name="QueueMarker1" type="Marker3D" parent="Stands/StandUnit2" unique_id=2000000006]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.016240656, 0, -2.900959)
 
-[node name="QueueMarker2" type="Marker3D" parent="StandUnit2" unique_id=2000000007]
+[node name="QueueMarker2" type="Marker3D" parent="Stands/StandUnit2" unique_id=2000000007]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.0467854, 0, -2.900959)
 
-[node name="Thermometer" parent="StandUnit2" unique_id=2000000008 instance=ExtResource("5_v5dby")]
+[node name="Thermometer" parent="Stands/StandUnit2" unique_id=2000000008 instance=ExtResource("5_v5dby")]
 transform = Transform3D(0.03671531, 0.002801695, -0.01562486, 0, 0.039372057, 0.007059807, 0.01587406, -0.0064800754, 0.036138933, 2.7120655, 1.3084176, -1.8661408)
 
-[node name="PriceBoard" parent="StandUnit2" unique_id=2000000009 instance=ExtResource("46_5fxch")]
+[node name="PriceBoard" parent="Stands/StandUnit2" unique_id=2000000009 instance=ExtResource("46_5fxch")]
 transform = Transform3D(-0.18977769, 0, -0.1627404, 0, 0.25, 0, 0.1627404, 0, -0.18977769, 0.13646549, 0.5373678, -1.3261083)
 
-[node name="DirectionalLight" type="DirectionalLight3D" parent="." unique_id=285599754]
+[node name="DirectionalLight" type="DirectionalLight3D" parent="Environment" unique_id=285599754]
 transform = Transform3D(0.81629366, -0.46448538, -0.34339193, 0.33309382, -0.10717513, 0.9367827, -0.47192508, -0.8790716, 0.06723085, 0, 10, 0)
 shadow_enabled = true
 script = ExtResource("37_sun")
 start_rotation_deg = Vector3(-50, 60, -80)
 end_rotation_deg = Vector3(-20, -70, 67)
 
-[node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1098989604]
+[node name="FillLight" type="DirectionalLight3D" parent="Environment" unique_id=1098989604]
 transform = Transform3D(-0.866, -0.25, -0.433, 0, 0.866, -0.5, 0.5, -0.433, -0.75, 0, 8, 0)
 light_color = Color(0.7, 0.85, 1, 1)
 light_energy = 0.5
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=305494689]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=305494689]
 environment = SubResource("Environment_main")
 script = ExtResource("37_sky")
 
-[node name="LightmapGI" type="LightmapGI" parent="." unique_id=1827849850]
+[node name="LightmapGI" type="LightmapGI" parent="Environment" unique_id=1827849850]
 quality = 3
 bounces = 8
 bounce_indirect_energy = 0.4
 directional = true
 light_data = ExtResource("6_j0rhc")
 
-[node name="VoxelGI" type="VoxelGI" parent="." unique_id=1156579838]
+[node name="VoxelGI" type="VoxelGI" parent="Environment" unique_id=1156579838]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.5, -2)
 size = Vector3(10, 5, 8)
 
-[node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=207345750]
+[node name="ReflectionProbe" type="ReflectionProbe" parent="Environment" unique_id=207345750]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.5, -2)
 max_distance = 20.0
 size = Vector3(10, 6, 8)
@@ -467,128 +437,87 @@ script = ExtResource("36_sygq6")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 141.51419, 0, 38.582844)
 script = ExtResource("36_sygq6")
 
-[node name="PreviewCenter" type="Marker3D" parent="." unique_id=1183170315]
+[node name="PreviewCenter" type="Marker3D" parent="Misc" unique_id=1183170315]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0394282, 1.4845874, -1.5014197)
 
-[node name="PreviewOrbitCamera" type="Marker3D" parent="." unique_id=1183170316]
+[node name="PreviewOrbitCamera" type="Marker3D" parent="Misc" unique_id=1183170316]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 10.422926, 2)
 script = ExtResource("10_preview")
 
 [node name="Neighborhood" parent="." unique_id=1396389632 instance=ExtResource("15_mxkvs")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.0044355392, -1.0999998, -7.9913626)
 
-[node name="Desk2_0" parent="." unique_id=215635169 instance=ExtResource("14_mxkvs")]
+[node name="Desk2_0" parent="Props" unique_id=215635169 instance=ExtResource("14_mxkvs")]
 transform = Transform3D(-3.628045e-08, 0, 0.83, 0, 0.83, 0, -0.83, 0, -3.628045e-08, -1.7846328, 0.041442253, 10.290646)
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Desk2_0" unique_id=1797473411]
+[node name="StaticBody3D" type="StaticBody3D" parent="Props/Desk2_0" unique_id=1797473411]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Desk2_0/StaticBody3D" unique_id=210846437]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Desk2_0/StaticBody3D" unique_id=210846437]
 transform = Transform3D(1, 0, 1.0658141e-14, 0, 1, 0, -1.0658141e-14, 0, 1, -0.0076351166, 0.362854, 0.00012207031)
 shape = SubResource("BoxShape3D_g4v7s")
 
-[node name="Computer" parent="." unique_id=1111887378 instance=ExtResource("15_m114p")]
+[node name="Computer" parent="Props" unique_id=1111887378 instance=ExtResource("15_m114p")]
 transform = Transform3D(-1.7703115e-08, 0, 0.40500003, 0, 0.40500003, 0, -0.40500003, 0, -1.7703115e-08, -1.797764, 1.1196927, 10.66297)
 
-[node name="Managers" type="Node" parent="." unique_id=1001413373]
 
-[node name="RecipeManager" type="Node" parent="Managers" unique_id=593663804]
-script = ExtResource("39_recipe")
-fruit_recipes = Array[ExtResource("18_5fxch")]([ExtResource("40_lemon"), ExtResource("41_straw"), ExtResource("42_blue"), ExtResource("43_peach"), ExtResource("44_water")])
 
-[node name="UpgradeConfigManager" type="Node" parent="Managers" unique_id=386669270]
-script = ExtResource("45_upgcfg")
-upgrades = Array[ExtResource("25_4v0p3")]([ExtResource("46_press"), ExtResource("47_nimble"), ExtResource("48_sunroof"), ExtResource("49_crates"), ExtResource("50_bulk"), ExtResource("51_mkt"), ExtResource("52_queue"), ExtResource("53_speed"), ExtResource("54_psych"), ExtResource("55_price"), ExtResource("56_ice"), ExtResource("57_sugar"), ExtResource("58_tip"), ExtResource("59_demand"), ExtResource("60_bin"), ExtResource("61_water"), ExtResource("62_lemunl"), ExtResource("63_strunl"), ExtResource("64_bluunl"), ExtResource("65_peaunl"), ExtResource("66_watunl")])
 
-[node name="PeopleManager" type="Node" parent="Managers" unique_id=1001413374]
-script = ExtResource("68_people")
-total_people = 50
-convert_chance_at_zero_popularity = 0.2
-convert_chance_at_max_popularity = 0.9
 
-[node name="TimeManager" type="Node" parent="Managers" unique_id=1001413375]
-script = ExtResource("69_time")
-seconds_per_hour = 40.0
 
-[node name="TrashManager" type="Node" parent="Managers" unique_id=1001413376]
-script = ExtResource("71_trash")
 
-[node name="ColorManager" type="Node" parent="Managers" unique_id=736981231]
-script = ExtResource("46_fqf7g")
-roof_default_color = Color(0.36220014, 0.34826168, 0.34491053, 1)
-wall_default_color = Color(0.78626776, 0.76280415, 0.6887659, 1)
-roof_colors = Array[Color]([Color(0.85490197, 0.69803923, 0.827451, 1), Color(0.42352942, 0.9607843, 0.88235295, 1), Color(0.7254902, 0.8509804, 0.43137255, 1), Color(0.92156863, 0.93333334, 0.19215687, 1), Color(0.85882354, 0.5137255, 0.5764706, 1)])
-wall_colors = Array[Color]([Color(0.42265648, 0.96156055, 0.88136154, 1), Color(0.8547164, 0.6989638, 0.8276675, 1), Color(0.7237331, 0.85128987, 0.43169385, 1), Color(0.86031544, 0.51238483, 0.5748986, 1), Color(0.92156863, 0.93333334, 0.19215687, 1)])
 
-[node name="FogVolume" type="FogVolume" parent="." unique_id=829046607]
+[node name="FogVolume" type="FogVolume" parent="Environment" unique_id=829046607]
 transform = Transform3D(1, 0, 0, 0, 0.16174394, 0, 0, 0, 1, -268.22437, -15.5393715, 31)
 size = Vector3(166.2, 107.12, 343)
 material = SubResource("FogMaterial_g4v7s")
 
-[node name="FogVolume2" type="FogVolume" parent="." unique_id=595344647]
+[node name="FogVolume2" type="FogVolume" parent="Environment" unique_id=595344647]
 transform = Transform3D(1, 0, 0, 0, 0.16174394, 0, 0, 0, 1, 264.77563, -15.186977, 31)
 size = Vector3(166, 111.47754, 343)
 material = SubResource("FogMaterial_g4v7s")
 
-[node name="Blackboard" parent="." unique_id=2117954484 instance=ExtResource("45_kx0xk")]
+[node name="Blackboard" parent="Props" unique_id=2117954484 instance=ExtResource("45_kx0xk")]
 transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3, 1.8940175, 16.6)
 
-[node name="PlayableArea" type="Area3D" parent="." unique_id=146113540]
+[node name="PlayableArea" type="Area3D" parent="Ground" unique_id=146113540]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="PlayableArea" unique_id=635766442]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground/PlayableArea" unique_id=635766442]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.85266113, 0, -8.432495)
 shape = SubResource("BoxShape3D_yf5fn")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1637452355]
+[node name="StaticBody3D" type="StaticBody3D" parent="Ground" unique_id=1637452355]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.51418304, 0, 0)
 collision_layer = 8
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=289732322]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground/StaticBody3D" unique_id=289732322]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 41.246582, 21.303865)
 shape = SubResource("BoxShape3D_5fxch")
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="StaticBody3D" unique_id=2044313268]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Ground/StaticBody3D" unique_id=2044313268]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 41.246582, -30.298359)
 shape = SubResource("BoxShape3D_5fxch")
 
-[node name="CollisionShape3D3" type="CollisionShape3D" parent="StaticBody3D" unique_id=1698946738]
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="Ground/StaticBody3D" unique_id=1698946738]
 transform = Transform3D(0, 0, 1.0000001, 0, 1, 0, -1.0000001, 0, 0, 20.11644, 41.246582, -3.6186612)
 shape = SubResource("BoxShape3D_5fxch")
 
-[node name="CollisionShape3D4" type="CollisionShape3D" parent="StaticBody3D" unique_id=245789172]
+[node name="CollisionShape3D4" type="CollisionShape3D" parent="Ground/StaticBody3D" unique_id=245789172]
 transform = Transform3D(0, 0, 1.0000001, 0, 1, 0, -1.0000001, 0, 0, -21.876167, 41.246582, -3.618662)
 shape = SubResource("BoxShape3D_5fxch")
 
-[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1079704992]
+[node name="OmniLight3D" type="OmniLight3D" parent="Environment" unique_id=1079704992]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5780778, 3.4851818, 12.612837)
 light_energy = 0.6
 omni_range = 10.620017
 
-[node name="Decorations" type="Node3D" parent="." unique_id=1407390588]
-transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
 
-[node name="PlantPot1" parent="Decorations" unique_id=1904588981 instance=ExtResource("49_l4ul6")]
-transform = Transform3D(0.84171945, 0, 0.53991526, 0, 1, 0, -0.53991526, 0, 0.84171945, -7.764577, 1.3492472, 35.04088)
 
-[node name="PlantPot8" parent="Decorations" unique_id=651441247 instance=ExtResource("49_l4ul6")]
-transform = Transform3D(0.84171945, 0, 0.53991526, 0, 1, 0, -0.53991526, 0, 0.84171945, 22.806116, 1.3492472, 64.299164)
 
-[node name="PlantPot2" parent="Decorations" unique_id=1238950346 instance=ExtResource("49_l4ul6")]
-transform = Transform3D(0.9211762, 0, -0.38914576, 0, 1, 0, 0.38914576, 0, 0.9211762, -7.764577, 1.3492472, 48.597187)
 
-[node name="PlantPot3" parent="Decorations" unique_id=701059214 instance=ExtResource("49_l4ul6")]
-transform = Transform3D(0.86611575, 0, 0.49984348, 0, 1, 0, -0.49984348, 0, 0.86611575, -8.243681, 1.3492472, 52.573715)
 
-[node name="PlantPot4" parent="Decorations" unique_id=471671490 instance=ExtResource("50_q3hpu")]
-transform = Transform3D(0.5868901, 0, 0.80966663, 0, 1, 0, -0.80966663, 0, 0.5868901, -5.804634, 1.3816375, 64.95521)
 
-[node name="PlantPot5" parent="Decorations" unique_id=1322096242 instance=ExtResource("50_q3hpu")]
-transform = Transform3D(0.6472111, 0, -0.76231086, 0, 1, 0, 0.76231086, 0, 0.6472111, 10.350017, 1.3816375, 64.58448)
 
-[node name="PlantPot6" parent="Decorations" unique_id=1339233554 instance=ExtResource("50_q3hpu")]
-transform = Transform3D(0.5868901, 0, 0.80966663, 0, 1, 0, -0.80966663, 0, 0.5868901, -27.828108, 2.1059017, 50.49137)
 
-[node name="PlantPot7" parent="Decorations" unique_id=1493501310 instance=ExtResource("50_q3hpu")]
-transform = Transform3D(0.6472111, 0, -0.76231086, 0, 1, 0, 0.76231086, 0, 0.6472111, -17.328918, 2.1059017, 50.101498)
 
 [node name="TruckRoute" type="Node3D" parent="." unique_id=1371739308]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9.926907)
@@ -608,10 +537,10 @@ transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 8.72
 [node name="PathEnd" type="Marker3D" parent="TruckRoute" unique_id=347151659]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 393.6401, 0, -1.8308334)
 
-[node name="DeliveryTruck" parent="." unique_id=1680832463 instance=ExtResource("51_q3hpu")]
+[node name="DeliveryTruck" parent="Trucks" unique_id=1680832463 instance=ExtResource("51_q3hpu")]
 transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, -90.6655, 0.9512104, 33.06649)
 
-[node name="DeliveryTruck2" parent="." unique_id=2000000010 instance=ExtResource("51_q3hpu")]
+[node name="DeliveryTruck2" parent="Trucks" unique_id=2000000010 instance=ExtResource("51_q3hpu")]
 transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, -70.6655, 0.9512104, 33.06649)
 
 [node name="Occlusions" type="Node3D" parent="." unique_id=2092071078]
