@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://b41up2s0vay8l" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://world001ls" path="res://scenes/world/world.tscn" id="2_world"]
-[ext_resource type="PackedScene" uid="uid://debrqguawbc46" path="res://scenes/player/player.tscn" id="3_player"]
 [ext_resource type="Script" uid="uid://bdwb7soqi2pxp" path="res://scripts/customer/customer_spawner.gd" id="5_spawner"]
 [ext_resource type="Script" uid="uid://kude15htrunu" path="res://scripts/systems/delivery_system.gd" id="6_delivery"]
 [ext_resource type="PackedScene" uid="uid://hud001ls" path="res://scenes/ui/hud.tscn" id="7_hud"]
@@ -10,44 +9,43 @@
 [ext_resource type="Script" uid="uid://bulmw0nj3xrmn" path="res://scripts/customer/pedestrian_spawner.gd" id="10_pedspawner"]
 [ext_resource type="PackedScene" uid="uid://c7s5b6a8h3q1j" path="res://scenes/systems/trash_spawner.tscn" id="11_trashspawner"]
 [ext_resource type="PackedScene" uid="uid://dbgconsole01" path="res://scenes/ui/debug_console.tscn" id="12_dbgconsole"]
-
-[ext_resource type="Resource" uid="uid://cqgusixkpn6b0" path="res://resources/upgrades/sunroof.tres" id="48_sunroof"]
-[ext_resource type="Resource" path="res://resources/data/peach.tres" id="43_peach"]
 [ext_resource type="Script" uid="uid://bx8ql2bcj8v5" path="res://scripts/core/ingredient_data.gd" id="18_5fxch"]
-[ext_resource type="Resource" uid="uid://bu46xbgvvx2ri" path="res://resources/upgrades/blueberry_unlock.tres" id="64_bluunl"]
-[ext_resource type="Resource" uid="uid://by6syp1tp4i6q" path="res://resources/upgrades/tip_magnet.tres" id="58_tip"]
-[ext_resource type="Resource" uid="uid://dkm7bmcp0fdtp" path="res://resources/upgrades/queue_appeal.tres" id="52_queue"]
-[ext_resource type="Resource" uid="uid://dt47sq4k4v7c" path="res://resources/upgrades/strawberry_unlock.tres" id="63_strunl"]
 [ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="25_4v0p3"]
-[ext_resource type="Resource" uid="uid://boksdhow4wy5i" path="res://resources/upgrades/larger_crates.tres" id="49_crates"]
-[ext_resource type="Script" uid="uid://puonyclrtmxb" path="res://scripts/systems/upgrade_config_manager.gd" id="45_upgcfg"]
-[ext_resource type="Resource" uid="uid://bt1nbebv8rxkw" path="res://resources/upgrades/bulk_buy.tres" id="50_bulk"]
-[ext_resource type="Script" uid="uid://bw5xghgwuppje" path="res://scripts/managers/people_manager.gd" id="68_people"]
-[ext_resource type="Resource" uid="uid://dcbt63m1d18bs" path="res://resources/data/lemon.tres" id="40_lemon"]
-[ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
-[ext_resource type="Resource" path="res://resources/data/watermelon.tres" id="44_water"]
-[ext_resource type="Resource" uid="uid://d1hk0gkktg6me" path="res://resources/upgrades/watermelon_unlock.tres" id="66_watunl"]
-[ext_resource type="Resource" uid="uid://bodfywk634j8m" path="res://resources/upgrades/lemon_unlock.tres" id="62_lemunl"]
-[ext_resource type="Resource" uid="uid://d4ea6ugq701fu" path="res://resources/upgrades/demand.tres" id="59_demand"]
-[ext_resource type="Resource" uid="uid://btcdwa0mln6e5" path="res://resources/upgrades/peach_unlock.tres" id="65_peaunl"]
-[ext_resource type="Resource" uid="uid://cwkj211dv1ox0" path="res://resources/upgrades/speed_serve.tres" id="53_speed"]
-[ext_resource type="Script" uid="uid://bsyvhgcutcvjd" path="res://scripts/managers/color_manager.gd" id="46_fqf7g"]
-[ext_resource type="Resource" uid="uid://b2hi13ds6njqg" path="res://resources/upgrades/ice_mastery.tres" id="56_ice"]
 [ext_resource type="Script" uid="uid://ba3frt220nu7m" path="res://scripts/systems/recipe_manager.gd" id="39_recipe"]
-[ext_resource type="Resource" uid="uid://dk5opuesubbg1" path="res://resources/upgrades/sugar_rush.tres" id="57_sugar"]
+[ext_resource type="Resource" uid="uid://dcbt63m1d18bs" path="res://resources/data/lemon.tres" id="40_lemon"]
 [ext_resource type="Resource" path="res://resources/data/strawberry.tres" id="41_straw"]
-[ext_resource type="Resource" uid="uid://c6kki7aodgms8" path="res://resources/upgrades/bin_capacity.tres" id="60_bin"]
 [ext_resource type="Resource" path="res://resources/data/blueberry.tres" id="42_blue"]
-[ext_resource type="Resource" uid="uid://dpe2rvl38mtc6" path="res://resources/upgrades/marketing.tres" id="51_mkt"]
-[ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
-[ext_resource type="Resource" uid="uid://bloghy56swyp1" path="res://resources/upgrades/price_flex.tres" id="55_price"]
-[ext_resource type="Resource" uid="uid://bc1gpbi3re7ip" path="res://resources/upgrades/psychology.tres" id="54_psych"]
-[ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="61_water"]
-[ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
+[ext_resource type="Resource" path="res://resources/data/peach.tres" id="43_peach"]
+[ext_resource type="Resource" path="res://resources/data/watermelon.tres" id="44_water"]
+[ext_resource type="Script" uid="uid://puonyclrtmxb" path="res://scripts/systems/upgrade_config_manager.gd" id="45_upgcfg"]
+[ext_resource type="Script" uid="uid://bsyvhgcutcvjd" path="res://scripts/managers/color_manager.gd" id="46_fqf7g"]
 [ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="46_press"]
+[ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="47_nimble"]
+[ext_resource type="Resource" uid="uid://cqgusixkpn6b0" path="res://resources/upgrades/sunroof.tres" id="48_sunroof"]
+[ext_resource type="Resource" uid="uid://boksdhow4wy5i" path="res://resources/upgrades/larger_crates.tres" id="49_crates"]
+[ext_resource type="Resource" uid="uid://bt1nbebv8rxkw" path="res://resources/upgrades/bulk_buy.tres" id="50_bulk"]
+[ext_resource type="Resource" uid="uid://dpe2rvl38mtc6" path="res://resources/upgrades/marketing.tres" id="51_mkt"]
+[ext_resource type="Resource" uid="uid://dkm7bmcp0fdtp" path="res://resources/upgrades/queue_appeal.tres" id="52_queue"]
+[ext_resource type="Resource" uid="uid://cwkj211dv1ox0" path="res://resources/upgrades/speed_serve.tres" id="53_speed"]
+[ext_resource type="Resource" uid="uid://bc1gpbi3re7ip" path="res://resources/upgrades/psychology.tres" id="54_psych"]
+[ext_resource type="Resource" uid="uid://bloghy56swyp1" path="res://resources/upgrades/price_flex.tres" id="55_price"]
+[ext_resource type="Resource" uid="uid://b2hi13ds6njqg" path="res://resources/upgrades/ice_mastery.tres" id="56_ice"]
+[ext_resource type="Resource" uid="uid://dk5opuesubbg1" path="res://resources/upgrades/sugar_rush.tres" id="57_sugar"]
+[ext_resource type="Resource" uid="uid://by6syp1tp4i6q" path="res://resources/upgrades/tip_magnet.tres" id="58_tip"]
+[ext_resource type="Resource" uid="uid://d4ea6ugq701fu" path="res://resources/upgrades/demand.tres" id="59_demand"]
+[ext_resource type="Resource" uid="uid://c6kki7aodgms8" path="res://resources/upgrades/bin_capacity.tres" id="60_bin"]
+[ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="61_water"]
+[ext_resource type="Resource" uid="uid://bodfywk634j8m" path="res://resources/upgrades/lemon_unlock.tres" id="62_lemunl"]
+[ext_resource type="Resource" uid="uid://dt47sq4k4v7c" path="res://resources/upgrades/strawberry_unlock.tres" id="63_strunl"]
+[ext_resource type="Resource" uid="uid://bu46xbgvvx2ri" path="res://resources/upgrades/blueberry_unlock.tres" id="64_bluunl"]
+[ext_resource type="Resource" uid="uid://btcdwa0mln6e5" path="res://resources/upgrades/peach_unlock.tres" id="65_peaunl"]
+[ext_resource type="Resource" uid="uid://d1hk0gkktg6me" path="res://resources/upgrades/watermelon_unlock.tres" id="66_watunl"]
 [ext_resource type="Resource" uid="uid://bmvspd0001" path="res://resources/upgrades/movement_speed.tres" id="67_movespd"]
 [ext_resource type="PackedScene" uid="uid://clobbyui01" path="res://scenes/ui/lobby_ui.tscn" id="68_lobbyui"]
+[ext_resource type="Script" uid="uid://bw5xghgwuppje" path="res://scripts/managers/people_manager.gd" id="68_people"]
 [ext_resource type="PackedScene" uid="uid://bpv1s2p3k4q5x" path="res://scenes/player/player_visuals.tscn" id="69_pvis"]
+[ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
+[ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
 
 [node name="Main" type="Node" unique_id=1191278377]
 script = ExtResource("1_main")
@@ -61,7 +59,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00049734116, 0.013125181, 0
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=581860801]
 spawn_path = NodePath("../Players")
-spawnable_scenes = PackedStringArray("res://scenes/player/player.tscn")
 
 [node name="WorldSpawner" type="MultiplayerSpawner" parent="." unique_id=581860803]
 
@@ -85,7 +82,6 @@ script = ExtResource("6_delivery")
 [node name="HUD" parent="." unique_id=1577022415 instance=ExtResource("7_hud")]
 
 [node name="DebugPanel" parent="." unique_id=1101678529 instance=ExtResource("9_debug")]
-
 
 [node name="Managers" type="Node" parent="." unique_id=1001413373]
 
@@ -117,20 +113,27 @@ wall_default_color = Color(0.78626776, 0.76280415, 0.6887659, 1)
 roof_colors = Array[Color]([Color(0.85490197, 0.69803923, 0.827451, 1), Color(0.42352942, 0.9607843, 0.88235295, 1), Color(0.7254902, 0.8509804, 0.43137255, 1), Color(0.92156863, 0.93333334, 0.19215687, 1), Color(0.85882354, 0.5137255, 0.5764706, 1)])
 wall_colors = Array[Color]([Color(0.42265648, 0.96156055, 0.88136154, 1), Color(0.8547164, 0.6989638, 0.8276675, 1), Color(0.7237331, 0.85128987, 0.43169385, 1), Color(0.86031544, 0.51238483, 0.5748986, 1), Color(0.92156863, 0.93333334, 0.19215687, 1)])
 
-[node name="DebugConsole" parent="." instance=ExtResource("12_dbgconsole")]
+[node name="DebugConsole" parent="." unique_id=39558311 instance=ExtResource("12_dbgconsole")]
 
-[node name="LobbyCamera" type="Camera3D" parent="." unique_id=7000000001]
+[node name="LobbyCamera" type="Camera3D" parent="." unique_id=-1589934591]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 3, 8)
-fov = 50.0
 current = true
+fov = 50.0
 
-[node name="LobbyPlayerModels" type="Node3D" parent="." unique_id=7000000002]
+[node name="LobbyCamStand1" type="Camera3D" parent="." unique_id=-1589934501]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 4, 10)
+fov = 50.0
 
-[node name="PlayerModel1" parent="LobbyPlayerModels" unique_id=7000000003 instance=ExtResource("69_pvis")]
-transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, 2, 0, 0)
+[node name="LobbyCamStand2" type="Camera3D" parent="." unique_id=-1589934502]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.1, 4, -14)
+fov = 50.0
 
-[node name="PlayerModel2" parent="LobbyPlayerModels" unique_id=7000000004 instance=ExtResource("69_pvis")]
-transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, -8.1, 0, -22)
+[node name="LobbyPlayerModels" type="Node3D" parent="." unique_id=-1589934590]
 
-[node name="LobbyUI" parent="." unique_id=7000000005 instance=ExtResource("68_lobbyui")]
-visible = true
+[node name="PlayerModel1" parent="LobbyPlayerModels" unique_id=-1589934589 instance=ExtResource("69_pvis")]
+transform = Transform3D(-0.063, 0, 5.507635e-09, 0, 0.063, 0, -5.507635e-09, 0, -0.063, -5.682295, 0.935688, 11.632187)
+
+[node name="PlayerModel2" parent="LobbyPlayerModels" unique_id=-1589934588 instance=ExtResource("69_pvis")]
+transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, -2.6603372, 0.9346231, -34.91608)
+
+[node name="LobbyUI" parent="." unique_id=-1589934587 instance=ExtResource("68_lobbyui")]

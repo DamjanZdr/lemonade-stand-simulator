@@ -20,6 +20,11 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 @onready var hud: CanvasLayer = $HUD
 @onready var stand_unit: StandUnit = world.find_child("StandUnit", true, false) as StandUnit
 @onready var stand_unit2: StandUnit = world.find_child("StandUnit2", true, false) as StandUnit
+@onready var lobby_camera: Camera3D = $LobbyCamera
+@onready var lobby_ui: Control = $LobbyUI
+@onready var lobby_player_models: Node3D = $LobbyPlayerModels
+@onready var lobby_cam_stand1: Camera3D = $LobbyCamStand1
+@onready var lobby_cam_stand2: Camera3D = $LobbyCamStand2
 
 ## The locally-controlled player, once spawned. Player is now spawned
 ## dynamically per connected peer (host + anyone who joins) instead of
@@ -58,21 +63,28 @@ var _orig_shadow_normal_bias: float = 1.0
 var _orig_shadow_bias: float = 1.0
 var _orig_fill_energy: float = 0.5
 
+## Lobby phase: true while in the lobby, false once the game starts.
+## During lobby, the LobbyCamera is active and game systems are paused.
+var _in_lobby: bool = true
+
+## Camera tween time for stand switching and game-start transition.
+const CAMERA_TWEEN_TIME: float = 1.5
+
+
+## Returns the camera node for the given stand index. These are
+## Camera3D nodes placed in the editor — select one and click
+## "Preview" in the editor viewport to see exactly what it sees.
+func _get_lobby_cam(stand_index: int) -> Camera3D:
+	match stand_index:
+		0:
+			return lobby_cam_stand1
+		1:
+			return lobby_cam_stand2
+		_:
+			return lobby_cam_stand1
+
 
 func _ready() -> void:
-	# QueueMarkerActive is the spot for the customer currently at the stand.
-	# QueueMarker1 is the first waiting spot (second customer in line).
-	# QueueMarker2 sets the direction and spacing for the rest of the waiting line.
-	# Move/rotate these markers in the editor to reorient the whole queue.
-	# Up to 299 waiting customer slots are generated automatically from that direction.
-	# (Now sourced from StandUnit so multiple stands can each have their own queue.)
-	if stand_unit:
-		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
-		spawner.set_stand(stand_unit)
-	if stand_unit2:
-		spawner2.set_queue_spots(stand_unit2.get_queue_spots(), stand_unit2.get_queue_step())
-		spawner2.set_stand(stand_unit2)
-
 	# Use the sky material set up in the editor (ProceduralSkyMaterial).
 	_world_env = world.find_child("WorldEnvironment", true, false) as WorldEnvironment
 	if _world_env and _world_env.environment:
@@ -93,6 +105,144 @@ func _ready() -> void:
 		_world_env.environment.ambient_light_sky_contribution = 0.6
 		_default_ambient_color = _world_env.environment.ambient_light_color
 		_default_exposure = _world_env.environment.tonemap_exposure
+
+	# Mark static meshes for LightmapGI baking
+	_mark_static_gi(world)
+	# Enhanced lighting is on by default; F2 toggles it off
+	_enable_enhanced_lighting()
+
+	# --- Lobby phase setup ---
+	_setup_lobby()
+
+	# Connect to game_starting signal — when the host starts the game,
+	# transition from lobby to game phase (camera tween, hide UI, start systems).
+	LobbyManager.game_starting.connect(_on_game_starting)
+
+	# If there's no lobby roster (e.g. testing main.tscn directly in the
+	# editor), skip the lobby and start the game immediately.
+	if LobbyManager.roster.is_empty():
+		print("[Main] No lobby roster — starting game directly (solo/test mode)")
+		_on_game_starting()
+
+
+## Sets up the lobby phase: positions the lobby camera, wires the lobby UI
+## to the player model, and hides the HUD.
+func _setup_lobby() -> void:
+	_in_lobby = true
+	# LobbyCamera is the active camera during the lobby
+	lobby_camera.current = true
+	# Hide the HUD during lobby — it'll be shown when the game starts
+	if hud:
+		hud.visible = false
+	# Wire the lobby UI to the first player model for customization preview
+	var pv := lobby_player_models.get_node_or_null("PlayerModel1") as PlayerVisuals
+	if pv and lobby_ui.has_method("set_player_visuals"):
+		lobby_ui.set_player_visuals(pv)
+	# Position the lobby camera at the default stand (stand 1)
+	_position_lobby_camera(0, false)
+	# Connect stand switch signal from lobby UI for camera tweening
+	if lobby_ui.has_signal("stand_switched"):
+		lobby_ui.stand_switched.connect(_on_stand_switched)
+
+
+## Positions the lobby camera at the given stand index, optionally tweening.
+## Reads the transform from the LobbyCamStand1 / LobbyCamStand2 Camera3D
+## nodes — position and rotate those in the editor to set the view.
+func _position_lobby_camera(stand_index: int, tween: bool) -> void:
+	var cam := _get_lobby_cam(stand_index)
+	if cam == null:
+		return
+	var target_transform := cam.global_transform
+
+	if tween:
+		var tw := create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(lobby_camera, "global_transform", target_transform, CAMERA_TWEEN_TIME) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	else:
+		lobby_camera.global_transform = target_transform
+
+
+## Called when the local player switches stands in the lobby UI.
+func _on_stand_switched(stand_index: int) -> void:
+	_position_lobby_camera(stand_index, true)
+
+
+## Called when the host starts the game (LobbyManager.game_starting signal).
+## Tweens the lobby camera into the local player's first-person position,
+## then starts all game systems.
+func _on_game_starting() -> void:
+	if not _in_lobby:
+		return
+	_in_lobby = false
+
+	# Determine which stand this player is on
+	var my_id := multiplayer.get_unique_id()
+	var my_entry: Dictionary = LobbyManager.roster.get(my_id, { })
+	var stand_idx: int = my_entry.get("stand_index", 0)
+	var stand: StandUnit = _stand_for_peer(my_id)
+	if stand == null:
+		stand = stand_unit if stand_unit else stand_unit2
+	if stand == null:
+		# No stands — just start the game phase directly
+		_start_game_phase()
+		return
+
+	# Fade out the lobby UI
+	if lobby_ui:
+		var tw := create_tween()
+		tw.tween_property(lobby_ui, "modulate:a", 0.0, 0.5)
+		tw.tween_callback(
+			func():
+				lobby_ui.visible = false,
+		)
+
+	# Hide lobby player models
+	if lobby_player_models:
+		lobby_player_models.visible = false
+
+	# Start game systems NOW (spawn player, start day, etc.) so the player
+	# exists by the time the camera tween finishes.
+	_start_game_phase()
+
+	# Tween the lobby camera into the player's first-person position.
+	# The player's Camera3D will take over when the tween completes.
+	if _local_player and _local_player.has_node("Head/Camera3D"):
+		var player_cam := _local_player.get_node("Head/Camera3D") as Camera3D
+		var target_transform := player_cam.global_transform
+		var tw := create_tween()
+		tw.tween_property(lobby_camera, "global_transform", target_transform, CAMERA_TWEEN_TIME) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		# When the tween finishes, switch to the player's camera
+		tw.tween_callback(
+			func():
+				lobby_camera.current = false
+				player_cam.make_current()
+				if hud:
+					hud.visible = true,
+		)
+	else:
+		# No local player (spectator?) — just stop the lobby camera
+		lobby_camera.current = false
+		if hud:
+			hud.visible = true
+
+
+## Starts all game systems. This is what _ready() used to do directly,
+## but now it's deferred until the lobby phase ends.
+func _start_game_phase() -> void:
+	# QueueMarkerActive is the spot for the customer currently at the stand.
+	# QueueMarker1 is the first waiting spot (second customer in line).
+	# QueueMarker2 sets the direction and spacing for the rest of the waiting line.
+	# Move/rotate these markers in the editor to reorient the whole queue.
+	# Up to 299 waiting customer slots are generated automatically from that direction.
+	# (Now sourced from StandUnit so multiple stands can each have their own queue.)
+	if stand_unit:
+		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
+		spawner.set_stand(stand_unit)
+	if stand_unit2:
+		spawner2.set_queue_spots(stand_unit2.get_queue_spots(), stand_unit2.get_queue_step())
+		spawner2.set_stand(stand_unit2)
 
 	# Pedestrian spawner reads its PedestrianPath children automatically.
 	# No wiring needed here — add paths in the editor as children of PedestrianSpawner.
@@ -124,7 +274,9 @@ func _ready() -> void:
 	if cash_template:
 		_cash_drop_pos = cash_template.global_position
 		cash_template.visible = false
-		var phys: StaticBody3D = cash_template.get_node_or_null("Physics") as StaticBody3D
+		# The Physics node is an Area3D (not StaticBody3D) — disable its
+		# collision_layer so raycasts don't hit the invisible template.
+		var phys: Area3D = cash_template.get_node_or_null("Physics") as Area3D
 		if phys:
 			phys.collision_layer = 0
 
@@ -152,10 +304,6 @@ func _ready() -> void:
 	# Push initial stand state to clients (money, prices, etc.)
 	if WorldSync.is_host():
 		call_deferred("_push_initial_stand_state")
-	# Mark static meshes for LightmapGI baking
-	_mark_static_gi(world)
-	# Enhanced lighting is on by default; F2 toggles it off
-	_enable_enhanced_lighting()
 
 
 ## --- Networking / per-peer player spawning ---
@@ -204,6 +352,11 @@ func _host_spawn_players() -> void:
 		_spawn_player_for_peer(1)
 	else:
 		for peer_id in LobbyManager.roster.keys():
+			# Skip players who haven't selected a stand — they don't spawn.
+			var stand_idx: int = LobbyManager.roster[peer_id].get("stand_index", -1)
+			if stand_idx < 0:
+				GameLog.log("[Main] Skipping player %d (no stand selected)" % peer_id)
+				continue
 			_spawn_player_for_peer(peer_id)
 
 
@@ -219,12 +372,15 @@ func _push_initial_stand_state() -> void:
 func _on_spawner_spawned(node: Node) -> void:
 	var p := node as Player
 	if p == null:
-		print("[Main] Spawner spawned non-player node: %s" % node.name)
+		GameLog.log("[Main] Spawner spawned non-player node: %s" % node.name)
 		return
-	print(
+	GameLog.log(
 		"[Main] Spawner spawned player: %s, is_auth=%s, my_id=%d"
 		% [p.name, p.is_multiplayer_authority(), multiplayer.get_unique_id()]
 	)
+	# Cache the player node in WorldSync so transform RPCs can find it
+	# quickly without doing a full scene tree search every frame.
+	WorldSync._node_cache[p.name] = p
 	# Only set up local-player stuff for OUR own player (the one we have
 	# authority over). Remote players are just visual representations.
 	if not p.is_multiplayer_authority():
@@ -257,20 +413,20 @@ func _request_spawn() -> void:
 
 func _spawn_player_for_peer(peer_id: int) -> void:
 	if players_node.has_node(str(peer_id)):
-		print("[Main] Spawn skipped — player %d already exists" % peer_id)
+		GameLog.log("[Main] Spawn skipped — player %d already exists" % peer_id)
 		return
 	var stand := _stand_for_peer(peer_id)
 	# Use the spawner's spawn() with the peer_id as data. The spawn_function
 	# (_spawn_player) creates the node with the correct name.
 	var p: Player = player_spawner.spawn(peer_id) as Player
 	if p == null:
-		push_warning("[Main] Failed to spawn player for peer %d" % peer_id)
+		GameLog.log("[Main] Failed to spawn player for peer %d" % peer_id)
 		return
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
 		p.global_position = stand.global_position + Vector3(0, 0, 2)
-	print(
+	GameLog.log(
 		"[Main] Spawned player %d (stand=%s, is_me=%s)"
 		% [peer_id, stand.name if stand else "null", peer_id == multiplayer.get_unique_id()]
 	)
@@ -472,7 +628,19 @@ func _set_grass_gi(enabled: bool) -> void:
 			(node as GeometryInstance3D).gi_mode = mode
 
 
+const BAKE_RADIUS := 70.0
+const STAND_POSITIONS := [
+	Vector3(2.0, 0.0, -2.0), # StandUnit
+	Vector3(-8.1, 0.0, -24.0), # StandUnit2
+]
+
+
 func _mark_static_gi(node: Node) -> void:
+	# Distance-based GI mode: meshes within BAKE_RADIUS of either stand
+	# are STATIC (use baked lightmaps), meshes outside are DYNAMIC (lit
+	# by VoxelGI at runtime). Street lights are always DISABLED.
+	# This matches set_lightmap_gi.gd so the bake only processes nearby
+	# geometry instead of the entire 2000+ node neighborhood.
 	if node is MeshInstance3D:
 		var mi := node as MeshInstance3D
 		var parent := mi.get_parent()
@@ -487,7 +655,15 @@ func _mark_static_gi(node: Node) -> void:
 			if is_street_light:
 				mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 			else:
-				mi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC
+				var min_dist := INF
+				for pos in STAND_POSITIONS:
+					var d := mi.global_position.distance_to(pos)
+					if d < min_dist:
+						min_dist = d
+				if min_dist <= BAKE_RADIUS:
+					mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
+				else:
+					mi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC
 	for child in node.get_children():
 		_mark_static_gi(child)
 
@@ -507,5 +683,3 @@ func _set_material_roughness(node: Node, roughness: float) -> void:
 				mi.set_surface_override_material(i, dup)
 	for child in node.get_children():
 		_set_material_roughness(child, roughness)
-
-
