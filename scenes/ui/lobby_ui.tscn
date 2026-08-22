@@ -1,0 +1,420 @@
+[gd_scene format=3 uid="uid://clobbyui01"]
+
+[ext_resource type="Script" path="res://scripts/ui/lobby_ui.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://dbgconsole01" path="res://scenes/ui/debug_console.tscn" id="2_dbgconsole"]
+[ext_resource type="Theme" uid="uid://gd20br3y4m22" path="res://assets/themes/menu_theme.tres" id="4_theme"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_join"]
+content_margin_left = 10.0
+content_margin_top = 4.0
+content_margin_right = 10.0
+content_margin_bottom = 4.0
+bg_color = Color(0.62, 0.49, 0.12, 0.25)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.62, 0.49, 0.12, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="LobbyUI" type="Control" unique_id=1412273314]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("4_theme")
+script = ExtResource("1_script")
+
+[node name="DebugConsole" parent="." unique_id=1463864855 instance=ExtResource("2_dbgconsole")]
+layout_mode = 1
+
+[node name="HBox" type="HBoxContainer" parent="." unique_id=840806489]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="LeftPanel" type="PanelContainer" parent="HBox" unique_id=552777177]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="HBox/LeftPanel" unique_id=1469982480]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="RoomRow" type="HBoxContainer" parent="HBox/LeftPanel/VBox" unique_id=102397494]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RoomCodeLabel" type="Label" parent="HBox/LeftPanel/VBox/RoomRow" unique_id=1503360401]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "Room: ..."
+
+[node name="CopyButton" type="Button" parent="HBox/LeftPanel/VBox/RoomRow" unique_id=702450381]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Copy"
+
+[node name="InviteButton" type="Button" parent="HBox/LeftPanel/VBox/RoomRow" unique_id=318650566]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Invite"
+
+[node name="HSeparator1" type="HSeparator" parent="HBox/LeftPanel/VBox" unique_id=93658892]
+layout_mode = 2
+
+[node name="StandsRow" type="HBoxContainer" parent="HBox/LeftPanel/VBox" unique_id=959066348]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="Stand1Col" type="VBoxContainer" parent="HBox/LeftPanel/VBox/StandsRow" unique_id=1394227650]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Stand1Label" type="Label" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col" unique_id=2122095765]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Stand 1"
+horizontal_alignment = 1
+
+[node name="Stand1Sep" type="HSeparator" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col" unique_id=220697495]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Stand1List" type="VBoxContainer" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col" unique_id=1818767488]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Stand1Button" type="Button" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col" unique_id=539399983]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_join")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_join")
+theme_override_styles/hover = SubResource("StyleBoxFlat_join")
+theme_override_styles/focus = SubResource("StyleBoxFlat_join")
+toggle_mode = true
+text = "Join"
+
+[node name="Spacer1" type="Control" parent="HBox/LeftPanel/VBox/StandsRow/Stand1Col" unique_id=986762202]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VSeparator" type="VSeparator" parent="HBox/LeftPanel/VBox/StandsRow" unique_id=2050370918]
+custom_minimum_size = Vector2(2, 0)
+layout_mode = 2
+
+[node name="Stand2Col" type="VBoxContainer" parent="HBox/LeftPanel/VBox/StandsRow" unique_id=1109779640]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Stand2Label" type="Label" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col" unique_id=545886941]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Stand 2"
+horizontal_alignment = 1
+
+[node name="Stand2Sep" type="HSeparator" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col" unique_id=165048895]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Stand2List" type="VBoxContainer" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col" unique_id=111008222]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Stand2Button" type="Button" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col" unique_id=523179578]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_join")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_join")
+theme_override_styles/hover = SubResource("StyleBoxFlat_join")
+theme_override_styles/focus = SubResource("StyleBoxFlat_join")
+toggle_mode = true
+text = "Join"
+
+[node name="Spacer2" type="Control" parent="HBox/LeftPanel/VBox/StandsRow/Stand2Col" unique_id=513459196]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HSeparator2" type="HSeparator" parent="HBox/LeftPanel/VBox" unique_id=877560185]
+layout_mode = 2
+
+[node name="BottomRow" type="HBoxContainer" parent="HBox/LeftPanel/VBox" unique_id=1591330613]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ReadyButton" type="Button" parent="HBox/LeftPanel/VBox/BottomRow" unique_id=1994469555]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Ready Up"
+
+[node name="StartButton" type="Button" parent="HBox/LeftPanel/VBox/BottomRow" unique_id=1045027807]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Start Game"
+
+[node name="BackButton" type="Button" parent="HBox/LeftPanel/VBox/BottomRow" unique_id=1378795500]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Back"
+
+[node name="RightPanel" type="PanelContainer" parent="HBox" unique_id=721934633]
+custom_minimum_size = Vector2(440, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CustomizeHBox" type="HBoxContainer" parent="HBox/RightPanel" unique_id=1094366789]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="OptionsCol" type="VBoxContainer" parent="HBox/RightPanel/CustomizeHBox" unique_id=1318797450]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol" unique_id=1667017135]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Customize"
+horizontal_alignment = 1
+
+[node name="GenderRow" type="HBoxContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol" unique_id=1082982557]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MaleButton" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow" unique_id=1492061416]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+toggle_mode = true
+text = "Male"
+
+[node name="FemaleButton" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow" unique_id=1559849850]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+toggle_mode = true
+text = "Female"
+
+[node name="OptionsGrid" type="GridContainer" parent="HBox/RightPanel/CustomizeHBox/OptionsCol" unique_id=1923986179]
+layout_mode = 2
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+columns = 4
+
+[node name="HairLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=89874339]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Hair:"
+
+[node name="HairPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1454963155]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "<"
+
+[node name="HairNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1363839964]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "1"
+horizontal_alignment = 1
+
+[node name="HairNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=440606321]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ">"
+
+[node name="ColorLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1852371448]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Color:"
+
+[node name="HairColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=189916453]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "<"
+
+[node name="HairColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=184023772]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "1"
+horizontal_alignment = 1
+
+[node name="HairColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=258182767]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ">"
+
+[node name="BrowsLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1725000590]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Brows:"
+
+[node name="EyebrowPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1000323122]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "<"
+
+[node name="EyebrowNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=867203599]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "1"
+horizontal_alignment = 1
+
+[node name="EyebrowNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=769485288]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ">"
+
+[node name="ShirtLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=65517542]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Shirt:"
+
+[node name="ShirtColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=717036013]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "<"
+
+[node name="ShirtColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1071678076]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "1"
+horizontal_alignment = 1
+
+[node name="ShirtColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=301401164]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ">"
+
+[node name="PantsLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1901740530]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Pants:"
+
+[node name="PantsColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=2070087818]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "<"
+
+[node name="PantsColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1887305554]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "1"
+horizontal_alignment = 1
+
+[node name="PantsColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1485985008]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ">"
+
+[node name="ShoesLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=983231680]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Shoes:"
+
+[node name="ShoesColorPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1513845903]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "<"
+
+[node name="ShoesColorNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1574835512]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "1"
+horizontal_alignment = 1
+
+[node name="ShoesColorNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=1507490782]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ">"
+
+[node name="HeadLabel" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=211746385]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Head:"
+
+[node name="HeadPrev" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=262543001]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "<"
+
+[node name="HeadNum" type="Label" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=239324649]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "5"
+horizontal_alignment = 1
+
+[node name="HeadNext" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid" unique_id=242600388]
+custom_minimum_size = Vector2(28, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ">"
+
+[node name="RandomButton" type="Button" parent="HBox/RightPanel/CustomizeHBox/OptionsCol" unique_id=1807004536]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Random"
+
+[node name="VersionLabel" type="Label" parent="." unique_id=346861609]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -28.0
+offset_right = -12.0
+offset_bottom = -8.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.243, 0.165, 0.078, 0.6)
+theme_override_font_sizes/font_size = 14
+text = "v0.1.0"
+horizontal_alignment = 2

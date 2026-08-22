@@ -137,4 +137,4 @@ func _set_enabled(enabled: bool) -> void:
 
 
 func _go_to_lobby() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/lobby.tscn")
+	get_tree().change_scene_to_file("res://scenes/main.tscn")

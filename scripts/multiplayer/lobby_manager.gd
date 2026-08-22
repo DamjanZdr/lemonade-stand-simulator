@@ -186,5 +186,8 @@ func start_game() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _do_start_game() -> void:
+	# Don't change scenes — main.tscn is already loaded (the lobby runs
+	# inside it). Just emit the signal so main.gd can transition from
+	# the lobby phase to the game phase (tween camera to first-person,
+	# hide lobby UI, start game systems).
 	game_starting.emit()
-	get_tree().change_scene_to_file("res://scenes/main.tscn")

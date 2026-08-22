@@ -46,6 +46,8 @@
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="46_press"]
 [ext_resource type="Resource" uid="uid://bmvspd0001" path="res://resources/upgrades/movement_speed.tres" id="67_movespd"]
+[ext_resource type="PackedScene" uid="uid://clobbyui01" path="res://scenes/ui/lobby_ui.tscn" id="68_lobbyui"]
+[ext_resource type="PackedScene" uid="uid://bpv1s2p3k4q5x" path="res://scenes/player/player_visuals.tscn" id="69_pvis"]
 
 [node name="Main" type="Node" unique_id=1191278377]
 script = ExtResource("1_main")
@@ -116,3 +118,19 @@ roof_colors = Array[Color]([Color(0.85490197, 0.69803923, 0.827451, 1), Color(0.
 wall_colors = Array[Color]([Color(0.42265648, 0.96156055, 0.88136154, 1), Color(0.8547164, 0.6989638, 0.8276675, 1), Color(0.7237331, 0.85128987, 0.43169385, 1), Color(0.86031544, 0.51238483, 0.5748986, 1), Color(0.92156863, 0.93333334, 0.19215687, 1)])
 
 [node name="DebugConsole" parent="." instance=ExtResource("12_dbgconsole")]
+
+[node name="LobbyCamera" type="Camera3D" parent="." unique_id=7000000001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 3, 8)
+fov = 50.0
+current = true
+
+[node name="LobbyPlayerModels" type="Node3D" parent="." unique_id=7000000002]
+
+[node name="PlayerModel1" parent="LobbyPlayerModels" unique_id=7000000003 instance=ExtResource("69_pvis")]
+transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, 2, 0, 0)
+
+[node name="PlayerModel2" parent="LobbyPlayerModels" unique_id=7000000004 instance=ExtResource("69_pvis")]
+transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, -8.1, 0, -22)
+
+[node name="LobbyUI" parent="." unique_id=7000000005 instance=ExtResource("68_lobbyui")]
+visible = true
