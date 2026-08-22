@@ -147,12 +147,13 @@ theme_override_constants/separation = 3
 
 [node name="HairStyleLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow" unique_id=89874340]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Hair"
 
 [node name="HairPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow" unique_id=1454963155]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -170,7 +171,7 @@ text = "Hair1M"
 horizontal_alignment = 1
 
 [node name="HairNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow" unique_id=440606321]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -185,12 +186,13 @@ theme_override_constants/separation = 3
 
 [node name="EyebrowsLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow" unique_id=1725000591]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Brows"
 
 [node name="EyebrowPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow" unique_id=1000323122]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -208,7 +210,7 @@ text = "Neutral"
 horizontal_alignment = 1
 
 [node name="EyebrowNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow" unique_id=769485288]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -223,12 +225,13 @@ theme_override_constants/separation = 3
 
 [node name="ShirtColorLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow" unique_id=65517543]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Shirt"
 
 [node name="ShirtColorPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow" unique_id=717036013]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -246,7 +249,7 @@ text = "Red"
 horizontal_alignment = 1
 
 [node name="ShirtColorNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow" unique_id=301401164]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -261,12 +264,13 @@ theme_override_constants/separation = 3
 
 [node name="ShoesColorLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow" unique_id=983231681]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Shoes"
 
 [node name="ShoesColorPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow" unique_id=1513845903]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -284,7 +288,7 @@ text = "Green"
 horizontal_alignment = 1
 
 [node name="ShoesColorNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow" unique_id=1507490782]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -299,12 +303,13 @@ theme_override_constants/separation = 3
 
 [node name="WallsColorLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow" unique_id=65517545]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Walls"
 
 [node name="WallsColorPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow" unique_id=65517546]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -322,7 +327,7 @@ text = "Cream"
 horizontal_alignment = 1
 
 [node name="WallsColorNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow" unique_id=65517548]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -342,12 +347,13 @@ theme_override_constants/separation = 3
 
 [node name="HairColorLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow" unique_id=1852371449]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Color"
 
 [node name="HairColorPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow" unique_id=189916453]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -365,7 +371,7 @@ text = "Med Brown"
 horizontal_alignment = 1
 
 [node name="HairColorNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow" unique_id=258182767]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -380,12 +386,13 @@ theme_override_constants/separation = 3
 
 [node name="EyebrowColorLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow" unique_id=1901740531]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Brow C"
 
 [node name="EyebrowColorPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow" unique_id=2070087818]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -403,7 +410,7 @@ text = "Black"
 horizontal_alignment = 1
 
 [node name="EyebrowColorNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow" unique_id=1485985008]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -418,12 +425,13 @@ theme_override_constants/separation = 3
 
 [node name="PantsColorLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow" unique_id=311746386]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Pants"
 
 [node name="PantsColorPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow" unique_id=311746387]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -441,7 +449,7 @@ text = "Blue"
 horizontal_alignment = 1
 
 [node name="PantsColorNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow" unique_id=311746389]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -456,12 +464,13 @@ theme_override_constants/separation = 3
 
 [node name="HeadSizeLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow" unique_id=211746386]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Head"
 
 [node name="HeadPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow" unique_id=262543001]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -479,7 +488,7 @@ text = "1.3x"
 horizontal_alignment = 1
 
 [node name="HeadNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow" unique_id=242600388]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -494,12 +503,13 @@ theme_override_constants/separation = 3
 
 [node name="RoofColorLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow" unique_id=211746391]
 layout_mode = 2
+custom_minimum_size = Vector2(48, 0)
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 13
 text = "Roof"
 
 [node name="RoofColorPrev" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow" unique_id=211746392]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -517,7 +527,7 @@ text = "Brown"
 horizontal_alignment = 1
 
 [node name="RoofColorNext" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow" unique_id=211746394]
-custom_minimum_size = Vector2(24, 26)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
@@ -570,7 +580,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "Room: ***"
+text = "Room: **********"
 
 [node name="CopyButton" type="Button" parent="LeftContainer/LobbyPanel/VBox/RoomRow" unique_id=702450381]
 layout_mode = 2
@@ -686,3 +696,4 @@ theme_override_colors/font_color = Color(0.243, 0.165, 0.078, 0.6)
 theme_override_font_sizes/font_size = 14
 text = "v0.1.0"
 horizontal_alignment = 2
+

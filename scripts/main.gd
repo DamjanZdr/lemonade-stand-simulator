@@ -164,10 +164,44 @@ func _position_lobby_camera(stand_index: int, tween: bool) -> void:
 	var target_transform := cam.global_transform
 
 	if tween:
+		# Tween position directly, but rotate the LONG way around Y
+		# so the camera pans in the opposite direction from the
+		# default shortest-path slerp.
+		var start_basis := lobby_camera.global_transform.basis
+		var end_basis := target_transform.basis
+		var start_euler := start_basis.get_euler()
+		var end_euler := end_basis.get_euler()
+		var start_yaw: float = start_euler.y
+		var end_yaw: float = end_euler.y
+		var diff: float = end_yaw - start_yaw
+		# Normalize to [-PI, PI] (shortest path)
+		while diff > PI:
+			diff -= TAU
+		while diff < -PI:
+			diff += TAU
+		# Flip to go the long way around
+		if diff > 0.0:
+			diff -= TAU
+		elif diff < 0.0:
+			diff += TAU
+		var start_pitch: float = start_euler.x
+		var end_pitch: float = end_euler.x
 		var tw := create_tween()
 		tw.set_parallel(true)
-		tw.tween_property(lobby_camera, "global_transform", target_transform, CAMERA_TWEEN_TIME) \
+		tw.tween_property(lobby_camera, "global_position", target_transform.origin, CAMERA_TWEEN_TIME) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw \
+				.tween_method(
+			func(t: float) -> void:
+				var yaw: float = start_yaw + diff * t
+				var pitch: float = lerpf(start_pitch, end_pitch, t)
+				lobby_camera.global_rotation = Vector3(pitch, yaw, 0.0),
+			0.0,
+			1.0,
+			CAMERA_TWEEN_TIME,
+		) \
+				.set_trans(Tween.TRANS_SINE) \
+				.set_ease(Tween.EASE_IN_OUT)
 	else:
 		lobby_camera.global_transform = target_transform
 

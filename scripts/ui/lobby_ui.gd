@@ -163,7 +163,7 @@ func _update_room_display() -> void:
 		_room_code_label.text = "Room: %d" % NetworkManager.lobby_id
 		_eye_button.text = "◉"
 	else:
-		_room_code_label.text = "Room: ***"
+		_room_code_label.text = "Room: **********"
 		_eye_button.text = "◎"
 
 
