@@ -8,6 +8,11 @@ var _refresh_timer: float = 0.0
 var _test_payment_cooldown: float = 0.0
 
 
+func _enter_tree() -> void:
+	# Hide as early as possible so the panel never flashes on screen
+	visible = false
+
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
 		if event.keycode == KEY_F1:
@@ -15,6 +20,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _ready() -> void:
+	visible = false
 	$Panel/VBox/BtnMoney.pressed.connect(
 		func():
 			EventBus.debug_add_money.emit(1000.0),

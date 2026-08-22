@@ -82,6 +82,7 @@ script = ExtResource("6_delivery")
 [node name="HUD" parent="." unique_id=1577022415 instance=ExtResource("7_hud")]
 
 [node name="DebugPanel" parent="." unique_id=1101678529 instance=ExtResource("9_debug")]
+visible = false
 
 [node name="Managers" type="Node" parent="." unique_id=1001413373]
 
