@@ -18,7 +18,7 @@ func set_manager(manager: Node) -> void:
 
 func _get_manager() -> Node:
 	if _manager == null:
-		var scene := Engine.get_main_loop().current_scene
+		var scene: Node = Engine.get_main_loop().current_scene
 		if scene:
 			_manager = scene.find_child("RecipeManager", true, false)
 		if _manager == null:

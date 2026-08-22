@@ -1880,7 +1880,6 @@ size = Vector2(26.35, 12)
 [sub_resource type="PlaneMesh" id="PlaneMesh_82vox"]
 size = Vector2(10, 2.2)
 
-
 [node name="Neighborhood" type="Node3D" unique_id=1396389632]
 script = ExtResource("22_neigh")
 
@@ -1971,6 +1970,47 @@ transform = Transform3D(1, 0, 9.313226e-10, 0, 1.0000002, 0, -9.313226e-10, 0, 1
 shape = SubResource("BoxShape3D_yf5fn")
 
 [node name="playerhouse -col" parent="Houses/player_house" unique_id=528387326 instance=ExtResource("10_0awr7")]
+visible = false
+
+[node name="player_house2" parent="Houses" unique_id=942529271 instance=ExtResource("2_wlhmk")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -22, 3.16167, -28)
+metadata/house_color_index = 2
+
+[node name="door" parent="Houses/player_house2" unique_id=1855545977 instance=ExtResource("3_wlhmk")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -1.4000001, -0.07603145, -1.1000004)
+
+[node name="DoorTrigger" type="Area3D" parent="Houses/player_house2" unique_id=1574245951]
+script = ExtResource("8_door")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Houses/player_house2/DoorTrigger" unique_id=813833656]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.149878, -0.4460938, -1.1499996)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="door2" parent="Houses/player_house2" unique_id=904493650 instance=ExtResource("3_wlhmk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9499986, 0, 0.9199619)
+
+[node name="DoorTrigger2" type="Area3D" parent="Houses/player_house2" unique_id=978310839]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.049999, 0, -0.4800396)
+script = ExtResource("8_door")
+door_node = NodePath("../door2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Houses/player_house2/DoorTrigger2" unique_id=1007247002]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.149878, -0.4460938, -1.1499996)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="Trashcan" parent="Houses/player_house2" unique_id=369057144 instance=ExtResource("8_t3nbc")]
+transform = Transform3D(0.23706862, 0, 0.44022548, 0, 0.5, 0, -0.44022548, 0, 0.23706862, -0.5208144, -1.3802583, 15.252073)
+
+[node name="pickup truck20" parent="Houses/player_house2" unique_id=1923883067 instance=ExtResource("21_kyhvj")]
+transform = Transform3D(-0.001943293, 0, -0.29999372, 0, 0.3, 0, 0.29999372, 0, -0.001943293, -7.9648533, -1.252958, 5.199999)
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Houses/player_house2/pickup truck20" unique_id=490961189]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Houses/player_house2/pickup truck20/StaticBody3D" unique_id=2138900895]
+transform = Transform3D(1, 0, 9.313226e-10, 0, 1.0000002, 0, -9.313226e-10, 0, 1, -8.889439, 4.1528053, -0.061523438)
+shape = SubResource("BoxShape3D_yf5fn")
+
+[node name="playerhouse -col" parent="Houses/player_house2" unique_id=528387327 instance=ExtResource("10_0awr7")]
 visible = false
 
 [node name="Streets" type="Node3D" parent="." unique_id=1338897075 groups=["grass_blocker"]]
@@ -8881,7 +8921,7 @@ omni_range = 20.0
 transform = Transform3D(-0.023428977, 0.35000592, 0.9364544, 0.68654084, 0.6865408, -0.23942263, -0.7267135, 0.6373048, -0.25637838, -22.460365, 11.3622265, 2.0936258)
 
 [node name="Decorations" type="Node3D" parent="." unique_id=1407390588]
-transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
+transform = Transform3D(-1.0927847e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -1.0927847e-08, -8.000037, 1.0291692, 0.070590496)
 
 [node name="PlantPot1" parent="Decorations" unique_id=1904588981 instance=ExtResource("49_l4ul6")]
 transform = Transform3D(0.84171945, 0, 0.53991526, 0, 1, 0, -0.53991526, 0, 0.84171945, -7.764577, 1.3492472, 35.04088)

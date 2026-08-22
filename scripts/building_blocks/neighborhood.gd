@@ -12,8 +12,8 @@ const PALETTE: Array[Color] = [
 	Color(0.85, 0.6, 0.15), # tan/orange
 ]
 const RED_THRESHOLD := 0.35
-const EXCLUDED: Array[StringName] = [&"pickup truck12"]
-const SKIP_RECOLOR_HOUSES: Array[StringName] = [&"player_house"]
+const EXCLUDED: Array[StringName] = [&"pickup truck12", &"pickup truck20"]
+const SKIP_RECOLOR_HOUSES: Array[StringName] = [&"player_house", &"player_house2"]
 
 const _FALLBACK_ROOF_DEFAULT: Color = Color(0.15, 0.15, 0.17)
 const _FALLBACK_WALL_DEFAULT: Color = Color.TRANSPARENT
