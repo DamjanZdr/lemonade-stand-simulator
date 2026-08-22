@@ -130,6 +130,9 @@ func _ready() -> void:
 		# starts the game. This must happen before any spawn requests
 		# arrive from clients.
 		_setup_networking()
+		# Listen for host disconnect so clients get a popup instead of
+		# getting stuck.
+		NetworkManager.server_disconnected.connect(_on_host_left)
 
 
 ## Sets up the lobby phase: positions the lobby camera, wires the lobby UI
@@ -574,6 +577,32 @@ func _on_local_player_ready(p: Player) -> void:
 	outline_sys.setup(p.get_node("Head/Camera3D") as Camera3D)
 	if hud and hud.has_method("set_stand") and p.assigned_stand:
 		hud.set_stand(p.assigned_stand)
+
+
+## Called when the server (host) disconnects. Shows a popup so the
+## client knows what happened instead of getting stuck.
+func _on_host_left() -> void:
+	# Only show this for clients (not the host themselves)
+	if multiplayer.is_server():
+		return
+	# Avoid showing multiple popups
+	if has_node("HostLeftDialog"):
+		return
+	var dialog := AcceptDialog.new()
+	dialog.name = "HostLeftDialog"
+	dialog.title = "Host Left"
+	dialog.dialog_text = "The host has left the game."
+	dialog.ok_button_text = "Back to Menu"
+	dialog.confirmed.connect(_go_to_main_menu)
+	dialog.canceled.connect(_go_to_main_menu)
+	add_child(dialog)
+	dialog.popup_centered()
+
+
+func _go_to_main_menu() -> void:
+	LobbyManager.reset()
+	SaveManager.clear_current_slot()
+	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
 
 func _on_cash_dropped(drop_pos: Vector3, payment: float, change_due: float) -> void:
