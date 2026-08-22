@@ -2580,8 +2580,7 @@ func _get_container_type_for_node(node: Node) -> String:
 		return "press"
 	if node is FruitBin:
 		return "fruit_bin"
-	if node is WaterDispenser:
-		return "water_dispenser"
+	# WaterDispenser is a fixed appliance — it cannot be picked up
 	var node_script: Script = node.get_script() as Script
 	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
