@@ -104,9 +104,10 @@ anchors_preset = 9
 anchor_bottom = 1.0
 offset_left = 20.0
 offset_top = 20.0
-offset_right = -20.0
+offset_right = 360.0
 offset_bottom = -20.0
 grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="VBox" type="VBoxContainer" parent="LeftPanel" unique_id=1469982480]
@@ -263,6 +264,7 @@ offset_top = 20.0
 offset_right = -20.0
 offset_bottom = -20.0
 grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="OptionsCol" type="VBoxContainer" parent="RightPanel" unique_id=1318797450]
