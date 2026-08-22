@@ -118,11 +118,18 @@ func _ready() -> void:
 	# transition from lobby to game phase (camera tween, hide UI, start systems).
 	LobbyManager.game_starting.connect(_on_game_starting)
 
-	# If there's no lobby roster (e.g. testing main.tscn directly in the
-	# editor), skip the lobby and start the game immediately.
-	if LobbyManager.roster.is_empty():
+	# If there's no lobby roster AND we're not connected to a server
+	# (e.g. testing main.tscn directly in the editor), skip the lobby
+	# and start the game immediately. Clients must wait for the roster
+	# to arrive over the network before the lobby can proceed.
+	if LobbyManager.roster.is_empty() and not multiplayer.has_multiplayer_peer():
 		print("[Main] No lobby roster — starting game directly (solo/test mode)")
 		_on_game_starting()
+	else:
+		# Set up networking now so the spawner is ready when the host
+		# starts the game. This must happen before any spawn requests
+		# arrive from clients.
+		_setup_networking()
 
 
 ## Sets up the lobby phase: positions the lobby camera, wires the lobby UI
@@ -340,7 +347,8 @@ func _start_game_phase() -> void:
 	# outline overlay, HUD stand assignment, etc. that depend on "the"
 	# local player now happen in _on_local_player_ready() once our own
 	# player actually exists, instead of here.
-	_setup_networking()
+	# _setup_networking() is called during _ready() so the spawner is
+	# ready before any spawn requests arrive.
 	WorldSync.setup(world_objects, world_spawner)
 
 	# Add the evening summary overlay
