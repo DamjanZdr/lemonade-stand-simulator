@@ -148,9 +148,9 @@ grow_horizontal = 0
 theme_override_constants/separation = 10
 
 [node name="CustomizePanel" type="PanelContainer" parent="LeftContainer" unique_id=721934633]
-custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
@@ -537,9 +537,9 @@ theme_override_font_sizes/font_size = 15
 text = "Randomize"
 
 [node name="LobbyPanel" type="PanelContainer" parent="LeftContainer" unique_id=552777177]
-custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
