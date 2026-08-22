@@ -3,35 +3,37 @@ extends Control
 ## The 3D world is already loaded — main.gd positions a LobbyCamera and
 ## player models in the world. This script only handles the 2D UI:
 ## room code, roster, stand selection, ready/start buttons, and
-## character customization (which applies to the PlayerVisuals node
-## that main.gd provides via set_player_visuals()).
+## character customization (which applies to the PlayerVisuals nodes
+## in the 3D world — both PlayerModel1 and PlayerModel2 so the player
+## sees their customization regardless of which stand they're viewing).
 
-@onready var _room_code_label: Label = $HBox/LeftPanel/VBox/RoomRow/RoomCodeLabel
-@onready var _copy_button: Button = $HBox/LeftPanel/VBox/RoomRow/CopyButton
-@onready var _invite_button: Button = $HBox/LeftPanel/VBox/RoomRow/InviteButton
-@onready var _stand1_list: VBoxContainer = $HBox/LeftPanel/VBox/StandsRow/Stand1Col/Stand1List
-@onready var _stand2_list: VBoxContainer = $HBox/LeftPanel/VBox/StandsRow/Stand2Col/Stand2List
-@onready var _stand1_button: Button = $HBox/LeftPanel/VBox/StandsRow/Stand1Col/Stand1Button
-@onready var _stand2_button: Button = $HBox/LeftPanel/VBox/StandsRow/Stand2Col/Stand2Button
-@onready var _ready_button: Button = $HBox/LeftPanel/VBox/BottomRow/ReadyButton
-@onready var _start_button: Button = $HBox/LeftPanel/VBox/BottomRow/StartButton
-@onready var _back_button: Button = $HBox/LeftPanel/VBox/BottomRow/BackButton
+@onready var _room_code_label: Label = $LeftPanel/VBox/RoomRow/RoomCodeLabel
+@onready var _copy_button: Button = $LeftPanel/VBox/RoomRow/CopyButton
+@onready var _invite_button: Button = $LeftPanel/VBox/RoomRow/InviteButton
+@onready var _stand1_list: VBoxContainer = $LeftPanel/VBox/StandsRow/Stand1Col/Stand1List
+@onready var _stand2_list: VBoxContainer = $LeftPanel/VBox/StandsRow/Stand2Col/Stand2List
+@onready var _stand1_button: Button = $LeftPanel/VBox/StandsRow/Stand1Col/Stand1Button
+@onready var _stand2_button: Button = $LeftPanel/VBox/StandsRow/Stand2Col/Stand2Button
+@onready var _ready_button: Button = $LeftPanel/VBox/BottomRow/ReadyButton
+@onready var _start_button: Button = $LeftPanel/VBox/BottomRow/StartButton
+@onready var _back_button: Button = $LeftPanel/VBox/BottomRow/BackButton
 @onready var _version_label: Label = $VersionLabel
 
 # Customization UI
-@onready var _male_button: Button = $HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow/MaleButton
-@onready var _female_button: Button = $HBox/RightPanel/CustomizeHBox/OptionsCol/GenderRow/FemaleButton
-@onready var _hair_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HairNum
-@onready var _hair_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HairColorNum
-@onready var _eyebrow_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/EyebrowNum
-@onready var _shirt_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/ShirtColorNum
-@onready var _pants_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/PantsColorNum
-@onready var _shoes_color_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/ShoesColorNum
-@onready var _head_num: Label = $HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HeadNum
+@onready var _male_button: Button = $RightPanel/OptionsCol/GenderRow/MaleButton
+@onready var _female_button: Button = $RightPanel/OptionsCol/GenderRow/FemaleButton
+@onready var _hair_num: Label = $RightPanel/OptionsCol/OptionsGrid/HairNum
+@onready var _hair_color_num: Label = $RightPanel/OptionsCol/OptionsGrid/HairColorNum
+@onready var _eyebrow_num: Label = $RightPanel/OptionsCol/OptionsGrid/EyebrowNum
+@onready var _shirt_color_num: Label = $RightPanel/OptionsCol/OptionsGrid/ShirtColorNum
+@onready var _pants_color_num: Label = $RightPanel/OptionsCol/OptionsGrid/PantsColorNum
+@onready var _shoes_color_num: Label = $RightPanel/OptionsCol/OptionsGrid/ShoesColorNum
+@onready var _head_num: Label = $RightPanel/OptionsCol/OptionsGrid/HeadNum
 
-## The PlayerVisuals node in the 3D world that customization applies to.
-## Set by main.gd when the lobby phase starts.
-var _player_visuals: PlayerVisuals = null
+## PlayerVisuals nodes in the 3D world. Customization applies to ALL of
+## them so the player sees their character regardless of which stand
+## the camera is looking at.
+var _player_visuals: Array[PlayerVisuals] = []
 
 ## Signal emitted when the local player switches stands in the lobby.
 ## main.gd connects to this to tween the LobbyCamera.
@@ -82,9 +84,9 @@ const CLOTHING_COLOR_NAMES: Array[String] = [
 ]
 
 
-## Called by main.gd to provide the PlayerVisuals node from the 3D world.
-func set_player_visuals(pv: PlayerVisuals) -> void:
-	_player_visuals = pv
+## Called by main.gd to provide PlayerVisuals nodes from the 3D world.
+func set_player_visuals(models: Array[PlayerVisuals]) -> void:
+	_player_visuals = models
 
 
 func _ready() -> void:
@@ -195,21 +197,19 @@ func _refresh() -> void:
 
 
 func _setup_customization() -> void:
-	# If main.gd hasn't set the PlayerVisuals yet, try to find it in the scene
-	if _player_visuals == null:
+	# If main.gd hasn't set the PlayerVisuals yet, find them in the scene
+	if _player_visuals.is_empty():
 		var models := get_tree().current_scene.find_child("LobbyPlayerModels", true, false) as Node
 		if models:
-			_player_visuals = models.get_node_or_null("PlayerModel1") as PlayerVisuals
-	if _player_visuals == null:
-		push_warning("LobbyUI: no PlayerVisuals set, customization will not be visible")
+			for child in models.get_children():
+				var pv := child as PlayerVisuals
+				if pv:
+					_player_visuals.append(pv)
+	if _player_visuals.is_empty():
+		push_warning("LobbyUI: no PlayerVisuals found, customization will not be visible")
 		return
-	# Initialize the player visuals with default appearance
-	_player_visuals.set_gender(_is_male)
-	_player_visuals.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
-	_player_visuals.set_eyebrow(_eyebrow_index)
-	_apply_clothing_colors()
-	_player_visuals.scale_head_bone(_head_size_to_scale())
-	_player_visuals.play_anim("Idle")
+	# Initialize all player visuals with default appearance
+	_apply_customization_to_all()
 	_update_all_labels()
 
 	# Gender buttons
@@ -225,134 +225,140 @@ func _setup_customization() -> void:
 	)
 
 	# Hair style buttons
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HairPrev.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/HairPrev.pressed.connect(
 		func():
-			_hair_index = (_hair_index - 1 + _player_visuals.get_hair_count()) % _player_visuals.get_hair_count()
+			_hair_index = (_hair_index - 1 + _player_visuals[0].get_hair_count()) % _player_visuals[
+				0
+			].get_hair_count()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HairNext.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/HairNext.pressed.connect(
 		func():
-			_hair_index = (_hair_index + 1) % _player_visuals.get_hair_count()
+			_hair_index = (_hair_index + 1) % _player_visuals[0].get_hair_count()
 			_on_customization_changed(),
 	)
 
 	# Hair color buttons
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HairColorPrev.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/HairColorPrev.pressed.connect(
 		func():
 			_hair_color_index = (_hair_color_index - 1 + PlayerVisuals.HAIR_COLORS.size()) % PlayerVisuals \
 					.HAIR_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HairColorNext.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/HairColorNext.pressed.connect(
 		func():
 			_hair_color_index = (_hair_color_index + 1) % PlayerVisuals.HAIR_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Eyebrow buttons
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/EyebrowPrev.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/EyebrowPrev.pressed.connect(
 		func():
-			_eyebrow_index = (_eyebrow_index - 1 + _player_visuals.get_eyebrow_count()) % _player_visuals.get_eyebrow_count()
+			_eyebrow_index = (_eyebrow_index - 1 + _player_visuals[0].get_eyebrow_count()) % _player_visuals[
+				0
+			].get_eyebrow_count()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/EyebrowNext.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/EyebrowNext.pressed.connect(
 		func():
-			_eyebrow_index = (_eyebrow_index + 1) % _player_visuals.get_eyebrow_count()
+			_eyebrow_index = (_eyebrow_index + 1) % _player_visuals[0].get_eyebrow_count()
 			_on_customization_changed(),
 	)
 
 	# Shirt color buttons
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/ShirtColorPrev.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/ShirtColorPrev.pressed.connect(
 		func():
 			_shirt_color_index = (_shirt_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/ShirtColorNext.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/ShirtColorNext.pressed.connect(
 		func():
 			_shirt_color_index = (_shirt_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Pants color buttons
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/PantsColorPrev.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/PantsColorPrev.pressed.connect(
 		func():
 			_pants_color_index = (_pants_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/PantsColorNext.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/PantsColorNext.pressed.connect(
 		func():
 			_pants_color_index = (_pants_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Shoes color buttons
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/ShoesColorPrev.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/ShoesColorPrev.pressed.connect(
 		func():
 			_shoes_color_index = (_shoes_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/ShoesColorNext.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/ShoesColorNext.pressed.connect(
 		func():
 			_shoes_color_index = (_shoes_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
 	# Head size buttons
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HeadPrev.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/HeadPrev.pressed.connect(
 		func():
 			_head_size_index = max(0, _head_size_index - 1)
 			_on_customization_changed(),
 	)
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/OptionsGrid/HeadNext.pressed.connect(
+	$RightPanel/OptionsCol/OptionsGrid/HeadNext.pressed.connect(
 		func():
 			_head_size_index = min(HEAD_SIZE_STEPS - 1, _head_size_index + 1)
 			_on_customization_changed(),
 	)
 
 	# Randomize button
-	$HBox/RightPanel/CustomizeHBox/OptionsCol/RandomButton.pressed.connect(_on_randomize)
+	$RightPanel/OptionsCol/RandomButton.pressed.connect(_on_randomize)
 
 	# Update gender button states
 	_update_gender_buttons()
 
 
 func _on_customization_changed() -> void:
-	if _player_visuals == null:
+	if _player_visuals.is_empty():
 		return
-	_player_visuals.set_gender(_is_male)
-	_player_visuals.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
-	_player_visuals.set_eyebrow(_eyebrow_index)
-	_apply_clothing_colors()
-	_player_visuals.scale_head_bone(_head_size_to_scale())
-	_player_visuals.play_anim("Idle")
+	_apply_customization_to_all()
 	_update_all_labels()
 	_update_gender_buttons()
 	_broadcast_customization()
 
 
+## Applies the current customization state to ALL player visual models.
+func _apply_customization_to_all() -> void:
+	for pv in _player_visuals:
+		if pv == null:
+			continue
+		pv.set_gender(_is_male)
+		pv.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
+		pv.set_eyebrow(_eyebrow_index)
+		var colors: Dictionary = {
+			"shirt": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
+			"top": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
+			"pants": PlayerVisuals.CLOTHING_COLORS[_pants_color_index],
+			"trousers": PlayerVisuals.CLOTHING_COLORS[_pants_color_index],
+			"shoes": PlayerVisuals.CLOTHING_COLORS[_shoes_color_index],
+		}
+		pv.set_clothing_colors(colors)
+		pv.scale_head_bone(_head_size_to_scale())
+		pv.play_anim("Idle")
+
+
 func _head_size_to_scale() -> float:
 	var step: float = (HEAD_SIZE_MAX - HEAD_SIZE_MIN) / float(HEAD_SIZE_STEPS - 1)
 	return HEAD_SIZE_MIN + step * _head_size_index
-
-
-func _apply_clothing_colors() -> void:
-	if _player_visuals == null:
-		return
-	var colors: Dictionary = {
-		"shirt": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
-		"top": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
-		"pants": PlayerVisuals.CLOTHING_COLORS[_pants_color_index],
-		"trousers": PlayerVisuals.CLOTHING_COLORS[_pants_color_index],
-		"shoes": PlayerVisuals.CLOTHING_COLORS[_shoes_color_index],
-	}
-	_player_visuals.set_clothing_colors(colors)
 
 
 func _update_gender_buttons() -> void:
@@ -371,10 +377,12 @@ func _update_all_labels() -> void:
 
 
 func _on_randomize() -> void:
+	if _player_visuals.is_empty():
+		return
 	_is_male = randi() % 2 == 0
-	_hair_index = randi() % _player_visuals.get_hair_count()
+	_hair_index = randi() % _player_visuals[0].get_hair_count()
 	_hair_color_index = randi() % PlayerVisuals.HAIR_COLORS.size()
-	_eyebrow_index = randi() % _player_visuals.get_eyebrow_count()
+	_eyebrow_index = randi() % _player_visuals[0].get_eyebrow_count()
 	_shirt_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
 	_pants_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
 	_shoes_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()

@@ -134,10 +134,16 @@ func _setup_lobby() -> void:
 	# Hide the HUD during lobby — it'll be shown when the game starts
 	if hud:
 		hud.visible = false
-	# Wire the lobby UI to the first player model for customization preview
-	var pv := lobby_player_models.get_node_or_null("PlayerModel1") as PlayerVisuals
-	if pv and lobby_ui.has_method("set_player_visuals"):
-		lobby_ui.set_player_visuals(pv)
+	# Wire the lobby UI to all player models so customization applies
+	# to both (player sees their character regardless of which stand
+	# the camera is looking at).
+	var models: Array[PlayerVisuals] = []
+	for child in lobby_player_models.get_children():
+		var pv := child as PlayerVisuals
+		if pv:
+			models.append(pv)
+	if not models.is_empty() and lobby_ui.has_method("set_player_visuals"):
+		lobby_ui.set_player_visuals(models)
 	# Position the lobby camera at the default stand (stand 1)
 	_position_lobby_camera(0, false)
 	# Connect stand switch signal from lobby UI for camera tweening
