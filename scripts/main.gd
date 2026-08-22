@@ -68,7 +68,7 @@ var _orig_fill_energy: float = 0.5
 var _in_lobby: bool = true
 
 ## Camera tween time for stand switching and game-start transition.
-const CAMERA_TWEEN_TIME: float = 0.6
+const CAMERA_TWEEN_TIME: float = 1.0
 
 
 ## Returns the camera node for the given stand index. These are
@@ -249,7 +249,14 @@ func _on_game_starting() -> void:
 	_start_game_phase()
 
 	# Tween the lobby camera into the player's first-person position.
-	# The player's Camera3D will take over when the tween completes.
+	# Deferred because _start_game_phase() defers player spawning on the
+	# host, so _local_player may not be set until next frame.
+	call_deferred("_tween_camera_to_player")
+
+
+## Tweens the lobby camera into the local player's first-person camera.
+## Called deferred after _start_game_phase so the player has spawned.
+func _tween_camera_to_player() -> void:
 	if _local_player and _local_player.has_node("Head/Camera3D"):
 		var player_cam := _local_player.get_node("Head/Camera3D") as Camera3D
 		var target_transform := player_cam.global_transform
@@ -468,13 +475,55 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
-		p.global_position = stand.global_position + Vector3(0, 0, 2)
+		# Spawn the player at the lobby visual's position so the
+		# camera transition from lobby to game is seamless.
+		var lobby_pos := _get_lobby_visual_position(peer_id)
+		if lobby_pos != Vector3.ZERO:
+			p.global_position = lobby_pos
+			# Match the visual's facing direction
+			var lobby_yaw := _get_lobby_visual_yaw(peer_id)
+			p.global_rotation = Vector3(0, lobby_yaw, 0)
+		else:
+			p.global_position = stand.global_position + Vector3(0, 0, 2)
 	GameLog.log(
 		"[Main] Spawned player %d (stand=%s, is_me=%s)"
 		% [peer_id, stand.name if stand else "null", peer_id == multiplayer.get_unique_id()]
 	)
 	if peer_id == multiplayer.get_unique_id():
 		_on_local_player_ready(p)
+
+
+## Returns the world position of the lobby player visual for the given
+## peer, or Vector3.ZERO if not found.
+func _get_lobby_visual_position(peer_id: int) -> Vector3:
+	if lobby_player_models == null:
+		return Vector3.ZERO
+	var stand_idx: int = LobbyManager.roster.get(peer_id, { }).get("stand_index", -1)
+	if stand_idx < 0:
+		return Vector3.ZERO
+	var model_idx := stand_idx
+	if model_idx >= lobby_player_models.get_child_count():
+		return Vector3.ZERO
+	var model := lobby_player_models.get_child(model_idx) as Node3D
+	if model:
+		return model.global_position
+	return Vector3.ZERO
+
+
+## Returns the Y rotation of the lobby player visual for the given peer.
+func _get_lobby_visual_yaw(peer_id: int) -> float:
+	if lobby_player_models == null:
+		return 0.0
+	var stand_idx: int = LobbyManager.roster.get(peer_id, { }).get("stand_index", -1)
+	if stand_idx < 0:
+		return 0.0
+	var model_idx := stand_idx
+	if model_idx >= lobby_player_models.get_child_count():
+		return 0.0
+	var model := lobby_player_models.get_child(model_idx) as Node3D
+	if model:
+		return model.global_rotation.y
+	return 0.0
 
 
 ## Returns the stand this peer picked in the lobby (LobbyManager.roster),
@@ -496,6 +545,7 @@ func _stand_for_peer(peer_id: int) -> StandUnit:
 
 
 func _on_local_player_ready(p: Player) -> void:
+	_local_player = p
 	# Spawn the screen-space outline overlay and hand it the local
 	# player's camera so it can mirror the transform every frame.
 	var outline_sys: Node = OUTLINE_SCENE.instantiate()
