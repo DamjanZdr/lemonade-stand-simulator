@@ -3631,6 +3631,7 @@ visible = false
 visible = false
 
 [node name="MaleMesh" type="MeshInstance3D" parent="man/Armature/Skeleton3D" unique_id=1909113374]
+cast_shadow = 1
 mesh = SubResource("ArrayMesh_sva0g")
 skin = SubResource("Skin_27xht")
 skeleton = NodePath("..")
@@ -3904,6 +3905,7 @@ visible = false
 visible = false
 
 [node name="FemaleMesh" type="MeshInstance3D" parent="woman/Armature/Skeleton3D" unique_id=956771414]
+cast_shadow = 1
 mesh = SubResource("ArrayMesh_7h28d")
 skin = SubResource("Skin_4leiq")
 skeleton = NodePath("..")

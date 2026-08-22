@@ -121,12 +121,20 @@ current = true
 fov = 50.0
 
 [node name="LobbyCamStand1" type="Camera3D" parent="." unique_id=-1589934501]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 4, 10)
-fov = 50.0
+transform = Transform3D(0.9659258, 0, 0.2588191, 0, 1, 0, -0.2588191, 0, 0.9659258, -2.6527681, 1.184797, -32.434513)
+
+[node name="SpotLight3D" type="SpotLight3D" parent="LobbyCamStand1" unique_id=389136227]
+spot_range = 11.0
+spot_angle = 85.97315
+shadow_enabled = true
 
 [node name="LobbyCamStand2" type="Camera3D" parent="." unique_id=-1589934502]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.1, 4, -14)
-fov = 50.0
+transform = Transform3D(-0.9659259, 0, -0.25881898, 0, 1, 0, 0.25881898, 0, -0.9659259, -5.653619, 1.2120197, 9.081305)
+
+[node name="SpotLight3D" type="SpotLight3D" parent="LobbyCamStand2" unique_id=1836317227]
+spot_range = 11.0
+spot_angle = 85.97315
+shadow_enabled = true
 
 [node name="LobbyPlayerModels" type="Node3D" parent="." unique_id=-1589934590]
 
