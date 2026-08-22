@@ -27,7 +27,6 @@
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="22_neigh"]
 [ext_resource type="ArrayMesh" uid="uid://duj6747nq4qsk" path="res://assets/models/environment/Grass/grass.res" id="23_xtpmv"]
 [ext_resource type="PackedScene" uid="uid://c14egrwx1ebnx" path="res://assets/models/environment/surroundings/insider.glb" id="27_7lc8q"]
-[ext_resource type="Script" uid="uid://hsqcc88lklsb" path="res://scripts/npc/npc_appearance.gd" id="27_8ui6t"]
 [ext_resource type="PackedScene" uid="uid://blm1uvvmndxcj" path="res://scenes/insider.tscn" id="28_mpqsg"]
 [ext_resource type="PackedScene" uid="uid://rxqxribk71f2" path="res://assets/models/characters/npc_attributes/Male/Hairstyles/Hair1M.glb" id="28_myl1y"]
 [ext_resource type="PackedScene" uid="uid://b576hrm7btb37" path="res://assets/models/characters/npc_attributes/Male/Hairstyles/Hair2M.glb" id="29_eusxp"]
@@ -7934,10 +7933,6 @@ multimesh = SubResource("MultiMesh_xtpmv")
 [node name="NPC" type="Node3D" parent="Grass" unique_id=789160888]
 transform = Transform3D(-0.092079975, 0, 0.03900359, 0, 0.099999994, 0, -0.03900359, 0, -0.092079975, -1050.8588, 2.4642596, 732.38763)
 visible = false
-script = ExtResource("27_8ui6t")
-walk_speed = 2.0
-eye_look_max_deg = 90.0
-eye_look_speed = 5.0
 
 [node name="man" type="Node3D" parent="Grass/NPC" unique_id=1019095832]
 
