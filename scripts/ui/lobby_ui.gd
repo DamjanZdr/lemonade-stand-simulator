@@ -1,34 +1,31 @@
 extends Control
 ## 2D lobby UI overlay. Lives inside main.tscn on top of the 3D world.
-## The 3D world is already loaded — main.gd positions a LobbyCamera and
-## player models in the world. This script only handles the 2D UI:
-## room code, roster, stand selection, ready/start buttons, and
-## character customization (which applies to the PlayerVisuals nodes
-## in the 3D world — both PlayerModel1 and PlayerModel2 so the player
-## sees their customization regardless of which stand they're viewing).
+## Both panels (customize + lobby) are on the left side. The 3D world
+## is visible on the right. Player models look at the camera and can
+## be spun by clicking and dragging on the 3D viewport area.
 
-@onready var _room_code_label: Label = $LeftPanel/VBox/RoomRow/RoomCodeLabel
-@onready var _copy_button: Button = $LeftPanel/VBox/RoomRow/CopyButton
-@onready var _invite_button: Button = $LeftPanel/VBox/RoomRow/InviteButton
-@onready var _stand1_list: VBoxContainer = $LeftPanel/VBox/StandsRow/Stand1Col/Stand1List
-@onready var _stand2_list: VBoxContainer = $LeftPanel/VBox/StandsRow/Stand2Col/Stand2List
-@onready var _stand1_button: Button = $LeftPanel/VBox/StandsRow/Stand1Col/Stand1Button
-@onready var _stand2_button: Button = $LeftPanel/VBox/StandsRow/Stand2Col/Stand2Button
-@onready var _ready_button: Button = $LeftPanel/VBox/BottomRow/ReadyButton
-@onready var _start_button: Button = $LeftPanel/VBox/BottomRow/StartButton
-@onready var _back_button: Button = $LeftPanel/VBox/BottomRow/BackButton
+@onready var _room_code_label: Label = $LeftContainer/LobbyPanel/VBox/RoomRow/RoomCodeLabel
+@onready var _copy_button: Button = $LeftContainer/LobbyPanel/VBox/RoomRow/CopyButton
+@onready var _invite_button: Button = $LeftContainer/LobbyPanel/VBox/RoomRow/InviteButton
+@onready var _stand1_list: VBoxContainer = $LeftContainer/LobbyPanel/VBox/StandsRow/Stand1Col/Stand1List
+@onready var _stand2_list: VBoxContainer = $LeftContainer/LobbyPanel/VBox/StandsRow/Stand2Col/Stand2List
+@onready var _stand1_button: Button = $LeftContainer/LobbyPanel/VBox/StandsRow/Stand1Col/Stand1Button
+@onready var _stand2_button: Button = $LeftContainer/LobbyPanel/VBox/StandsRow/Stand2Col/Stand2Button
+@onready var _ready_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/ReadyButton
+@onready var _start_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/StartButton
+@onready var _back_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/BackButton
 @onready var _version_label: Label = $VersionLabel
 
 # Customization UI
-@onready var _male_button: Button = $RightPanel/OptionsCol/GenderRow/MaleButton
-@onready var _female_button: Button = $RightPanel/OptionsCol/GenderRow/FemaleButton
-@onready var _hair_num: Label = $RightPanel/OptionsCol/OptionsGrid/HairNum
-@onready var _hair_color_num: Label = $RightPanel/OptionsCol/OptionsGrid/HairColorNum
-@onready var _eyebrow_num: Label = $RightPanel/OptionsCol/OptionsGrid/EyebrowNum
-@onready var _shirt_color_num: Label = $RightPanel/OptionsCol/OptionsGrid/ShirtColorNum
-@onready var _pants_color_num: Label = $RightPanel/OptionsCol/OptionsGrid/PantsColorNum
-@onready var _shoes_color_num: Label = $RightPanel/OptionsCol/OptionsGrid/ShoesColorNum
-@onready var _head_num: Label = $RightPanel/OptionsCol/OptionsGrid/HeadNum
+@onready var _male_button: Button = $LeftContainer/CustomizePanel/OptionsCol/GenderRow/MaleButton
+@onready var _female_button: Button = $LeftContainer/CustomizePanel/OptionsCol/GenderRow/FemaleButton
+@onready var _hair_name: Label = $LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HairName
+@onready var _hair_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HairColorName
+@onready var _eyebrow_name: Label = $LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/EyebrowName
+@onready var _shirt_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/ShirtColorName
+@onready var _pants_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/PantsColorName
+@onready var _shoes_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/ShoesColorName
+@onready var _head_name: Label = $LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HeadName
 
 ## PlayerVisuals nodes in the 3D world. Customization applies to ALL of
 ## them so the player sees their character regardless of which stand
@@ -53,13 +50,13 @@ var _head_size_index: int = 4 # 0-8, maps to 0.5x - 2.0x (index 4 = 1.3x default
 
 const HEAD_SIZE_MIN: float = 0.5
 const HEAD_SIZE_MAX: float = 2.0
-const HEAD_SIZE_STEPS: int = 9 # 0.5, 0.7, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.0
+const HEAD_SIZE_STEPS: int = 9
 
 const HAIR_COLOR_NAMES: Array[String] = [
 	"Black",
 	"Dark Brown",
-	"Medium Brown",
-	"Light Brown",
+	"Med Brown",
+	"Lt Brown",
 	"Blonde",
 	"Auburn",
 	"Grey",
@@ -73,20 +70,33 @@ const CLOTHING_COLOR_NAMES: Array[String] = [
 	"Purple",
 	"Orange",
 	"Charcoal",
-	"Light Grey",
+	"Lt Grey",
 	"Tan",
 	"Teal",
 	"Maroon",
 	"Navy",
 	"Pink",
 	"Sky Blue",
-	"Lime Green",
+	"Lime",
 ]
+
+# ── Drag-to-spin state ────────────────────────────────────────────────────────
+var _dragging: bool = false
+var _drag_last_x: float = 0.0
+var _model_yaw_offset: float = 0.0
 
 
 ## Called by main.gd to provide PlayerVisuals nodes from the 3D world.
 func set_player_visuals(models: Array[PlayerVisuals]) -> void:
 	_player_visuals = models
+
+
+## Called by main.gd to set the look-at target (the lobby camera) so
+## player models track it with their eyes.
+func set_look_at_target(target: Node3D) -> void:
+	for pv in _player_visuals:
+		if pv:
+			pv.look_at_target = target
 
 
 func _ready() -> void:
@@ -116,11 +126,8 @@ func _ready() -> void:
 		func(_id):
 			_refresh(),
 	)
-	# Re-request the current roster in case roster_changed already fired
-	# during the scene transition from MainMenu (before our _ready ran).
 	LobbyManager.request_refresh()
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
-	# Defer customization setup to ensure PlayerVisuals @onready vars are ready
 	call_deferred("_setup_customization")
 	_refresh()
 
@@ -170,7 +177,6 @@ func _refresh() -> void:
 	for peer_id in LobbyManager.roster:
 		var entry: Dictionary = LobbyManager.roster[peer_id]
 		var stand_idx: int = entry.get("stand_index", -1)
-		# Skip players who haven't selected a stand — they don't appear in either list.
 		if stand_idx < 0:
 			continue
 		var ready_mark := "✓ " if entry.get("ready", false) else ""
@@ -178,7 +184,8 @@ func _refresh() -> void:
 		var row := Label.new()
 		row.text = "%s%s%s" % [ready_mark, entry.get("name", "Player"), you_text]
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		row.add_theme_font_size_override("font_size", 16)
+		row.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+		row.add_theme_font_size_override("font_size", 14)
 		if stand_idx == 0:
 			_stand1_list.add_child(row)
 		elif stand_idx == 1:
@@ -193,11 +200,47 @@ func _refresh() -> void:
 	_start_button.visible = is_host
 	_start_button.disabled = not LobbyManager.all_ready()
 
+# ── Drag to spin player models ────────────────────────────────────────────────
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				_dragging = true
+				_drag_last_x = mb.position.x
+			else:
+				_dragging = false
+	elif event is InputEventMouseMotion and _dragging:
+		var mm := event as InputEventMouseMotion
+		var delta_x := mm.position.x - _drag_last_x
+		_model_yaw_offset += delta_x * 0.01
+		_apply_yaw_to_models()
+		_drag_last_x = mm.position.x
+
+
+## Also handle unhandled input so dragging works even if the click
+## started on a UI element but moved off it.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT and not mb.pressed:
+			_dragging = false
+
+
+func _apply_yaw_to_models() -> void:
+	for pv in _player_visuals:
+		if pv == null:
+			continue
+		var pos := pv.transform.origin
+		var rot := Basis(Vector3.UP, _model_yaw_offset)
+		pv.transform = Transform3D(rot, pos)
+
 # ── Character Customization ──────────────────────────────────────────────────
 
 
 func _setup_customization() -> void:
-	# If main.gd hasn't set the PlayerVisuals yet, find them in the scene
 	if _player_visuals.is_empty():
 		var models := get_tree().current_scene.find_child("LobbyPlayerModels", true, false) as Node
 		if models:
@@ -208,11 +251,9 @@ func _setup_customization() -> void:
 	if _player_visuals.is_empty():
 		push_warning("LobbyUI: no PlayerVisuals found, customization will not be visible")
 		return
-	# Initialize all player visuals with default appearance
 	_apply_customization_to_all()
-	_update_all_labels()
+	_update_all_names()
 
-	# Gender buttons
 	_male_button.pressed.connect(
 		func():
 			_is_male = true
@@ -224,106 +265,96 @@ func _setup_customization() -> void:
 			_on_customization_changed(),
 	)
 
-	# Hair style buttons
-	$RightPanel/OptionsCol/OptionsGrid/HairPrev.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HairPrev.pressed.connect(
 		func():
 			_hair_index = (_hair_index - 1 + _player_visuals[0].get_hair_count()) % _player_visuals[
 				0
 			].get_hair_count()
 			_on_customization_changed(),
 	)
-	$RightPanel/OptionsCol/OptionsGrid/HairNext.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HairNext.pressed.connect(
 		func():
 			_hair_index = (_hair_index + 1) % _player_visuals[0].get_hair_count()
 			_on_customization_changed(),
 	)
 
-	# Hair color buttons
-	$RightPanel/OptionsCol/OptionsGrid/HairColorPrev.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HairColorPrev.pressed.connect(
 		func():
 			_hair_color_index = (_hair_color_index - 1 + PlayerVisuals.HAIR_COLORS.size()) % PlayerVisuals \
 					.HAIR_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$RightPanel/OptionsCol/OptionsGrid/HairColorNext.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HairColorNext.pressed.connect(
 		func():
 			_hair_color_index = (_hair_color_index + 1) % PlayerVisuals.HAIR_COLORS.size()
 			_on_customization_changed(),
 	)
 
-	# Eyebrow buttons
-	$RightPanel/OptionsCol/OptionsGrid/EyebrowPrev.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/EyebrowPrev.pressed.connect(
 		func():
 			_eyebrow_index = (_eyebrow_index - 1 + _player_visuals[0].get_eyebrow_count()) % _player_visuals[
 				0
 			].get_eyebrow_count()
 			_on_customization_changed(),
 	)
-	$RightPanel/OptionsCol/OptionsGrid/EyebrowNext.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/EyebrowNext.pressed.connect(
 		func():
 			_eyebrow_index = (_eyebrow_index + 1) % _player_visuals[0].get_eyebrow_count()
 			_on_customization_changed(),
 	)
 
-	# Shirt color buttons
-	$RightPanel/OptionsCol/OptionsGrid/ShirtColorPrev.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/ShirtColorPrev.pressed.connect(
 		func():
 			_shirt_color_index = (_shirt_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$RightPanel/OptionsCol/OptionsGrid/ShirtColorNext.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/ShirtColorNext.pressed.connect(
 		func():
 			_shirt_color_index = (_shirt_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
-	# Pants color buttons
-	$RightPanel/OptionsCol/OptionsGrid/PantsColorPrev.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/PantsColorPrev.pressed.connect(
 		func():
 			_pants_color_index = (_pants_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$RightPanel/OptionsCol/OptionsGrid/PantsColorNext.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/PantsColorNext.pressed.connect(
 		func():
 			_pants_color_index = (_pants_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
-	# Shoes color buttons
-	$RightPanel/OptionsCol/OptionsGrid/ShoesColorPrev.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/ShoesColorPrev.pressed.connect(
 		func():
 			_shoes_color_index = (_shoes_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
 					.CLOTHING_COLORS \
 					.size()
 			_on_customization_changed(),
 	)
-	$RightPanel/OptionsCol/OptionsGrid/ShoesColorNext.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/ShoesColorNext.pressed.connect(
 		func():
 			_shoes_color_index = (_shoes_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
 			_on_customization_changed(),
 	)
 
-	# Head size buttons
-	$RightPanel/OptionsCol/OptionsGrid/HeadPrev.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HeadPrev.pressed.connect(
 		func():
 			_head_size_index = max(0, _head_size_index - 1)
 			_on_customization_changed(),
 	)
-	$RightPanel/OptionsCol/OptionsGrid/HeadNext.pressed.connect(
+	$LeftContainer/CustomizePanel/OptionsCol/OptionsGrid/HeadNext.pressed.connect(
 		func():
 			_head_size_index = min(HEAD_SIZE_STEPS - 1, _head_size_index + 1)
 			_on_customization_changed(),
 	)
 
-	# Randomize button
-	$RightPanel/OptionsCol/RandomButton.pressed.connect(_on_randomize)
-
-	# Update gender button states
+	$LeftContainer/CustomizePanel/OptionsCol/RandomButton.pressed.connect(_on_randomize)
 	_update_gender_buttons()
 
 
@@ -331,12 +362,11 @@ func _on_customization_changed() -> void:
 	if _player_visuals.is_empty():
 		return
 	_apply_customization_to_all()
-	_update_all_labels()
+	_update_all_names()
 	_update_gender_buttons()
 	_broadcast_customization()
 
 
-## Applies the current customization state to ALL player visual models.
 func _apply_customization_to_all() -> void:
 	for pv in _player_visuals:
 		if pv == null:
@@ -366,14 +396,18 @@ func _update_gender_buttons() -> void:
 	_female_button.button_pressed = not _is_male
 
 
-func _update_all_labels() -> void:
-	_hair_num.text = str(_hair_index + 1)
-	_hair_color_num.text = str(_hair_color_index + 1)
-	_eyebrow_num.text = str(_eyebrow_index + 1)
-	_shirt_color_num.text = str(_shirt_color_index + 1)
-	_pants_color_num.text = str(_pants_color_index + 1)
-	_shoes_color_num.text = str(_shoes_color_index + 1)
-	_head_num.text = str(_head_size_index + 1)
+## Updates all option name labels with the current selection's name.
+func _update_all_names() -> void:
+	if _player_visuals.is_empty():
+		return
+	var pv := _player_visuals[0]
+	_hair_name.text = pv.get_hair_name(_hair_index)
+	_hair_color_name.text = HAIR_COLOR_NAMES[_hair_color_index]
+	_eyebrow_name.text = pv.get_eyebrow_name(_eyebrow_index)
+	_shirt_color_name.text = CLOTHING_COLOR_NAMES[_shirt_color_index]
+	_pants_color_name.text = CLOTHING_COLOR_NAMES[_pants_color_index]
+	_shoes_color_name.text = CLOTHING_COLOR_NAMES[_shoes_color_index]
+	_head_name.text = "%.1fx" % _head_size_to_scale()
 
 
 func _on_randomize() -> void:

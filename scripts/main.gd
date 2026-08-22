@@ -144,6 +144,9 @@ func _setup_lobby() -> void:
 			models.append(pv)
 	if not models.is_empty() and lobby_ui.has_method("set_player_visuals"):
 		lobby_ui.set_player_visuals(models)
+	# Make player models look at the lobby camera with their eyes
+	if lobby_ui.has_method("set_look_at_target"):
+		lobby_ui.set_look_at_target(lobby_camera)
 	# Position the lobby camera at the default stand (stand 1)
 	_position_lobby_camera(0, false)
 	# Connect stand switch signal from lobby UI for camera tweening

@@ -8,6 +8,10 @@ extends Node3D
 ## group instead of the single "Player" node (NPC behavior).
 @export var is_player_visual: bool = false
 
+## When non-null, eye look-at always targets this node instead of searching
+## for players. Used by the lobby to make player models look at the camera.
+var look_at_target: Node3D = null
+
 # ── Animation speed controls (editable per-instance in the Inspector) ──────────
 @export_group("Animation Speeds")
 @export var walk_speed: float = 1.0
@@ -256,6 +260,16 @@ func get_hair_count() -> int:
 	return hairs.get_child_count()
 
 
+## Returns the name of the hair style at the given index (e.g. "Hair1M").
+func get_hair_name(index: int) -> String:
+	var hairs: Node3D = _man_hairs if _man.visible else _woman_hairs
+	var children := hairs.get_children()
+	if children.is_empty():
+		return "Hair"
+	index = index % children.size()
+	return children[index].name
+
+
 func set_hair(index: int, color: Color) -> void:
 	var hairs: Node3D = _man_hairs if _man.visible else _woman_hairs
 	var children := hairs.get_children()
@@ -276,6 +290,21 @@ func get_eyebrow_count() -> int:
 	if eb == null:
 		return 0
 	return eb.get_child_count()
+
+
+## Returns the name of the eyebrow style at the given index (e.g. "Neutral").
+func get_eyebrow_name(index: int) -> String:
+	var eb := _get_eyebrows_node()
+	if eb == null:
+		return "Brows"
+	var children := eb.get_children()
+	if children.is_empty():
+		return "Brows"
+	index = index % children.size()
+	# Strip gender suffix (e.g. "NeutralEyebrowsM" -> "Neutral")
+	var n: String = children[index].name
+	n = n.replace("EyebrowsM", "").replace("EyebrowsF", "")
+	return n
 
 
 func set_eyebrow(index: int) -> void:
@@ -516,6 +545,10 @@ func stop_payment_pose() -> void:
 
 
 func _process(delta: float) -> void:
+	# If a look_at_target is set (e.g. lobby camera), always track it
+	if look_at_target != null and is_instance_valid(look_at_target):
+		_update_eye_look(delta)
+		return
 	_check_timer -= delta
 	if _check_timer <= 0.0:
 		_check_timer = 0.2
@@ -527,6 +560,20 @@ func _process(delta: float) -> void:
 
 func _update_eye_look(delta: float) -> void:
 	if _left_eye == null or _left_rest_dir == Vector3.ZERO:
+		return
+
+	# If a look_at_target override is set, use it directly
+	if look_at_target != null and is_instance_valid(look_at_target):
+		var aim := look_at_target.global_position
+		var dist_l := _left_eye.global_position.distance_to(aim)
+		var dist_r := _right_eye.global_position.distance_to(aim)
+		var t := clampf(eye_look_speed * delta, 0.0, 1.0)
+		var target_l := _target_eye_rot(_left_eye, _left_rest_dir, aim, dist_l)
+		var target_r := _target_eye_rot(_right_eye, _right_rest_dir, aim, dist_r)
+		_eye_rot_l = _eye_rot_l.slerp(target_l, t)
+		_eye_rot_r = _eye_rot_r.slerp(target_r, t)
+		_apply_eye(_left_eye, _eye_rot_l)
+		_apply_eye(_right_eye, _eye_rot_r)
 		return
 
 	# Determine the look target: for player visuals, use the closest other
