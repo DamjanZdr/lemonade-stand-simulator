@@ -171,6 +171,9 @@ func _on_switch_stand() -> void:
 	_current_stand = 1 - _current_stand
 	LobbyManager.set_my_stand(_current_stand)
 	stand_switched.emit(_current_stand)
+	# Reset drag-to-spin rotation when switching stands
+	_model_yaw_offset = 0.0
+	_apply_yaw_to_models()
 	_refresh()
 
 
