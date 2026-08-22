@@ -162,8 +162,9 @@ func _default_to_stand_1() -> void:
 		stand_switched.emit(0)
 	else:
 		_current_stand = mine.get("stand_index", 0)
-	# Set initial yaw based on stand (stand 2 = 180°)
-	_model_yaw_offset = 0.0 if _current_stand == 0 else PI
+	# Set initial drag offset to 0 — per-model base yaw is handled
+	# in _apply_yaw_to_models (model 0 = 0°, model 1 = 180°).
+	_model_yaw_offset = 0.0
 	_apply_yaw_to_models()
 
 
@@ -185,8 +186,9 @@ func _on_switch_stand() -> void:
 	_current_stand = 1 - _current_stand
 	LobbyManager.set_my_stand(_current_stand)
 	stand_switched.emit(_current_stand)
-	# Reset rotation: stand 1 = 0°, stand 2 = 180°
-	_model_yaw_offset = 0.0 if _current_stand == 0 else PI
+	# Reset drag offset — per-model base yaw (0° for stand 1, 180° for
+	# stand 2) is handled in _apply_yaw_to_models.
+	_model_yaw_offset = 0.0
 	_apply_yaw_to_models()
 	_refresh()
 
@@ -295,7 +297,12 @@ func _apply_yaw_to_models() -> void:
 		var base_basis := base.basis
 		var scale := base_basis.get_scale()
 		var base_rot := base_basis.get_rotation_quaternion()
-		var yaw_rot := Quaternion(Vector3.UP, _model_yaw_offset)
+		# Each model has its own base yaw: model 0 (stand 1) = 0°,
+		# model 1 (stand 2) = 180° so it faces the stand 2 camera.
+		# The drag offset is added on top of the per-model base.
+		var base_yaw: float = 0.0 if i == 0 else PI
+		var total_yaw: float = base_yaw + _model_yaw_offset
+		var yaw_rot := Quaternion(Vector3.UP, total_yaw)
 		var combined := (yaw_rot * base_rot).normalized()
 		var new_basis := Basis(combined).scaled(scale)
 		pv.transform = Transform3D(new_basis, pos)
