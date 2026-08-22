@@ -297,10 +297,10 @@ func _apply_yaw_to_models() -> void:
 		var base_basis := base.basis
 		var scale := base_basis.get_scale()
 		var base_rot := base_basis.get_rotation_quaternion()
-		# Each model has its own base yaw: model 0 (stand 1) = 0°,
-		# model 1 (stand 2) = 180° so it faces the stand 2 camera.
+		# Each model has its own base yaw so it faces its stand's camera:
+		# model 0 (stand 1) = 180°, model 1 (stand 2) = 0°.
 		# The drag offset is added on top of the per-model base.
-		var base_yaw: float = 0.0 if i == 0 else PI
+		var base_yaw: float = PI if i == 0 else 0.0
 		var total_yaw: float = base_yaw + _model_yaw_offset
 		var yaw_rot := Quaternion(Vector3.UP, total_yaw)
 		var combined := (yaw_rot * base_rot).normalized()

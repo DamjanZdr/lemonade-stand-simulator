@@ -68,7 +68,7 @@ var _orig_fill_energy: float = 0.5
 var _in_lobby: bool = true
 
 ## Camera tween time for stand switching and game-start transition.
-const CAMERA_TWEEN_TIME: float = 1.5
+const CAMERA_TWEEN_TIME: float = 0.6
 
 
 ## Returns the camera node for the given stand index. These are
