@@ -234,7 +234,8 @@ func _apply_yaw_to_models() -> void:
 		if pv == null:
 			continue
 		var pos := pv.transform.origin
-		var rot := Basis(Vector3.UP, _model_yaw_offset)
+		var scale := pv.transform.basis.get_scale()
+		var rot := Basis(Vector3.UP, _model_yaw_offset).scaled(scale)
 		pv.transform = Transform3D(rot, pos)
 
 # ── Character Customization ──────────────────────────────────────────────────
