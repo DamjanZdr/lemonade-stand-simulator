@@ -497,7 +497,8 @@ func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
-	var speed := move_speed * (sprint_multiplier if _is_sprinting else 1.0)
+	var speed_bonus := UpgradeManager.get_effect_total("movement_speed")
+	var speed := (move_speed + speed_bonus) * (sprint_multiplier if _is_sprinting else 1.0)
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()

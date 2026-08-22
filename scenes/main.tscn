@@ -45,6 +45,7 @@
 [ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="61_water"]
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Resource" uid="uid://c7onr7vydi720" path="res://resources/upgrades/press_speed.tres" id="46_press"]
+[ext_resource type="Resource" uid="uid://bmvspd0001" path="res://resources/upgrades/movement_speed.tres" id="67_movespd"]
 
 [node name="Main" type="Node" unique_id=1191278377]
 script = ExtResource("1_main")
@@ -92,7 +93,7 @@ fruit_recipes = Array[ExtResource("18_5fxch")]([ExtResource("40_lemon"), ExtReso
 
 [node name="UpgradeConfigManager" type="Node" parent="Managers" unique_id=386669270]
 script = ExtResource("45_upgcfg")
-upgrades = Array[ExtResource("25_4v0p3")]([ExtResource("46_press"), ExtResource("47_nimble"), ExtResource("48_sunroof"), ExtResource("49_crates"), ExtResource("50_bulk"), ExtResource("51_mkt"), ExtResource("52_queue"), ExtResource("53_speed"), ExtResource("54_psych"), ExtResource("55_price"), ExtResource("56_ice"), ExtResource("57_sugar"), ExtResource("58_tip"), ExtResource("59_demand"), ExtResource("60_bin"), ExtResource("61_water"), ExtResource("62_lemunl"), ExtResource("63_strunl"), ExtResource("64_bluunl"), ExtResource("65_peaunl"), ExtResource("66_watunl")])
+upgrades = Array[ExtResource("25_4v0p3")]([ExtResource("46_press"), ExtResource("47_nimble"), ExtResource("48_sunroof"), ExtResource("49_crates"), ExtResource("50_bulk"), ExtResource("51_mkt"), ExtResource("52_queue"), ExtResource("53_speed"), ExtResource("54_psych"), ExtResource("55_price"), ExtResource("56_ice"), ExtResource("57_sugar"), ExtResource("58_tip"), ExtResource("59_demand"), ExtResource("60_bin"), ExtResource("61_water"), ExtResource("62_lemunl"), ExtResource("63_strunl"), ExtResource("64_bluunl"), ExtResource("65_peaunl"), ExtResource("66_watunl"), ExtResource("67_movespd")])
 
 [node name="PeopleManager" type="Node" parent="Managers" unique_id=1001413374]
 script = ExtResource("68_people")

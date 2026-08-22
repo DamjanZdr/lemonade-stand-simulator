@@ -13,6 +13,7 @@
 [ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="11_water_dispenser"]
 [ext_resource type="Resource" uid="uid://d15hoyn42ngpk" path="res://resources/upgrades/foot_traffic.tres" id="12_foot_traffic"]
 [ext_resource type="Resource" uid="uid://cy4padwttenjf" path="res://resources/upgrades/trash_rebate.tres" id="13_trash_rebate"]
+[ext_resource type="Resource" uid="uid://bmvspd0001" path="res://resources/upgrades/movement_speed.tres" id="14_movement_speed"]
 
 [node name="UpgradeTree" type="Node2D" unique_id=235020644]
 
@@ -373,4 +374,34 @@ cost = 110.0
 position = Vector2(566.3, -411.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("13_trash_rebate")
+cost = 130.0
+
+[node name="MovementSpeed1" type="Node2D" parent="." unique_id=2100000001]
+position = Vector2(140, 82.3)
+script = ExtResource("1_node")
+upgrade = ExtResource("14_movement_speed")
+cost = 50.0
+
+[node name="MovementSpeed2" type="Node2D" parent="." unique_id=2100000002]
+position = Vector2(280, 164.6)
+script = ExtResource("1_node")
+upgrade = ExtResource("14_movement_speed")
+cost = 70.0
+
+[node name="MovementSpeed3" type="Node2D" parent="." unique_id=2100000003]
+position = Vector2(420, 246.9)
+script = ExtResource("1_node")
+upgrade = ExtResource("14_movement_speed")
+cost = 90.0
+
+[node name="MovementSpeed4" type="Node2D" parent="." unique_id=2100000004]
+position = Vector2(560, 329.2)
+script = ExtResource("1_node")
+upgrade = ExtResource("14_movement_speed")
+cost = 110.0
+
+[node name="MovementSpeed5" type="Node2D" parent="." unique_id=2100000005]
+position = Vector2(700, 411.4)
+script = ExtResource("1_node")
+upgrade = ExtResource("14_movement_speed")
 cost = 130.0

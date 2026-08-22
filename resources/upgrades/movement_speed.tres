@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://bmvspd0001"]
+
+[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"movement_speed"
+display_name = "Movement Speed"
+description = "Move faster on foot. Applies to both walking and sprinting."
+category = "equipment"
+effect_per_node = 10.0
+costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
+effects = Array[float]([10.0, 10.0, 10.0, 10.0, 10.0])
