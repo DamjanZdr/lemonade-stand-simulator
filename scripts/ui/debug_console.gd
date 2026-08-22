@@ -13,6 +13,7 @@ var _visible: bool = false
 
 
 func _ready() -> void:
+	visible = false
 	_panel.visible = false
 	_copy_button.pressed.connect(_on_copy)
 	_clear_button.pressed.connect(_on_clear)
@@ -26,6 +27,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_F12:
 			_visible = not _visible
+			visible = _visible
 			_panel.visible = _visible
 			if _visible:
 				# Scroll to bottom
@@ -53,4 +55,5 @@ func _on_clear() -> void:
 
 func _on_close() -> void:
 	_visible = false
+	visible = false
 	_panel.visible = false
