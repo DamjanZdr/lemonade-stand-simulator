@@ -81,6 +81,7 @@ theme = ExtResource("4_theme")
 script = ExtResource("1_script")
 
 [node name="DebugConsole" parent="." unique_id=1463864855 instance=ExtResource("2_dbgconsole")]
+visible = false
 layout_mode = 1
 
 [node name="LeftContainer" type="VBoxContainer" parent="." unique_id=840806489]

@@ -186,10 +186,21 @@ func _on_switch_stand() -> void:
 	_current_stand = 1 - _current_stand
 	LobbyManager.set_my_stand(_current_stand)
 	stand_switched.emit(_current_stand)
-	# Reset drag offset — per-model base yaw (0° for stand 1, 180° for
-	# stand 2) is handled in _apply_yaw_to_models.
-	_model_yaw_offset = 0.0
-	_apply_yaw_to_models()
+	# Smoothly tween the drag offset back to 0 so the model rotates
+	# gracefully instead of snapping.
+	var start_yaw := _model_yaw_offset
+	var tw := create_tween()
+	tw \
+			.tween_method(
+		func(t: float) -> void:
+			_model_yaw_offset = lerpf(start_yaw, 0.0, t)
+			_apply_yaw_to_models(),
+		0.0,
+		1.0,
+		0.4,
+	) \
+			.set_trans(Tween.TRANS_SINE) \
+			.set_ease(Tween.EASE_IN_OUT)
 	_refresh()
 
 
