@@ -18,9 +18,9 @@ func set_manager(manager: Node) -> void:
 
 func _get_manager() -> Node:
 	if _manager == null:
-		_manager = Engine.get_main_loop().current_scene.get_node_or_null(
-			"World/Managers/RecipeManager"
-		)
+		var scene := Engine.get_main_loop().current_scene
+		if scene:
+			_manager = scene.find_child("RecipeManager", true, false)
 		if _manager == null:
 			push_warning("RecipeEvaluator: RecipeManager not found, using fallback values")
 	return _manager
