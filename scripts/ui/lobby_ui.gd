@@ -8,6 +8,7 @@ extends Control
 @onready var _room_code_label: Label = $LeftContainer/LobbyPanel/VBox/RoomRow/RoomCodeLabel
 @onready var _copy_button: Button = $LeftContainer/LobbyPanel/VBox/RoomRow/CopyButton
 @onready var _invite_button: Button = $LeftContainer/LobbyPanel/VBox/RoomRow/InviteButton
+@onready var _switch_button: Button = $LeftContainer/LobbyPanel/VBox/SwitchRow/SwitchButton
 @onready var _stand1_list: VBoxContainer = $LeftContainer/LobbyPanel/VBox/PlayersRow/Stand1Col/Stand1List
 @onready var _stand2_list: VBoxContainer = $LeftContainer/LobbyPanel/VBox/PlayersRow/Stand2Col/Stand2List
 @onready var _ready_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/ReadyButton
@@ -98,11 +99,20 @@ var _color_manager: Node = null
 var _dragging: bool = false
 var _drag_last_x: float = 0.0
 var _model_yaw_offset: float = 0.0
+## Original transforms of the player models from the scene, saved so
+## yaw can be applied on top of them without losing base rotation.
+var _model_base_transforms: Array[Transform3D] = []
 
 
 ## Called by main.gd to provide PlayerVisuals nodes from the 3D world.
 func set_player_visuals(models: Array[PlayerVisuals]) -> void:
 	_player_visuals = models
+	_model_base_transforms.clear()
+	for pv in _player_visuals:
+		if pv:
+			_model_base_transforms.append(pv.transform)
+		else:
+			_model_base_transforms.append(Transform3D.IDENTITY)
 
 
 ## Called by main.gd to set the look-at target (the lobby camera) so
@@ -122,6 +132,7 @@ func _ready() -> void:
 		func():
 			NetworkManager.invite_friend(),
 	)
+	_switch_button.pressed.connect(_on_switch_stand)
 	_ready_button.pressed.connect(_on_ready_pressed)
 	_start_button.pressed.connect(
 		func():
@@ -151,6 +162,9 @@ func _default_to_stand_1() -> void:
 		stand_switched.emit(0)
 	else:
 		_current_stand = mine.get("stand_index", 0)
+	# Set initial yaw based on stand (stand 2 = 180°)
+	_model_yaw_offset = 0.0 if _current_stand == 0 else PI
+	_apply_yaw_to_models()
 
 
 func _on_eye_pressed() -> void:
@@ -163,7 +177,7 @@ func _update_room_display() -> void:
 		_room_code_label.text = "Room: %d" % NetworkManager.lobby_id
 		_eye_button.text = "◉"
 	else:
-		_room_code_label.text = "Room: **********"
+		_room_code_label.text = "Room: ************"
 		_eye_button.text = "◎"
 
 
@@ -171,8 +185,8 @@ func _on_switch_stand() -> void:
 	_current_stand = 1 - _current_stand
 	LobbyManager.set_my_stand(_current_stand)
 	stand_switched.emit(_current_stand)
-	# Reset drag-to-spin rotation when switching stands
-	_model_yaw_offset = 0.0
+	# Reset rotation: stand 1 = 0°, stand 2 = 180°
+	_model_yaw_offset = 0.0 if _current_stand == 0 else PI
 	_apply_yaw_to_models()
 	_refresh()
 
@@ -228,40 +242,15 @@ func _refresh() -> void:
 		var you_text := " (you)" if peer_id == my_id else ""
 		var player_name: String = entry.get("name", "Player")
 
-		if peer_id == my_id:
-			# Add a row with the arrow button for the local player
-			var row := HBoxContainer.new()
-			row.alignment = BoxContainer.ALIGNMENT_CENTER
-			row.add_theme_constant_override("separation", 4)
-
-			var label := Label.new()
-			label.text = "%s%s%s" % [ready_mark, player_name, you_text]
-			label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-			label.add_theme_font_size_override("font_size", 14)
-			row.add_child(label)
-
-			var arrow := Button.new()
-			arrow.text = "→" if _current_stand == 0 else "←"
-			arrow.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0, 1))
-			arrow.add_theme_font_size_override("font_size", 14)
-			arrow.custom_minimum_size = Vector2(24, 22)
-			arrow.pressed.connect(_on_switch_stand)
-			row.add_child(arrow)
-
-			if stand_idx == 0:
-				_stand1_list.add_child(row)
-			elif stand_idx == 1:
-				_stand2_list.add_child(row)
-		else:
-			var label := Label.new()
-			label.text = "%s%s" % [ready_mark, player_name]
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-			label.add_theme_font_size_override("font_size", 14)
-			if stand_idx == 0:
-				_stand1_list.add_child(label)
-			elif stand_idx == 1:
-				_stand2_list.add_child(label)
+		var label := Label.new()
+		label.text = "%s%s%s" % [ready_mark, player_name, you_text]
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+		label.add_theme_font_size_override("font_size", 14)
+		if stand_idx == 0:
+			_stand1_list.add_child(label)
+		elif stand_idx == 1:
+			_stand2_list.add_child(label)
 
 	_ready_button.text = "Unready" if mine.get("ready", false) else "Ready Up"
 
@@ -297,13 +286,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _apply_yaw_to_models() -> void:
-	for pv in _player_visuals:
-		if pv == null:
+	for i in _player_visuals.size():
+		var pv := _player_visuals[i]
+		if pv == null or i >= _model_base_transforms.size():
 			continue
-		var pos := pv.transform.origin
-		var scale := pv.transform.basis.get_scale()
-		var rot := Basis(Vector3.UP, _model_yaw_offset).scaled(scale)
-		pv.transform = Transform3D(rot, pos)
+		var base := _model_base_transforms[i]
+		var pos := base.origin
+		var base_basis := base.basis
+		var scale := base_basis.get_scale()
+		var base_rot := base_basis.get_rotation_quaternion()
+		var yaw_rot := Quaternion(Vector3.UP, _model_yaw_offset)
+		var combined := (yaw_rot * base_rot).normalized()
+		var new_basis := Basis(combined).scaled(scale)
+		pv.transform = Transform3D(new_basis, pos)
 
 # ── Character Customization ──────────────────────────────────────────────────
 
