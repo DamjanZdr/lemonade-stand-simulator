@@ -12,6 +12,11 @@ extends Control
 var _visible: bool = false
 
 
+func _enter_tree() -> void:
+	# Hide as early as possible so the panel never flashes on screen
+	visible = false
+
+
 func _ready() -> void:
 	visible = false
 	_panel.visible = false

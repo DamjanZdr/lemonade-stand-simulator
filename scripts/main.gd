@@ -348,7 +348,8 @@ func _start_game_phase() -> void:
 	# local player now happen in _on_local_player_ready() once our own
 	# player actually exists, instead of here.
 	# _setup_networking() is called during _ready() so the spawner is
-	# ready before any spawn requests arrive.
+	# ready before any spawn requests arrive. Actual spawning happens now.
+	_spawn_all_players()
 	WorldSync.setup(world_objects, world_spawner)
 
 	# Add the evening summary overlay
@@ -367,23 +368,26 @@ func _start_game_phase() -> void:
 ## --- Networking / per-peer player spawning ---
 ## By the time this scene loads, hosting/joining already happened back in
 ## the MainMenu/Lobby scenes (see main_menu.gd, lobby.gd, lobby_manager.gd)
-## — connections are already established and every connected peer already
-## picked a stand in the lobby (tracked in LobbyManager.roster, which
-## survives the scene change since it's an autoload). So we don't need to
-## wait for lobby_created/peer_connected here; we just spawn a player for
-## everyone already known.
+## Sets up the multiplayer spawner so it's ready to receive spawn
+## requests. Called during _ready() so the spawner is available
+## before any client requests arrive. Actual player spawning happens
+## in _start_game_phase() or on-demand when clients request it.
 func _setup_networking() -> void:
 	# Spawner config is set in the scene file (spawn_path + spawnable_scenes).
 	# Set a spawn_function so spawn() works for custom-named player nodes.
 	player_spawner.spawn_function = _spawn_player
 	player_spawner.spawned.connect(_on_spawner_spawned)
+	NetworkManager.peer_connected.connect(_on_peer_connected)
 
+
+## Spawns players for all connected peers. Called from _start_game_phase()
+## when the host starts the game.
+func _spawn_all_players() -> void:
 	if multiplayer.is_server():
 		# Defer spawning so the spawner is fully ready before we add nodes
 		# to its spawn_path. Without this, the spawner may not detect
 		# manually-added nodes and fail to replicate them to clients.
 		call_deferred("_host_spawn_players")
-		NetworkManager.peer_connected.connect(_on_peer_connected)
 	else:
 		# We're a client; our connection to the host was already
 		# established during the lobby phase, so we can request our
@@ -457,7 +461,10 @@ func _on_spawner_spawned(node: Node) -> void:
 ## gameworld (shouldn't normally happen with the lobby-gates-entry flow,
 ## but guards against edge cases like a very late straggling connection).
 func _on_peer_connected(peer_id: int) -> void:
-	if multiplayer.is_server():
+	# Only spawn players if we're past the lobby (game has started).
+	# During the lobby, peers connect but don't get a player until
+	# the host starts the game.
+	if multiplayer.is_server() and not _in_lobby:
 		_spawn_player_for_peer(peer_id)
 
 
@@ -466,7 +473,13 @@ func _request_spawn() -> void:
 	var sender_id := multiplayer.get_remote_sender_id()
 	print("[Main] Host received spawn request from peer %d" % sender_id)
 	if sender_id != 0 and multiplayer.is_server():
-		_spawn_player_for_peer(sender_id)
+		if _in_lobby:
+			# Still in lobby — defer spawn until game starts.
+			# _spawn_all_players() will handle it when the host
+			# starts the game.
+			print("[Main] Still in lobby, deferring spawn for peer %d" % sender_id)
+		else:
+			_spawn_player_for_peer(sender_id)
 
 
 func _spawn_player_for_peer(peer_id: int) -> void:
