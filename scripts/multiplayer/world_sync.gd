@@ -27,6 +27,13 @@ var _spawn_counter: int = 0
 ## a full scene tree search every frame for transform syncs.
 var _node_cache: Dictionary = { }
 
+## Stable network ID system. Every object spawned through WorldSync gets a
+## unique integer ID that survives reparenting, unlike name/path lookups.
+const NET_ID_META := "_net_id"
+var _net_id_counter: int = 0
+var _net_id_to_node: Dictionary = { }
+var _node_to_net_id: Dictionary = { }
+
 
 func setup(world_objects: Node, spawner: MultiplayerSpawner) -> void:
 	# Currently unused (we use RPC-based spawning instead of MultiplayerSpawner),
@@ -40,6 +47,44 @@ func is_host() -> bool:
 		# as local-host mode so single-player and initialization paths work.
 		return true
 	return multiplayer.is_server()
+
+
+## Assign a stable network ID to a node. Returns the ID. If the node is
+## freed, the ID is automatically unregistered.
+func _assign_net_id(obj: Node) -> int:
+	var id := _net_id_counter
+	_net_id_counter += 1
+	obj.set_meta(NET_ID_META, id)
+	_net_id_to_node[id] = obj
+	_node_to_net_id[obj] = id
+	obj.tree_exited.connect(_on_net_object_tree_exited.bind(id))
+	return id
+
+
+func _get_net_id(obj: Node) -> int:
+	if obj == null or not is_instance_valid(obj):
+		return -1
+	if obj.has_meta(NET_ID_META):
+		return obj.get_meta(NET_ID_META) as int
+	return -1
+
+
+func _find_node_by_net_id(net_id: int) -> Node:
+	if net_id < 0:
+		return null
+	var node: Node = _net_id_to_node.get(net_id, null)
+	if node != null and is_instance_valid(node):
+		return node
+	# If the node is no longer valid, clean the stale entry.
+	_net_id_to_node.erase(net_id)
+	return null
+
+
+func _on_net_object_tree_exited(net_id: int) -> void:
+	var node: Node = _net_id_to_node.get(net_id, null)
+	if node != null and is_instance_valid(node):
+		_node_to_net_id.erase(node)
+	_net_id_to_node.erase(net_id)
 
 
 ## Send a full snapshot of all placed containers and supply boxes to
@@ -118,9 +163,13 @@ func _serialize_container(node: Node) -> Dictionary:
 			scene_path = "res://scenes/stand/workstation.tscn"
 		_:
 			return { }
+	var net_id := _get_net_id(node)
+	if net_id < 0:
+		net_id = _assign_net_id(node)
 	var entry := {
 		"scene_path": scene_path,
 		"name": node.name,
+		"net_id": net_id,
 		"ctype": ctype,
 		"position": [node.global_position.x, node.global_position.y, node.global_position.z],
 		"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
@@ -160,9 +209,13 @@ func _serialize_supply_box(node: Node) -> Dictionary:
 	var box := node as SupplyBox
 	if box == null:
 		return { }
+	var net_id := _get_net_id(node)
+	if net_id < 0:
+		net_id = _assign_net_id(node)
 	return {
 		"scene_path": "res://scenes/objects/supply_box.tscn",
 		"name": box.name,
+		"net_id": net_id,
 		"position": [box.global_position.x, box.global_position.y, box.global_position.z],
 		"rotation": [box.global_rotation.x, box.global_rotation.y, box.global_rotation.z],
 		"scale": [box.scale.x, box.scale.y, box.scale.z],
@@ -225,6 +278,12 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 	if scl.size() >= 3:
 		instance.scale = Vector3(scl[0], scl[1], scl[2])
 	instance.name = obj_name
+	var net_id: int = entry.get("net_id", -1)
+	if net_id >= 0:
+		instance.set_meta(NET_ID_META, net_id)
+		_net_id_to_node[net_id] = instance
+		_node_to_net_id[instance] = net_id
+		instance.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	root.add_child(instance)
 	var pos: Array = entry.get("position", [0, 0, 0])
 	var rot: Array = entry.get("rotation", [0, 0, 0])
@@ -269,6 +328,12 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 ## Update an existing container (e.g. default scene object) from a snapshot
 ## entry instead of spawning a duplicate.
 func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
+	var net_id: int = entry.get("net_id", -1)
+	if net_id >= 0 and _get_net_id(existing) < 0:
+		existing.set_meta(NET_ID_META, net_id)
+		_net_id_to_node[net_id] = existing
+		_node_to_net_id[existing] = net_id
+		existing.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	var pos: Array = entry.get("position", [0, 0, 0])
 	var rot: Array = entry.get("rotation", [0, 0, 0])
 	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
@@ -335,6 +400,12 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 	if scl.size() >= 3:
 		box.scale = Vector3(scl[0], scl[1], scl[2])
 	box.name = box_name
+	var net_id: int = entry.get("net_id", -1)
+	if net_id >= 0:
+		box.set_meta(NET_ID_META, net_id)
+		_net_id_to_node[net_id] = box
+		_node_to_net_id[box] = net_id
+		box.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	root.add_child(box)
 	var pos: Array = entry.get("position", [0, 0, 0])
 	var rot: Array = entry.get("rotation", [0, 0, 0])
@@ -351,6 +422,12 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 ## Update an existing supply box from a snapshot entry instead of spawning
 ## a duplicate.
 func _update_supply_box_from_snapshot(existing: SupplyBox, entry: Dictionary) -> void:
+	var net_id: int = entry.get("net_id", -1)
+	if net_id >= 0 and _get_net_id(existing) < 0:
+		existing.set_meta(NET_ID_META, net_id)
+		_net_id_to_node[net_id] = existing
+		_node_to_net_id[existing] = net_id
+		existing.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	existing.ingredient_type = entry.get("ingredient_type", "lemon")
 	existing.quantity = float(entry.get("quantity", 10.0))
 	existing.is_equipment = bool(entry.get("is_equipment", false))
@@ -403,30 +480,35 @@ func request_despawn(obj: Node) -> void:
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] request_despawn: obj is null/invalid")
 		return
-	GameLog.log("[WorldSync] request_despawn name=%s is_host=%s" % [obj.name, is_host()])
+	var net_id := _get_net_id(obj)
+	GameLog.log(
+		"[WorldSync] request_despawn name=%s net_id=%d is_host=%s" % [obj.name, net_id, is_host()]
+	)
 	if is_host():
 		despawn_networked(obj)
 		return
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	GameLog.log(
-		"[WorldSync] Client sending despawn RPC to host: parent=%s name=%s"
-		% [parent_path, obj.name]
+		"[WorldSync] Client sending despawn RPC to host: parent=%s name=%s net_id=%d"
+		% [parent_path, obj.name, net_id]
 	)
-	_rpc_request_despawn.rpc_id(1, parent_path, obj.name)
+	_rpc_request_despawn.rpc_id(1, parent_path, obj.name, net_id)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_despawn(parent_path_str: String, obj_name: String) -> void:
+func _rpc_request_despawn(parent_path_str: String, obj_name: String, net_id: int) -> void:
 	if not is_host():
 		return
 	GameLog.log(
-		"[WorldSync] Host received despawn request: parent=%s name=%s" % [parent_path_str, obj_name]
+		"[WorldSync] Host received despawn request: parent=%s name=%s net_id=%d"
+		% [parent_path_str, obj_name, net_id]
 	)
-	var parent := _string_to_node(parent_path_str)
-	if parent == null:
-		GameLog.log("[WorldSync] Host despawn: parent not found: " + parent_path_str)
-		return
-	var obj := parent.get_node_or_null(obj_name)
+	# Prefer net_id lookup, fall back to name/path for pre-existing scene objects.
+	var obj := _find_node_by_net_id(net_id)
+	if obj == null:
+		var parent := _string_to_node(parent_path_str)
+		if parent != null:
+			obj = parent.get_node_or_null(obj_name)
 	if obj:
 		despawn_networked(obj)
 	else:
@@ -465,12 +547,12 @@ func spawn_networked(
 	clean_state.erase("_net_pitcher_recipe")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
-	# Give the object a unique name so despawn can find it reliably.
-	# Without this, multiple objects of the same type would all be named
-	# e.g. "SupplyBox" and despawn would only find the first one.
+	# Give the object a unique name and stable network ID so despawn and
+	# reparenting can find it reliably even when its path changes.
 	var base_name := obj.name
 	obj.name = base_name + "_" + str(_spawn_counter)
 	_spawn_counter += 1
+	var net_id := _assign_net_id(obj)
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
@@ -500,13 +582,14 @@ func spawn_networked(
 	# Broadcast to clients
 	var parent_path := _node_path_to_string(parent.get_path())
 	GameLog.log(
-		"[WorldSync] Host spawned %s name=%s parent=%s pos=%s scale=%s"
-		% [scene_path, obj.name, parent_path, str(global_pos), str(obj_scale)]
+		"[WorldSync] Host spawned %s name=%s net_id=%d parent=%s pos=%s scale=%s"
+		% [scene_path, obj.name, net_id, parent_path, str(global_pos), str(obj_scale)]
 	)
 	_spawn_on_clients.rpc(
 		scene_path,
 		parent_path,
 		obj.name,
+		net_id,
 		global_pos,
 		global_rot,
 		obj_scale,
@@ -525,13 +608,16 @@ func despawn_networked(obj: Node) -> void:
 		return
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	var obj_name := obj.name
-	GameLog.log("[WorldSync] Host despawning %s parent=%s" % [obj_name, parent_path])
+	var net_id := _get_net_id(obj)
+	GameLog.log(
+		"[WorldSync] Host despawning %s net_id=%d parent=%s" % [obj_name, net_id, parent_path]
+	)
 	# If this is a supply box, make boxes above fall on the host AND clients
 	if obj is SupplyBox:
 		SupplyBox.make_boxes_above_pos_fall(obj.global_position)
 		_sync_boxes_fall.rpc(obj.global_position)
 	obj.queue_free()
-	_despawn_on_clients.rpc(parent_path, obj_name)
+	_despawn_on_clients.rpc(parent_path, obj_name, net_id)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -777,6 +863,7 @@ func _spawn_on_clients(
 	scene_path: String,
 	parent_path_str: String,
 	obj_name: String,
+	net_id: int,
 	global_pos: Vector3,
 	global_rot: Vector3,
 	obj_scale: Vector3,
@@ -785,8 +872,8 @@ func _spawn_on_clients(
 	if is_host():
 		return # Host already spawned it locally
 	GameLog.log(
-		"[WorldSync] Client received spawn: %s name=%s parent=%s"
-		% [scene_path, obj_name, parent_path_str]
+		"[WorldSync] Client received spawn: %s name=%s net_id=%d parent=%s"
+		% [scene_path, obj_name, net_id, parent_path_str]
 	)
 	var parent := _string_to_node(parent_path_str)
 	if parent == null:
@@ -812,6 +899,13 @@ func _spawn_on_clients(
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	obj.name = obj_name
+	# Register the same net_id the host assigned, so future RPCs can find
+	# this object regardless of its name or parent path.
+	if net_id >= 0:
+		obj.set_meta(NET_ID_META, net_id)
+		_net_id_to_node[net_id] = obj
+		_node_to_net_id[obj] = net_id
+		obj.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
@@ -842,18 +936,20 @@ func _spawn_on_clients(
 
 
 @rpc("authority", "call_local", "reliable")
-func _despawn_on_clients(parent_path_str: String, obj_name: String) -> void:
+func _despawn_on_clients(parent_path_str: String, obj_name: String, net_id: int) -> void:
 	if is_host():
 		return
 	GameLog.log(
-		"[WorldSync] Client received despawn: parent=%s name=%s" % [parent_path_str, obj_name]
+		"[WorldSync] Client received despawn: parent=%s name=%s net_id=%d"
+		% [parent_path_str, obj_name, net_id]
 	)
-	var parent := _string_to_node(parent_path_str)
-	var obj: Node = null
-	if parent:
-		obj = parent.get_node_or_null(obj_name)
-	# Fallback: search the entire scene tree by name in case the object
-	# was re-parented on the host without the client knowing.
+	# Prefer stable net_id lookup, then fall back to name/path for objects
+	# that pre-date the net_id system or default scene objects.
+	var obj := _find_node_by_net_id(net_id)
+	if obj == null:
+		var parent := _string_to_node(parent_path_str)
+		if parent:
+			obj = parent.get_node_or_null(obj_name)
 	if obj == null:
 		obj = _find_node_by_name(get_tree().current_scene, obj_name)
 	if obj:
