@@ -1320,7 +1320,10 @@ func _build_prices_page() -> void:
 		slider.value_changed.connect(
 			func(v: float):
 				val_lbl.text = "$%.2f" % v
-				GameState.set_price(ft_ref, v),
+				GameState.set_price(ft_ref, v)
+				var stand := _get_local_stand()
+				if stand and stand.has_method("request_set_price"):
+					stand.request_set_price(ft_ref, v),
 		)
 		container.add_child(row)
 
@@ -1702,6 +1705,17 @@ func _on_price_changed(fruit_type: String, new_price: float) -> void:
 			val_lbl.text = "$%.2f" % new_price
 
 
+## Find the local player's StandUnit so we can send price/recipe
+## changes to the host via RPC. Returns null in single-player.
+func _get_local_stand() -> Node:
+	var root := get_tree().current_scene
+	if root == null:
+		return null
+	for s in root.find_children("*", "StandUnit", true, false):
+		return s
+	return null
+
+
 func _on_day_phase_changed(phase: int, day: int) -> void:
 	if phase == DayManager.Phase.MORNING:
 		_update_morning_data(day)
@@ -2052,7 +2066,10 @@ func _build_recipes_page() -> void:
 			func(v: float):
 				var r := GameState.get_recipe(ft).duplicate()
 				r["fruit_count"] = v
-				GameState.set_recipe(ft, r),
+				GameState.set_recipe(ft, r)
+				var stand := _get_local_stand()
+				if stand and stand.has_method("request_set_recipe"):
+					stand.request_set_recipe(ft, r),
 		)
 
 		var sugar_row := _make_spin_row("Sugar", 0, 10, 0.1, recipe.get("sugar", 0.0))
@@ -2063,7 +2080,10 @@ func _build_recipes_page() -> void:
 			func(v: float):
 				var r := GameState.get_recipe(ft).duplicate()
 				r["sugar"] = v
-				GameState.set_recipe(ft, r),
+				GameState.set_recipe(ft, r)
+				var stand := _get_local_stand()
+				if stand and stand.has_method("request_set_recipe"):
+					stand.request_set_recipe(ft, r),
 		)
 
 

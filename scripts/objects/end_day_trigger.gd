@@ -15,7 +15,18 @@ func _ready() -> void:
 
 func interact(_player: Node) -> void:
 	if _ready_to_end:
-		DayManager.trigger_end_day()
+		if multiplayer.is_server():
+			DayManager.trigger_end_day()
+		else:
+			_request_end_day.rpc_id(1)
+
+
+## Client -> Host RPC to request ending the day.
+@rpc("any_peer", "reliable")
+func _request_end_day() -> void:
+	if not multiplayer.is_server():
+		return
+	DayManager.trigger_end_day()
 
 
 func get_hint(_player: Node) -> String:

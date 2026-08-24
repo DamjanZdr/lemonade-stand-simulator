@@ -1077,6 +1077,7 @@ func _place_cup_stack_from_box() -> void:
 		"starting_count": 1,
 		"max_capacity": 10,
 		"_net_groups": ["container"],
+		"_net_scale": placement_scale,
 	}
 	var stack := WorldSync.request_spawn(
 		"res://scenes/objects/cup_stack.tscn",
@@ -1207,6 +1208,7 @@ func _place_single_cup(_filled: bool) -> void:
 		"starting_count": 1,
 		"max_capacity": 10,
 		"_net_groups": ["container"],
+		"_net_scale": placement_scale,
 	}
 	var stack := WorldSync.request_spawn(
 		"res://scenes/objects/cup_stack.tscn",
@@ -1470,14 +1472,15 @@ func _place_equipment_from_box() -> void:
 	# Use same position as ghost (already includes collision offset)
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
 	var state: Dictionary = { }
 	# Set initial state so _ready() sees it
 	state["starting_amount"] = 0.0
 	state["starting_count"] = 0
 	state["_net_groups"] = ["container"]
+	state["_net_scale"] = placement_scale
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance:
-		var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
 		instance.scale = placement_scale
 		instance.add_to_group("container")
 		# Add pitcher to pitcher group for water tap detection
@@ -2426,14 +2429,16 @@ func _try_place_container() -> Node3D:
 				get_tree().current_scene.add_child(source_node)
 			source_node.global_transform = _ghost.global_transform
 			_enable_physics(source_node)
-			# Sync the move to clients so they see the table at its new position
-			WorldSync.sync_move_object(
+			# Sync the move + show to clients in a single RPC so the
+			# position and visibility are set atomically. This is more
+			# reliable than separate move + show RPCs.
+			WorldSync.sync_move_and_show(
 				source_node,
 				source_node.global_position,
 				source_node.global_rotation,
+				source_node.scale,
+				true,
 			)
-			# Show the workstation on clients again (it was hidden when picked up)
-			WorldSync.sync_show_object(source_node.name)
 			EventBus.container_placed.emit(container_type, source_node)
 			AudioManager.play_sfx("table", source_node.global_position, -1.0, 0.05, 0.85)
 			_destroy_ghost()
@@ -2448,10 +2453,12 @@ func _try_place_container() -> Node3D:
 	# Restore saved contents (or empty if none)
 	var saved_amount: float = held_item_data.get("saved_amount", 0.0)
 	var saved_count: int = held_item_data.get("saved_count", 0)
+	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
 	var state: Dictionary = {
 		"starting_amount": saved_amount,
 		"starting_count": saved_count,
 		"_net_groups": ["container"],
+		"_net_scale": placement_scale,
 	}
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
@@ -2460,7 +2467,6 @@ func _try_place_container() -> Node3D:
 		_destroy_ghost()
 		clear_held()
 		return null
-	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
 	instance.scale = placement_scale
 	instance.add_to_group("container")
 	# Add pitcher to pitcher group for water tap detection
@@ -2525,14 +2531,14 @@ func _cancel_container_placement() -> void:
 				get_tree().current_scene.add_child(source_node)
 		source_node.global_transform = original
 		_enable_physics(source_node)
-		# Sync the restore to clients so they see the table back at its original spot
-		WorldSync.sync_move_object(
+		# Sync the restore + show to clients in a single RPC
+		WorldSync.sync_move_and_show(
 			source_node,
 			source_node.global_position,
 			source_node.global_rotation,
+			source_node.scale,
+			true,
 		)
-		# Show the workstation on clients again
-		WorldSync.sync_show_object(source_node.name)
 	_destroy_ghost()
 	var refund_value := cost * 0.7
 	make_held_trash(refund_value, container_type)

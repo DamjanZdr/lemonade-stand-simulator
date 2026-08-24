@@ -58,7 +58,13 @@ func _sync_day_timer(timer: float, duration: float, is_over: bool) -> void:
 		return
 	_day_timer = timer
 	_day_duration = duration
-	day_time_over = is_over
+	# Emit day_time_over signal when the day ends for clients so the
+	# end-day sign becomes interactable on clients too.
+	if is_over and not day_time_over:
+		day_time_over = true
+		EventBus.day_time_over.emit()
+	else:
+		day_time_over = is_over
 	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
 
 

@@ -366,8 +366,10 @@ func spawn_networked(
 	# Special key "_net_groups" is not a property — it's a list of groups
 	# to add the object to after spawning (so clients match the host).
 	var net_groups: Array = state.get("_net_groups", [])
+	var net_scale: Vector3 = state.get("_net_scale", Vector3.ZERO)
 	var clean_state := state.duplicate()
 	clean_state.erase("_net_groups")
+	clean_state.erase("_net_scale")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	# Give the object a unique name so despawn can find it reliably.
@@ -379,6 +381,9 @@ func spawn_networked(
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
+	# Apply scale from state if provided, otherwise use the object's current scale
+	if net_scale != Vector3.ZERO:
+		obj.scale = net_scale
 	# Capture the object's scale after adding to the parent (parent's
 	# transform may affect it). We'll send this to clients so they
 	# match the host's scale.
@@ -465,6 +470,24 @@ func sync_move_object(obj: Node, new_pos: Vector3, new_rot: Vector3) -> void:
 	_move_on_clients.rpc(obj.name, new_pos, new_rot)
 
 
+## Move AND show/hide an object in a single RPC. More reliable than
+## calling sync_move_object + sync_show_object separately, since the
+## position and visibility are set atomically on the client.
+func sync_move_and_show(
+	obj: Node,
+	new_pos: Vector3,
+	new_rot: Vector3,
+	new_scale: Vector3,
+	show: bool,
+) -> void:
+	if not is_host() or obj == null or not is_instance_valid(obj):
+		return
+	obj.global_position = new_pos
+	obj.global_rotation = new_rot
+	obj.scale = new_scale
+	_move_and_show_on_clients.rpc(obj.name, new_pos, new_rot, new_scale, show)
+
+
 ## Reparent an object to a new parent on the host and sync to clients.
 func sync_reparent_object(obj: Node, new_parent: Node) -> void:
 	if not is_host() or obj == null or not is_instance_valid(obj):
@@ -489,6 +512,30 @@ func _move_on_clients(obj_name: String, new_pos: Vector3, new_rot: Vector3) -> v
 	if obj:
 		obj.global_position = new_pos
 		obj.global_rotation = new_rot
+
+
+@rpc("authority", "call_local", "reliable")
+func _move_and_show_on_clients(
+	obj_name: String,
+	new_pos: Vector3,
+	new_rot: Vector3,
+	new_scale: Vector3,
+	show: bool,
+) -> void:
+	if is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj:
+		obj.global_position = new_pos
+		obj.global_rotation = new_rot
+		obj.scale = new_scale
+		obj.visible = show
+		for child in obj.find_children("*", "CollisionShape3D", true, false):
+			var col := child as CollisionShape3D
+			if col:
+				col.disabled = not show
+	else:
+		GameLog.log("[WorldSync] Client move_and_show: object not found: " + obj_name)
 
 
 ## Hide an object on all clients (e.g. when a workstation is picked up
@@ -552,15 +599,20 @@ func _spawn_on_clients(
 	# Special key "_net_groups" is not a property — it's a list of groups
 	# to add the object to after spawning (so clients match the host).
 	var net_groups: Array = state.get("_net_groups", [])
+	var net_scale: Vector3 = state.get("_net_scale", Vector3.ZERO)
 	var clean_state := state.duplicate()
 	clean_state.erase("_net_groups")
+	clean_state.erase("_net_scale")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	obj.name = obj_name
 	parent.add_child(obj)
 	obj.global_position = global_pos
 	obj.global_rotation = global_rot
-	obj.scale = obj_scale
+	if net_scale != Vector3.ZERO:
+		obj.scale = net_scale
+	else:
+		obj.scale = obj_scale
 	# Add to groups after spawning so clients match the host
 	for g in net_groups:
 		obj.add_to_group(g)
