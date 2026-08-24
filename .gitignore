@@ -25,3 +25,6 @@ tools/godotsteam-templates/
 
 # Exported game builds (not for git)
 export/
+export.zip
+scripts/blahblah.gd
+scripts/blahblah.gd.uid
