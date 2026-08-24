@@ -350,6 +350,8 @@ func set_clothing_color(surface_name: String, color: Color) -> void:
 
 ## Set the skin color by tinting all non-clothing, non-hair surfaces.
 ## A slider value of 0.0 = lightest skin, 1.0 = darkest skin.
+## Also tints the eye meshes (the skin-colored sclera/eyelid portion)
+## so the skin tone matches around the eyes.
 func set_skin_color(slider_value: float) -> void:
 	var skin_color := _skin_color_from_slider(slider_value)
 	var body: MeshInstance3D = _man_mesh if _man.visible else _woman_mesh
@@ -365,6 +367,24 @@ func set_skin_color(slider_value: float) -> void:
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = skin_color
 		body.set_surface_override_material(i, mat)
+	# Apply the same skin color to the eye meshes so the skin tone
+	# around the eyes matches the rest of the body.
+	var left_eye: MeshInstance3D = _left_eye if _left_eye else (
+		_man_left_eye if _man.visible else _woman_left_eye
+	)
+	var right_eye: MeshInstance3D = _right_eye if _right_eye else (
+		_man_right_eye if _man.visible else _woman_right_eye
+	)
+	for eye in [left_eye, right_eye]:
+		if eye == null or not is_instance_valid(eye):
+			continue
+		var eye_mesh := eye.mesh as ArrayMesh
+		if eye_mesh == null:
+			continue
+		for i in eye_mesh.get_surface_count():
+			var eye_mat := StandardMaterial3D.new()
+			eye_mat.albedo_color = skin_color
+			eye.set_surface_override_material(i, eye_mat)
 
 
 ## Map a 0-1 slider value to a skin color ranging from light to dark.
