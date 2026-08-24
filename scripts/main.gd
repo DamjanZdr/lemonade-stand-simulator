@@ -382,6 +382,7 @@ func _setup_networking() -> void:
 	player_spawner.spawn_function = _spawn_player
 	player_spawner.spawned.connect(_on_spawner_spawned)
 	NetworkManager.peer_connected.connect(_on_peer_connected)
+	NetworkManager.peer_disconnected.connect(_on_peer_disconnected)
 
 
 ## Spawns players for all connected peers. Called from _start_game_phase()
@@ -485,6 +486,21 @@ func _on_peer_connected(peer_id: int) -> void:
 		# Send the full world state to the newly joined client so they
 		# see all containers/supply boxes that were placed before they joined.
 		call_deferred("_push_world_state_to_client", peer_id)
+
+
+## Called when a client disconnects. The host removes their player
+## from the world so they don't linger as a frozen body.
+func _on_peer_disconnected(peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	GameLog.log("[Main] Peer %d disconnected, removing player" % peer_id)
+	var player_name := str(peer_id)
+	if players_node.has_node(player_name):
+		var p := players_node.get_node(player_name)
+		p.queue_free()
+	# Clean up any cached references
+	WorldSync._node_cache.erase(player_name)
+	_assigned_stands.erase(peer_id)
 
 
 @rpc("any_peer", "call_local", "reliable")
