@@ -22,7 +22,7 @@ offset_bottom = 0
 [node name="VBox" type="VBoxContainer" parent="Panel"]
 
 [node name="Title" type="Label" parent="Panel/VBox"]
-text = "=== DEV PANEL ==="
+text = "=== DEV PANEL (F1) ==="
 theme_override_font_sizes/font_size = 10
 
 [node name="StatsLabel" type="Label" parent="Panel/VBox"]
