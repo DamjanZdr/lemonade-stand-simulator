@@ -83,6 +83,16 @@ func update_display() -> void:
 func add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if not fruit_grids.has(fruit_type):
 		return
+	# Client-side: send a request to the host. Do NOT mutate locally so the
+	# host stays the single source of truth and there is no double application.
+	if not WorldSync.is_host():
+		_rpc_request_add_amount.rpc_id(1, fruit_type, qty, from_pos)
+		return
+	_apply_add_amount(fruit_type, qty, from_pos)
+	_sync_state_to_peers()
+
+
+func _apply_add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	# One-fruit-type rule: if the bin already contains a different fruit,
 	# refuse to add this one until the bin is emptied.
 	for ft in fruit_amounts.keys():
@@ -100,7 +110,13 @@ func add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO
 	for i in range(old_count, new_count):
 		_drop_item(nodes[i], origins[i], grid_drop, from_pos)
 	EventBus.bin_amount_changed.emit(fruit_type, fruit_amounts[fruit_type])
-	_sync_state_to_peers()
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_request_add_amount(fruit_type: String, qty: float, from_pos: Vector3) -> void:
+	if not is_multiplayer_authority():
+		return
+	add_amount(fruit_type, qty, from_pos)
 
 
 func _sync_state_to_peers() -> void:
@@ -135,12 +151,30 @@ func _drop_item(
 func take_amount(fruit_type: String, qty: float) -> float:
 	if not fruit_amounts.has(fruit_type):
 		return 0.0
+	# Client-side: send a request to the host and do not mutate locally.
+	if not WorldSync.is_host():
+		_rpc_request_take_amount.rpc_id(1, fruit_type, qty)
+		return 0.0
+	var taken := _apply_take_amount(fruit_type, qty)
+	_sync_state_to_peers()
+	return taken
+
+
+func _apply_take_amount(fruit_type: String, qty: float) -> float:
+	if not fruit_amounts.has(fruit_type):
+		return 0.0
 	var taken := minf(qty, fruit_amounts[fruit_type])
 	fruit_amounts[fruit_type] -= taken
 	update_display()
 	EventBus.bin_amount_changed.emit(fruit_type, fruit_amounts[fruit_type])
-	_sync_state_to_peers()
 	return taken
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_request_take_amount(fruit_type: String, qty: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	take_amount(fruit_type, qty)
 
 
 func _get_fruit_type_from_hit(hit_node: Node) -> String:

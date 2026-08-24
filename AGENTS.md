@@ -34,6 +34,9 @@ func _rpc_do_thing(params) -> void:
     _do_thing(params)
     _push_state_to_clients()
 ```
+**Done:**
+- `FruitBin` now routes `add_amount()` and `take_amount()` through host-only `_apply_*` helpers. Clients send `_rpc_request_*` and do not mutate locally.
+**Still TODO:** `SupplyBox`, `Blackboard`, `StandUnit`.
 **Files to refactor:** `scripts/objects/fruit_bin.gd`, `scripts/objects/supply_box.gd`, `scripts/objects/blackboard.gd`, `scripts/stand/stand_unit.gd`.
 
 ### 2. Stable network IDs for spawned objects — DONE
