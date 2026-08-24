@@ -36,23 +36,42 @@ func interact(player: Node) -> void:
 	if p.held_item_data.get("is_trash", false):
 		var refund := _get_refund(player)
 		var trash_type := _get_trash_type(player)
-		if refund > 0.0:
-			GameState.add_money(refund)
-		EventBus.trash_disposed.emit(trash_type, refund)
+		# Route through host so money and trash disposal sync correctly
+		if WorldSync.is_host():
+			_apply_trash_disposal(trash_type, refund)
+		else:
+			_request_trash_disposal.rpc_id(1, trash_type, refund)
 		AudioManager.play_sfx("trash", global_position)
-		_spawn_disposed_trash(trash_type)
 		player.clear_held()
 		return
 	if p.held_item == Player.HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		var refund := _get_container_cost_for_trash(ctype)
-		if refund > 0.0:
-			GameState.add_money(refund)
-		EventBus.trash_disposed.emit(ctype, refund)
+		if WorldSync.is_host():
+			_apply_trash_disposal(ctype, refund)
+		else:
+			_request_trash_disposal.rpc_id(1, ctype, refund)
 		AudioManager.play_sfx("trash", global_position)
-		_spawn_disposed_trash(ctype)
 		player.clear_held()
 		return
+
+
+## Host-side: apply money refund and spawn trash visual.
+func _apply_trash_disposal(trash_type: String, refund: float) -> void:
+	if not WorldSync.is_host():
+		return
+	if refund > 0.0:
+		GameState.add_money(refund)
+	EventBus.trash_disposed.emit(trash_type, refund)
+	_spawn_disposed_trash(trash_type)
+
+
+## Client -> Host RPC to request trash disposal.
+@rpc("any_peer", "reliable")
+func _request_trash_disposal(trash_type: String, refund: float) -> void:
+	if not WorldSync.is_host():
+		return
+	_apply_trash_disposal(trash_type, refund)
 
 
 func _spawn_disposed_trash(trash_type: String = "") -> void:

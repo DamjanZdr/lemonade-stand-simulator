@@ -19,16 +19,10 @@ func _ready() -> void:
 		show_variant(trash_variant)
 	else:
 		_pick_random_variant()
-	# Only the host should handle trash interaction. Clients see the trash
-	# but can't pick it up (the host despawns via WorldSync when picked up).
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		# Disable interaction on clients by removing from interactable group
-		# and disabling the collision shape
-		if is_in_group("interactable"):
-			remove_from_group("interactable")
-		var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
-		if col:
-			col.disabled = true
+	# Clients can interact with trash — the pickup routes through the
+	# host via WorldSync.despawn_networked() which sends a despawn RPC
+	# to all peers. The host handles the actual despawn.
+	# We keep collision enabled on all peers so raycasts can hit trash.
 
 
 func _pick_random_variant() -> void:
@@ -69,8 +63,10 @@ func interact(player: Node) -> void:
 		return
 	set_highlight(false)
 	p.make_held_trash(trash_value, trash_type, _create_hand_mesh())
-	# Despawn via WorldSync so clients remove the trash too
-	WorldSync.despawn_networked(self)
+	# Despawn via WorldSync so all players see the trash removed.
+	# request_despawn works on both host (despawns directly) and
+	# clients (sends RPC to host to despawn).
+	WorldSync.request_despawn(self)
 
 
 func interact_secondary(player: Node) -> void:
