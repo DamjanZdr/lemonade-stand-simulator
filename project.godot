@@ -36,6 +36,7 @@ AudioManager="*res://scripts/autoloads/audio_manager.gd"
 [debug]
 
 gdscript/warnings/treat_warnings_as_errors=false
+gdscript/warnings/unused_signal=0
 
 [display]
 
