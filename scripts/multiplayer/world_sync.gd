@@ -38,6 +38,249 @@ func is_host() -> bool:
 	return multiplayer.is_server()
 
 
+## Send a full snapshot of all placed containers and supply boxes to
+## clients. Called after the host respawns saved/default containers.
+## This ensures clients see objects that were placed before they joined
+## or that were loaded from a save.
+func sync_world_state_to_clients() -> void:
+	if not is_host():
+		return
+	var snapshot := _collect_world_snapshot()
+	if snapshot.is_empty():
+		return
+	_apply_world_snapshot.rpc(snapshot)
+
+
+## Same as sync_world_state_to_clients but only sent to a specific peer.
+## Used when a client joins mid-game (late join).
+func sync_world_state_to_peer(peer_id: int) -> void:
+	if not is_host():
+		return
+	var snapshot := _collect_world_snapshot()
+	if snapshot.is_empty():
+		return
+	_apply_world_snapshot.rpc_id(peer_id, snapshot)
+
+
+## Collects all containers and supply boxes in the world into a
+## serializable dictionary. Each entry has: scene_path, name,
+## position, rotation, scale, and state (contents/amounts).
+func _collect_world_snapshot() -> Dictionary:
+	var containers: Array = []
+	var supply_boxes: Array = []
+	var root := get_tree().current_scene
+	if root == null:
+		return { }
+	# Collect containers
+	for node in get_tree().get_nodes_in_group("container"):
+		if not is_instance_valid(node) or node.is_queued_for_deletion():
+			continue
+		if node.is_in_group("ghost"):
+			continue
+		var entry := _serialize_container(node)
+		if entry != null:
+			containers.append(entry)
+	# Collect supply boxes
+	for node in get_tree().get_nodes_in_group("supply_box"):
+		if not is_instance_valid(node) or node.is_queued_for_deletion():
+			continue
+		var entry := _serialize_supply_box(node)
+		if entry != null:
+			supply_boxes.append(entry)
+	return { "containers": containers, "supply_boxes": supply_boxes }
+
+
+func _serialize_container(node: Node) -> Dictionary:
+	var ctype := SaveManager._get_container_type(node)
+	if ctype == "" or not SaveManager._is_known_container_type(ctype):
+		return { }
+	var scene_path: String = ""
+	match ctype:
+		"fruit_bin":
+			scene_path = "res://scenes/objects/fruit_bin.tscn"
+		"sugar_bin":
+			scene_path = "res://scenes/objects/sugar_bin.tscn"
+		"ice_bin":
+			scene_path = "res://scenes/objects/ice_bin.tscn"
+		"cup_stack":
+			scene_path = "res://scenes/objects/cup_stack.tscn"
+		"pitcher":
+			scene_path = "res://scenes/objects/pitcher.tscn"
+		"press":
+			scene_path = "res://scenes/objects/press.tscn"
+		"water_dispenser":
+			scene_path = "res://scenes/objects/water_dispenser.tscn"
+		"workstation":
+			scene_path = "res://scenes/stand/workstation.tscn"
+		_:
+			return { }
+	var entry := {
+		"scene_path": scene_path,
+		"name": node.name,
+		"ctype": ctype,
+		"position": [node.global_position.x, node.global_position.y, node.global_position.z],
+		"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
+		"scale": [node.scale.x, node.scale.y, node.scale.z],
+	}
+	# Capture container-specific state
+	if node is FruitBin:
+		var fb := node as FruitBin
+		var amounts: Array = []
+		for key in fb.fruit_amounts:
+			amounts.append([key, fb.fruit_amounts[key]])
+		entry["fruit_amounts"] = amounts
+	elif node is IngredientBin:
+		var ib := node as IngredientBin
+		entry["current_amount"] = ib.current_amount
+		entry["ingredient_type"] = ib.ingredient_type
+	elif node is Pitcher:
+		var p := node as Pitcher
+		entry["fruit_type"] = p.fruit_type
+		entry["fruit_count"] = p.fruit_count
+		entry["water"] = p.water
+		entry["sugar"] = p.sugar
+		entry["ice"] = p.ice
+		entry["cups_poured"] = p.cups_poured
+		entry["pitcher_state"] = int(p.state)
+	elif node is CupStack:
+		entry["current_count"] = (node as CupStack).current_count
+	elif node is WaterDispenser:
+		entry["water_fillings"] = (node as WaterDispenser).max_fillings
+	elif node is Press:
+		entry["fruit_type"] = (node as Press).fruit_type
+		entry["fruit_count"] = (node as Press).fruit_count
+	return entry
+
+
+func _serialize_supply_box(node: Node) -> Dictionary:
+	var box := node as SupplyBox
+	if box == null:
+		return { }
+	return {
+		"scene_path": "res://scenes/objects/supply_box.tscn",
+		"name": box.name,
+		"position": [box.global_position.x, box.global_position.y, box.global_position.z],
+		"rotation": [box.global_rotation.x, box.global_rotation.y, box.global_rotation.z],
+		"scale": [box.scale.x, box.scale.y, box.scale.z],
+		"ingredient_type": box.ingredient_type,
+		"quantity": box.quantity,
+		"is_equipment": box.is_equipment,
+		"equipment_type": box.equipment_type,
+	}
+
+
+## Clients receive the full world snapshot and instantiate all
+## containers and supply boxes to match the host's world.
+@rpc("authority", "call_local", "reliable")
+func _apply_world_snapshot(snapshot: Dictionary) -> void:
+	if is_host():
+		return
+	var root := get_tree().current_scene
+	if root == null:
+		return
+	# Spawn containers
+	for entry in snapshot.get("containers", []):
+		_spawn_container_from_snapshot(entry, root)
+	# Spawn supply boxes
+	for entry in snapshot.get("supply_boxes", []):
+		_spawn_supply_box_from_snapshot(entry, root)
+	GameLog.log(
+		"[WorldSync] Applied world snapshot: %d containers, %d supply boxes"
+		% [snapshot.get("containers", []).size(), snapshot.get("supply_boxes", []).size()]
+	)
+
+
+func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
+	var scene_path: String = entry.get("scene_path", "")
+	if scene_path == "":
+		return
+	var scene := _get_scene(scene_path)
+	if scene == null:
+		return
+	var instance := scene.instantiate()
+	# Set state BEFORE add_child so _ready() sees correct values
+	var ctype: String = entry.get("ctype", "")
+	if instance is CupStack:
+		instance.starting_count = int(entry.get("current_count", instance.starting_count))
+	if instance is WaterDispenser:
+		instance.water_fillings = int(entry.get("water_fillings", instance.water_fillings))
+	if instance is Press:
+		instance.fruit_type = entry.get("fruit_type", "")
+		instance.fruit_count = float(entry.get("fruit_count", 0.0))
+	if instance is IngredientBin:
+		instance.ingredient_type = entry.get("ingredient_type", "")
+	# Apply scale before adding to tree
+	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
+	if scl.size() >= 3:
+		instance.scale = Vector3(scl[0], scl[1], scl[2])
+	instance.name = entry.get("name", instance.name)
+	root.add_child(instance)
+	var pos: Array = entry.get("position", [0, 0, 0])
+	var rot: Array = entry.get("rotation", [0, 0, 0])
+	instance.global_position = Vector3(pos[0], pos[1], pos[2])
+	instance.global_rotation = Vector3(
+		rot[0] if rot.size() > 0 else 0.0,
+		rot[1] if rot.size() > 1 else 0.0,
+		rot[2] if rot.size() > 2 else 0.0,
+	)
+	instance.add_to_group("container")
+	# Restore contents AFTER _ready() has run
+	if instance is FruitBin:
+		var fb := instance as FruitBin
+		var amounts: Array = entry.get("fruit_amounts", [])
+		fb.fruit_amounts.clear()
+		for pair in amounts:
+			if pair is Array and pair.size() >= 2:
+				fb.fruit_amounts[pair[0]] = pair[1]
+		fb.update_display()
+	elif instance is IngredientBin:
+		var ib := instance as IngredientBin
+		ib.current_amount = float(entry.get("current_amount", 0.0))
+		ib.update_display()
+	elif instance is Pitcher:
+		var p := instance as Pitcher
+		p.fruit_type = entry.get("fruit_type", "")
+		p.fruit_count = float(entry.get("fruit_count", 0.0))
+		p.water = float(entry.get("water", 0.0))
+		p.sugar = float(entry.get("sugar", 0.0))
+		p.ice = float(entry.get("ice", 0.0))
+		p.cups_poured = int(entry.get("cups_poured", 0))
+		p.state = int(entry.get("pitcher_state", 0)) as Pitcher.PitcherState
+		p.add_to_group("pitcher")
+		p.set_pitcher_visible(true)
+		p.sync_fill_display()
+		p.update_liquid_color()
+		p.call_deferred("update_label")
+	# Cache for fast lookup
+	_node_cache[instance.name] = instance
+
+
+func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
+	var scene := _get_scene("res://scenes/objects/supply_box.tscn")
+	if scene == null:
+		return
+	var box := scene.instantiate() as SupplyBox
+	box.ingredient_type = entry.get("ingredient_type", "lemon")
+	box.quantity = float(entry.get("quantity", 10.0))
+	box.is_equipment = bool(entry.get("is_equipment", false))
+	box.equipment_type = entry.get("equipment_type", "")
+	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
+	if scl.size() >= 3:
+		box.scale = Vector3(scl[0], scl[1], scl[2])
+	box.name = entry.get("name", box.name)
+	root.add_child(box)
+	var pos: Array = entry.get("position", [0, 0, 0])
+	var rot: Array = entry.get("rotation", [0, 0, 0])
+	box.global_position = Vector3(pos[0], pos[1], pos[2])
+	box.global_rotation = Vector3(
+		rot[0] if rot.size() > 0 else 0.0,
+		rot[1] if rot.size() > 1 else 0.0,
+		rot[2] if rot.size() > 2 else 0.0,
+	)
+	box.add_to_group("supply_box")
+	_node_cache[box.name] = box
+
+
 ## The node where world objects should be added. All spawned world objects
 ## go here so they're easy to find and manage.
 func get_world_objects() -> Node:

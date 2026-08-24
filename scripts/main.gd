@@ -366,6 +366,7 @@ func _start_game_phase() -> void:
 	# Push initial stand state to clients (money, prices, etc.)
 	if WorldSync.is_host():
 		call_deferred("_push_initial_stand_state")
+		call_deferred("_push_world_state_to_clients")
 
 
 ## --- Networking / per-peer player spawning ---
@@ -434,6 +435,18 @@ func _push_initial_stand_state() -> void:
 		stand_unit2._push_state()
 
 
+## Send all placed containers and supply boxes to clients so they see
+## the same world as the host immediately on join (not just empty space
+## until the host moves something).
+func _push_world_state_to_clients() -> void:
+	WorldSync.sync_world_state_to_clients()
+
+
+## Same as above but only to a specific peer (for late joiners).
+func _push_world_state_to_client(peer_id: int) -> void:
+	WorldSync.sync_world_state_to_peer(peer_id)
+
+
 func _on_spawner_spawned(node: Node) -> void:
 	var p := node as Player
 	if p == null:
@@ -469,6 +482,9 @@ func _on_peer_connected(peer_id: int) -> void:
 	# the host starts the game.
 	if multiplayer.is_server() and not _in_lobby:
 		_spawn_player_for_peer(peer_id)
+		# Send the full world state to the newly joined client so they
+		# see all containers/supply boxes that were placed before they joined.
+		call_deferred("_push_world_state_to_client", peer_id)
 
 
 @rpc("any_peer", "call_local", "reliable")
