@@ -724,13 +724,12 @@ func _ignore_customer_collisions() -> void:
 		PhysicsServer3D.body_add_collision_exception(other.get_rid(), get_rid())
 
 
-## Disables all collision shapes on this NPC. Called on clients since
-## NPC positions are synced from the host — clients don't need physics.
+## Disables physics collision on clients while keeping collision shapes
+## enabled for raycast interaction. Called on clients since NPC
+## positions are synced from the host.
 func _disable_collision() -> void:
-	for child in find_children("*", "CollisionShape3D", true, false):
-		var col := child as CollisionShape3D
-		if col:
-			col.disabled = true
+	collision_layer = 0
+	collision_mask = 0
 
 
 func _create_white_texture(size: int = 4) -> ImageTexture:

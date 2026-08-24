@@ -192,6 +192,10 @@ func play_anim(anim_name: String) -> void:
 		return
 	if not _active_anim.has_animation(anim_name):
 		return
+	# Don't restart the same animation — prevents glitchy restarts on
+	# clients when state sync RPCs arrive repeatedly.
+	if _active_anim.assigned_animation == anim_name and _active_anim.is_playing():
+		return
 	var anim := _active_anim.get_animation(anim_name)
 	if anim:
 		# Talk plays once, everything else loops
