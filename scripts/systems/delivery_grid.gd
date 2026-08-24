@@ -177,11 +177,29 @@ func release_slot_index(cell_index: int) -> void:
 
 ## Sync the slot stack count to all clients. Only the host sends;
 ## clients receive and update their local _stacks to match.
+## On a client, sends the reservation to the host first.
 func _sync_slot_state(cell_index: int, stack_count: int) -> void:
+	if WorldSync.is_host():
+		if multiplayer.has_multiplayer_peer():
+			_apply_slot_state.rpc_id(0, get_path(), cell_index, stack_count)
+	else:
+		if multiplayer.has_multiplayer_peer():
+			_request_slot_state.rpc_id(1, get_path(), cell_index, stack_count)
+
+
+## Client→host: client tells host about a slot reservation/release.
+@rpc("any_peer", "reliable")
+func _request_slot_state(grid_path: NodePath, cell_index: int, stack_count: int) -> void:
 	if not WorldSync.is_host():
 		return
-	if multiplayer.has_multiplayer_peer():
-		_apply_slot_state.rpc_id(0, get_path(), cell_index, stack_count)
+	var grid := get_tree().current_scene.get_node_or_null(grid_path) as DeliveryGrid
+	if grid == null:
+		return
+	if cell_index < 0 or cell_index >= grid._stacks.size():
+		return
+	grid._stacks[cell_index] = stack_count
+	# Broadcast to all clients (including the sender) so everyone agrees
+	_apply_slot_state.rpc_id(0, grid_path, cell_index, stack_count)
 
 
 @rpc("authority", "call_local", "reliable")

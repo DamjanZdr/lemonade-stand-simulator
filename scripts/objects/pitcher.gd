@@ -55,6 +55,7 @@ const MAX_FILL_VOLUME: float = 10.0
 
 func _ready() -> void:
 	add_to_group("pitcher")
+	add_to_group("container")
 	prep_position = global_position
 	_prep_scale = scale
 	EventBus.debug_empty_pitcher.connect(_on_debug_empty_pitcher)

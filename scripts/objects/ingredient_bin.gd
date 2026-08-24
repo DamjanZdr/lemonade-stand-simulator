@@ -34,6 +34,7 @@ var _cubes_per_scoop: int = 0
 
 func _ready() -> void:
 	add_to_group("bin")
+	add_to_group("container")
 	# If an IngredientData resource is assigned, derive the string type from it.
 	if ingredient_data != null:
 		ingredient_type = ingredient_data.id

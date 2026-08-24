@@ -363,13 +363,17 @@ func spawn_networked(
 		return null
 	var obj := scene.instantiate()
 	# Set state BEFORE adding to tree so _ready() sees configured values.
-	# Special key "_net_groups" is not a property — it's a list of groups
-	# to add the object to after spawning (so clients match the host).
+	# Special keys starting with "_net_" are not properties — they're
+	# post-spawn actions handled below.
 	var net_groups: Array = state.get("_net_groups", [])
 	var net_scale: Vector3 = state.get("_net_scale", Vector3.ZERO)
+	var net_fruit_amounts: Dictionary = state.get("_net_fruit_amounts", { })
+	var net_pitcher_recipe: Dictionary = state.get("_net_pitcher_recipe", { })
 	var clean_state := state.duplicate()
 	clean_state.erase("_net_groups")
 	clean_state.erase("_net_scale")
+	clean_state.erase("_net_fruit_amounts")
+	clean_state.erase("_net_pitcher_recipe")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	# Give the object a unique name so despawn can find it reliably.
@@ -384,6 +388,22 @@ func spawn_networked(
 	# Apply scale from state if provided, otherwise use the object's current scale
 	if net_scale != Vector3.ZERO:
 		obj.scale = net_scale
+	# Apply post-ready state (fruit amounts, pitcher recipe) AFTER
+	# _ready() has run so the object's internal structures are set up.
+	if not net_fruit_amounts.is_empty() and obj is FruitBin:
+		(obj as FruitBin).fruit_amounts = net_fruit_amounts.duplicate()
+		(obj as FruitBin).update_display()
+	if not net_pitcher_recipe.is_empty() and obj is Pitcher:
+		var p := obj as Pitcher
+		p.fruit_type = net_pitcher_recipe.get("fruit_type", "")
+		p.fruit_count = net_pitcher_recipe.get("fruit_count", 0.0)
+		p.water = net_pitcher_recipe.get("water", 0.0)
+		p.sugar = net_pitcher_recipe.get("sugar", 0.0)
+		p.ice = net_pitcher_recipe.get("ice", 0.0)
+		p.cups_poured = net_pitcher_recipe.get("cups_poured", 0)
+		p.set_pitcher_visible(true)
+		p.sync_fill_display()
+		p.call_deferred("update_label")
 	# Capture the object's scale after adding to the parent (parent's
 	# transform may affect it). We'll send this to clients so they
 	# match the host's scale.
@@ -463,11 +483,27 @@ func _reparent_on_clients(new_parent_path_str: String, obj_name: String) -> void
 ## and placed somewhere else — the same node is reused (not destroyed
 ## and re-spawned) so items on top follow it.
 func sync_move_object(obj: Node, new_pos: Vector3, new_rot: Vector3) -> void:
-	if not is_host() or obj == null or not is_instance_valid(obj):
+	if obj == null or not is_instance_valid(obj):
+		return
+	if not is_host():
+		_rpc_request_move.rpc_id(1, obj.name, new_pos, new_rot)
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	_move_on_clients.rpc(obj.name, new_pos, new_rot)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_move(obj_name: String, new_pos: Vector3, new_rot: Vector3) -> void:
+	if not is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj == null or not is_instance_valid(obj):
+		GameLog.log("[WorldSync] Host _rpc_request_move: object not found: " + obj_name)
+		return
+	obj.global_position = new_pos
+	obj.global_rotation = new_rot
+	_move_on_clients.rpc(obj_name, new_pos, new_rot)
 
 
 ## Move AND show/hide an object in a single RPC. More reliable than
@@ -480,12 +516,35 @@ func sync_move_and_show(
 	new_scale: Vector3,
 	show: bool,
 ) -> void:
-	if not is_host() or obj == null or not is_instance_valid(obj):
+	if obj == null or not is_instance_valid(obj):
+		return
+	if not is_host():
+		_rpc_request_move_and_show.rpc_id(1, obj.name, new_pos, new_rot, new_scale, show)
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	obj.scale = new_scale
 	_move_and_show_on_clients.rpc(obj.name, new_pos, new_rot, new_scale, show)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_move_and_show(
+	obj_name: String,
+	new_pos: Vector3,
+	new_rot: Vector3,
+	new_scale: Vector3,
+	show: bool,
+) -> void:
+	if not is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj == null or not is_instance_valid(obj):
+		GameLog.log("[WorldSync] Host _rpc_request_move_and_show: object not found: " + obj_name)
+		return
+	obj.global_position = new_pos
+	obj.global_rotation = new_rot
+	obj.scale = new_scale
+	_move_and_show_on_clients.rpc(obj_name, new_pos, new_rot, new_scale, show)
 
 
 ## Reparent an object to a new parent on the host and sync to clients.
@@ -544,6 +603,7 @@ func _move_and_show_on_clients(
 ## it on clients instead of despawning it.
 func sync_hide_object(obj_name: String) -> void:
 	if not is_host():
+		_rpc_request_set_visible.rpc_id(1, obj_name, false)
 		return
 	_set_visible_on_clients.rpc(obj_name, false)
 
@@ -552,8 +612,20 @@ func sync_hide_object(obj_name: String) -> void:
 ## back down after being picked up).
 func sync_show_object(obj_name: String) -> void:
 	if not is_host():
+		_rpc_request_set_visible.rpc_id(1, obj_name, true)
 		return
 	_set_visible_on_clients.rpc(obj_name, true)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_set_visible(obj_name: String, show: bool) -> void:
+	if not is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj == null or not is_instance_valid(obj):
+		GameLog.log("[WorldSync] Host _rpc_request_set_visible: object not found: " + obj_name)
+		return
+	_set_visible_on_clients.rpc(obj_name, show)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -596,13 +668,17 @@ func _spawn_on_clients(
 		return
 	var obj := scene.instantiate()
 	# Set state BEFORE adding to tree so _ready() sees configured values.
-	# Special key "_net_groups" is not a property — it's a list of groups
-	# to add the object to after spawning (so clients match the host).
+	# Special keys starting with "_net_" are not properties — they're
+	# post-spawn actions handled below.
 	var net_groups: Array = state.get("_net_groups", [])
 	var net_scale: Vector3 = state.get("_net_scale", Vector3.ZERO)
+	var net_fruit_amounts: Dictionary = state.get("_net_fruit_amounts", { })
+	var net_pitcher_recipe: Dictionary = state.get("_net_pitcher_recipe", { })
 	var clean_state := state.duplicate()
 	clean_state.erase("_net_groups")
 	clean_state.erase("_net_scale")
+	clean_state.erase("_net_fruit_amounts")
+	clean_state.erase("_net_pitcher_recipe")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	obj.name = obj_name
@@ -613,6 +689,21 @@ func _spawn_on_clients(
 		obj.scale = net_scale
 	else:
 		obj.scale = obj_scale
+	# Apply post-ready state AFTER _ready() has run
+	if not net_fruit_amounts.is_empty() and obj is FruitBin:
+		(obj as FruitBin).fruit_amounts = net_fruit_amounts.duplicate()
+		(obj as FruitBin).update_display()
+	if not net_pitcher_recipe.is_empty() and obj is Pitcher:
+		var p := obj as Pitcher
+		p.fruit_type = net_pitcher_recipe.get("fruit_type", "")
+		p.fruit_count = net_pitcher_recipe.get("fruit_count", 0.0)
+		p.water = net_pitcher_recipe.get("water", 0.0)
+		p.sugar = net_pitcher_recipe.get("sugar", 0.0)
+		p.ice = net_pitcher_recipe.get("ice", 0.0)
+		p.cups_poured = net_pitcher_recipe.get("cups_poured", 0)
+		p.set_pitcher_visible(true)
+		p.sync_fill_display()
+		p.call_deferred("update_label")
 	# Add to groups after spawning so clients match the host
 	for g in net_groups:
 		obj.add_to_group(g)
@@ -698,28 +789,77 @@ func _apply_transforms_batch(
 ## Sync a property change on a world object from host to all clients.
 ## Use this for container contents (fruit amounts, water, sugar, ice,
 ## cup counts, etc.) so all peers see the same state.
+## On a client, sends the change to the host first (host-authoritative),
+## which then broadcasts to all other clients.
 func sync_property(obj: Node, prop: String, value: Variant) -> void:
-	if not is_host() or obj == null or not is_instance_valid(obj):
+	if obj == null or not is_instance_valid(obj):
+		return
+	if not is_host():
+		_rpc_request_property.rpc_id(1, obj.name, prop, value)
 		return
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	_apply_property.rpc(parent_path, obj.name, prop, value)
 
 
+@rpc("any_peer", "reliable")
+func _rpc_request_property(obj_name: String, prop: String, value: Variant) -> void:
+	if not is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj == null or not is_instance_valid(obj):
+		return
+	obj.set(prop, value)
+	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	_apply_property.rpc(parent_path, obj_name, prop, value)
+
+
 ## Sync multiple property changes at once (more efficient than calling
 ## sync_property for each one individually).
 func sync_properties(obj: Node, props: Dictionary) -> void:
-	if not is_host() or obj == null or not is_instance_valid(obj):
+	if obj == null or not is_instance_valid(obj):
+		return
+	if not is_host():
+		_rpc_request_properties.rpc_id(1, obj.name, props)
 		return
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	_apply_properties.rpc(parent_path, obj.name, props)
 
 
+@rpc("any_peer", "reliable")
+func _rpc_request_properties(obj_name: String, props: Dictionary) -> void:
+	if not is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj == null or not is_instance_valid(obj):
+		return
+	for key in props:
+		obj.set(key, props[key])
+	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	_apply_properties.rpc(parent_path, obj_name, props)
+
+
 ## Call a method on a world object on all clients (e.g. update_display).
 func sync_call(obj: Node, method: String, args: Array = []) -> void:
-	if not is_host() or obj == null or not is_instance_valid(obj):
+	if obj == null or not is_instance_valid(obj):
+		return
+	if not is_host():
+		_rpc_request_call.rpc_id(1, obj.name, method, args)
 		return
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	_call_method.rpc(parent_path, obj.name, method, args)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_call(obj_name: String, method: String, args: Array) -> void:
+	if not is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj == null or not is_instance_valid(obj):
+		return
+	if obj.has_method(method):
+		obj.callv(method, args)
+	var parent_path := _node_path_to_string(obj.get_parent().get_path())
+	_call_method.rpc(parent_path, obj_name, method, args)
 
 
 @rpc("authority", "call_local", "reliable")

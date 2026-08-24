@@ -16,6 +16,11 @@ var _field_index := 0 # 0 = primary, 1 = sugar
 var _edit_buffer := ""
 var _cursor_visible := true
 var _cursor_timer := 0.0
+## The player currently editing recipes on this board. Stored so we
+## can release THEM from focus when editing ends — not just whichever
+## player happens to be first in the "player" group (which in MP
+## would often be the wrong one).
+var _editing_player: Player = null
 
 
 func _ready() -> void:
@@ -35,6 +40,7 @@ func interact(_player: Node) -> void:
 		return
 	var p := _player as Player
 	if p != null and board_camera != null:
+		_editing_player = p
 		p.enter_priceboard_focus(board_camera.global_transform)
 	_start_edit(0, 0)
 
@@ -283,15 +289,45 @@ func _on_label_clicked(
 
 func _finish_edit() -> void:
 	_store_buffer()
+	_apply_recipes_to_stand()
 	_label_index = -1
 	_field_index = 0
 	_edit_buffer = ""
 	_cursor_visible = true
 	_cursor_timer = 0.0
 	_refresh_all_labels()
-	var p := get_tree().get_first_node_in_group("player") as Player
-	if p != null:
-		p.exit_priceboard_focus()
+	if _editing_player != null and is_instance_valid(_editing_player):
+		_editing_player.exit_priceboard_focus()
+	_editing_player = null
+
+
+## Send all edited recipe values to the stand via RPC so the host
+## and all clients see the same recipes.
+func _apply_recipes_to_stand() -> void:
+	var stand := get_parent() as StandUnit
+	if stand == null:
+		return
+	for i in range(_label_data.size()):
+		var data: Dictionary = _label_data[i]
+		if data.get("locked", false):
+			continue
+		var fruit_id: String = data.get("name", "").to_lower()
+		if fruit_id == "" or not fruit_id in StandUnit.FRUIT_TYPES:
+			continue
+		var v1: String = data.get("value1", "")
+		var v2: String = data.get("value2", "")
+		if v1 == "" and v2 == "":
+			continue
+		# Build recipe from current GameState values, then override
+		# with the edited fields.
+		var recipe := GameState.get_recipe(fruit_id).duplicate()
+		if v1 != "" and v1.is_valid_float():
+			recipe["fruit_count"] = float(v1)
+		if v2 != "" and v2.is_valid_float():
+			recipe["sugar"] = float(v2)
+		stand.request_set_recipe(fruit_id, recipe)
+		# Also update local GameState immediately for responsiveness
+		GameState.set_recipe(fruit_id, recipe)
 
 
 func _next_editable_index(from: int, direction: int) -> int:

@@ -22,6 +22,7 @@ var fruit_grids: Dictionary[String, Dictionary] = { }
 
 func _ready() -> void:
 	add_to_group("bin")
+	add_to_group("container")
 	# Discover ItemGrid_* children
 	for child in get_children():
 		var name: String = child.name

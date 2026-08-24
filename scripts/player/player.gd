@@ -198,6 +198,7 @@ var _net_target_pos: Vector3 = Vector3.ZERO
 var _net_target_rot: Vector3 = Vector3.ZERO
 var _has_net_target: bool = false
 var _net_head_pitch: float = 0.0
+var _net_head_yaw: float = 0.0
 const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 
 # Animation state
@@ -489,12 +490,16 @@ func _process(delta: float) -> void:
 			global_rotation.y = lerpf(global_rotation.y, _net_target_rot.y, t)
 		# Update neck/head bones so other players see where this player is looking
 		if visuals != null and visuals.visible:
-			visuals.update_look_bones(global_rotation.y, _net_head_pitch, global_rotation.y)
+			visuals.update_look_bones(
+				global_rotation.y + _net_head_yaw,
+				_net_head_pitch,
+				global_rotation.y,
+			)
 		_update_anim()
 	else:
 		# Local player: update neck/head bones based on camera look direction
 		if visuals != null and visuals.visible:
-			visuals.update_look_bones(global_rotation.y, head.rotation.x, global_rotation.y)
+			visuals.update_look_bones(head.global_rotation.y, head.rotation.x, global_rotation.y)
 
 
 func _physics_process(delta: float) -> void:
@@ -548,7 +553,13 @@ func _try_sync_position(delta: float) -> void:
 	_last_synced_pos = global_position
 	_last_synced_rot = global_rotation
 	_last_synced_pitch = head.rotation.x
-	_sync_position.rpc(global_position, global_rotation, _is_sprinting, head.rotation.x)
+	_sync_position.rpc(
+		global_position,
+		global_rotation,
+		_is_sprinting,
+		head.rotation.x,
+		head.rotation.y,
+	)
 
 
 ## Simple position sync RPC. Only the authority sends; all other peers
@@ -559,6 +570,7 @@ func _sync_position(
 	rot: Vector3,
 	sprinting: bool = false,
 	head_pitch: float = 0.0,
+	head_yaw: float = 0.0,
 ) -> void:
 	if is_multiplayer_authority():
 		return # We're the authority, we already have the right position
@@ -574,6 +586,7 @@ func _sync_position(
 	_has_net_target = true
 	# Update neck/head bones on the remote player's visual model
 	_net_head_pitch = head_pitch
+	_net_head_yaw = head_yaw
 
 
 func _poll_hint() -> void:
@@ -2460,6 +2473,18 @@ func _try_place_container() -> Node3D:
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
 	}
+	# Include fruit bin amounts in spawn state so the host (and all
+	# clients) receive them. The host applies them after _ready().
+	if container_type == "fruit_bin":
+		var recipe: Dictionary = held_item_data.get("saved_recipe", { })
+		var amounts: Dictionary = recipe.get("fruit_amounts", { })
+		if not amounts.is_empty():
+			state["_net_fruit_amounts"] = amounts.duplicate()
+	# Include pitcher recipe in spawn state for the same reason.
+	if container_type == "pitcher":
+		var recipe: Dictionary = held_item_data.get("saved_recipe", { })
+		if not recipe.is_empty():
+			state["_net_pitcher_recipe"] = recipe.duplicate()
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
@@ -2473,13 +2498,19 @@ func _try_place_container() -> Node3D:
 	if instance is Pitcher:
 		instance.add_to_group("pitcher")
 
-	# Restore fruit bin amounts after _ready() has run
+	# Restore fruit bin amounts after _ready() has run (host only —
+	# clients receive them via the _net_fruit_amounts spawn state key)
 	if container_type == "fruit_bin" and instance is FruitBin:
 		var recipe: Dictionary = held_item_data.get("saved_recipe", { })
 		var amounts: Dictionary = recipe.get("fruit_amounts", { })
 		if not amounts.is_empty():
 			instance.fruit_amounts = amounts.duplicate()
 			instance.update_display()
+			# Broadcast to clients so they see the restored amounts
+			WorldSync.sync_property(instance, "fruit_amounts", instance.fruit_amounts.duplicate(
+					true
+				))
+			WorldSync.sync_call(instance, "update_display")
 
 	# Restore pitcher recipe (always — water may have been added while holding)
 	if container_type == "pitcher" and instance is Pitcher:
@@ -2947,7 +2978,13 @@ func _attach_items_to_workstation(workstation: Node) -> void:
 			continue
 		if not item is Node3D:
 			continue
-		if (item as Node).get_parent() != get_tree().current_scene:
+		# Only attach items that are direct children of the world root
+		# or WorldObjects — not items already parented to another
+		# workstation or the player.
+		var parent := (item as Node).get_parent()
+		if parent == null:
+			continue
+		if parent != get_tree().current_scene and parent.name != "WorldObjects":
 			continue
 		var pos := (item as Node3D).global_position
 		if pos.y < table_pos.y + 0.8 or pos.y > table_pos.y + 1.5:

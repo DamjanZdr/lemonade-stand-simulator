@@ -4,18 +4,13 @@ extends CanvasLayer
 
 var _label: Label
 var _refresh_timer: float = 0.0
-
-
-func _enter_tree() -> void:
-	# Hide as early as possible so it never flashes on screen
-	visible = false
+var _shown: bool = false
 
 
 func _ready() -> void:
-	visible = false
 	# Build the label programmatically since this is a CanvasLayer
 	_label = Label.new()
-	_label.anchors_preset = Control.PRESET_BOTTOM_LEFT
+	_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	_label.offset_left = 8
 	_label.offset_top = -30
 	_label.offset_right = 120
@@ -25,18 +20,20 @@ func _ready() -> void:
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 3)
 	_label.text = "FPS: --"
+	_label.visible = false
 	add_child(_label)
 
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
 		if event.keycode == KEY_F:
-			visible = not visible
+			_shown = not _shown
+			_label.visible = _shown
 			get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
-	if not visible:
+	if not _shown:
 		return
 	_refresh_timer += delta
 	if _refresh_timer < 0.25:
