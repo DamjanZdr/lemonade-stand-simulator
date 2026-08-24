@@ -179,12 +179,12 @@ func release_slot_index(cell_index: int) -> void:
 ## clients receive and update their local _stacks to match.
 ## On a client, sends the reservation to the host first.
 func _sync_slot_state(cell_index: int, stack_count: int) -> void:
+	if multiplayer == null or not multiplayer.has_multiplayer_peer():
+		return
 	if WorldSync.is_host():
-		if multiplayer.has_multiplayer_peer():
-			_apply_slot_state.rpc_id(0, get_path(), cell_index, stack_count)
+		_apply_slot_state.rpc_id(0, get_path(), cell_index, stack_count)
 	else:
-		if multiplayer.has_multiplayer_peer():
-			_request_slot_state.rpc_id(1, get_path(), cell_index, stack_count)
+		_request_slot_state.rpc_id(1, get_path(), cell_index, stack_count)
 
 
 ## Client→host: client tells host about a slot reservation/release.

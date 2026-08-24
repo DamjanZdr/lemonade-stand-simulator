@@ -430,7 +430,7 @@ func _transfer_next_box(index: int) -> void:
 		target_rot = _target_grid.get_slot_rotation(truck_cell_idx)
 		_target_grid.reserve_slot(truck_cell_idx)
 		box.set_meta("delivery_cell_idx", truck_cell_idx)
-		box.tree_exited.connect(_target_grid.release_slot_index.bind(truck_cell_idx))
+		box.set_meta("delivery_grid_path", _target_grid.get_path())
 
 	# Arc animation: parabolic path from truck to delivery grid
 	_animate_arc(box, target_pos, target_rot)

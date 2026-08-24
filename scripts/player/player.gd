@@ -490,16 +490,22 @@ func _process(delta: float) -> void:
 			global_rotation.y = lerpf(global_rotation.y, _net_target_rot.y, t)
 		# Update neck/head bones so other players see where this player is looking
 		if visuals != null and visuals.visible:
-			visuals.update_look_bones(
-				global_rotation.y + _net_head_yaw,
-				_net_head_pitch,
-				global_rotation.y,
-			)
+			var neck_yaw := global_rotation.y + _net_head_yaw
+			visuals.update_look_bones(neck_yaw, _net_head_pitch, global_rotation.y)
+			# Re-apply after AnimationPlayer has run this frame so the pose
+			# isn't overwritten by the current animation.
+			visuals.call_deferred("update_look_bones", neck_yaw, _net_head_pitch, global_rotation.y)
 		_update_anim()
 	else:
 		# Local player: update neck/head bones based on camera look direction
 		if visuals != null and visuals.visible:
-			visuals.update_look_bones(head.global_rotation.y, head.rotation.x, global_rotation.y)
+			var cam_yaw := head.global_rotation.y
+			var cam_pitch := head.rotation.x
+			var body_yaw := global_rotation.y
+			visuals.update_look_bones(cam_yaw, cam_pitch, body_yaw)
+			# Re-apply after AnimationPlayer has run this frame so the pose
+			# isn't overwritten by the current animation.
+			visuals.call_deferred("update_look_bones", cam_yaw, cam_pitch, body_yaw)
 
 
 func _physics_process(delta: float) -> void:
@@ -1380,7 +1386,7 @@ func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> v
 	if box == null:
 		return
 	box.set_meta("delivery_cell_idx", cell_idx)
-	box.tree_exited.connect(grid.release_slot_index.bind(cell_idx))
+	box.set_meta("delivery_grid_path", grid.get_path())
 
 
 func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
@@ -1405,7 +1411,7 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 		if grid != null:
 			grid.reserve_slot(cell_idx)
 			box.set_meta("delivery_cell_idx", cell_idx)
-			box.tree_exited.connect(grid.release_slot_index.bind(cell_idx))
+			box.set_meta("delivery_grid_path", grid.get_path())
 
 
 func _drop_held_box() -> void:
@@ -2638,8 +2644,18 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 	AudioManager.play_sfx(pickup_key, interactable.global_position)
 	# Despawn the container on all peers via WorldSync (host authority).
 	# This ensures the container is removed for everyone, not just the
-	# player who picked it up.
+	# player who picked it up. Do this BEFORE removing the local copy so
+	# WorldSync can still read its original parent path/name.
 	WorldSync.request_despawn(interactable)
+	# Remove the local container immediately so it can't be interacted with
+	# or duplicated while waiting for the host's despawn RPC. Workstations
+	# keep their original instance (for attached items); everything else
+	# is recreated on placement.
+	if container_type != "workstation":
+		var ip := interactable.get_parent()
+		if ip != null:
+			ip.remove_child(interactable)
+			interactable.queue_free()
 	hold_container(container_type, saved_amount, saved_count, has_liquid, saved_recipe)
 	# Mark as deployed (was already placed on a workstation) so it can't go on the floor
 	held_item_data["deployed"] = true

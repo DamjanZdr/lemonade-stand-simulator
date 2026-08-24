@@ -27,6 +27,9 @@ func _ready() -> void:
 	_scan_labels()
 	_refresh_all_labels()
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+	# Listen to global recipe changes so the blackboard labels stay in
+	# sync when another player edits the same recipes.
+	EventBus.recipe_changed.connect(_on_recipe_changed)
 
 
 func get_hint(_player: Node) -> String:
@@ -380,4 +383,22 @@ func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 					var locked_lbl := parent_title.get_node_or_null(label.name + "Locked") as Label3D
 					if locked_lbl != null:
 						locked_lbl.visible = now_locked
+	_refresh_all_labels()
+
+
+func _on_recipe_changed(fruit_type: String, recipe: Dictionary) -> void:
+	if recipe.is_empty():
+		return
+	for i in range(_label_data.size()):
+		var data: Dictionary = _label_data[i]
+		var fruit_id: String = data.get("name", "").to_lower()
+		if fruit_id != fruit_type:
+			continue
+		# Update both recipe fields on the blackboard labels so all
+		# players see the same values.
+		if recipe.has("fruit_count"):
+			data["value1"] = str(int(recipe["fruit_count"]))
+		if recipe.has("sugar"):
+			data["value2"] = str(int(recipe["sugar"]))
+		break
 	_refresh_all_labels()

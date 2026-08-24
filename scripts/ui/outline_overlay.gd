@@ -146,6 +146,8 @@ func _on_frame_pre_draw() -> void:
 func _sync_outline_camera() -> void:
 	if _main_cam == null or not is_instance_valid(_main_cam) or _cam == null:
 		return
+	if not is_inside_tree() or not _cam.is_inside_tree() or not _main_cam.is_inside_tree():
+		return
 	_cam.global_transform = _main_cam.global_transform
 	_cam.fov = _main_cam.fov
 	_cam.near = _main_cam.near

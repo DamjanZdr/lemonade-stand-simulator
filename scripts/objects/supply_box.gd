@@ -223,34 +223,41 @@ func interact(player: Node) -> void:
 	if p == null or p.held_item != p.HeldItem.NONE:
 		return
 	GameLog.log("[SupplyBox] interact name=%s is_host=%s" % [name, WorldSync.is_host()])
-	# Hide the box before freeing it so it doesn't flash for a frame.
-	visible = false
-	physics.collision_layer = 0
+	# Release the delivery-grid slot immediately on this peer so the
+	# next placement doesn't use a stale stack height while waiting for
+	# the host's despawn RPC to arrive.
+	if has_meta("delivery_grid_path") and has_meta("delivery_cell_idx"):
+		var grid_path: NodePath = get_meta("delivery_grid_path")
+		var grid := get_tree().current_scene.get_node_or_null(grid_path) as DeliveryGrid
+		if grid != null:
+			grid.release_slot_index(get_meta("delivery_cell_idx") as int)
 
+	# Determine what the player picks up BEFORE removing the local box.
+	var held_type: int = p.HeldItem.SUPPLY_BOX
+	var held_data: Dictionary = { }
+	var hand_mesh: Node3D = null
 	if is_trash_box:
-		AudioManager.play_sfx("pick_up_box", global_position)
-		p.make_held_trash(trash_value, trash_type, _make_hand_mesh())
-		# Boxes above fall is handled by WorldSync.despawn_networked()
-		WorldSync.request_despawn(self)
-		return
-
-	if is_equipment:
-		AudioManager.play_sfx("pick_up_box", global_position)
-		p.set_held(
-			p.HeldItem.SUPPLY_BOX,
-			{ "source": "delivery", "is_equipment": true, "equipment_type": equipment_type },
-			_make_hand_mesh(),
-		)
-		WorldSync.request_despawn(self)
-		return
+		hand_mesh = _make_hand_mesh()
+		p.make_held_trash(trash_value, trash_type, hand_mesh)
+	elif is_equipment:
+		held_data = { "source": "delivery", "is_equipment": true, "equipment_type": equipment_type }
+		hand_mesh = _make_hand_mesh()
+		p.set_held(held_type, held_data, hand_mesh)
+	else:
+		held_data = { "ingredient_type": ingredient_type, "amount": quantity, "source": "delivery" }
+		hand_mesh = _make_hand_mesh()
+		p.set_held(held_type, held_data, hand_mesh)
 
 	AudioManager.play_sfx("pick_up_box", global_position)
-	p.set_held(
-		p.HeldItem.SUPPLY_BOX,
-		{ "ingredient_type": ingredient_type, "amount": quantity, "source": "delivery" },
-		_make_hand_mesh(),
-	)
+	# Request the despawn BEFORE removing locally so WorldSync can read
+	# the original parent path and name.
 	WorldSync.request_despawn(self)
+	# Remove the local box immediately so it can't be interacted with or
+	# duplicated while waiting for the host's despawn RPC.
+	var parent := get_parent()
+	if parent != null:
+		parent.remove_child(self)
+	queue_free()
 
 
 ## Static method: find all supply boxes above the given world position

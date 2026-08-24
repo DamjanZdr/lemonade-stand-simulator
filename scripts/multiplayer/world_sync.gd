@@ -35,6 +35,10 @@ func setup(world_objects: Node, spawner: MultiplayerSpawner) -> void:
 
 
 func is_host() -> bool:
+	if multiplayer == null:
+		# No multiplayer peer set up yet (or tree is being torn down). Treat
+		# as local-host mode so single-player and initialization paths work.
+		return true
 	return multiplayer.is_server()
 
 
@@ -197,6 +201,13 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 	var scene := _get_scene(scene_path)
 	if scene == null:
 		return
+	var obj_name: String = entry.get("name", "")
+	# If an object with this name already exists under the expected root,
+	# update its transform/contents instead of spawning a duplicate.
+	var existing := root.get_node_or_null(obj_name)
+	if existing != null:
+		_update_container_from_snapshot(existing, entry)
+		return
 	var instance := scene.instantiate()
 	# Set state BEFORE add_child so _ready() sees correct values
 	var ctype: String = entry.get("ctype", "")
@@ -213,7 +224,7 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
 	if scl.size() >= 3:
 		instance.scale = Vector3(scl[0], scl[1], scl[2])
-	instance.name = entry.get("name", instance.name)
+	instance.name = obj_name
 	root.add_child(instance)
 	var pos: Array = entry.get("position", [0, 0, 0])
 	var rot: Array = entry.get("rotation", [0, 0, 0])
@@ -255,9 +266,65 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 	_node_cache[instance.name] = instance
 
 
+## Update an existing container (e.g. default scene object) from a snapshot
+## entry instead of spawning a duplicate.
+func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
+	var pos: Array = entry.get("position", [0, 0, 0])
+	var rot: Array = entry.get("rotation", [0, 0, 0])
+	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
+	if existing is Node3D:
+		existing.global_position = Vector3(pos[0], pos[1], pos[2])
+		existing.global_rotation = Vector3(
+			rot[0] if rot.size() > 0 else 0.0,
+			rot[1] if rot.size() > 1 else 0.0,
+			rot[2] if rot.size() > 2 else 0.0,
+		)
+		if scl.size() >= 3:
+			existing.scale = Vector3(scl[0], scl[1], scl[2])
+	if existing is FruitBin:
+		var fb := existing as FruitBin
+		var amounts: Array = entry.get("fruit_amounts", [])
+		fb.fruit_amounts.clear()
+		for pair in amounts:
+			if pair is Array and pair.size() >= 2:
+				fb.fruit_amounts[pair[0]] = pair[1]
+		fb.update_display()
+	elif existing is IngredientBin:
+		var ib := existing as IngredientBin
+		ib.current_amount = float(entry.get("current_amount", 0.0))
+		ib.update_display()
+	elif existing is Pitcher:
+		var p := existing as Pitcher
+		p.fruit_type = entry.get("fruit_type", "")
+		p.fruit_count = float(entry.get("fruit_count", 0.0))
+		p.water = float(entry.get("water", 0.0))
+		p.sugar = float(entry.get("sugar", 0.0))
+		p.ice = float(entry.get("ice", 0.0))
+		p.cups_poured = int(entry.get("cups_poured", 0))
+		p.state = int(entry.get("pitcher_state", 0)) as Pitcher.PitcherState
+		p.add_to_group("pitcher")
+		p.set_pitcher_visible(true)
+		p.sync_fill_display()
+		p.update_liquid_color()
+		p.call_deferred("update_label")
+	elif existing is CupStack:
+		existing.starting_count = int(entry.get("current_count", existing.starting_count))
+	elif existing is WaterDispenser:
+		existing.water_fillings = int(entry.get("water_fillings", existing.water_fillings))
+	elif existing is Press:
+		existing.fruit_type = entry.get("fruit_type", "")
+		existing.fruit_count = float(entry.get("fruit_count", 0.0))
+	_node_cache[existing.name] = existing
+
+
 func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 	var scene := _get_scene("res://scenes/objects/supply_box.tscn")
 	if scene == null:
+		return
+	var box_name: String = entry.get("name", "")
+	var existing := root.get_node_or_null(box_name) as SupplyBox
+	if existing != null:
+		_update_supply_box_from_snapshot(existing, entry)
 		return
 	var box := scene.instantiate() as SupplyBox
 	box.ingredient_type = entry.get("ingredient_type", "lemon")
@@ -267,7 +334,7 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
 	if scl.size() >= 3:
 		box.scale = Vector3(scl[0], scl[1], scl[2])
-	box.name = entry.get("name", box.name)
+	box.name = box_name
 	root.add_child(box)
 	var pos: Array = entry.get("position", [0, 0, 0])
 	var rot: Array = entry.get("rotation", [0, 0, 0])
@@ -279,6 +346,28 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 	)
 	box.add_to_group("supply_box")
 	_node_cache[box.name] = box
+
+
+## Update an existing supply box from a snapshot entry instead of spawning
+## a duplicate.
+func _update_supply_box_from_snapshot(existing: SupplyBox, entry: Dictionary) -> void:
+	existing.ingredient_type = entry.get("ingredient_type", "lemon")
+	existing.quantity = float(entry.get("quantity", 10.0))
+	existing.is_equipment = bool(entry.get("is_equipment", false))
+	existing.equipment_type = entry.get("equipment_type", "")
+	var pos: Array = entry.get("position", [0, 0, 0])
+	var rot: Array = entry.get("rotation", [0, 0, 0])
+	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
+	existing.global_position = Vector3(pos[0], pos[1], pos[2])
+	existing.global_rotation = Vector3(
+		rot[0] if rot.size() > 0 else 0.0,
+		rot[1] if rot.size() > 1 else 0.0,
+		rot[2] if rot.size() > 2 else 0.0,
+	)
+	if scl.size() >= 3:
+		existing.scale = Vector3(scl[0], scl[1], scl[2])
+	existing.update_metrics()
+	_node_cache[existing.name] = existing
 
 
 ## The node where world objects should be added. All spawned world objects
@@ -772,7 +861,10 @@ func _despawn_on_clients(parent_path_str: String, obj_name: String) -> void:
 		_node_cache.erase(obj_name)
 		GameLog.log("[WorldSync] Client despawned %s OK" % obj_name)
 	else:
-		GameLog.log("[WorldSync] Client despawn: object not found anywhere: " + obj_name)
+		# Object was likely already removed locally (e.g. picked up and
+		# freed by the client before the host's despawn RPC arrived).
+		_node_cache.erase(obj_name)
+		GameLog.log("[WorldSync] Client despawn: object already removed: " + obj_name)
 
 
 ## Recursively search a node tree for a child with the given name.

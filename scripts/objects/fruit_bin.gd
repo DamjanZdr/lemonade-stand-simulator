@@ -83,6 +83,11 @@ func update_display() -> void:
 func add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if not fruit_grids.has(fruit_type):
 		return
+	# One-fruit-type rule: if the bin already contains a different fruit,
+	# refuse to add this one until the bin is emptied.
+	for ft in fruit_amounts.keys():
+		if ft != fruit_type and fruit_amounts[ft] > 0.0:
+			return
 	var data: Dictionary = fruit_grids[fruit_type]
 	var nodes: Array[Node3D] = data["nodes"]
 	var cap: int = data["capacity"]
@@ -185,10 +190,14 @@ func interact(player: Node) -> void:
 		# Depositing from delivery box
 		if data.get("source") == "delivery":
 			var to_deposit: float = data.get("amount", 0.0)
+			# One-fruit-type rule: refuse if bin has a different fruit.
+			for ft in fruit_amounts.keys():
+				if ft != itype and fruit_amounts[ft] > 0.0:
+					return
 			var space: float = get_capacity(itype) - fruit_amounts.get(itype, 0.0)
 			if space <= 0.0:
 				return
-			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
+			var deposited: float = minf(to_deposit, space)
 			add_amount(itype, deposited, _get_hand_pos(player))
 			EventBus.supply_box_deposited.emit(itype, deposited)
 			var remaining: float = to_deposit - deposited
