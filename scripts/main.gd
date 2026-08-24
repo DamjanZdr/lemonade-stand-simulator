@@ -26,6 +26,11 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 @onready var lobby_cam_stand1: Camera3D = $LobbyCamStand1
 @onready var lobby_cam_stand2: Camera3D = $LobbyCamStand2
 
+## FPS counter label (toggled with F key)
+var _fps_label: Label = null
+var _fps_shown: bool = false
+var _fps_timer: float = 0.0
+
 ## The locally-controlled player, once spawned. Player is now spawned
 ## dynamically per connected peer (host + anyone who joins) instead of
 ## being a static scene node, so a second real player can get their own
@@ -113,6 +118,21 @@ func _ready() -> void:
 
 	# --- Lobby phase setup ---
 	_setup_lobby()
+
+	# Create FPS counter label (toggled with F key)
+	_fps_label = Label.new()
+	_fps_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_fps_label.offset_left = 8
+	_fps_label.offset_top = -30
+	_fps_label.offset_right = 120
+	_fps_label.offset_bottom = -4
+	_fps_label.add_theme_font_size_override("font_size", 14)
+	_fps_label.add_theme_color_override("font_color", Color(1, 1, 0.4, 0.9))
+	_fps_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_fps_label.add_theme_constant_override("outline_size", 3)
+	_fps_label.text = "FPS: --"
+	_fps_label.visible = false
+	hud.add_child(_fps_label)
 
 	# Connect to game_starting signal — when the host starts the game,
 	# transition from lobby to game phase (camera tween, hide UI, start systems).
@@ -675,7 +695,11 @@ func _on_debug_set_rain(enabled: bool) -> void:
 
 
 func _process(_delta: float) -> void:
-	pass
+	if _fps_shown and _fps_label:
+		_fps_timer += _delta
+		if _fps_timer >= 0.25:
+			_fps_timer = 0.0
+			_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
 
 func _input(event: InputEvent) -> void:
@@ -685,6 +709,11 @@ func _input(event: InputEvent) -> void:
 			_enable_enhanced_lighting()
 		else:
 			_disable_enhanced_lighting()
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.keycode == KEY_F and event.pressed and not event.is_echo():
+		_fps_shown = not _fps_shown
+		if _fps_label:
+			_fps_label.visible = _fps_shown
 		get_viewport().set_input_as_handled()
 
 
