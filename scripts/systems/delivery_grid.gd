@@ -82,6 +82,7 @@ func reserve_next_slot() -> Dictionary:
 
 
 ## Reserves a specific cell and returns its index, world position and rotation.
+## On the host, also syncs the reservation to clients.
 func reserve_slot(cell_index: int) -> Dictionary:
 	if cell_index < 0 or cell_index >= _stacks.size():
 		push_warning("DeliveryGrid.reserve_slot: invalid cell index %d" % cell_index)
@@ -90,6 +91,7 @@ func reserve_slot(cell_index: int) -> Dictionary:
 	var pos := get_slot_position(cell_index)
 	var rot := get_slot_rotation(cell_index)
 	_stacks[cell_index] += 1
+	_sync_slot_state(cell_index, _stacks[cell_index])
 	return { "index": cell_index, "position": pos, "rotation": rot }
 
 
@@ -158,6 +160,7 @@ func get_next_position() -> Vector3:
 
 
 ## Releases a slot by its index when a box is removed from the grid.
+## On the host, also syncs the release to clients.
 func release_slot_index(cell_index: int) -> void:
 	if cell_index < 0 or cell_index >= _stacks.size():
 		return
@@ -169,6 +172,28 @@ func release_slot_index(cell_index: int) -> void:
 		for key in _cell_yaws.keys():
 			if key / 1000 == cell_index:
 				_cell_yaws.erase(key)
+	_sync_slot_state(cell_index, _stacks[cell_index])
+
+
+## Sync the slot stack count to all clients. Only the host sends;
+## clients receive and update their local _stacks to match.
+func _sync_slot_state(cell_index: int, stack_count: int) -> void:
+	if not WorldSync.is_host():
+		return
+	if multiplayer.has_multiplayer_peer():
+		_apply_slot_state.rpc_id(0, get_path(), cell_index, stack_count)
+
+
+@rpc("authority", "call_local", "reliable")
+func _apply_slot_state(grid_path: NodePath, cell_index: int, stack_count: int) -> void:
+	if WorldSync.is_host():
+		return
+	var grid := get_tree().current_scene.get_node_or_null(grid_path) as DeliveryGrid
+	if grid == null:
+		return
+	if cell_index < 0 or cell_index >= grid._stacks.size():
+		return
+	grid._stacks[cell_index] = stack_count
 
 
 func total_capacity() -> int:
