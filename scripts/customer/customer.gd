@@ -357,7 +357,7 @@ func try_serve(player: Node) -> void:
 	if patience <= 0.0:
 		return
 	var p := player as Player
-	if p == null or p.held_item != p.HeldItem.CUP_FILLED:
+	if p == null or p.held_item != HeldItem.CUP_FILLED:
 		return
 	if stand != null and not stand.can_be_served_by(p):
 		# Real multiplayer only: this customer belongs to a different

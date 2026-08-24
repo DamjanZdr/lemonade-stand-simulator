@@ -85,7 +85,7 @@ func interact(player: Node) -> void:
 		return
 
 	# Refill dispenser from water supply box
-	if p.held_item == p.HeldItem.SUPPLY_BOX:
+	if p.held_item == HeldItem.SUPPLY_BOX:
 		var itype: String = p.held_item_data.get("ingredient_type", "")
 		if itype == "water":
 			if water_fillings >= max_fillings:
@@ -108,11 +108,11 @@ func interact(player: Node) -> void:
 			return
 
 	# Place pitcher on dispenser — handled by player script ghost placement
-	if p.held_item == p.HeldItem.CONTAINER:
+	if p.held_item == HeldItem.CONTAINER:
 		return
 
 	# Empty hands interactions
-	if p.held_item == p.HeldItem.NONE:
+	if p.held_item == HeldItem.NONE:
 		# Start filling if pitcher snapped, has space, and we have water
 		if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling:
 			var space := Balancing.PITCHER_MAX_LIQUID - _snapped_pitcher.get_liquid_volume()
@@ -152,7 +152,7 @@ func get_hint(player: Node) -> String:
 	if p == null:
 		return "Water Dispenser"
 
-	if p.held_item == p.HeldItem.SUPPLY_BOX:
+	if p.held_item == HeldItem.SUPPLY_BOX:
 		if p.held_item_data.get("is_trash", false):
 			return ""
 		var itype: String = p.held_item_data.get("ingredient_type", "")
@@ -162,7 +162,7 @@ func get_hint(player: Node) -> String:
 			return "Water Dispenser | LMB: refill (%d/%d)" % [water_fillings, max_fillings]
 		return "Water Dispenser | only water boxes refill"
 
-	if p.held_item == p.HeldItem.CONTAINER:
+	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		if ctype == "pitcher":
 			if _snapped_pitcher != null:

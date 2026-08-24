@@ -35,24 +35,24 @@ func fill(recipe_snapshot: Dictionary) -> void:
 
 func interact(player: Node) -> void:
 	var p := player as Player
-	if p == null or p.held_item != p.HeldItem.NONE:
+	if p == null or p.held_item != HeldItem.NONE:
 		return
 	match state:
 		CupState.EMPTY:
 			physics.collision_layer = 0
 			model.visible = false
-			p.set_held(p.HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
+			p.set_held(HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
 			queue_free()
 		CupState.FILLED:
 			physics.collision_layer = 0
 			model.visible = false
-			p.set_held(p.HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
+			p.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
 			queue_free()
 
 
 func get_hint(player: Node) -> String:
 	var p := player as Player
-	if p == null or p.held_item != p.HeldItem.NONE:
+	if p == null or p.held_item != HeldItem.NONE:
 		return ""
 	return "Cup | LMB: pick up %s cup" % ("filled" if state == CupState.FILLED else "empty")
 

@@ -9,7 +9,7 @@ func interact(player: Node) -> void:
 	var p := player as Player
 	if p == null:
 		return
-	if p.held_item != p.HeldItem.CONTAINER:
+	if p.held_item != HeldItem.CONTAINER:
 		return
 	var data := p.held_item_data
 	if data.get("container_type", "") != "pitcher":
@@ -28,7 +28,7 @@ func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null:
 		return ""
-	if p.held_item == p.HeldItem.CONTAINER:
+	if p.held_item == HeldItem.CONTAINER:
 		var data := p.held_item_data
 		if data.get("container_type", "") == "pitcher":
 			return "Counter | LMB: place pitcher"

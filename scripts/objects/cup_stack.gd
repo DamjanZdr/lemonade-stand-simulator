@@ -152,7 +152,7 @@ func interact(player: Node) -> void:
 		return
 
 	# Deposit ONE cup from box at a time
-	if p.held_item == p.HeldItem.SUPPLY_BOX:
+	if p.held_item == HeldItem.SUPPLY_BOX:
 		var data := p.held_item_data
 		if data.get("source") == "delivery" \
 				and data.get("ingredient_type", "") == "cups":
@@ -171,14 +171,14 @@ func interact(player: Node) -> void:
 			return
 
 	# Return an empty cup back to the stack
-	if p.held_item == p.HeldItem.CUP_EMPTY:
+	if p.held_item == HeldItem.CUP_EMPTY:
 		add_cups(1, _get_hand_pos(p))
 		AudioManager.play_sfx("taking_cup", global_position)
 		p.clear_held()
 		return
 
 	# Take a cup OR pick up empty container
-	if p.held_item == p.HeldItem.NONE:
+	if p.held_item == HeldItem.NONE:
 		if current_count <= 0:
 			# Pick up empty stack
 			p.pickup_container(self, "cup_stack")
@@ -186,7 +186,7 @@ func interact(player: Node) -> void:
 		current_count -= 1
 		_update_display()
 		AudioManager.play_sfx("taking_cup", global_position)
-		p.set_held(p.HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
+		p.set_held(HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
 		WorldSync.sync_property(self, "current_count", current_count)
 		WorldSync.sync_call(self, "_update_display")
 
@@ -196,7 +196,7 @@ func get_hint(player: Node) -> String:
 	if p == null:
 		return ""
 
-	if p.held_item == p.HeldItem.SUPPLY_BOX:
+	if p.held_item == HeldItem.SUPPLY_BOX:
 		var data := p.held_item_data
 		if data.get("is_trash", false):
 			return ""
@@ -208,11 +208,11 @@ func get_hint(player: Node) -> String:
 			return "Cup Stack | LMB: add 1 cup (x%.0f in box)" % data.get("amount", 0.0)
 		return ""
 
-	if p.held_item == p.HeldItem.NONE:
+	if p.held_item == HeldItem.NONE:
 		if current_count > 0:
 			return "Cup Stack | LMB: take a cup (%d)  |  RMB: pick up" % current_count
 		return "Cup Stack | LMB: pick up"
-	if p.held_item == p.HeldItem.CUP_EMPTY:
+	if p.held_item == HeldItem.CUP_EMPTY:
 		return "Cup Stack | LMB: return cup"
 	return ""
 

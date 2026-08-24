@@ -17,7 +17,7 @@ func interact(player: Node) -> void:
 	# Route through the host via RPC so the host processes the interaction
 	# and syncs the state change to all clients
 	var peer_id := int(p.name)
-	if p.held_item == p.HeldItem.CUP_FILLED:
+	if p.held_item == HeldItem.CUP_FILLED:
 		var recipe: Dictionary = p.held_item_data.get("recipe", { })
 		customer.request_serve(peer_id, recipe)
 	else:
@@ -33,6 +33,6 @@ func get_hint(player: Node) -> String:
 	if customer == null or customer.state != Customer.CustomerState.WAITING:
 		return ""
 	var p := player as Player
-	if p != null and p.held_item == p.HeldItem.CUP_FILLED:
+	if p != null and p.held_item == HeldItem.CUP_FILLED:
 		return "Customer | LMB: serve lemonade"
 	return ""

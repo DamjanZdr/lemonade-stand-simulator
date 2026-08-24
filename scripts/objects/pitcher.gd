@@ -254,7 +254,7 @@ func interact(player: Node) -> void:
 	match state:
 		PitcherState.PREPPING, PitcherState.COMPLETE:
 			# Deposit scoop from hand (sugar/ice only in COMPLETE state)
-			if p.held_item == p.HeldItem.SUPPLY_BOX \
+			if p.held_item == HeldItem.SUPPLY_BOX \
 					and p.held_item_data.get("source") == "bin_scoop":
 				if _drop_busy:
 					return
@@ -271,11 +271,11 @@ func interact(player: Node) -> void:
 					)
 				return
 			# Fill cup if pitcher has liquid and player holds empty cup
-			if p.held_item == p.HeldItem.CUP_EMPTY and get_liquid_volume() > 0.0:
+			if p.held_item == HeldItem.CUP_EMPTY and get_liquid_volume() > 0.0:
 				var recipe := pour_portion()
 				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
 				p.set_held(
-					p.HeldItem.CUP_FILLED,
+					HeldItem.CUP_FILLED,
 					{ "recipe": recipe },
 					_make_filled_cup_mesh(cup_color),
 				)
@@ -284,14 +284,14 @@ func interact(player: Node) -> void:
 					_clear_and_return()
 				return
 			# Pick up: always use container system now
-			if p.held_item == p.HeldItem.NONE:
+			if p.held_item == HeldItem.NONE:
 				p.pickup_container(self, "pitcher")
 		PitcherState.SERVING:
-			if p.held_item == p.HeldItem.CUP_EMPTY:
+			if p.held_item == HeldItem.CUP_EMPTY:
 				var recipe := pour_portion()
 				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
 				p.set_held(
-					p.HeldItem.CUP_FILLED,
+					HeldItem.CUP_FILLED,
 					{ "recipe": recipe },
 					_make_filled_cup_mesh(cup_color),
 				)
@@ -302,7 +302,7 @@ func interact(player: Node) -> void:
 			# Pick up: a pitcher that's still serving (not full, cups already
 			# poured from it) should still be pick-up-able with an empty hand,
 			# same as a fresh one in PREPPING/COMPLETE.
-			if p.held_item == p.HeldItem.NONE:
+			if p.held_item == HeldItem.NONE:
 				p.pickup_container(self, "pitcher")
 
 
@@ -339,7 +339,7 @@ func get_hint(player: Node) -> String:
 		contents = "[%s]\n" % get_contents_string()
 	match state:
 		PitcherState.PREPPING, PitcherState.COMPLETE:
-			if p.held_item == p.HeldItem.SUPPLY_BOX \
+			if p.held_item == HeldItem.SUPPLY_BOX \
 					and p.held_item_data.get("source") == "bin_scoop":
 				return contents + "Pitcher | LMB: add %s" % p.held_item_data.get(
 					"ingredient_type",
@@ -347,13 +347,13 @@ func get_hint(player: Node) -> String:
 				)
 			if get_liquid_volume() <= 0.0:
 				return "Pitcher | LMB: pick up"
-			if p.held_item == p.HeldItem.CUP_EMPTY:
+			if p.held_item == HeldItem.CUP_EMPTY:
 				return contents + (
 					"Pitcher | LMB: fill cup  |  RMB: pick up (%.1f liq)" % get_liquid_volume()
 				)
 			return contents + "Pitcher | LMB/RMB: pick up"
 		PitcherState.SERVING:
-			if p.held_item == p.HeldItem.CUP_EMPTY:
+			if p.held_item == HeldItem.CUP_EMPTY:
 				return contents + (
 					"Pitcher | LMB: fill cup  |  RMB: pick up (%.1f liq)" % get_liquid_volume()
 				)

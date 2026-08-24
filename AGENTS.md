@@ -79,7 +79,7 @@ func _rpc_do_thing(params) -> void:
 - `PlayerPlacement` — ghost + placement validation
 - `PlayerInventory` / `PlayerHands` — held item state
 **Planned sub-tasks:**
-- [ ] Extract `HeldItem` enum to a shared location so other scripts don't import `Player` just for the enum (tried; needs autoload or careful aliasing because `class_name` references fail at parse time before the new script is imported).
+- [x] Extract `HeldItem` enum to a shared `HeldItem` autoload so other scripts don't import `Player` just for the enum.
 - [ ] Extract held-item state + `set_held()` / `clear_held()` into `PlayerInventory`.
 - [ ] Extract raycast/hint/interact dispatch into `PlayerInteraction`.
 - [ ] Extract placement ghost + validation into `PlayerPlacement`.

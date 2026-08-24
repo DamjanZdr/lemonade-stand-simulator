@@ -20,7 +20,7 @@ func get_hint(player: Node) -> String:
 	if p.held_item_data.get("is_trash", false):
 		var refund := _get_refund(player)
 		return "Trashcan | LMB: trash for $%.2f" % refund
-	if p.held_item == Player.HeldItem.CONTAINER:
+	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		var cost := _get_container_cost_for_trash(ctype)
 		return "Trashcan | LMB: recycle for $%.2f" % cost
@@ -44,7 +44,7 @@ func interact(player: Node) -> void:
 		AudioManager.play_sfx("trash", global_position)
 		player.clear_held()
 		return
-	if p.held_item == Player.HeldItem.CONTAINER:
+	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		var refund := _get_container_cost_for_trash(ctype)
 		if WorldSync.is_host():

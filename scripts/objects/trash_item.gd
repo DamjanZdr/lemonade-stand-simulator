@@ -59,7 +59,7 @@ func interact(player: Node) -> void:
 	var p := player as Player
 	if p == null:
 		return
-	if p.held_item != Player.HeldItem.NONE:
+	if p.held_item != HeldItem.NONE:
 		return
 	set_highlight(false)
 	p.make_held_trash(trash_value, trash_type, _create_hand_mesh())
@@ -75,7 +75,7 @@ func interact_secondary(player: Node) -> void:
 
 func get_hint(player: Node) -> String:
 	var p := player as Player
-	if p == null or p.held_item != Player.HeldItem.NONE:
+	if p == null or p.held_item != HeldItem.NONE:
 		return ""
 	return "Trash | LMB: pick up"
 

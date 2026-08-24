@@ -20,7 +20,7 @@ func interact(player: Node) -> void:
 	if ped.can_interact():
 		ped.request_offer(peer_id)
 		return
-	if p.held_item == p.HeldItem.CUP_FILLED:
+	if p.held_item == HeldItem.CUP_FILLED:
 		var recipe: Dictionary = p.held_item_data.get("recipe", { })
 		ped.request_serve(peer_id, recipe)
 
@@ -34,6 +34,6 @@ func get_hint(player: Node) -> String:
 	if ped == null or not ped.can_interact():
 		return ""
 	var p := player as Player
-	if p != null and p.held_item == p.HeldItem.CUP_FILLED:
+	if p != null and p.held_item == HeldItem.CUP_FILLED:
 		return "Pedestrian | LMB: serve lemonade"
 	return "Pedestrian | LMB: offer free lemonade"

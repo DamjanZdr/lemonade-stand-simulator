@@ -220,7 +220,7 @@ func _setup_icon() -> void:
 
 func interact(player: Node) -> void:
 	var p: Player = player as Player
-	if p == null or p.held_item != p.HeldItem.NONE:
+	if p == null or p.held_item != HeldItem.NONE:
 		return
 	GameLog.log("[SupplyBox] interact name=%s is_host=%s" % [name, WorldSync.is_host()])
 	# Release the delivery-grid slot immediately on this peer as a
@@ -229,7 +229,7 @@ func interact(player: Node) -> void:
 	release_delivery_slot(self)
 
 	# Determine what the player picks up BEFORE removing the local box.
-	var held_type: int = p.HeldItem.SUPPLY_BOX
+	var held_type: int = HeldItem.SUPPLY_BOX
 	var held_data: Dictionary = { }
 	var hand_mesh: Node3D = null
 	if is_trash_box:
@@ -311,7 +311,7 @@ func interact_secondary(player: Node) -> void:
 
 func get_hint(player: Node) -> String:
 	var p: Player = player as Player
-	if p == null or p.held_item != p.HeldItem.NONE:
+	if p == null or p.held_item != HeldItem.NONE:
 		return ""
 	if is_trash_box:
 		return "Trash Box | LMB: pick up"

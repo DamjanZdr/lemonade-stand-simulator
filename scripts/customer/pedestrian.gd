@@ -506,7 +506,7 @@ func try_serve(player: Node) -> void:
 	if _state != PedestrianState.OFFERED:
 		return
 	var p := player as Player
-	if p == null or p.held_item != p.HeldItem.CUP_FILLED:
+	if p == null or p.held_item != HeldItem.CUP_FILLED:
 		return
 	var recipe: Dictionary = p.held_item_data.get("recipe", { })
 	p.clear_held()

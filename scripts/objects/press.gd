@@ -34,7 +34,7 @@ var _snapped_pitcher: Pitcher = null
 @onready var _snap_point: Marker3D = $PitcherSnapPoint
 @onready var _model: Node3D = $press
 @onready var _anim_player: AnimationPlayer = (
-		_model.find_child("AnimationPlayer", true) if _model else null
+	_model.find_child("AnimationPlayer", true) if _model else null
 )
 var _merged_anim: Animation = null
 const MERGED_ANIM_NAME: String = "merged/PressingMerged"
@@ -107,7 +107,7 @@ func interact(player: Node) -> void:
 		return
 
 	# Deposit fruit scoops into press
-	if p.held_item == p.HeldItem.SUPPLY_BOX \
+	if p.held_item == HeldItem.SUPPLY_BOX \
 			and p.held_item_data.get("source") == "bin_scoop":
 		if _drop_busy:
 			return
@@ -128,21 +128,22 @@ func interact(player: Node) -> void:
 		return
 
 	# Start pressing if fruits inside, hands empty, and a valid pitcher is snapped
-	if p.held_item == p.HeldItem.NONE and fruit_count > 0.0 and not _pressing:
+	if p.held_item == HeldItem.NONE and fruit_count > 0.0 and not _pressing:
 		if _snapped_pitcher == null or not is_instance_valid(_snapped_pitcher):
 			EventBus.interaction_hint_changed.emit("Snap a pitcher to the press first!")
 			return
 		if not _can_press_into_pitcher(_snapped_pitcher):
-			EventBus.interaction_hint_changed.emit(
-				"Pitcher has wrong fruit or already has water!",
-			)
+			EventBus.interaction_hint_changed.emit("Pitcher has wrong fruit or already has water!")
 			return
 		_start_press()
 		return
 
 	# Pick up pitcher from press if press is empty
-	if p.held_item == p.HeldItem.NONE and fruit_count <= 0.0 \
-			and not _pressing and has_snapped_pitcher():
+	if (
+		p.held_item == HeldItem.NONE and fruit_count <= 0.0 \
+				and not _pressing
+		and has_snapped_pitcher()
+	):
 		var pitcher := _snapped_pitcher
 		_snapped_pitcher = null
 		pitcher.visible = false
@@ -151,15 +152,21 @@ func interact(player: Node) -> void:
 		return
 
 	# Pick up the press container (only if empty, no snapped pitcher, and not pressing)
-	if p.held_item == p.HeldItem.NONE and fruit_count <= 0.0 \
-			and not _pressing and not has_snapped_pitcher():
+	if (
+		p.held_item == HeldItem.NONE and fruit_count <= 0.0 \
+				and not _pressing
+		and not has_snapped_pitcher()
+	):
 		p.pickup_container(self, "press")
 
 
 func interact_secondary(player: Node) -> void:
 	var p := player as Player
-	if p != null and p.held_item == p.HeldItem.NONE and not _pressing \
-			and fruit_count <= 0.0 and not has_snapped_pitcher():
+	if (
+		p != null and p.held_item == HeldItem.NONE and not _pressing \
+				and fruit_count <= 0.0
+		and not has_snapped_pitcher()
+	):
 		p.pickup_container(self, "press")
 
 
@@ -169,10 +176,7 @@ func _get_pitcher_hint() -> String:
 	var vol := _snapped_pitcher.get_liquid_volume()
 	if vol <= 0.0:
 		return " (pitcher empty)"
-	return " (pitcher: %s, %.1f liq)" % [
-		_snapped_pitcher.get_contents_string(),
-		vol,
-	]
+	return " (pitcher: %s, %.1f liq)" % [_snapped_pitcher.get_contents_string(), vol]
 
 
 func get_hint(player: Node) -> String:
@@ -183,7 +187,7 @@ func get_hint(player: Node) -> String:
 		return ""
 	if _pressing:
 		return "Press | pressing %s..." % fruit_type.capitalize()
-	if p.held_item == p.HeldItem.SUPPLY_BOX \
+	if p.held_item == HeldItem.SUPPLY_BOX \
 			and p.held_item_data.get("source") == "bin_scoop":
 		var itype: String = p.held_item_data.get("ingredient_type", "")
 		if not _is_fruit(itype):
@@ -299,7 +303,7 @@ func set_highlight(on: bool) -> void:
 	if has_snapped_pitcher():
 		var player := get_tree().get_first_node_in_group("player") as Player
 		var holding_fruit := false
-		if player != null and player.held_item == player.HeldItem.SUPPLY_BOX \
+		if player != null and player.held_item == HeldItem.SUPPLY_BOX \
 				and player.held_item_data.get("source") == "bin_scoop":
 			holding_fruit = true
 		if holding_fruit:
@@ -353,8 +357,11 @@ func get_snap_global_position() -> Vector3:
 
 func _can_press_into_pitcher(pitcher: Pitcher) -> bool:
 	## Empty pitcher is always valid.
-	if pitcher.fruit_count == 0.0 and pitcher.water == 0.0 \
-			and pitcher.sugar == 0.0 and pitcher.ice == 0.0:
+	if (
+		pitcher.fruit_count == 0.0 and pitcher.water == 0.0 \
+				and pitcher.sugar == 0.0
+		and pitcher.ice == 0.0
+	):
 		return true
 	## Otherwise: no water yet, and same fruit type.
 	if pitcher.water == 0.0 and pitcher.fruit_type == fruit_type:
@@ -449,19 +456,22 @@ func _start_juice_drain() -> void:
 	var original_pos_y := _juice_mesh.position.y
 
 	_juice_drain_tween = create_tween()
-	_juice_drain_tween.tween_method(
+	_juice_drain_tween \
+			.tween_method(
 		func(s: float):
 			_juice_mesh.scale.y = s
 			_juice_mesh.position.y = original_pos_y + bottom_local * (1.0 - s),
 		1.0,
 		0.0,
 		0.35,
-	).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_LINEAR)
+	) \
+			.set_ease(Tween.EASE_IN) \
+			.set_trans(Tween.TRANS_LINEAR)
 	_juice_drain_tween.tween_callback(
 		func():
 			_juice_mesh.visible = false
 			_juice_mesh.scale = Vector3.ONE
-			_juice_mesh.position.y = 0.7
+			_juice_mesh.position.y = 0.7,
 	)
 
 
@@ -542,7 +552,7 @@ func _animate_fruit_drop(itype: String, amount: float, start_pos: Vector3) -> vo
 				AudioManager.play_sfx("fruit_in_crate", global_position)
 				EventBus.interaction_hint_changed.emit(
 					"%s in press: %.0f" % [fruit_type.capitalize(), fruit_count],
-				)
+				),
 		)
 	else:
 		fruit_mesh.queue_free()

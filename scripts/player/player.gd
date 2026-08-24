@@ -1,15 +1,6 @@
 class_name Player
 extends CharacterBody3D
 
-enum HeldItem {
-	NONE,
-	CUP_EMPTY,
-	CUP_FILLED,
-	SUPPLY_BOX,
-	CONTAINER,
-	TRASH,
-}
-
 @export var move_speed: float = 5.0
 const MOUSE_SENSITIVITY: float = 0.002
 
@@ -52,7 +43,7 @@ func _get_held_item_name() -> String:
 @export var sprint_multiplier: float = 1.8
 @export var jump_velocity: float = 5.0
 
-var held_item: HeldItem = HeldItem.NONE
+var held_item: int = HeldItem.NONE
 var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
 var _last_hint: String = ""
@@ -1669,7 +1660,7 @@ func _find_looked_at_dispenser() -> WaterDispenser:
 	return _frame_dispenser
 
 
-func set_held(item_type: HeldItem, data: Dictionary, mesh: Node3D = null) -> void:
+func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 	if _held_mesh and is_instance_valid(_held_mesh):
 		_held_mesh.queue_free()
 		_held_mesh = null
@@ -1683,7 +1674,7 @@ func set_held(item_type: HeldItem, data: Dictionary, mesh: Node3D = null) -> voi
 	EventBus.held_item_changed.emit(int(item_type), data)
 
 
-func _apply_hand_offset(item_type: HeldItem, data: Dictionary) -> void:
+func _apply_hand_offset(item_type: int, data: Dictionary) -> void:
 	if _held_mesh == null:
 		return
 	var offset := Vector3.ZERO

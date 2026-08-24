@@ -14,7 +14,7 @@ func interact(player: Node) -> void:
 		return
 
 	# If player is holding a pitcher, let the player script handle it directly
-	if p.held_item == p.HeldItem.CONTAINER and p.held_item_data.get("container_type") == "pitcher":
+	if p.held_item == HeldItem.CONTAINER and p.held_item_data.get("container_type") == "pitcher":
 		return
 
 	# Find nearest placed pitcher
@@ -60,7 +60,7 @@ func get_hint(player: Node) -> String:
 		return "Water Tap"
 
 	# Check if player is holding a pitcher — hint handled by player script
-	if p.held_item == p.HeldItem.CONTAINER and p.held_item_data.get("container_type") == "pitcher":
+	if p.held_item == HeldItem.CONTAINER and p.held_item_data.get("container_type") == "pitcher":
 		var recipe: Dictionary = p.held_item_data.get("saved_recipe", { })
 		if recipe.get("water", 0.0) > 0.0:
 			return "Water Tap | pitcher already filled"
