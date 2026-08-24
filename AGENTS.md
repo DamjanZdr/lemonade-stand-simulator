@@ -69,9 +69,13 @@ func _rpc_do_thing(params) -> void:
 **Target:** Use an `AnimationTree` additive blend track for head/neck, or set `AnimationPlayer.process_callback = ANIMATION_PROCESS_PHYSICS` and apply poses in `_process`.
 **Files:** `scripts/player/player_visuals.gd`, `scripts/player/player.gd`.
 
-### 7. Decouple save/snapshot from runtime groups
+### 7. Decouple save/snapshot from runtime groups — DONE
 **Problem:** The world snapshot scans the `"container"` group, so default-scene objects that join the group get duplicated on client join.
-**Target:** Host keeps an explicit `placed_objects` registry. Snapshot = serialize registry. Spawn/despawn = mutate registry + replicate.
+**Done:**
+- `WorldSync` now maintains a host-side `_placed_objects` registry keyed by `net_id`.
+- `spawn_networked()` registers new objects; `tree_exited` unregisters them.
+- `_collect_world_snapshot()` uses the registry instead of scanning groups.
+- Default-scene objects not spawned through `WorldSync` are lazily registered on the first snapshot so they are included.
 **Files:** `scripts/multiplayer/world_sync.gd`, `scripts/systems/save_manager.gd`.
 
 ### 8. Per-peer UI focus ownership

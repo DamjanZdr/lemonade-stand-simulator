@@ -34,6 +34,11 @@ var _net_id_counter: int = 0
 var _net_id_to_node: Dictionary = { }
 var _node_to_net_id: Dictionary = { }
 
+## Host-side registry of all placed world objects. Used instead of scanning
+## the "container"/"supply_box" groups, which can miss objects or include
+## stale/duplicate entries on client join.
+var _placed_objects: Dictionary = { }
+
 
 func setup(world_objects: Node, spawner: MultiplayerSpawner) -> void:
 	# Currently unused (we use RPC-based spawning instead of MultiplayerSpawner),
@@ -57,6 +62,7 @@ func _assign_net_id(obj: Node) -> int:
 	obj.set_meta(NET_ID_META, id)
 	_net_id_to_node[id] = obj
 	_node_to_net_id[obj] = id
+	_placed_objects[id] = obj
 	obj.tree_exited.connect(_on_net_object_tree_exited.bind(id))
 	return id
 
@@ -89,6 +95,7 @@ func _on_net_object_tree_exited(net_id: int) -> void:
 	if node != null and is_instance_valid(node):
 		_node_to_net_id.erase(node)
 	_net_id_to_node.erase(net_id)
+	_placed_objects.erase(net_id)
 
 
 ## Send a full snapshot of all placed containers and supply boxes to
@@ -116,31 +123,47 @@ func sync_world_state_to_peer(peer_id: int) -> void:
 
 
 ## Collects all containers and supply boxes in the world into a
-## serializable dictionary. Each entry has: scene_path, name,
+## serializable dictionary. Each entry has: scene_path, name, net_id,
 ## position, rotation, scale, and state (contents/amounts).
 func _collect_world_snapshot() -> Dictionary:
 	var containers: Array = []
 	var supply_boxes: Array = []
-	var root := get_tree().current_scene
-	if root == null:
+	if get_tree() == null or get_tree().current_scene == null:
 		return { }
-	# Collect containers
-	for node in get_tree().get_nodes_in_group("container"):
+	_ensure_default_objects_registered()
+	var to_remove: Array[int] = []
+	for net_id in _placed_objects.keys():
+		var node: Node = _placed_objects[net_id]
 		if not is_instance_valid(node) or node.is_queued_for_deletion():
+			to_remove.append(net_id)
 			continue
 		if node.is_in_group("ghost"):
 			continue
-		var entry := _serialize_container(node)
-		if entry != null:
-			containers.append(entry)
-	# Collect supply boxes
-	for node in get_tree().get_nodes_in_group("supply_box"):
-		if not is_instance_valid(node) or node.is_queued_for_deletion():
-			continue
-		var entry := _serialize_supply_box(node)
-		if entry != null:
-			supply_boxes.append(entry)
+		if node.is_in_group("container"):
+			var entry := _serialize_container(node)
+			if entry != null:
+				containers.append(entry)
+		elif node.is_in_group("supply_box"):
+			var entry := _serialize_supply_box(node)
+			if entry != null:
+				supply_boxes.append(entry)
+	for id in to_remove:
+		_placed_objects.erase(id)
 	return { "containers": containers, "supply_boxes": supply_boxes }
+
+
+## Ensure default-scene objects (not spawned through WorldSync) are in the
+## host registry so they are included in snapshots and can be looked up by
+## net_id. Called once per snapshot.
+func _ensure_default_objects_registered() -> void:
+	for group in ["container", "supply_box"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if not is_instance_valid(node) or node.is_queued_for_deletion():
+				continue
+			var net_id := get_net_id(node)
+			if net_id < 0:
+				net_id = _assign_net_id(node)
+			_placed_objects[net_id] = node
 
 
 func _serialize_container(node: Node) -> Dictionary:
