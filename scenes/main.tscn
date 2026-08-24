@@ -85,7 +85,7 @@ script = ExtResource("6_delivery")
 [node name="DebugPanel" parent="." unique_id=1101678529 instance=ExtResource("9_debug")]
 visible = false
 
-[node name="FPSCounter" type="Label" parent="."]
+[node name="FPSCounter" type="CanvasLayer" parent="."]
 script = ExtResource("10_fps")
 visible = false
 
