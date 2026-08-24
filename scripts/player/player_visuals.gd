@@ -369,11 +369,15 @@ func set_skin_color(slider_value: float) -> void:
 		body.set_surface_override_material(i, mat)
 	# Apply the same skin color to the eye meshes so the skin tone
 	# around the eyes matches the rest of the body.
-	var left_eye: MeshInstance3D = _left_eye if _left_eye else (
-		_man_left_eye if _man.visible else _woman_left_eye
+	var left_eye: MeshInstance3D = (
+		_left_eye
+		if _left_eye
+		else (_man_left_eye if _man.visible else _woman_left_eye)
 	)
-	var right_eye: MeshInstance3D = _right_eye if _right_eye else (
-		_man_right_eye if _man.visible else _woman_right_eye
+	var right_eye: MeshInstance3D = (
+		_right_eye
+		if _right_eye
+		else (_man_right_eye if _man.visible else _woman_right_eye)
 	)
 	for eye in [left_eye, right_eye]:
 		if eye == null or not is_instance_valid(eye):
@@ -382,6 +386,12 @@ func set_skin_color(slider_value: float) -> void:
 		if eye_mesh == null:
 			continue
 		for i in eye_mesh.get_surface_count():
+			# Only tint the "Skin" surface (eyelid). The other surfaces
+			# are the iris/white (unnamed) and pupil ("EyeBlack") —
+			# those must keep their original materials.
+			var sname := eye_mesh.surface_get_name(i).to_lower()
+			if sname != "skin":
+				continue
 			var eye_mat := StandardMaterial3D.new()
 			eye_mat.albedo_color = skin_color
 			eye.set_surface_override_material(i, eye_mat)
