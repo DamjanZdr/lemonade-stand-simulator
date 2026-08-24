@@ -342,12 +342,10 @@ func set_price(fruit_type: String, new_price: float) -> void:
 	price_changed.emit(fruit_type, new_price)
 	if not is_legacy_primary:
 		return
-	# TEMPORARY (primary stand only): also write through to GameState so
-	# other not-yet-migrated systems (morning_hub/debug_panel/save_manager)
-	# see the new price. A non-primary stand's prices are fully local and
-	# must never touch GameState. Remove this once those are migrated too.
-	GameState.prices[fruit_type] = new_price
-	EventBus.price_changed.emit(fruit_type, new_price)
+	# Primary stand only: GameState is the read-only global view of this
+	# stand's authoritative prices. Use GameState.set_price() so the signal
+	# is emitted consistently for UI, save/load, etc.
+	GameState.set_price(fruit_type, new_price)
 
 
 func get_recipe(fruit_type: String) -> Dictionary:
@@ -413,6 +411,11 @@ func _rpc_on_customer_served(outcome: String) -> void:
 
 func set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 	recipes[fruit_type] = recipe.duplicate()
+	if is_legacy_primary:
+		# Keep the global GameState view in sync so UI, save/load, and other
+		# not-yet-migrated systems that read GameState see the authoritative
+		# primary-stand value. Non-primary stands must not pollute GameState.
+		GameState.set_recipe(fruit_type, recipes[fruit_type])
 	recipe_changed.emit(fruit_type, recipes[fruit_type])
 
 

@@ -1320,10 +1320,12 @@ func _build_prices_page() -> void:
 		slider.value_changed.connect(
 			func(v: float):
 				val_lbl.text = "$%.2f" % v
-				GameState.set_price(ft_ref, v)
+				# The stand applies the price and updates GameState authoritatively.
 				var stand := _get_local_stand()
 				if stand and stand.has_method("request_set_price"):
-					stand.request_set_price(ft_ref, v),
+					stand.request_set_price(ft_ref, v)
+				else:
+					GameState.set_price(ft_ref, v),
 		)
 		container.add_child(row)
 
@@ -2066,10 +2068,12 @@ func _build_recipes_page() -> void:
 			func(v: float):
 				var r := GameState.get_recipe(ft).duplicate()
 				r["fruit_count"] = v
-				GameState.set_recipe(ft, r)
+				# The stand applies the recipe and updates GameState authoritatively.
 				var stand := _get_local_stand()
 				if stand and stand.has_method("request_set_recipe"):
-					stand.request_set_recipe(ft, r),
+					stand.request_set_recipe(ft, r)
+				else:
+					GameState.set_recipe(ft, r),
 		)
 
 		var sugar_row := _make_spin_row("Sugar", 0, 10, 0.1, recipe.get("sugar", 0.0))
@@ -2080,10 +2084,12 @@ func _build_recipes_page() -> void:
 			func(v: float):
 				var r := GameState.get_recipe(ft).duplicate()
 				r["sugar"] = v
-				GameState.set_recipe(ft, r)
+				# The stand applies the recipe and updates GameState authoritatively.
 				var stand := _get_local_stand()
 				if stand and stand.has_method("request_set_recipe"):
-					stand.request_set_recipe(ft, r),
+					stand.request_set_recipe(ft, r)
+				else:
+					GameState.set_recipe(ft, r),
 		)
 
 

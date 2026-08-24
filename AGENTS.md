@@ -36,7 +36,9 @@ func _rpc_do_thing(params) -> void:
 ```
 **Done:**
 - `FruitBin` now routes `add_amount()` and `take_amount()` through host-only `_apply_*` helpers. Clients send `_rpc_request_*` and do not mutate locally.
-**Still TODO:** `SupplyBox`, `Blackboard`, `StandUnit`.
+- `StandUnit.set_recipe()` and `set_price()` now update `GameState` consistently via `GameState.set_*()` on the legacy primary stand.
+- `Blackboard` and `morning_hub` no longer duplicate GameState writes; they send requests through `StandUnit.request_set_*()` and rely on the resulting state sync.
+**Still TODO:** `SupplyBox` (already uses `request_despawn` for pick-up; slot release could be centralized).
 **Files to refactor:** `scripts/objects/fruit_bin.gd`, `scripts/objects/supply_box.gd`, `scripts/objects/blackboard.gd`, `scripts/stand/stand_unit.gd`.
 
 ### 2. Stable network IDs for spawned objects — DONE
@@ -48,10 +50,13 @@ func _rpc_do_thing(params) -> void:
 - Workstation item attachment sync passes `{ name, net_id }` dictionaries instead of just names.
 **Files:** `scripts/multiplayer/world_sync.gd`, `scripts/player/player.gd`.
 
-### 3. Make GameState authoritative for stand stats
+### 3. Stand stats ownership (GameState as read-only view)
 **Problem:** Recipes and prices are stored in `StandUnit.recipes`, `GameState.recipes`, and the blackboard labels. They drift.
-**Target:** `GameState` owns prices + recipes. `StandUnit` reads from it. `StandUnit._apply_state()` only needs to sync numbers, not recipe maps.
-**Files:** `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/objects/blackboard.gd`.
+**Target:** `StandUnit` is authoritative for its own prices + recipes. The legacy primary stand writes through to `GameState` via `GameState.set_*()` so existing UI, save/load, and debug tools keep working. Non-primary stands stay isolated. UI callers send requests through `StandUnit.request_set_*()` instead of mutating `GameState` directly.
+**Done:**
+- `StandUnit.set_recipe()` and `set_price()` write through to `GameState` for the primary stand.
+- `Blackboard` and `morning_hub` no longer call `GameState.set_*()` directly.
+**Files:** `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/objects/blackboard.gd`, `scripts/ui/morning_hub.gd`.
 
 ### 4. Unified pickup/placement lifecycle
 **Problem:** `pickup_container()` has a special workstation branch and separate paths for other containers. Every new placeable item repeats this.

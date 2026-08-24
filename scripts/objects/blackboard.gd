@@ -332,15 +332,16 @@ func _apply_recipes_to_stand() -> void:
 		if v1 == "" and v2 == "":
 			continue
 		# Build recipe from current GameState values, then override
-		# with the edited fields.
+		# with the edited fields. The request is sent to the host, which
+		# applies it and broadcasts the authoritative state; GameState
+		# is updated by StandUnit.set_recipe on the host and by _apply_state
+		# on clients, so we don't duplicate the write here.
 		var recipe := GameState.get_recipe(fruit_id).duplicate()
 		if v1 != "" and v1.is_valid_float():
 			recipe["fruit_count"] = float(v1)
 		if v2 != "" and v2.is_valid_float():
 			recipe["sugar"] = float(v2)
 		stand.request_set_recipe(fruit_id, recipe)
-		# Also update local GameState immediately for responsiveness
-		GameState.set_recipe(fruit_id, recipe)
 
 
 ## Find the closest StandUnit in the scene to this blackboard.
