@@ -326,8 +326,8 @@ func _apply_transforms_batch(
 	var count := names.size()
 	for i in count:
 		var obj := _find_node_by_name_only(names[i])
-		if obj and obj.has_method("_net_set_target"):
-			obj._net_set_target(positions[i], rotations[i])
+		if obj and obj.has_method("net_set_target"):
+			obj.net_set_target(positions[i], rotations[i])
 
 
 ## Sync a property change on a world object from host to all clients.
@@ -385,8 +385,8 @@ func _apply_transform(
 	if obj:
 		# If the object supports interpolation (e.g. NPCs), set the target
 		# instead of snapping position directly
-		if obj.has_method("_net_set_target"):
-			obj._net_set_target(pos, rot)
+		if obj.has_method("net_set_target"):
+			obj.net_set_target(pos, rot)
 		else:
 			obj.global_position = pos
 			obj.global_rotation = rot

@@ -267,7 +267,7 @@ func _physics_client_interpolate(delta: float) -> void:
 		basis = Basis(curr_q.slerp(target_q, t))
 
 
-func _net_set_target(pos: Vector3, rot: Vector3) -> void:
+func net_set_target(pos: Vector3, rot: Vector3) -> void:
 	_net_target_pos = pos
 	_net_target_rot = rot
 	_has_net_target = true

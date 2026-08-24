@@ -281,7 +281,7 @@ func _physics_client_interpolate(delta: float) -> void:
 ## Called by WorldSync._apply_transform when the object supports
 ## interpolation. Sets the target position/rotation that
 ## _physics_client_interpolate moves toward.
-func _net_set_target(pos: Vector3, rot: Vector3) -> void:
+func net_set_target(pos: Vector3, rot: Vector3) -> void:
 	_net_target_pos = pos
 	_net_target_rot = rot
 
