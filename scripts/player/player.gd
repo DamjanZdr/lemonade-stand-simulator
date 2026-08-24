@@ -192,6 +192,12 @@ var _last_synced_rot: Vector3 = Vector3.ZERO
 const SYNC_MIN_INTERVAL: float = 0.05 # Max 20 updates/sec while moving
 const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
 
+# Remote player interpolation target (set by RPC, lerped toward in _process)
+var _net_target_pos: Vector3 = Vector3.ZERO
+var _net_target_rot: Vector3 = Vector3.ZERO
+var _has_net_target: bool = false
+const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
+
 # Animation state
 var _current_anim: String = "Idle"
 var _was_moving: bool = false
@@ -464,7 +470,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	# Remote players: update animation based on velocity from RPC sync
+	# Remote players: interpolate toward network target and update animation
 	if not is_multiplayer_authority():
 		_time_since_sync += delta
 		# If no position RPC arrived recently, the authority has stopped
@@ -474,6 +480,11 @@ func _process(delta: float) -> void:
 		else:
 			# Decay velocity for smooth interpolation between RPCs
 			velocity = velocity.move_toward(Vector3.ZERO, 30.0 * delta)
+		# Smoothly interpolate toward the network target position
+		if _has_net_target:
+			var t := clampf(NET_LERP_SPEED * delta, 0.0, 1.0)
+			global_position = global_position.lerp(_net_target_pos, t)
+			global_rotation.y = lerpf(global_rotation.y, _net_target_rot.y, t)
 		_update_anim()
 
 
@@ -529,8 +540,8 @@ func _try_sync_position(delta: float) -> void:
 
 
 ## Simple position sync RPC. Only the authority sends; all other peers
-## receive and update the remote player's transform directly.
-@rpc("authority", "call_local", "reliable")
+## receive and set the interpolation target (smoothed in _process).
+@rpc("authority", "call_local", "unreliable")
 func _sync_position(pos: Vector3, rot: Vector3, sprinting: bool = false) -> void:
 	if is_multiplayer_authority():
 		return # We're the authority, we already have the right position
@@ -540,8 +551,10 @@ func _sync_position(pos: Vector3, rot: Vector3, sprinting: bool = false) -> void
 	_prev_sync_pos = pos
 	_is_sprinting = sprinting
 	_time_since_sync = 0.0
-	global_position = pos
-	global_rotation = rot
+	# Set interpolation target instead of snapping directly
+	_net_target_pos = pos
+	_net_target_rot = rot
+	_has_net_target = true
 
 
 func _poll_hint() -> void:
