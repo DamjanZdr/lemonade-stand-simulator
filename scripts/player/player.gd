@@ -488,24 +488,22 @@ func _process(delta: float) -> void:
 			var t := clampf(NET_LERP_SPEED * delta, 0.0, 1.0)
 			global_position = global_position.lerp(_net_target_pos, t)
 			global_rotation.y = lerpf(global_rotation.y, _net_target_rot.y, t)
-		# Update neck/head bones so other players see where this player is looking
+		# Update neck/head bones so other players see where this player is looking.
+		# PlayerVisuals applies the pose in _process after the child AnimationPlayer
+		# has run, so the pose isn't overwritten by the current animation.
 		if visuals != null and visuals.visible:
 			var neck_yaw := global_rotation.y + _net_head_yaw
-			visuals.update_look_bones(neck_yaw, _net_head_pitch, global_rotation.y)
-			# Re-apply after AnimationPlayer has run this frame so the pose
-			# isn't overwritten by the current animation.
-			visuals.call_deferred("update_look_bones", neck_yaw, _net_head_pitch, global_rotation.y)
+			visuals.set_look_target(neck_yaw, _net_head_pitch, global_rotation.y)
 		_update_anim()
 	else:
-		# Local player: update neck/head bones based on camera look direction
+		# Local player: update neck/head bones based on camera look direction.
+		# PlayerVisuals applies the pose in _process after the child AnimationPlayer
+		# has run, so the pose isn't overwritten by the current animation.
 		if visuals != null and visuals.visible:
 			var cam_yaw := head.global_rotation.y
 			var cam_pitch := head.rotation.x
 			var body_yaw := global_rotation.y
-			visuals.update_look_bones(cam_yaw, cam_pitch, body_yaw)
-			# Re-apply after AnimationPlayer has run this frame so the pose
-			# isn't overwritten by the current animation.
-			visuals.call_deferred("update_look_bones", cam_yaw, cam_pitch, body_yaw)
+			visuals.set_look_target(cam_yaw, cam_pitch, body_yaw)
 
 
 func _physics_process(delta: float) -> void:
