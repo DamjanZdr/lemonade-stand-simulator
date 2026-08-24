@@ -61,12 +61,16 @@ func _assign_net_id(obj: Node) -> int:
 	return id
 
 
-func _get_net_id(obj: Node) -> int:
+func get_net_id(obj: Node) -> int:
 	if obj == null or not is_instance_valid(obj):
 		return -1
 	if obj.has_meta(NET_ID_META):
 		return obj.get_meta(NET_ID_META) as int
 	return -1
+
+
+func _get_net_id(obj: Node) -> int:
+	return get_net_id(obj)
 
 
 func _find_node_by_net_id(net_id: int) -> Node:
@@ -631,10 +635,10 @@ func _sync_boxes_fall(box_pos: Vector3) -> void:
 ## the host moves an object (e.g. a supply box from the truck grid to
 ## the world) and clients need to match the hierarchy.
 @rpc("authority", "call_local", "reliable")
-func _reparent_on_clients(new_parent_path_str: String, obj_name: String) -> void:
+func _reparent_on_clients(new_parent_path_str: String, obj_name: String, net_id: int) -> void:
 	if is_host():
 		return
-	var obj := _find_node("", obj_name)
+	var obj := _find_node("", obj_name, net_id)
 	if obj == null:
 		GameLog.log("[WorldSync] Client reparent: object not found: " + obj_name)
 		return
@@ -656,30 +660,32 @@ func _reparent_on_clients(new_parent_path_str: String, obj_name: String) -> void
 ## Sync item attachments for a workstation across all peers. When a
 ## player picks up a table, the items on top must be reparented to that
 ## table on every client so they follow the table when it moves.
-## 'item_names' is the list of item node names currently attached.
+## 'item_data' is an Array[Dictionary] of { name, net_id } for attached items.
 ## 'parent_name' is the workstation name.
-func sync_workstation_items(parent_name: String, item_names: Array[String]) -> void:
+func sync_workstation_items(parent_name: String, item_data: Array[Dictionary]) -> void:
 	if not is_host():
-		_rpc_request_workstation_items.rpc_id(1, parent_name, item_names)
+		_rpc_request_workstation_items.rpc_id(1, parent_name, item_data)
 		return
-	_reparent_workstation_items_on_host(parent_name, item_names)
+	_reparent_workstation_items_on_host(parent_name, item_data)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_workstation_items(parent_name: String, item_names: Array[String]) -> void:
+func _rpc_request_workstation_items(parent_name: String, item_data: Array[Dictionary]) -> void:
 	if not is_host():
 		return
-	_reparent_workstation_items_on_host(parent_name, item_names)
+	_reparent_workstation_items_on_host(parent_name, item_data)
 
 
-func _reparent_workstation_items_on_host(parent_name: String, item_names: Array[String]) -> void:
+func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[Dictionary]) -> void:
 	var parent := _find_node_by_name_only(parent_name)
 	if parent == null or not is_instance_valid(parent):
 		GameLog.log("[WorldSync] Workstation items: parent not found: " + parent_name)
 		return
 	var parent_path := _node_path_to_string(parent.get_path())
-	for item_name in item_names:
-		var item := _find_node_by_name_only(item_name)
+	for entry in item_data:
+		var item_name: String = entry.get("name", "")
+		var net_id: int = entry.get("net_id", -1)
+		var item := _find_node("", item_name, net_id)
 		if item == null or not is_instance_valid(item):
 			continue
 		if item.get_parent() == parent:
@@ -691,7 +697,7 @@ func _reparent_workstation_items_on_host(parent_name: String, item_names: Array[
 		item.global_position = old_pos
 		item.global_rotation = old_rot
 		# Tell all clients to do the same reparent
-		_reparent_on_clients.rpc(parent_path, item_name)
+		_reparent_on_clients.rpc(parent_path, item_name, net_id)
 
 
 ## Move an existing object to a new position/rotation on the host and
@@ -701,25 +707,27 @@ func _reparent_workstation_items_on_host(parent_name: String, item_names: Array[
 func sync_move_object(obj: Node, new_pos: Vector3, new_rot: Vector3) -> void:
 	if obj == null or not is_instance_valid(obj):
 		return
+	var net_id := _get_net_id(obj)
+	var obj_name := obj.name
 	if not is_host():
-		_rpc_request_move.rpc_id(1, obj.name, new_pos, new_rot)
+		_rpc_request_move.rpc_id(1, obj_name, net_id, new_pos, new_rot)
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
-	_move_on_clients.rpc(obj.name, new_pos, new_rot)
+	_move_on_clients.rpc(obj_name, net_id, new_pos, new_rot)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_move(obj_name: String, new_pos: Vector3, new_rot: Vector3) -> void:
+func _rpc_request_move(obj_name: String, net_id: int, new_pos: Vector3, new_rot: Vector3) -> void:
 	if not is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node("", obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] Host _rpc_request_move: object not found: " + obj_name)
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
-	_move_on_clients.rpc(obj_name, new_pos, new_rot)
+	_move_on_clients.rpc(obj.name, net_id, new_pos, new_rot)
 
 
 ## Move AND show/hide an object in a single RPC. More reliable than
@@ -734,18 +742,21 @@ func sync_move_and_show(
 ) -> void:
 	if obj == null or not is_instance_valid(obj):
 		return
+	var net_id := _get_net_id(obj)
+	var obj_name := obj.name
 	if not is_host():
-		_rpc_request_move_and_show.rpc_id(1, obj.name, new_pos, new_rot, new_scale, show)
+		_rpc_request_move_and_show.rpc_id(1, obj_name, net_id, new_pos, new_rot, new_scale, show)
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	obj.scale = new_scale
-	_move_and_show_on_clients.rpc(obj.name, new_pos, new_rot, new_scale, show)
+	_move_and_show_on_clients.rpc(obj_name, net_id, new_pos, new_rot, new_scale, show)
 
 
 @rpc("any_peer", "reliable")
 func _rpc_request_move_and_show(
 	obj_name: String,
+	net_id: int,
 	new_pos: Vector3,
 	new_rot: Vector3,
 	new_scale: Vector3,
@@ -753,14 +764,14 @@ func _rpc_request_move_and_show(
 ) -> void:
 	if not is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node("", obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] Host _rpc_request_move_and_show: object not found: " + obj_name)
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	obj.scale = new_scale
-	_move_and_show_on_clients.rpc(obj_name, new_pos, new_rot, new_scale, show)
+	_move_and_show_on_clients.rpc(obj.name, net_id, new_pos, new_rot, new_scale, show)
 
 
 ## Reparent an object to a new parent on the host and sync to clients.
@@ -776,14 +787,14 @@ func sync_reparent_object(obj: Node, new_parent: Node) -> void:
 	obj.global_position = old_pos
 	obj.global_rotation = old_rot
 	var new_parent_path := _node_path_to_string(new_parent.get_path())
-	_reparent_on_clients.rpc(new_parent_path, obj.name)
+	_reparent_on_clients.rpc(new_parent_path, obj.name, _get_net_id(obj))
 
 
 @rpc("authority", "call_local", "reliable")
-func _move_on_clients(obj_name: String, new_pos: Vector3, new_rot: Vector3) -> void:
+func _move_on_clients(obj_name: String, net_id: int, new_pos: Vector3, new_rot: Vector3) -> void:
 	if is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node("", obj_name, net_id)
 	if obj:
 		obj.global_position = new_pos
 		obj.global_rotation = new_rot
@@ -792,6 +803,7 @@ func _move_on_clients(obj_name: String, new_pos: Vector3, new_rot: Vector3) -> v
 @rpc("authority", "call_local", "reliable")
 func _move_and_show_on_clients(
 	obj_name: String,
+	net_id: int,
 	new_pos: Vector3,
 	new_rot: Vector3,
 	new_scale: Vector3,
@@ -799,7 +811,7 @@ func _move_and_show_on_clients(
 ) -> void:
 	if is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node("", obj_name, net_id)
 	if obj:
 		obj.global_position = new_pos
 		obj.global_rotation = new_rot
@@ -817,38 +829,46 @@ func _move_and_show_on_clients(
 ## and is now "in the player's hands"). The object stays in the tree
 ## on the host but is removed from the holder's scene tree, so we hide
 ## it on clients instead of despawning it.
-func sync_hide_object(obj_name: String) -> void:
-	if not is_host():
-		_rpc_request_set_visible.rpc_id(1, obj_name, false)
+func sync_hide_object(obj: Node) -> void:
+	if obj == null or not is_instance_valid(obj):
 		return
-	_set_visible_on_clients.rpc(obj_name, false)
+	var net_id := _get_net_id(obj)
+	var obj_name := obj.name
+	if not is_host():
+		_rpc_request_set_visible.rpc_id(1, obj_name, net_id, false)
+		return
+	_set_visible_on_clients.rpc(obj_name, net_id, false)
 
 
 ## Show an object on all clients (e.g. when a workstation is placed
 ## back down after being picked up).
-func sync_show_object(obj_name: String) -> void:
-	if not is_host():
-		_rpc_request_set_visible.rpc_id(1, obj_name, true)
+func sync_show_object(obj: Node) -> void:
+	if obj == null or not is_instance_valid(obj):
 		return
-	_set_visible_on_clients.rpc(obj_name, true)
+	var net_id := _get_net_id(obj)
+	var obj_name := obj.name
+	if not is_host():
+		_rpc_request_set_visible.rpc_id(1, obj_name, net_id, true)
+		return
+	_set_visible_on_clients.rpc(obj_name, net_id, true)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_set_visible(obj_name: String, show: bool) -> void:
+func _rpc_request_set_visible(obj_name: String, net_id: int, show: bool) -> void:
 	if not is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node("", obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] Host _rpc_request_set_visible: object not found: " + obj_name)
 		return
-	_set_visible_on_clients.rpc(obj_name, show)
+	_set_visible_on_clients.rpc(obj.name, net_id, show)
 
 
 @rpc("authority", "call_local", "reliable")
-func _set_visible_on_clients(obj_name: String, visible: bool) -> void:
+func _set_visible_on_clients(obj_name: String, net_id: int, visible: bool) -> void:
 	if is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node("", obj_name, net_id)
 	if obj:
 		obj.visible = visible
 		# Also disable collision so hidden objects don't block the player
@@ -982,8 +1002,9 @@ func _find_node_by_name(root: Node, target_name: String) -> Node:
 func sync_transform(obj: Node, pos: Vector3, rot: Vector3) -> void:
 	if not is_host() or obj == null or not is_instance_valid(obj):
 		return
+	var net_id := _get_net_id(obj)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_apply_transform.rpc_id(0, parent_path, obj.name, pos, rot, 1) # 1 = unreliable channel
+	_apply_transform.rpc_id(0, parent_path, obj.name, net_id, pos, rot, 1) # 1 = unreliable channel
 
 
 ## Batch sync: sends ALL NPC transforms in a single RPC instead of one
@@ -1023,23 +1044,31 @@ func _apply_transforms_batch(
 func sync_property(obj: Node, prop: String, value: Variant) -> void:
 	if obj == null or not is_instance_valid(obj):
 		return
-	if not is_host():
-		_rpc_request_property.rpc_id(1, obj.name, prop, value)
-		return
+	var net_id := _get_net_id(obj)
+	var obj_name := obj.name
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_apply_property.rpc(parent_path, obj.name, prop, value)
+	if not is_host():
+		_rpc_request_property.rpc_id(1, parent_path, obj_name, net_id, prop, value)
+		return
+	_apply_property.rpc(parent_path, obj_name, net_id, prop, value)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_property(obj_name: String, prop: String, value: Variant) -> void:
+func _rpc_request_property(
+	parent_path_str: String,
+	obj_name: String,
+	net_id: int,
+	prop: String,
+	value: Variant,
+) -> void:
 	if not is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		return
 	obj.set(prop, value)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_apply_property.rpc(parent_path, obj_name, prop, value)
+	_apply_property.rpc(parent_path, obj_name, net_id, prop, value)
 
 
 ## Sync multiple property changes at once (more efficient than calling
@@ -1047,60 +1076,76 @@ func _rpc_request_property(obj_name: String, prop: String, value: Variant) -> vo
 func sync_properties(obj: Node, props: Dictionary) -> void:
 	if obj == null or not is_instance_valid(obj):
 		return
-	if not is_host():
-		_rpc_request_properties.rpc_id(1, obj.name, props)
-		return
+	var net_id := _get_net_id(obj)
+	var obj_name := obj.name
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_apply_properties.rpc(parent_path, obj.name, props)
+	if not is_host():
+		_rpc_request_properties.rpc_id(1, parent_path, obj_name, net_id, props)
+		return
+	_apply_properties.rpc(parent_path, obj_name, net_id, props)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_properties(obj_name: String, props: Dictionary) -> void:
+func _rpc_request_properties(
+	parent_path_str: String,
+	obj_name: String,
+	net_id: int,
+	props: Dictionary,
+) -> void:
 	if not is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		return
 	for key in props:
 		obj.set(key, props[key])
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_apply_properties.rpc(parent_path, obj_name, props)
+	_apply_properties.rpc(parent_path, obj_name, net_id, props)
 
 
 ## Call a method on a world object on all clients (e.g. update_display).
 func sync_call(obj: Node, method: String, args: Array = []) -> void:
 	if obj == null or not is_instance_valid(obj):
 		return
-	if not is_host():
-		_rpc_request_call.rpc_id(1, obj.name, method, args)
-		return
+	var net_id := _get_net_id(obj)
+	var obj_name := obj.name
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_call_method.rpc(parent_path, obj.name, method, args)
+	if not is_host():
+		_rpc_request_call.rpc_id(1, parent_path, obj_name, net_id, method, args)
+		return
+	_call_method.rpc(parent_path, obj_name, net_id, method, args)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_call(obj_name: String, method: String, args: Array) -> void:
+func _rpc_request_call(
+	parent_path_str: String,
+	obj_name: String,
+	net_id: int,
+	method: String,
+	args: Array,
+) -> void:
 	if not is_host():
 		return
-	var obj := _find_node_by_name_only(obj_name)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		return
 	if obj.has_method(method):
 		obj.callv(method, args)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_call_method.rpc(parent_path, obj_name, method, args)
+	_call_method.rpc(parent_path, obj_name, net_id, method, args)
 
 
 @rpc("authority", "call_local", "reliable")
 func _apply_property(
 	parent_path_str: String,
 	obj_name: String,
+	net_id: int,
 	prop: String,
 	value: Variant,
 ) -> void:
 	if is_host():
 		return
-	var obj := _find_node(parent_path_str, obj_name)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj:
 		obj.set(prop, value)
 
@@ -1109,13 +1154,14 @@ func _apply_property(
 func _apply_transform(
 	parent_path_str: String,
 	obj_name: String,
+	net_id: int,
 	pos: Vector3,
 	rot: Vector3,
 	_channel: int,
 ) -> void:
 	if is_host():
 		return
-	var obj := _find_node(parent_path_str, obj_name)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj:
 		# If the object supports interpolation (e.g. NPCs), set the target
 		# instead of snapping position directly
@@ -1127,26 +1173,42 @@ func _apply_transform(
 
 
 @rpc("authority", "call_local", "reliable")
-func _apply_properties(parent_path_str: String, obj_name: String, props: Dictionary) -> void:
+func _apply_properties(
+	parent_path_str: String,
+	obj_name: String,
+	net_id: int,
+	props: Dictionary,
+) -> void:
 	if is_host():
 		return
-	var obj := _find_node(parent_path_str, obj_name)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj:
 		for key in props:
 			obj.set(key, props[key])
 
 
 @rpc("authority", "call_local", "reliable")
-func _call_method(parent_path_str: String, obj_name: String, method: String, args: Array) -> void:
+func _call_method(
+	parent_path_str: String,
+	obj_name: String,
+	net_id: int,
+	method: String,
+	args: Array,
+) -> void:
 	if is_host():
 		return
-	var obj := _find_node(parent_path_str, obj_name)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj and obj.has_method(method):
 		obj.callv(method, args)
 
 
-func _find_node(parent_path_str: String, obj_name: String) -> Node:
-	# Check cache first
+func _find_node(parent_path_str: String, obj_name: String, net_id: int = -1) -> Node:
+	# Prefer stable net_id lookup (survives reparenting).
+	if net_id >= 0:
+		var by_id := _find_node_by_net_id(net_id)
+		if by_id != null:
+			return by_id
+	# Check name cache next
 	if _node_cache.has(obj_name):
 		var cached: Node = _node_cache[obj_name]
 		if is_instance_valid(cached):

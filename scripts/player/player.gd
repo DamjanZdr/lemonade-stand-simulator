@@ -1271,12 +1271,7 @@ func _place_filled_cup() -> void:
 		"state": Cup.CupState.FILLED,
 		"_net_groups": ["container"],
 	}
-	var cup := WorldSync.request_spawn(
-		"res://scenes/objects/cup.tscn",
-		cup_pos,
-		cup_rot,
-		state,
-	) as Cup
+	var cup := WorldSync.request_spawn("res://scenes/objects/cup.tscn", cup_pos, cup_rot, state) as Cup
 	if cup:
 		cup.scale = placement_scale
 		cup.add_to_group("container")
@@ -2598,17 +2593,17 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 		# Remember which items got attached so we can sync the attachment
 		# to all other peers (host + clients). Without this, only the local
 		# player has the items parented to the table.
-		var attached_names: Array[String] = []
+		var attached_items: Array[Dictionary] = []
 		for child in interactable.get_children():
 			if child.is_in_group("container"):
-				attached_names.append(child.name)
-		held_item_data["workstation_attached_items"] = attached_names
-		if not attached_names.is_empty():
-			WorldSync.sync_workstation_items(interactable.name, attached_names)
+				attached_items.append({ "name": child.name, "net_id": WorldSync.get_net_id(child) })
+		held_item_data["workstation_attached_items"] = attached_items
+		if not attached_items.is_empty():
+			WorldSync.sync_workstation_items(interactable.name, attached_items)
 		var pickup_pos := interactable.global_position
 		source_parent.remove_child(interactable)
 		# Hide the workstation on clients (it's "in the player's hands" now)
-		WorldSync.sync_hide_object(interactable.name)
+		WorldSync.sync_hide_object(interactable)
 		EventBus.container_picked_up.emit(container_type, interactable)
 		AudioManager.play_sfx("table", pickup_pos)
 		hold_container(container_type, 0.0, 0, false, { })

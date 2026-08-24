@@ -36,9 +36,13 @@ func _rpc_do_thing(params) -> void:
 ```
 **Files to refactor:** `scripts/objects/fruit_bin.gd`, `scripts/objects/supply_box.gd`, `scripts/objects/blackboard.gd`, `scripts/stand/stand_unit.gd`.
 
-### 2. Stable network IDs for spawned objects
+### 2. Stable network IDs for spawned objects — DONE
 **Problem:** Objects are located by `name` + parent path. Reparenting and duplicate names break sync, causing missed despawns and duplicated placements.
-**Target:** Assign a unique `net_id` to every `WorldSync`-spawned object and use that ID for despawn / reparent / property sync.
+**Done:**
+- `WorldSync` assigns a unique integer `net_id` meta to every spawned object and to objects captured by snapshots.
+- Spawn, despawn, property sync, method sync, transform sync, move/show, and reparent RPCs all carry and prefer `net_id`.
+- `_find_node()` now tries `net_id` first, then name cache, then path, then tree search.
+- Workstation item attachment sync passes `{ name, net_id }` dictionaries instead of just names.
 **Files:** `scripts/multiplayer/world_sync.gd`, `scripts/player/player.gd`.
 
 ### 3. Make GameState authoritative for stand stats
