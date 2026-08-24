@@ -62,6 +62,24 @@ func _sync_day_timer(timer: float, duration: float, is_over: bool) -> void:
 	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
 
 
+## Sync the current day phase and day number to all clients.
+## Called whenever the host changes the phase (morning/day/evening).
+func _sync_phase_to_clients() -> void:
+	if not multiplayer.is_server():
+		return
+	if multiplayer.get_peers().size() > 0:
+		_sync_day_phase.rpc(current_phase, day_number)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_day_phase(phase: int, day: int) -> void:
+	if multiplayer.is_server():
+		return
+	current_phase = phase as Phase
+	day_number = day
+	EventBus.day_phase_changed.emit(current_phase, day_number)
+
+
 func start_morning() -> void:
 	current_phase = Phase.MORNING
 	day_start_money = GameState.money
@@ -71,6 +89,7 @@ func start_morning() -> void:
 	GameState.temperature = temp
 	EventBus.weather_changed.emit(temp)
 	EventBus.day_phase_changed.emit(Phase.MORNING, day_number)
+	_sync_phase_to_clients()
 
 
 func start_day() -> void:
@@ -85,6 +104,7 @@ func start_day() -> void:
 	_day_running = true
 	day_time_over = false
 	EventBus.day_phase_changed.emit(Phase.DAY, day_number)
+	_sync_phase_to_clients()
 
 
 func trigger_end_day() -> void:
@@ -99,6 +119,7 @@ func end_day() -> void:
 	day_costs = day_start_money - GameState.money + day_revenue
 	current_phase = Phase.EVENING
 	EventBus.day_phase_changed.emit(Phase.EVENING, day_number)
+	_sync_phase_to_clients()
 
 
 func end_evening() -> void:
