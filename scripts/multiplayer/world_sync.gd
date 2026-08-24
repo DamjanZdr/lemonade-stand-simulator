@@ -478,6 +478,47 @@ func _reparent_on_clients(new_parent_path_str: String, obj_name: String) -> void
 	GameLog.log("[WorldSync] Client reparented %s to %s" % [obj_name, new_parent_path_str])
 
 
+## Sync item attachments for a workstation across all peers. When a
+## player picks up a table, the items on top must be reparented to that
+## table on every client so they follow the table when it moves.
+## 'item_names' is the list of item node names currently attached.
+## 'parent_name' is the workstation name.
+func sync_workstation_items(parent_name: String, item_names: Array[String]) -> void:
+	if not is_host():
+		_rpc_request_workstation_items.rpc_id(1, parent_name, item_names)
+		return
+	_reparent_workstation_items_on_host(parent_name, item_names)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_workstation_items(parent_name: String, item_names: Array[String]) -> void:
+	if not is_host():
+		return
+	_reparent_workstation_items_on_host(parent_name, item_names)
+
+
+func _reparent_workstation_items_on_host(parent_name: String, item_names: Array[String]) -> void:
+	var parent := _find_node_by_name_only(parent_name)
+	if parent == null or not is_instance_valid(parent):
+		GameLog.log("[WorldSync] Workstation items: parent not found: " + parent_name)
+		return
+	var parent_path := _node_path_to_string(parent.get_path())
+	for item_name in item_names:
+		var item := _find_node_by_name_only(item_name)
+		if item == null or not is_instance_valid(item):
+			continue
+		if item.get_parent() == parent:
+			continue
+		var old_pos: Vector3 = item.global_position
+		var old_rot: Vector3 = item.global_rotation
+		item.get_parent().remove_child(item)
+		parent.add_child(item)
+		item.global_position = old_pos
+		item.global_rotation = old_rot
+		# Tell all clients to do the same reparent
+		_reparent_on_clients.rpc(parent_path, item_name)
+
+
 ## Move an existing object to a new position/rotation on the host and
 ## sync to all clients. Used when a workstation (table) is picked up
 ## and placed somewhere else — the same node is reused (not destroyed

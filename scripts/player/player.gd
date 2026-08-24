@@ -2584,6 +2584,16 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 		var source_parent := interactable.get_parent()
 		held_item_data["source_parent"] = source_parent
 		held_item_data["source_original_transform"] = interactable.global_transform
+		# Remember which items got attached so we can sync the attachment
+		# to all other peers (host + clients). Without this, only the local
+		# player has the items parented to the table.
+		var attached_names: Array[String] = []
+		for child in interactable.get_children():
+			if child.is_in_group("container"):
+				attached_names.append(child.name)
+		held_item_data["workstation_attached_items"] = attached_names
+		if not attached_names.is_empty():
+			WorldSync.sync_workstation_items(interactable.name, attached_names)
 		var pickup_pos := interactable.global_position
 		source_parent.remove_child(interactable)
 		# Hide the workstation on clients (it's "in the player's hands" now)

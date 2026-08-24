@@ -192,6 +192,9 @@ func _apply_state(
 		price_changed.emit(ft, prices[ft])
 	for ft in changed_recipes:
 		recipe_changed.emit(ft, recipes[ft])
+		# Keep the global GameState in sync so other systems (morning hub,
+		# save manager, etc.) see the new recipe on clients too.
+		GameState.set_recipe(ft, recipes[ft])
 
 
 func _ready() -> void:
