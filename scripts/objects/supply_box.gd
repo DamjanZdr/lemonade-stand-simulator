@@ -223,14 +223,10 @@ func interact(player: Node) -> void:
 	if p == null or p.held_item != p.HeldItem.NONE:
 		return
 	GameLog.log("[SupplyBox] interact name=%s is_host=%s" % [name, WorldSync.is_host()])
-	# Release the delivery-grid slot immediately on this peer so the
-	# next placement doesn't use a stale stack height while waiting for
-	# the host's despawn RPC to arrive.
-	if has_meta("delivery_grid_path") and has_meta("delivery_cell_idx"):
-		var grid_path: NodePath = get_meta("delivery_grid_path")
-		var grid := get_tree().current_scene.get_node_or_null(grid_path) as DeliveryGrid
-		if grid != null:
-			grid.release_slot_index(get_meta("delivery_cell_idx") as int)
+	# Release the delivery-grid slot immediately on this peer as a
+	# prediction; the host will also release it when it authoritatively
+	# despawns the box.
+	release_delivery_slot(self)
 
 	# Determine what the player picks up BEFORE removing the local box.
 	var held_type: int = p.HeldItem.SUPPLY_BOX
@@ -293,6 +289,20 @@ static func make_boxes_above_pos_fall(box_pos: Vector3) -> void:
 				box.remove_meta("fall_target_y")
 				AudioManager.play_sfx("box_drop", box.global_position),
 		)
+
+
+## Release the delivery-grid slot this box occupies, if any. Safe to call
+## on any peer; the actual grid state is kept consistent by the host
+## through WorldSync.despawn_networked().
+static func release_delivery_slot(box: SupplyBox) -> void:
+	if box == null or not is_instance_valid(box):
+		return
+	if not box.has_meta("delivery_grid_path") or not box.has_meta("delivery_cell_idx"):
+		return
+	var grid_path: NodePath = box.get_meta("delivery_grid_path")
+	var grid := box.get_tree().current_scene.get_node_or_null(grid_path) as DeliveryGrid
+	if grid != null:
+		grid.release_slot_index(box.get_meta("delivery_cell_idx") as int)
 
 
 func interact_secondary(player: Node) -> void:

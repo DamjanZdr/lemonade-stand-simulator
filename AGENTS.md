@@ -38,7 +38,9 @@ func _rpc_do_thing(params) -> void:
 - `FruitBin` now routes `add_amount()` and `take_amount()` through host-only `_apply_*` helpers. Clients send `_rpc_request_*` and do not mutate locally.
 - `StandUnit.set_recipe()` and `set_price()` now update `GameState` consistently via `GameState.set_*()` on the legacy primary stand.
 - `Blackboard` and `morning_hub` no longer duplicate GameState writes; they send requests through `StandUnit.request_set_*()` and rely on the resulting state sync.
-**Still TODO:** `SupplyBox` (already uses `request_despawn` for pick-up; slot release could be centralized).
+**Done:**
+- `FruitBin`, `StandUnit` recipe/price, and `SupplyBox` despawn now all follow the request → host applies → broadcast pattern.
+- `SupplyBox.release_delivery_slot()` is a shared helper used both for client-side prediction on pick-up and for host-authoritative release inside `WorldSync.despawn_networked()`. All clients also release the slot when they receive the despawn RPC, keeping every peer's delivery grid consistent.
 **Files to refactor:** `scripts/objects/fruit_bin.gd`, `scripts/objects/supply_box.gd`, `scripts/objects/blackboard.gd`, `scripts/stand/stand_unit.gd`.
 
 ### 2. Stable network IDs for spawned objects — DONE

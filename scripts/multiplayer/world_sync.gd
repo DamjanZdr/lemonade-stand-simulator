@@ -639,8 +639,10 @@ func despawn_networked(obj: Node) -> void:
 	GameLog.log(
 		"[WorldSync] Host despawning %s net_id=%d parent=%s" % [obj_name, net_id, parent_path]
 	)
-	# If this is a supply box, make boxes above fall on the host AND clients
+	# If this is a supply box, release any delivery-grid slot it occupies
+	# (host-authoritative) and make boxes above fall on the host AND clients.
 	if obj is SupplyBox:
+		SupplyBox.release_delivery_slot(obj as SupplyBox)
 		SupplyBox.make_boxes_above_pos_fall(obj.global_position)
 		_sync_boxes_fall.rpc(obj.global_position)
 	obj.queue_free()
@@ -996,6 +998,10 @@ func _despawn_on_clients(parent_path_str: String, obj_name: String, net_id: int)
 	if obj == null:
 		obj = _find_node_by_name(get_tree().current_scene, obj_name)
 	if obj:
+		# Release any delivery-grid slot this box occupied so the client's
+		# grid matches the host's.
+		if obj is SupplyBox:
+			SupplyBox.release_delivery_slot(obj as SupplyBox)
 		obj.queue_free()
 		_node_cache.erase(obj_name)
 		GameLog.log("[WorldSync] Client despawned %s OK" % obj_name)
