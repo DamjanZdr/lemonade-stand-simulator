@@ -1397,6 +1397,7 @@ func _drop_held_box() -> void:
 	if box:
 		box.update_metrics()
 	AudioManager.play_sfx("box_drop", drop_pos)
+	_destroy_ghost()
 	clear_held()
 
 
