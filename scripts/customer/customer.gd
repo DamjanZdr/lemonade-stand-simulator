@@ -137,6 +137,10 @@ func _ready() -> void:
 			cp.visible = false
 	add_to_group("customers")
 	_ignore_pedestrian_collisions()
+	# Clients don't need collision — positions are synced from host.
+	# Disabling collision shapes saves physics processing on clients.
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		_disable_collision()
 
 
 func _process(_delta: float) -> void:
@@ -959,6 +963,15 @@ func _ignore_pedestrian_collisions() -> void:
 			continue
 		PhysicsServer3D.body_add_collision_exception(get_rid(), other.get_rid())
 		PhysicsServer3D.body_add_collision_exception(other.get_rid(), get_rid())
+
+
+## Disables all collision shapes on this NPC. Called on clients since
+## NPC positions are synced from the host — clients don't need physics.
+func _disable_collision() -> void:
+	for child in find_children("*", "CollisionShape3D", true, false):
+		var col := child as CollisionShape3D
+		if col:
+			col.disabled = true
 
 
 func _create_white_texture(size: int = 4) -> ImageTexture:

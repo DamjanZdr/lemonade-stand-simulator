@@ -44,7 +44,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	# Host: periodically sync all pedestrian positions to clients.
 	# Clients interpolate toward these positions smoothly (server-authoritative,
-	# like Schedule 1 / FishNet). Uses unreliable RPCs for bandwidth efficiency.
+	# like Schedule 1 / FishNet). Uses a single batched unreliable RPC for
+	# all pedestrians to minimize network overhead.
 	if not WorldSync.is_host():
 		return
 	_sync_timer += delta
@@ -55,11 +56,20 @@ func _process(delta: float) -> void:
 		func(p):
 			return is_instance_valid(p),
 	)
+	if _pedestrians.is_empty():
+		return
+	var names := PackedStringArray()
+	var positions := PackedVector3Array()
+	var rotations := PackedVector3Array()
 	for ped in _pedestrians:
 		var p := ped as Pedestrian
 		if p == null:
 			continue
-		WorldSync.sync_transform(p, p.global_position, p.global_rotation)
+		names.append(p.name)
+		positions.append(p.global_position)
+		rotations.append(p.global_rotation)
+	if names.size() > 0:
+		WorldSync.sync_transforms_batch(names, positions, rotations)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:

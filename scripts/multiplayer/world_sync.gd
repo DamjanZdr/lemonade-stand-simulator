@@ -301,6 +301,35 @@ func sync_transform(obj: Node, pos: Vector3, rot: Vector3) -> void:
 	_apply_transform.rpc_id(0, parent_path, obj.name, pos, rot, 1) # 1 = unreliable channel
 
 
+## Batch sync: sends ALL NPC transforms in a single RPC instead of one
+## RPC per NPC. Dramatically reduces network overhead when many NPCs
+## are active. Each entry in the arrays corresponds to one NPC:
+## names[i] / positions[i] / rotations[i].
+func sync_transforms_batch(
+	names: PackedStringArray,
+	positions: PackedVector3Array,
+	rotations: PackedVector3Array,
+) -> void:
+	if not is_host():
+		return
+	_apply_transforms_batch.rpc_id(0, names, positions, rotations)
+
+
+@rpc("authority", "call_local", "unreliable")
+func _apply_transforms_batch(
+	names: PackedStringArray,
+	positions: PackedVector3Array,
+	rotations: PackedVector3Array,
+) -> void:
+	if is_host():
+		return
+	var count := names.size()
+	for i in count:
+		var obj := _find_node_by_name_only(names[i])
+		if obj and obj.has_method("_net_set_target"):
+			obj._net_set_target(positions[i], rotations[i])
+
+
 ## Sync a property change on a world object from host to all clients.
 ## Use this for container contents (fruit amounts, water, sugar, ice,
 ## cup counts, etc.) so all peers see the same state.
@@ -398,6 +427,22 @@ func _find_node(parent_path_str: String, obj_name: String) -> Node:
 			return obj
 	# Fallback: search the entire scene tree by name in case the object
 	# was re-parented on the host without the client knowing.
+	var found := _find_node_by_name(get_tree().current_scene, obj_name)
+	if found:
+		_node_cache[obj_name] = found
+	return found
+
+
+## Fast name-only lookup for batch syncs (avoids serializing parent
+## paths for every NPC every tick). Uses the cache, falls back to
+## tree search only on cache miss.
+func _find_node_by_name_only(obj_name: String) -> Node:
+	if _node_cache.has(obj_name):
+		var cached: Node = _node_cache[obj_name]
+		if is_instance_valid(cached):
+			return cached
+		else:
+			_node_cache.erase(obj_name)
 	var found := _find_node_by_name(get_tree().current_scene, obj_name)
 	if found:
 		_node_cache[obj_name] = found
