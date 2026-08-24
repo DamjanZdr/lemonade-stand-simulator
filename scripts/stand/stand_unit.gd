@@ -195,6 +195,7 @@ func _apply_state(
 
 
 func _ready() -> void:
+	add_to_group("stand")
 	_setup_replication()
 	_init_default_prices()
 	_init_default_recipes()

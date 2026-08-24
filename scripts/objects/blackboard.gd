@@ -43,6 +43,11 @@ func interact(_player: Node) -> void:
 		_editing_player = p
 		p.enter_priceboard_focus(board_camera.global_transform)
 	_start_edit(0, 0)
+	# Clear any stale edited values from a previous session so ESC
+	# truly cancels instead of re-applying old values.
+	for i in range(_label_data.size()):
+		_label_data[i]["value1"] = ""
+		_label_data[i]["value2"] = ""
 
 
 func _input(event: InputEvent) -> void:
@@ -200,7 +205,7 @@ func _start_edit(label_idx: int, field_idx: int) -> void:
 	if _label_data[label_idx].get("locked", false):
 		var next := _next_editable_index(label_idx, 1)
 		if next < 0:
-			_finish_edit()
+			_apply_and_finish_edit()
 			return
 		label_idx = next
 	_label_index = label_idx
@@ -218,7 +223,7 @@ func _confirm_and_next() -> void:
 	else:
 		var next_idx := _next_editable_index(_label_index, 1)
 		if next_idx < 0:
-			_finish_edit()
+			_apply_and_finish_edit()
 		else:
 			_start_edit(next_idx, 0)
 
@@ -288,8 +293,6 @@ func _on_label_clicked(
 
 
 func _finish_edit() -> void:
-	_store_buffer()
-	_apply_recipes_to_stand()
 	_label_index = -1
 	_field_index = 0
 	_edit_buffer = ""
@@ -301,10 +304,17 @@ func _finish_edit() -> void:
 	_editing_player = null
 
 
-## Send all edited recipe values to the stand via RPC so the host
-## and all clients see the same recipes.
+## Finish editing and apply the entered recipe values to the stand.
+func _apply_and_finish_edit() -> void:
+	_store_buffer()
+	_apply_recipes_to_stand()
+	_finish_edit()
+
+
+## Send all edited recipe values to the nearest stand via RPC so
+## the host and all clients see the same recipes.
 func _apply_recipes_to_stand() -> void:
-	var stand := get_parent() as StandUnit
+	var stand := _find_nearest_stand()
 	if stand == null:
 		return
 	for i in range(_label_data.size()):
@@ -328,6 +338,21 @@ func _apply_recipes_to_stand() -> void:
 		stand.request_set_recipe(fruit_id, recipe)
 		# Also update local GameState immediately for responsiveness
 		GameState.set_recipe(fruit_id, recipe)
+
+
+## Find the closest StandUnit in the scene to this blackboard.
+func _find_nearest_stand() -> StandUnit:
+	var best: StandUnit = null
+	var best_dist := INF
+	for node in get_tree().get_nodes_in_group("stand"):
+		var s := node as StandUnit
+		if s == null or not is_instance_valid(s):
+			continue
+		var d := global_position.distance_squared_to(s.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = s
+	return best
 
 
 func _next_editable_index(from: int, direction: int) -> int:
