@@ -189,6 +189,7 @@ var _in_priceboard_mode := false
 var _sync_pos_timer: float = 0.0
 var _last_synced_pos: Vector3 = Vector3.ZERO
 var _last_synced_rot: Vector3 = Vector3.ZERO
+var _last_synced_pitch: float = 0.0
 const SYNC_MIN_INTERVAL: float = 0.05 # Max 20 updates/sec while moving
 const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
 
@@ -196,6 +197,7 @@ const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
 var _net_target_pos: Vector3 = Vector3.ZERO
 var _net_target_rot: Vector3 = Vector3.ZERO
 var _has_net_target: bool = false
+var _net_head_pitch: float = 0.0
 const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 
 # Animation state
@@ -485,7 +487,14 @@ func _process(delta: float) -> void:
 			var t := clampf(NET_LERP_SPEED * delta, 0.0, 1.0)
 			global_position = global_position.lerp(_net_target_pos, t)
 			global_rotation.y = lerpf(global_rotation.y, _net_target_rot.y, t)
+		# Update neck/head bones so other players see where this player is looking
+		if visuals != null and visuals.visible:
+			visuals.update_look_bones(global_rotation.y, _net_head_pitch, global_rotation.y)
 		_update_anim()
+	else:
+		# Local player: update neck/head bones based on camera look direction
+		if visuals != null and visuals.visible:
+			visuals.update_look_bones(global_rotation.y, head.rotation.x, global_rotation.y)
 
 
 func _physics_process(delta: float) -> void:
@@ -522,8 +531,9 @@ func _physics_process(delta: float) -> void:
 	_update_anim()
 
 
-## Only sync position when the player has actually moved or rotated
-## beyond a threshold. While standing still, no RPCs are sent at all.
+## Only sync position when the player has actually moved, rotated, or
+## changed their look direction beyond a threshold. While standing still
+## and not looking around, no RPCs are sent at all.
 ## While moving, syncs are throttled to max 20/sec (0.05s interval).
 func _try_sync_position(delta: float) -> void:
 	_sync_pos_timer += delta
@@ -531,18 +541,25 @@ func _try_sync_position(delta: float) -> void:
 		return
 	var pos_delta := global_position.distance_to(_last_synced_pos)
 	var rot_delta := absf(global_rotation.y - _last_synced_rot.y)
-	if pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD:
-		return # Haven't moved enough, skip
+	var pitch_delta := absf(head.rotation.x - _last_synced_pitch)
+	if pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD and pitch_delta < 0.05:
+		return # Haven't moved/looked enough, skip
 	_sync_pos_timer = 0.0
 	_last_synced_pos = global_position
 	_last_synced_rot = global_rotation
-	_sync_position.rpc(global_position, global_rotation, _is_sprinting)
+	_last_synced_pitch = head.rotation.x
+	_sync_position.rpc(global_position, global_rotation, _is_sprinting, head.rotation.x)
 
 
 ## Simple position sync RPC. Only the authority sends; all other peers
 ## receive and set the interpolation target (smoothed in _process).
 @rpc("authority", "call_local", "unreliable")
-func _sync_position(pos: Vector3, rot: Vector3, sprinting: bool = false) -> void:
+func _sync_position(
+	pos: Vector3,
+	rot: Vector3,
+	sprinting: bool = false,
+	head_pitch: float = 0.0,
+) -> void:
 	if is_multiplayer_authority():
 		return # We're the authority, we already have the right position
 	# Compute velocity from position delta so animations work on remote players
@@ -555,6 +572,8 @@ func _sync_position(pos: Vector3, rot: Vector3, sprinting: bool = false) -> void
 	_net_target_pos = pos
 	_net_target_rot = rot
 	_has_net_target = true
+	# Update neck/head bones on the remote player's visual model
+	_net_head_pitch = head_pitch
 
 
 func _poll_hint() -> void:
