@@ -2406,6 +2406,14 @@ func _try_place_container() -> Node3D:
 				get_tree().current_scene.add_child(source_node)
 			source_node.global_transform = _ghost.global_transform
 			_enable_physics(source_node)
+			# Sync the move to clients so they see the table at its new position
+			WorldSync.sync_move_object(
+				source_node,
+				source_node.global_position,
+				source_node.global_rotation,
+			)
+			# Show the workstation on clients again (it was hidden when picked up)
+			WorldSync.sync_show_object(source_node.name)
 			EventBus.container_placed.emit(container_type, source_node)
 			AudioManager.play_sfx("table", source_node.global_position, -1.0, 0.05, 0.85)
 			_destroy_ghost()
@@ -2497,6 +2505,14 @@ func _cancel_container_placement() -> void:
 				get_tree().current_scene.add_child(source_node)
 		source_node.global_transform = original
 		_enable_physics(source_node)
+		# Sync the restore to clients so they see the table back at its original spot
+		WorldSync.sync_move_object(
+			source_node,
+			source_node.global_position,
+			source_node.global_rotation,
+		)
+		# Show the workstation on clients again
+		WorldSync.sync_show_object(source_node.name)
 	_destroy_ghost()
 	var refund_value := cost * 0.7
 	make_held_trash(refund_value, container_type)
@@ -2513,6 +2529,8 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 		held_item_data["source_original_transform"] = interactable.global_transform
 		var pickup_pos := interactable.global_position
 		source_parent.remove_child(interactable)
+		# Hide the workstation on clients (it's "in the player's hands" now)
+		WorldSync.sync_hide_object(interactable.name)
 		EventBus.container_picked_up.emit(container_type, interactable)
 		AudioManager.play_sfx("table", pickup_pos)
 		hold_container(container_type, 0.0, 0, false, { })
@@ -2551,7 +2569,10 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 	if pickup_key == "workstation":
 		pickup_key = "table"
 	AudioManager.play_sfx(pickup_key, interactable.global_position)
-	interactable.queue_free()
+	# Despawn the container on all peers via WorldSync (host authority).
+	# This ensures the container is removed for everyone, not just the
+	# player who picked it up.
+	WorldSync.request_despawn(interactable)
 	hold_container(container_type, saved_amount, saved_count, has_liquid, saved_recipe)
 	# Mark as deployed (was already placed on a workstation) so it can't go on the floor
 	held_item_data["deployed"] = true

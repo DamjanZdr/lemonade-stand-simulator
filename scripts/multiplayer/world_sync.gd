@@ -453,6 +453,76 @@ func _reparent_on_clients(new_parent_path_str: String, obj_name: String) -> void
 	GameLog.log("[WorldSync] Client reparented %s to %s" % [obj_name, new_parent_path_str])
 
 
+## Move an existing object to a new position/rotation on the host and
+## sync to all clients. Used when a workstation (table) is picked up
+## and placed somewhere else — the same node is reused (not destroyed
+## and re-spawned) so items on top follow it.
+func sync_move_object(obj: Node, new_pos: Vector3, new_rot: Vector3) -> void:
+	if not is_host() or obj == null or not is_instance_valid(obj):
+		return
+	obj.global_position = new_pos
+	obj.global_rotation = new_rot
+	_move_on_clients.rpc(obj.name, new_pos, new_rot)
+
+
+## Reparent an object to a new parent on the host and sync to clients.
+func sync_reparent_object(obj: Node, new_parent: Node) -> void:
+	if not is_host() or obj == null or not is_instance_valid(obj):
+		return
+	if new_parent == null or not is_instance_valid(new_parent):
+		return
+	var old_pos: Vector3 = obj.global_position
+	var old_rot: Vector3 = obj.global_rotation
+	obj.get_parent().remove_child(obj)
+	new_parent.add_child(obj)
+	obj.global_position = old_pos
+	obj.global_rotation = old_rot
+	var new_parent_path := _node_path_to_string(new_parent.get_path())
+	_reparent_on_clients.rpc(new_parent_path, obj.name)
+
+
+@rpc("authority", "call_local", "reliable")
+func _move_on_clients(obj_name: String, new_pos: Vector3, new_rot: Vector3) -> void:
+	if is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj:
+		obj.global_position = new_pos
+		obj.global_rotation = new_rot
+
+
+## Hide an object on all clients (e.g. when a workstation is picked up
+## and is now "in the player's hands"). The object stays in the tree
+## on the host but is removed from the holder's scene tree, so we hide
+## it on clients instead of despawning it.
+func sync_hide_object(obj_name: String) -> void:
+	if not is_host():
+		return
+	_set_visible_on_clients.rpc(obj_name, false)
+
+
+## Show an object on all clients (e.g. when a workstation is placed
+## back down after being picked up).
+func sync_show_object(obj_name: String) -> void:
+	if not is_host():
+		return
+	_set_visible_on_clients.rpc(obj_name, true)
+
+
+@rpc("authority", "call_local", "reliable")
+func _set_visible_on_clients(obj_name: String, visible: bool) -> void:
+	if is_host():
+		return
+	var obj := _find_node_by_name_only(obj_name)
+	if obj:
+		obj.visible = visible
+		# Also disable collision so hidden objects don't block the player
+		for child in obj.find_children("*", "CollisionShape3D", true, false):
+			var col := child as CollisionShape3D
+			if col:
+				col.disabled = not visible
+
+
 @rpc("authority", "call_local", "reliable")
 func _spawn_on_clients(
 	scene_path: String,
