@@ -63,7 +63,13 @@ func _rpc_do_thing(params) -> void:
 ### 4. Unified pickup/placement lifecycle
 **Problem:** `pickup_container()` has a special workstation branch and separate paths for other containers. Every new placeable item repeats this.
 **Target:** A `Pickupable` component or base class with `save_state()`, `restore_state()`, `on_pickup()`, `on_place(parent)` virtuals. Workstation only differs by child-attachment rule.
-**Files:** `scripts/player/player.gd`, new `scripts/components/pickupable.gd`.
+**In progress:**
+- [x] Create `scripts/components/pickupable.gd` base component with virtual methods and documentation.
+- [ ] Migrate `SupplyBox` to use `Pickupable`.
+- [ ] Migrate containers (`FruitBin`, `IngredientBin`, `Pitcher`, `CupStack`, `WaterDispenser`, `Press`) to use `Pickupable`.
+- [ ] Migrate workstation/table to use `Pickupable` with child-attachment rule.
+- [ ] Refactor `Player.gd` pickup/place code to dispatch through `Pickupable` instead of branching by type.
+**Files:** `scripts/player/player.gd`, `scripts/components/pickupable.gd`, placeable object scripts.
 
 ### 5. Split `player.gd`
 **Problem:** `scripts/player/player.gd` is ~3,000 lines and handles movement, camera, input, interaction, placement, inventory, MP sync, and serving.
@@ -72,11 +78,18 @@ func _rpc_do_thing(params) -> void:
 - `PlayerInteraction` — raycast + hint + interact request
 - `PlayerPlacement` — ghost + placement validation
 - `PlayerInventory` / `PlayerHands` — held item state
+**Planned sub-tasks:**
+- [ ] Extract `HeldItem` enum to a shared location so other scripts don't import `Player` just for the enum (tried; needs autoload or careful aliasing because `class_name` references fail at parse time before the new script is imported).
+- [ ] Extract held-item state + `set_held()` / `clear_held()` into `PlayerInventory`.
+- [ ] Extract raycast/hint/interact dispatch into `PlayerInteraction`.
+- [ ] Extract placement ghost + validation into `PlayerPlacement`.
+- [ ] Extract movement/camera/input into `PlayerController`.
 **Files:** `scripts/player/player.gd`, new files under `scripts/player/`.
 
-### 6. Replace deferred bone-pose hack for neck/head
+### 6. Replace deferred bone-pose hack for neck/head — DONE
 **Problem:** `AnimationPlayer` overwrites procedural head/neck rotations, so we currently apply them twice (immediate + deferred).
-**Target:** Use an `AnimationTree` additive blend track for head/neck, or set `AnimationPlayer.process_callback = ANIMATION_PROCESS_PHYSICS` and apply poses in `_process`.
+**Target:** Apply procedural head/neck pose after the child AnimationPlayer has run.
+**Done:** `Player._process` stores the look target via `PlayerVisuals.set_look_target()`; `PlayerVisuals._process` applies `update_look_bones()` after eye look-at, which is after the child AnimationPlayer updates.
 **Files:** `scripts/player/player_visuals.gd`, `scripts/player/player.gd`.
 
 ### 7. Decouple save/snapshot from runtime groups — DONE
