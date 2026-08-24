@@ -1271,7 +1271,12 @@ func _place_filled_cup() -> void:
 		"state": Cup.CupState.FILLED,
 		"_net_groups": ["container"],
 	}
-	var cup := WorldSync.request_spawn("res://scenes/objects/cup.tscn", cup_pos, cup_rot, state) as Cup
+	var cup := WorldSync.request_spawn(
+		"res://scenes/objects/cup.tscn",
+		cup_pos,
+		cup_rot,
+		state,
+	) as Cup
 	if cup:
 		cup.scale = placement_scale
 		cup.add_to_group("container")
