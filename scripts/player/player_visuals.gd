@@ -348,6 +348,42 @@ func set_clothing_color(surface_name: String, color: Color) -> void:
 			body.set_surface_override_material(i, mat)
 
 
+## Set the skin color by tinting all non-clothing, non-hair surfaces.
+## A slider value of 0.0 = lightest skin, 1.0 = darkest skin.
+func set_skin_color(slider_value: float) -> void:
+	var skin_color := _skin_color_from_slider(slider_value)
+	var body: MeshInstance3D = _man_mesh if _man.visible else _woman_mesh
+	var mesh := body.mesh as ArrayMesh
+	if mesh == null:
+		return
+	for i in mesh.get_surface_count():
+		var sname := mesh.surface_get_name(i).to_lower()
+		if sname in CLOTHING_SURFACES:
+			continue
+		if sname in ["hair", "eyebrow", "eyebrows"]:
+			continue
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = skin_color
+		body.set_surface_override_material(i, mat)
+
+
+## Map a 0-1 slider value to a skin color ranging from light to dark.
+func _skin_color_from_slider(value: float) -> Color:
+	var light := Color(0.98, 0.87, 0.75, 1.0)
+	var tan := Color(0.90, 0.72, 0.55, 1.0)
+	var medium := Color(0.75, 0.55, 0.40, 1.0)
+	var dark := Color(0.45, 0.30, 0.22, 1.0)
+	var darkest := Color(0.25, 0.16, 0.12, 1.0)
+	if value < 0.25:
+		return light.lerp(tan, value / 0.25)
+	elif value < 0.5:
+		return tan.lerp(medium, (value - 0.25) / 0.25)
+	elif value < 0.75:
+		return medium.lerp(dark, (value - 0.5) / 0.25)
+	else:
+		return dark.lerp(darkest, (value - 0.75) / 0.25)
+
+
 func set_clothing_colors(colors: Dictionary) -> void:
 	var body: MeshInstance3D = _man_mesh if _man.visible else _woman_mesh
 	var mesh := body.mesh as ArrayMesh
@@ -388,6 +424,10 @@ func apply_customization(data: Dictionary) -> void:
 		_tint_clothing(_man_mesh if male else _woman_mesh)
 	else:
 		set_clothing_colors(clothing)
+	# Skin color (0.0 = lightest, 1.0 = darkest)
+	var skin_val: float = data.get("skin_color", 0.0)
+	if skin_val > 0.0:
+		set_skin_color(skin_val)
 
 
 ## Get the current customization as a dictionary (for storing in roster).

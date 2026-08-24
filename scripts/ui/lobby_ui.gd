@@ -31,6 +31,7 @@ extends Control
 @onready var _pants_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow/PantsColorName
 @onready var _head_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow/HeadName
 @onready var _roof_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow/RoofColorName
+@onready var _skin_color_slider: HSlider = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow/SkinColorSlider
 
 ## PlayerVisuals nodes in the 3D world. Customization applies to ALL of
 ## them so the player sees their character regardless of which stand
@@ -55,6 +56,7 @@ var _shoes_color_index: int = 2
 var _head_size_index: int = 4 # 0-8, maps to 0.5x - 2.0x (index 4 = 1.3x default)
 var _walls_color_index: int = 0
 var _roof_color_index: int = 0
+var _skin_color_value: float = 0.0 # 0.0 = lightest, 1.0 = darkest
 
 const HEAD_SIZE_MIN: float = 0.5
 const HEAD_SIZE_MAX: float = 2.0
@@ -532,6 +534,13 @@ func _setup_customization() -> void:
 		)
 
 	$LeftContainer/CustomizePanel/OptionsCol/RandomButton.pressed.connect(_on_randomize)
+	# Skin color slider
+	if _skin_color_slider:
+		_skin_color_slider.value_changed.connect(
+			func(v: float):
+				_skin_color_value = v
+				_on_customization_changed(),
+		)
 	_update_gender_buttons()
 
 
@@ -577,6 +586,7 @@ func _apply_customization_to_all() -> void:
 			"shoes": PlayerVisuals.CLOTHING_COLORS[_shoes_color_index],
 		}
 		pv.set_clothing_colors(colors)
+		pv.set_skin_color(_skin_color_value)
 		pv.scale_head_bone(_head_size_to_scale())
 		pv.play_anim("Idle")
 
@@ -619,6 +629,9 @@ func _on_randomize() -> void:
 	_pants_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
 	_shoes_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
 	_head_size_index = randi() % HEAD_SIZE_STEPS
+	_skin_color_value = randf()
+	if _skin_color_slider:
+		_skin_color_slider.value = _skin_color_value
 	var wc := _get_wall_colors()
 	if not wc.is_empty():
 		_walls_color_index = randi() % wc.size()
@@ -649,6 +662,7 @@ func _get_customization_data() -> Dictionary:
 		"eyebrow_index": _eyebrow_index,
 		"eyebrow_color": PlayerVisuals.HAIR_COLORS[_eyebrow_color_index],
 		"head_size": _head_size_to_scale(),
+		"skin_color": _skin_color_value,
 		"clothing_colors": {
 			"shirt": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
 			"top": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],

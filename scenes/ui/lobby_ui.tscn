@@ -537,6 +537,25 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_arrow")
 theme_override_styles/focus = SubResource("StyleBoxFlat_arrow")
 text = ">"
 
+[node name="SkinColorRow" type="HBoxContainer" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol" unique_id=211746395]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SkinColorLabel" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow" unique_id=211746396]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "Skin"
+
+[node name="SkinColorSlider" type="HSlider" parent="LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow" unique_id=211746397]
+custom_minimum_size = Vector2(100, 20)
+layout_mode = 2
+min_value = 0.0
+max_value = 1.0
+step = 0.05
+value = 0.0
+
 [node name="RandomButton" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol" unique_id=1807004536]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
