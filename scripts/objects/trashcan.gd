@@ -106,7 +106,7 @@ func _spawn_disposed_trash(trash_type: String = "") -> void:
 
 
 func _is_valid_player(player: Node) -> bool:
-	return player != null and player.has_method("clear_held") and player.has_method("set_held")
+	return player != null and player.has_node("PlayerInventory")
 
 
 func _is_holding_trash(player: Node) -> bool:

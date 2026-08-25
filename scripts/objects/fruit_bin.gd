@@ -267,7 +267,7 @@ func interact(player: Node) -> void:
 
 
 func get_hint(player: Node) -> String:
-	if not player.has_method("clear_held"):
+	if not player.has_node("PlayerInventory"):
 		return ""
 	var held_item: int = player.get("held_item")
 	var data: Dictionary = player.get("held_item_data")

@@ -176,8 +176,8 @@ const HELD_CONTAINER := 4
 
 
 func interact(player: Node) -> void:
-	# Duck-type: verify this is a player by checking for required methods/properties
-	if not player.has_method("clear_held"):
+	# Duck-type: verify this is a player by checking for inventory component
+	if not player.has_node("PlayerInventory"):
 		return
 	var held_item: int = player.get("held_item")
 	var data: Dictionary = player.get("held_item_data")
@@ -239,7 +239,7 @@ func _get_container_type() -> String:
 
 
 func get_hint(player: Node) -> String:
-	if not player.has_method("clear_held"):
+	if not player.has_node("PlayerInventory"):
 		return ""
 	var held_item: int = player.get("held_item")
 	var data: Dictionary = player.get("held_item_data")
