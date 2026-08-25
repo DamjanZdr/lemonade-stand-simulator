@@ -400,8 +400,12 @@ func _place_filled_cup() -> void:
 	EventBus.interaction_hint_changed.emit("Filled cup placed!")
 
 
-func _place_held_supply_box_on(place_pos: Vector3, place_rot: Vector3 = Vector3.ZERO) -> SupplyBox:
-	var state: Dictionary = { }
+func _place_held_supply_box_on(
+	place_pos: Vector3,
+	place_rot: Vector3 = Vector3.ZERO,
+	extra_state: Dictionary = { },
+) -> SupplyBox:
+	var state: Dictionary = extra_state.duplicate()
 	if _player.held_item_data.get("is_equipment", false):
 		state["is_equipment"] = true
 		state["equipment_type"] = _player.held_item_data.get("equipment_type", "")
@@ -497,7 +501,10 @@ func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> v
 		_drop_held_box()
 		return
 	var slot := grid.reserve_slot(cell_idx)
-	var box := _place_held_supply_box_on(slot["position"], slot["rotation"])
+	var grid_path := str(grid.get_path())
+	# Pass delivery grid metas through spawn state so clients also get them.
+	var extra_state := { "_net_delivery_cell_idx": cell_idx, "_net_delivery_grid_path": grid_path }
+	var box := _place_held_supply_box_on(slot["position"], slot["rotation"], extra_state)
 	if box == null:
 		return
 	box.set_meta("delivery_cell_idx", cell_idx)
@@ -517,15 +524,23 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 		0,
 	) + _stack_offset
 	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
-	var box := _place_held_supply_box_on(place_pos, place_rot)
-	if box == null:
-		return
+	# Inherit delivery grid metas from the box we're stacking on so the
+	# new box also knows which grid slot it belongs to.
 	var cell_idx: int = top.get_meta("delivery_cell_idx", -1) as int
+	var extra_state: Dictionary = { }
 	if cell_idx >= 0:
 		var grid := _get_delivery_grid()
 		if grid != null:
 			grid.reserve_slot(cell_idx)
-			box.set_meta("delivery_cell_idx", cell_idx)
+			extra_state["_net_delivery_cell_idx"] = cell_idx
+			extra_state["_net_delivery_grid_path"] = str(grid.get_path())
+	var box := _place_held_supply_box_on(place_pos, place_rot, extra_state)
+	if box == null:
+		return
+	if cell_idx >= 0:
+		box.set_meta("delivery_cell_idx", cell_idx)
+		var grid := _get_delivery_grid()
+		if grid != null:
 			box.set_meta("delivery_grid_path", grid.get_path())
 
 
@@ -1063,7 +1078,8 @@ func _update_equipment_box_ghost() -> void:
 		if node is SupplyBox:
 			var target_box := _get_topmost_box_in_stack(node as SupplyBox)
 			if target_box == null or not target_box.is_inside_tree():
-				_ghost.visible = false
+				if _ghost != null:
+					_ghost.visible = false
 				_ghost_valid = false
 				_stack_target_id = -1
 				return

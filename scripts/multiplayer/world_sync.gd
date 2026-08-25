@@ -250,6 +250,8 @@ func _serialize_supply_box(node: Node) -> Dictionary:
 		"quantity": box.quantity,
 		"is_equipment": box.is_equipment,
 		"equipment_type": box.equipment_type,
+		"delivery_cell_idx": box.get_meta("delivery_cell_idx", -1) as int,
+		"delivery_grid_path": str(box.get_meta("delivery_grid_path", "")),
 	}
 
 
@@ -444,6 +446,14 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 	)
 	box.add_to_group("supply_box")
 	_node_cache[box.name] = box
+	# Restore delivery grid slot metas so clients can release the slot
+	# when picking up the box.
+	var cell_idx: int = entry.get("delivery_cell_idx", -1)
+	if cell_idx >= 0:
+		box.set_meta("delivery_cell_idx", cell_idx)
+		var grid_path_str: String = entry.get("delivery_grid_path", "")
+		if grid_path_str != "":
+			box.set_meta("delivery_grid_path", NodePath(grid_path_str))
 
 
 ## Update an existing supply box from a snapshot entry instead of spawning
@@ -472,6 +482,13 @@ func _update_supply_box_from_snapshot(existing: SupplyBox, entry: Dictionary) ->
 		existing.scale = Vector3(scl[0], scl[1], scl[2])
 	existing.update_metrics()
 	_node_cache[existing.name] = existing
+	# Restore delivery grid slot metas for existing boxes too.
+	var cell_idx: int = entry.get("delivery_cell_idx", -1)
+	if cell_idx >= 0:
+		existing.set_meta("delivery_cell_idx", cell_idx)
+		var grid_path_str: String = entry.get("delivery_grid_path", "")
+		if grid_path_str != "":
+			existing.set_meta("delivery_grid_path", NodePath(grid_path_str))
 
 
 ## The node where world objects should be added. All spawned world objects
@@ -567,11 +584,15 @@ func spawn_networked(
 	var net_scale: Vector3 = state.get("_net_scale", Vector3.ZERO)
 	var net_fruit_amounts: Dictionary = state.get("_net_fruit_amounts", { })
 	var net_pitcher_recipe: Dictionary = state.get("_net_pitcher_recipe", { })
+	var net_delivery_cell_idx: int = state.get("_net_delivery_cell_idx", -1)
+	var net_delivery_grid_path: String = state.get("_net_delivery_grid_path", "")
 	var clean_state := state.duplicate()
 	clean_state.erase("_net_groups")
 	clean_state.erase("_net_scale")
 	clean_state.erase("_net_fruit_amounts")
 	clean_state.erase("_net_pitcher_recipe")
+	clean_state.erase("_net_delivery_cell_idx")
+	clean_state.erase("_net_delivery_grid_path")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	# Give the object a unique name and stable network ID so despawn and
@@ -602,6 +623,12 @@ func spawn_networked(
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.call_deferred("update_label")
+	# Restore delivery grid slot metas so clients can release the slot
+	# when picking up the box.
+	if net_delivery_cell_idx >= 0:
+		obj.set_meta("delivery_cell_idx", net_delivery_cell_idx)
+		if net_delivery_grid_path != "":
+			obj.set_meta("delivery_grid_path", NodePath(net_delivery_grid_path))
 	# Capture the object's scale after adding to the parent (parent's
 	# transform may affect it). We'll send this to clients so they
 	# match the host's scale.
@@ -936,11 +963,15 @@ func _spawn_on_clients(
 	var net_scale: Vector3 = state.get("_net_scale", Vector3.ZERO)
 	var net_fruit_amounts: Dictionary = state.get("_net_fruit_amounts", { })
 	var net_pitcher_recipe: Dictionary = state.get("_net_pitcher_recipe", { })
+	var net_delivery_cell_idx: int = state.get("_net_delivery_cell_idx", -1)
+	var net_delivery_grid_path: String = state.get("_net_delivery_grid_path", "")
 	var clean_state := state.duplicate()
 	clean_state.erase("_net_groups")
 	clean_state.erase("_net_scale")
 	clean_state.erase("_net_fruit_amounts")
 	clean_state.erase("_net_pitcher_recipe")
+	clean_state.erase("_net_delivery_cell_idx")
+	clean_state.erase("_net_delivery_grid_path")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	obj.name = obj_name
@@ -973,6 +1004,12 @@ func _spawn_on_clients(
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.call_deferred("update_label")
+	# Restore delivery grid slot metas so clients can release the slot
+	# when picking up the box.
+	if net_delivery_cell_idx >= 0:
+		obj.set_meta("delivery_cell_idx", net_delivery_cell_idx)
+		if net_delivery_grid_path != "":
+			obj.set_meta("delivery_grid_path", NodePath(net_delivery_grid_path))
 	# Add to groups after spawning so clients match the host
 	for g in net_groups:
 		obj.add_to_group(g)

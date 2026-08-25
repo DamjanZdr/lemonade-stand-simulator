@@ -301,6 +301,19 @@ func _set_truck_visible(is_visible: bool) -> void:
 	GameLog.log("[DeliveryTruck] %s visibility set to %s" % [name, is_visible])
 
 
+## Host → clients: set delivery grid metas on a box so clients can
+## release the slot when the box is picked up.
+@rpc("authority", "reliable")
+func _set_box_delivery_metas(box_name: String, cell_idx: int, grid_path: String) -> void:
+	if is_multiplayer_authority():
+		return
+	var box := get_tree().current_scene.find_child(box_name, true, false)
+	if box == null:
+		return
+	box.set_meta("delivery_cell_idx", cell_idx)
+	box.set_meta("delivery_grid_path", NodePath(grid_path))
+
+
 func _drive_to_waypoint(delta: float) -> void:
 	if _current_wp >= _waypoints.size():
 		# Reached the drop point
@@ -431,6 +444,8 @@ func _transfer_next_box(index: int) -> void:
 		_target_grid.reserve_slot(truck_cell_idx)
 		box.set_meta("delivery_cell_idx", truck_cell_idx)
 		box.set_meta("delivery_grid_path", _target_grid.get_path())
+		# Sync metas to clients so they can release the slot when picking up
+		_set_box_delivery_metas.rpc(box.name, truck_cell_idx, str(_target_grid.get_path()))
 
 	# Arc animation: parabolic path from truck to delivery grid
 	_animate_arc(box, target_pos, target_rot)

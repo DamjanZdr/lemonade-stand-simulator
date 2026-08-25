@@ -190,6 +190,15 @@ func poll_hint() -> void:
 func primary_interact() -> void:
 	# Check if looking at an interactable first (even when holding items)
 	var interactable := get_looked_at_interactable()
+	print(
+		"[Interact] primary_interact held=%d is_trash=%s trash_type=%s interactable=%s"
+		% [
+			_player.inventory.held_item,
+			_player.inventory.held_item_data.get("is_trash", false),
+			_player.inventory.held_item_data.get("trash_type", ""),
+			interactable.name if interactable else "null",
+		]
+	)
 
 	# Walking pedestrians take priority: first click starts the offer no matter
 	# what the player is holding. Subsequent clicks serve lemonade.
@@ -303,8 +312,13 @@ func primary_interact() -> void:
 				if node is SupplyBox:
 					_player.placement._ghost_valid = true
 					var box_pos := (node as SupplyBox).global_position
-					var offset: float = _player.placement._ghost.get_meta("bottom_offset", 0.0) if _player.placement._ghost else 0.0
-					_player.placement._ghost.global_position = box_pos + Vector3(0, 0.262 - offset, 0)
+					var g := _player.placement._ghost
+					var offset: float = g.get_meta("bottom_offset", 0.0) if g else 0.0
+					_player.placement._ghost.global_position = box_pos + Vector3(
+						0,
+						0.262 - offset,
+						0,
+					)
 					_player.placement._try_place_container()
 					return
 				node = node.get_parent()
