@@ -125,7 +125,7 @@ func poll_hint() -> void:
 			if dispenser != null:
 				hint = dispenser.get_hint(_player)
 				return
-		if _player._ghost_valid:
+		if _player.placement._ghost_valid:
 			hint = "%s | LMB: place" % _player.inventory.get_held_item_name()
 		else:
 			if container_type == "workstation":
@@ -211,7 +211,7 @@ func primary_interact() -> void:
 		var is_box_trash: bool = _player.inventory.held_item_data.get("trash_type", "") == "empty_box"
 		if interactable != null and interactable.is_in_group("trashcan"):
 			interactable.interact(_player)
-			_player._destroy_ghost()
+			_player.placement._destroy_ghost()
 			return
 		# Also check ray collider ancestor chain for trashcan group
 		if _player.ray.is_colliding():
@@ -219,21 +219,21 @@ func primary_interact() -> void:
 			while node != null:
 				if node is Interactable and node.is_in_group("trashcan"):
 					(node as Interactable).interact(_player)
-					_player._destroy_ghost()
+					_player.placement._destroy_ghost()
 					return
 				node = node.get_parent()
 		if is_box_trash:
-			if _player._ghost != null and _player._ghost_valid:
-				_player._drop_trash(_player._ghost.global_position)
+			if _player.placement._ghost != null and _player.placement._ghost_valid:
+				_player.placement._drop_trash(_player.placement._ghost.global_position)
 			elif (
 				_player.ray.is_colliding()
 				and _player._is_placement_surface(_player.ray.get_collider())
 			):
-				_player._drop_trash(
+				_player.placement._drop_trash(
 					_player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
 				)
 			else:
-				_player._drop_trash()
+				_player.placement._drop_trash()
 		return
 
 	# Containers can be recycled at a trashcan for 70% refund.
@@ -277,9 +277,9 @@ func primary_interact() -> void:
 					{ },
 				)
 				if press.can_snap_pitcher(snap_recipe):
-					_player._ghost.global_position = press.get_snap_global_position()
-					_player._ghost_valid = true
-					var placed := _player._try_place_container()
+					_player.placement._ghost.global_position = press.get_snap_global_position()
+					_player.placement._ghost_valid = true
+					var placed := _player.placement._try_place_container()
 					if placed is Pitcher:
 						press.snap_pitcher(placed as Pitcher)
 					return
@@ -289,9 +289,9 @@ func primary_interact() -> void:
 			if dispenser != null:
 				var _recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
 				if dispenser.can_snap_pitcher_from_recipe(_recipe):
-					_player._ghost.global_position = dispenser.get_snap_global_position()
-					_player._ghost_valid = true
-					var placed := _player._try_place_container()
+					_player.placement._ghost.global_position = dispenser.get_snap_global_position()
+					_player.placement._ghost_valid = true
+					var placed := _player.placement._try_place_container()
 					if placed is Pitcher:
 						dispenser.snap_pitcher(placed as Pitcher)
 					return
@@ -301,18 +301,18 @@ func primary_interact() -> void:
 			var node: Node = _player.ray.get_collider()
 			while node != null:
 				if node is SupplyBox:
-					_player._ghost_valid = true
+					_player.placement._ghost_valid = true
 					var box_pos := (node as SupplyBox).global_position
-					var offset: float = _player._ghost.get_meta("bottom_offset", 0.0) if _player._ghost else 0.0
-					_player._ghost.global_position = box_pos + Vector3(0, 0.262 - offset, 0)
-					_player._try_place_container()
+					var offset: float = _player.placement._ghost.get_meta("bottom_offset", 0.0) if _player.placement._ghost else 0.0
+					_player.placement._ghost.global_position = box_pos + Vector3(0, 0.262 - offset, 0)
+					_player.placement._try_place_container()
 					return
 				node = node.get_parent()
 			# Ground placement for equipment boxes
 			if not _player._is_placement_surface(_player.ray.get_collider()):
-				_player._ghost_valid = false
+				_player.placement._ghost_valid = false
 				return
-		_player._try_place_container()
+		_player.placement._try_place_container()
 		return
 
 	# Handle single empty cup placement or pitcher interaction
@@ -337,7 +337,7 @@ func primary_interact() -> void:
 			return
 		# Place on surface to start new stack
 		if _player.ray.is_colliding() and _player._is_placement_surface(_player.ray.get_collider()):
-			_player._place_single_cup(false)
+			_player.placement._place_single_cup(false)
 			return
 		return
 
@@ -362,7 +362,7 @@ func primary_interact() -> void:
 		if _player.ray.is_colliding():
 			var collider := _player.ray.get_collider()
 			if _player._is_placement_surface(collider) and not _player._is_ground_surface(collider):
-				_player._place_filled_cup()
+				_player.placement._place_filled_cup()
 				return
 		return
 
@@ -375,11 +375,11 @@ func primary_interact() -> void:
 			while node != null:
 				if node is SupplyBox:
 					# Stack the cup box on top of the hovered stack
-					_player._place_held_supply_box_on_stack(node as SupplyBox)
+					_player.placement._place_held_supply_box_on_stack(node as SupplyBox)
 					return
 				if node is DeliveryGrid:
 					# Place on the delivery grid
-					_player._place_held_supply_box_on_grid(
+					_player.placement._place_held_supply_box_on_grid(
 						node as DeliveryGrid,
 						_player.ray.get_collision_point(),
 					)
@@ -397,15 +397,15 @@ func primary_interact() -> void:
 			if _player._is_placement_surface(collider):
 				if _player._is_ground_surface(collider):
 					# Floor — drop the box
-					_player._place_held_supply_box_on(
+					_player.placement._place_held_supply_box_on(
 						_player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0),
 					)
 					return
 				# Workstation/stand — place cup stack
-				_player._place_cup_stack_from_box()
+				_player.placement._place_cup_stack_from_box()
 				return
 		# Fallback: drop the box
-		_player._drop_held_box()
+		_player.placement._drop_held_box()
 		return
 
 	# Handle non-cup supply box placement (stack on boxes or place on ground)
@@ -419,10 +419,10 @@ func primary_interact() -> void:
 			var node: Node = _player.ray.get_collider()
 			while node != null:
 				if node is SupplyBox:
-					_player._place_held_supply_box_on_stack(node as SupplyBox)
+					_player.placement._place_held_supply_box_on_stack(node as SupplyBox)
 					return
 				if node is DeliveryGrid:
-					_player._place_held_supply_box_on_grid(
+					_player.placement._place_held_supply_box_on_grid(
 						node as DeliveryGrid,
 						_player.ray.get_collision_point(),
 					)
@@ -466,15 +466,15 @@ func primary_interact() -> void:
 				)
 			):
 				# Place working equipment on workstation (or floor for tables)
-				_player._place_equipment_from_box()
+				_player.placement._place_equipment_from_box()
 				return
 			if on_surface and not is_equipment:
 				# Place ingredient box on a surface
-				_player._place_held_supply_box_on(
+				_player.placement._place_held_supply_box_on(
 					_player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0),
 				)
 				return
-		_player._drop_held_box()
+		_player.placement._drop_held_box()
 		return
 
 	# Handle fallback interactables (not caught by specific cases above)
@@ -487,7 +487,7 @@ func primary_interact() -> void:
 		_player.inventory.held_item == HeldItem.SUPPLY_BOX
 		and _player.inventory.held_item_data.get("source") == "delivery"
 	):
-		_player._drop_held_box()
+		_player.placement._drop_held_box()
 
 
 func secondary_interact() -> void:
@@ -508,7 +508,7 @@ func secondary_interact() -> void:
 			if interactable is Press and (interactable as Press).has_snapped_pitcher():
 				(interactable as Press).interact(_player)
 				return
-			var ctype := _player._get_container_type_for_node(interactable)
+			var ctype := _player.placement._get_container_type_for_node(interactable)
 			if ctype != "":
 				_player.pickup_container(interactable, ctype)
 				return
@@ -521,10 +521,10 @@ func secondary_interact() -> void:
 		_player.inventory.held_item == HeldItem.SUPPLY_BOX
 		and _player.inventory.held_item_data.get("source") == "delivery"
 	):
-		_player._drop_held_box()
+		_player.placement._drop_held_box()
 	elif _player.inventory.held_item == HeldItem.TRASH \
 			and _player.inventory.held_item_data.get("trash_type", "") == "empty_box":
-		_player._drop_trash()
+		_player.placement._drop_trash()
 
 
 func update_rapid_fire(delta: float) -> void:
