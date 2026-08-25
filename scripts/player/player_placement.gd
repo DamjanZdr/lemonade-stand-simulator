@@ -430,6 +430,8 @@ func _regenerate_stack_offset() -> void:
 
 
 func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
+	if not is_instance_valid(base) or not base.is_inside_tree():
+		return base
 	var top := base
 	var top_y := _get_box_stack_y(base)
 	var base_pos := base.global_position
