@@ -807,6 +807,11 @@ func sync_move_and_show(
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	obj.scale = new_scale
+	obj.visible = show
+	for child in obj.find_children("*", "CollisionShape3D", true, false):
+		var col := child as CollisionShape3D
+		if col:
+			col.disabled = not show
 	_move_and_show_on_clients.rpc(obj_name, net_id, new_pos, new_rot, new_scale, show)
 
 
@@ -828,6 +833,11 @@ func _rpc_request_move_and_show(
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	obj.scale = new_scale
+	obj.visible = show
+	for child in obj.find_children("*", "CollisionShape3D", true, false):
+		var col := child as CollisionShape3D
+		if col:
+			col.disabled = not show
 	_move_and_show_on_clients.rpc(obj.name, net_id, new_pos, new_rot, new_scale, show)
 
 
@@ -894,6 +904,13 @@ func sync_hide_object(obj: Node) -> void:
 	if not is_host():
 		_rpc_request_set_visible.rpc_id(1, obj_name, net_id, false)
 		return
+	# Hide on the host too — the host should see the table disappear
+	# when any player picks it up.
+	obj.visible = false
+	for child in obj.find_children("*", "CollisionShape3D", true, false):
+		var col := child as CollisionShape3D
+		if col:
+			col.disabled = true
 	_set_visible_on_clients.rpc(obj_name, net_id, false)
 
 
@@ -907,6 +924,11 @@ func sync_show_object(obj: Node) -> void:
 	if not is_host():
 		_rpc_request_set_visible.rpc_id(1, obj_name, net_id, true)
 		return
+	obj.visible = true
+	for child in obj.find_children("*", "CollisionShape3D", true, false):
+		var col := child as CollisionShape3D
+		if col:
+			col.disabled = false
 	_set_visible_on_clients.rpc(obj_name, net_id, true)
 
 
@@ -921,7 +943,14 @@ func _rpc_request_set_visible(obj_name: String, net_id: int, show: bool) -> void
 			% [obj_name, net_id]
 		)
 		return
-	GameLog.log("[WorldSync] Host received set_visible %s=%s net_id=%d" % [obj.name, show, net_id])
+	# Apply on the host too — the host needs to hide/show the object
+	# just like clients do, not just broadcast.
+	obj.visible = show
+	for child in obj.find_children("*", "CollisionShape3D", true, false):
+		var col := child as CollisionShape3D
+		if col:
+			col.disabled = not show
+	# Broadcast to all non-host clients
 	_set_visible_on_clients.rpc(obj.name, net_id, show)
 
 
