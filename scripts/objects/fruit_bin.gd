@@ -231,7 +231,8 @@ func interact(player: Node) -> void:
 			var space: float = get_capacity(itype) - fruit_amounts.get(itype, 0.0)
 			if space <= 0.0:
 				return
-			var deposited: float = minf(to_deposit, space)
+			# Deposit one unit per click so the player sees the bin fill up.
+			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
 			add_amount(itype, deposited, _get_hand_pos(player))
 			EventBus.supply_box_deposited.emit(itype, deposited)
 			var remaining: float = to_deposit - deposited

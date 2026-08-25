@@ -1358,13 +1358,12 @@ func _try_place_container() -> Node3D:
 	if container_type == "workstation":
 		var source_node: Node3D = _player.held_item_data.get("source_node") as Node3D
 		if source_node != null and is_instance_valid(source_node):
-			var source_parent: Node = _player.held_item_data.get("source_parent") as Node
-			if source_parent != null and is_instance_valid(source_parent):
-				source_parent.add_child(source_node)
-			else:
-				get_tree().current_scene.add_child(source_node)
+			# Workstation was hidden (not removed from tree) when picked up,
+			# so just move it and show it again.
 			source_node.global_transform = _ghost.global_transform
 			_enable_physics(source_node)
+			source_node.visible = true
+			# _enable_physics already called above re-enables collision
 			# Sync the move + show to clients in a single RPC so the
 			# position and visibility are set atomically. This is more
 			# reliable than separate move + show RPCs.
@@ -1470,21 +1469,17 @@ func _try_place_container() -> Node3D:
 func _cancel_container_placement() -> void:
 	var container_type: String = _player.held_item_data.get("container_type", "")
 	var cost := _get_container_cost(container_type)
-	# Restore the moved workstation and its attached items to where they were.
+	# Restore the workstation to its original position and show it again.
 	var source_node: Node3D = _player.held_item_data.get("source_node") as Node3D
 	if source_node != null and is_instance_valid(source_node):
 		var original: Transform3D = (_player.held_item_data.get(
 				"source_original_transform",
 				source_node.global_transform,
 			) as Transform3D)
-		var source_parent: Node = _player.held_item_data.get("source_parent") as Node
-		if source_node.get_parent() == null:
-			if source_parent != null and is_instance_valid(source_parent):
-				source_parent.add_child(source_node)
-			else:
-				get_tree().current_scene.add_child(source_node)
 		source_node.global_transform = original
 		_enable_physics(source_node)
+		source_node.visible = true
+		# _enable_physics already called above re-enables collision
 		# Sync the restore + show to clients in a single RPC
 		WorldSync.sync_move_and_show(
 			source_node,
@@ -1518,8 +1513,11 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 		if not attached_items.is_empty():
 			WorldSync.sync_workstation_items(interactable.name, attached_items)
 		var pickup_pos := interactable.global_position
-		source_parent.remove_child(interactable)
-		# Hide the workstation on clients (it's "in the player's hands" now)
+		# Don't remove the workstation from the tree — just hide it locally
+		# so items stay attached and the tree structure matches other peers.
+		# The sync_hide_object call below hides it on all other clients too.
+		interactable.visible = false
+		# _disable_physics already called above
 		WorldSync.sync_hide_object(interactable)
 		EventBus.container_picked_up.emit(container_type, interactable)
 		AudioManager.play_sfx("table", pickup_pos)
