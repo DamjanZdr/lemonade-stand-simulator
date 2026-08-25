@@ -43,11 +43,6 @@ func _get_held_item_name() -> String:
 @export var sprint_multiplier: float = 1.8
 @export var jump_velocity: float = 5.0
 
-## Neck turns on Y first; body catches up once the neck exceeds this angle.
-const NECK_YAW_MAX: float = 0.2
-## How quickly the body rotates to match the head when the neck hits its limit.
-const NECK_YAW_CATCHUP_SPEED: float = 8.0
-
 var held_item: int = HeldItem.NONE
 var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
@@ -445,9 +440,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Rotate the head on both axes; the body catches up in _physics_process
-		# so other players can see the neck turn before the body follows.
-		head.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 		head.rotation.x = clampf(head.rotation.x, -PI / 2.1, PI / 2.1)
 
@@ -488,21 +481,23 @@ func _process(delta: float) -> void:
 			global_position = global_position.lerp(_net_target_pos, t)
 			global_rotation.y = lerpf(global_rotation.y, _net_target_rot.y, t)
 		# Update neck/head bones so other players see where this player is looking.
-		# PlayerVisuals applies the pose in _process after the child AnimationPlayer
-		# has run, so the pose isn't overwritten by the current animation.
+		# Apply immediately for this frame, then deferred after AnimationPlayer
+		# has updated so the pose isn't overwritten by the current animation.
 		if visuals != null and visuals.visible:
 			var neck_yaw := global_rotation.y + _net_head_yaw
-			visuals.set_look_target(neck_yaw, _net_head_pitch, global_rotation.y)
+			visuals.update_look_bones(neck_yaw, _net_head_pitch, global_rotation.y)
+			visuals.call_deferred("update_look_bones", neck_yaw, _net_head_pitch, global_rotation.y)
 		_update_anim()
 	else:
 		# Local player: update neck/head bones based on camera look direction.
-		# PlayerVisuals applies the pose in _process after the child AnimationPlayer
-		# has run, so the pose isn't overwritten by the current animation.
+		# Apply immediately for this frame, then deferred after AnimationPlayer
+		# has updated so the pose isn't overwritten by the current animation.
 		if visuals != null and visuals.visible:
 			var cam_yaw := head.global_rotation.y
 			var cam_pitch := head.rotation.x
 			var body_yaw := global_rotation.y
-			visuals.set_look_target(cam_yaw, cam_pitch, body_yaw)
+			visuals.update_look_bones(cam_yaw, cam_pitch, body_yaw)
+			visuals.call_deferred("update_look_bones", cam_yaw, cam_pitch, body_yaw)
 
 
 func _physics_process(delta: float) -> void:
@@ -521,19 +516,6 @@ func _physics_process(delta: float) -> void:
 	else:
 		if Input.is_action_just_pressed("jump"):
 			velocity.y = jump_velocity
-
-	# Keep the head/neck within their natural limit by rotating the body
-	# to follow the head yaw smoothly.
-	var head_yaw := head.rotation.y
-	if abs(head_yaw) > NECK_YAW_MAX:
-		var target_turn: float = head_yaw - sign(head_yaw) * NECK_YAW_MAX
-		var turn: float = clampf(
-			target_turn * NECK_YAW_CATCHUP_SPEED * delta,
-			-abs(target_turn),
-			abs(target_turn),
-		)
-		rotate_y(turn)
-		head.rotation.y -= turn
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
@@ -565,7 +547,7 @@ func _try_sync_position(delta: float) -> void:
 	var pitch_delta := absf(head.rotation.x - _last_synced_pitch)
 	var yaw_delta := absf(head.rotation.y - _last_synced_yaw)
 	if (
-			pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD \
+		pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD \
 				and pitch_delta < 0.05
 		and yaw_delta < 0.05
 	):

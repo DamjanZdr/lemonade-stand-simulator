@@ -101,12 +101,6 @@ func _ready() -> void:
 	_disable_cast_shadows()
 
 
-func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
-	_look_camera_yaw = camera_yaw
-	_look_camera_pitch = camera_pitch
-	_look_body_yaw = body_yaw
-
-
 func _disable_cast_shadows() -> void:
 	## NPCs are small and numerous; shadows from every mesh tank the shadow-map pass.
 	for node: Node in find_children("*", "GeometryInstance3D", true, false):
@@ -137,12 +131,6 @@ var _is_near_player: bool = true
 var _check_timer: float = 0.0
 var _closest_player_cache: Node3D = null
 var _closest_player_dist: float = INF
-
-# Stored look target for procedural head/neck poses. Applied in _process
-# after the AnimationPlayer has updated, so the pose isn't overwritten.
-var _look_camera_yaw: float = 0.0
-var _look_camera_pitch: float = 0.0
-var _look_body_yaw: float = 0.0
 
 
 func _get_player_camera() -> Camera3D:
@@ -758,9 +746,6 @@ func _update_eye_look(delta: float) -> void:
 	_eye_rot_r = _eye_rot_r.slerp(target_r, t)
 	_apply_eye(_left_eye, _eye_rot_l)
 	_apply_eye(_right_eye, _eye_rot_r)
-	# Apply procedural head/neck pose via call_deferred so it happens AFTER
-	# the child AnimationPlayer has updated this frame and can't overwrite it.
-	call_deferred("update_look_bones", _look_camera_yaw, _look_camera_pitch, _look_body_yaw)
 
 
 ## Computes the world-space rotation that swings the eye's rest-forward toward aim.
