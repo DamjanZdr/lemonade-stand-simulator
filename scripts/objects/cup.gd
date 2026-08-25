@@ -23,6 +23,32 @@ var _cup_fill_mesh: Node = null
 func _ready() -> void:
 	_cup_fill_mesh = model.find_child("Fill", true, false)
 	_refresh_fill_visibility()
+	_setup_pickupable()
+
+
+func _setup_pickupable() -> void:
+	var pickupable := Pickupable.new()
+	pickupable.name = "Pickupable"
+	pickupable.held_item_type = HeldItem.CUP_FILLED if state == CupState.FILLED else HeldItem.CUP_EMPTY
+	pickupable.can_pickup_callback = func(player: Node) -> bool:
+		var p := player as Player
+		return p != null and p.held_item == HeldItem.NONE
+	pickupable.get_hand_mesh_callback = func() -> Node3D:
+		return _make_hand_mesh(state == CupState.FILLED)
+	pickupable.pick_up_callback = func(player: Node) -> Dictionary:
+		var p := player as Player
+		if p == null or p.held_item != HeldItem.NONE:
+			return { }
+		physics.collision_layer = 0
+		model.visible = false
+		match state:
+			CupState.EMPTY:
+				p.set_held(HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
+			CupState.FILLED:
+				p.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
+		queue_free()
+		return { }
+	add_child(pickupable)
 
 
 func fill(recipe_snapshot: Dictionary) -> void:
@@ -34,6 +60,15 @@ func fill(recipe_snapshot: Dictionary) -> void:
 
 
 func interact(player: Node) -> void:
+	var pickupable := get_node_or_null("Pickupable") as Pickupable
+	if pickupable != null:
+		pickupable.pick_up(player)
+		return
+	# Fallback old path if the component is missing.
+	_pick_up_player(player)
+
+
+func _pick_up_player(player: Node) -> void:
 	var p := player as Player
 	if p == null or p.held_item != HeldItem.NONE:
 		return
