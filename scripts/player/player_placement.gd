@@ -1732,6 +1732,9 @@ func _check_ghost_overlap() -> bool:
 			continue # Skip other ghosts
 		if not (node is Node3D):
 			continue
+		# Skip hidden containers (e.g. a workstation being carried by a player)
+		if not (node as Node3D).visible:
+			continue
 
 		var other_node := node as Node3D
 		var other_origin := other_node.global_position

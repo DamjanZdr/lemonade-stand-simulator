@@ -739,8 +739,13 @@ func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[D
 		var net_id: int = entry.get("net_id", -1)
 		var item := _find_node("", item_name, net_id)
 		if item == null or not is_instance_valid(item):
+			GameLog.log("[WorldSync] Workstation items: item not found: " + item_name)
 			continue
 		if item.get_parent() == parent:
+			# Already parented on the host, but still broadcast to clients
+			# in case they haven't reparented yet (e.g. late joiner or
+			# previous reparent RPC was lost).
+			_reparent_on_clients.rpc(parent_path, item_name, net_id)
 			continue
 		var old_pos: Vector3 = item.global_position
 		var old_rot: Vector3 = item.global_rotation
@@ -911,8 +916,12 @@ func _rpc_request_set_visible(obj_name: String, net_id: int, show: bool) -> void
 		return
 	var obj := _find_node("", obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
-		GameLog.log("[WorldSync] Host _rpc_request_set_visible: object not found: " + obj_name)
+		GameLog.log(
+			"[WorldSync] Host _rpc_request_set_visible: object not found: %s net_id=%d"
+			% [obj_name, net_id]
+		)
 		return
+	GameLog.log("[WorldSync] Host received set_visible %s=%s net_id=%d" % [obj.name, show, net_id])
 	_set_visible_on_clients.rpc(obj.name, net_id, show)
 
 
