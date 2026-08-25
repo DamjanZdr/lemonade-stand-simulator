@@ -196,6 +196,13 @@ var _net_target_rot: Vector3 = Vector3.ZERO
 var _has_net_target: bool = false
 var _net_head_pitch: float = 0.0
 var _net_head_yaw: float = 0.0
+
+# Camera-relative yaw and pitch. The body rotates to catch up once the head
+# yaw exceeds the neck limit; storing them prevents incremental rotations
+# from introducing unwanted roll into the head/camera.
+var _look_yaw: float = 0.0
+var _look_pitch: float = 0.0
+
 const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 
 # Animation state
@@ -445,13 +452,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Mouse X rotates the head/camera yaw around the world Y axis (Euler Y),
-		# not around the already-pitched head local Y axis, to prevent camera roll.
-		# The body catches up once the head turns past NECK_YAW_MAX.
-		head.rotation.y -= event.relative.x * MOUSE_SENSITIVITY
-		head.rotation.y = wrap_angle(head.rotation.y)
-		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
-		head.rotation.x = clampf(head.rotation.x, -PI / 2.1, PI / 2.1)
+		# Update stored yaw/pitch and re-apply the head rotation as a single
+		# clean Euler vector. This avoids mixing rotate_x with rotation.y and
+		# keeps the camera horizon level.
+		_look_yaw = wrap_angle(_look_yaw - event.relative.x * MOUSE_SENSITIVITY)
+		_look_pitch = clampf(
+			_look_pitch - event.relative.y * MOUSE_SENSITIVITY,
+			-PI / 2.1,
+			PI / 2.1,
+		)
+		head.rotation = Vector3(_look_pitch, _look_yaw, 0)
 
 	if event.is_action_pressed("ui_cancel"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -576,16 +586,17 @@ func _try_sync_position(delta: float) -> void:
 
 
 ## After the head turns past the neck limit, rotate the body to catch up.
-## The camera stays steady because the body turn is subtracted from head.rotation.y.
+## The camera stays steady because the body turn is subtracted from _look_yaw
+## and the head is re-set as a clean Euler vector.
 func _update_body_yaw(delta: float) -> void:
-	var head_yaw := wrap_angle(head.rotation.y)
-	if absf(head_yaw) <= NECK_YAW_MAX:
+	if absf(_look_yaw) <= NECK_YAW_MAX:
 		return
-	var excess: float = head_yaw - sign(head_yaw) * NECK_YAW_MAX
+	var excess: float = _look_yaw - sign(_look_yaw) * NECK_YAW_MAX
 	var max_turn: float = NECK_YAW_CATCHUP_SPEED * delta
 	var turn: float = clampf(excess, -max_turn, max_turn)
-	rotate_y(turn)
-	head.rotation.y = wrap_angle(head.rotation.y - turn)
+	rotation.y = wrap_angle(rotation.y + turn)
+	_look_yaw = wrap_angle(_look_yaw - turn)
+	head.rotation = Vector3(_look_pitch, _look_yaw, 0)
 
 
 ## Wrap an angle to the [-PI, PI] range.
