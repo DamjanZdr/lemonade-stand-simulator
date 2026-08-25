@@ -285,7 +285,9 @@ func _ready() -> void:
 		]
 	)
 	_setup_visuals()
-	if not is_multiplayer_authority():
+	if is_multiplayer_authority():
+		_configure_local_player()
+	else:
 		# This is another peer's player, replicated here so we can see
 		# them — not ours to control. Skip capturing input/camera/audio,
 		# which would otherwise fight with our own local player for them.
@@ -301,7 +303,12 @@ func _ready() -> void:
 						"[Player] Remote player %s pos after 3s=%s" % [name, str(global_position)]
 					),
 		)
-		return
+
+
+## Applies local-player-only setup: mouse capture, camera, audio, and physics.
+## Called from _ready for the local player, and from main.gd when a late
+## joiner's authority is claimed after the spawner replicates the node.
+func _configure_local_player() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Layer 2 is used by the screen-space outline system for white fill nodes.
 	# The main camera must not render them — only the SubViewport OutlineCamera does.

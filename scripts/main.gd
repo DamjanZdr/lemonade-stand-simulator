@@ -535,8 +535,20 @@ func _on_spawner_spawned(node: Node) -> void:
 	WorldSync._node_cache[p.name] = p
 	# Only set up local-player stuff for OUR own player (the one we have
 	# authority over). Remote players are just visual representations.
+	# For late joiners the authority may not be claimed yet, so force it
+	# when the node name matches the local peer ID.
 	if not p.is_multiplayer_authority():
-		return
+		var name_peer: int = int(p.name) if p.name.is_valid_int() else 0
+		if name_peer != multiplayer.get_unique_id():
+			return
+		# Claim authority for our own player and run the local-only setup
+		# that was skipped in _ready because the authority wasn't set yet.
+		p.set_multiplayer_authority(name_peer)
+		var sync := p.get_node_or_null("PositionSync") as MultiplayerSynchronizer
+		if sync:
+			sync.set_multiplayer_authority(name_peer)
+		p._configure_local_player()
+		p.visuals.visible = false
 	# assigned_stand isn't replicated (only position/rotation are), so
 	# set it locally from the lobby roster.
 	var peer_id := multiplayer.get_unique_id()
