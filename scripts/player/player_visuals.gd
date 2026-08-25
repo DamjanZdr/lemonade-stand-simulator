@@ -588,10 +588,8 @@ func get_active_skeleton() -> Skeleton3D:
 ## Neck rotates on Y (left/right) up to ±0.2 rad before the body turns.
 ## Head rotates on X (up/down) up to +0.5 (down) / -0.5 (up).
 ## Called from the player's _process.
-var _neck_yaw: float = 0.0
-var _head_pitch: float = 0.0
-const NECK_YAW_MAX: float = 0.2
-const HEAD_PITCH_MAX: float = 0.5
+const NECK_YAW_MAX: float = 0.5
+const NECK_PITCH_MAX: float = 0.5
 
 
 func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
@@ -636,27 +634,17 @@ func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) 
 	var skel := get_active_skeleton()
 	if skel == null:
 		return
-	# Neck yaw: difference between camera yaw and body yaw, clamped
+	# All procedural look movement is applied to the Neck bone, not the Head.
+	# Yaw (left/right) and pitch (up/down) are both clamped to ±0.5 rad.
 	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
-	_neck_yaw = clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
-	# Head pitch: camera pitch inverted because the model's local X axis
-	# points the opposite way to the camera's pitch direction.
-	_head_pitch = clampf(-camera_pitch, -HEAD_PITCH_MAX, HEAD_PITCH_MAX)
-	# Apply to neck bone (Y rotation) as a local rotation on top of the bone's
-	# rest pose, so it turns around the bone's own axis instead of world space.
+	var neck_yaw := clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
+	var neck_pitch := clampf(-camera_pitch, -NECK_PITCH_MAX, NECK_PITCH_MAX)
 	var neck_idx := skel.find_bone("Neck")
 	if neck_idx >= 0:
 		var rest := skel.get_bone_rest(neck_idx)
-		var local_yaw := Quaternion.from_euler(Vector3(0, _neck_yaw, 0))
-		var neck_rot := rest.basis.get_rotation_quaternion() * local_yaw
+		var local_rot := Quaternion.from_euler(Vector3(neck_pitch, neck_yaw, 0))
+		var neck_rot := rest.basis.get_rotation_quaternion() * local_rot
 		skel.set_bone_pose_rotation(neck_idx, neck_rot)
-	# Apply to head bone (X rotation for pitch)
-	var head_idx := skel.find_bone("Head")
-	if head_idx >= 0:
-		var rest := skel.get_bone_rest(head_idx)
-		var local_pitch := Quaternion.from_euler(Vector3(_head_pitch, 0, 0))
-		var head_rot := rest.basis.get_rotation_quaternion() * local_pitch
-		skel.set_bone_pose_rotation(head_idx, head_rot)
 
 
 ## Wrap an angle to the [-PI, PI] range.
