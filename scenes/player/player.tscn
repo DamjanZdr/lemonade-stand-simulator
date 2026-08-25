@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://c6g5g8x5ct4vh" path="res://scripts/player/money_denomination.gd" id="9_denom"]
 [ext_resource type="PackedScene" uid="uid://bpv1s2p3k4q5x" path="res://scenes/player/player_visuals.tscn" id="10_pvis"]
 [ext_resource type="Script" path="res://scripts/player/player_inventory.gd" id="11_inv"]
+[ext_resource type="Script" path="res://scripts/player/player_interaction.gd" id="12_interaction"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.35
@@ -56,6 +57,9 @@ transform = Transform3D(-0.063, 0, 0, 0, 0.063, 0, 0, 0, -0.063, 0, 0.75, 0)
 
 [node name="PlayerInventory" type="Node" parent="."]
 script = ExtResource("11_inv")
+
+[node name="PlayerInteraction" type="Node" parent="."]
+script = ExtResource("12_interaction")
 
 [node name="Head" type="Node3D" parent="." unique_id=950411191]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4472662, 0)

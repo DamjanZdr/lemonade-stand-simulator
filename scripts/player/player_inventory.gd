@@ -22,6 +22,11 @@ func _ready() -> void:
 
 
 ## Returns a user-readable name for the held item, used by the HUD.
+## Returns the currently attached hand mesh, or null if empty-handed.
+func get_hand_mesh() -> Node3D:
+	return _held_mesh
+
+
 func get_held_item_name() -> String:
 	match held_item:
 		HeldItem.CUP_EMPTY:

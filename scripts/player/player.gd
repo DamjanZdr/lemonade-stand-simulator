@@ -20,28 +20,18 @@ const HINT_STAND := "Aim at stand or workstation to place"
 ## without blocking solo testing of every stand.
 var assigned_stand: StandUnit = null
 
-@export var gravity: float = 9.8
-@export var sprint_multiplier: float = 1.8
-@export var jump_velocity: float = 5.0
-
 var held_item: int = HeldItem.NONE
 var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
-var _last_hint: String = ""
-var _hovered: Interactable = null
-var _last_press_holding_fruit: bool = false
-var last_interact_hit: Node = null
 
-# --- Rapid-fire bin deposit ---
-var _primary_held: bool = false
-var _rapid_fire_timer: float = 0.0
+@export var gravity: float = 9.8
+@export var sprint_multiplier: float = 1.8
+@export var jump_velocity: float = 5.0
 @export var rapid_fire_interval: float = 0.35
-# Cup stacks have a small collider (matching the real cup's size), so a tiny
-# bit of mouse drift while holding can make the raycast momentarily miss it
-# — especially right after placing the very first cup, when re-aiming is the
-# only way it used to "reconnect". Remember the last cup stack we deposited
-# into and keep targeting it while held, as long as it's still valid.
-var _rapid_fire_cup_target: CupStack = null
+
+# Last node hit by a raycast during an interact call; used by interactable
+# scripts to know which collider the player actually clicked.
+var last_interact_hit: Node = null
 
 # --- Container placement ghost ---
 var _ghost: Node3D = null
@@ -49,11 +39,6 @@ var _ghost_valid: bool = false
 static var _ghost_mat_valid: StandardMaterial3D = null
 static var _ghost_mat_invalid: StandardMaterial3D = null
 var _last_ghost_mat: StandardMaterial3D = null
-
-# --- Per-frame lookup cache (avoids redundant tree walks) ---
-var _frame_press: Press = null
-var _frame_dispenser: WaterDispenser = null
-var _frame_lookups_done: bool = false
 
 # --- Box stack wobble ---
 var _stack_target_id: int = -1
@@ -157,6 +142,7 @@ func _get_container_scene(container_type: String) -> PackedScene:
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var visuals: PlayerVisuals = $Visuals
 @onready var inventory: PlayerInventory = $PlayerInventory
+@onready var interaction = $PlayerInteraction
 
 var _in_priceboard_mode := false
 var _sync_pos_timer: float = 0.0
@@ -198,11 +184,9 @@ var _money_mode: bool = false
 
 func set_money_mode(active: bool) -> void:
 	_money_mode = active
-	if active and _hovered and is_instance_valid(_hovered):
-		_hovered.set_highlight(false)
-		_hovered = null
+	if interaction != null:
+		interaction.set_money_mode(active)
 	if active:
-		_last_hint = ""
 		EventBus.interaction_hint_changed.emit("")
 
 
@@ -455,16 +439,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			_primary_held = true
-			_rapid_fire_timer = _get_rapid_fire_interval()
-			_primary_interact()
+			if interaction != null:
+				interaction.set_primary_held(true)
+				interaction.primary_interact()
 		elif not event.pressed:
-			_primary_held = false
-			_rapid_fire_cup_target = null
+			if interaction != null:
+				interaction.set_primary_held(false)
 
 	if event.is_action_pressed("secondary_interact") and \
 			Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_secondary_interact()
+		if interaction != null:
+			interaction.secondary_interact()
 
 
 func _process(delta: float) -> void:
@@ -499,6 +484,10 @@ func _process(delta: float) -> void:
 			var cam_pitch := head.rotation.x
 			var body_yaw := global_rotation.y
 			visuals.set_look_target(cam_yaw, cam_pitch, body_yaw)
+		if interaction != null and not _money_mode:
+			interaction.poll_hint()
+			interaction.update_rapid_fire(delta)
+		_update_ghost()
 
 
 func _physics_process(delta: float) -> void:
@@ -529,11 +518,9 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_update_body_yaw(delta)
 	_try_sync_position(delta)
-	_frame_lookups_done = false
-	if not _money_mode:
-		_poll_hint()
+	if interaction != null:
+		interaction.update_frame_lookups()
 	_update_ghost()
-	_update_rapid_fire(delta)
 	_update_anim()
 
 
@@ -619,438 +606,6 @@ func _sync_position(
 	_net_head_yaw = head_yaw
 
 
-func _poll_hint() -> void:
-	var interactable := _get_looked_at_interactable()
-	if interactable != _hovered:
-		if _hovered and is_instance_valid(_hovered):
-			_hovered.set_highlight(false)
-		_hovered = interactable
-		if _hovered:
-			_hovered.set_highlight(true)
-	elif _hovered and is_instance_valid(_hovered) and _hovered is Press:
-		# Re-apply highlight only when held-item state changes (not every frame)
-		var holding_fruit_now: bool = held_item == HeldItem.SUPPLY_BOX \
-				and held_item_data.get("source") == "bin_scoop"
-		if holding_fruit_now != _last_press_holding_fruit:
-			_last_press_holding_fruit = holding_fruit_now
-			_hovered.set_highlight(true)
-	var hint := ""
-	# Pedestrians show their own hint (offer / serve) regardless of held item.
-	if interactable is PedestrianInteractable:
-		hint = interactable.get_hint(self)
-		if hint != _last_hint:
-			_last_hint = hint
-			EventBus.interaction_hint_changed.emit(hint)
-		return
-	if held_item_data.get("is_trash", false):
-		if interactable != null and interactable.is_in_group("trashcan"):
-			hint = interactable.get_hint(self)
-		elif held_item_data.get("trash_type", "") == "empty_box":
-			hint = "Trash | LMB: place or use trashcan"
-		else:
-			hint = "Trash | find a trashcan"
-		if hint != _last_hint:
-			_last_hint = hint
-			EventBus.interaction_hint_changed.emit(hint)
-		return
-	if held_item == HeldItem.CONTAINER:
-		var container_type: String = held_item_data.get("container_type", "")
-		# Check if looking at trashcan for recycling
-		if interactable != null and interactable.is_in_group("trashcan"):
-			hint = interactable.get_hint(self)
-			if hint != _last_hint:
-				_last_hint = hint
-				EventBus.interaction_hint_changed.emit(hint)
-			return
-		# Check if looking at water tap with pitcher
-		if interactable is WaterTap:
-			if container_type == "pitcher":
-				var _recipe: Dictionary = held_item_data.get("saved_recipe", { })
-				if _recipe.get("water", 0.0) > 0.0:
-					hint = "Pitcher | already has water"
-				else:
-					hint = "Pitcher | LMB: fill with water"
-			else:
-				hint = "%s | LMB: place" % inventory.get_held_item_name()
-		else:
-			hint = "%s | LMB: place" % inventory.get_held_item_name()
-		if container_type == "pitcher":
-			var press := _find_looked_at_press()
-			if press != null:
-				var snap_recipe: Dictionary = held_item_data.get("saved_recipe", { })
-				hint = press.get_pitcher_snap_hint(snap_recipe)
-				return
-			var dispenser := _find_looked_at_dispenser()
-			if dispenser != null:
-				hint = dispenser.get_hint(self)
-				return
-		if _ghost_valid:
-			hint = "%s | LMB: place" % inventory.get_held_item_name()
-		else:
-			if container_type == "workstation":
-				hint = HINT_GROUND
-			else:
-				hint = "%s | %s" % [inventory.get_held_item_name(), HINT_STAND]
-		if container_type == "pitcher" and _held_pitcher_has_contents():
-			hint += "  |  RMB: empty"
-	elif held_item == HeldItem.SUPPLY_BOX \
-			and held_item_data.get("source") == "bin_scoop":
-		# Bin scoops can only be deposited into bins/presses/pitchers
-		if interactable != null:
-			hint = interactable.get_hint(self)
-		else:
-			hint = "%s | aim at bin, press, or trash to deposit" % inventory.get_held_item_name()
-	elif held_item == HeldItem.SUPPLY_BOX \
-			and held_item_data.get("ingredient_type") == "cups":
-		var _held_name := inventory.get_held_item_name()
-		hint = "%s | LMB: place 1 cup" % _held_name
-		if _is_aiming_at_grid():
-			hint = "%s | LMB: place box on grid" % _held_name
-		if interactable is SupplyBox:
-			hint = "%s | LMB: stack box" % _held_name
-		if interactable is CupStack:
-			hint = "%s | LMB: add 1 cup" % _held_name
-	elif held_item == HeldItem.SUPPLY_BOX:
-		var _hn := inventory.get_held_item_name()
-		hint = "%s | LMB: place box" % _hn
-		if _is_aiming_at_grid():
-			hint = "%s | LMB: place on grid" % _hn
-		if interactable is SupplyBox:
-			hint = "%s | LMB: stack on box" % _hn
-	elif held_item == HeldItem.CUP_EMPTY:
-		hint = "Empty Cup | LMB: place cup"
-		if interactable is CupStack:
-			hint = "Empty Cup | LMB: add to stack"
-	elif held_item == HeldItem.CUP_FILLED:
-		hint = "Filled Cup | LMB: place filled cup"
-		if ray.is_colliding():
-			var hit_node: Node = ray.get_collider() as Node
-			var has_customer := _find_customer_in_ancestors(hit_node) != null
-			var has_ped := _find_pedestrian_in_ancestors(hit_node) != null
-			if has_customer or has_ped:
-				hint = "Filled Cup | LMB: serve lemonade"
-	else:
-		hint = interactable.get_hint(self) if interactable else ""
-		# Append pickup hint when looking at a pickupable object with empty hands
-		if interactable and held_item == HeldItem.NONE:
-			var pickupable := interactable.find_child("Pickupable", false, false)
-			if pickupable != null and pickupable.can_pick_up(self) and not hint.contains("pick up"):
-				hint = hint + "  |  RMB: pick up" if hint != "" else "RMB: pick up"
-	if hint != _last_hint:
-		_last_hint = hint
-		EventBus.interaction_hint_changed.emit(hint)
-
-
-func _primary_interact() -> void:
-	# Check if looking at an interactable first (even when holding items)
-	var interactable := _get_looked_at_interactable()
-
-	# Walking pedestrians take priority: first click starts the offer no matter
-	# what the player is holding. Subsequent clicks serve lemonade.
-	if interactable is PedestrianInteractable:
-		interactable.interact(self)
-		return
-
-	# Unified pickup path: if the interactable has a Pickupable component and
-	# we can pick it up, let it handle pickup/held-item setup.
-	if held_item == HeldItem.NONE and interactable != null:
-		var pickupable := interactable.find_child("Pickupable", false, false)
-		if pickupable != null and pickupable.can_pick_up(self):
-			pickupable.pick_up(self)
-			return
-
-	# Trash items can be disposed of at a trashcan.
-	# Empty box trash can also be placed on the ground like supply boxes.
-	if held_item_data.get("is_trash", false):
-		var is_box_trash: bool = held_item_data.get("trash_type", "") == "empty_box"
-		if interactable != null and interactable.is_in_group("trashcan"):
-			interactable.interact(self)
-			_destroy_ghost()
-			return
-		# Also check ray collider ancestor chain for trashcan group
-		if ray.is_colliding():
-			var node: Node = ray.get_collider()
-			while node != null:
-				if node is Interactable and node.is_in_group("trashcan"):
-					(node as Interactable).interact(self)
-					_destroy_ghost()
-					return
-				node = node.get_parent()
-		if is_box_trash:
-			if _ghost != null and _ghost_valid:
-				_drop_trash(_ghost.global_position)
-			elif ray.is_colliding() and _is_placement_surface(ray.get_collider()):
-				_drop_trash(ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0))
-			else:
-				_drop_trash()
-		return
-
-	# Containers can be recycled at a trashcan for 70% refund.
-	if held_item == HeldItem.CONTAINER:
-		if interactable != null and interactable.is_in_group("trashcan"):
-			interactable.interact(self)
-			return
-
-	# Handle water tap interaction when holding pitcher - fill directly
-	var container_type: String = ""
-	if interactable is WaterTap and held_item == HeldItem.CONTAINER:
-		container_type = held_item_data.get("container_type", "")
-		if container_type == "pitcher":
-			var recipe: Dictionary = held_item_data.get("saved_recipe", { })
-			var current_water: float = recipe.get("water", 0.0)
-			if current_water <= 0.0:
-				var current_fruit: float = recipe.get("fruit_count", recipe.get("lemons", 0.0))
-				var liquid_volume: float = current_fruit + current_water
-				var fill: float = Balancing.PITCHER_MAX_LIQUID - liquid_volume
-				if fill > 0.0:
-					recipe["water"] = current_water + fill
-					held_item_data["saved_recipe"] = recipe
-					held_item_data["has_liquid"] = true
-					EventBus.pitcher_ingredient_added.emit("water", fill)
-					# Animate eraser on the held mesh instead of recreating it
-					if _held_mesh is Pitcher:
-						(_held_mesh as Pitcher).fill_water_slow(fill, 4.0)
-				EventBus.interaction_hint_changed.emit("Pitcher filled with water!")
-			else:
-				EventBus.interaction_hint_changed.emit("Pitcher already has water!")
-			return
-
-	if held_item == HeldItem.CONTAINER:
-		container_type = held_item_data.get("container_type", "")
-		if container_type == "pitcher":
-			var press := _find_looked_at_press()
-			if press != null:
-				var snap_recipe: Dictionary = held_item_data.get("saved_recipe", { })
-				if press.can_snap_pitcher(snap_recipe):
-					_ghost.global_position = press.get_snap_global_position()
-					_ghost_valid = true
-					var placed := _try_place_container()
-					if placed is Pitcher:
-						press.snap_pitcher(placed as Pitcher)
-					return
-				EventBus.interaction_hint_changed.emit(press.get_pitcher_snap_hint(snap_recipe))
-				return
-			var dispenser := _find_looked_at_dispenser()
-			if dispenser != null:
-				var _recipe: Dictionary = held_item_data.get("saved_recipe", { })
-				if dispenser.can_snap_pitcher_from_recipe(_recipe):
-					_ghost.global_position = dispenser.get_snap_global_position()
-					_ghost_valid = true
-					var placed := _try_place_container()
-					if placed is Pitcher:
-						dispenser.snap_pitcher(placed as Pitcher)
-					return
-				# Can't snap to dispenser — fall through to normal placement
-		var from_box: bool = held_item_data.get("from_delivery_box", false)
-		if from_box and ray.is_colliding():
-			var node: Node = ray.get_collider()
-			while node != null:
-				if node is SupplyBox:
-					_ghost_valid = true
-					var box_pos := (node as SupplyBox).global_position
-					var offset: float = _ghost.get_meta("bottom_offset", 0.0) if _ghost else 0.0
-					_ghost.global_position = box_pos + Vector3(0, 0.262 - offset, 0)
-					_try_place_container()
-					return
-				node = node.get_parent()
-			# Ground placement for equipment boxes
-			if not _is_placement_surface(ray.get_collider()):
-				_ghost_valid = false
-				return
-		_try_place_container()
-		return
-
-	# Handle single empty cup placement or pitcher interaction
-	if held_item == HeldItem.CUP_EMPTY:
-		# First check if looking at a pitcher to fill cup
-		if interactable is Pitcher:
-			last_interact_hit = ray.get_collider()
-			(interactable as Pitcher).interact(self)
-			last_interact_hit = null
-			return
-		# Then check for cup stack
-		if interactable is CupStack:
-			last_interact_hit = ray.get_collider()
-			(interactable as CupStack).interact(self)
-			last_interact_hit = null
-			return
-		# Then check for water tap
-		if interactable is WaterTap:
-			last_interact_hit = ray.get_collider()
-			(interactable as WaterTap).interact(self)
-			last_interact_hit = null
-			return
-		# Place on surface to start new stack
-		if ray.is_colliding() and _is_placement_surface(ray.get_collider()):
-			_place_single_cup(false)
-			return
-		return
-
-	# Handle filled cup - serve to customer or place on surface
-	if held_item == HeldItem.CUP_FILLED:
-		# First check if looking at a customer or pedestrian to serve.
-		if ray.is_colliding():
-			var hit_node: Node = ray.get_collider() as Node
-			var customer: Customer = _find_customer_in_ancestors(hit_node)
-			if customer != null:
-				var peer_id := int(name)
-				var recipe_data: Dictionary = held_item_data.get("recipe", { })
-				customer.request_serve(peer_id, recipe_data)
-				return
-			var ped: Pedestrian = _find_pedestrian_in_ancestors(hit_node)
-			if ped != null:
-				var peer_id := int(name)
-				var recipe_data: Dictionary = held_item_data.get("recipe", { })
-				ped.request_serve(peer_id, recipe_data)
-				return
-		# Then place on surface (only on workstation/stand, not ground)
-		if ray.is_colliding():
-			var collider := ray.get_collider()
-			if _is_placement_surface(collider) and not _is_ground_surface(collider):
-				_place_filled_cup()
-				return
-		return
-
-	# Special handling for cup box - place stack on surface or deposit to existing
-	if held_item == HeldItem.SUPPLY_BOX \
-			and held_item_data.get("source") == "delivery" \
-			and held_item_data.get("ingredient_type") == "cups":
-		if ray.is_colliding():
-			var node: Node = ray.get_collider()
-			while node != null:
-				if node is SupplyBox:
-					# Stack the cup box on top of the hovered stack
-					_place_held_supply_box_on_stack(node as SupplyBox)
-					return
-				if node is DeliveryGrid:
-					# Place on the delivery grid
-					_place_held_supply_box_on_grid(node as DeliveryGrid, ray.get_collision_point())
-					return
-				node = node.get_parent()
-		if interactable is CupStack:
-			# Deposit to existing stack
-			_rapid_fire_cup_target = interactable as CupStack
-			last_interact_hit = ray.get_collider()
-			interactable.interact(self)
-			last_interact_hit = null
-			return
-		if ray.is_colliding():
-			var collider := ray.get_collider()
-			if _is_placement_surface(collider):
-				if _is_ground_surface(collider):
-					# Floor — drop the box
-					_place_held_supply_box_on(
-						ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0),
-					)
-					return
-				# Workstation/stand — place cup stack
-				_place_cup_stack_from_box()
-				return
-		# Fallback: drop the box
-		_drop_held_box()
-		return
-
-	# Handle non-cup supply box placement (stack on boxes or place on ground)
-	if held_item == HeldItem.SUPPLY_BOX and held_item_data.get("source") == "delivery" \
-			and held_item_data.get("ingredient_type") != "cups":
-		var is_equipment: bool = held_item_data.get("is_equipment", false)
-		if ray.is_colliding():
-			var node: Node = ray.get_collider()
-			while node != null:
-				if node is SupplyBox:
-					_place_held_supply_box_on_stack(node as SupplyBox)
-					return
-				if node is DeliveryGrid:
-					_place_held_supply_box_on_grid(node as DeliveryGrid, ray.get_collision_point())
-					return
-				node = node.get_parent()
-			# Check if looking at a matching ingredient bin or water dispenser
-			if not is_equipment:
-				if interactable is IngredientBin:
-					var bin := interactable as IngredientBin
-					if bin.ingredient_type == held_item_data.get("ingredient_type", ""):
-						last_interact_hit = ray.get_collider()
-						bin.interact(self)
-						last_interact_hit = null
-						return
-				if interactable is FruitBin:
-					var fbin := interactable as FruitBin
-					var itype: String = held_item_data.get("ingredient_type", "")
-					if fbin.fruit_grids.has(itype):
-						last_interact_hit = ray.get_collider()
-						fbin.interact(self)
-						last_interact_hit = null
-						return
-				if interactable is WaterDispenser:
-					if held_item_data.get("ingredient_type", "") == "water":
-						last_interact_hit = ray.get_collider()
-						interactable.interact(self)
-						last_interact_hit = null
-						return
-			var collider := ray.get_collider()
-			var on_surface := _is_placement_surface(collider)
-			var is_ground := _is_ground_surface(collider)
-			var equipment_type: String = held_item_data.get("equipment_type", "")
-			if (
-				is_equipment
-				and (
-					on_surface and not is_ground and equipment_type != "workstation"
-					or is_ground and equipment_type == "workstation"
-				)
-			):
-				# Place working equipment on workstation (or floor for tables)
-				_place_equipment_from_box()
-				return
-			if on_surface and not is_equipment:
-				# Place ingredient box on a surface
-				_place_held_supply_box_on(
-					ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0),
-				)
-				return
-		_drop_held_box()
-		return
-
-	# Handle fallback interactables (not caught by specific cases above)
-	var fallback_interactable := _get_looked_at_interactable()
-	if fallback_interactable:
-		last_interact_hit = ray.get_collider()
-		fallback_interactable.interact(self)
-		last_interact_hit = null
-	elif held_item == HeldItem.SUPPLY_BOX and held_item_data.get("source") == "delivery":
-		_drop_held_box()
-
-
-func _secondary_interact() -> void:
-	# Holding a pitcher: RMB always empties it, regardless of what's being
-	# looked at.
-	if held_item == HeldItem.CONTAINER and held_item_data.get("container_type", "") == "pitcher":
-		_empty_held_pitcher()
-		return
-
-	var interactable := _get_looked_at_interactable()
-	if interactable:
-		# If hands empty and looking at container, pick it up
-		if held_item == HeldItem.NONE:
-			# Press with snapped pitcher: pick up the pitcher, not the press
-			if interactable is Press and (interactable as Press).has_snapped_pitcher():
-				(interactable as Press).interact(self)
-				return
-			var ctype := _get_container_type_for_node(interactable)
-			if ctype != "":
-				pickup_container(interactable, ctype)
-				return
-		# Otherwise let the interactable handle secondary interact
-		interactable.interact_secondary(self)
-		return
-
-	# Drop supply box or empty box trash
-	if held_item == HeldItem.SUPPLY_BOX and held_item_data.get("source") == "delivery":
-		_drop_held_box()
-	elif held_item == HeldItem.TRASH \
-			and held_item_data.get("trash_type", "") == "empty_box":
-		_drop_trash()
-
-
 func _held_pitcher_has_contents() -> bool:
 	var recipe: Dictionary = held_item_data.get("saved_recipe", { })
 	return (
@@ -1092,10 +647,10 @@ func _place_cup_stack_from_box() -> void:
 		return
 
 	# Check if looking at existing stack
-	var interactable := _get_looked_at_interactable()
+	var interactable := interaction.get_looked_at_interactable() as Interactable
 	if interactable is CupStack:
 		# Add one cup to existing stack
-		_rapid_fire_cup_target = interactable as CupStack
+		interaction.set_rapid_fire_cup_target(interactable as CupStack)
 		interactable.add_cups(1)
 		inventory.update_held_amount(float(qty - 1))
 		if qty - 1 <= 0:
@@ -1148,7 +703,7 @@ func _place_cup_stack_from_box() -> void:
 	# Remember this brand-new stack as the rapid-fire target so holding the
 	# mouse down keeps depositing into it, even before the raycast has had a
 	# chance to register its freshly-added (and quite small) collider.
-	_rapid_fire_cup_target = stack as CupStack
+	interaction.set_rapid_fire_cup_target(stack as CupStack)
 
 	AudioManager.play_sfx(_get_place_sfx_key("cup_stack"), stack.global_position, -1.0, 0.05, 0.85)
 	EventBus.container_placed.emit("cup_stack", stack)
@@ -1200,7 +755,7 @@ func _update_single_cup_ghost() -> void:
 	var hit_point := ray.get_collision_point()
 
 	# Check if looking at existing cup stack
-	var interactable := _get_looked_at_interactable()
+	var interactable := interaction.get_looked_at_interactable() as Interactable
 	if interactable is CupStack and held_item == HeldItem.CUP_EMPTY:
 		# For empty cups, hide ghost when looking at stack
 		_ghost.visible = false
@@ -1546,162 +1101,6 @@ func _place_equipment_from_box() -> void:
 	AudioManager.play_sfx(_get_place_sfx_key(equipment_type), place_pos, -1.0, 0.05, 0.85)
 	EventBus.container_placed.emit(equipment_type, instance)
 
-
-func _update_rapid_fire(delta: float) -> void:
-	if not _primary_held:
-		return
-	if held_item != HeldItem.SUPPLY_BOX:
-		return
-	if held_item_data.get("is_trash", false):
-		return
-	if held_item_data.get("source") != "delivery":
-		return
-
-	_rapid_fire_timer -= delta
-	if _rapid_fire_timer > 0.0:
-		return
-
-	var interactable := _get_looked_at_interactable()
-
-	# Handle cup stack deposits
-	var cup_stack := interactable as CupStack
-	if cup_stack != null:
-		_rapid_fire_cup_target = cup_stack
-	elif held_item_data.get("ingredient_type", "") == "cups" \
-			and is_instance_valid(_rapid_fire_cup_target):
-		# Raycast momentarily missed the (small) cup stack collider; keep
-		# depositing into the last one we hit rather than stalling out.
-		cup_stack = _rapid_fire_cup_target
-	if cup_stack != null:
-		if held_item_data.get("ingredient_type", "") != "cups":
-			return
-		if cup_stack.current_count >= cup_stack.max_capacity:
-			return
-		var amount: float = held_item_data.get("amount", 0.0)
-		if amount <= 0.0:
-			return
-		_rapid_fire_timer = _get_rapid_fire_interval()
-		last_interact_hit = ray.get_collider()
-		cup_stack.interact(self)
-		last_interact_hit = null
-		return
-
-	# Handle water dispenser refill
-	var dispenser := interactable as WaterDispenser
-	if dispenser != null:
-		if held_item_data.get("ingredient_type", "") != "water":
-			return
-		if dispenser.water_fillings >= dispenser.max_fillings:
-			return
-		var amount: float = held_item_data.get("amount", 0.0)
-		if amount <= 0.0:
-			return
-		_rapid_fire_timer = _get_rapid_fire_interval()
-		last_interact_hit = ray.get_collider()
-		dispenser.interact(self)
-		last_interact_hit = null
-		return
-
-	# Handle ingredient bin deposits
-	var bin := interactable as IngredientBin
-	if bin != null:
-		if bin.ingredient_type == held_item_data.get("ingredient_type", ""):
-			if bin.current_amount < bin.max_capacity:
-				var amount: float = held_item_data.get("amount", 0.0)
-				if amount > 0.0:
-					_rapid_fire_timer = _get_rapid_fire_interval()
-					last_interact_hit = ray.get_collider()
-					bin.interact(self)
-					last_interact_hit = null
-		return
-	var fbin := interactable as FruitBin
-	if fbin != null:
-		var itype: String = held_item_data.get("ingredient_type", "")
-		if fbin.fruit_grids.has(itype):
-			var amt: float = held_item_data.get("amount", 0.0)
-			if amt > 0.0 and fbin.fruit_amounts.get(itype, 0.0) < fbin.get_capacity(itype):
-				_rapid_fire_timer = _get_rapid_fire_interval()
-				last_interact_hit = ray.get_collider()
-				fbin.interact(self)
-				last_interact_hit = null
-		return
-
-
-func _get_rapid_fire_interval() -> float:
-	var nimble_bonus: float = UpgradeManager.get_effect_total("nimbleness")
-	if nimble_bonus > 0.0:
-		return rapid_fire_interval * (1.0 - nimble_bonus)
-	return rapid_fire_interval
-
-
-func _get_looked_at_interactable() -> Interactable:
-	if not ray.is_colliding():
-		return null
-	var node: Node = ray.get_collider()
-	if node == null:
-		return null
-	var chain := node
-	while chain != null:
-		if chain is Interactable:
-			return chain as Interactable
-		chain = chain.get_parent()
-	return null
-
-
-func _find_looked_at_press() -> Press:
-	if _frame_lookups_done:
-		return _frame_press
-	_frame_lookups_done = true
-	_frame_press = null
-	_frame_dispenser = null
-	# Standard interactable lookup
-	var interactable := _get_looked_at_interactable()
-	if interactable is Press:
-		_frame_press = interactable as Press
-		return _frame_press
-	if interactable is WaterDispenser:
-		_frame_dispenser = interactable as WaterDispenser
-	# Fallback: walk up from direct collider (deeper search)
-	if ray.is_colliding():
-		var node := ray.get_collider()
-		for i in range(6):
-			if node == null:
-				break
-			if node is Press and _frame_press == null:
-				_frame_press = node as Press
-			if node is WaterDispenser and _frame_dispenser == null:
-				_frame_dispenser = node as WaterDispenser
-			if _frame_press != null and _frame_dispenser != null:
-				break
-			node = node.get_parent()
-	return _frame_press
-
-
-func _find_looked_at_dispenser() -> WaterDispenser:
-	if _frame_lookups_done:
-		return _frame_dispenser
-	_frame_lookups_done = true
-	_frame_press = null
-	_frame_dispenser = null
-	var interactable := _get_looked_at_interactable()
-	if interactable is Press:
-		_frame_press = interactable as Press
-	if interactable is WaterDispenser:
-		_frame_dispenser = interactable as WaterDispenser
-	if ray.is_colliding():
-		var node := ray.get_collider()
-		for i in range(6):
-			if node == null:
-				break
-			if node is Press and _frame_press == null:
-				_frame_press = node as Press
-			if node is WaterDispenser and _frame_dispenser == null:
-				_frame_dispenser = node as WaterDispenser
-			if _frame_press != null and _frame_dispenser != null:
-				break
-			node = node.get_parent()
-	return _frame_dispenser
-
 # ==========================================================================
 #  CONTAINER PLACEMENT SYSTEM
 # ==========================================================================
@@ -1975,7 +1374,7 @@ func _update_cup_box_ghost() -> void:
 		node = node.get_parent()
 
 	# Check if looking at existing cup stack - hide ghost in that case
-	var interactable := _get_looked_at_interactable()
+	var interactable := interaction.get_looked_at_interactable() as Interactable
 	if interactable is CupStack:
 		_destroy_ghost()
 		_ghost_valid = true # Valid to add to existing
@@ -2291,7 +1690,7 @@ func _update_ghost() -> void:
 	# Pitcher snapping to press
 	var container_type: String = held_item_data.get("container_type", "")
 	if container_type == "pitcher":
-		var press := _find_looked_at_press()
+		var press := interaction.find_looked_at_press() as Press
 		if press != null:
 			var recipe: Dictionary = held_item_data.get("saved_recipe", { })
 			_ghost.global_position = press.get_snap_global_position()
@@ -2303,7 +1702,7 @@ func _update_ghost() -> void:
 				_ghost_valid = false
 				_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
 			return
-		var dispenser := _find_looked_at_dispenser()
+		var dispenser := interaction.find_looked_at_dispenser() as WaterDispenser
 		if dispenser != null:
 			var _recipe: Dictionary = held_item_data.get("saved_recipe", { })
 			if _ghost == null or _ghost.get_meta("container_type", "") != "pitcher":
