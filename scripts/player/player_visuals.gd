@@ -584,10 +584,11 @@ const HEAD_PITCH_MAX: float = 0.5
 
 func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
 	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
-	if (
+	var should_print: bool = (
 		abs(yaw_diff - _last_debug_yaw) > DEBUG_NECK_THRESHOLD
 		or abs(camera_pitch - _last_debug_pitch) > DEBUG_NECK_THRESHOLD
-	):
+	)
+	if should_print:
 		_last_debug_yaw = yaw_diff
 		_last_debug_pitch = camera_pitch
 		print(
@@ -596,7 +597,8 @@ func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) 
 		)
 	var skel := get_active_skeleton()
 	if skel == null:
-		print("[PlayerVisuals] skeleton null")
+		if should_print:
+			print("[PlayerVisuals] skeleton null")
 		return
 	# Neck yaw: difference between camera yaw and body yaw, clamped
 	_neck_yaw = clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
@@ -610,8 +612,9 @@ func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) 
 				.basis \
 				.get_rotation_quaternion()
 		skel.set_bone_pose_rotation(neck_idx, neck_rot)
-		print("[PlayerVisuals] neck applied idx=%d yaw=%.2f" % [neck_idx, _neck_yaw])
-	else:
+		if should_print:
+			print("[PlayerVisuals] neck applied idx=%d yaw=%.2f" % [neck_idx, _neck_yaw])
+	elif should_print:
 		print("[PlayerVisuals] neck bone not found")
 	# Apply to head bone (X rotation for pitch)
 	var head_idx := skel.find_bone("Head")
@@ -621,8 +624,9 @@ func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) 
 				.basis \
 				.get_rotation_quaternion()
 		skel.set_bone_pose_rotation(head_idx, head_rot)
-		print("[PlayerVisuals] head applied idx=%d pitch=%.2f" % [head_idx, _head_pitch])
-	else:
+		if should_print:
+			print("[PlayerVisuals] head applied idx=%d pitch=%.2f" % [head_idx, _head_pitch])
+	elif should_print:
 		print("[PlayerVisuals] head bone not found")
 
 
