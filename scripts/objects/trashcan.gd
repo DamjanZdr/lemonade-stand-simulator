@@ -29,19 +29,10 @@ func get_hint(player: Node) -> String:
 
 func interact(player: Node) -> void:
 	if not _is_valid_player(player):
-		print("[Trashcan] _is_valid_player failed")
 		return
 	var p := player as Player
 	if p == null:
-		print("[Trashcan] player cast failed")
 		return
-	print(
-		"[Trashcan] interact called, held_item=%d, is_trash=%s, trash_type=%s"
-		% [p.held_item, p.held_item_data.get("is_trash", false), p.held_item_data.get(
-				"trash_type",
-				"",
-			)]
-	)
 	if p.held_item_data.get("is_trash", false):
 		var refund := _get_refund(player)
 		var trash_type := _get_trash_type(player)
