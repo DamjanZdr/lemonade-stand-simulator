@@ -8,6 +8,10 @@ extends Node3D
 @export var mirror_size: Vector2 = Vector2(1.2, 1.8)
 @export var viewport_resolution: Vector2i = Vector2i(256, 320)
 
+# Cull layer used only for the local player's visual model so the main
+# camera doesn't see it but the mirror reflection camera can.
+const PLAYER_VISUAL_LAYER: int = 3
+
 var _viewport: SubViewport = null
 var _camera: Camera3D = null
 
@@ -20,6 +24,7 @@ func _ready() -> void:
 	# Viewport textures are not always ready in _ready; assign the material
 	# after one frame to make sure the texture exists.
 	call_deferred("_assign_viewport_texture")
+	_configure_local_player_visual()
 
 
 func _setup_viewport() -> void:
@@ -29,8 +34,9 @@ func _setup_viewport() -> void:
 	add_child(_viewport)
 
 	_camera = Camera3D.new()
-	# Render everything except the mirror surface itself.
-	_camera.cull_mask = 1
+	# Render world (layer 1) and the local player visual clone (layer 3),
+	# but not the mirror surface itself (layer 2).
+	_camera.cull_mask = 1 | (1 << (PLAYER_VISUAL_LAYER - 1))
 	_viewport.add_child(_camera)
 
 
@@ -69,6 +75,27 @@ func _assign_viewport_texture() -> void:
 	var mat := _mesh.material_override as StandardMaterial3D
 	if mat != null:
 		mat.albedo_texture = _viewport.get_texture()
+
+
+func _configure_local_player_visual() -> void:
+	var player := _find_local_player()
+	if player == null or player.visuals == null:
+		return
+	# The local player's visual model is normally hidden in first-person.
+	# Make it visible but move it to a separate cull layer so the main
+	# camera still doesn't see it while the mirror camera can.
+	player.visuals.visible = true
+	_set_visual_layers_recursive(player.visuals, PLAYER_VISUAL_LAYER)
+	if player.camera != null:
+		player.camera.cull_mask &= ~(1 << (PLAYER_VISUAL_LAYER - 1))
+
+
+func _set_visual_layers_recursive(node: Node, layer: int) -> void:
+	var mesh := node as MeshInstance3D
+	if mesh != null:
+		mesh.layers = 1 << (layer - 1)
+	for child in node.get_children():
+		_set_visual_layers_recursive(child, layer)
 
 
 func _process(_delta: float) -> void:
