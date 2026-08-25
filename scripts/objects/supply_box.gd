@@ -88,6 +88,63 @@ func _ready() -> void:
 		_setup_equipment_icon()
 	else:
 		_setup_icon()
+	_setup_pickupable()
+
+
+func _setup_pickupable() -> void:
+	var pickupable := Pickupable.new()
+	pickupable.name = "Pickupable"
+	pickupable.held_item_type = HeldItem.SUPPLY_BOX
+	pickupable.can_pickup_callback = func(player: Node) -> bool:
+		var p := player as Player
+		return p != null and p.held_item == HeldItem.NONE
+	pickupable.get_hand_mesh_callback = func() -> Node3D:
+		return _make_hand_mesh()
+	pickupable.pick_up_callback = func(player: Node) -> Dictionary:
+		_pick_up_player(player)
+		return { }
+	add_child(pickupable)
+
+
+func _pick_up_player(player: Node) -> void:
+	var p := player as Player
+	if p == null or p.held_item != HeldItem.NONE:
+		return
+	GameLog.log("[SupplyBox] pick_up name=%s is_host=%s" % [name, WorldSync.is_host()])
+	# Release the delivery-grid slot immediately on this peer as a
+	# prediction; the host will also release it when it authoritatively
+	# despawns the box.
+	release_delivery_slot(self)
+
+	# Determine what the player picks up BEFORE removing the local box.
+	var hand_mesh: Node3D = _make_hand_mesh()
+	if is_trash_box:
+		p.make_held_trash(trash_value, trash_type, hand_mesh)
+	elif is_equipment:
+		var held_data := {
+			"source": "delivery",
+			"is_equipment": true,
+			"equipment_type": equipment_type,
+		}
+		p.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
+	else:
+		var held_data := {
+			"ingredient_type": ingredient_type,
+			"amount": quantity,
+			"source": "delivery",
+		}
+		p.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
+
+	AudioManager.play_sfx("pick_up_box", global_position)
+	# Request the despawn BEFORE removing locally so WorldSync can read
+	# the original parent path and name.
+	WorldSync.request_despawn(self)
+	# Remove the local box immediately so it can't be interacted with or
+	# duplicated while waiting for the host's despawn RPC.
+	var parent := get_parent()
+	if parent != null:
+		parent.remove_child(self)
+	queue_free()
 
 
 func _cache_face_nodes() -> void:
@@ -219,41 +276,13 @@ func _setup_icon() -> void:
 
 
 func interact(player: Node) -> void:
-	var p: Player = player as Player
-	if p == null or p.held_item != HeldItem.NONE:
+	# Unified pickup path: delegate to the Pickupable component.
+	var pickupable := get_node_or_null("Pickupable") as Pickupable
+	if pickupable != null:
+		pickupable.pick_up(player)
 		return
-	GameLog.log("[SupplyBox] interact name=%s is_host=%s" % [name, WorldSync.is_host()])
-	# Release the delivery-grid slot immediately on this peer as a
-	# prediction; the host will also release it when it authoritatively
-	# despawns the box.
-	release_delivery_slot(self)
-
-	# Determine what the player picks up BEFORE removing the local box.
-	var held_type: int = HeldItem.SUPPLY_BOX
-	var held_data: Dictionary = { }
-	var hand_mesh: Node3D = null
-	if is_trash_box:
-		hand_mesh = _make_hand_mesh()
-		p.make_held_trash(trash_value, trash_type, hand_mesh)
-	elif is_equipment:
-		held_data = { "source": "delivery", "is_equipment": true, "equipment_type": equipment_type }
-		hand_mesh = _make_hand_mesh()
-		p.set_held(held_type, held_data, hand_mesh)
-	else:
-		held_data = { "ingredient_type": ingredient_type, "amount": quantity, "source": "delivery" }
-		hand_mesh = _make_hand_mesh()
-		p.set_held(held_type, held_data, hand_mesh)
-
-	AudioManager.play_sfx("pick_up_box", global_position)
-	# Request the despawn BEFORE removing locally so WorldSync can read
-	# the original parent path and name.
-	WorldSync.request_despawn(self)
-	# Remove the local box immediately so it can't be interacted with or
-	# duplicated while waiting for the host's despawn RPC.
-	var parent := get_parent()
-	if parent != null:
-		parent.remove_child(self)
-	queue_free()
+	# Fallback old path if the component is missing.
+	_pick_up_player(player)
 
 
 ## Static method: find all supply boxes above the given world position

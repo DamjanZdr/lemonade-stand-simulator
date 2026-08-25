@@ -696,10 +696,10 @@ func _poll_hint() -> void:
 				hint = "Filled Cup | LMB: serve lemonade"
 	else:
 		hint = interactable.get_hint(self) if interactable else ""
-		# Append pickup hint when looking at a placed container with empty hands
+		# Append pickup hint when looking at a pickupable object with empty hands
 		if interactable and held_item == HeldItem.NONE:
-			var ctype := _get_container_type_for_node(interactable)
-			if ctype != "" and not hint.contains("pick up"):
+			var pickupable := interactable.find_child("Pickupable", false, false)
+			if pickupable != null and pickupable.can_pick_up(self) and not hint.contains("pick up"):
 				hint = hint + "  |  RMB: pick up" if hint != "" else "RMB: pick up"
 	if hint != _last_hint:
 		_last_hint = hint
@@ -715,6 +715,14 @@ func _primary_interact() -> void:
 	if interactable is PedestrianInteractable:
 		interactable.interact(self)
 		return
+
+	# Unified pickup path: if the interactable has a Pickupable component and
+	# we can pick it up, let it handle pickup/held-item setup.
+	if held_item == HeldItem.NONE and interactable != null:
+		var pickupable := interactable.find_child("Pickupable", false, false)
+		if pickupable != null and pickupable.can_pick_up(self):
+			pickupable.pick_up(self)
+			return
 
 	# Trash items can be disposed of at a trashcan.
 	# Empty box trash can also be placed on the ground like supply boxes.
