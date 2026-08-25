@@ -619,7 +619,8 @@ func _compute_neck_yaw_for_target(body_yaw: float) -> float:
 	if to_target.length_squared() < 0.001:
 		return body_yaw
 	var target_yaw := atan2(to_target.x, to_target.z)
-	var yaw_diff := wrap_angle(target_yaw - body_yaw)
+	# The visual model is flipped 180° on Z, so the yaw sign is inverted.
+	var yaw_diff := -wrap_angle(target_yaw - body_yaw)
 	return body_yaw + clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
 
 
