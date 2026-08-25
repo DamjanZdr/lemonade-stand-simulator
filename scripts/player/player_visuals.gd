@@ -99,16 +99,31 @@ const CLOTHING_SURFACES: Array[String] = [
 
 func _ready() -> void:
 	_disable_cast_shadows()
-	# Keep animations in idle process, but run this node AFTER the
-	# AnimationPlayer in idle so the procedural bone pose is applied on top of
-	# the current animation frame. This makes the neck/head rotation stick.
+	# Strip the rotation tracks for the Neck and Head bones so the animation
+	# player never overwrites the procedural look rotation we apply in code.
 	if _man_anim != null:
-		_man_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
-		_man_anim.process_priority = -10
+		_strip_neck_head_rotation_tracks(_man_anim)
 	if _woman_anim != null:
-		_woman_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
-		_woman_anim.process_priority = -10
-	process_priority = 10
+		_strip_neck_head_rotation_tracks(_woman_anim)
+
+
+## Remove rotation tracks for the Neck and Head bones from every animation in
+## the given player. This lets us fully drive those rotations from code.
+func _strip_neck_head_rotation_tracks(anim_player: AnimationPlayer) -> void:
+	for anim_name in anim_player.get_animation_list():
+		var anim := anim_player.get_animation(anim_name)
+		if anim == null:
+			continue
+		var i := anim.get_track_count() - 1
+		while i >= 0:
+			var path: NodePath = anim.track_get_path(i)
+			var bone_name: String = String(path.get_subname(0)) if path.get_subname_count() > 0 else ""
+			if (
+				bone_name in ["Neck", "Head"]
+				and anim.track_get_type(i) == Animation.TYPE_ROTATION_3D
+			):
+				anim.remove_track(i)
+			i -= 1
 
 
 func _disable_cast_shadows() -> void:
@@ -214,6 +229,7 @@ func randomize_appearance() -> void:
 	_man.visible = male
 	_woman.visible = not male
 	_active_anim = _man_anim if male else _woman_anim
+	_strip_neck_head_rotation_tracks(_active_anim)
 	_left_eye = _man_left_eye if male else _woman_left_eye
 	_right_eye = _man_right_eye if male else _woman_right_eye
 	_left_marker = _man_left_marker if male else _woman_left_marker
@@ -250,6 +266,7 @@ func set_gender(male: bool) -> void:
 	_man.visible = male
 	_woman.visible = not male
 	_active_anim = _man_anim if male else _woman_anim
+	_strip_neck_head_rotation_tracks(_active_anim)
 	_left_eye = _man_left_eye if male else _woman_left_eye
 	_right_eye = _man_right_eye if male else _woman_right_eye
 	_left_marker = _man_left_marker if male else _woman_left_marker
