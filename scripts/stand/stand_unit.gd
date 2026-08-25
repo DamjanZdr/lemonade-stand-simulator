@@ -258,13 +258,6 @@ func _ready() -> void:
 	purchased_upgrade_nodes = UpgradeManager.purchased_nodes.duplicate()
 	EventBus.upgrade_purchased.connect(_on_global_upgrade_purchased_bridge)
 
-	# Debug mirror so the local player can see their own head/neck pose
-	# without needing a second player in multiplayer.
-	var mirror := preload("res://scripts/objects/player_mirror.gd").new()
-	mirror.name = "PlayerMirror"
-	mirror.position = Vector3(2.5, 1.0, 0.0)
-	add_child(mirror)
-
 
 func _on_global_money_changed_bridge(new_amount: float) -> void:
 	if is_equal_approx(new_amount, money):
