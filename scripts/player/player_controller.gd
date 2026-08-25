@@ -215,6 +215,18 @@ func _physics_process(delta: float) -> void:
 		# Remote players' position/_player.rotation come from RPC sync
 		# instead of local physics simulation.
 		return
+	# Debug: log once per second to diagnose late-join freeze
+	if Engine.get_process_frames() % 60 == 0:
+		GameLog.log(
+			"[Controller] physics auth=%s pos=%s mouse=%d input=(%.1f,%.1f)"
+			% [
+				_player.is_multiplayer_authority(),
+				str(_player.global_position),
+				Input.mouse_mode,
+				Input.get_vector("move_left", "move_right", "move_forward", "move_back").x,
+				Input.get_vector("move_left", "move_right", "move_forward", "move_back").y,
+			]
+		)
 	if _in_priceboard_mode:
 		_player.velocity = Vector3.ZERO
 		_player.move_and_slide()
