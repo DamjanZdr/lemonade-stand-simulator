@@ -99,12 +99,16 @@ const CLOTHING_SURFACES: Array[String] = [
 
 func _ready() -> void:
 	_disable_cast_shadows()
-	# Run animations in the physics step so we can apply procedural bone
-	# poses afterwards in _physics_process, guaranteeing the pose sticks.
+	# Keep animations in idle process, but run this node AFTER the
+	# AnimationPlayer in idle so the procedural bone pose is applied on top of
+	# the current animation frame. This makes the neck/head rotation stick.
 	if _man_anim != null:
-		_man_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
+		_man_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+		_man_anim.process_priority = -10
 	if _woman_anim != null:
-		_woman_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
+		_woman_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+		_woman_anim.process_priority = -10
+	process_priority = 10
 
 
 func _disable_cast_shadows() -> void:
@@ -581,13 +585,10 @@ func get_active_skeleton() -> Skeleton3D:
 
 
 ## Update neck and head bones based on camera look direction.
-## Neck rotates on Y (left/right) up to ±0.2 rad before the body turns.
-## Head rotates on X (up/down) up to +0.5 (down) / -0.5 (up).
-## Called from the player's _process.
-var _neck_yaw: float = 0.0
-var _head_pitch: float = 0.0
-const NECK_YAW_MAX: float = 0.2
-const HEAD_PITCH_MAX: float = 0.5
+## The Neck bone handles both look yaw (left/right) and pitch (up/down),
+## limited to ±0.5 rad on each axis.
+const NECK_YAW_MAX: float = 0.5
+const NECK_PITCH_MAX: float = 0.5
 
 
 func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
@@ -596,40 +597,25 @@ func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) ->
 	_look_body_yaw = body_yaw
 
 
-func _physics_process(_delta: float) -> void:
-	# Apply the procedural head/neck pose in the physics step. Because the
-	# AnimationPlayer is also set to physics callback, this runs before the
-	# animation overwrites the pose; the deferred call runs after the animation
-	# update so the pose wins for the rendered frame.
+func _apply_look_bones() -> void:
 	update_look_bones(_look_camera_yaw, _look_camera_pitch, _look_body_yaw)
-	call_deferred("update_look_bones", _look_camera_yaw, _look_camera_pitch, _look_body_yaw)
 
 
 func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
 	var skel := get_active_skeleton()
 	if skel == null:
 		return
-	# Neck yaw: difference between camera yaw and body yaw, clamped
+	# All procedural look movement goes on the Neck bone.
+	# Yaw (Y) is left/right; pitch (X) is up/down. Both clamped to ±0.5 rad.
 	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
-	_neck_yaw = clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
-	# Head pitch: camera pitch inverted because the model's local X axis
-	# points the opposite way to the camera's pitch direction.
-	_head_pitch = clampf(-camera_pitch, -HEAD_PITCH_MAX, HEAD_PITCH_MAX)
-	# Apply to neck bone (Y rotation) as a local rotation on top of the bone's
-	# rest pose, so it turns around the bone's own axis instead of world space.
+	var neck_yaw := clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
+	var neck_pitch := clampf(-camera_pitch, -NECK_PITCH_MAX, NECK_PITCH_MAX)
 	var neck_idx := skel.find_bone("Neck")
 	if neck_idx >= 0:
 		var rest := skel.get_bone_rest(neck_idx)
-		var local_yaw := Quaternion.from_euler(Vector3(0, _neck_yaw, 0))
-		var neck_rot := rest.basis.get_rotation_quaternion() * local_yaw
+		var local_rot := Quaternion.from_euler(Vector3(neck_pitch, neck_yaw, 0))
+		var neck_rot := rest.basis.get_rotation_quaternion() * local_rot
 		skel.set_bone_pose_rotation(neck_idx, neck_rot)
-	# Apply to head bone (X rotation for pitch)
-	var head_idx := skel.find_bone("Head")
-	if head_idx >= 0:
-		var rest := skel.get_bone_rest(head_idx)
-		var local_pitch := Quaternion.from_euler(Vector3(_head_pitch, 0, 0))
-		var head_rot := rest.basis.get_rotation_quaternion() * local_pitch
-		skel.set_bone_pose_rotation(head_idx, head_rot)
 
 
 ## Wrap an angle to the [-PI, PI] range.
@@ -689,6 +675,11 @@ func stop_payment_pose() -> void:
 
 
 func _process(delta: float) -> void:
+	# Apply procedural neck/head pose BEFORE eye look so the eyes are computed
+	# against the already-rotated head. Because this node's process_priority is
+	# higher than the AnimationPlayer's, this runs after the animation frame.
+	_apply_look_bones()
+
 	# If a look_at_target is set (e.g. lobby camera), always track it
 	if look_at_target != null and is_instance_valid(look_at_target):
 		_update_eye_look(delta)
