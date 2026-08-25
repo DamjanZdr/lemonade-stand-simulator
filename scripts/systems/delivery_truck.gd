@@ -597,7 +597,7 @@ func _animate_arc(box: SupplyBox, target_pos: Vector3, target_rot: Vector3) -> v
 	# isn't stuck on the truck grid visually.
 	if WorldSync.is_host():
 		var parent_path := WorldSync._node_path_to_string(get_tree().current_scene.get_path())
-		WorldSync._reparent_on_clients.rpc(parent_path, box.name)
+		WorldSync._reparent_on_clients.rpc(parent_path, box.name, WorldSync._get_net_id(box))
 
 	var tween := box.create_tween()
 	tween.set_parallel(true)

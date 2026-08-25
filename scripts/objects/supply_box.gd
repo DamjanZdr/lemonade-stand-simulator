@@ -119,21 +119,21 @@ func _pick_up_player(player: Node) -> void:
 	# Determine what the player picks up BEFORE removing the local box.
 	var hand_mesh: Node3D = _make_hand_mesh()
 	if is_trash_box:
-		p.make_held_trash(trash_value, trash_type, hand_mesh)
+		p.inventory.make_held_trash(trash_value, trash_type, hand_mesh)
 	elif is_equipment:
 		var held_data := {
 			"source": "delivery",
 			"is_equipment": true,
 			"equipment_type": equipment_type,
 		}
-		p.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
+		p.inventory.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
 	else:
 		var held_data := {
 			"ingredient_type": ingredient_type,
 			"amount": quantity,
 			"source": "delivery",
 		}
-		p.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
+		p.inventory.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
 
 	AudioManager.play_sfx("pick_up_box", global_position)
 	# Request the despawn BEFORE removing locally so WorldSync can read

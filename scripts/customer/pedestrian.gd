@@ -1,4 +1,4 @@
-class_name Pedestrian
+﻿class_name Pedestrian
 extends CharacterBody3D
 ## A neighbourhood pedestrian that follows a PedestrianPath in order.
 ## At convertable waypoints it rolls a popularity-based chance to join the queue.
@@ -509,7 +509,7 @@ func try_serve(player: Node) -> void:
 	if p == null or p.held_item != HeldItem.CUP_FILLED:
 		return
 	var recipe: Dictionary = p.held_item_data.get("recipe", { })
-	p.clear_held()
+	p.inventory.clear_held()
 	_state = PedestrianState.SERVING
 	_offered_by_player = null
 	_hide_order_bubble()

@@ -1,4 +1,4 @@
-class_name Cup
+﻿class_name Cup
 extends Interactable
 ## A single paper cup. Starts EMPTY; becomes FILLED when the pitcher pours into it.
 ## Player picks it up and hands it to the customer at the counter.
@@ -43,9 +43,9 @@ func _setup_pickupable() -> void:
 		model.visible = false
 		match state:
 			CupState.EMPTY:
-				p.set_held(HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
+				p.inventory.set_held(HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
 			CupState.FILLED:
-				p.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
+				p.inventory.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
 		queue_free()
 		return { }
 	add_child(pickupable)
@@ -76,12 +76,12 @@ func _pick_up_player(player: Node) -> void:
 		CupState.EMPTY:
 			physics.collision_layer = 0
 			model.visible = false
-			p.set_held(HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
+			p.inventory.set_held(HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
 			queue_free()
 		CupState.FILLED:
 			physics.collision_layer = 0
 			model.visible = false
-			p.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
+			p.inventory.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
 			queue_free()
 
 

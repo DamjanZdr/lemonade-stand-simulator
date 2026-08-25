@@ -1,4 +1,4 @@
-@tool
+﻿@tool
 class_name CupStack
 extends Interactable
 ## Stacks cups in a grid. Player takes one at a time.
@@ -165,16 +165,16 @@ func interact(player: Node) -> void:
 			EventBus.supply_box_deposited.emit("cups", 1.0)
 			var remaining: int = int(data.get("amount", 0.0)) - 1
 			if remaining > 0:
-				p.update_held_amount(float(remaining))
+				p.inventory.update_held_amount(float(remaining))
 			else:
-				p.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+				p.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 			return
 
 	# Return an empty cup back to the stack
 	if p.held_item == HeldItem.CUP_EMPTY:
 		add_cups(1, _get_hand_pos(p))
 		AudioManager.play_sfx("taking_cup", global_position)
-		p.clear_held()
+		p.inventory.clear_held()
 		return
 
 	# Take a cup OR pick up empty container
@@ -186,7 +186,7 @@ func interact(player: Node) -> void:
 		current_count -= 1
 		_update_display()
 		AudioManager.play_sfx("taking_cup", global_position)
-		p.set_held(HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
+		p.inventory.set_held(HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
 		WorldSync.sync_property(self, "current_count", current_count)
 		WorldSync.sync_call(self, "_update_display")
 

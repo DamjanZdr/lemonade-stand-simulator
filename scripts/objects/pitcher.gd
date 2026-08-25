@@ -1,4 +1,4 @@
-class_name Pitcher
+﻿class_name Pitcher
 extends Interactable
 ## Three-state pitcher: PREPPING → COMPLETE → SERVING → PREPPING
 ##
@@ -262,7 +262,7 @@ func interact(player: Node) -> void:
 				var amount: float = p.held_item_data.get("amount", 0.0)
 				if _can_add_ingredient(itype, amount):
 					var start_pos := _get_hand_pos(player)
-					p.clear_held()
+					p.inventory.clear_held()
 					_animate_drop(itype, amount, start_pos)
 				else:
 					EventBus.interaction_hint_changed.emit(
@@ -274,7 +274,7 @@ func interact(player: Node) -> void:
 			if p.held_item == HeldItem.CUP_EMPTY and get_liquid_volume() > 0.0:
 				var recipe := pour_portion()
 				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
-				p.set_held(
+				p.inventory.set_held(
 					HeldItem.CUP_FILLED,
 					{ "recipe": recipe },
 					_make_filled_cup_mesh(cup_color),
@@ -290,7 +290,7 @@ func interact(player: Node) -> void:
 			if p.held_item == HeldItem.CUP_EMPTY:
 				var recipe := pour_portion()
 				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
-				p.set_held(
+				p.inventory.set_held(
 					HeldItem.CUP_FILLED,
 					{ "recipe": recipe },
 					_make_filled_cup_mesh(cup_color),

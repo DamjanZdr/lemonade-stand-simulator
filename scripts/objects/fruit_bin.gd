@@ -1,4 +1,4 @@
-class_name FruitBin
+﻿class_name FruitBin
 extends Interactable
 ## Multi-fruit bin with separate visual grids per fruit type.
 ## Each fruit type has its own ItemGrid_* child (e.g. ItemGrid_Lemon).
@@ -219,7 +219,7 @@ func interact(player: Node) -> void:
 		# Returning a scoop
 		if data.get("source") == "bin_scoop":
 			add_amount(itype, data.get("amount", Balancing.GRAB_AMOUNT), _get_hand_pos(player))
-			player.clear_held()
+			player.inventory.clear_held()
 			return
 		# Depositing from delivery box
 		if data.get("source") == "delivery":
@@ -236,9 +236,9 @@ func interact(player: Node) -> void:
 			EventBus.supply_box_deposited.emit(itype, deposited)
 			var remaining: float = to_deposit - deposited
 			if remaining > 0.0:
-				player.update_held_amount(remaining)
+				player.inventory.update_held_amount(remaining)
 			else:
-				player.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+				player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 		return
 
 	# Take
@@ -254,7 +254,7 @@ func interact(player: Node) -> void:
 			return
 		take_amount(fruit_type, Balancing.GRAB_AMOUNT)
 		AudioManager.play_sfx("fruit_pickup_from_crate", global_position)
-		player.set_held(
+		player.inventory.set_held(
 			HELD_SUPPLY_BOX,
 			{
 				"ingredient_type": fruit_type,

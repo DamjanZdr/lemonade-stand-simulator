@@ -1,4 +1,4 @@
-@tool
+﻿@tool
 class_name IngredientBin
 extends Interactable
 ## Shallow crate that shows individual ingredient items in a 2×5 grid.
@@ -187,7 +187,7 @@ func interact(player: Node) -> void:
 		if data.get("source") == "bin_scoop" \
 				and data.get("ingredient_type", "") == ingredient_type:
 			add_amount(data.get("amount", Balancing.GRAB_AMOUNT), _get_hand_pos(player))
-			player.clear_held()
+			player.inventory.clear_held()
 			return
 		# Deposit delivery box — 1 unit per click so the player sees the bin fill up.
 		if data.get("source") == "delivery" \
@@ -201,10 +201,10 @@ func interact(player: Node) -> void:
 			EventBus.supply_box_deposited.emit(ingredient_type, deposited)
 			var remaining: float = to_deposit - deposited
 			if remaining > 0.0:
-				player.update_held_amount(remaining)
+				player.inventory.update_held_amount(remaining)
 			else:
 				# Emptied delivery box becomes trash that can be sold at the trashcan.
-				player.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+				player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 		return
 
 	# Take one unit OR pick up empty container
@@ -215,7 +215,7 @@ func interact(player: Node) -> void:
 			return
 		# Otherwise take a scoop
 		take_amount(Balancing.GRAB_AMOUNT)
-		player.set_held(
+		player.inventory.set_held(
 			HELD_SUPPLY_BOX,
 			{
 				"ingredient_type": ingredient_type,

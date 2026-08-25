@@ -1,4 +1,4 @@
-class_name CounterSlot
+﻿class_name CounterSlot
 extends Interactable
 ## Invisible slot on the counter. Click while holding sealed pitcher to place it for serving.
 
@@ -21,7 +21,7 @@ func interact(player: Node) -> void:
 		EventBus.interaction_hint_changed.emit("Pitcher has no lemonade!")
 		return
 	pitcher.place_on_counter(global_position)
-	p.clear_held()
+	p.inventory.clear_held()
 
 
 func get_hint(player: Node) -> String:

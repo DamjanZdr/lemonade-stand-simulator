@@ -1,4 +1,4 @@
-class_name Press
+﻿class_name Press
 extends Interactable
 ## Fruit press: player deposits scoops, then presses to extract juice into a pitcher.
 ## A pitcher must be snapped to the PitcherSnapPoint before pressing works.
@@ -123,7 +123,7 @@ func interact(player: Node) -> void:
 			)
 			return
 		var start_pos := _get_hand_pos(player)
-		p.clear_held()
+		p.inventory.clear_held()
 		_animate_fruit_drop(itype, amount, start_pos)
 		return
 

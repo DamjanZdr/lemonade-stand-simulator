@@ -1,4 +1,4 @@
-class_name TrashItem
+﻿class_name TrashItem
 extends Interactable
 ## A piece of litter the player can pick up and throw in the trashcan for a refund.
 
@@ -62,7 +62,7 @@ func interact(player: Node) -> void:
 	if p.held_item != HeldItem.NONE:
 		return
 	set_highlight(false)
-	p.make_held_trash(trash_value, trash_type, _create_hand_mesh())
+	p.inventory.make_held_trash(trash_value, trash_type, _create_hand_mesh())
 	# Despawn via WorldSync so all players see the trash removed.
 	# request_despawn works on both host (despawns directly) and
 	# clients (sends RPC to host to despawn).

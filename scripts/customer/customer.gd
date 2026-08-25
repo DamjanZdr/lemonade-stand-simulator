@@ -1,4 +1,4 @@
-class_name Customer
+﻿class_name Customer
 extends CharacterBody3D
 ## Runtime-spawned NPC. Walks to queue spot, waits, receives/rejects lemonade, leaves.
 
@@ -384,11 +384,11 @@ func try_serve(player: Node) -> void:
 
 	if not order.has(fruit_type) or order[fruit_type] <= 0:
 		# Wrong item: doesn't count toward the order, and the cup is wasted.
-		p.clear_held()
+		p.inventory.clear_held()
 		_reject_wrong_item(fruit_type)
 		return
 
-	p.clear_held()
+	p.inventory.clear_held()
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, fruit_type)
 	if _best_complaint == "" and not result.complaints.is_empty():
 		_best_complaint = result.complaints[0]

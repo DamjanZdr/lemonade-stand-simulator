@@ -1,4 +1,4 @@
-class_name WaterDispenser
+﻿class_name WaterDispenser
 extends Interactable
 ## Water dispenser: holds water that fills pitchers. Refilled from shop water boxes.
 ## Pitcher snaps to Marker3D. Click to fill. Tap handle rotates during fill.
@@ -101,9 +101,9 @@ func interact(player: Node) -> void:
 			var to_add: int = 1
 			var remaining: float = qty - float(to_add)
 			if remaining > 0.0:
-				p.update_held_amount(remaining)
+				p.inventory.update_held_amount(remaining)
 			else:
-				p.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+				p.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 			_animate_water_drop(start_pos, to_add)
 			return
 

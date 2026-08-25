@@ -1,4 +1,4 @@
-class_name Trashcan
+﻿class_name Trashcan
 extends Interactable
 ## Interactable trashcan. Accepts held items marked as trash and refunds money.
 
@@ -42,7 +42,7 @@ func interact(player: Node) -> void:
 		else:
 			_request_trash_disposal.rpc_id(1, trash_type, refund)
 		AudioManager.play_sfx("trash", global_position)
-		player.clear_held()
+		player.inventory.clear_held()
 		return
 	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
@@ -52,7 +52,7 @@ func interact(player: Node) -> void:
 		else:
 			_request_trash_disposal.rpc_id(1, ctype, refund)
 		AudioManager.play_sfx("trash", global_position)
-		player.clear_held()
+		player.inventory.clear_held()
 		return
 
 
