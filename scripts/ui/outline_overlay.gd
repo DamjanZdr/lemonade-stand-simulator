@@ -28,17 +28,14 @@ func _get_base_viewport_size() -> Vector2i:
 
 
 func _get_actual_viewport_size() -> Vector2i:
-	# The project uses canvas_items stretch mode with expand aspect.
-	# The DisplayRect is a canvas item laid out at the BASE resolution
-	# (1280x720) and then scaled to the window. The SubViewport texture
-	# is displayed on this canvas item. If the SubViewport is at the
-	# actual window size (e.g. 1920x1080), the texture gets squeezed
-	# into 1280x720 canvas space and stretched back, causing a scale
-	# mismatch that makes outlines appear larger than the objects.
-	#
-	# Fix: render the SubViewport at the BASE resolution so it matches
-	# the canvas coordinate system 1:1. The 3D aspect ratio is the same
-	# (both 16:9), so the projection matches the main camera.
+	# Use the real window size so the outline camera's projection
+	# matches the main camera's projection exactly. The DisplayRect
+	# stretches the texture to fill the canvas, and the canvas is
+	# scaled to the window — so the net scaling is 1:1 and outlines
+	# align with objects regardless of window size.
+	var win := get_window()
+	if win != null:
+		return Vector2i(win.size)
 	return _get_base_viewport_size()
 
 
@@ -88,8 +85,8 @@ func _on_viewport_size_changed() -> void:
 func _update_shader_width() -> void:
 	if _display == null or _display.material == null:
 		return
-	# SubViewport is now at base resolution, matching the canvas 1:1,
-	# so no scaling is needed — just use the target width directly.
+	# SubViewport matches the main viewport size, so the outline width
+	# in texture pixels maps 1:1 to screen pixels after canvas scaling.
 	(_display.material as ShaderMaterial).set_shader_parameter("outline_width", _target_width)
 
 
