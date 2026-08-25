@@ -148,8 +148,8 @@ func _empty_held_pitcher() -> void:
 	_player.held_item_data["saved_recipe"] = { }
 	_player.held_item_data["has_liquid"] = false
 
-	if _player._held_mesh is Pitcher:
-		var held_pitcher := _player._held_mesh as Pitcher
+	if _player.inventory.get_hand_mesh() is Pitcher:
+		var held_pitcher := _player.inventory.get_hand_mesh() as Pitcher
 		held_pitcher.fruit_type = ""
 		held_pitcher.fruit_count = 0.0
 		held_pitcher.water = 0.0
@@ -763,9 +763,9 @@ func _set_container_starting_state(
 
 
 func _refresh_held_container_mesh() -> void:
-	if _player._held_mesh and is_instance_valid(_player._held_mesh):
-		_player._held_mesh.queue_free()
-		_player._held_mesh = null
+	var old_mesh := _player.inventory.get_hand_mesh()
+	if old_mesh and is_instance_valid(old_mesh):
+		old_mesh.queue_free()
 	var container_type: String = _player.held_item_data.get("container_type", "")
 	var has_liquid: bool = _player.held_item_data.get("has_liquid", false)
 	var saved_recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
@@ -779,8 +779,8 @@ func _refresh_held_container_mesh() -> void:
 		saved_count,
 	)
 	if new_mesh:
-		_player._held_mesh = new_mesh
-		_player.hand_slot.add_child(_player._held_mesh)
+		# Re-attach via inventory so state stays consistent.
+		_player.inventory.set_held(_player.held_item, _player.held_item_data, new_mesh)
 
 
 func _disable_hand_collision(node: Node) -> void:
@@ -1191,12 +1191,14 @@ func _ensure_container_ghost(container_type: String) -> void:
 
 func _update_ghost() -> void:
 	# Bin scoops don't have a placement ghost
-	if _player.held_item == HeldItem.SUPPLY_BOX and _player.held_item_data.get("source") == "bin_scoop":
+	if _player.held_item == HeldItem.SUPPLY_BOX \
+			and _player.held_item_data.get("source") == "bin_scoop":
 		if _ghost != null:
 			_destroy_ghost()
 		return
 	# Handle cup box ghost preview
-	if _player.held_item == HeldItem.SUPPLY_BOX and _player.held_item_data.get("ingredient_type") == "cups":
+	if _player.held_item == HeldItem.SUPPLY_BOX \
+			and _player.held_item_data.get("ingredient_type") == "cups":
 		_update_cup_box_ghost()
 		return
 	# Handle single cup ghost preview
