@@ -43,6 +43,11 @@ func _get_held_item_name() -> String:
 @export var sprint_multiplier: float = 1.8
 @export var jump_velocity: float = 5.0
 
+## Head/neck yaw limit before the body rotates to catch up.
+const NECK_YAW_MAX: float = 0.2
+## How quickly the body rotates to match the head when the neck hits its limit.
+const NECK_YAW_CATCHUP_SPEED: float = 8.0
+
 var held_item: int = HeldItem.NONE
 var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
@@ -447,7 +452,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		# Mouse X rotates the head/camera instantly; the body catches up in
+		# _physics_process so the visible neck can turn before the body follows.
+		head.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 		head.rotation.x = clampf(head.rotation.x, -PI / 2.1, PI / 2.1)
 
@@ -524,8 +531,26 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("jump"):
 			velocity.y = jump_velocity
 
+	# Keep the head/neck within their natural limit by rotating the body
+	# to follow the head yaw smoothly. This creates visible neck rotation
+	# on remote players while the local camera stays instantly responsive.
+	var head_yaw := head.rotation.y
+	if abs(head_yaw) > NECK_YAW_MAX:
+		var target_turn: float = head_yaw - sign(head_yaw) * NECK_YAW_MAX
+		var turn: float = clampf(
+			target_turn * NECK_YAW_CATCHUP_SPEED * delta,
+			-abs(target_turn),
+			abs(target_turn),
+		)
+		rotate_y(turn)
+		head.rotation.y -= turn
+
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	# Movement follows the camera/head direction so controls feel identical
+	# even though the body can lag slightly behind.
+	var raw_direction := head.global_transform.basis * Vector3(input_dir.x, 0, input_dir.y)
+	raw_direction.y = 0.0
+	var direction := raw_direction.normalized()
 	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
 	var speed_bonus := UpgradeManager.get_effect_total("movement_speed")
 	var speed := (move_speed + speed_bonus) * (sprint_multiplier if _is_sprinting else 1.0)
