@@ -598,20 +598,6 @@ func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) ->
 	_look_body_yaw = body_yaw
 
 
-func _physics_process(delta: float) -> void:
-	# Apply the procedural head/neck pose in the physics step. Because the
-	# AnimationPlayer is also set to physics callback, this runs before the
-	# animation overwrites the pose; the deferred call runs after the animation
-	# update so the pose wins for the rendered frame.
-	var target_camera_yaw := _compute_neck_yaw_for_target(_look_body_yaw)
-	var target_neck_yaw := wrap_angle(target_camera_yaw - _look_body_yaw)
-	var t := clampf(NECK_LOOK_SPEED * delta, 0.0, 1.0)
-	_current_neck_yaw = lerp_angle(_current_neck_yaw, target_neck_yaw, t)
-	var camera_yaw := _look_body_yaw + _current_neck_yaw
-	update_look_bones(camera_yaw, _look_camera_pitch, _look_body_yaw)
-	call_deferred("update_look_bones", camera_yaw, _look_camera_pitch, _look_body_yaw)
-
-
 ## Compute a camera/head yaw that turns the neck toward the nearest other
 ## player, limited to NECK_YAW_MAX so the body still handles large turns.
 func _compute_neck_yaw_for_target(body_yaw: float) -> float:
@@ -707,6 +693,7 @@ func _process(delta: float) -> void:
 	# If a look_at_target is set (e.g. lobby camera), always track it
 	if look_at_target != null and is_instance_valid(look_at_target):
 		_update_eye_look(delta)
+		_apply_neck_look(delta)
 		return
 	_check_timer -= delta
 	if _check_timer <= 0.0:
@@ -715,6 +702,20 @@ func _process(delta: float) -> void:
 
 	if _is_near_player:
 		_update_eye_look(delta)
+	_apply_neck_look(delta)
+
+
+## Blend the neck toward the look target and apply the procedural pose.
+## The immediate call runs after the animation player in _process; the
+## deferred call re-applies after any late animation updates in the frame.
+func _apply_neck_look(delta: float) -> void:
+	var target_camera_yaw := _compute_neck_yaw_for_target(_look_body_yaw)
+	var target_neck_yaw := wrap_angle(target_camera_yaw - _look_body_yaw)
+	var t := clampf(NECK_LOOK_SPEED * delta, 0.0, 1.0)
+	_current_neck_yaw = lerp_angle(_current_neck_yaw, target_neck_yaw, t)
+	var camera_yaw := _look_body_yaw + _current_neck_yaw
+	update_look_bones(camera_yaw, _look_camera_pitch, _look_body_yaw)
+	call_deferred("update_look_bones", camera_yaw, _look_camera_pitch, _look_body_yaw)
 
 
 func _update_eye_look(delta: float) -> void:
