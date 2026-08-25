@@ -5,7 +5,7 @@ extends CharacterBody3D
 const MOUSE_SENSITIVITY: float = 0.002
 
 ## Head/neck yaw limit before the body rotates to catch up.
-const NECK_YAW_MAX: float = 0.5
+const NECK_YAW_MAX: float = 0.8
 ## How quickly the body rotates to match the head when the neck hits its limit.
 const NECK_YAW_CATCHUP_SPEED: float = 8.0
 

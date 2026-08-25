@@ -603,9 +603,9 @@ func get_active_skeleton() -> Skeleton3D:
 
 ## Update neck and head bones based on camera look direction.
 ## The Neck bone handles both look yaw (left/right) and pitch (up/down),
-## limited to ±0.5 rad on each axis.
-const NECK_YAW_MAX: float = 0.5
-const NECK_PITCH_MAX: float = 0.5
+## limited to ±0.8 rad on each axis.
+const NECK_YAW_MAX: float = 0.8
+const NECK_PITCH_MAX: float = 0.8
 
 
 func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
