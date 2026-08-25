@@ -71,21 +71,18 @@ func _rpc_do_thing(params) -> void:
 - [ ] Refactor `Player.gd` pickup/place code to dispatch through `Pickupable` instead of branching by type.
 **Files:** `scripts/player/player.gd`, `scripts/components/pickupable.gd`, placeable object scripts.
 
-### 5. Split `player.gd`
-**Problem:** `scripts/player/player.gd` is ~3,000 lines and handles movement, camera, input, interaction, placement, inventory, MP sync, and serving.
-**Target:** Separate into focused scripts:
-- `PlayerController` — movement + camera + input
-- `PlayerInteraction` — raycast + hint + interact request
-- `PlayerPlacement` — ghost + placement validation
-- `PlayerInventory` / `PlayerHands` — held item state
-**Planned sub-tasks:**
-- [x] Extract `HeldItem` enum to a shared `HeldItem` autoload so other scripts don't import `Player` just for the enum.
-- [ ] Extract held-item state + `set_held()` / `clear_held()` into `PlayerInventory`.
-- [ ] Extract raycast/hint/interact dispatch into `PlayerInteraction`.
-- [ ] Extract placement ghost + validation into `PlayerPlacement`.
-- [ ] Extract movement/camera/input into `PlayerController`.
+### 5. Split `player.gd` — DONE
+**Problem:** `scripts/player/player.gd` was ~3,000 lines and handled movement, camera, input, interaction, placement, inventory, MP sync, and serving.
+**Done:**
+- `HeldItem` enum extracted to a shared autoload.
+- `PlayerInventory` (`scripts/player/player_inventory.gd`) — held item state, `set_held()` / `clear_held()` / `update_held_amount()` / `make_held_trash()`.
+- `PlayerInteraction` (`scripts/player/player_interaction.gd`) — raycast, hint, primary/secondary interact dispatch, rapid-fire, frame lookups.
+- `PlayerPlacement` (`scripts/player/player_placement.gd`) — ghost, placement validation, container pickup/place, supply box stacking, cup placement, trash drop, equipment placement.
+- `PlayerController` (`scripts/player/player_controller.gd`) — movement, camera, input, body yaw catch-up, animation state, position sync RPCs, priceboard focus.
+- `Player.gd` reduced to ~200 lines: `CharacterBody3D` authority, `_enter_tree`/`_ready`/`_configure_local_player`/`_setup_visuals`, `set_money_mode`, and `@onready` refs to the four child components.
+- All four components are child nodes on `scenes/player/player.tscn`.
 **Plan:** `.devin/plans/player_split_plan.md` (step-by-step extraction order, public APIs, gotchas).
-**Files:** `scripts/player/player.gd`, new files under `scripts/player/`.
+**Files:** `scripts/player/player.gd`, `scripts/player/player_inventory.gd`, `scripts/player/player_interaction.gd`, `scripts/player/player_placement.gd`, `scripts/player/player_controller.gd`, `scenes/player/player.tscn`.
 
 ### 6. Replace deferred bone-pose hack for neck/head — DONE
 **Problem:** `AnimationPlayer` overwrites procedural head/neck rotations, so we currently apply them twice (immediate + deferred).
