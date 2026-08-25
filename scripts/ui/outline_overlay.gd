@@ -28,14 +28,13 @@ func _get_base_viewport_size() -> Vector2i:
 
 
 func _get_actual_viewport_size() -> Vector2i:
-	# Use the real window size so the outline camera's projection
-	# matches the main camera's projection exactly. The DisplayRect
-	# stretches the texture to fill the canvas, and the canvas is
-	# scaled to the window — so the net scaling is 1:1 and outlines
-	# align with objects regardless of window size.
-	var win := get_window()
-	if win != null:
-		return Vector2i(win.size)
+	# The project uses canvas_items stretch mode with expand aspect.
+	# The DisplayRect is a canvas item laid out at the BASE resolution
+	# (1280x720) and then scaled to the window. The SubViewport texture
+	# is displayed on this canvas item. Rendering the SubViewport at the
+	# actual window size causes a scale mismatch (texture is squeezed
+	# into base-resolution canvas space then stretched back), so we
+	# render at the BASE resolution to match the canvas 1:1.
 	return _get_base_viewport_size()
 
 
@@ -154,3 +153,19 @@ func _sync_outline_camera() -> void:
 	_cam.size = _main_cam.size # for orthographic projection
 	_cam.h_offset = _main_cam.h_offset
 	_cam.v_offset = _main_cam.v_offset
+	# Debug: log sizes once per second to diagnose outline scale mismatch
+	if Engine.get_process_frames() % 60 == 0:
+		var win := get_window()
+		var win_size := win.size if win != null else Vector2i.ZERO
+		var main_vp_size := _main_cam.get_viewport().get_visible_rect().size
+		GameLog.log(
+			"[Outline] subvp=%s win=%s main_vp=%s base=%s fov=%.1f aspect=%.3f"
+			% [
+				_subvp.size,
+				win_size,
+				main_vp_size,
+				_get_base_viewport_size(),
+				_cam.fov,
+				float(_subvp.size.x) / float(_subvp.size.y),
+			]
+		)
