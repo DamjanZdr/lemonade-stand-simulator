@@ -445,9 +445,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Mouse X rotates the head/camera on Y; the body catches up once the
-		# head turns past NECK_YAW_MAX, letting the neck visibly rotate first.
-		head.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		# Mouse X rotates the head/camera yaw around the world Y axis (Euler Y),
+		# not around the already-pitched head local Y axis, to prevent camera roll.
+		# The body catches up once the head turns past NECK_YAW_MAX.
+		head.rotation.y -= event.relative.x * MOUSE_SENSITIVITY
 		head.rotation.y = wrap_angle(head.rotation.y)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 		head.rotation.x = clampf(head.rotation.x, -PI / 2.1, PI / 2.1)
