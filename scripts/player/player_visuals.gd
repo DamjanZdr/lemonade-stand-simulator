@@ -758,9 +758,9 @@ func _update_eye_look(delta: float) -> void:
 	_eye_rot_r = _eye_rot_r.slerp(target_r, t)
 	_apply_eye(_left_eye, _eye_rot_l)
 	_apply_eye(_right_eye, _eye_rot_r)
-	# Apply procedural head/neck pose after eye look-at so both run in the
-	# same _process, after the child AnimationPlayer has updated.
-	update_look_bones(_look_camera_yaw, _look_camera_pitch, _look_body_yaw)
+	# Apply procedural head/neck pose via call_deferred so it happens AFTER
+	# the child AnimationPlayer has updated this frame and can't overwrite it.
+	call_deferred("update_look_bones", _look_camera_yaw, _look_camera_pitch, _look_body_yaw)
 
 
 ## Computes the world-space rotation that swings the eye's rest-forward toward aim.
