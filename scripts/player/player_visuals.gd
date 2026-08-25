@@ -601,8 +601,26 @@ func _physics_process(_delta: float) -> void:
 	# AnimationPlayer is also set to physics callback, this runs before the
 	# animation overwrites the pose; the deferred call runs after the animation
 	# update so the pose wins for the rendered frame.
-	update_look_bones(_look_camera_yaw, _look_camera_pitch, _look_body_yaw)
-	call_deferred("update_look_bones", _look_camera_yaw, _look_camera_pitch, _look_body_yaw)
+	var camera_yaw := _compute_neck_yaw_for_target(_look_body_yaw)
+	update_look_bones(camera_yaw, _look_camera_pitch, _look_body_yaw)
+	call_deferred("update_look_bones", camera_yaw, _look_camera_pitch, _look_body_yaw)
+
+
+## Compute a camera/head yaw that turns the neck toward the nearest other
+## player, limited to NECK_YAW_MAX so the body still handles large turns.
+func _compute_neck_yaw_for_target(body_yaw: float) -> float:
+	var target := _closest_player_cache
+	if target == null or not is_instance_valid(target):
+		target = _find_closest_other_player()
+	if target == null:
+		return body_yaw
+	var to_target := target.global_position - global_position
+	to_target.y = 0.0
+	if to_target.length_squared() < 0.001:
+		return body_yaw
+	var target_yaw := atan2(to_target.x, to_target.z)
+	var yaw_diff := wrap_angle(target_yaw - body_yaw)
+	return body_yaw + clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
 
 
 func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
