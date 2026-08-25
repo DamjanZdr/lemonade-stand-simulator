@@ -485,6 +485,10 @@ func _process(delta: float) -> void:
 		# has updated so the pose isn't overwritten by the current animation.
 		if visuals != null and visuals.visible:
 			var neck_yaw := global_rotation.y + _net_head_yaw
+			print(
+				"[Player] remote set neck: yaw=%.2f pitch=%.2f body=%.2f"
+				% [neck_yaw, _net_head_pitch, global_rotation.y]
+			)
 			visuals.update_look_bones(neck_yaw, _net_head_pitch, global_rotation.y)
 			visuals.call_deferred("update_look_bones", neck_yaw, _net_head_pitch, global_rotation.y)
 		_update_anim()
@@ -496,6 +500,10 @@ func _process(delta: float) -> void:
 			var cam_yaw := head.global_rotation.y
 			var cam_pitch := head.rotation.x
 			var body_yaw := global_rotation.y
+			print(
+				"[Player] local set neck: yaw=%.2f pitch=%.2f body=%.2f"
+				% [cam_yaw, cam_pitch, body_yaw]
+			)
 			visuals.update_look_bones(cam_yaw, cam_pitch, body_yaw)
 			visuals.call_deferred("update_look_bones", cam_yaw, cam_pitch, body_yaw)
 

@@ -578,8 +578,13 @@ const HEAD_PITCH_MAX: float = 0.5
 
 
 func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
+	print(
+		"[PlayerVisuals] update_look_bones cam_yaw=%.2f pitch=%.2f body=%.2f"
+		% [camera_yaw, camera_pitch, body_yaw]
+	)
 	var skel := get_active_skeleton()
 	if skel == null:
+		print("[PlayerVisuals] skeleton null")
 		return
 	# Neck yaw: difference between camera yaw and body yaw, clamped
 	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
@@ -594,6 +599,9 @@ func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) 
 				.basis \
 				.get_rotation_quaternion()
 		skel.set_bone_pose_rotation(neck_idx, neck_rot)
+		print("[PlayerVisuals] neck applied idx=%d yaw=%.2f" % [neck_idx, _neck_yaw])
+	else:
+		print("[PlayerVisuals] neck bone not found")
 	# Apply to head bone (X rotation for pitch)
 	var head_idx := skel.find_bone("Head")
 	if head_idx >= 0:
@@ -602,6 +610,9 @@ func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) 
 				.basis \
 				.get_rotation_quaternion()
 		skel.set_bone_pose_rotation(head_idx, head_rot)
+		print("[PlayerVisuals] head applied idx=%d pitch=%.2f" % [head_idx, _head_pitch])
+	else:
+		print("[PlayerVisuals] head bone not found")
 
 
 ## Wrap an angle to the [-PI, PI] range.
