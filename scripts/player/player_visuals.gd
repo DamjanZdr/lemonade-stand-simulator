@@ -612,8 +612,9 @@ func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) 
 	# Neck yaw: difference between camera yaw and body yaw, clamped
 	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
 	_neck_yaw = clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
-	# Head pitch: directly from camera pitch, clamped
-	_head_pitch = clampf(camera_pitch, -HEAD_PITCH_MAX, HEAD_PITCH_MAX)
+	# Head pitch: camera pitch inverted because the model's local X axis
+	# points the opposite way to the camera's pitch direction.
+	_head_pitch = clampf(-camera_pitch, -HEAD_PITCH_MAX, HEAD_PITCH_MAX)
 	# Apply to neck bone (Y rotation) as a local rotation on top of the bone's
 	# rest pose, so it turns around the bone's own axis instead of world space.
 	var neck_idx := skel.find_bone("Neck")
