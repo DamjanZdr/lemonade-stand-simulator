@@ -193,6 +193,13 @@ var _net_head_pitch: float = 0.0
 var _net_head_yaw: float = 0.0
 const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 
+# Debug throttling for head sync diagnosis
+var _last_debug_sent_pitch: float = -999.0
+var _last_debug_sent_yaw: float = -999.0
+var _last_debug_received_pitch: float = -999.0
+var _last_debug_received_yaw: float = -999.0
+const DEBUG_SYNC_THRESHOLD: float = 0.05
+
 # Animation state
 var _current_anim: String = "Idle"
 var _was_moving: bool = false
@@ -557,6 +564,16 @@ func _try_sync_position(delta: float) -> void:
 	_last_synced_rot = global_rotation
 	_last_synced_pitch = head.rotation.x
 	_last_synced_yaw = head.rotation.y
+	if (
+		abs(head.rotation.x - _last_debug_sent_pitch) > DEBUG_SYNC_THRESHOLD
+		or abs(head.rotation.y - _last_debug_sent_yaw) > DEBUG_SYNC_THRESHOLD
+	):
+		_last_debug_sent_pitch = head.rotation.x
+		_last_debug_sent_yaw = head.rotation.y
+		print(
+			"[Player] sending head sync pitch=%.2f yaw=%.2f peer=%d"
+			% [head.rotation.x, head.rotation.y, multiplayer.get_unique_id()]
+		)
 	_sync_position.rpc(
 		global_position,
 		global_rotation,
@@ -589,6 +606,16 @@ func _sync_position(
 	_net_target_rot = rot
 	_has_net_target = true
 	# Update neck/head bones on the remote player's visual model
+	if (
+		abs(head_pitch - _last_debug_received_pitch) > DEBUG_SYNC_THRESHOLD
+		or abs(head_yaw - _last_debug_received_yaw) > DEBUG_SYNC_THRESHOLD
+	):
+		_last_debug_received_pitch = head_pitch
+		_last_debug_received_yaw = head_yaw
+		print(
+			"[Player] received head sync pitch=%.2f yaw=%.2f peer=%d"
+			% [head_pitch, head_yaw, multiplayer.get_remote_sender_id()]
+		)
 	_net_head_pitch = head_pitch
 	_net_head_yaw = head_yaw
 
