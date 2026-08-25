@@ -437,7 +437,7 @@ func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
 		if not is_instance_valid(node) or node == base:
 			continue
 		var box := node as SupplyBox
-		if box == null:
+		if box == null or not box.is_inside_tree():
 			continue
 		var dx := absf(box.global_position.x - base_pos.x)
 		var dz := absf(box.global_position.z - base_pos.z)
@@ -452,6 +452,8 @@ func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
 func _get_box_stack_y(box: SupplyBox) -> float:
 	if box.has_meta("fall_target_y"):
 		return box.get_meta("fall_target_y") as float
+	if not box.is_inside_tree():
+		return 0.0
 	return box.global_position.y
 
 
@@ -997,7 +999,7 @@ func _update_supply_box_ghost() -> void:
 			break
 		node = node.get_parent()
 
-	if target_box != null:
+	if target_box != null and target_box.is_inside_tree():
 		target_box.update_metrics()
 		var target_id := target_box.get_instance_id()
 		if target_id != _stack_target_id:
@@ -1058,6 +1060,11 @@ func _update_equipment_box_ghost() -> void:
 	while node != null:
 		if node is SupplyBox:
 			var target_box := _get_topmost_box_in_stack(node as SupplyBox)
+			if target_box == null or not target_box.is_inside_tree():
+				_ghost.visible = false
+				_ghost_valid = false
+				_stack_target_id = -1
+				return
 			target_box.update_metrics()
 			var target_id := target_box.get_instance_id()
 			if target_id != _stack_target_id:
