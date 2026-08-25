@@ -132,6 +132,11 @@ var _check_timer: float = 0.0
 var _closest_player_cache: Node3D = null
 var _closest_player_dist: float = INF
 
+# Debug throttling for neck pose diagnosis
+var _last_debug_yaw: float = -999.0
+var _last_debug_pitch: float = -999.0
+const DEBUG_NECK_THRESHOLD: float = 0.05
+
 
 func _get_player_camera() -> Camera3D:
 	if _camera_cache and is_instance_valid(_camera_cache):
@@ -578,16 +583,22 @@ const HEAD_PITCH_MAX: float = 0.5
 
 
 func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
-	print(
-		"[PlayerVisuals] update_look_bones cam_yaw=%.2f pitch=%.2f body=%.2f"
-		% [camera_yaw, camera_pitch, body_yaw]
-	)
+	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
+	if (
+		abs(yaw_diff - _last_debug_yaw) > DEBUG_NECK_THRESHOLD
+		or abs(camera_pitch - _last_debug_pitch) > DEBUG_NECK_THRESHOLD
+	):
+		_last_debug_yaw = yaw_diff
+		_last_debug_pitch = camera_pitch
+		print(
+			"[PlayerVisuals] update_look_bones cam_yaw=%.2f pitch=%.2f body=%.2f yaw_diff=%.2f"
+			% [camera_yaw, camera_pitch, body_yaw, yaw_diff]
+		)
 	var skel := get_active_skeleton()
 	if skel == null:
 		print("[PlayerVisuals] skeleton null")
 		return
 	# Neck yaw: difference between camera yaw and body yaw, clamped
-	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
 	_neck_yaw = clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
 	# Head pitch: directly from camera pitch, clamped
 	_head_pitch = clampf(camera_pitch, -HEAD_PITCH_MAX, HEAD_PITCH_MAX)
