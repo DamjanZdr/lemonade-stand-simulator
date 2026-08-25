@@ -17,6 +17,9 @@ var _camera: Camera3D = null
 func _ready() -> void:
 	_setup_viewport()
 	_setup_mesh()
+	# Viewport textures are not always ready in _ready; assign the material
+	# after one frame to make sure the texture exists.
+	call_deferred("_assign_viewport_texture")
 
 
 func _setup_viewport() -> void:
@@ -42,16 +45,17 @@ func _setup_mesh() -> void:
 		quad.size = mirror_size
 		_mesh.mesh = quad
 
-	# Flip vertically so the viewport texture appears right-side-up.
+	# QuadMesh faces +Z by default; flip vertically so the viewport texture
+	# appears right-side-up.
 	_mesh.scale.y = -1.0
-	# Make the mirror surface visible from both sides.
+	# Put the mirror surface on its own cull layer so the reflection camera
+	# can see through it and capture the player behind it.
 	_mesh.layers = 2
 
 	var mat := _mesh.material_override as StandardMaterial3D
 	if mat == null:
 		mat = StandardMaterial3D.new()
 		_mesh.material_override = mat
-	mat.albedo_texture = _viewport.get_texture()
 	mat.roughness = 0.1
 	mat.metallic = 0.5
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -59,14 +63,25 @@ func _setup_mesh() -> void:
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 
+func _assign_viewport_texture() -> void:
+	if _viewport == null or _mesh == null:
+		return
+	var mat := _mesh.material_override as StandardMaterial3D
+	if mat != null:
+		mat.albedo_texture = _viewport.get_texture()
+
+
 func _process(_delta: float) -> void:
 	var player := _find_local_player()
 	if player == null or _camera == null:
 		return
 	var player_pos: Vector3 = player.global_position
-	# Place the reflection camera in front of the mirror, looking at the player.
-	var forward: Vector3 = -global_transform.basis.z
-	_camera.global_position = player_pos + forward * 1.5 + Vector3(0, 0.4, 0)
+	# Mirror's +Z points toward the player. Place the reflection camera
+	# slightly behind the mirror plane, looking through it at the player.
+	var forward: Vector3 = (player_pos - global_position).normalized()
+	if forward.length_squared() < 0.001:
+		forward = -global_transform.basis.z
+	_camera.global_position = global_position - forward * 0.5
 	_camera.look_at(player_pos + Vector3(0.0, 1.0, 0.0), Vector3.UP)
 
 
