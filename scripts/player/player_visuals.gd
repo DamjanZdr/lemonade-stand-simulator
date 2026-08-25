@@ -126,6 +126,10 @@ var _look_camera_yaw: float = 0.0
 var _look_camera_pitch: float = 0.0
 var _look_body_yaw: float = 0.0
 
+# Current neck yaw, smoothly interpolated toward the target each frame.
+var _current_neck_yaw: float = 0.0
+const NECK_LOOK_SPEED: float = 8.0
+
 var anim_player: AnimationPlayer:
 	get:
 		return _active_anim
@@ -596,12 +600,16 @@ func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) ->
 	_look_body_yaw = body_yaw
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	# Apply the procedural head/neck pose in the physics step. Because the
 	# AnimationPlayer is also set to physics callback, this runs before the
 	# animation overwrites the pose; the deferred call runs after the animation
 	# update so the pose wins for the rendered frame.
-	var camera_yaw := _compute_neck_yaw_for_target(_look_body_yaw)
+	var target_camera_yaw := _compute_neck_yaw_for_target(_look_body_yaw)
+	var target_neck_yaw := wrap_angle(target_camera_yaw - _look_body_yaw)
+	var t := clampf(NECK_LOOK_SPEED * delta, 0.0, 1.0)
+	_current_neck_yaw = lerp_angle(_current_neck_yaw, target_neck_yaw, t)
+	var camera_yaw := _look_body_yaw + _current_neck_yaw
 	update_look_bones(camera_yaw, _look_camera_pitch, _look_body_yaw)
 	call_deferred("update_look_bones", camera_yaw, _look_camera_pitch, _look_body_yaw)
 
