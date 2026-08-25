@@ -5,7 +5,7 @@ extends Node3D
 ## player in multiplayer.
 
 @export var mirror_size: Vector2 = Vector2(1.2, 1.8)
-@export var viewport_resolution: Vector2i = Vector2i(256, 256)
+@export var viewport_resolution: Vector2i = Vector2i(256, 320)
 
 var _viewport: SubViewport = null
 var _camera: Camera3D = null
@@ -33,7 +33,9 @@ func _setup_mesh() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = mirror_size
 	_mesh.mesh = plane
-	_mesh.rotation.x = -PI / 2.0
+	# PlaneMesh is horizontal by default; rotate it vertical and flip it
+	# so the viewport texture appears right-side-up.
+	_mesh.rotation = Vector3(-PI / 2.0, 0.0, PI)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = _viewport.get_texture()
 	mat.roughness = 0.1
@@ -48,8 +50,10 @@ func _process(_delta: float) -> void:
 	if player == null or _camera == null:
 		return
 	var player_pos: Vector3 = player.global_position
-	# Place camera behind and above the player, looking at them.
-	_camera.global_position = player_pos + Vector3(0.0, 1.6, 2.0)
+	# Face the mesh toward the player.
+	look_at(player_pos + Vector3(0.0, 1.0, 0.0), Vector3.UP)
+	# Place the camera behind and above the player, looking at them.
+	_camera.global_position = player_pos + Vector3(0.0, 1.6, 2.2)
 	_camera.look_at(player_pos + Vector3(0.0, 1.0, 0.0), Vector3.UP)
 
 

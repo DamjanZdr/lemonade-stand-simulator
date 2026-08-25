@@ -308,6 +308,10 @@ func _ready() -> void:
 	$Head/Camera3D.cull_mask &= ~2
 	$Head/Camera3D.make_current()
 	GameLog.log("[Player] Camera made current for local player %s" % name)
+	# Align the body with the camera so there is no initial head/body
+	# offset that would make the camera appear tilted/offset at spawn.
+	rotate_y(head.rotation.y)
+	head.rotation.y = 0.0
 	var listener := $Head/Camera3D/AudioListener3D as AudioListener3D
 	if listener:
 		listener.make_current()

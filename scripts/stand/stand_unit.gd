@@ -262,7 +262,7 @@ func _ready() -> void:
 	# without needing a second player in multiplayer.
 	var mirror := preload("res://scripts/objects/player_mirror.gd").new()
 	mirror.name = "PlayerMirror"
-	mirror.position = Vector3(0.0, 1.0, 2.5)
+	mirror.position = Vector3(2.5, 1.0, 0.0)
 	add_child(mirror)
 
 
