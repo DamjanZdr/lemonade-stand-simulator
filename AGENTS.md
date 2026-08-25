@@ -84,6 +84,7 @@ func _rpc_do_thing(params) -> void:
 - [ ] Extract raycast/hint/interact dispatch into `PlayerInteraction`.
 - [ ] Extract placement ghost + validation into `PlayerPlacement`.
 - [ ] Extract movement/camera/input into `PlayerController`.
+**Plan:** `.devin/plans/player_split_plan.md` (step-by-step extraction order, public APIs, gotchas).
 **Files:** `scripts/player/player.gd`, new files under `scripts/player/`.
 
 ### 6. Replace deferred bone-pose hack for neck/head — DONE
