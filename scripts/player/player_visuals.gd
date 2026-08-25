@@ -132,11 +132,6 @@ var _check_timer: float = 0.0
 var _closest_player_cache: Node3D = null
 var _closest_player_dist: float = INF
 
-# Debug throttling for neck pose diagnosis
-var _last_debug_yaw: float = -999.0
-var _last_debug_pitch: float = -999.0
-const DEBUG_NECK_THRESHOLD: float = 0.05
-
 
 func _get_player_camera() -> Camera3D:
 	if _camera_cache and is_instance_valid(_camera_cache):
@@ -583,51 +578,29 @@ const HEAD_PITCH_MAX: float = 0.5
 
 
 func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
-	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
-	var should_print: bool = (
-		abs(yaw_diff - _last_debug_yaw) > DEBUG_NECK_THRESHOLD
-		or abs(camera_pitch - _last_debug_pitch) > DEBUG_NECK_THRESHOLD
-	)
-	if should_print:
-		_last_debug_yaw = yaw_diff
-		_last_debug_pitch = camera_pitch
-		print(
-			"[PlayerVisuals] update_look_bones cam_yaw=%.2f pitch=%.2f body=%.2f yaw_diff=%.2f"
-			% [camera_yaw, camera_pitch, body_yaw, yaw_diff]
-		)
 	var skel := get_active_skeleton()
 	if skel == null:
-		if should_print:
-			print("[PlayerVisuals] skeleton null")
 		return
 	# Neck yaw: difference between camera yaw and body yaw, clamped
+	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
 	_neck_yaw = clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
 	# Head pitch: directly from camera pitch, clamped
 	_head_pitch = clampf(camera_pitch, -HEAD_PITCH_MAX, HEAD_PITCH_MAX)
-	# Apply to neck bone (Y rotation)
+	# Apply to neck bone (Y rotation) as a local rotation on top of the bone's
+	# rest pose, so it turns around the bone's own axis instead of world space.
 	var neck_idx := skel.find_bone("Neck")
 	if neck_idx >= 0:
 		var rest := skel.get_bone_rest(neck_idx)
-		var neck_rot := Quaternion.from_euler(Vector3(0, _neck_yaw, 0)) * rest \
-				.basis \
-				.get_rotation_quaternion()
+		var local_yaw := Quaternion.from_euler(Vector3(0, _neck_yaw, 0))
+		var neck_rot := rest.basis.get_rotation_quaternion() * local_yaw
 		skel.set_bone_pose_rotation(neck_idx, neck_rot)
-		if should_print:
-			print("[PlayerVisuals] neck applied idx=%d yaw=%.2f" % [neck_idx, _neck_yaw])
-	elif should_print:
-		print("[PlayerVisuals] neck bone not found")
 	# Apply to head bone (X rotation for pitch)
 	var head_idx := skel.find_bone("Head")
 	if head_idx >= 0:
 		var rest := skel.get_bone_rest(head_idx)
-		var head_rot := Quaternion.from_euler(Vector3(_head_pitch, 0, 0)) * rest \
-				.basis \
-				.get_rotation_quaternion()
+		var local_pitch := Quaternion.from_euler(Vector3(_head_pitch, 0, 0))
+		var head_rot := rest.basis.get_rotation_quaternion() * local_pitch
 		skel.set_bone_pose_rotation(head_idx, head_rot)
-		if should_print:
-			print("[PlayerVisuals] head applied idx=%d pitch=%.2f" % [head_idx, _head_pitch])
-	elif should_print:
-		print("[PlayerVisuals] head bone not found")
 
 
 ## Wrap an angle to the [-PI, PI] range.

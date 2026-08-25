@@ -24,18 +24,21 @@ func _setup_viewport() -> void:
 	add_child(_viewport)
 
 	_camera = Camera3D.new()
+	# Render everything except the mirror surface itself.
 	_camera.cull_mask = 1
 	_viewport.add_child(_camera)
 
 
 func _setup_mesh() -> void:
 	_mesh = MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = mirror_size
-	_mesh.mesh = plane
-	# PlaneMesh is horizontal by default; rotate it vertical and flip it
-	# so the viewport texture appears right-side-up.
-	_mesh.rotation = Vector3(-PI / 2.0, 0.0, PI)
+	var quad := QuadMesh.new()
+	quad.size = mirror_size
+	_mesh.mesh = quad
+	# Flip vertically so the viewport texture appears right-side-up.
+	_mesh.scale.y = -1.0
+	# Put the mirror surface on its own cull layer so the reflection camera
+	# can see through it and capture the player behind it.
+	_mesh.layers = 2
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = _viewport.get_texture()
 	mat.roughness = 0.1
@@ -50,10 +53,12 @@ func _process(_delta: float) -> void:
 	if player == null or _camera == null:
 		return
 	var player_pos: Vector3 = player.global_position
-	# Face the mesh toward the player.
+	# Face the mirror toward the player.
 	look_at(player_pos + Vector3(0.0, 1.0, 0.0), Vector3.UP)
-	# Place the camera behind and above the player, looking at them.
-	_camera.global_position = player_pos + Vector3(0.0, 1.6, 2.2)
+	# Place the reflection camera on the mirror side of the player, looking
+	# at the player's front.
+	var forward: Vector3 = (player_pos - global_position).normalized()
+	_camera.global_position = player_pos + forward * 1.5 + Vector3(0, 0.4, 0)
 	_camera.look_at(player_pos + Vector3(0.0, 1.0, 0.0), Vector3.UP)
 
 

@@ -43,11 +43,6 @@ func _get_held_item_name() -> String:
 @export var sprint_multiplier: float = 1.8
 @export var jump_velocity: float = 5.0
 
-## Head/neck yaw limit before the body rotates to catch up.
-const NECK_YAW_MAX: float = 0.2
-## How quickly the body rotates to match the head when the neck hits its limit.
-const NECK_YAW_CATCHUP_SPEED: float = 8.0
-
 var held_item: int = HeldItem.NONE
 var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
@@ -198,13 +193,6 @@ var _net_head_pitch: float = 0.0
 var _net_head_yaw: float = 0.0
 const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 
-# Debug throttling for head sync diagnosis
-var _last_debug_sent_pitch: float = -999.0
-var _last_debug_sent_yaw: float = -999.0
-var _last_debug_received_pitch: float = -999.0
-var _last_debug_received_yaw: float = -999.0
-const DEBUG_SYNC_THRESHOLD: float = 0.05
-
 # Animation state
 var _current_anim: String = "Idle"
 var _was_moving: bool = false
@@ -308,10 +296,6 @@ func _ready() -> void:
 	$Head/Camera3D.cull_mask &= ~2
 	$Head/Camera3D.make_current()
 	GameLog.log("[Player] Camera made current for local player %s" % name)
-	# Align the body with the camera so there is no initial head/body
-	# offset that would make the camera appear tilted/offset at spawn.
-	rotate_y(head.rotation.y)
-	head.rotation.y = 0.0
 	var listener := $Head/Camera3D/AudioListener3D as AudioListener3D
 	if listener:
 		listener.make_current()
@@ -456,9 +440,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Mouse X rotates the head/camera instantly; the body catches up in
-		# _physics_process so the visible neck can turn before the body follows.
-		head.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 		head.rotation.x = clampf(head.rotation.x, -PI / 2.1, PI / 2.1)
 
@@ -535,26 +517,8 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("jump"):
 			velocity.y = jump_velocity
 
-	# Keep the head/neck within their natural limit by rotating the body
-	# to follow the head yaw smoothly. This creates visible neck rotation
-	# on remote players while the local camera stays instantly responsive.
-	var head_yaw := head.rotation.y
-	if abs(head_yaw) > NECK_YAW_MAX:
-		var target_turn: float = head_yaw - sign(head_yaw) * NECK_YAW_MAX
-		var turn: float = clampf(
-			target_turn * NECK_YAW_CATCHUP_SPEED * delta,
-			-abs(target_turn),
-			abs(target_turn),
-		)
-		rotate_y(turn)
-		head.rotation.y -= turn
-
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	# Movement follows the camera/head direction so controls feel identical
-	# even though the body can lag slightly behind.
-	var raw_direction := head.global_transform.basis * Vector3(input_dir.x, 0, input_dir.y)
-	raw_direction.y = 0.0
-	var direction := raw_direction.normalized()
+	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
 	var speed_bonus := UpgradeManager.get_effect_total("movement_speed")
 	var speed := (move_speed + speed_bonus) * (sprint_multiplier if _is_sprinting else 1.0)
@@ -593,16 +557,6 @@ func _try_sync_position(delta: float) -> void:
 	_last_synced_rot = global_rotation
 	_last_synced_pitch = head.rotation.x
 	_last_synced_yaw = head.rotation.y
-	if (
-		abs(head.rotation.x - _last_debug_sent_pitch) > DEBUG_SYNC_THRESHOLD
-		or abs(head.rotation.y - _last_debug_sent_yaw) > DEBUG_SYNC_THRESHOLD
-	):
-		_last_debug_sent_pitch = head.rotation.x
-		_last_debug_sent_yaw = head.rotation.y
-		print(
-			"[Player] sending head sync pitch=%.2f yaw=%.2f peer=%d"
-			% [head.rotation.x, head.rotation.y, multiplayer.get_unique_id()]
-		)
 	_sync_position.rpc(
 		global_position,
 		global_rotation,
@@ -635,16 +589,6 @@ func _sync_position(
 	_net_target_rot = rot
 	_has_net_target = true
 	# Update neck/head bones on the remote player's visual model
-	if (
-		abs(head_pitch - _last_debug_received_pitch) > DEBUG_SYNC_THRESHOLD
-		or abs(head_yaw - _last_debug_received_yaw) > DEBUG_SYNC_THRESHOLD
-	):
-		_last_debug_received_pitch = head_pitch
-		_last_debug_received_yaw = head_yaw
-		print(
-			"[Player] received head sync pitch=%.2f yaw=%.2f peer=%d"
-			% [head_pitch, head_yaw, multiplayer.get_remote_sender_id()]
-		)
 	_net_head_pitch = head_pitch
 	_net_head_yaw = head_yaw
 
