@@ -4,6 +4,11 @@ extends CharacterBody3D
 @export var move_speed: float = 5.0
 const MOUSE_SENSITIVITY: float = 0.002
 
+## Head/neck yaw limit before the body rotates to catch up.
+const NECK_YAW_MAX: float = 0.5
+## How quickly the body rotates to match the head when the neck hits its limit.
+const NECK_YAW_CATCHUP_SPEED: float = 8.0
+
 const HINT_GROUND := "Aim at ground to place"
 const HINT_STAND := "Aim at stand or workstation to place"
 
@@ -440,7 +445,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		# Mouse X rotates the head/camera on Y; the body catches up once the
+		# head turns past NECK_YAW_MAX, letting the neck visibly rotate first.
+		head.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		head.rotation.y = wrap_angle(head.rotation.y)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 		head.rotation.x = clampf(head.rotation.x, -PI / 2.1, PI / 2.1)
 
@@ -479,7 +487,7 @@ func _process(delta: float) -> void:
 		if _has_net_target:
 			var t := clampf(NET_LERP_SPEED * delta, 0.0, 1.0)
 			global_position = global_position.lerp(_net_target_pos, t)
-			global_rotation.y = lerpf(global_rotation.y, _net_target_rot.y, t)
+			global_rotation.y = lerp_angle(global_rotation.y, _net_target_rot.y, t)
 		# Update neck/head bones so other players see where this player is looking.
 		# Apply immediately for this frame, then deferred after AnimationPlayer
 		# has updated so the pose isn't overwritten by the current animation.
@@ -516,13 +524,15 @@ func _physics_process(delta: float) -> void:
 			velocity.y = jump_velocity
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	# Movement follows the camera/head direction so looking around still steers.
+	var direction := (head.global_transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
 	var speed_bonus := UpgradeManager.get_effect_total("movement_speed")
 	var speed := (move_speed + speed_bonus) * (sprint_multiplier if _is_sprinting else 1.0)
 	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
 	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
 	move_and_slide()
+	_update_body_yaw(delta)
 	_try_sync_position(delta)
 	_frame_lookups_done = false
 	if not _money_mode:
@@ -562,6 +572,28 @@ func _try_sync_position(delta: float) -> void:
 		head.rotation.x,
 		head.rotation.y,
 	)
+
+
+## After the head turns past the neck limit, rotate the body to catch up.
+## The camera stays steady because the body turn is subtracted from head.rotation.y.
+func _update_body_yaw(delta: float) -> void:
+	var head_yaw := wrap_angle(head.rotation.y)
+	if absf(head_yaw) <= NECK_YAW_MAX:
+		return
+	var excess: float = head_yaw - sign(head_yaw) * NECK_YAW_MAX
+	var max_turn: float = NECK_YAW_CATCHUP_SPEED * delta
+	var turn: float = clampf(excess, -max_turn, max_turn)
+	rotate_y(turn)
+	head.rotation.y = wrap_angle(head.rotation.y - turn)
+
+
+## Wrap an angle to the [-PI, PI] range.
+func wrap_angle(angle: float) -> float:
+	while angle > PI:
+		angle -= TAU
+	while angle < -PI:
+		angle += TAU
+	return angle
 
 
 ## Simple position sync RPC. Only the authority sends; all other peers
