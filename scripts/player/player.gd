@@ -20,30 +20,6 @@ const HINT_STAND := "Aim at stand or workstation to place"
 ## without blocking solo testing of every stand.
 var assigned_stand: StandUnit = null
 
-
-func _get_held_item_name() -> String:
-	match held_item:
-		HeldItem.CUP_EMPTY:
-			return "Empty Cup"
-		HeldItem.CUP_FILLED:
-			return "Filled Cup"
-		HeldItem.SUPPLY_BOX:
-			var itype: String = held_item_data.get("ingredient_type", "")
-			if held_item_data.get("source") == "bin_scoop":
-				return itype.capitalize()
-			if itype == "cups":
-				return "Cup Box"
-			if held_item_data.get("is_equipment", false):
-				var etype: String = held_item_data.get("equipment_type", "equipment")
-				return etype.capitalize().replace("_", " ") + " Box"
-			return itype.capitalize() + " Box"
-		HeldItem.CONTAINER:
-			return held_item_data.get("container_type", "").capitalize().replace("_", " ")
-		HeldItem.TRASH:
-			return "Trash"
-	return ""
-
-
 @export var gravity: float = 9.8
 @export var sprint_multiplier: float = 1.8
 @export var jump_velocity: float = 5.0
@@ -180,6 +156,7 @@ func _get_container_scene(container_type: String) -> PackedScene:
 @onready var ray: RayCast3D = $Head/RayCast3D
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var visuals: PlayerVisuals = $Visuals
+@onready var inventory: PlayerInventory = $PlayerInventory
 
 var _in_priceboard_mode := false
 var _sync_pos_timer: float = 0.0
@@ -694,9 +671,9 @@ func _poll_hint() -> void:
 				else:
 					hint = "Pitcher | LMB: fill with water"
 			else:
-				hint = "%s | LMB: place" % _get_held_item_name()
+				hint = "%s | LMB: place" % inventory.get_held_item_name()
 		else:
-			hint = "%s | LMB: place" % _get_held_item_name()
+			hint = "%s | LMB: place" % inventory.get_held_item_name()
 		if container_type == "pitcher":
 			var press := _find_looked_at_press()
 			if press != null:
@@ -708,12 +685,12 @@ func _poll_hint() -> void:
 				hint = dispenser.get_hint(self)
 				return
 		if _ghost_valid:
-			hint = "%s | LMB: place" % _get_held_item_name()
+			hint = "%s | LMB: place" % inventory.get_held_item_name()
 		else:
 			if container_type == "workstation":
 				hint = HINT_GROUND
 			else:
-				hint = "%s | %s" % [_get_held_item_name(), HINT_STAND]
+				hint = "%s | %s" % [inventory.get_held_item_name(), HINT_STAND]
 		if container_type == "pitcher" and _held_pitcher_has_contents():
 			hint += "  |  RMB: empty"
 	elif held_item == HeldItem.SUPPLY_BOX \
@@ -722,10 +699,10 @@ func _poll_hint() -> void:
 		if interactable != null:
 			hint = interactable.get_hint(self)
 		else:
-			hint = "%s | aim at bin, press, or trash to deposit" % _get_held_item_name()
+			hint = "%s | aim at bin, press, or trash to deposit" % inventory.get_held_item_name()
 	elif held_item == HeldItem.SUPPLY_BOX \
 			and held_item_data.get("ingredient_type") == "cups":
-		var _held_name := _get_held_item_name()
+		var _held_name := inventory.get_held_item_name()
 		hint = "%s | LMB: place 1 cup" % _held_name
 		if _is_aiming_at_grid():
 			hint = "%s | LMB: place box on grid" % _held_name
@@ -734,7 +711,7 @@ func _poll_hint() -> void:
 		if interactable is CupStack:
 			hint = "%s | LMB: add 1 cup" % _held_name
 	elif held_item == HeldItem.SUPPLY_BOX:
-		var _hn := _get_held_item_name()
+		var _hn := inventory.get_held_item_name()
 		hint = "%s | LMB: place box" % _hn
 		if _is_aiming_at_grid():
 			hint = "%s | LMB: place on grid" % _hn
@@ -1120,9 +1097,9 @@ func _place_cup_stack_from_box() -> void:
 		# Add one cup to existing stack
 		_rapid_fire_cup_target = interactable as CupStack
 		interactable.add_cups(1)
-		update_held_amount(float(qty - 1))
+		inventory.update_held_amount(float(qty - 1))
 		if qty - 1 <= 0:
-			make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+			inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 		EventBus.supply_box_deposited.emit("cups", 1)
 		return
 
@@ -1164,9 +1141,9 @@ func _place_cup_stack_from_box() -> void:
 		stack.add_to_group("container")
 
 	# Deduct one cup from held box
-	update_held_amount(float(qty - 1))
+	inventory.update_held_amount(float(qty - 1))
 	if qty - 1 <= 0:
-		make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+		inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 
 	# Remember this brand-new stack as the rapid-fire target so holding the
 	# mouse down keeps depositing into it, even before the raycast has had a
@@ -1295,7 +1272,7 @@ func _place_single_cup(_filled: bool) -> void:
 		stack.add_to_group("container")
 
 	_destroy_ghost()
-	clear_held()
+	inventory.clear_held()
 	AudioManager.play_sfx("taking_cup", stack_pos)
 	EventBus.container_placed.emit("cup_stack", stack)
 
@@ -1339,7 +1316,7 @@ func _place_filled_cup() -> void:
 					child.disabled = false
 
 	_destroy_ghost()
-	clear_held()
+	inventory.clear_held()
 	AudioManager.play_sfx("taking_cup", cup_pos)
 	EventBus.interaction_hint_changed.emit("Filled cup placed!")
 
@@ -1362,7 +1339,7 @@ func _place_held_supply_box_on(place_pos: Vector3, place_rot: Vector3 = Vector3.
 		box.update_metrics()
 	AudioManager.play_sfx("box_drop", place_pos)
 	_destroy_ghost()
-	clear_held()
+	inventory.clear_held()
 	return box
 
 
@@ -1493,7 +1470,7 @@ func _drop_held_box() -> void:
 		box.update_metrics()
 	AudioManager.play_sfx("box_drop", drop_pos)
 	_destroy_ghost()
-	clear_held()
+	inventory.clear_held()
 
 
 func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
@@ -1521,7 +1498,7 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 		box.update_metrics()
 	AudioManager.play_sfx("box_drop", drop_pos)
 	_destroy_ghost()
-	clear_held()
+	inventory.clear_held()
 
 
 ## Not every container type has its own placement sound recorded — fall back
@@ -1565,7 +1542,7 @@ func _place_equipment_from_box() -> void:
 			instance.call_deferred("update_label")
 			EventBus.pitcher_state_changed.emit(int(instance.state))
 	_destroy_ghost()
-	make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+	inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 	AudioManager.play_sfx(_get_place_sfx_key(equipment_type), place_pos, -1.0, 0.05, 0.85)
 	EventBus.container_placed.emit(equipment_type, instance)
 
@@ -1725,76 +1702,6 @@ func _find_looked_at_dispenser() -> WaterDispenser:
 			node = node.get_parent()
 	return _frame_dispenser
 
-
-func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
-	if _held_mesh and is_instance_valid(_held_mesh):
-		_held_mesh.queue_free()
-		_held_mesh = null
-	held_item = item_type
-	held_item_data = data
-	if mesh:
-		_held_mesh = mesh
-		hand_slot.add_child(mesh)
-		_remove_placement_groups(mesh)
-		_apply_hand_offset(item_type, data)
-	EventBus.held_item_changed.emit(int(item_type), data)
-
-
-func _apply_hand_offset(item_type: int, data: Dictionary) -> void:
-	if _held_mesh == null:
-		return
-	var offset := Vector3.ZERO
-	match item_type:
-		HeldItem.SUPPLY_BOX:
-			offset = Vector3(0.1, 0.1, 0.0)
-		HeldItem.CONTAINER:
-			var ctype: String = data.get("container_type", "")
-			if ctype in ["fruit_bin", "sugar_bin", "ice_bin"]:
-				offset = Vector3(0.05, 0.05, 0.0)
-		HeldItem.TRASH:
-			offset = Vector3(0.1, 0.1, 0.0)
-	_held_mesh.position = offset
-
-
-func update_held_amount(new_amount: float) -> void:
-	held_item_data["amount"] = new_amount
-	if _held_mesh:
-		var mesh_inst := _held_mesh as SupplyBox
-		if mesh_inst and mesh_inst.is_hand_mesh:
-			mesh_inst.quantity = new_amount
-		var qty_text := "×%.0f" % new_amount
-		for fname in ["Front", "Back", "Left", "Right", "Top"]:
-			var lbl := _held_mesh.get_node_or_null("Icons/QtyLabel_" + fname) as Label3D
-			if lbl == null:
-				lbl = _held_mesh.get_node_or_null("QtyLabel_" + fname) as Label3D
-			if lbl:
-				lbl.text = qty_text
-	EventBus.held_item_changed.emit(int(held_item), held_item_data)
-
-
-func clear_held() -> void:
-	set_held(HeldItem.NONE, { })
-
-
-func make_held_trash(
-	refund: float,
-	trash_type: String = "empty_box",
-	hand_mesh: Node3D = null,
-) -> void:
-	var data := { "amount": 0.0, "is_trash": true, "trash_value": refund, "trash_type": trash_type }
-	if hand_mesh == null:
-		var box_inst: SupplyBox = SUPPLY_BOX_SCENE.instantiate() as SupplyBox
-		box_inst.is_hand_mesh = true
-		box_inst.quantity = 0.0
-		box_inst.ingredient_type = "trash"
-		box_inst.scale = Vector3.ONE * (0.05 / 0.3)
-		var phys := box_inst.get_node_or_null("Physics") as StaticBody3D
-		if phys:
-			phys.collision_layer = 0
-			phys.collision_mask = 0
-		hand_mesh = box_inst
-	set_held(HeldItem.TRASH, data, hand_mesh)
-
 # ==========================================================================
 #  CONTAINER PLACEMENT SYSTEM
 # ==========================================================================
@@ -1824,7 +1731,7 @@ func hold_container(
 	)
 
 	# Use set_held to properly manage hand mesh (unified system)
-	set_held(
+	inventory.set_held(
 		HeldItem.CONTAINER,
 		{
 			"container_type": container_type,
@@ -2516,7 +2423,7 @@ func _try_place_container() -> Node3D:
 			EventBus.container_placed.emit(container_type, source_node)
 			AudioManager.play_sfx("table", source_node.global_position, -1.0, 0.05, 0.85)
 			_destroy_ghost()
-			clear_held()
+			inventory.clear_held()
 			return source_node
 		return null
 
@@ -2551,7 +2458,7 @@ func _try_place_container() -> Node3D:
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance == null:
 		_destroy_ghost()
-		clear_held()
+		inventory.clear_held()
 		return null
 	instance.scale = placement_scale
 	instance.add_to_group("container")
@@ -2599,7 +2506,7 @@ func _try_place_container() -> Node3D:
 
 	_destroy_ghost()
 	var container_type_str: String = held_item_data.get("container_type", "")
-	clear_held()
+	inventory.clear_held()
 	EventBus.container_placed.emit(container_type_str, instance)
 	AudioManager.play_sfx(_get_place_sfx_key(container_type_str), place_pos, -1.0, 0.05, 0.85)
 	return instance
@@ -2633,7 +2540,7 @@ func _cancel_container_placement() -> void:
 		)
 	_destroy_ghost()
 	var refund_value := cost * 0.7
-	make_held_trash(refund_value, container_type)
+	inventory.make_held_trash(refund_value, container_type)
 	EventBus.interaction_hint_changed.emit("Recycled — take to trashcan for $%.2f" % refund_value)
 
 

@@ -57,6 +57,10 @@ func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 		_player.hand_slot.add_child(mesh)
 		_player._remove_placement_groups(mesh)
 		_apply_hand_offset(item_type, data)
+	if _player != null:
+		_player.held_item = held_item
+		_player.held_item_data = held_item_data
+		_player._held_mesh = _held_mesh
 	EventBus.held_item_changed.emit(int(item_type), data)
 
 
@@ -90,6 +94,9 @@ func update_held_amount(new_amount: float) -> void:
 			if lbl:
 				lbl.text = qty_text
 	EventBus.held_item_changed.emit(int(held_item), held_item_data)
+	if _player != null:
+		_player.held_item_data = held_item_data
+		_player._held_mesh = _held_mesh
 
 
 func clear_held() -> void:
