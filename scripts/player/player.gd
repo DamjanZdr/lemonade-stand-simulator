@@ -43,6 +43,11 @@ func _get_held_item_name() -> String:
 @export var sprint_multiplier: float = 1.8
 @export var jump_velocity: float = 5.0
 
+## Neck turns on Y first; body catches up once the neck exceeds this angle.
+const NECK_YAW_MAX: float = 0.2
+## How quickly the body rotates to match the head when the neck hits its limit.
+const NECK_YAW_CATCHUP_SPEED: float = 8.0
+
 var held_item: int = HeldItem.NONE
 var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
@@ -181,6 +186,7 @@ var _sync_pos_timer: float = 0.0
 var _last_synced_pos: Vector3 = Vector3.ZERO
 var _last_synced_rot: Vector3 = Vector3.ZERO
 var _last_synced_pitch: float = 0.0
+var _last_synced_yaw: float = 0.0
 const SYNC_MIN_INTERVAL: float = 0.05 # Max 20 updates/sec while moving
 const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
 
@@ -439,7 +445,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		# Rotate the head on both axes; the body catches up in _physics_process
+		# so other players can see the neck turn before the body follows.
+		head.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 		head.rotation.x = clampf(head.rotation.x, -PI / 2.1, PI / 2.1)
 
@@ -514,6 +522,19 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("jump"):
 			velocity.y = jump_velocity
 
+	# Keep the head/neck within their natural limit by rotating the body
+	# to follow the head yaw smoothly.
+	var head_yaw := head.rotation.y
+	if abs(head_yaw) > NECK_YAW_MAX:
+		var target_turn: float = head_yaw - sign(head_yaw) * NECK_YAW_MAX
+		var turn: float = clampf(
+			target_turn * NECK_YAW_CATCHUP_SPEED * delta,
+			-abs(target_turn),
+			abs(target_turn),
+		)
+		rotate_y(turn)
+		head.rotation.y -= turn
+
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
@@ -542,12 +563,18 @@ func _try_sync_position(delta: float) -> void:
 	var pos_delta := global_position.distance_to(_last_synced_pos)
 	var rot_delta := absf(global_rotation.y - _last_synced_rot.y)
 	var pitch_delta := absf(head.rotation.x - _last_synced_pitch)
-	if pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD and pitch_delta < 0.05:
+	var yaw_delta := absf(head.rotation.y - _last_synced_yaw)
+	if (
+			pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD \
+				and pitch_delta < 0.05
+		and yaw_delta < 0.05
+	):
 		return # Haven't moved/looked enough, skip
 	_sync_pos_timer = 0.0
 	_last_synced_pos = global_position
 	_last_synced_rot = global_rotation
 	_last_synced_pitch = head.rotation.x
+	_last_synced_yaw = head.rotation.y
 	_sync_position.rpc(
 		global_position,
 		global_rotation,
