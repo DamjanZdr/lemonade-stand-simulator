@@ -126,10 +126,6 @@ var _look_camera_yaw: float = 0.0
 var _look_camera_pitch: float = 0.0
 var _look_body_yaw: float = 0.0
 
-# Current neck yaw, smoothly interpolated toward the target each frame.
-var _current_neck_yaw: float = 0.0
-const NECK_LOOK_SPEED: float = 8.0
-
 var anim_player: AnimationPlayer:
 	get:
 		return _active_anim
@@ -588,8 +584,10 @@ func get_active_skeleton() -> Skeleton3D:
 ## Neck rotates on Y (left/right) up to ±0.2 rad before the body turns.
 ## Head rotates on X (up/down) up to +0.5 (down) / -0.5 (up).
 ## Called from the player's _process.
-const NECK_YAW_MAX: float = 0.5
-const NECK_PITCH_MAX: float = 0.5
+var _neck_yaw: float = 0.0
+var _head_pitch: float = 0.0
+const NECK_YAW_MAX: float = 0.2
+const HEAD_PITCH_MAX: float = 0.5
 
 
 func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
@@ -598,39 +596,40 @@ func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) ->
 	_look_body_yaw = body_yaw
 
 
-## Compute a camera/head yaw that turns the neck toward the nearest other
-## player, limited to NECK_YAW_MAX so the body still handles large turns.
-func _compute_neck_yaw_for_target(body_yaw: float) -> float:
-	var target := _closest_player_cache
-	if target == null or not is_instance_valid(target):
-		target = _find_closest_other_player()
-	if target == null:
-		return body_yaw
-	var to_target := target.global_position - global_position
-	to_target.y = 0.0
-	if to_target.length_squared() < 0.001:
-		return body_yaw
-	var target_yaw := atan2(to_target.x, to_target.z)
-	# The visual model is flipped 180° on Z, so the yaw sign is inverted.
-	var yaw_diff := -wrap_angle(target_yaw - body_yaw)
-	return body_yaw + clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
+func _physics_process(_delta: float) -> void:
+	# Apply the procedural head/neck pose in the physics step. Because the
+	# AnimationPlayer is also set to physics callback, this runs before the
+	# animation overwrites the pose; the deferred call runs after the animation
+	# update so the pose wins for the rendered frame.
+	update_look_bones(_look_camera_yaw, _look_camera_pitch, _look_body_yaw)
+	call_deferred("update_look_bones", _look_camera_yaw, _look_camera_pitch, _look_body_yaw)
 
 
 func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
 	var skel := get_active_skeleton()
 	if skel == null:
 		return
-	# All procedural look movement is applied to the Neck bone, not the Head.
-	# Yaw (left/right) and pitch (up/down) are both clamped to ±0.5 rad.
+	# Neck yaw: difference between camera yaw and body yaw, clamped
 	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
-	var neck_yaw := clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
-	var neck_pitch := clampf(-camera_pitch, -NECK_PITCH_MAX, NECK_PITCH_MAX)
+	_neck_yaw = clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
+	# Head pitch: camera pitch inverted because the model's local X axis
+	# points the opposite way to the camera's pitch direction.
+	_head_pitch = clampf(-camera_pitch, -HEAD_PITCH_MAX, HEAD_PITCH_MAX)
+	# Apply to neck bone (Y rotation) as a local rotation on top of the bone's
+	# rest pose, so it turns around the bone's own axis instead of world space.
 	var neck_idx := skel.find_bone("Neck")
 	if neck_idx >= 0:
 		var rest := skel.get_bone_rest(neck_idx)
-		var local_rot := Quaternion.from_euler(Vector3(neck_pitch, neck_yaw, 0))
-		var neck_rot := rest.basis.get_rotation_quaternion() * local_rot
+		var local_yaw := Quaternion.from_euler(Vector3(0, _neck_yaw, 0))
+		var neck_rot := rest.basis.get_rotation_quaternion() * local_yaw
 		skel.set_bone_pose_rotation(neck_idx, neck_rot)
+	# Apply to head bone (X rotation for pitch)
+	var head_idx := skel.find_bone("Head")
+	if head_idx >= 0:
+		var rest := skel.get_bone_rest(head_idx)
+		var local_pitch := Quaternion.from_euler(Vector3(_head_pitch, 0, 0))
+		var head_rot := rest.basis.get_rotation_quaternion() * local_pitch
+		skel.set_bone_pose_rotation(head_idx, head_rot)
 
 
 ## Wrap an angle to the [-PI, PI] range.
@@ -693,7 +692,6 @@ func _process(delta: float) -> void:
 	# If a look_at_target is set (e.g. lobby camera), always track it
 	if look_at_target != null and is_instance_valid(look_at_target):
 		_update_eye_look(delta)
-		_apply_neck_look(delta)
 		return
 	_check_timer -= delta
 	if _check_timer <= 0.0:
@@ -702,20 +700,6 @@ func _process(delta: float) -> void:
 
 	if _is_near_player:
 		_update_eye_look(delta)
-	_apply_neck_look(delta)
-
-
-## Blend the neck toward the look target and apply the procedural pose.
-## The immediate call runs after the animation player in _process; the
-## deferred call re-applies after any late animation updates in the frame.
-func _apply_neck_look(delta: float) -> void:
-	var target_camera_yaw := _compute_neck_yaw_for_target(_look_body_yaw)
-	var target_neck_yaw := wrap_angle(target_camera_yaw - _look_body_yaw)
-	var t := clampf(NECK_LOOK_SPEED * delta, 0.0, 1.0)
-	_current_neck_yaw = lerp_angle(_current_neck_yaw, target_neck_yaw, t)
-	var camera_yaw := _look_body_yaw + _current_neck_yaw
-	update_look_bones(camera_yaw, _look_camera_pitch, _look_body_yaw)
-	call_deferred("update_look_bones", camera_yaw, _look_camera_pitch, _look_body_yaw)
 
 
 func _update_eye_look(delta: float) -> void:
