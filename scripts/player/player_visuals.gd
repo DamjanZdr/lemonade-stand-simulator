@@ -99,6 +99,12 @@ const CLOTHING_SURFACES: Array[String] = [
 
 func _ready() -> void:
 	_disable_cast_shadows()
+	# Run animations in the physics step so we can apply procedural bone
+	# poses afterwards in _physics_process, guaranteeing the pose sticks.
+	if _man_anim != null:
+		_man_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
+	if _woman_anim != null:
+		_woman_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
 
 
 func _disable_cast_shadows() -> void:
@@ -112,6 +118,13 @@ func _disable_cast_shadows() -> void:
 const _EYE_SCALE := 0.30564013
 
 var _active_anim: AnimationPlayer = null
+
+# Stored look target for procedural head/neck poses. Applied in
+# _physics_process after the AnimationPlayer has updated, so the pose isn't
+# overwritten by the current animation.
+var _look_camera_yaw: float = 0.0
+var _look_camera_pitch: float = 0.0
+var _look_body_yaw: float = 0.0
 
 var anim_player: AnimationPlayer:
 	get:
@@ -575,6 +588,21 @@ var _neck_yaw: float = 0.0
 var _head_pitch: float = 0.0
 const NECK_YAW_MAX: float = 0.2
 const HEAD_PITCH_MAX: float = 0.5
+
+
+func set_look_target(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:
+	_look_camera_yaw = camera_yaw
+	_look_camera_pitch = camera_pitch
+	_look_body_yaw = body_yaw
+
+
+func _physics_process(_delta: float) -> void:
+	# Apply the procedural head/neck pose in the physics step. Because the
+	# AnimationPlayer is also set to physics callback, this runs before the
+	# animation overwrites the pose; the deferred call runs after the animation
+	# update so the pose wins for the rendered frame.
+	update_look_bones(_look_camera_yaw, _look_camera_pitch, _look_body_yaw)
+	call_deferred("update_look_bones", _look_camera_yaw, _look_camera_pitch, _look_body_yaw)
 
 
 func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) -> void:

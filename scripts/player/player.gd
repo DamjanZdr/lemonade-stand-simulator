@@ -485,19 +485,17 @@ func _process(delta: float) -> void:
 		# has updated so the pose isn't overwritten by the current animation.
 		if visuals != null and visuals.visible:
 			var neck_yaw := global_rotation.y + _net_head_yaw
-			visuals.update_look_bones(neck_yaw, _net_head_pitch, global_rotation.y)
-			visuals.call_deferred("update_look_bones", neck_yaw, _net_head_pitch, global_rotation.y)
+			visuals.set_look_target(neck_yaw, _net_head_pitch, global_rotation.y)
 		_update_anim()
 	else:
 		# Local player: update neck/head bones based on camera look direction.
-		# Apply immediately for this frame, then deferred after AnimationPlayer
-		# has updated so the pose isn't overwritten by the current animation.
+		# PlayerVisuals applies the pose in _physics_process after the
+		# AnimationPlayer has updated so the pose isn't overwritten.
 		if visuals != null and visuals.visible:
 			var cam_yaw := head.global_rotation.y
 			var cam_pitch := head.rotation.x
 			var body_yaw := global_rotation.y
-			visuals.update_look_bones(cam_yaw, cam_pitch, body_yaw)
-			visuals.call_deferred("update_look_bones", cam_yaw, cam_pitch, body_yaw)
+			visuals.set_look_target(cam_yaw, cam_pitch, body_yaw)
 
 
 func _physics_process(delta: float) -> void:
