@@ -12,10 +12,16 @@ extends Node
 
 signal roster_changed()
 signal game_starting()
+signal late_join_starting(peer_id: int)
+signal late_join_denied(reason: String)
 
 ## peer_id -> { "name": String, "stand_index": int (-1 = unset, 0/1/...
 ## corresponds to the Nth stand), "ready": bool, "customization": Dictionary }
 var roster: Dictionary = { }
+
+## Set to true when the game has already started. Late joiners go through the
+## lobby UI but are auto-assigned a free stand, then spawned when they ready up.
+var game_started: bool = false
 
 
 func _ready() -> void:
@@ -76,8 +82,22 @@ func _register(peer_id: int, player_name: String) -> void:
 		"ready": false,
 		"customization": { },
 	}
-	print("[LobbyManager] Registered peer %d as '%s'" % [peer_id, player_name])
+	# If the game already started, this is a late joiner. Auto-assign a stand or
+	# deny them immediately so they don't take up an in-game slot without one.
+	if game_started:
+		var free_stand := _first_free_stand()
+		if free_stand < 0:
+			print("[LobbyManager] Denying late join for peer %d (no free stand)" % peer_id)
+			_deny_late_join.rpc_id(peer_id, "Both stands are full. Try again later.")
+			# Give the client a moment to show the message before dropping.
+			_disconnect_peer_deferred.call_deferred(peer_id)
+		else:
+			roster[peer_id]["stand_index"] = free_stand
+			print("[LobbyManager] Late join peer %d assigned stand %d" % [peer_id, free_stand])
 	_broadcast_roster()
+	# Sync the game-started flag so the new client knows the lobby is in late-join mode.
+	if game_started:
+		_sync_game_started.rpc_id(peer_id, game_started)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -90,9 +110,51 @@ func _sender_id() -> int:
 	return id if id != 0 else multiplayer.get_unique_id()
 
 
+## Returns the first unclaimed stand index (0 or 1), or -1 if both are taken.
+func _first_free_stand() -> int:
+	var used: Array[int] = []
+	for id in roster:
+		if id == _sender_id():
+			continue
+		var idx: int = roster[id].get("stand_index", -1)
+		if idx >= 0:
+			used.append(idx)
+	for i in [0, 1]:
+		if not used.has(i):
+			return i
+	return -1
+
+
+func _disconnect_peer_deferred(peer_id: int) -> void:
+	await get_tree().create_timer(1.0).timeout
+	if multiplayer.has_multiplayer_peer() and peer_id in multiplayer.get_peers():
+		multiplayer.multiplayer_peer.disconnect_peer(peer_id)
+
+
 func _broadcast_roster() -> void:
 	print("[LobbyManager] Broadcasting roster: %d players" % roster.size())
 	_apply_roster.rpc(roster)
+
+
+## Marks the game as started on the host and syncs that to all clients.
+func mark_game_started() -> void:
+	if not multiplayer.is_server():
+		return
+	game_started = true
+	_sync_game_started.rpc(game_started)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_game_started(is_started: bool) -> void:
+	game_started = is_started
+
+
+@rpc("authority", "call_local", "reliable")
+func _deny_late_join(reason: String) -> void:
+	if multiplayer.is_server():
+		return
+	print("[LobbyManager] Late join denied: %s" % reason)
+	late_join_denied.emit(reason)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -151,6 +213,10 @@ func _request_set_ready(is_ready: bool) -> void:
 	if roster.has(id):
 		roster[id]["ready"] = is_ready
 		_broadcast_roster()
+		# If the game is already in progress, a late joiner starts the moment
+		# they ready up (assuming they have a stand).
+		if game_started and is_ready and roster[id].get("stand_index", -1) >= 0:
+			late_join_starting.emit(id)
 
 ## --- Queries ---
 
@@ -181,6 +247,7 @@ func start_game() -> void:
 		return
 	if not all_ready():
 		return
+	mark_game_started()
 	_do_start_game.rpc()
 
 

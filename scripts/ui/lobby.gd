@@ -172,8 +172,16 @@ func _refresh() -> void:
 	_ready_button.text = "Unready" if mine.get("ready", false) else "Ready Up"
 
 	var is_host := multiplayer.is_server()
-	_start_button.visible = is_host
+	_start_button.visible = is_host and not LobbyManager.game_started
 	_start_button.disabled = not LobbyManager.all_ready()
+
+	# Late-join UI: lock stand selection (auto-assigned) and make it clear
+	# the game is already running.
+	if LobbyManager.game_started:
+		_stand1_button.disabled = true
+		_stand2_button.disabled = true
+		_ready_button.text = "Unready" if mine.get("ready", false) else "Ready to Spawn"
+		_version_label.text = "Game in progress — spawn when ready"
 
 # ── Character Customization ──────────────────────────────────────────────────
 

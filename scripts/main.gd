@@ -72,6 +72,9 @@ var _orig_fill_energy: float = 0.5
 ## During lobby, the LobbyCamera is active and game systems are paused.
 var _in_lobby: bool = true
 
+## True for the local late joiner once the host has started their spawn-in.
+var _late_join_camera_pending: bool = false
+
 ## Camera tween time for stand switching and game-start transition.
 const CAMERA_TWEEN_TIME: float = 1.0
 
@@ -137,6 +140,8 @@ func _ready() -> void:
 	# Connect to game_starting signal — when the host starts the game,
 	# transition from lobby to game phase (camera tween, hide UI, start systems).
 	LobbyManager.game_starting.connect(_on_game_starting)
+	LobbyManager.late_join_starting.connect(_on_late_join_starting)
+	LobbyManager.late_join_denied.connect(_on_late_join_denied)
 
 	# If there's no lobby roster AND we're not connected to a server
 	# (e.g. testing main.tscn directly in the editor), skip the lobby
@@ -306,6 +311,54 @@ func _tween_camera_to_player() -> void:
 		lobby_camera.current = false
 		if hud:
 			hud.visible = true
+
+
+## Called on the host when a late joiner hits ready. Spawns the player and
+## tells the client to transition from lobby to the game.
+func _on_late_join_starting(peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	print("[Main] Late join starting for peer %d" % peer_id)
+	_spawn_player_for_peer(peer_id)
+	_push_world_state_to_client(peer_id)
+	_start_late_join.rpc_id(peer_id, peer_id)
+
+
+## Tells a specific peer to transition from the late-join lobby into the game.
+@rpc("authority", "call_local", "reliable")
+func _start_late_join(peer_id: int) -> void:
+	if peer_id != multiplayer.get_unique_id():
+		return
+	print("[Main] Starting late join transition for peer %d" % peer_id)
+	_late_join_camera_pending = true
+	_do_late_join_transition()
+
+
+## Transitions the local player from the late-join lobby into the running game.
+func _do_late_join_transition() -> void:
+	_in_lobby = false
+	# Hide the lobby UI and player models, show the HUD.
+	if lobby_ui:
+		lobby_ui.visible = false
+	if lobby_player_models:
+		lobby_player_models.visible = false
+	if hud:
+		hud.visible = true
+	# The local player will be spawned by the spawner; _on_local_player_ready
+	# will finish the camera tween when it's ready.
+
+
+## Shows a popup and returns to the main menu if a late join is denied.
+func _on_late_join_denied(reason: String) -> void:
+	var dialog := AcceptDialog.new()
+	dialog.name = "LateJoinDeniedDialog"
+	dialog.title = "Can't Join"
+	dialog.dialog_text = reason
+	dialog.ok_button_text = "Back to Menu"
+	dialog.confirmed.connect(_go_to_main_menu)
+	dialog.canceled.connect(_go_to_main_menu)
+	add_child(dialog)
+	dialog.popup_centered()
 
 
 ## Starts all game systems. This is what _ready() used to do directly,
@@ -495,12 +548,16 @@ func _on_spawner_spawned(node: Node) -> void:
 
 
 ## Handles a peer connecting AFTER we've already loaded into the
-## gameworld (shouldn't normally happen with the lobby-gates-entry flow,
-## but guards against edge cases like a very late straggling connection).
+## gameworld. If the game hasn't started yet, the normal lobby flow will
+## spawn them when the host starts. If it has started, they're a late
+## joiner: their stand is auto-assigned and they spawn once they hit ready.
 func _on_peer_connected(peer_id: int) -> void:
-	# Only spawn players if we're past the lobby (game has started).
-	# During the lobby, peers connect but don't get a player until
-	# the host starts the game.
+	# During the active lobby, late joiners are spawned from the ready-up flow.
+	if multiplayer.is_server() and not _in_lobby and LobbyManager.game_started:
+		# Don't spawn here; _on_late_join_starting handles it after they ready up.
+		return
+	# Normal post-lobby connection (e.g. a peer that reconnected while still
+	# transitioning) — spawn immediately and push world state.
 	if multiplayer.is_server() and not _in_lobby:
 		_spawn_player_for_peer(peer_id)
 		# Send the full world state to the newly joined client so they
@@ -629,6 +686,10 @@ func _on_local_player_ready(p: Player) -> void:
 	outline_sys.setup(p.get_node("Head/Camera3D") as Camera3D)
 	if hud and hud.has_method("set_stand") and p.assigned_stand:
 		hud.set_stand(p.assigned_stand)
+	# If this is a late joiner, the camera tween was waiting for the player to exist.
+	if _late_join_camera_pending:
+		_late_join_camera_pending = false
+		call_deferred("_tween_camera_to_player")
 
 
 ## Called when the server (host) disconnects. Shows a popup so the
