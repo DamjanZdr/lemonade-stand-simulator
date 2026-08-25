@@ -4,6 +4,30 @@ extends Node
 
 @onready var _player: Player = get_parent() as Player
 
+
+func _ready() -> void:
+	if _player == null:
+		push_warning("PlayerPlacement: parent is not a Player")
+
+
+## Local-player placement init: precompute shared box metrics and load the
+## workstation scene at runtime (avoiding compile-time preload issues while
+## the editor reimports .uid files). Called from Player._configure_local_player.
+func _configure_local_player() -> void:
+	var temp_box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
+	temp_box.update_metrics()
+	temp_box.free()
+	_workstation_scene = load("res://scenes/stand/workstation.tscn") as PackedScene
+
+
+## Public entry point used by PlayerController._process to refresh the ghost.
+func update_ghost() -> void:
+	_update_ghost()
+
+
+const HINT_GROUND := "Aim at ground to place"
+const HINT_STAND := "Aim at stand or workstation to place"
+# --- Container placement ghost ---
 var _ghost: Node3D = null
 var _ghost_valid: bool = false
 static var _ghost_mat_valid: StandardMaterial3D = null
@@ -106,489 +130,51 @@ func _get_container_scene(container_type: String) -> PackedScene:
 	return CONTAINER_SCENES.get(container_type) as PackedScene
 
 
-@onready var _player.head: Node3D = $Head
-@onready var hand_slot: Node3D = $Head/Camera3D/HandSlot
-@onready var _player.ray: RayCast3D = $Head/RayCast3D
-@onready var _player.camera: Camera3D = $Head/Camera3D
-@onready var visuals: PlayerVisuals = $Visuals
-@onready var _player.inventory: PlayerInventory = $PlayerInventory
-@onready var interaction = $PlayerInteraction
-
-var _in_priceboard_mode := false
-var _sync_pos_timer: float = 0.0
-var _last_synced_pos: Vector3 = Vector3.ZERO
-var _last_synced_rot: Vector3 = Vector3.ZERO
-var _last_synced_pitch: float = 0.0
-var _last_synced_yaw: float = 0.0
-const SYNC_MIN_INTERVAL: float = 0.05 # Max 20 updates/sec while moving
-const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
-
-# Remote player interpolation target (set by RPC, lerped toward in _process)
-var _net_target_pos: Vector3 = Vector3.ZERO
-var _net_target_rot: Vector3 = Vector3.ZERO
-var _has_net_target: bool = false
-var _net_head_pitch: float = 0.0
-var _net_head_yaw: float = 0.0
-
-# Camera-relative yaw and pitch. The body rotates to catch up once the _player.head
-# yaw exceeds the neck limit; storing them prevents incremental rotations
-# from introducing unwanted roll into the _player.head/_player.camera.
-var _look_yaw: float = 0.0
-var _look_pitch: float = 0.0
-
-const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
-
-# Animation state
-var _current_anim: String = "Idle"
-var _was_moving: bool = false
-var _prev_sync_pos: Vector3 = Vector3.ZERO
-var _is_sprinting: bool = false
-var _time_since_sync: float = 0.0
-const SYNC_ROT_THRESHOLD: float = 0.05 # Min rotation (radians) to trigger sync
-var _priceboard_tween: Tween = null
-var _priceboard_camera_original_local: Transform3D
-var _priceboard_camera_original_top_level := false
-
-var _money_mode: bool = false
-
-
-func set_money_mode(active: bool) -> void:
-	_money_mode = active
-	if interaction != null:
-		interaction.set_money_mode(active)
-	if active:
-		EventBus.interaction_hint_changed.emit("")
-
-
-func _enter_tree() -> void:
-	# Multiplayer authority: nodes spawned via main.gd's per-peer spawning
-	# are named after the owning peer's ID, matching the pattern used by
-	# the Phase 1 networking test scene. A statically-placed Player (e.g.
-	# in an editor preview scene with a non-numeric name) keeps the
-	# default authority (peer 1 / host), which is also correct for solo
-	# play using the default OfflineMultiplayerPeer.
-	if name.is_valid_int():
-		set_multiplayer_authority(int(_player.name))
-	GameLog.log(
-		"[Player] _enter_tree name=%s authority=%d my_id=%d is_auth=%s"
-		% [
-			name,
-			get_multiplayer_authority(),
-			multiplayer.get_unique_id(),
-			is_multiplayer_authority(),
-		]
-	)
-	_setup_position_replication()
-
-
-## So other peers can see where a remote player physically is, even
-## though only the authoritative peer drives that player's own movement
-## input/physics locally.
-func _setup_position_replication() -> void:
-	var sync := MultiplayerSynchronizer.new()
-	sync.name = "PositionSync"
-	# Explicitly set the synchronizer's authority to match the player's.
-	# Without this, the synchronizer may not know which peer is the
-	# authority and won't replicate position/rotation to other peers.
-	sync.set_multiplayer_authority(get_multiplayer_authority())
-	# Set replication config BEFORE adding to tree — otherwise the
-	# synchronizer tries to start replication with no config and errors.
-	var config := SceneReplicationConfig.new()
-	config.add_property(NodePath("../:position"))
-	config.add_property(NodePath("../:rotation"))
-	sync.replication_config = config
-	add_child(sync)
-	GameLog.log(
-		"[Player] PositionSync set up for %s authority=%d"
-		% [name, sync.get_multiplayer_authority()]
+func _held_pitcher_has_contents() -> bool:
+	var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
+	return (
+		recipe.get("fruit_count", recipe.get("lemons", 0.0)) > 0.0 or recipe.get("water", 0.0) > 0.0
+		or recipe.get("sugar", 0.0) > 0.0 or recipe.get("ice", 0.0) > 0.0
 	)
 
 
-func _ready() -> void:
-	add_to_group("player")
-	GameLog.log(
-		"[Player] _ready name=%s authority=%d my_id=%d is_auth=%s"
-		% [
-			name,
-			get_multiplayer_authority(),
-			multiplayer.get_unique_id(),
-			is_multiplayer_authority(),
-		]
-	)
-	_setup_visuals()
-	if is_multiplayer_authority():
-		_configure_local_player()
-	else:
-		# This is another peer's player, replicated here so we can see
-		# them — not ours to control. Skip capturing input/_player.camera/audio,
-		# which would otherwise fight with our own local player for them.
-		# Log the initial position so we can see if the synchronizer
-		# is updating it over time.
-		GameLog.log("[Player] Remote player %s initial pos=%s" % [name, str(_player.global_position)])
-		# Set up a one-shot timer to check if position is being updated
-		var timer := get_tree().create_timer(3.0)
-		timer.timeout.connect(
-			func():
-				if is_instance_valid(self):
-					GameLog.log(
-						"[Player] Remote player %s pos after 3s=%s" % [name, str(_player.global_position)]
-					),
-		)
-
-
-## Applies local-player-only setup: mouse capture, _player.camera, audio, and physics.
-## Called from _ready for the local player, and from main.gd when a late
-## joiner's authority is claimed after the spawner replicates the node.
-func _configure_local_player() -> void:
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	# Layer 2 is used by the screen-space outline system for white fill nodes.
-	# The main _player.camera must not render them — only the SubViewport OutlineCamera does.
-	$Head/Camera3D.cull_mask &= ~2
-	$Head/Camera3D.make_current()
-	GameLog.log("[Player] Camera made current for local player %s" % name)
-	var listener := $Head/Camera3D/AudioListener3D as AudioListener3D
-	if listener:
-		listener.make_current()
-
-	# Smooth movement over small ledges and slopes (sidewalks, curbs, etc.)
-	up_direction = Vector3.UP
-	floor_max_angle = deg_to_rad(60.0)
-	floor_snap_length = 0.3
-	floor_constant_speed = true
-	floor_stop_on_slope = false
-	floor_block_on_wall = false
-
-	# Compute the shared box metrics once so grid ghost/placement use correct values.
-	var temp_box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
-	temp_box.update_metrics()
-	temp_box.free()
-
-	# Load the workstation scene at runtime to avoid compile-time preload issues
-	# while the editor imports the new scene/script .uid files.
-	_workstation_scene = load("res://scenes/stand/workstation.tscn") as PackedScene
-
-
-## Set up the PlayerVisuals: apply customization from the lobby roster,
-## scale the _player.head bone, hide the model for the local player (first-person),
-## and start the idle animation.
-func _setup_visuals() -> void:
-	if visuals == null:
-		return
-	# Mark as player visual so eye look-at targets other players, not "Player"
-	visuals.is_player_visual = true
-	# Apply customization from the lobby roster
-	var peer_id := int(_player.name)
-	var entry: Dictionary = LobbyManager.roster.get(peer_id, { })
-	var custom: Dictionary = entry.get("customization", { })
-	if not custom.is_empty():
-		visuals.apply_customization(custom)
-	else:
-		# No customization data — use a deterministic seed based on peer ID
-		# so all peers see the same random appearance for this player
-		visuals.appearance_seed = peer_id * 2654435761
-		visuals.randomize_appearance()
-	# Scale the _player.head bone for cartoony proportions (from customization or default)
-	var head_size: float = custom.get("head_size", 1.3)
-	visuals.scale_head_bone(head_size)
-	# Hide visuals for the local player (first-person _player.camera)
-	# Remote players see the full character model
-	visuals.visible = not is_multiplayer_authority()
-	# Start idle animation
-	visuals.play_anim("Idle")
-	_current_anim = "Idle"
-
-
-## Update the player's animation based on movement state.
-## Walk = 1.7x speed, Sprint = 2.0x speed, Jump = idle for now.
-## Animations switch immediately (no waiting for current loop to finish).
-func _update_anim() -> void:
-	if visuals == null or not visuals.visible:
+func _empty_held_pitcher() -> void:
+	## Dumps out whatever's currently in the held pitcher. Keeps the pitcher
+	## itself held ΓÇö only clears its contents.
+	if not _held_pitcher_has_contents():
+		EventBus.interaction_hint_changed.emit("Pitcher is already empty!")
 		return
 
-	# Determine state
-	var on_floor: bool
-	if is_multiplayer_authority():
-		on_floor = is_on_floor()
-	else:
-		# Remote players don't run move_and_slide, so estimate from velocity.y
-		on_floor = absf(velocity.y) < 1.0
+	_player.held_item_data["saved_recipe"] = { }
+	_player.held_item_data["has_liquid"] = false
 
-	var horizontal_vel := Vector3(velocity.x, 0, velocity.z).length()
-	var moving := horizontal_vel > 0.5 and on_floor
+	if _player._held_mesh is Pitcher:
+		var held_pitcher := _player._held_mesh as Pitcher
+		held_pitcher.fruit_type = ""
+		held_pitcher.fruit_count = 0.0
+		held_pitcher.water = 0.0
+		held_pitcher.sugar = 0.0
+		held_pitcher.ice = 0.0
+		held_pitcher.cups_poured = 0
+		held_pitcher.update_label()
+		held_pitcher.update_liquid_color()
 
-	# Determine target animation and speed
-	var target_anim: String
-	var target_speed: float = 1.0
-
-	if not on_floor:
-		# Jumping/falling — play idle for now
-		target_anim = "Idle"
-		target_speed = 1.0
-	elif moving:
-		target_anim = "Walk"
-		# Walk animation is designed for the model's default facing.
-		# The player model is rotated 180°, so negate speed to match.
-		# Walk = -1.7x (reversed), Sprint = -2.0x
-		target_speed = -(2.0 if _is_sprinting else 1.7)
-	else:
-		target_anim = "Idle"
-		target_speed = 1.0
-
-	# Always apply — even if same anim, speed may have changed (walk<->sprint)
-	if _current_anim != target_anim:
-		visuals.play_anim_speed(target_anim, target_speed)
-		_current_anim = target_anim
-	elif target_anim == "Walk":
-		# Same anim but speed might have changed (started/stopped sprinting)
-		visuals.set_anim_speed(target_speed)
-
-
-func enter_priceboard_focus(focus_transform: Transform3D) -> void:
-	_in_priceboard_mode = true
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	_priceboard_camera_original_local = _player.camera.transform
-	_priceboard_camera_original_top_level = _player.camera.top_level
-	_player.camera.top_level = true
-	var hud := get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("set_hud_visible"):
-		hud.set_hud_visible(false)
-	if _priceboard_tween != null and _priceboard_tween.is_valid():
-		_priceboard_tween.kill()
-	_priceboard_tween = create_tween()
-	_priceboard_tween.set_trans(Tween.TRANS_QUAD)
-	_priceboard_tween.set_ease(Tween.EASE_IN_OUT)
-	_priceboard_tween.tween_property(_player.camera, "global_transform", focus_transform, 0.4)
-
-
-func exit_priceboard_focus() -> void:
-	if not _in_priceboard_mode:
-		return
-	var target_global := _player.head.global_transform * _priceboard_camera_original_local
-	if _priceboard_tween != null and _priceboard_tween.is_valid():
-		_priceboard_tween.kill()
-	_priceboard_tween = create_tween()
-	_priceboard_tween.set_trans(Tween.TRANS_QUAD)
-	_priceboard_tween.set_ease(Tween.EASE_IN_OUT)
-	_priceboard_tween.tween_property(_player.camera, "global_transform", target_global, 0.4)
-	_priceboard_tween.finished.connect(_on_priceboard_tween_finished)
-
-
-func _on_priceboard_tween_finished() -> void:
-	_player.camera.top_level = _priceboard_camera_original_top_level
-	_player.camera.transform = _priceboard_camera_original_local
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	_in_priceboard_mode = false
-	var hud := get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("set_hud_visible"):
-		hud.set_hud_visible(true)
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if not is_multiplayer_authority():
-		return
-	if _in_priceboard_mode:
-		return
-
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Update stored yaw/pitch and re-apply the _player.head rotation as a single
-		# clean Euler vector. This avoids mixing rotate_x with rotation.y and
-		# keeps the _player.camera horizon level.
-		_look_yaw = wrap_angle(_look_yaw - event.relative.x * MOUSE_SENSITIVITY)
-		_look_pitch = clampf(
-			_look_pitch - event.relative.y * MOUSE_SENSITIVITY,
-			-PI / 2.1,
-			PI / 2.1,
-		)
-		_player.head.rotation = Vector3(_look_pitch, _look_yaw, 0)
-
-	if event.is_action_pressed("ui_cancel"):
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			if interaction != null:
-				interaction.set_primary_held(true)
-				interaction.primary_interact()
-		elif not event.pressed:
-			if interaction != null:
-				interaction.set_primary_held(false)
-
-	if event.is_action_pressed("secondary_interact") and \
-			Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		if interaction != null:
-			interaction.secondary_interact()
-
-
-func _process(delta: float) -> void:
-	# Remote players: interpolate toward network target and update animation
-	if not is_multiplayer_authority():
-		_time_since_sync += delta
-		# If no position RPC arrived recently, the authority has stopped
-		# moving — snap velocity to zero immediately so walk->idle is instant
-		if _time_since_sync > 0.15:
-			velocity = Vector3.ZERO
-		else:
-			# Decay velocity for smooth interpolation between RPCs
-			velocity = velocity.move_toward(Vector3.ZERO, 30.0 * delta)
-		# Smoothly interpolate toward the network target position
-		if _has_net_target:
-			var t := clampf(NET_LERP_SPEED * delta, 0.0, 1.0)
-			_player.global_position = _player.global_position.lerp(_net_target_pos, t)
-			global_rotation.y = lerp_angle(global_rotation.y, _net_target_rot.y, t)
-		# Update neck/_player.head bones so other players see where this player is looking.
-		# Apply immediately for this frame, then deferred after AnimationPlayer
-		# has updated so the pose isn't overwritten by the current animation.
-		if visuals != null and visuals.visible:
-			var neck_yaw := global_rotation.y + _net_head_yaw
-			visuals.set_look_target(neck_yaw, _net_head_pitch, global_rotation.y)
-		_update_anim()
-	else:
-		# Local player: update neck/_player.head bones based on _player.camera look direction.
-		# PlayerVisuals applies the pose in _physics_process after the
-		# AnimationPlayer has updated so the pose isn't overwritten.
-		if visuals != null and visuals.visible:
-			var cam_yaw := _player.head.global_rotation.y
-			var cam_pitch := _player.head.rotation.x
-			var body_yaw := global_rotation.y
-			visuals.set_look_target(cam_yaw, cam_pitch, body_yaw)
-		if interaction != null and not _money_mode:
-			interaction.poll_hint()
-			interaction.update_rapid_fire(delta)
-		_update_ghost()
-
-
-func _physics_process(delta: float) -> void:
-	if not is_multiplayer_authority():
-		# Remote players' position/rotation come from RPC sync
-		# instead of local physics simulation.
-		return
-	if _in_priceboard_mode:
-		velocity = Vector3.ZERO
-		move_and_slide()
-		_try_sync_position(delta)
-		return
-
-	if not is_on_floor():
-		velocity.y -= gravity * delta
-	else:
-		if Input.is_action_just_pressed("jump"):
-			velocity.y = jump_velocity
-
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	# Movement follows the _player.camera/_player.head direction so looking around still steers.
-	var direction := (_player.head.global__player.transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
-	var speed_bonus := UpgradeManager.get_effect_total("movement_speed")
-	var speed := (move_speed + speed_bonus) * (sprint_multiplier if _is_sprinting else 1.0)
-	velocity.x = direction.x * speed if direction else move_toward(velocity.x, 0, speed)
-	velocity.z = direction.z * speed if direction else move_toward(velocity.z, 0, speed)
-	move_and_slide()
-	_update_body_yaw(delta)
-	_try_sync_position(delta)
-	if interaction != null:
-		interaction.update_frame_lookups()
-	_update_ghost()
-	_update_anim()
-
-
-## Only sync position when the player has actually moved, rotated, or
-## changed their look direction beyond a threshold. While standing still
-## and not looking around, no RPCs are sent at all.
-## While moving, syncs are throttled to max 20/sec (0.05s interval).
-func _try_sync_position(delta: float) -> void:
-	_sync_pos_timer += delta
-	if _sync_pos_timer < SYNC_MIN_INTERVAL:
-		return
-	var pos_delta := _player.global_position.distance_to(_last_synced_pos)
-	var rot_delta := absf(global_rotation.y - _last_synced_rot.y)
-	var pitch_delta := absf(_player.head.rotation.x - _last_synced_pitch)
-	var yaw_delta := absf(_player.head.rotation.y - _last_synced_yaw)
-	if (
-		pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD \
-				and pitch_delta < 0.05
-		and yaw_delta < 0.05
-	):
-		return # Haven't moved/looked enough, skip
-	_sync_pos_timer = 0.0
-	_last_synced_pos = _player.global_position
-	_last_synced_rot = global_rotation
-	_last_synced_pitch = _player.head.rotation.x
-	_last_synced_yaw = _player.head.rotation.y
-	_sync_position.rpc(
-		_player.global_position,
-		global_rotation,
-		_is_sprinting,
-		_player.head.rotation.x,
-		_player.head.rotation.y,
-	)
-
-
-## After the _player.head turns past the neck limit, rotate the body to catch up.
-## The _player.camera stays steady because the body turn is subtracted from _look_yaw
-## and the _player.head is re-set as a clean Euler vector.
-func _update_body_yaw(delta: float) -> void:
-	if absf(_look_yaw) <= NECK_YAW_MAX:
-		return
-	var excess: float = _look_yaw - sign(_look_yaw) * NECK_YAW_MAX
-	var max_turn: float = NECK_YAW_CATCHUP_SPEED * delta
-	var turn: float = clampf(excess, -max_turn, max_turn)
-	rotation.y = wrap_angle(rotation.y + turn)
-	_look_yaw = wrap_angle(_look_yaw - turn)
-	_player.head.rotation = Vector3(_look_pitch, _look_yaw, 0)
-
-
-## Wrap an angle to the [-PI, PI] range.
-func wrap_angle(angle: float) -> float:
-	while angle > PI:
-		angle -= TAU
-	while angle < -PI:
-		angle += TAU
-	return angle
-
-
-## Simple position sync RPC. Only the authority sends; all other peers
-## receive and set the interpolation target (smoothed in _process).
-@rpc("authority", "call_local", "unreliable")
-func _sync_position(
-	pos: Vector3,
-	rot: Vector3,
-	sprinting: bool = false,
-	head_pitch: float = 0.0,
-	head_yaw: float = 0.0,
-) -> void:
-	if is_multiplayer_authority():
-		return # We're the authority, we already have the right position
-	# Compute velocity from position delta so animations work on remote players
-	var delta_pos := pos - _prev_sync_pos
-	velocity = delta_pos / (get_process_delta_time() if get_process_delta_time() > 0 else 0.016)
-	_prev_sync_pos = pos
-	_is_sprinting = sprinting
-	_time_since_sync = 0.0
-	# Set interpolation target instead of snapping directly
-	_net_target_pos = pos
-	_net_target_rot = rot
-	_has_net_target = true
-	# Update neck/_player.head bones on the remote player's visual model
-	_net_head_pitch = head_pitch
-	_net_head_yaw = head_yaw
+	EventBus.interaction_hint_changed.emit("Pitcher emptied!")
 
 
 func _place_cup_stack_from_box() -> void:
 	# Place ONE cup on the surface or add to existing stack.
 
 	# Get quantity from held box
-	var qty: int = int(_player.inventory.held_item_data.get("amount", 0))
+	var qty: int = int(_player.held_item_data.get("amount", 0))
 	if qty <= 0:
 		return
 
 	# Check if looking at existing stack
-	var interactable := interaction.get_looked_at_interactable() as Interactable
+	var interactable := _player.interaction.get_looked_at_interactable() as Interactable
 	if interactable is CupStack:
 		# Add one cup to existing stack
-		interaction.set_rapid_fire_cup_target(interactable as CupStack)
+		_player.interaction.set_rapid_fire_cup_target(interactable as CupStack)
 		interactable.add_cups(1)
 		_player.inventory.update_held_amount(float(qty - 1))
 		if qty - 1 <= 0:
@@ -601,7 +187,7 @@ func _place_cup_stack_from_box() -> void:
 		var hit_point := _player.ray.get_collision_point()
 		for node in get_tree().get_nodes_in_group("container"):
 			if node is CupStack:
-				var dist := (node as Node3D)._player.global_position.distance_to(hit_point)
+				var dist := (node as Node3D).global_position.distance_to(hit_point)
 				if dist < 0.08: # Smaller threshold for cups
 					EventBus.interaction_hint_changed.emit("Too close to existing cup stack!")
 					return
@@ -641,9 +227,9 @@ func _place_cup_stack_from_box() -> void:
 	# Remember this brand-new stack as the rapid-fire target so holding the
 	# mouse down keeps depositing into it, even before the raycast has had a
 	# chance to register its freshly-added (and quite small) collider.
-	interaction.set_rapid_fire_cup_target(stack as CupStack)
+	_player.interaction.set_rapid_fire_cup_target(stack as CupStack)
 
-	AudioManager.play_sfx(_get_place_sfx_key("cup_stack"), stack._player.global_position, -1.0, 0.05, 0.85)
+	AudioManager.play_sfx(_get_place_sfx_key("cup_stack"), stack.global_position, -1.0, 0.05, 0.85)
 	EventBus.container_placed.emit("cup_stack", stack)
 
 
@@ -652,12 +238,12 @@ func _update_single_cup_ghost() -> void:
 	# Destroy ghost if it's the wrong type for current held item
 	if _ghost != null:
 		var is_cup_stack_ghost: bool = _ghost.get_node_or_null("ItemGrid") != null
-		var should_be_stack: bool = _player.inventory.held_item == HeldItem.CUP_EMPTY
+		var should_be_stack: bool = _player.held_item == HeldItem.CUP_EMPTY
 		if is_cup_stack_ghost != should_be_stack:
 			_destroy_ghost()
 
 	if _ghost == null:
-		if _player.inventory.held_item == HeldItem.CUP_FILLED:
+		if _player.held_item == HeldItem.CUP_FILLED:
 			_ghost = CUP_SCENE.instantiate()
 			var placement_scale: Vector3 = Vector3.ONE * 0.03
 			_ghost.scale = placement_scale
@@ -693,8 +279,8 @@ func _update_single_cup_ghost() -> void:
 	var hit_point := _player.ray.get_collision_point()
 
 	# Check if looking at existing cup stack
-	var interactable := interaction.get_looked_at_interactable() as Interactable
-	if interactable is CupStack and _player.inventory.held_item == HeldItem.CUP_EMPTY:
+	var interactable := _player.interaction.get_looked_at_interactable() as Interactable
+	if interactable is CupStack and _player.held_item == HeldItem.CUP_EMPTY:
 		# For empty cups, hide ghost when looking at stack
 		_ghost.visible = false
 		_ghost_valid = true
@@ -709,14 +295,14 @@ func _update_single_cup_ghost() -> void:
 
 	# Filled cups can't go on ground
 	var is_ground := _is_ground_surface(collider)
-	if _player.inventory.held_item == HeldItem.CUP_FILLED and is_ground:
+	if _player.held_item == HeldItem.CUP_FILLED and is_ground:
 		_ghost.visible = true
 		_ghost_valid = false
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
-		_ghost._player.global_position = hit_point + Vector3(0, -_ghost.get_meta("bottom_offset", 0.0), 0)
+		_ghost.global_position = hit_point + Vector3(0, -_ghost.get_meta("bottom_offset", 0.0), 0)
 		return
 
-	_ghost._player.global_position = hit_point + Vector3(0, -_ghost.get_meta("bottom_offset", 0.0), 0)
+	_ghost.global_position = hit_point + Vector3(0, -_ghost.get_meta("bottom_offset", 0.0), 0)
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
 	if look_dir.length_squared() > 0.001:
@@ -776,7 +362,7 @@ func _place_filled_cup() -> void:
 		EventBus.interaction_hint_changed.emit("Cannot place here - invalid position!")
 		return
 
-	var recipe: Dictionary = _player.inventory.held_item_data.get("recipe", { })
+	var recipe: Dictionary = _player.held_item_data.get("recipe", { })
 	var placement_scale := Vector3.ONE * 0.03
 	# Calculate position before spawning
 	var hit_point := _player.ray.get_collision_point()
@@ -800,7 +386,7 @@ func _place_filled_cup() -> void:
 	if cup:
 		cup.scale = placement_scale
 		cup.add_to_group("container")
-		# Ensure collision is active and on the interaction layer
+		# Ensure collision is active and on the _player.interaction layer
 		if cup.physics != null:
 			cup.physics.collision_layer = 1
 			cup.physics.collision_mask = 1
@@ -816,12 +402,12 @@ func _place_filled_cup() -> void:
 
 func _place_held_supply_box_on(place_pos: Vector3, place_rot: Vector3 = Vector3.ZERO) -> SupplyBox:
 	var state: Dictionary = { }
-	if _player.inventory.held_item_data.get("is_equipment", false):
+	if _player.held_item_data.get("is_equipment", false):
 		state["is_equipment"] = true
-		state["equipment_type"] = _player.inventory.held_item_data.get("equipment_type", "")
+		state["equipment_type"] = _player.held_item_data.get("equipment_type", "")
 	else:
-		state["ingredient_type"] = _player.inventory.held_item_data.get("ingredient_type", "lemon")
-		state["quantity"] = _player.inventory.held_item_data.get("amount", 1.0)
+		state["ingredient_type"] = _player.held_item_data.get("ingredient_type", "lemon")
+		state["quantity"] = _player.held_item_data.get("amount", 1.0)
 	var box := WorldSync.request_spawn(
 		"res://scenes/objects/supply_box.tscn",
 		place_pos,
@@ -846,15 +432,15 @@ func _regenerate_stack_offset() -> void:
 func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
 	var top := base
 	var top_y := _get_box_stack_y(base)
-	var base_pos := base._player.global_position
+	var base_pos := base.global_position
 	for node in get_tree().get_nodes_in_group("supply_box"):
 		if not is_instance_valid(node) or node == base:
 			continue
 		var box := node as SupplyBox
 		if box == null:
 			continue
-		var dx := absf(box._player.global_position.x - base_pos.x)
-		var dz := absf(box._player.global_position.z - base_pos.z)
+		var dx := absf(box.global_position.x - base_pos.x)
+		var dz := absf(box.global_position.z - base_pos.z)
 		if dx < SupplyBox.stack_radius and dz < SupplyBox.stack_radius:
 			var box_y := _get_box_stack_y(box)
 			if box_y > top_y:
@@ -866,7 +452,7 @@ func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
 func _get_box_stack_y(box: SupplyBox) -> float:
 	if box.has_meta("fall_target_y"):
 		return box.get_meta("fall_target_y") as float
-	return box._player.global_position.y
+	return box.global_position.y
 
 
 func _get_delivery_grid_from_collider(collider: Node) -> DeliveryGrid:
@@ -921,7 +507,7 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 		_stack_target_id = top.get_instance_id()
 		_regenerate_stack_offset()
 	var top_y := _get_box_stack_y(top)
-	var place_pos := Vector3(top._player.global_position.x, top_y, top._player.global_position.z) + Vector3(
+	var place_pos := Vector3(top.global_position.x, top_y, top.global_position.z) + Vector3(
 		0,
 		SupplyBox.stack_height,
 		0,
@@ -941,18 +527,22 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 
 func _drop_held_box() -> void:
 	var state: Dictionary = { }
-	if _player.inventory.held_item_data.get("is_equipment", false):
+	if _player.held_item_data.get("is_equipment", false):
 		state["is_equipment"] = true
-		state["equipment_type"] = _player.inventory.held_item_data.get("equipment_type", "")
+		state["equipment_type"] = _player.held_item_data.get("equipment_type", "")
 	else:
-		state["ingredient_type"] = _player.inventory.held_item_data.get("ingredient_type", "lemon")
-		state["quantity"] = _player.inventory.held_item_data.get("amount", 1.0)
+		state["ingredient_type"] = _player.held_item_data.get("ingredient_type", "lemon")
+		state["quantity"] = _player.held_item_data.get("amount", 1.0)
 	# Drop exactly where the raycast hits, or 0.8 m ahead if not hitting anything.
 	var drop_pos: Vector3
 	if _player.ray.is_colliding():
 		drop_pos = _player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
 	else:
-		drop_pos = _player.global_position + (-_player.transform.basis.z * 0.8) + Vector3(0, 0.15, 0)
+		drop_pos = _player.global_position + (-_player.transform.basis.z * 0.8) + Vector3(
+			0,
+			0.15,
+			0,
+		)
 	var box := WorldSync.request_spawn(
 		"res://scenes/objects/supply_box.tscn",
 		drop_pos,
@@ -971,8 +561,8 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 		"is_trash_box": true,
 		"ingredient_type": "trash",
 		"quantity": 0.0,
-		"trash_value": _player.inventory.held_item_data.get("trash_value", 0.0),
-		"trash_type": _player.inventory.held_item_data.get("trash_type", "empty_box"),
+		"trash_value": _player.held_item_data.get("trash_value", 0.0),
+		"trash_type": _player.held_item_data.get("trash_type", "empty_box"),
 	}
 	var drop_pos: Vector3
 	if place_pos != Vector3.ZERO:
@@ -980,7 +570,11 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	elif _player.ray.is_colliding() and _is_placement_surface(_player.ray.get_collider()):
 		drop_pos = _player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
 	else:
-		drop_pos = _player.global_position + (-_player.transform.basis.z * 0.8) + Vector3(0, 0.15, 0)
+		drop_pos = _player.global_position + (-_player.transform.basis.z * 0.8) + Vector3(
+			0,
+			0.15,
+			0,
+		)
 	var box := WorldSync.request_spawn(
 		"res://scenes/objects/supply_box.tscn",
 		drop_pos,
@@ -994,8 +588,6 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	_player.inventory.clear_held()
 
 
-## Not every container type has its own placement sound recorded — fall back
-## to the generic "table" sound for the ones that don't.
 func _get_place_sfx_key(container_type: String) -> String:
 	match container_type:
 		"pitcher", "press", "fruit_bin":
@@ -1008,13 +600,13 @@ func _place_equipment_from_box() -> void:
 	if not _ghost_valid or _ghost == null:
 		EventBus.interaction_hint_changed.emit("Can only place on stand or workstation!")
 		return
-	var equipment_type: String = _player.inventory.held_item_data.get("equipment_type", "")
+	var equipment_type: String = _player.held_item_data.get("equipment_type", "")
 	var scene_path: String = CONTAINER_SCENE_PATHS.get(equipment_type, "")
 	if scene_path == "":
 		push_warning("Unknown equipment type: " + equipment_type)
 		return
 	# Use same position as ghost (already includes collision offset)
-	var place_pos := _ghost._player.global_position
+	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
 	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
 	var state: Dictionary = { }
@@ -1038,10 +630,6 @@ func _place_equipment_from_box() -> void:
 	_player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 	AudioManager.play_sfx(_get_place_sfx_key(equipment_type), place_pos, -1.0, 0.05, 0.85)
 	EventBus.container_placed.emit(equipment_type, instance)
-
-# ==========================================================================
-#  CONTAINER PLACEMENT SYSTEM
-# ==========================================================================
 
 
 func hold_container(
@@ -1081,7 +669,7 @@ func hold_container(
 		hand_mesh,
 	)
 
-	EventBus.held_item_changed.emit(int(_player.inventory.held_item), _player.inventory.held_item_data)
+	EventBus.held_item_changed.emit(int(_player.held_item), _player.held_item_data)
 	_create_ghost(container_type)
 
 
@@ -1170,6 +758,27 @@ func _set_container_starting_state(
 				pitcher.cups_poured = saved_recipe.get("cups_poured", 0)
 
 
+func _refresh_held_container_mesh() -> void:
+	if _player._held_mesh and is_instance_valid(_player._held_mesh):
+		_player._held_mesh.queue_free()
+		_player._held_mesh = null
+	var container_type: String = _player.held_item_data.get("container_type", "")
+	var has_liquid: bool = _player.held_item_data.get("has_liquid", false)
+	var saved_recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
+	var saved_amount: float = _player.held_item_data.get("saved_amount", 0.0)
+	var saved_count: int = _player.held_item_data.get("saved_count", 0)
+	var new_mesh: Node3D = _create_container_hand_mesh(
+		container_type,
+		has_liquid,
+		saved_recipe,
+		saved_amount,
+		saved_count,
+	)
+	if new_mesh:
+		_player._held_mesh = new_mesh
+		_player.hand_slot.add_child(_player._held_mesh)
+
+
 func _disable_hand_collision(node: Node) -> void:
 	# Recursively disable collision on all physics bodies.
 	if node is CollisionObject3D:
@@ -1224,8 +833,8 @@ func _create_ghost(container_type: String) -> void:
 	_ghost.set_meta("bottom_offset", bottom_offset * placement_scale.y)
 	# Set starting state so the ghost's _ready() shows the correct item
 	# count and label, matching what will actually be placed.
-	var saved_amount: float = _player.inventory.held_item_data.get("saved_amount", 0.0)
-	var saved_count: int = _player.inventory.held_item_data.get("saved_count", 0)
+	var saved_amount: float = _player.held_item_data.get("saved_amount", 0.0)
+	var saved_count: int = _player.held_item_data.get("saved_count", 0)
 	_set_container_starting_state(_ghost, container_type, saved_amount, saved_count)
 	# Disable all physics on the ghost so it can't collide or be raycast-hit
 	_disable_physics(_ghost)
@@ -1291,7 +900,7 @@ func _update_cup_box_ghost() -> void:
 		node = node.get_parent()
 
 	# Check if looking at existing cup stack - hide ghost in that case
-	var interactable := interaction.get_looked_at_interactable() as Interactable
+	var interactable := _player.interaction.get_looked_at_interactable() as Interactable
 	if interactable is CupStack:
 		_destroy_ghost()
 		_ghost_valid = true # Valid to add to existing
@@ -1304,15 +913,15 @@ func _update_cup_box_ghost() -> void:
 
 	var is_ground := _is_ground_surface(collider)
 	if is_ground:
-		# Floor — show box ghost but invalid (cup boxes can't go on floor)
+		# Floor ΓÇö show box ghost but invalid (cup boxes can't go on floor)
 		_ensure_box_ghost()
-		_ghost._player.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
 		_ghost.visible = true
 		_ghost_valid = false
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
 		return
 
-	# Workstation/stand — show cup stack ghost
+	# Workstation/stand ΓÇö show cup stack ghost
 	if _ghost == null or _ghost.get_meta("ghost_type", "") != "cup_stack":
 		_destroy_ghost()
 		_ghost = CUP_STACK_SCENE.instantiate()
@@ -1328,7 +937,7 @@ func _update_cup_box_ghost() -> void:
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		get_tree().current_scene.add_child(_ghost)
 
-	_ghost._player.global_position = hit_point + Vector3(0, -_ghost.get_meta("bottom_offset", 0.0), 0)
+	_ghost.global_position = hit_point + Vector3(0, -_ghost.get_meta("bottom_offset", 0.0), 0)
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
 	if look_dir.length_squared() > 0.001:
@@ -1350,7 +959,7 @@ func _update_grid_ghost(grid: DeliveryGrid, hit_point: Vector3) -> void:
 	var target_id := grid.get_instance_id() + cell_idx
 	if target_id != _stack_target_id:
 		_stack_target_id = target_id
-	_ghost._player.global_position = grid.get_slot_position(cell_idx)
+	_ghost.global_position = grid.get_slot_position(cell_idx)
 	_ghost.global_rotation = grid.get_slot_rotation(cell_idx)
 	_ghost.visible = true
 	_ghost_valid = true
@@ -1379,7 +988,7 @@ func _update_supply_box_ghost() -> void:
 	var collider := _player.ray.get_collider()
 	var hit_point := _player.ray.get_collision_point()
 
-	# Check if looking at another SupplyBox — stack on top
+	# Check if looking at another SupplyBox ΓÇö stack on top
 	var node: Node = collider
 	var target_box: SupplyBox = null
 	while node != null:
@@ -1396,18 +1005,18 @@ func _update_supply_box_ghost() -> void:
 			_regenerate_stack_offset()
 		var ghost_y := _get_box_stack_y(target_box)
 		var stack_base := Vector3(
-			target_box._player.global_position.x,
+			target_box.global_position.x,
 			ghost_y,
-			target_box._player.global_position.z,
+			target_box.global_position.z,
 		) + Vector3(0, SupplyBox.stack_height, 0)
-		_ghost._player.global_position = stack_base + _stack_offset
+		_ghost.global_position = stack_base + _stack_offset
 		_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
 		_ghost.visible = true
 		_ghost_valid = true
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		return
 
-	# Check if looking at the delivery grid — snap to the nearest cell
+	# Check if looking at the delivery grid ΓÇö snap to the nearest cell
 	var grid_node: Node = collider
 	while grid_node != null:
 		if grid_node is DeliveryGrid:
@@ -1424,14 +1033,14 @@ func _update_supply_box_ghost() -> void:
 		return
 
 	_stack_target_id = -1
-	_ghost._player.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
+	_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
 	_ghost.visible = true
 	_ghost_valid = true
 	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 
 
 func _update_equipment_box_ghost() -> void:
-	var equipment_type: String = _player.inventory.held_item_data.get("equipment_type", "")
+	var equipment_type: String = _player.held_item_data.get("equipment_type", "")
 	if equipment_type == "":
 		return
 
@@ -1444,7 +1053,7 @@ func _update_equipment_box_ghost() -> void:
 	var collider := _player.ray.get_collider()
 	var hit_point := _player.ray.get_collision_point()
 
-	# Check if looking at another SupplyBox — stack on top (box ghost)
+	# Check if looking at another SupplyBox ΓÇö stack on top (box ghost)
 	var node: Node = collider
 	while node != null:
 		if node is SupplyBox:
@@ -1455,8 +1064,8 @@ func _update_equipment_box_ghost() -> void:
 				_stack_target_id = target_id
 				_regenerate_stack_offset()
 			_ensure_box_ghost()
-			var stack_base := target_box._player.global_position + Vector3(0, SupplyBox.stack_height, 0)
-			_ghost._player.global_position = stack_base + _stack_offset
+			var stack_base := target_box.global_position + Vector3(0, SupplyBox.stack_height, 0)
+			_ghost.global_position = stack_base + _stack_offset
 			_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
 			_ghost.visible = true
 			_ghost_valid = true
@@ -1464,7 +1073,7 @@ func _update_equipment_box_ghost() -> void:
 			return
 		node = node.get_parent()
 
-	# Check if looking at the delivery grid — show box ghost on the grid.
+	# Check if looking at the delivery grid ΓÇö show box ghost on the grid.
 	var grid_node: Node = collider
 	while grid_node != null:
 		if grid_node is DeliveryGrid:
@@ -1475,7 +1084,7 @@ func _update_equipment_box_ghost() -> void:
 	var on_surface := _is_placement_surface(collider)
 	var is_ground := _is_ground_surface(collider)
 
-	# Workstations are tables — they can only be placed on the floor.
+	# Workstations are tables ΓÇö they can only be placed on the floor.
 	if equipment_type == "workstation":
 		if not is_ground:
 			_destroy_ghost()
@@ -1488,7 +1097,7 @@ func _update_equipment_box_ghost() -> void:
 			_stack_target_id = -1
 			return
 		var ws_offset: float = _ghost.get_meta("bottom_offset", 0.0)
-		_ghost._player.global_position = hit_point + Vector3(0, -ws_offset, 0)
+		_ghost.global_position = hit_point + Vector3(0, -ws_offset, 0)
 		var look_dir := _player.global_position - hit_point
 		look_dir.y = 0
 		if look_dir.length_squared() > 0.001:
@@ -1506,22 +1115,22 @@ func _update_equipment_box_ghost() -> void:
 		return
 
 	if is_ground:
-		# Floor placement for other equipment — just drop the box
+		# Floor placement for other equipment ΓÇö just drop the box
 		_ensure_box_ghost()
-		_ghost._player.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
 		_ghost.visible = true
 		_ghost_valid = true
 		_stack_target_id = -1
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 	else:
-		# Other equipment on a surface — show container ghost
+		# Other equipment on a surface ΓÇö show container ghost
 		_ensure_container_ghost(equipment_type)
 		if _ghost == null:
 			_ghost_valid = false
 			_stack_target_id = -1
 			return
 		var equip_offset: float = _ghost.get_meta("bottom_offset", 0.0)
-		_ghost._player.global_position = hit_point + Vector3(0, -equip_offset, 0)
+		_ghost.global_position = hit_point + Vector3(0, -equip_offset, 0)
 		var look_dir := _player.global_position - hit_point
 		look_dir.y = 0
 		if look_dir.length_squared() > 0.001:
@@ -1573,44 +1182,47 @@ func _ensure_container_ghost(container_type: String) -> void:
 
 func _update_ghost() -> void:
 	# Bin scoops don't have a placement ghost
-	if _player.inventory.held_item == HeldItem.SUPPLY_BOX and _player.inventory.held_item_data.get("source") == "bin_scoop":
+	if _player.held_item == HeldItem.SUPPLY_BOX and _player.held_item_data.get("source") == "bin_scoop":
 		if _ghost != null:
 			_destroy_ghost()
 		return
 	# Handle cup box ghost preview
-	if _player.inventory.held_item == HeldItem.SUPPLY_BOX and _player.inventory.held_item_data.get("ingredient_type") == "cups":
+	if _player.held_item == HeldItem.SUPPLY_BOX and _player.held_item_data.get("ingredient_type") == "cups":
 		_update_cup_box_ghost()
 		return
 	# Handle single cup ghost preview
-	if _player.inventory.held_item == HeldItem.CUP_EMPTY or _player.inventory.held_item == HeldItem.CUP_FILLED:
+	if _player.held_item == HeldItem.CUP_EMPTY or _player.held_item == HeldItem.CUP_FILLED:
 		_update_single_cup_ghost()
 		return
-	# Handle equipment box — show container ghost on workstation, box ghost on floor/boxes
-	if _player.inventory.held_item == HeldItem.SUPPLY_BOX and _player.inventory.held_item_data.get("is_equipment", false):
+	# Handle equipment box ΓÇö show container ghost on workstation, box ghost on floor/boxes
+	if _player.held_item == HeldItem.SUPPLY_BOX and _player.held_item_data.get(
+			"is_equipment",
+			false,
+		):
 		_update_equipment_box_ghost()
 		return
 	# Handle trash box ghost preview (only for empty box trash)
-	if _player.inventory.held_item == HeldItem.TRASH \
-			and _player.inventory.held_item_data.get("trash_type", "") == "empty_box":
+	if _player.held_item == HeldItem.TRASH \
+			and _player.held_item_data.get("trash_type", "") == "empty_box":
 		_update_supply_box_ghost()
 		return
-	if _player.inventory.held_item == HeldItem.TRASH:
+	if _player.held_item == HeldItem.TRASH:
 		_destroy_ghost()
 		return
 	# Handle generic supply box ghost (non-cup ingredient boxes or any supply box)
-	if _player.inventory.held_item == HeldItem.SUPPLY_BOX:
+	if _player.held_item == HeldItem.SUPPLY_BOX:
 		_update_supply_box_ghost()
 		return
-	if _player.inventory.held_item != HeldItem.CONTAINER or _ghost == null:
+	if _player.held_item != HeldItem.CONTAINER or _ghost == null:
 		return
 
 	# Pitcher snapping to press
-	var container_type: String = _player.inventory.held_item_data.get("container_type", "")
+	var container_type: String = _player.held_item_data.get("container_type", "")
 	if container_type == "pitcher":
-		var press := interaction.find_looked_at_press() as Press
+		var press := _player.interaction.find_looked_at_press() as Press
 		if press != null:
-			var recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
-			_ghost._player.global_position = press.get_snap_global_position()
+			var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
+			_ghost.global_position = press.get_snap_global_position()
 			_ghost.visible = true
 			if press.can_snap_pitcher(recipe):
 				_ghost_valid = true
@@ -1619,18 +1231,18 @@ func _update_ghost() -> void:
 				_ghost_valid = false
 				_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
 			return
-		var dispenser := interaction.find_looked_at_dispenser() as WaterDispenser
+		var dispenser := _player.interaction.find_looked_at_dispenser() as WaterDispenser
 		if dispenser != null:
-			var _recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
+			var _recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
 			if _ghost == null or _ghost.get_meta("container_type", "") != "pitcher":
 				_create_ghost("pitcher")
 			if _ghost != null and dispenser.can_snap_pitcher_from_recipe(_recipe):
-				_ghost._player.global_position = dispenser.get_snap_global_position()
+				_ghost.global_position = dispenser.get_snap_global_position()
 				_ghost.visible = true
 				_ghost_valid = true
 				_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 				return
-			# Can't snap — fall through to normal placement below
+			# Can't snap ΓÇö fall through to normal placement below
 
 	if not _player.ray.is_colliding():
 		_ghost.visible = false
@@ -1640,7 +1252,7 @@ func _update_ghost() -> void:
 	var collider := _player.ray.get_collider()
 	var hit_point := _player.ray.get_collision_point()
 	var _hit_normal := _player.ray.get_collision_normal()
-	var from_box: bool = _player.inventory.held_item_data.get("from_delivery_box", false)
+	var from_box: bool = _player.held_item_data.get("from_delivery_box", false)
 
 	# When holding an equipment box, allow stacking on other boxes
 	if from_box:
@@ -1649,14 +1261,14 @@ func _update_ghost() -> void:
 			if node is SupplyBox:
 				var box := node as SupplyBox
 				var box_offset: float = _ghost.get_meta("bottom_offset", 0.0)
-				_ghost._player.global_position = box._player.global_position + Vector3(0, 0.262 - box_offset, 0)
+				_ghost.global_position = box.global_position + Vector3(0, 0.262 - box_offset, 0)
 				_ghost.visible = true
 				_ghost_valid = true
 				_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 				return
 			node = node.get_parent()
 
-	# Containers cannot be placed on the delivery grid — only boxes can.
+	# Containers cannot be placed on the delivery grid ΓÇö only boxes can.
 	var grid_node: Node = collider
 	while grid_node != null:
 		if grid_node is DeliveryGrid:
@@ -1684,7 +1296,7 @@ func _update_ghost() -> void:
 	_ghost.visible = true
 	# Apply collision-based offset so ghost sits on surface
 	var offset: float = _ghost.get_meta("bottom_offset", 0.0)
-	_ghost._player.global_position = hit_point + Vector3(0, -offset, 0)
+	_ghost.global_position = hit_point + Vector3(0, -offset, 0)
 	# Keep ghost upright, face the player
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
@@ -1695,7 +1307,7 @@ func _update_ghost() -> void:
 	var overlapping := _check_ghost_overlap()
 	# Deployed containers (picked up from workstation) can't go on ground,
 	# except for workstations and water dispensers, which are floor-standing.
-	var deployed: bool = _player.inventory.held_item_data.get("deployed", false)
+	var deployed: bool = _player.held_item_data.get("deployed", false)
 	var valid := (
 		not overlapping
 		and (
@@ -1714,12 +1326,12 @@ func _try_place_container() -> Node3D:
 		EventBus.interaction_hint_changed.emit("Can only place on stand or workstation!")
 		return null
 
-	var container_type: String = _player.inventory.held_item_data.get("container_type", "")
+	var container_type: String = _player.held_item_data.get("container_type", "")
 	# Move the existing workstation instead of creating a new one, so attached items follow.
 	if container_type == "workstation":
-		var source_node: Node3D = _player.inventory.held_item_data.get("source_node") as Node3D
+		var source_node: Node3D = _player.held_item_data.get("source_node") as Node3D
 		if source_node != null and is_instance_valid(source_node):
-			var source_parent: Node = _player.inventory.held_item_data.get("source_parent") as Node
+			var source_parent: Node = _player.held_item_data.get("source_parent") as Node
 			if source_parent != null and is_instance_valid(source_parent):
 				source_parent.add_child(source_node)
 			else:
@@ -1731,13 +1343,13 @@ func _try_place_container() -> Node3D:
 			# reliable than separate move + show RPCs.
 			WorldSync.sync_move_and_show(
 				source_node,
-				source_node._player.global_position,
+				source_node.global_position,
 				source_node.global_rotation,
 				source_node.scale,
 				true,
 			)
 			EventBus.container_placed.emit(container_type, source_node)
-			AudioManager.play_sfx("table", source_node._player.global_position, -1.0, 0.05, 0.85)
+			AudioManager.play_sfx("table", source_node.global_position, -1.0, 0.05, 0.85)
 			_destroy_ghost()
 			_player.inventory.clear_held()
 			return source_node
@@ -1748,8 +1360,8 @@ func _try_place_container() -> Node3D:
 		return null
 
 	# Restore saved contents (or empty if none)
-	var saved_amount: float = _player.inventory.held_item_data.get("saved_amount", 0.0)
-	var saved_count: int = _player.inventory.held_item_data.get("saved_count", 0)
+	var saved_amount: float = _player.held_item_data.get("saved_amount", 0.0)
+	var saved_count: int = _player.held_item_data.get("saved_count", 0)
 	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(container_type, Vector3.ONE)
 	var state: Dictionary = {
 		"starting_amount": saved_amount,
@@ -1760,16 +1372,16 @@ func _try_place_container() -> Node3D:
 	# Include fruit bin amounts in spawn state so the host (and all
 	# clients) receive them. The host applies them after _ready().
 	if container_type == "fruit_bin":
-		var recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
+		var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
 		var amounts: Dictionary = recipe.get("fruit_amounts", { })
 		if not amounts.is_empty():
 			state["_net_fruit_amounts"] = amounts.duplicate()
 	# Include pitcher recipe in spawn state for the same reason.
 	if container_type == "pitcher":
-		var recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
+		var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
 		if not recipe.is_empty():
 			state["_net_pitcher_recipe"] = recipe.duplicate()
-	var place_pos := _ghost._player.global_position
+	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance == null:
@@ -1782,10 +1394,10 @@ func _try_place_container() -> Node3D:
 	if instance is Pitcher:
 		instance.add_to_group("pitcher")
 
-	# Restore fruit bin amounts after _ready() has run (host only —
+	# Restore fruit bin amounts after _ready() has run (host only ΓÇö
 	# clients receive them via the _net_fruit_amounts spawn state key)
 	if container_type == "fruit_bin" and instance is FruitBin:
-		var recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
+		var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
 		var amounts: Dictionary = recipe.get("fruit_amounts", { })
 		if not amounts.is_empty():
 			instance.fruit_amounts = amounts.duplicate()
@@ -1796,9 +1408,9 @@ func _try_place_container() -> Node3D:
 				))
 			WorldSync.sync_call(instance, "update_display")
 
-	# Restore pitcher recipe (always — water may have been added while holding)
+	# Restore pitcher recipe (always ΓÇö water may have been added while holding)
 	if container_type == "pitcher" and instance is Pitcher:
-		var recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
+		var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
 		instance.fruit_type = recipe.get("fruit_type", "")
 		instance.fruit_count = recipe.get("fruit_count", recipe.get("lemons", 0.0))
 		instance.sugar = recipe.get("sugar", 0.0)
@@ -1821,7 +1433,7 @@ func _try_place_container() -> Node3D:
 		EventBus.pitcher_state_changed.emit(int(instance.state))
 
 	_destroy_ghost()
-	var container_type_str: String = _player.inventory.held_item_data.get("container_type", "")
+	var container_type_str: String = _player.held_item_data.get("container_type", "")
 	_player.inventory.clear_held()
 	EventBus.container_placed.emit(container_type_str, instance)
 	AudioManager.play_sfx(_get_place_sfx_key(container_type_str), place_pos, -1.0, 0.05, 0.85)
@@ -1829,16 +1441,16 @@ func _try_place_container() -> Node3D:
 
 
 func _cancel_container_placement() -> void:
-	var container_type: String = _player.inventory.held_item_data.get("container_type", "")
+	var container_type: String = _player.held_item_data.get("container_type", "")
 	var cost := _get_container_cost(container_type)
 	# Restore the moved workstation and its attached items to where they were.
-	var source_node: Node3D = _player.inventory.held_item_data.get("source_node") as Node3D
+	var source_node: Node3D = _player.held_item_data.get("source_node") as Node3D
 	if source_node != null and is_instance_valid(source_node):
-		var original: Transform3D = (
-			_player.inventory.held_item_data.get("source_original_transform", source_node.global_transform)
-			as Transform3D
-		)
-		var source_parent: Node = _player.inventory.held_item_data.get("source_parent") as Node
+		var original: Transform3D = (_player.held_item_data.get(
+				"source_original_transform",
+				source_node.global_transform,
+			) as Transform3D)
+		var source_parent: Node = _player.held_item_data.get("source_parent") as Node
 		if source_node.get_parent() == null:
 			if source_parent != null and is_instance_valid(source_parent):
 				source_parent.add_child(source_node)
@@ -1849,7 +1461,7 @@ func _cancel_container_placement() -> void:
 		# Sync the restore + show to clients in a single RPC
 		WorldSync.sync_move_and_show(
 			source_node,
-			source_node._player.global_position,
+			source_node.global_position,
 			source_node.global_rotation,
 			source_node.scale,
 			true,
@@ -1857,17 +1469,17 @@ func _cancel_container_placement() -> void:
 	_destroy_ghost()
 	var refund_value := cost * 0.7
 	_player.inventory.make_held_trash(refund_value, container_type)
-	EventBus.interaction_hint_changed.emit("Recycled — take to trashcan for $%.2f" % refund_value)
+	EventBus.interaction_hint_changed.emit("Recycled ΓÇö take to trashcan for $%.2f" % refund_value)
 
 
 func pickup_container(interactable: Interactable, container_type: String) -> void:
-	# Workstations are tables — keep the original instance so items on top move with it.
+	# Workstations are tables ΓÇö keep the original instance so items on top move with it.
 	if container_type == "workstation":
 		_attach_items_to_workstation(interactable)
 		_disable_physics(interactable)
 		var source_parent := interactable.get_parent()
-		_player.inventory.held_item_data["source_parent"] = source_parent
-		_player.inventory.held_item_data["source_original_transform"] = interactable.global_transform
+		_player.held_item_data["source_parent"] = source_parent
+		_player.held_item_data["source_original_transform"] = interactable.global_transform
 		# Remember which items got attached so we can sync the attachment
 		# to all other peers (host + clients). Without this, only the local
 		# player has the items parented to the table.
@@ -1875,18 +1487,18 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 		for child in interactable.get_children():
 			if child.is_in_group("container"):
 				attached_items.append({ "name": child.name, "net_id": WorldSync.get_net_id(child) })
-		_player.inventory.held_item_data["workstation_attached_items"] = attached_items
+		_player.held_item_data["workstation_attached_items"] = attached_items
 		if not attached_items.is_empty():
 			WorldSync.sync_workstation_items(interactable.name, attached_items)
-		var pickup_pos := interactable._player.global_position
+		var pickup_pos := interactable.global_position
 		source_parent.remove_child(interactable)
 		# Hide the workstation on clients (it's "in the player's hands" now)
 		WorldSync.sync_hide_object(interactable)
 		EventBus.container_picked_up.emit(container_type, interactable)
 		AudioManager.play_sfx("table", pickup_pos)
 		hold_container(container_type, 0.0, 0, false, { })
-		_player.inventory.held_item_data["source_node"] = interactable
-		_player.inventory.held_item_data["deployed"] = true
+		_player.held_item_data["source_node"] = interactable
+		_player.held_item_data["deployed"] = true
 		return
 
 	# Save container state before picking up
@@ -1919,7 +1531,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 	var pickup_key: String = container_type
 	if pickup_key == "workstation":
 		pickup_key = "table"
-	AudioManager.play_sfx(pickup_key, interactable._player.global_position)
+	AudioManager.play_sfx(pickup_key, interactable.global_position)
 	# Despawn the container on all peers via WorldSync (host authority).
 	# This ensures the container is removed for everyone, not just the
 	# player who picked it up. Do this BEFORE removing the local copy so
@@ -1936,7 +1548,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 			interactable.queue_free()
 	hold_container(container_type, saved_amount, saved_count, has_liquid, saved_recipe)
 	# Mark as deployed (was already placed on a workstation) so it can't go on the floor
-	_player.inventory.held_item_data["deployed"] = true
+	_player.held_item_data["deployed"] = true
 
 
 func _find_customer_in_ancestors(node: Node) -> Customer:
@@ -1975,7 +1587,7 @@ func _get_container_type_for_node(node: Node) -> String:
 		return "press"
 	if node is FruitBin:
 		return "fruit_bin"
-	# WaterDispenser is a fixed appliance — it cannot be picked up
+	# WaterDispenser is a fixed appliance ΓÇö it cannot be picked up
 	var node_script: Script = node.get_script() as Script
 	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
@@ -2075,14 +1687,14 @@ func _check_ghost_overlap() -> bool:
 	if _ghost == null:
 		return false
 
-	# Get ghost's collision shape and transform
+	# Get ghost's collision shape and _player.transform
 	var ghost_shape := _get_collision_shape(_ghost)
 	if ghost_shape == null:
 		return false
 	var ghost_transform := _ghost.global_transform
 	var ghost_bounds_radius := _get_shape_radius(ghost_shape) * maxf(
-		ghost__player.transform.basis.get_scale().x,
-		ghost__player.transform.basis.get_scale().z,
+		ghost_transform.basis.get_scale().x,
+		ghost_transform.basis.get_scale().z,
 	)
 	var ghost_origin := ghost_transform.origin
 	var max_check_dist := ghost_bounds_radius + 2.0
@@ -2097,7 +1709,7 @@ func _check_ghost_overlap() -> bool:
 			continue
 
 		var other_node := node as Node3D
-		var other_origin := other_node._player.global_position
+		var other_origin := other_node.global_position
 		if ghost_origin.distance_to(other_origin) > max_check_dist:
 			continue
 
@@ -2118,12 +1730,12 @@ func _check_ghost_overlap() -> bool:
 		else:
 			# Fallback to sphere approximation using shape extents
 			var ghost_radius := _get_shape_radius(ghost_shape) * maxf(
-				ghost__player.transform.basis.get_scale().x,
-				ghost__player.transform.basis.get_scale().z,
+				ghost_transform.basis.get_scale().x,
+				ghost_transform.basis.get_scale().z,
 			)
 			var other_radius := _get_shape_radius(other_shape) * maxf(
-				other__player.transform.basis.get_scale().x,
-				other__player.transform.basis.get_scale().z,
+				other_transform.basis.get_scale().x,
+				other_transform.basis.get_scale().z,
 			)
 			var dist := ghost_transform.origin.distance_to(other_transform.origin)
 			if dist < (ghost_radius + other_radius):
@@ -2172,11 +1784,11 @@ func _boxes_intersect(
 	# Check if two oriented boxes intersect using AABB approximation.
 	# Simple AABB check in world space
 	var a_pos := a_transform.origin
-	var a_scale := a__player.transform.basis.get_scale()
+	var a_scale := a_transform.basis.get_scale()
 	var a_size := Vector3(a.size.x * a_scale.x, a.size.y * a_scale.y, a.size.z * a_scale.z)
 
 	var b_pos := b_transform.origin
-	var b_scale := b__player.transform.basis.get_scale()
+	var b_scale := b_transform.basis.get_scale()
 	var b_size := Vector3(b.size.x * b_scale.x, b.size.y * b_scale.y, b.size.z * b_scale.z)
 
 	# Check X, Y, Z overlap with small buffer
@@ -2199,8 +1811,8 @@ func _cylinders_intersect(
 	# Check if two cylinders intersect (horizontal distance check).
 	var a_pos := a_transform.origin
 	var b_pos := b_transform.origin
-	var a_scale := a__player.transform.basis.get_scale()
-	var b_scale := b__player.transform.basis.get_scale()
+	var a_scale := a_transform.basis.get_scale()
+	var b_scale := b_transform.basis.get_scale()
 	var a_radius := a.radius * maxf(a_scale.x, a_scale.z)
 	var b_radius := b.radius * maxf(b_scale.x, b_scale.z)
 	var buffer := 0.02
@@ -2266,15 +1878,8 @@ func _enable_physics(node: Node) -> void:
 		_enable_physics(child)
 
 
-func _set_visual_visible(node: Node, on: bool) -> void:
-	if node is GeometryInstance3D or node is CanvasItem:
-		node.visible = on
-	for child in node.get_children():
-		_set_visual_visible(child, on)
-
-
 func _attach_items_to_workstation(workstation: Node) -> void:
-	var table_pos := (workstation as Node3D)._player.global_position
+	var table_pos := (workstation as Node3D).global_position
 	for item in get_tree().get_nodes_in_group("container"):
 		if not is_instance_valid(item):
 			continue
@@ -2283,14 +1888,14 @@ func _attach_items_to_workstation(workstation: Node) -> void:
 		if not item is Node3D:
 			continue
 		# Only attach items that are direct children of the world root
-		# or WorldObjects — not items already parented to another
+		# or WorldObjects ΓÇö not items already parented to another
 		# workstation or the player.
 		var parent := (item as Node).get_parent()
 		if parent == null:
 			continue
 		if parent != get_tree().current_scene and parent.name != "WorldObjects":
 			continue
-		var pos := (item as Node3D)._player.global_position
+		var pos := (item as Node3D).global_position
 		if pos.y < table_pos.y + 0.8 or pos.y > table_pos.y + 1.5:
 			continue
 		if absf(pos.x - table_pos.x) > 1.0 or absf(pos.z - table_pos.z) > 1.0:
