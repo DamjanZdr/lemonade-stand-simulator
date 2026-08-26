@@ -327,18 +327,8 @@ func show_menu() -> void:
 			btn.scale = Vector2.ONE
 		_make_flat_button(btn)
 		_add_drop_shadow(btn)
-		print(
-			"[ShowMenu] btn=%s modulate=%s scale=%s visible=%s"
-			% [btn.name, btn.modulate, btn.scale, btn.visible]
-		)
-		print(
-			"[ShowMenu]   mouse_entered=%d mouse_exited=%d button_down=%d"
-			% [
-				btn.mouse_entered.get_connections().size(),
-				btn.mouse_exited.get_connections().size(),
-				btn.button_down.get_connections().size(),
-			]
-		)
+	# Re-enable all buttons (set_busy may have disabled them).
+	set_enabled(true)
 	# Animate buttons in
 	_animate_buttons_in()
 
