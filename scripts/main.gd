@@ -320,8 +320,71 @@ func _on_late_join_starting(peer_id: int) -> void:
 		return
 	print("[Main] Late join starting for peer %d" % peer_id)
 	_spawn_player_for_peer(peer_id)
+	# Also send a manual spawn RPC to the client in case the
+	# MultiplayerSpawner fails to replicate (which happens on
+	# repeated join/leave cycles).
+	var p := players_node.get_node_or_null(str(peer_id)) as Player
+	if p:
+		_spawn_player_on_client.rpc_id(
+			peer_id,
+			PLAYER_SCENE_PATH,
+			p.name,
+			p.global_position,
+			p.global_rotation,
+		)
 	_push_world_state_to_client(peer_id)
 	_start_late_join.rpc_id(peer_id, peer_id)
+
+
+## Manually spawn a player on a late-joining client. This is a fallback
+## for when the MultiplayerSpawner fails to replicate the spawn (which
+## happens on repeated join/leave cycles). The client creates the player
+## node directly and claims authority if it's their own.
+@rpc("authority", "reliable")
+func _spawn_player_on_client(
+	scene_path: String,
+	player_name: String,
+	spawn_pos: Vector3,
+	spawn_rot: Vector3,
+) -> void:
+	GameLog.log("[Main] _spawn_player_on_client received: %s" % player_name)
+	# If the spawner already created it, don't duplicate.
+	if players_node.has_node(player_name):
+		GameLog.log("[Main] Player %s already exists, skipping manual spawn" % player_name)
+		return
+	var scene := load(scene_path) as PackedScene
+	if scene == null:
+		GameLog.log("[Main] Failed to load player scene: %s" % scene_path)
+		return
+	var p: Player = scene.instantiate() as Player
+	p.name = player_name
+	players_node.add_child(p)
+	p.global_position = spawn_pos
+	p.global_rotation = spawn_rot
+	GameLog.log(
+		"[Main] Manually spawned player %s, authority=%d my_id=%d"
+		% [p.name, p.get_multiplayer_authority(), multiplayer.get_unique_id()]
+	)
+	# If this is our own player, claim authority and configure as local.
+	var name_peer: int = int(player_name) if player_name.is_valid_int() else 0
+	var is_local := name_peer == multiplayer.get_unique_id()
+	if is_local and not p.is_multiplayer_authority():
+		p.set_multiplayer_authority(name_peer)
+		var sync := p.get_node_or_null("PositionSync") as MultiplayerSynchronizer
+		if sync:
+			sync.set_multiplayer_authority(name_peer)
+		p._configure_local_player()
+		p.visuals.visible = false
+	# Set assigned stand from roster.
+	if is_local:
+		var stand := _stand_for_peer(multiplayer.get_unique_id())
+		if stand:
+			p.assigned_stand = stand
+			_assigned_stands[multiplayer.get_unique_id()] = stand
+		_on_local_player_ready(p)
+	else:
+		# Remote player — just cache it for WorldSync lookups.
+		WorldSync._node_cache[p.name] = p
 
 
 ## Tells a specific peer to transition from the late-join lobby into the game.
@@ -697,6 +760,10 @@ func _stand_for_peer(peer_id: int) -> StandUnit:
 
 
 func _on_local_player_ready(p: Player) -> void:
+	if _local_player != null and is_instance_valid(_local_player):
+		# Already set up — don't create a second outline system.
+		GameLog.log("[Main] _on_local_player_ready already called, skipping")
+		return
 	_local_player = p
 	# Spawn the screen-space outline overlay and hand it the local
 	# player's camera so it can mirror the transform every frame.
