@@ -112,6 +112,11 @@ var _transition_tween: Tween = null
 var _transition_blur_tween: Tween = null
 const TRANSITION_WHIP_TIME: float = 0.4
 const TRANSITION_SETTLE_TIME: float = 0.6
+# Mouse parallax for main menu camera.
+var _menu_cam_base_pos: Vector3 = Vector3.ZERO
+var _menu_cam_parallax_current: Vector2 = Vector2.ZERO
+const MENU_CAM_PARALLAX_STRENGTH: float = 0.8
+const MENU_CAM_PARALLAX_SMOOTH: float = 3.0
 
 
 ## Returns the camera node for the given stand index. These are
@@ -240,6 +245,7 @@ func _enter_main_menu() -> void:
 	# Use the MainMenuCamera as the active camera.
 	if main_menu_camera:
 		main_menu_camera.current = true
+		_menu_cam_base_pos = main_menu_camera.global_position
 	if lobby_camera:
 		lobby_camera.current = false
 	# Hide the HUD and lobby UI during the menu.
@@ -1245,12 +1251,40 @@ func _on_debug_set_rain(enabled: bool) -> void:
 		_world_env.environment.tonemap_exposure = exposure
 
 
+## Subtle mouse parallax for the main menu camera.
+## Offsets the camera position slightly based on mouse position
+## relative to the screen center, smoothed for a living feel.
+func _menu_cam_parallax(delta: float) -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var mouse_pos := get_viewport().get_mouse_position()
+	# Normalize to -1..1 range from screen center.
+	var target := Vector2(
+		(mouse_pos.x / viewport_size.x - 0.5),
+		(mouse_pos.y / viewport_size.y - 0.5),
+	)
+	# Smooth toward target.
+	_menu_cam_parallax_current = _menu_cam_parallax_current.lerp(
+		target,
+		clamp(delta * MENU_CAM_PARALLAX_SMOOTH, 0.0, 1.0),
+	)
+	# Apply offset to camera position (invert Y so up = up).
+	var offset := Vector3(
+		_menu_cam_parallax_current.x * MENU_CAM_PARALLAX_STRENGTH,
+		-_menu_cam_parallax_current.y * MENU_CAM_PARALLAX_STRENGTH,
+		0.0,
+	)
+	main_menu_camera.global_position = _menu_cam_base_pos + offset
+
+
 func _process(_delta: float) -> void:
 	if _fps_shown and _fps_label:
 		_fps_timer += _delta
 		if _fps_timer >= 0.25:
 			_fps_timer = 0.0
 			_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+	# Mouse parallax on main menu camera — subtle, smoothed.
+	if _game_state == MenuState.MAIN_MENU and main_menu_camera and not _transition_active:
+		_menu_cam_parallax(_delta)
 
 
 func _input(event: InputEvent) -> void:
