@@ -1,7 +1,7 @@
 class_name Player
 extends CharacterBody3D
 
-@export var move_speed: float = 3.5
+@export var move_speed: float = 3.0
 
 const HINT_GROUND := "Aim at ground to place"
 const HINT_STAND := "Aim at stand or workstation to place"
@@ -19,7 +19,7 @@ var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
 
 @export var gravity: float = 9.8
-@export var sprint_multiplier: float = 2.57
+@export var sprint_multiplier: float = 3.5
 @export var jump_velocity: float = 5.0
 @export var rapid_fire_interval: float = 0.35
 
