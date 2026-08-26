@@ -19,8 +19,10 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 @onready var _saves_button: Button = $MenuBox/SavesButton
 @onready var _join_button: Button = $MenuBox/JoinButton
 @onready var _join_panel: Control = $JoinPanel
-@onready var _join_field: LineEdit = $JoinPanel/JoinList/JoinField
+@onready var _join_field: LineEdit = $JoinPanel/JoinList/JoinInputRow/JoinField
 @onready var _join_submit: Button = $JoinPanel/JoinList/JoinSubmit
+@onready var _join_paste: Button = $JoinPanel/JoinList/JoinInputRow/PasteBtn
+@onready var _join_clear: Button = $JoinPanel/JoinList/JoinInputRow/ClearBtn
 @onready var _join_back: Button = $JoinPanel/JoinBack
 @onready var _quit_button: Button = $MenuBox/QuitButton
 @onready var _status_label: Label = $MenuBox/StatusLabel
@@ -67,6 +69,24 @@ func _ready() -> void:
 		func(_text):
 			_on_join_submit(),
 	)
+	_join_paste.pressed.connect(
+		func():
+			_on_button_click(
+				_join_paste,
+				func():
+					_join_field.text = DisplayServer.clipboard_get()
+					_join_field.caret_column = _join_field.text.length(),
+			),
+	)
+	_join_clear.pressed.connect(
+		func():
+			_on_button_click(
+				_join_clear,
+				func():
+					_join_field.text = ""
+					_join_field.grab_focus(),
+			),
+	)
 	_quit_button.pressed.connect(
 		func():
 			_on_button_click(
@@ -92,6 +112,12 @@ func _ready() -> void:
 	_make_flat_button(_join_submit)
 	_add_drop_shadow(_join_submit)
 	_setup_hover_effect(_join_submit)
+	_make_flat_button(_join_paste)
+	_add_drop_shadow(_join_paste)
+	_setup_hover_effect(_join_paste)
+	_make_flat_button(_join_clear)
+	_add_drop_shadow(_join_clear)
+	_setup_hover_effect(_join_clear)
 	_make_flat_button(_join_back)
 	_add_drop_shadow(_join_back)
 	_setup_hover_effect(_join_back)
