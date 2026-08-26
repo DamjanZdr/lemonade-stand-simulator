@@ -482,8 +482,32 @@ func _build_save_row(
 	panel_style.set_content_margin_all(10)
 	panel_style.set_corner_radius_all(4)
 	panel.add_theme_stylebox_override("panel", panel_style)
-	# Store base scale and set pivot for pop.
-	panel.set_meta("_base_scale", Vector2.ONE)
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	panel.add_child(row)
+	# Stand name button (large, yellow) — no own hover, panel handles it.
+	var btn := Button.new()
+	btn.custom_minimum_size = Vector2(0, 36)
+	btn.add_theme_font_size_override("font_size", 26)
+	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
+	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.text = stand_name
+	_make_flat_button(btn)
+	btn.pressed.connect(
+		func():
+			_on_button_click(
+				btn,
+				func():
+					_on_load_save(slot_name, stand_name),
+			),
+	)
+	row.add_child(btn)
+	# Info line: small, dim text under the name.
+	var info := Label.new()
+	info.add_theme_font_size_override("font_size", 14)
+	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
+	row.add_child(info)
 	# Hover: pop the whole panel + brighten border.
 	panel.mouse_entered.connect(
 		func():
@@ -515,32 +539,6 @@ func _build_save_row(
 			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
 					.set_ease(Tween.EASE_OUT),
 	)
-	var row := VBoxContainer.new()
-	row.add_theme_constant_override("separation", 2)
-	panel.add_child(row)
-	# Stand name button (large, yellow) — no own hover, panel handles it.
-	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(0, 36)
-	btn.add_theme_font_size_override("font_size", 26)
-	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	btn.text = stand_name
-	_make_flat_button(btn)
-	btn.pressed.connect(
-		func():
-			_on_button_click(
-				btn,
-				func():
-					_on_load_save(slot_name, stand_name),
-			),
-	)
-	row.add_child(btn)
-	# Info line: small, dim text under the name.
-	var info := Label.new()
-	info.add_theme_font_size_override("font_size", 14)
-	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
-	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
-	row.add_child(info)
 	outer.add_child(panel)
 	# Delete button — replaced by Yes/No inline when clicked.
 	var del_btn := Button.new()
