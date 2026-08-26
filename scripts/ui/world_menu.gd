@@ -11,7 +11,6 @@ signal load_stand_requested(slot_name: String)
 
 const HOVER_POP: float = 1.12
 const HOVER_DURATION: float = 0.18
-const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 
 @onready var _play_button: Button = $MenuBox/PlayButton
 @onready var _title_label: Label = $MenuBox/TitleBox/TitleLabel
@@ -356,25 +355,8 @@ func _on_name_entry_confirmed() -> void:
 	var name := _name_entry_field.text.strip_edges()
 	if name == "":
 		return
-	if _name_weight(name) > NAME_MAX_WEIGHT:
-		_name_entry_field.text = ""
-		_name_entry_dialog.set_text("Name is too long! Capitals count as 1.5 chars.")
-		_name_entry_dialog.popup_centered()
-		_name_entry_field.grab_focus()
-		return
 	set_busy("Creating '%s'..." % name)
 	new_stand_requested.emit(name)
-
-
-## Weighted character count: capitals count as 1.5, everything else as 1.
-func _name_weight(s: String) -> float:
-	var weight: float = 0.0
-	for ch in s:
-		if ch >= "A" and ch <= "Z":
-			weight += 1.5
-		else:
-			weight += 1.0
-	return weight
 
 
 ## Build the saves list dynamically from SaveManager.list_saves().
