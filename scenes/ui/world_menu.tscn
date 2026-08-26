@@ -58,7 +58,7 @@ alignment = 0
 
 [node name="TitleBox" type="VBoxContainer" parent="MenuBox"]
 layout_mode = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = -12
 
 [node name="TitleLabel" type="Label" parent="MenuBox/TitleBox"]
 layout_mode = 2
