@@ -31,10 +31,8 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 @onready var _slots_container: VBoxContainer = $SavesPanel/SavesList/SlotsContainer
 @onready var _new_stand_button: Button = $SavesPanel/SavesList/NewStandButton
 @onready var _saves_back: Button = $SavesPanel/SavesList/BackButton
-@onready var _confirm_dialog: ConfirmationDialog = $ConfirmDialog
 
 var _saves_data: Array = []
-var _pending_delete: String = ""
 var _menu_buttons: Array[Button] = []
 
 
@@ -75,11 +73,6 @@ func _ready() -> void:
 	_new_stand_button.pressed.connect(
 		func():
 			_on_button_click(_new_stand_button, _on_new_stand_pressed),
-	)
-	_confirm_dialog.confirmed.connect(_on_confirm_delete)
-	_confirm_dialog.canceled.connect(
-		func():
-			_pending_delete = "",
 	)
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	# Remove button backgrounds so they look like plain text, then wire hover.
@@ -491,7 +484,7 @@ func _build_save_row(
 			),
 	)
 	top_row.add_child(btn)
-	# Delete button.
+	# Delete button — replaced by Yes/No inline when clicked.
 	var del_btn := Button.new()
 	del_btn.custom_minimum_size = Vector2(70, 36)
 	del_btn.add_theme_font_size_override("font_size", 14)
@@ -501,15 +494,57 @@ func _build_save_row(
 	del_btn.text = "Delete"
 	_make_flat_button(del_btn)
 	_setup_hover_effect(del_btn)
+	# Yes/No container (hidden until Delete is pressed).
+	var confirm_row := HBoxContainer.new()
+	confirm_row.add_theme_constant_override("separation", 8)
+	confirm_row.visible = false
+	var yes_btn := Button.new()
+	yes_btn.custom_minimum_size = Vector2(50, 36)
+	yes_btn.add_theme_font_size_override("font_size", 14)
+	yes_btn.add_theme_color_override("font_color", Color(1, 0.3, 0.3, 0.9))
+	yes_btn.add_theme_color_override("font_hover_color", Color(1, 0.2, 0.2, 1))
+	yes_btn.text = "Yes"
+	_make_flat_button(yes_btn)
+	_setup_hover_effect(yes_btn)
+	yes_btn.pressed.connect(
+		func():
+			_on_button_click(
+				yes_btn,
+				func():
+					SaveManager.delete_slot(slot_name)
+					_refresh_saves(),
+			),
+	)
+	var no_btn := Button.new()
+	no_btn.custom_minimum_size = Vector2(50, 36)
+	no_btn.add_theme_font_size_override("font_size", 14)
+	no_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
+	no_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 0.8))
+	no_btn.text = "No"
+	_make_flat_button(no_btn)
+	_setup_hover_effect(no_btn)
+	no_btn.pressed.connect(
+		func():
+			_on_button_click(
+				no_btn,
+				func():
+					confirm_row.visible = false
+					del_btn.visible = true,
+			),
+	)
+	confirm_row.add_child(yes_btn)
+	confirm_row.add_child(no_btn)
 	del_btn.pressed.connect(
 		func():
 			_on_button_click(
 				del_btn,
 				func():
-					_on_delete_save(slot_name, stand_name),
+					del_btn.visible = false
+					confirm_row.visible = true,
 			),
 	)
 	top_row.add_child(del_btn)
+	top_row.add_child(confirm_row)
 	row.add_child(top_row)
 	# Info line: small, dim text under the name.
 	var info := Label.new()
@@ -523,17 +558,3 @@ func _build_save_row(
 func _on_load_save(slot_name: String, stand_name: String) -> void:
 	set_busy("Loading %s..." % stand_name)
 	load_stand_requested.emit(slot_name)
-
-
-func _on_delete_save(slot_name: String, stand_name: String) -> void:
-	_pending_delete = slot_name
-	_confirm_dialog.dialog_text = "Delete '%s'? This cannot be undone." % stand_name
-	_confirm_dialog.popup_centered()
-
-
-func _on_confirm_delete() -> void:
-	if _pending_delete == "":
-		return
-	SaveManager.delete_slot(_pending_delete)
-	_pending_delete = ""
-	_refresh_saves()
