@@ -417,10 +417,23 @@ func _finish_transition() -> void:
 		)
 	# Show the menu again (without animation — animation tween may not
 	# process reliably right after the transition tweens).
-	if _world_menu:
+	print("[Transition] _world_menu=%s valid=%s" % [_world_menu, is_instance_valid(_world_menu)])
+	if _world_menu and is_instance_valid(_world_menu):
 		_world_menu.show_menu_immediate()
 		_world_menu.set_status("")
 		_world_menu.set_enabled(true)
+		print("[Transition] Menu shown, visible=%s" % _world_menu.visible)
+		# Check MenuBox visibility
+		var menu_box := _world_menu.get_node_or_null("MenuBox")
+		if menu_box:
+			print(
+				"[Transition] MenuBox visible=%s modulate=%s"
+				% [menu_box.visible, menu_box.modulate]
+			)
+		else:
+			print("[Transition] MenuBox is NULL!")
+	else:
+		print("[Transition] _world_menu is NULL or invalid!")
 	# Ensure camera is exactly at the main menu position.
 	if main_menu_camera:
 		main_menu_camera.global_transform = _get_main_menu_cam_transform()
