@@ -16,83 +16,95 @@ grow_vertical = 2
 color = Color(0, 0, 0, 0.35)
 
 [node name="MenuBox" type="VBoxContainer" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -220.0
-offset_right = 200.0
-offset_bottom = 220.0
-grow_horizontal = 2
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = 80.0
+offset_right = 400.0
+offset_bottom = -80.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
-theme_override_constants/separation = 18
+theme_override_constants/separation = 8
+alignment = 0
 
 [node name="TitleLabel" type="Label" parent="MenuBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 56
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 42
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
 text = "Lemonade Stand"
 
 [node name="SubtitleLabel" type="Label" parent="MenuBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
 text = "Simulator"
 
 [node name="Spacer" type="Control" parent="MenuBox"]
-custom_minimum_size = Vector2(0, 8)
+custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 48)
-theme_override_font_sizes/font_size = 28
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 text = "Play"
 
 [node name="SavesButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 44)
-theme_override_font_sizes/font_size = 24
+custom_minimum_size = Vector2(0, 40)
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 text = "Saves"
 
 [node name="JoinButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 44)
-theme_override_font_sizes/font_size = 24
+custom_minimum_size = Vector2(0, 40)
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 text = "Join by ID"
 
 [node name="JoinRow" type="HBoxContainer" parent="MenuBox"]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
+offset_left = 20.0
 
 [node name="JoinField" type="LineEdit" parent="MenuBox/JoinRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 36)
 theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 1, 1, 0.9)
 placeholder_text = "Lobby ID..."
 
 [node name="JoinSubmit" type="Button" parent="MenuBox/JoinRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(100, 40)
-theme_override_font_sizes/font_size = 24
+custom_minimum_size = Vector2(80, 36)
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 text = "Join"
 
 [node name="StatusLabel" type="Label" parent="MenuBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-horizontal_alignment = 1
-autowrap_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 0.4, 0.8)
 text = ""
+
+[node name="Spacer2" type="Control" parent="MenuBox"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
 
 [node name="QuitButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 36)
 theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 0.8)
 text = "Quit"
 
 [node name="VersionLabel" type="Label" parent="."]
@@ -109,7 +121,7 @@ grow_horizontal = 0
 grow_vertical = 0
 horizontal_alignment = 2
 theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.243, 0.165, 0.078, 0.6)
+theme_override_colors/font_color = Color(1, 1, 1, 0.3)
 text = "v0.1.0"
 
 [node name="SavesPanel" type="Control" parent="."]
