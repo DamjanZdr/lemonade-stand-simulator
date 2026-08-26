@@ -6,6 +6,7 @@ extends Node
 ##   AudioManager.play_sfx("press_fruits", global_position, _press_duration)
 
 const SFX_DIR := "res://assets/audio/sfx/"
+const MUSIC_DIR := "res://assets/audio/music tracks/"
 const _PITCH_VARIATION: float = 0.05
 const _UI_PITCH_VARIATION: float = 0.02
 ## UI sounds (play_sfx_ui) play through a plain, non-positional
@@ -16,12 +17,17 @@ const _UI_PITCH_VARIATION: float = 0.02
 const UI_VOLUME_DB: float = -8.0
 
 var _streams: Dictionary = { }
+var _music_player: AudioStreamPlayer = null
 
 
 func _ready() -> void:
 	_ensure_buses()
 	_preload_all()
+	_preload_music()
 	EventBus.change_finalized.connect(_on_change_finalized)
+	# Start menu music immediately — it loops and persists across
+	# scene transitions since AudioManager is an autoload.
+	_play_music("Crinoline Dreams")
 
 
 ## Ensure SFX and Music buses exist (created at runtime so we don't
@@ -82,6 +88,46 @@ func _on_change_finalized(_earned: float) -> void:
 	var player := get_tree().get_first_node_in_group("player")
 	var pos: Vector3 = (player as Node3D).global_position if player else Vector3.ZERO
 	play_sfx("transaction_complete", pos, -1.0, 0.1)
+
+
+## Preload music tracks from the music directory.
+func _preload_music() -> void:
+	var dir := DirAccess.open(MUSIC_DIR)
+	if dir == null:
+		push_warning("AudioManager: could not open music dir '%s'" % MUSIC_DIR)
+		return
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".mp3"):
+			var key := file_name.get_basename()
+			var path := MUSIC_DIR + file_name
+			var stream := load(path) as AudioStreamMP3
+			if stream:
+				stream.loop = true
+				_streams["music_" + key] = stream
+		file_name = dir.get_next()
+	dir.list_dir_end()
+
+
+## Play a music track on the Music bus. Loops indefinitely.
+## Since AudioManager is an autoload, this persists across scene changes.
+func _play_music(track_name: String) -> void:
+	var key := "music_" + track_name
+	var stream: AudioStream = _streams.get(key)
+	if stream == null:
+		push_warning("AudioManager: music track '%s' not found" % track_name)
+		return
+	if _music_player and _music_player.playing:
+		if _music_player.stream == stream:
+			return # Already playing this track.
+		_music_player.stop()
+	if _music_player == null:
+		_music_player = AudioStreamPlayer.new()
+		_music_player.bus = "Music"
+		add_child(_music_player)
+	_music_player.stream = stream
+	_music_player.play()
 
 
 func play_sfx(
