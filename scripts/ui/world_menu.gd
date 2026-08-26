@@ -465,9 +465,19 @@ func _build_save_row(
 	day: int,
 	money: float,
 	date_text: String,
-) -> VBoxContainer:
+) -> PanelContainer:
+	# Outer panel with subtle outline.
+	var panel := PanelContainer.new()
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0, 0, 0, 0)
+	panel_style.border_color = Color(1, 1, 1, 0.15)
+	panel_style.set_border_width_all(1)
+	panel_style.set_content_margin_all(10)
+	panel_style.set_corner_radius_all(4)
+	panel.add_theme_stylebox_override("panel", panel_style)
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 2)
+	panel.add_child(row)
 	# Top row: stand name button (large, yellow) + delete button.
 	var top_row := HBoxContainer.new()
 	top_row.add_theme_constant_override("separation", 12)
@@ -566,7 +576,7 @@ func _build_save_row(
 	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
 	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
 	row.add_child(info)
-	return row
+	return panel
 
 
 func _on_load_save(slot_name: String, stand_name: String) -> void:
