@@ -56,6 +56,10 @@ func _ensure_buses() -> void:
 		AudioServer.add_bus()
 		AudioServer.set_bus_name(2, "Music")
 		AudioServer.set_bus_send(2, "Master")
+	# Default all volumes to 50%.
+	AudioServer.set_bus_volume_db(0, linear_to_db(0.5))
+	AudioServer.set_bus_volume_db(1, linear_to_db(0.5))
+	AudioServer.set_bus_volume_db(2, linear_to_db(0.5))
 
 
 func _preload_all() -> void:

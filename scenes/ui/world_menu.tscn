@@ -353,16 +353,16 @@ layout_mode = 2
 size_flags_horizontal = 0
 custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
-max_value = 1.0
+max_value = 0.5
 step = 0.01
-value = 1.0
+value = 0.5
 
 [node name="MasterValue" type="Label" parent="SettingsPanel/SettingsList/MasterRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(40, 0)
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(1, 1, 1, 0.5)
-text = "100"
+text = "50"
 horizontal_alignment = 2
 
 [node name="SFXRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
@@ -381,16 +381,16 @@ layout_mode = 2
 size_flags_horizontal = 0
 custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
-max_value = 1.0
+max_value = 0.5
 step = 0.01
-value = 1.0
+value = 0.5
 
 [node name="SFXValue" type="Label" parent="SettingsPanel/SettingsList/SFXRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(40, 0)
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(1, 1, 1, 0.5)
-text = "100"
+text = "50"
 horizontal_alignment = 2
 
 [node name="MusicRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
@@ -409,16 +409,16 @@ layout_mode = 2
 size_flags_horizontal = 0
 custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
-max_value = 1.0
+max_value = 0.5
 step = 0.01
-value = 1.0
+value = 0.5
 
 [node name="MusicValue" type="Label" parent="SettingsPanel/SettingsList/MusicRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(40, 0)
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(1, 1, 1, 0.5)
-text = "100"
+text = "50"
 horizontal_alignment = 2
 
 [node name="Spacer2" type="Control" parent="SettingsPanel/SettingsList"]
