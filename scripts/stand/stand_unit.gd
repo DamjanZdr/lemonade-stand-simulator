@@ -78,7 +78,7 @@ var highest_money: float = 0.0
 @onready var thermometer: Node3D = $Thermometer
 @onready var water_dispenser: Node3D = $WaterDispenser
 @onready var stand_mesh: Node3D = $Stand
-@onready var _sign_label: Label3D = get_node_or_null("stand/SignLabel")
+@onready var _sign_label: Label3D = get_node_or_null("Stand/stand/SignLabel")
 
 
 ## Networked (Stage B): host-authoritative stand state. Instead of a
