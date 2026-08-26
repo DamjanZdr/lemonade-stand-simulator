@@ -10,7 +10,8 @@ signal new_stand_requested(stand_name: String)
 signal load_stand_requested(slot_name: String)
 
 const HOVER_POP: float = 1.12
-const HOVER_DURATION: float = 0.08
+const HOVER_OVERSHOOT: float = 1.18
+const HOVER_DURATION: float = 0.18
 
 @onready var _play_button: Button = $MenuBox/PlayButton
 @onready var _title_label: Label = $MenuBox/TitleBox/TitleLabel
@@ -97,12 +98,16 @@ func _ready() -> void:
 	# Remove button backgrounds so they look like plain text, then wire hover.
 	for btn in _menu_buttons:
 		_make_flat_button(btn)
+		_add_drop_shadow(btn)
 		_setup_hover_effect(btn)
 	_make_flat_button(_join_submit)
+	_add_drop_shadow(_join_submit)
 	_setup_hover_effect(_join_submit)
 	_make_flat_button(_saves_back)
+	_add_drop_shadow(_saves_back)
 	_setup_hover_effect(_saves_back)
 	_make_flat_button(_new_stand_button)
+	_add_drop_shadow(_new_stand_button)
 	_setup_hover_effect(_new_stand_button)
 	# Size "Simulator" to match the width of "Lemonade Stand".
 	_fit_subtitle_width()
@@ -168,6 +173,16 @@ func _fit_subtitle_width() -> void:
 	_subtitle_label.add_theme_font_size_override("font_size", sub_size)
 
 
+## Add a drop shadow to a button's text.
+func _add_drop_shadow(btn: Button) -> void:
+	if btn == null:
+		return
+	btn.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
+	btn.add_theme_constant_override("shadow_offset_x", 2)
+	btn.add_theme_constant_override("shadow_offset_y", 2)
+	btn.add_theme_constant_override("shadow_outline_size", 4)
+
+
 ## Remove all stylebox backgrounds so the button looks like plain text.
 func _make_flat_button(btn: Button) -> void:
 	if btn == null:
@@ -195,7 +210,7 @@ func _setup_hover_effect(btn: Button) -> void:
 	)
 
 
-## Juicy centered scale "pop" on hover, with slight overshoot.
+## Juicy centered scale "pop" on hover — overshoots then settles.
 func _animate_hover(btn: Button, hover: bool) -> void:
 	if btn == null or not is_instance_valid(btn):
 		return
@@ -210,17 +225,20 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 	var base_scale: Vector2 = btn.get_meta("_base_scale")
 	var tw := create_tween()
 	btn.set_meta("_hover_tween", tw)
-	tw.set_parallel(true)
 	if hover:
-		# Overshoot pop for a juicy feel.
-		tw.tween_property(btn, "scale", base_scale * HOVER_POP, HOVER_DURATION) \
-				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), HOVER_DURATION) \
+		# Two-step bounce: snap to overshoot, then settle back.
+		tw.set_parallel(true)
+		tw.tween_property(btn, "scale", base_scale * HOVER_OVERSHOOT, 0.08) \
 				.set_ease(Tween.EASE_OUT)
-	else:
-		tw.tween_property(btn, "scale", base_scale, HOVER_DURATION) \
+		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.1) \
+				.set_ease(Tween.EASE_OUT)
+		tw.chain().tween_property(btn, "scale", base_scale * HOVER_POP, 0.1) \
 				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tw.tween_property(btn, "modulate", Color.WHITE, HOVER_DURATION) \
+	else:
+		tw.set_parallel(true)
+		tw.tween_property(btn, "scale", base_scale, 0.12) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "modulate", Color.WHITE, 0.12) \
 				.set_ease(Tween.EASE_OUT)
 
 

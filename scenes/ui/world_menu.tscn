@@ -55,12 +55,20 @@ theme_override_constants/separation = 0
 layout_mode = 2
 theme_override_font_sizes/font_size = 42
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/shadow_color = Color(0, 0, 0, 0.6)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_outline_size = 6
 text = "Lemonade Stand"
 
 [node name="SubtitleLabel" type="Label" parent="MenuBox/TitleBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 60
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/shadow_color = Color(0, 0, 0, 0.6)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/shadow_outline_size = 6
 text = "Simulator"
 
 [node name="Spacer" type="Control" parent="MenuBox"]
