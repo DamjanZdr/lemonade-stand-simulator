@@ -8,12 +8,12 @@
 [sub_resource type="ShaderMaterial" id="BlurMat"]
 shader = ExtResource("3_blur")
 shader_parameter/blur_radius = 12.0
-shader_parameter/fade_start = 0.3
+shader_parameter/fade_start = 0.5
 
 [sub_resource type="ShaderMaterial" id="DimFadeMat"]
 shader = ExtResource("4_dimfade")
 shader_parameter/dim_color = Color(0, 0, 0, 0.35)
-shader_parameter/fade_start = 0.3
+shader_parameter/fade_start = 0.5
 
 [node name="WorldMenu" type="CanvasLayer"]
 layer = 50
@@ -27,7 +27,7 @@ anchors_preset = 9
 anchor_bottom = 1.0
 offset_left = 0.0
 offset_top = 0.0
-offset_right = 420.0
+offset_right = 800.0
 offset_bottom = 0.0
 grow_vertical = 2
 material = SubResource("BlurMat")
@@ -38,7 +38,7 @@ anchors_preset = 9
 anchor_bottom = 1.0
 offset_left = 0.0
 offset_top = 0.0
-offset_right = 420.0
+offset_right = 800.0
 offset_bottom = 0.0
 grow_vertical = 2
 material = SubResource("DimFadeMat")

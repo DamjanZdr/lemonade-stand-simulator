@@ -30,13 +30,13 @@ enum MenuState {
 @onready var stand_unit: StandUnit = world.find_child("StandUnit", true, false) as StandUnit
 @onready var stand_unit2: StandUnit = world.find_child("StandUnit2", true, false) as StandUnit
 @onready var lobby_camera: Camera3D = $LobbyCamera
-@onready var main_menu_camera: Camera3D = $MainMenuCamera
+@onready var main_menu_camera: Camera3D = $MainMenuCameras/MainMenuCamera
 @onready var lobby_ui: Control = $LobbyUI
 @onready var lobby_player_models: Node3D = $LobbyPlayerModels
 @onready var lobby_cam_stand1: Camera3D = $LobbyCamStand1
 @onready var lobby_cam_stand2: Camera3D = $LobbyCamStand2
-@onready var stand_change_cam_end: Marker3D = $StandChangeCameraEnd
-@onready var stand_change_cam_start: Marker3D = $StandChangeCameraStart
+@onready var stand_change_cam_end: Marker3D = $MainMenuCameras/StandChangeCameraEnd
+@onready var stand_change_cam_start: Marker3D = $MainMenuCameras/StandChangeCameraStart
 @onready var _transition_blur_rect: ColorRect = $TransitionOverlay/BlurRect
 @onready var _transition_overlay: CanvasLayer = $TransitionOverlay
 
