@@ -23,6 +23,7 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 @onready var _join_submit: Button = $JoinPanel/JoinList/JoinSubmit
 @onready var _join_back: Button = $JoinPanel/JoinBack
 var _join_paste_btn: Button = null
+var _join_clear_btn: Button = null
 var _join_error_label: Label = null
 @onready var _quit_button: Button = $MenuBox/QuitButton
 @onready var _status_label: Label = $MenuBox/StatusLabel
@@ -69,7 +70,8 @@ func _ready() -> void:
 		func(_text):
 			_on_join_submit(),
 	)
-	# Inline Paste button inside the field, visible only when empty.
+	# Inline Paste/Clear button inside the field, at the right edge.
+	# Paste shows when empty, Clear shows when not empty.
 	_join_paste_btn = Button.new()
 	_join_paste_btn.text = "Paste"
 	_join_paste_btn.add_theme_font_size_override("font_size", 16)
@@ -79,18 +81,44 @@ func _ready() -> void:
 	_setup_hover_effect(_join_paste_btn)
 	_join_paste_btn.visible = false
 	_join_field.add_child(_join_paste_btn)
+	_join_clear_btn = Button.new()
+	_join_clear_btn.text = "Clear"
+	_join_clear_btn.add_theme_font_size_override("font_size", 16)
+	_join_clear_btn.add_theme_color_override("font_color", Color(1, 0.5, 0.5, 0.5))
+	_join_clear_btn.add_theme_color_override("font_hover_color", Color(1, 0.3, 0.3, 1))
+	_make_flat_button(_join_clear_btn)
+	_setup_hover_effect(_join_clear_btn)
+	_join_clear_btn.visible = false
+	_join_field.add_child(_join_clear_btn)
+	# Update button visibility based on field content.
+	var update_btns := func():
+		var empty := _join_field.text.strip_edges() == ""
+		_join_paste_btn.visible = empty
+		_join_clear_btn.visible = not empty
+		_position_join_inline_btns()
 	_join_paste_btn.pressed.connect(
 		func():
 			_on_button_click(
 				_join_paste_btn,
 				func():
 					_join_field.text = DisplayServer.clipboard_get()
-					_join_field.caret_column = _join_field.text.length(),
+					_join_field.caret_column = _join_field.text.length()
+					update_btns.call(),
+			),
+	)
+	_join_clear_btn.pressed.connect(
+		func():
+			_on_button_click(
+				_join_clear_btn,
+				func():
+					_join_field.text = ""
+					_join_field.grab_focus()
+					update_btns.call(),
 			),
 	)
 	_join_field.text_changed.connect(
-		func(new_text):
-			_join_paste_btn.visible = new_text.strip_edges() == "",
+		func(_new_text):
+			update_btns.call(),
 	)
 	# Error label for invalid ID.
 	_join_error_label = Label.new()
@@ -361,18 +389,26 @@ func _animate_buttons_in() -> void:
 		delay += 0.06
 
 
+## Position the inline Paste/Clear buttons at the right edge inside the field.
+func _position_join_inline_btns() -> void:
+	for btn: Button in [_join_paste_btn, _join_clear_btn]:
+		if btn and is_instance_valid(btn) and btn.visible:
+			btn.position = Vector2(
+				_join_field.size.x - btn.size.x - 8,
+				(_join_field.size.y - btn.size.y) / 2.0,
+			)
+
+
 func _toggle_join_row() -> void:
 	_join_panel.visible = true
 	$MenuBox.visible = false
 	_join_field.text = ""
 	_join_error_label.visible = false
 	_join_paste_btn.visible = true
-	# Position paste button at the right edge inside the field.
+	_join_clear_btn.visible = false
+	# Position buttons after the field has its size computed.
 	await get_tree().process_frame
-	_join_paste_btn.position = Vector2(
-		_join_field.size.x - _join_paste_btn.size.x - 8,
-		(_join_field.size.y - _join_paste_btn.size.y) / 2.0,
-	)
+	_position_join_inline_btns()
 	_join_field.grab_focus()
 
 
