@@ -465,9 +465,13 @@ func _build_save_row(
 	day: int,
 	money: float,
 	date_text: String,
-) -> PanelContainer:
-	# Outer panel with subtle outline.
+) -> HBoxContainer:
+	# Outer row: [Panel(box) | Delete/Yes/No]
+	var outer := HBoxContainer.new()
+	outer.add_theme_constant_override("separation", 12)
+	# Panel with subtle outline that highlights on hover.
 	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0, 0, 0, 0)
 	panel_style.border_color = Color(1, 1, 1, 0.15)
@@ -475,14 +479,30 @@ func _build_save_row(
 	panel_style.set_content_margin_all(10)
 	panel_style.set_corner_radius_all(4)
 	panel.add_theme_stylebox_override("panel", panel_style)
+	# Hover: brighten the border.
+	panel.mouse_entered.connect(
+		func():
+			if panel.has_meta("_border_tween") and panel.get_meta("_border_tween") is Tween:
+				(panel.get_meta("_border_tween") as Tween).kill()
+			var tw := create_tween()
+			panel.set_meta("_border_tween", tw)
+			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.4), 0.08) \
+					.set_ease(Tween.EASE_OUT),
+	)
+	panel.mouse_exited.connect(
+		func():
+			if panel.has_meta("_border_tween") and panel.get_meta("_border_tween") is Tween:
+				(panel.get_meta("_border_tween") as Tween).kill()
+			var tw := create_tween()
+			panel.set_meta("_border_tween", tw)
+			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.15), 0.12) \
+					.set_ease(Tween.EASE_OUT),
+	)
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 2)
 	panel.add_child(row)
-	# Top row: stand name button (large, yellow) + delete button.
-	var top_row := HBoxContainer.new()
-	top_row.add_theme_constant_override("separation", 12)
+	# Stand name button (large, yellow).
 	var btn := Button.new()
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.custom_minimum_size = Vector2(0, 36)
 	btn.add_theme_font_size_override("font_size", 26)
 	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
@@ -499,7 +519,14 @@ func _build_save_row(
 					_on_load_save(slot_name, stand_name),
 			),
 	)
-	top_row.add_child(btn)
+	row.add_child(btn)
+	# Info line: small, dim text under the name.
+	var info := Label.new()
+	info.add_theme_font_size_override("font_size", 14)
+	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
+	row.add_child(info)
+	outer.add_child(panel)
 	# Delete button — replaced by Yes/No inline when clicked.
 	var del_btn := Button.new()
 	del_btn.add_theme_font_size_override("font_size", 20)
@@ -567,16 +594,9 @@ func _build_save_row(
 					confirm_row.visible = true,
 			),
 	)
-	top_row.add_child(del_btn)
-	top_row.add_child(confirm_row)
-	row.add_child(top_row)
-	# Info line: small, dim text under the name.
-	var info := Label.new()
-	info.add_theme_font_size_override("font_size", 14)
-	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
-	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
-	row.add_child(info)
-	return panel
+	outer.add_child(del_btn)
+	outer.add_child(confirm_row)
+	return outer
 
 
 func _on_load_save(slot_name: String, stand_name: String) -> void:
