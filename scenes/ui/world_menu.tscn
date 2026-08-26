@@ -53,16 +53,16 @@ offset_right = 400.0
 offset_bottom = -80.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 alignment = 0
 
 [node name="TitleBox" type="VBoxContainer" parent="MenuBox"]
 layout_mode = 2
-theme_override_constants/separation = -12
+theme_override_constants/separation = -16
 
 [node name="TitleLabel" type="Label" parent="MenuBox/TitleBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 42
+theme_override_font_sizes/font_size = 56
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
 theme_override_colors/shadow_color = Color(0, 0, 0, 0.6)
 theme_override_constants/shadow_offset_x = 3
@@ -72,7 +72,7 @@ text = "Lemonade Stand"
 
 [node name="SubtitleLabel" type="Label" parent="MenuBox/TitleBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 60
+theme_override_font_sizes/font_size = 80
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
 theme_override_colors/shadow_color = Color(0, 0, 0, 0.6)
 theme_override_constants/shadow_offset_x = 3
@@ -81,13 +81,13 @@ theme_override_constants/shadow_outline_size = 6
 text = "Simulator"
 
 [node name="Spacer" type="Control" parent="MenuBox"]
-custom_minimum_size = Vector2(0, 24)
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
@@ -97,7 +97,7 @@ text = "Play"
 [node name="SavesButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
@@ -107,7 +107,7 @@ text = "Stands"
 [node name="JoinButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
@@ -130,7 +130,7 @@ text = ""
 [node name="SettingsButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
@@ -140,7 +140,7 @@ text = "Settings"
 [node name="QuitButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
@@ -220,11 +220,11 @@ anchor_top = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
 offset_left = 60.0
-offset_top = 390.0
+offset_top = 460.0
 offset_right = 500.0
-offset_bottom = 444.0
+offset_bottom = 508.0
 grow_vertical = 0
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
@@ -290,11 +290,11 @@ anchor_top = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
 offset_left = 60.0
-offset_top = 390.0
+offset_top = 460.0
 offset_right = 500.0
-offset_bottom = 444.0
+offset_bottom = 508.0
 grow_vertical = 0
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
@@ -504,7 +504,7 @@ offset_top = -70.0
 offset_right = 500.0
 offset_bottom = -16.0
 grow_vertical = 0
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)

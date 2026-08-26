@@ -628,6 +628,9 @@ func _on_return_to_menu() -> void:
 	NetworkManager.leave_game()
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
+	# Make sure lobby camera is the current one for the tween.
+	if lobby_camera:
+		lobby_camera.current = true
 	# Fade out lobby UI.
 	if lobby_ui:
 		var fade_tw := create_tween()
