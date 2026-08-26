@@ -415,15 +415,12 @@ func _finish_transition() -> void:
 				if _transition_overlay:
 					_transition_overlay.visible = false,
 		)
-	# Show the menu again.
+	# Show the menu again (without animation — animation tween may not
+	# process reliably right after the transition tweens).
 	if _world_menu:
-		print("[Transition] Showing menu, _world_menu.visible=%s" % _world_menu.visible)
-		_world_menu.show_menu()
+		_world_menu.show_menu_immediate()
 		_world_menu.set_status("")
 		_world_menu.set_enabled(true)
-		print("[Transition] After show_menu, _world_menu.visible=%s" % _world_menu.visible)
-	else:
-		print("[Transition] _world_menu is NULL!")
 	# Ensure camera is exactly at the main menu position.
 	if main_menu_camera:
 		main_menu_camera.global_transform = _get_main_menu_cam_transform()

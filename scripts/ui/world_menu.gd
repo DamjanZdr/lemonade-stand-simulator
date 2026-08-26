@@ -122,6 +122,18 @@ func show_menu() -> void:
 	_animate_buttons_in()
 
 
+## Show the menu without the stagger animation (used after transitions).
+func show_menu_immediate() -> void:
+	visible = true
+	_saves_panel.visible = false
+	_join_row.visible = false
+	_status_label.text = ""
+	# Make sure all buttons are fully visible immediately.
+	for btn in _menu_buttons:
+		if btn != null and is_instance_valid(btn):
+			btn.modulate = Color(1, 1, 1, 1)
+
+
 func hide_menu() -> void:
 	visible = false
 
