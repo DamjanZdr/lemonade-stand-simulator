@@ -243,7 +243,6 @@ offset_top = 44.0
 offset_right = 388.0
 offset_bottom = 76.0
 theme_override_font_sizes/font_size = 20
-max_length = 15
 placeholder_text = "e.g. Damjan's Lemonade"
 
 [node name="ConfirmDialog" type="ConfirmationDialog" parent="."]
