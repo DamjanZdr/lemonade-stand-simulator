@@ -258,6 +258,15 @@ func _enter_main_menu() -> void:
 		_world_menu.new_stand_requested.connect(_on_menu_new_stand)
 		_world_menu.load_stand_requested.connect(_on_menu_load_stand)
 	_world_menu.show_menu()
+	# Update stand sign: show the loaded stand name, or default text
+	# if no save is loaded yet (first launch).
+	var sign_text := GameState.stand_name
+	if sign_text == "":
+		sign_text = "🍋 LEMONADE STAND 🍋"
+	if stand_unit:
+		stand_unit.set_stand_name(sign_text)
+	if stand_unit2:
+		stand_unit2.set_stand_name(sign_text)
 	# Freeze game systems while in the menu.
 	_set_systems_paused(true)
 	# Connect network signals so we transition to the lobby when a
@@ -420,12 +429,15 @@ func _finish_transition() -> void:
 		)
 	# Show the menu again (without animation — animation tween may not
 	# process reliably right after the transition tweens).
-	print("[Transition] _world_menu=%s valid=%s" % [_world_menu, is_instance_valid(_world_menu)])
 	if _world_menu and is_instance_valid(_world_menu):
 		_world_menu.show_menu_immediate()
 		_world_menu.set_status("")
 		_world_menu.set_enabled(true)
-		print("[Transition] Menu shown, visible=%s" % _world_menu.visible)
+	# Update stand sign with the newly loaded stand name.
+	if stand_unit:
+		stand_unit.set_stand_name(GameState.stand_name)
+	if stand_unit2:
+		stand_unit2.set_stand_name(GameState.stand_name)
 		# Check MenuBox visibility
 		var menu_box := _world_menu.get_node_or_null("MenuBox")
 		if menu_box:
@@ -546,12 +558,8 @@ func _transition_to_lobby() -> void:
 		if lobby_ui:
 			lobby_ui.visible = true
 	# Update stand signs with the loaded stand name.
-	print("[Main] Setting stand signs to: %s" % GameState.stand_name)
 	if stand_unit:
 		stand_unit.set_stand_name(GameState.stand_name)
-		print("[Main] stand_unit sign set, get=%s" % stand_unit.get_stand_name())
-	else:
-		print("[Main] stand_unit is NULL")
 	if stand_unit2:
 		stand_unit2.set_stand_name(GameState.stand_name)
 	# Unfreeze game systems for the lobby phase (still no day cycle).
