@@ -110,8 +110,8 @@ var _transition_active: bool = false
 var _transition_loaded: bool = false
 var _transition_tween: Tween = null
 var _transition_blur_tween: Tween = null
-const TRANSITION_WHIP_TIME: float = 0.4
-const TRANSITION_SETTLE_TIME: float = 0.6
+const TRANSITION_WHIP_TIME: float = 0.5
+const TRANSITION_SETTLE_TIME: float = 0.8
 # Mouse parallax for main menu camera.
 var _menu_cam_base_pos: Vector3 = Vector3.ZERO
 var _menu_cam_parallax_current: Vector2 = Vector2.ZERO
@@ -423,7 +423,7 @@ func _do_transition_whip() -> void:
 	if _transition_tween:
 		_transition_tween.kill()
 	_transition_tween = create_tween()
-	_transition_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_transition_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	# Tween only position, keep rotation fixed to avoid dipping.
 	_transition_tween.tween_property(
 		main_menu_camera,
@@ -442,7 +442,7 @@ func _do_transition_whip() -> void:
 			var target := _get_main_menu_cam_transform()
 			print("[Transition] SETTLE to target pos=%s" % target.origin)
 			var settle := create_tween()
-			settle.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			settle.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 			settle.tween_property(
 				main_menu_camera,
 				"global_position",
