@@ -529,18 +529,17 @@ func _transition_to_lobby() -> void:
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tw.tween_property(main_menu_camera, "fov", target_fov, CAMERA_TWEEN_TIME) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		if lobby_ui:
-			tw.tween_property(lobby_ui, "modulate:a", 1.0, CAMERA_TWEEN_TIME * 0.7) \
-					.set_ease(Tween.EASE_OUT)
 		tw.chain().tween_callback(
 			func():
 				main_menu_camera.global_transform = target
 				main_menu_camera.fov = target_fov
 				main_menu_camera.current = false
-				lobby_camera.current = true
-				if lobby_ui:
-					lobby_ui.modulate = Color(1, 1, 1, 1),
+				lobby_camera.current = true,
 		)
+		# Fade in lobby UI right as the camera arrives.
+		if lobby_ui:
+			tw.tween_property(lobby_ui, "modulate:a", 1.0, 0.25) \
+					.set_ease(Tween.EASE_OUT)
 	else:
 		if lobby_camera:
 			lobby_camera.current = true
