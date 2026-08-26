@@ -31,8 +31,6 @@ const HOVER_DURATION: float = 0.18
 @onready var _new_stand_button: Button = $SavesPanel/SavesList/NewStandButton
 @onready var _saves_back: Button = $SavesPanel/SavesList/BackButton
 @onready var _confirm_dialog: ConfirmationDialog = $ConfirmDialog
-@onready var _name_entry_dialog: AcceptDialog = $NameEntryDialog
-@onready var _name_entry_field: LineEdit = $NameEntryDialog/NameEntry
 
 var _saves_data: Array = []
 var _pending_delete: String = ""
@@ -81,17 +79,6 @@ func _ready() -> void:
 	_confirm_dialog.canceled.connect(
 		func():
 			_pending_delete = "",
-	)
-	_name_entry_dialog.confirmed.connect(_on_name_entry_confirmed)
-	_name_entry_dialog.canceled.connect(
-		func():
-			_name_entry_field.text = "",
-	)
-	# Allow Enter in the line edit to confirm the dialog.
-	_name_entry_field.text_submitted.connect(
-		func(_text):
-			_name_entry_dialog.hide()
-			_on_name_entry_confirmed(),
 	)
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	# Remove button backgrounds so they look like plain text, then wire hover.
@@ -160,11 +147,9 @@ func set_enabled(enabled: bool) -> void:
 		btn.disabled = not enabled
 
 
-## Show the name entry dialog (used by Play button when no saves exist).
+## Show the inline name entry (used by Play button when no saves exist).
 func show_name_entry() -> void:
-	_name_entry_field.text = ""
-	_name_entry_dialog.popup_centered()
-	_name_entry_field.grab_focus()
+	_on_new_stand_pressed()
 
 
 ## Size the "Simulator" subtitle so its rendered width matches the
@@ -346,17 +331,60 @@ func _on_saves_back() -> void:
 
 
 func _on_new_stand_pressed() -> void:
-	_name_entry_field.text = ""
-	_name_entry_dialog.popup_centered()
-	_name_entry_field.grab_focus()
+	# Inline name entry: hide the New Stand button, show a LineEdit +
+	# Create button in its place.
+	_new_stand_button.visible = false
+	var row := HBoxContainer.new()
+	row.name = "InlineNameEntry"
+	row.add_theme_constant_override("separation", 8)
+	var field := LineEdit.new()
+	field.name = "NameField"
+	field.max_length = 14
+	field.size_flags_horizontal = 3
+	field.add_theme_font_size_override("font_size", 20)
+	field.placeholder_text = "Stand name..."
+	field.text_submitted.connect(
+		func(text):
+			_confirm_inline_name(row, field),
+	)
+	field.focus_exited.connect(
+		func():
+			# Cancel if focus lost and field is empty; otherwise keep it
+			# so the Create button can still be clicked.
+			if field.text.strip_edges() == "":
+				_cancel_inline_name(row),
+	)
+	var create_btn := Button.new()
+	create_btn.name = "CreateBtn"
+	create_btn.text = "Create"
+	create_btn.add_theme_font_size_override("font_size", 20)
+	create_btn.pressed.connect(
+		func():
+			_confirm_inline_name(row, field),
+	)
+	row.add_child(field)
+	row.add_child(create_btn)
+	# Insert the inline row where the New Stand button was (before Spacer2).
+	var idx := _new_stand_button.get_index()
+	_saves_list.add_child(row)
+	_saves_list.move_child(row, idx)
+	field.grab_focus()
 
 
-func _on_name_entry_confirmed() -> void:
-	var name := _name_entry_field.text.strip_edges()
+func _confirm_inline_name(row: HBoxContainer, field: LineEdit) -> void:
+	var name := field.text.strip_edges()
 	if name == "":
+		_cancel_inline_name(row)
 		return
+	row.queue_free()
+	_new_stand_button.visible = true
 	set_busy("Creating '%s'..." % name)
 	new_stand_requested.emit(name)
+
+
+func _cancel_inline_name(row: HBoxContainer) -> void:
+	row.queue_free()
+	_new_stand_button.visible = true
 
 
 ## Build the saves list dynamically from SaveManager.list_saves().
