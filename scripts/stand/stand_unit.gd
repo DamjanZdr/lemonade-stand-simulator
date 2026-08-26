@@ -544,9 +544,13 @@ func can_be_served_by(player: Node) -> bool:
 
 
 ## Set the text on the stand's sign (the Label3D above the counter).
+## Wraps the name in lemon emojis unless it already has them.
 func set_stand_name(name: String) -> void:
 	if _sign_label:
-		_sign_label.text = name
+		if name.begins_with("🍋"):
+			_sign_label.text = name
+		else:
+			_sign_label.text = "🍋 %s 🍋" % name
 
 
 ## Get the current stand sign text.
