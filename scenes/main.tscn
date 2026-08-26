@@ -151,10 +151,10 @@ current = true
 fov = 80.0
 
 [node name="StandChangeCameraEnd" type="Marker3D" parent="." unique_id=1999270952]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 180, 0, -19)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 180, 1.3345039, -19)
 
 [node name="StandChangeCameraStart" type="Marker3D" parent="." unique_id=706505586]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -211.17914, 0, -19)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -211.17914, 1.3345039, -19)
 
 [node name="TransitionOverlay" type="CanvasLayer" parent="."]
 layer = 100

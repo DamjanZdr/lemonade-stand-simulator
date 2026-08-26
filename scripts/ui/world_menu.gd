@@ -123,7 +123,8 @@ func show_menu() -> void:
 
 
 ## Show the menu without the stagger animation (used after transitions).
-func show_menu_immediate() -> void:
+## Fades in over `duration` seconds.
+func show_menu_immediate(duration: float = 0.4) -> void:
 	visible = true
 	_saves_panel.visible = false
 	_join_row.visible = false
@@ -134,6 +135,11 @@ func show_menu_immediate() -> void:
 	for btn in _menu_buttons:
 		if btn != null and is_instance_valid(btn):
 			btn.modulate = Color(1, 1, 1, 1)
+	# Fade in the MenuBox.
+	$MenuBox.modulate = Color(1, 1, 1, 0)
+	var tw := create_tween()
+	tw.set_ease(Tween.EASE_OUT)
+	tw.tween_property($MenuBox, "modulate:a", 1.0, duration)
 
 
 func hide_menu() -> void:
