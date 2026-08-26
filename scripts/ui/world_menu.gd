@@ -241,8 +241,8 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 	# Store the original scale on first hover.
 	if not btn.has_meta("_base_scale"):
 		btn.set_meta("_base_scale", btn.scale)
-	# Pivot at right-center: grows right, stays vertically centered.
-	btn.pivot_offset = Vector2(btn.size.x, btn.size.y / 2.0)
+	# Pivot at left-center: grows right, stays vertically centered.
+	btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
 	var base_scale: Vector2 = btn.get_meta("_base_scale")
 	var tw := create_tween()
 	btn.set_meta("_hover_tween", tw)
