@@ -337,6 +337,11 @@ func _start_stand_transition(slot_name: String, stand_name: String) -> void:
 	# Make sure the MainMenuCamera is the active camera.
 	if main_menu_camera:
 		main_menu_camera.current = true
+	print("[Transition] START slot=%s stand=%s" % [slot_name, stand_name])
+	print("[Transition] MainMenuCamera pos=%s" % main_menu_camera.global_position)
+	print("[Transition] End marker pos=%s" % stand_change_cam_end.global_position)
+	print("[Transition] Start marker pos=%s" % stand_change_cam_start.global_position)
+	print("[Transition] Stored main menu cam transform: %s" % _get_main_menu_cam_transform())
 	# Mark as loaded — SaveManager.load_existing_game/start_new_game are
 	# synchronous, so by the time we get here the state is already applied.
 	# In the future if loading becomes async, this is where we'd wait.
@@ -350,6 +355,7 @@ func _start_stand_transition(slot_name: String, stand_name: String) -> void:
 func _do_transition_whip() -> void:
 	if not _transition_active:
 		return
+	print("[Transition] WHIP START from pos=%s" % main_menu_camera.global_position)
 	# Blur in.
 	_tween_blur(1.0, TRANSITION_WHIP_TIME * 0.5)
 	# Whip to End.
@@ -367,19 +373,26 @@ func _do_transition_whip() -> void:
 		func():
 			# Snap to Start.
 			main_menu_camera.global_transform = stand_change_cam_start.global_transform
+			print("[Transition] SNAP to Start, pos=%s" % main_menu_camera.global_position)
 			# Blur out slightly.
 			_tween_blur(0.3, TRANSITION_SETTLE_TIME * 0.3)
 			# Tween toward MainMenuCamera position.
+			var target := _get_main_menu_cam_transform()
+			print("[Transition] SETTLE to target pos=%s" % target.origin)
 			var settle := create_tween()
 			settle.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			settle.tween_property(
 				main_menu_camera,
 				"global_transform",
-				_get_main_menu_cam_transform(),
+				target,
 				TRANSITION_SETTLE_TIME,
 			)
 			settle.tween_callback(
 				func():
+					print(
+						"[Transition] SETTLE DONE, pos=%s loaded=%s"
+						% [main_menu_camera.global_position, _transition_loaded]
+					)
 					_tween_blur(0.0, 0.3)
 					if _transition_loaded:
 						_finish_transition()
@@ -393,6 +406,7 @@ func _do_transition_whip() -> void:
 ## Finish the transition: restore the menu, stop blur.
 func _finish_transition() -> void:
 	_transition_active = false
+	print("[Transition] FINISH, final pos=%s" % main_menu_camera.global_position)
 	_tween_blur(0.0, 0.2)
 	if _transition_overlay:
 		# Hide after the blur fade completes.
