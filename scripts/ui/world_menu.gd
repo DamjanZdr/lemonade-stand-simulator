@@ -224,6 +224,7 @@ func hide_menu() -> void:
 
 func set_status(text: String) -> void:
 	_status_label.text = text
+	_status_label.visible = text != ""
 
 
 func set_busy(text: String) -> void:
