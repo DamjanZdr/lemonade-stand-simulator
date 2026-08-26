@@ -478,7 +478,7 @@ func _build_save_row(
 	panel.custom_minimum_size = Vector2(SAVE_BOX_WIDTH, 0)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0, 0, 0, 0)
-	panel_style.border_color = Color(1, 1, 1, 0.15)
+	panel_style.border_color = Color(1, 1, 1, 0.4)
 	panel_style.set_border_width_all(1)
 	panel_style.set_content_margin_all(10)
 	panel_style.set_corner_radius_all(4)
@@ -491,7 +491,7 @@ func _build_save_row(
 	var btn := Label.new()
 	btn.custom_minimum_size = Vector2(0, 36)
 	btn.add_theme_font_size_override("font_size", 26)
-	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
+	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1.0))
 	btn.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
 	btn.add_theme_constant_override("shadow_offset_x", 2)
 	btn.add_theme_constant_override("shadow_offset_y", 2)
@@ -502,7 +502,7 @@ func _build_save_row(
 	# Info line: small, dim text under the name.
 	var info := Label.new()
 	info.add_theme_font_size_override("font_size", 14)
-	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
 	row.add_child(info)
 	# Hover: pop the inner content (row) + brighten border. Panel outline stays put.
@@ -517,11 +517,11 @@ func _build_save_row(
 			tw.set_parallel(true)
 			tw.tween_property(row, "scale", Vector2.ONE * HOVER_POP, 0.06) \
 					.set_ease(Tween.EASE_OUT)
-			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.4), 0.08) \
+			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 1.0), 0.08) \
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.06) \
 					.set_ease(Tween.EASE_OUT)
-			tw.tween_property(info, "modulate", Color(1, 1, 1, 0.7), 0.06) \
+			tw.tween_property(info, "modulate", Color(1, 1, 1, 1.0), 0.06) \
 					.set_ease(Tween.EASE_OUT),
 	)
 	panel.mouse_exited.connect(
@@ -533,11 +533,11 @@ func _build_save_row(
 			tw.set_parallel(true)
 			tw.tween_property(row, "scale", Vector2.ONE, 0.08) \
 					.set_ease(Tween.EASE_OUT)
-			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.15), 0.12) \
+			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.4), 0.12) \
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
 					.set_ease(Tween.EASE_OUT)
-			tw.tween_property(info, "modulate", Color(1, 1, 1, 0.4), 0.08) \
+			tw.tween_property(info, "modulate", Color(1, 1, 1, 0.7), 0.08) \
 					.set_ease(Tween.EASE_OUT),
 	)
 	# Click anywhere on the panel loads the save.
