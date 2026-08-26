@@ -115,7 +115,7 @@ const TRANSITION_SETTLE_TIME: float = 0.6
 # Mouse parallax for main menu camera.
 var _menu_cam_base_pos: Vector3 = Vector3.ZERO
 var _menu_cam_parallax_current: Vector2 = Vector2.ZERO
-const MENU_CAM_PARALLAX_STRENGTH: float = 0.4
+const MENU_CAM_PARALLAX_STRENGTH: float = 0.2
 const MENU_CAM_PARALLAX_SMOOTH: float = 3.0
 
 
