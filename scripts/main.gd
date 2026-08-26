@@ -363,16 +363,17 @@ func _do_transition_whip() -> void:
 		_transition_tween.kill()
 	_transition_tween = create_tween()
 	_transition_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# Tween only position, keep rotation fixed to avoid dipping.
 	_transition_tween.tween_property(
 		main_menu_camera,
-		"global_transform",
-		stand_change_cam_end.global_transform,
+		"global_position",
+		stand_change_cam_end.global_position,
 		TRANSITION_WHIP_TIME,
 	)
 	_transition_tween.tween_callback(
 		func():
-			# Snap to Start.
-			main_menu_camera.global_transform = stand_change_cam_start.global_transform
+			# Snap to Start position (keep rotation).
+			main_menu_camera.global_position = stand_change_cam_start.global_position
 			print("[Transition] SNAP to Start, pos=%s" % main_menu_camera.global_position)
 			# Blur out slightly.
 			_tween_blur(0.3, TRANSITION_SETTLE_TIME * 0.3)
@@ -383,8 +384,8 @@ func _do_transition_whip() -> void:
 			settle.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			settle.tween_property(
 				main_menu_camera,
-				"global_transform",
-				target,
+				"global_position",
+				target.origin,
 				TRANSITION_SETTLE_TIME,
 			)
 			settle.tween_callback(
