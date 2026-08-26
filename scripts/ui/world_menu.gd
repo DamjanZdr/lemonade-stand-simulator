@@ -11,6 +11,7 @@ signal load_stand_requested(slot_name: String)
 
 const HOVER_POP: float = 1.12
 const HOVER_DURATION: float = 0.18
+const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 
 @onready var _play_button: Button = $MenuBox/PlayButton
 @onready var _title_label: Label = $MenuBox/TitleBox/TitleLabel
@@ -339,10 +340,18 @@ func _on_new_stand_pressed() -> void:
 	row.add_theme_constant_override("separation", 12)
 	var field := LineEdit.new()
 	field.name = "NameField"
-	field.max_length = 14
 	field.size_flags_horizontal = 3
 	field.add_theme_font_size_override("font_size", 20)
 	field.placeholder_text = "Stand name..."
+	# Limit by weighted char count: capitals = 1.5, others = 1.0.
+	# Reject typed/deleted text that would exceed NAME_MAX_WEIGHT.
+	field.text_changed.connect(
+		func(new_text: String):
+			if _name_weight(new_text) > NAME_MAX_WEIGHT:
+				# Revert to the previous text by trimming the last char.
+				field.text = new_text.substr(0, new_text.length() - 1)
+				field.caret_column = field.text.length(),
+	)
 	# Transparent background, white outline border.
 	var field_style := StyleBoxFlat.new()
 	field_style.bg_color = Color(0, 0, 0, 0)
@@ -411,6 +420,17 @@ func _confirm_inline_name(row: HBoxContainer, field: LineEdit) -> void:
 func _cancel_inline_name(row: HBoxContainer) -> void:
 	row.queue_free()
 	_new_stand_button.visible = true
+
+
+## Weighted character count: capitals count as 1.5, everything else as 1.
+func _name_weight(s: String) -> float:
+	var weight: float = 0.0
+	for ch in s:
+		if ch >= "A" and ch <= "Z":
+			weight += 1.5
+		else:
+			weight += 1.0
+	return weight
 
 
 ## Build the saves list dynamically from SaveManager.list_saves().
