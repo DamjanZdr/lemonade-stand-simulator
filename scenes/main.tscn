@@ -7,7 +7,6 @@
 [ext_resource type="PackedScene" uid="uid://hud001ls" path="res://scenes/ui/hud.tscn" id="7_hud"]
 [ext_resource type="PackedScene" uid="uid://dp8lh1ptnkcc3" path="res://scenes/ui/debug_panel.tscn" id="9_debug"]
 [ext_resource type="Script" uid="uid://bulmw0nj3xrmn" path="res://scripts/customer/pedestrian_spawner.gd" id="10_pedspawner"]
-[ext_resource type="PackedScene" uid="uid://debrqguawbc46" path="res://scenes/player/player.tscn" id="20_player"]
 [ext_resource type="PackedScene" uid="uid://c7s5b6a8h3q1j" path="res://scenes/systems/trash_spawner.tscn" id="11_trashspawner"]
 [ext_resource type="PackedScene" uid="uid://dbgconsole01" path="res://scenes/ui/debug_console.tscn" id="12_dbgconsole"]
 [ext_resource type="Script" uid="uid://bx8ql2bcj8v5" path="res://scripts/core/ingredient_data.gd" id="18_5fxch"]
@@ -60,7 +59,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00049734116, 0.013125181, 0
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=581860801]
 spawn_path = NodePath("../Players")
-spawnable_scenes = Array[PackedScene]([ExtResource("20_player")])
 
 [node name="WorldSpawner" type="MultiplayerSpawner" parent="." unique_id=581860803]
 
@@ -84,7 +82,6 @@ script = ExtResource("6_delivery")
 [node name="HUD" parent="." unique_id=1577022415 instance=ExtResource("7_hud")]
 
 [node name="DebugPanel" parent="." unique_id=1101678529 instance=ExtResource("9_debug")]
-visible = false
 
 [node name="Managers" type="Node" parent="." unique_id=1001413373]
 
@@ -117,11 +114,9 @@ roof_colors = Array[Color]([Color(0.85490197, 0.69803923, 0.827451, 1), Color(0.
 wall_colors = Array[Color]([Color(0.42265648, 0.96156055, 0.88136154, 1), Color(0.8547164, 0.6989638, 0.8276675, 1), Color(0.7237331, 0.85128987, 0.43169385, 1), Color(0.86031544, 0.51238483, 0.5748986, 1), Color(0.92156863, 0.93333334, 0.19215687, 1)])
 
 [node name="DebugConsole" parent="." unique_id=39558311 instance=ExtResource("12_dbgconsole")]
-visible = false
 
 [node name="LobbyCamera" type="Camera3D" parent="." unique_id=-1589934591]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 3, 8)
-current = true
 fov = 50.0
 
 [node name="LobbyCamStand1" type="Camera3D" parent="." unique_id=-1589934501]
@@ -141,3 +136,9 @@ transform = Transform3D(-0.063, 0, 5.507635e-09, 0, 0.063, 0, -5.507635e-09, 0, 
 transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, -2.6603372, 0.9346231, -34.91608)
 
 [node name="LobbyUI" parent="." unique_id=-1589934587 instance=ExtResource("68_lobbyui")]
+visible = false
+
+[node name="MainMenuCamera" type="Camera3D" parent="." unique_id=1523728213]
+transform = Transform3D(-0.98489964, 0.013518753, 0.17259747, -0.013518779, 0.98789716, -0.15452011, -0.17259747, -0.15452012, -0.9727968, 5.2999997, 1.3345039, -4.5)
+current = true
+fov = 80.0

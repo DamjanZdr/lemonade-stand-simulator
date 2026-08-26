@@ -136,9 +136,6 @@ func _ready() -> void:
 	# Enhanced lighting is on by default; F2 toggles it off
 	_enable_enhanced_lighting()
 
-	# --- Lobby phase setup ---
-	_setup_lobby()
-
 	# Create FPS counter label (toggled with F key)
 	_fps_label = Label.new()
 	_fps_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
@@ -165,14 +162,13 @@ func _ready() -> void:
 	# main menu so the player can choose Play, Saves, or Join.
 	if multiplayer.has_multiplayer_peer():
 		# Already connected — set up networking and enter lobby/game flow.
+		_setup_lobby()
 		_setup_networking()
 		NetworkManager.server_disconnected.connect(_on_host_left)
-		# If there's already a roster, we're joining mid-game as a late
-		# joiner; the lobby flow handles that. If no roster yet, the
-		# lobby will populate from the host.
 		_game_state = MenuState.LOBBY
 	else:
 		# No multiplayer session — show the in-world main menu.
+		# _setup_lobby() is deferred until we actually enter the lobby.
 		_enter_main_menu()
 
 
@@ -203,8 +199,8 @@ func _setup_lobby() -> void:
 	# Connect stand switch signal from lobby UI for camera tweening
 	if lobby_ui.has_signal("stand_switched"):
 		lobby_ui.stand_switched.connect(_on_stand_switched)
-	# Hide lobby UI during main menu — it'll be shown when Play is pressed.
-	lobby_ui.visible = false
+	# Lobby UI is visible during the lobby phase.
+	lobby_ui.visible = true
 
 ## --- In-world main menu ---
 
@@ -324,8 +320,15 @@ func _transition_to_lobby() -> void:
 	_in_lobby = true
 	if _world_menu:
 		_world_menu.hide_menu()
+	# Set up the lobby now (camera, UI wiring, player models).
+	# This was deferred from _ready() because we started in MAIN_MENU.
+	_setup_lobby()
 	# Tween MainMenuCamera to the LobbyCamera's transform, then switch.
 	if main_menu_camera and lobby_camera:
+		# Temporarily make lobby_camera current so _setup_lobby's wiring
+		# works, then switch back to main_menu_camera for the tween.
+		lobby_camera.current = false
+		main_menu_camera.current = true
 		var target := lobby_camera.global_transform
 		var tw := create_tween()
 		tw.tween_property(main_menu_camera, "global_transform", target, CAMERA_TWEEN_TIME) \
