@@ -668,7 +668,7 @@ func _on_return_to_menu() -> void:
 					lobby_ui.visible = false
 					lobby_ui.modulate = Color(1, 1, 1, 1)
 				if _world_menu:
-					_world_menu.show_menu_immediate(0.4)
+					_world_menu.show_menu()
 				_game_state = MenuState.MAIN_MENU
 				_in_lobby = false
 				_transition_active = false,
