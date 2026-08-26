@@ -949,7 +949,7 @@ func _on_load_save(slot_name: String, stand_name: String) -> void:
 # ─── Music Player Widget ───
 
 const MUSIC_WIDGET_W: float = 280.0
-const MUSIC_WIDGET_H: float = 96.0
+const MUSIC_WIDGET_H: float = 88.0
 
 
 func _build_music_player() -> void:
@@ -1007,55 +1007,54 @@ func _build_music_player() -> void:
 			AudioManager.prev_track(),
 	)
 
-	# Disc + now-playing column.
-	var disc_col := VBoxContainer.new()
-	disc_col.name = "DiscCol"
-	disc_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	disc_col.add_theme_constant_override("separation", 2)
-	disc_col.alignment = BoxContainer.ALIGNMENT_CENTER
-	disc_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top_row.add_child(disc_col)
-
-	# Disc + label row.
+	# Disc + text column (disc on left, text stacked on right).
 	var disc_row := HBoxContainer.new()
 	disc_row.name = "DiscRow"
+	disc_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	disc_row.add_theme_constant_override("separation", 8)
 	disc_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	disc_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	disc_col.add_child(disc_row)
+	top_row.add_child(disc_row)
 
-	# Vinyl disc.
+	# Vinyl disc — taller so it spans both text lines.
 	var disc := Control.new()
 	disc.name = "Vinyl"
-	disc.custom_minimum_size = Vector2(32, 32)
+	disc.custom_minimum_size = Vector2(44, 44)
 	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	disc.set_script(load("res://scripts/ui/vinyl_disc.gd"))
 	disc_row.add_child(disc)
 	_music_vinyl = disc
 
-	# Now playing label.
-	_music_label = Label.new()
-	_music_label.name = "TrackName"
-	_music_label.add_theme_font_size_override("font_size", 13)
-	_music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	_music_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_music_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_music_label.text = "—"
-	_music_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_music_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	disc_row.add_child(_music_label)
+	# Text column: NOW PLAYING header + track name.
+	var text_col := VBoxContainer.new()
+	text_col.name = "TextCol"
+	text_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_col.add_theme_constant_override("separation", 1)
+	text_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	text_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc_row.add_child(text_col)
 
-	# "NOW PLAYING" small header above disc row.
+	# "NOW PLAYING" small header.
 	var np_label := Label.new()
 	np_label.name = "NowPlaying"
 	np_label.add_theme_font_size_override("font_size", 9)
 	np_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.5))
-	np_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	np_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	np_label.text = "♪ NOW PLAYING"
 	np_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	disc_col.add_child(np_label)
-	# Move now-playing above disc row.
-	disc_col.move_child(np_label, 0)
+	text_col.add_child(np_label)
+
+	# Track name label.
+	_music_label = Label.new()
+	_music_label.name = "TrackName"
+	_music_label.add_theme_font_size_override("font_size", 13)
+	_music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	_music_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_music_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_music_label.text = "—"
+	_music_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_music_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_col.add_child(_music_label)
 
 	# Next button.
 	_music_next_btn = Button.new()

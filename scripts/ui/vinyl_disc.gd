@@ -5,8 +5,8 @@ extends Control
 var _angle: float = 0.0
 var _spinning: bool = false
 const _SPIN_SPEED: float = 120.0 # degrees per second
-const _DISC_RADIUS: float = 18.0
-const _LABEL_RADIUS: float = 6.0
+const _DISC_RADIUS: float = 22.0
+const _LABEL_RADIUS: float = 7.0
 
 
 func _ready() -> void:
@@ -41,5 +41,9 @@ func _draw() -> void:
 	if _spinning:
 		var rad := deg_to_rad(_angle)
 		var mark_end := center + Vector2(cos(rad), sin(rad)) * (_DISC_RADIUS - 2.0)
-		draw_line(center + Vector2(cos(rad), sin(rad)) * _LABEL_RADIUS, mark_end,
-				Color(1, 1, 1, 0.25), 1.0)
+		draw_line(
+			center + Vector2(cos(rad), sin(rad)) * _LABEL_RADIUS,
+			mark_end,
+			Color(1, 1, 1, 0.25),
+			1.0,
+		)
