@@ -82,10 +82,12 @@ func _is_known_container_type(ctype: String) -> bool:
 	return ctype in CONTAINER_SCENES or ctype == "workstation"
 
 
-func save_game() -> void:
+func save_game(force: bool = false) -> void:
 	# Only the host auto-saves. Clients receive state via RPCs and
 	# should never write save files (they'd be incomplete/out of sync).
-	if not WorldSync.is_host():
+	# 'force' bypasses the host check (used when creating a new game
+	# from the main menu before networking is set up).
+	if not force and not WorldSync.is_host():
 		return
 	if not auto_save_enabled or current_slot == "":
 		return
@@ -205,8 +207,8 @@ func start_new_game(stand_name: String = "") -> void:
 	GameState.highest_purchase = 0.0
 	DayManager.day_number = 1
 	UpgradeManager.reset()
-	# Save immediately to create the slot
-	save_game()
+	# Save immediately to create the slot (force: not a host yet)
+	save_game(true)
 
 
 ## Load an existing save slot and set it as the current slot.
