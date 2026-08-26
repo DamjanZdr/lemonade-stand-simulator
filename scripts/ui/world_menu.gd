@@ -6,6 +6,7 @@ signal play_pressed
 signal saves_pressed
 signal join_pressed(lobby_id: int)
 signal host_pressed
+signal settings_pressed
 signal new_stand_requested(stand_name: String)
 signal load_stand_requested(slot_name: String)
 
@@ -26,6 +27,7 @@ var _join_paste_btn: Button = null
 var _join_clear_btn: Button = null
 var _join_error_label: Label = null
 @onready var _quit_button: Button = $MenuBox/QuitButton
+@onready var _settings_button: Button = $MenuBox/SettingsButton
 @onready var _status_label: Label = $MenuBox/StatusLabel
 @onready var _version_label: Label = $VersionLabel
 
@@ -41,7 +43,7 @@ var _menu_buttons: Array[Button] = []
 
 
 func _ready() -> void:
-	_menu_buttons = [_play_button, _saves_button, _join_button, _quit_button]
+	_menu_buttons = [_play_button, _saves_button, _join_button, _settings_button, _quit_button]
 	_play_button.pressed.connect(
 		func():
 			_on_button_click(
@@ -132,6 +134,14 @@ func _ready() -> void:
 				_quit_button,
 				func():
 					get_tree().quit(),
+			),
+	)
+	_settings_button.pressed.connect(
+		func():
+			_on_button_click(
+				_settings_button,
+				func():
+					settings_pressed.emit(),
 			),
 	)
 	_saves_back.pressed.connect(
