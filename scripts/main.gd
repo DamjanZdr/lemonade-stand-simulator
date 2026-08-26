@@ -230,8 +230,10 @@ func _setup_lobby() -> void:
 	_position_lobby_camera(0, false)
 	# Connect stand switch signal from lobby UI for camera tweening
 	if lobby_ui.has_signal("stand_switched"):
-		lobby_ui.stand_switched.connect(_on_stand_switched)
-		lobby_ui.return_to_menu_requested.connect(_on_return_to_menu)
+		if not lobby_ui.stand_switched.is_connected(_on_stand_switched):
+			lobby_ui.stand_switched.connect(_on_stand_switched)
+		if not lobby_ui.return_to_menu_requested.is_connected(_on_return_to_menu):
+			lobby_ui.return_to_menu_requested.connect(_on_return_to_menu)
 	# Lobby UI is visible during the lobby phase.
 	lobby_ui.visible = true
 
@@ -619,7 +621,8 @@ func _transition_to_lobby() -> void:
 	_set_systems_paused(false)
 	# Set up networking now that we're entering the lobby.
 	_setup_networking()
-	NetworkManager.server_disconnected.connect(_on_host_left)
+	if not NetworkManager.server_disconnected.is_connected(_on_host_left):
+		NetworkManager.server_disconnected.connect(_on_host_left)
 	GameLog.log("[Main] Transitioned to LOBBY state")
 
 
@@ -1029,9 +1032,12 @@ func _setup_networking() -> void:
 	# Spawner config is set in the scene file (spawn_path + spawnable_scenes).
 	# Set a spawn_function so spawn() works for custom-named player nodes.
 	player_spawner.spawn_function = _spawn_player
-	player_spawner.spawned.connect(_on_spawner_spawned)
-	NetworkManager.peer_connected.connect(_on_peer_connected)
-	NetworkManager.peer_disconnected.connect(_on_peer_disconnected)
+	if not player_spawner.spawned.is_connected(_on_spawner_spawned):
+		player_spawner.spawned.connect(_on_spawner_spawned)
+	if not NetworkManager.peer_connected.is_connected(_on_peer_connected):
+		NetworkManager.peer_connected.connect(_on_peer_connected)
+	if not NetworkManager.peer_disconnected.is_connected(_on_peer_disconnected):
+		NetworkManager.peer_disconnected.connect(_on_peer_disconnected)
 	GameLog.log(
 		"[Main] _setup_networking done, spawner=%s spawn_path=%s"
 		% [player_spawner.name, player_spawner.spawn_path]

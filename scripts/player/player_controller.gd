@@ -240,8 +240,11 @@ func _physics_process(delta: float) -> void:
 			_player.velocity.y = _player.jump_velocity
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	# Movement follows the _player.camera/_player.head direction so looking around still steers.
-	var direction := (_player.head.global_transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	# Movement follows the head's yaw only — zero out Y so pitch
+	# (looking up/down) doesn't reduce horizontal speed.
+	var direction := (_player.head.global_transform.basis * Vector3(input_dir.x, 0, input_dir.y))
+	direction.y = 0
+	direction = direction.normalized()
 	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
 	var speed_bonus := UpgradeManager.get_effect_total("movement_speed")
 	var speed := (_player.move_speed + speed_bonus) * (

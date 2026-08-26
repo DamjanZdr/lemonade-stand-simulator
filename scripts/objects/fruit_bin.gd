@@ -218,6 +218,9 @@ func interact(player: Node) -> void:
 			return
 		# Returning a scoop
 		if data.get("source") == "bin_scoop":
+			var scoop_space: float = get_capacity(itype) - fruit_amounts.get(itype, 0.0)
+			if scoop_space <= 0.0:
+				return
 			add_amount(itype, data.get("amount", Balancing.GRAB_AMOUNT), _get_hand_pos(player))
 			player.inventory.clear_held()
 			return

@@ -24,7 +24,7 @@ func get_hint(player: Node) -> String:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		var cost := _get_container_cost_for_trash(ctype)
 		return "Trashcan | LMB: recycle for $%.2f" % cost
-	return "Trashcan | LMB: pick up"
+	return "Trashcan"
 
 
 func interact(player: Node) -> void:
