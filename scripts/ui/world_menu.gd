@@ -7,6 +7,10 @@ signal saves_pressed
 signal join_pressed(lobby_id: int)
 signal host_pressed
 signal settings_pressed
+signal fullscreen_toggled(enabled: bool)
+signal vsync_toggled(enabled: bool)
+signal enhanced_lighting_toggled(enabled: bool)
+signal fps_toggled(enabled: bool)
 signal new_stand_requested(stand_name: String)
 signal load_stand_requested(slot_name: String)
 
@@ -28,6 +32,15 @@ var _join_clear_btn: Button = null
 var _join_error_label: Label = null
 @onready var _quit_button: Button = $MenuBox/QuitButton
 @onready var _settings_button: Button = $MenuBox/SettingsButton
+@onready var _settings_panel: Control = $SettingsPanel
+@onready var _settings_back: Button = $SettingsPanel/SettingsBack
+@onready var _master_slider: HSlider = $SettingsPanel/SettingsList/MasterRow/MasterSlider
+@onready var _sfx_slider: HSlider = $SettingsPanel/SettingsList/SFXRow/SFXSlider
+@onready var _music_slider: HSlider = $SettingsPanel/SettingsList/MusicRow/MusicSlider
+@onready var _fullscreen_check: CheckBox = $SettingsPanel/SettingsList/FullscreenRow/FullscreenCheck
+@onready var _vsync_check: CheckBox = $SettingsPanel/SettingsList/VSyncRow/VSyncCheck
+@onready var _lighting_check: CheckBox = $SettingsPanel/SettingsList/LightingRow/LightingCheck
+@onready var _fps_check: CheckBox = $SettingsPanel/SettingsList/FPSRow/FPSCheck
 @onready var _status_label: Label = $MenuBox/StatusLabel
 @onready var _version_label: Label = $VersionLabel
 
@@ -138,11 +151,43 @@ func _ready() -> void:
 	)
 	_settings_button.pressed.connect(
 		func():
-			_on_button_click(
-				_settings_button,
-				func():
-					settings_pressed.emit(),
-			),
+			_on_button_click(_settings_button, _on_settings_pressed),
+	)
+	_settings_back.pressed.connect(
+		func():
+			_on_button_click(_settings_back, _on_settings_back),
+	)
+	# Audio sliders — control bus volumes directly.
+	_master_slider.value_changed.connect(
+		func(v: float):
+			AudioServer.set_bus_volume_db(0, linear_to_db(v)),
+	)
+	_sfx_slider.value_changed.connect(
+		func(v: float):
+			if AudioServer.get_bus_count() > 1:
+				AudioServer.set_bus_volume_db(1, linear_to_db(v)),
+	)
+	_music_slider.value_changed.connect(
+		func(v: float):
+			if AudioServer.get_bus_count() > 2:
+				AudioServer.set_bus_volume_db(2, linear_to_db(v)),
+	)
+	# Graphics toggles.
+	_fullscreen_check.toggled.connect(
+		func(on: bool):
+			fullscreen_toggled.emit(on),
+	)
+	_vsync_check.toggled.connect(
+		func(on: bool):
+			vsync_toggled.emit(on),
+	)
+	_lighting_check.toggled.connect(
+		func(on: bool):
+			enhanced_lighting_toggled.emit(on),
+	)
+	_fps_check.toggled.connect(
+		func(on: bool):
+			fps_toggled.emit(on),
 	)
 	_saves_back.pressed.connect(
 		func():
@@ -164,6 +209,9 @@ func _ready() -> void:
 	_make_flat_button(_join_back)
 	_add_drop_shadow(_join_back)
 	_setup_hover_effect(_join_back)
+	_make_flat_button(_settings_back)
+	_add_drop_shadow(_settings_back)
+	_setup_hover_effect(_settings_back)
 	# Style join field same as stand box outline.
 	var jf_style := StyleBoxFlat.new()
 	jf_style.bg_color = Color(0, 0, 0, 0)
@@ -193,6 +241,7 @@ func show_menu() -> void:
 	visible = true
 	_saves_panel.visible = false
 	_join_panel.visible = false
+	_settings_panel.visible = false
 	_status_label.text = ""
 	# Animate buttons in
 	_animate_buttons_in()
@@ -204,6 +253,7 @@ func show_menu_immediate(duration: float = 0.4) -> void:
 	visible = true
 	_saves_panel.visible = false
 	_join_panel.visible = false
+	_settings_panel.visible = false
 	_status_label.text = ""
 	# MenuBox may have been hidden by _on_saves_pressed().
 	$MenuBox.visible = true
@@ -425,6 +475,24 @@ func _toggle_join_row() -> void:
 
 func _on_join_back() -> void:
 	_join_panel.visible = false
+	$MenuBox.visible = true
+
+
+func _on_settings_pressed() -> void:
+	_settings_panel.visible = true
+	$MenuBox.visible = false
+	# Sync current state into the controls.
+	_master_slider.value = db_to_linear(AudioServer.get_bus_volume_db(0))
+	_fullscreen_check.button_pressed = (
+		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	)
+	_vsync_check.button_pressed = DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
+	_lighting_check.button_pressed = true # default, main.gd will sync
+	_fps_check.button_pressed = false # default, main.gd will sync
+
+
+func _on_settings_back() -> void:
+	_settings_panel.visible = false
 	$MenuBox.visible = true
 
 

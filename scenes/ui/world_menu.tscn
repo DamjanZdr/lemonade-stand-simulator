@@ -301,6 +301,188 @@ theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
 text = "Back"
 
+[node name="SettingsPanel" type="Control" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SettingsList" type="VBoxContainer" parent="SettingsPanel"]
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = 80.0
+offset_right = 500.0
+offset_bottom = -70.0
+grow_vertical = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 6
+alignment = 0
+
+[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+text = "Settings"
+
+[node name="Spacer" type="Control" parent="SettingsPanel/SettingsList"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="AudioHeader" type="Label" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.9, 0.3, 0.9)
+text = "Audio"
+
+[node name="MasterRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MasterLabel" type="Label" parent="SettingsPanel/SettingsList/MasterRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "Master"
+
+[node name="MasterSlider" type="HSlider" parent="SettingsPanel/SettingsList/MasterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(200, 0)
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="SFXRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SFXLabel" type="Label" parent="SettingsPanel/SettingsList/SFXRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "SFX"
+
+[node name="SFXSlider" type="HSlider" parent="SettingsPanel/SettingsList/SFXRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(200, 0)
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="MusicRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MusicLabel" type="Label" parent="SettingsPanel/SettingsList/MusicRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="SettingsPanel/SettingsList/MusicRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(200, 0)
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="Spacer2" type="Control" parent="SettingsPanel/SettingsList"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="GraphicsHeader" type="Label" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.9, 0.3, 0.9)
+text = "Graphics"
+
+[node name="FullscreenRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FullscreenLabel" type="Label" parent="SettingsPanel/SettingsList/FullscreenRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "Fullscreen"
+
+[node name="FullscreenCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FullscreenRow"]
+layout_mode = 2
+
+[node name="VSyncRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="VSyncLabel" type="Label" parent="SettingsPanel/SettingsList/VSyncRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "VSync"
+
+[node name="VSyncCheck" type="CheckBox" parent="SettingsPanel/SettingsList/VSyncRow"]
+layout_mode = 2
+
+[node name="LightingRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LightingLabel" type="Label" parent="SettingsPanel/SettingsList/LightingRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "Enhanced Lighting"
+
+[node name="LightingCheck" type="CheckBox" parent="SettingsPanel/SettingsList/LightingRow"]
+layout_mode = 2
+
+[node name="FPSRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FPSLabel" type="Label" parent="SettingsPanel/SettingsList/FPSRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "Show FPS"
+
+[node name="FPSCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FPSRow"]
+layout_mode = 2
+
+[node name="SettingsBack" type="Button" parent="SettingsPanel"]
+layout_mode = 2
+theme = ExtResource("2_theme")
+anchors_preset = 5
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 60.0
+offset_top = 390.0
+offset_right = 500.0
+offset_bottom = 444.0
+grow_vertical = 0
+custom_minimum_size = Vector2(0, 54)
+theme_override_font_sizes/font_size = 38
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
+alignment = 0
+text = "Back"
+
 [node name="NameEntryDialog" type="AcceptDialog" parent="."]
 title = "Name Your Stand"
 ok_button_text = "Create"

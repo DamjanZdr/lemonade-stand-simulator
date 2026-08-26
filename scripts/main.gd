@@ -263,6 +263,10 @@ func _enter_main_menu() -> void:
 		_world_menu.host_pressed.connect(_on_menu_host)
 		_world_menu.new_stand_requested.connect(_on_menu_new_stand)
 		_world_menu.load_stand_requested.connect(_on_menu_load_stand)
+		_world_menu.fullscreen_toggled.connect(_on_fullscreen_toggled)
+		_world_menu.vsync_toggled.connect(_on_vsync_toggled)
+		_world_menu.enhanced_lighting_toggled.connect(_on_enhanced_lighting_toggled)
+		_world_menu.fps_toggled.connect(_on_fps_toggled)
 	_world_menu.show_menu()
 	# If no save has been loaded yet (current_slot is empty), peek at
 	# the most recent save's stand name so the sign shows the right
@@ -341,6 +345,34 @@ func _on_menu_load_stand(slot_name: String) -> void:
 ## Host button (from Saves panel): a save was selected, host a new game.
 func _on_menu_host() -> void:
 	NetworkManager.host_game()
+
+
+## Settings handlers.
+func _on_fullscreen_toggled(enabled: bool) -> void:
+	if enabled:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+
+
+func _on_vsync_toggled(enabled: bool) -> void:
+	DisplayServer.window_set_vsync_mode(
+		DisplayServer.VSYNC_ENABLED if enabled else DisplayServer.VSYNC_DISABLED
+	)
+
+
+func _on_enhanced_lighting_toggled(enabled: bool) -> void:
+	_enhanced_lighting = enabled
+	if enabled:
+		_enable_enhanced_lighting()
+	else:
+		_disable_enhanced_lighting()
+
+
+func _on_fps_toggled(enabled: bool) -> void:
+	_fps_shown = enabled
+	if _fps_label:
+		_fps_label.visible = _fps_shown
 
 ## --- Stand change transition ---
 
