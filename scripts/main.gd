@@ -320,17 +320,20 @@ func _on_late_join_starting(peer_id: int) -> void:
 		return
 	print("[Main] Late join starting for peer %d" % peer_id)
 	_spawn_player_for_peer(peer_id)
-	# Also send a manual spawn RPC to the client in case the
-	# MultiplayerSpawner fails to replicate (which happens on
-	# repeated join/leave cycles).
-	var p := players_node.get_node_or_null(str(peer_id)) as Player
-	if p:
+	# Send manual spawn RPCs for ALL existing players to the late joiner
+	# so they can see the host and any other players already in the game.
+	# The MultiplayerSpawner may not replicate spawns that happened before
+	# the client connected.
+	for existing in players_node.get_children():
+		var ep := existing as Player
+		if ep == null or not is_instance_valid(ep):
+			continue
 		_spawn_player_on_client.rpc_id(
 			peer_id,
 			PLAYER_SCENE_PATH,
-			p.name,
-			p.global_position,
-			p.global_rotation,
+			ep.name,
+			ep.global_position,
+			ep.global_rotation,
 		)
 	_push_world_state_to_client(peer_id)
 	_start_late_join.rpc_id(peer_id, peer_id)
