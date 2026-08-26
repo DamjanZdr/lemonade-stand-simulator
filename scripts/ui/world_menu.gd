@@ -289,18 +289,20 @@ func _build_save_row(
 	day: int,
 	money: float,
 	date_text: String,
-) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	# The main button shows stand name + info on two lines.
+) -> VBoxContainer:
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	# Top row: stand name button (large, yellow) + delete button.
+	var top_row := HBoxContainer.new()
+	top_row.add_theme_constant_override("separation", 12)
 	var btn := Button.new()
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.custom_minimum_size = Vector2(0, 50)
-	btn.add_theme_font_size_override("font_size", 24)
-	btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
-	btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	btn.custom_minimum_size = Vector2(0, 36)
+	btn.add_theme_font_size_override("font_size", 26)
+	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
+	btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.5, 1))
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	btn.text = "%s  (last played %s)\nDay %d  |  $%.2f" % [stand_name, date_text, day, money]
+	btn.text = stand_name
 	_make_flat_button(btn)
 	_setup_hover_effect(btn)
 	btn.pressed.connect(
@@ -311,7 +313,7 @@ func _build_save_row(
 					_on_load_save(slot_name, stand_name),
 			),
 	)
-	row.add_child(btn)
+	top_row.add_child(btn)
 	# Delete button.
 	var del_btn := Button.new()
 	del_btn.custom_minimum_size = Vector2(70, 36)
@@ -330,7 +332,14 @@ func _build_save_row(
 					_on_delete_save(slot_name, stand_name),
 			),
 	)
-	row.add_child(del_btn)
+	top_row.add_child(del_btn)
+	row.add_child(top_row)
+	# Info line: small, dim text under the name.
+	var info := Label.new()
+	info.add_theme_font_size_override("font_size", 14)
+	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
+	row.add_child(info)
 	return row
 
 
