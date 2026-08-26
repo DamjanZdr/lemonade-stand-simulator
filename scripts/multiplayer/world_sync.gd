@@ -51,6 +51,9 @@ func is_host() -> bool:
 		# No multiplayer peer set up yet (or tree is being torn down). Treat
 		# as local-host mode so single-player and initialization paths work.
 		return true
+	if multiplayer.multiplayer_peer == null:
+		# No peer assigned — treat as local-host.
+		return true
 	return multiplayer.is_server()
 
 
