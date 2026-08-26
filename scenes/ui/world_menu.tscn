@@ -1,11 +1,30 @@
-[gd_scene load_steps=3 format=3 uid="uid://cworldmenu01"]
+[gd_scene load_steps=4 format=3 uid="uid://cworldmenu01"]
 
 [ext_resource type="Script" path="res://scripts/ui/world_menu.gd" id="1_script"]
 [ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
+[ext_resource type="Shader" path="res://shaders/ui_blur.gdshader" id="3_blur"]
+
+[sub_resource type="ShaderMaterial" id="BlurMat"]
+shader = ExtResource("3_blur")
+shader_parameter/blur_radius = 4.0
 
 [node name="WorldMenu" type="CanvasLayer"]
 layer = 50
 script = ExtResource("1_script")
+
+[node name="BackBufferCopy" type="BackBufferCopy" parent="."]
+copy_mode = 0
+
+[node name="BlurPanel" type="ColorRect" parent="."]
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 420.0
+offset_bottom = 0.0
+grow_vertical = 2
+material = SubResource("BlurMat")
+color = Color(0, 0, 0, 0)
 
 [node name="DimLayer" type="ColorRect" parent="."]
 anchors_preset = 15
