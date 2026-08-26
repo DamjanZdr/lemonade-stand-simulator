@@ -323,7 +323,7 @@ func _on_menu_play() -> void:
 		if slot != "":
 			SaveManager.load_existing_game(slot)
 			NetworkManager.host_game()
-			_world_menu.set_busy("Loading %s..." % latest.get("stand_name", slot))
+			_world_menu.hide_menu()
 			return
 	# No saves — prompt for a stand name.
 	_world_menu.show_name_entry()
