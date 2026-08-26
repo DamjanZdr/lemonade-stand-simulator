@@ -25,7 +25,7 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 var _join_paste_btn: Button = null
 var _join_clear_btn: Button = null
 var _join_error_label: Label = null
-@onready var _quit_button: Button = $QuitButton
+@onready var _quit_button: Button = $MenuBox/QuitButton
 @onready var _status_label: Label = $MenuBox/StatusLabel
 @onready var _version_label: Label = $VersionLabel
 
@@ -41,7 +41,7 @@ var _menu_buttons: Array[Button] = []
 
 
 func _ready() -> void:
-	_menu_buttons = [_play_button, _saves_button, _join_button]
+	_menu_buttons = [_play_button, _saves_button, _join_button, _quit_button]
 	_play_button.pressed.connect(
 		func():
 			_on_button_click(
@@ -148,9 +148,6 @@ func _ready() -> void:
 		_make_flat_button(btn)
 		_add_drop_shadow(btn)
 		_setup_hover_effect(btn)
-	_make_flat_button(_quit_button)
-	_add_drop_shadow(_quit_button)
-	_setup_hover_effect(_quit_button)
 	_make_flat_button(_join_submit)
 	_add_drop_shadow(_join_submit)
 	_setup_hover_effect(_join_submit)
@@ -186,7 +183,6 @@ func show_menu() -> void:
 	visible = true
 	_saves_panel.visible = false
 	_join_panel.visible = false
-	_quit_button.visible = true
 	_status_label.text = ""
 	# Animate buttons in
 	_animate_buttons_in()
@@ -198,7 +194,6 @@ func show_menu_immediate(duration: float = 0.4) -> void:
 	visible = true
 	_saves_panel.visible = false
 	_join_panel.visible = false
-	_quit_button.visible = true
 	_status_label.text = ""
 	# MenuBox may have been hidden by _on_saves_pressed().
 	$MenuBox.visible = true
@@ -407,7 +402,6 @@ func _position_join_inline_btns() -> void:
 func _toggle_join_row() -> void:
 	_join_panel.visible = true
 	$MenuBox.visible = false
-	_quit_button.visible = false
 	_join_field.text = ""
 	_join_error_label.visible = false
 	_join_paste_btn.visible = true
@@ -421,7 +415,6 @@ func _toggle_join_row() -> void:
 func _on_join_back() -> void:
 	_join_panel.visible = false
 	$MenuBox.visible = true
-	_quit_button.visible = true
 
 
 func _on_join_submit() -> void:
@@ -442,13 +435,11 @@ func _on_saves_pressed() -> void:
 	_saves_panel.visible = true
 	# Hide the main menu buttons while browsing saves.
 	$MenuBox.visible = false
-	_quit_button.visible = false
 
 
 func _on_saves_back() -> void:
 	_saves_panel.visible = false
 	$MenuBox.visible = true
-	_quit_button.visible = true
 
 
 func _on_new_stand_pressed() -> void:
