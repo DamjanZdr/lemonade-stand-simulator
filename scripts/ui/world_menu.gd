@@ -486,6 +486,7 @@ func _build_save_row(
 	row.add_theme_constant_override("separation", 2)
 	panel.add_child(row)
 	# Stand name button (large, yellow) — no own hover, panel handles it.
+	# mouse_filter = MOUSE_FILTER_PASS so it doesn't steal hover from panel.
 	var btn := Button.new()
 	btn.custom_minimum_size = Vector2(0, 36)
 	btn.add_theme_font_size_override("font_size", 26)
@@ -493,6 +494,7 @@ func _build_save_row(
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.text = stand_name
 	_make_flat_button(btn)
+	btn.mouse_filter = Control.MOUSE_FILTER_PASS
 	btn.pressed.connect(
 		func():
 			_on_button_click(
@@ -508,17 +510,17 @@ func _build_save_row(
 	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
 	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
 	row.add_child(info)
-	# Hover: pop the whole panel + brighten border.
+	# Hover: pop the inner content (row) + brighten border. Panel outline stays put.
 	panel.mouse_entered.connect(
 		func():
 			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
 			if panel.has_meta("_hover_tween") and panel.get_meta("_hover_tween") is Tween:
 				(panel.get_meta("_hover_tween") as Tween).kill()
-			panel.pivot_offset = Vector2(0, panel.size.y / 2.0)
+			row.pivot_offset = Vector2(0, row.size.y / 2.0)
 			var tw := create_tween()
 			panel.set_meta("_hover_tween", tw)
 			tw.set_parallel(true)
-			tw.tween_property(panel, "scale", Vector2.ONE * HOVER_POP, 0.06) \
+			tw.tween_property(row, "scale", Vector2.ONE * HOVER_POP, 0.06) \
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.4), 0.08) \
 					.set_ease(Tween.EASE_OUT)
@@ -532,7 +534,7 @@ func _build_save_row(
 			var tw := create_tween()
 			panel.set_meta("_hover_tween", tw)
 			tw.set_parallel(true)
-			tw.tween_property(panel, "scale", Vector2.ONE, 0.08) \
+			tw.tween_property(row, "scale", Vector2.ONE, 0.08) \
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.15), 0.12) \
 					.set_ease(Tween.EASE_OUT)
