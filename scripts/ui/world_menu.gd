@@ -336,13 +336,25 @@ func _on_new_stand_pressed() -> void:
 	_new_stand_button.visible = false
 	var row := HBoxContainer.new()
 	row.name = "InlineNameEntry"
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 12)
 	var field := LineEdit.new()
 	field.name = "NameField"
 	field.max_length = 14
 	field.size_flags_horizontal = 3
 	field.add_theme_font_size_override("font_size", 20)
 	field.placeholder_text = "Stand name..."
+	# Transparent background, white outline border.
+	var field_style := StyleBoxLine.new()
+	field_style.color = Color(1, 1, 1, 0.6)
+	field_style.thickness = 2
+	field.add_theme_stylebox_override("normal", field_style)
+	var field_focus := StyleBoxLine.new()
+	field_focus.color = Color(1, 1, 1, 0.9)
+	field_focus.thickness = 2
+	field.add_theme_stylebox_override("focus", field_focus)
+	field.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+	field.add_theme_color_override("font_placeholder_color", Color(1, 1, 1, 0.4))
+	field.add_theme_color_override("caret_color", Color(1, 1, 1, 0.9))
 	field.text_submitted.connect(
 		func(text):
 			_confirm_inline_name(row, field),
@@ -358,6 +370,10 @@ func _on_new_stand_pressed() -> void:
 	create_btn.name = "CreateBtn"
 	create_btn.text = "Create"
 	create_btn.add_theme_font_size_override("font_size", 20)
+	create_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
+	create_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 1))
+	_make_flat_button(create_btn)
+	_add_drop_shadow(create_btn)
 	create_btn.pressed.connect(
 		func():
 			_confirm_inline_name(row, field),
