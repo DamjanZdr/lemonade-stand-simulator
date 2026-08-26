@@ -339,7 +339,8 @@ func _on_new_stand_pressed() -> void:
 	row.add_theme_constant_override("separation", 12)
 	var field := LineEdit.new()
 	field.name = "NameField"
-	field.size_flags_horizontal = 3
+	field.custom_minimum_size = Vector2(SAVE_BOX_WIDTH, 0)
+	field.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	field.add_theme_font_size_override("font_size", 20)
 	field.placeholder_text = "Stand name..."
 	# Limit by weighted char count: capitals = 1.5, others = 1.0.
