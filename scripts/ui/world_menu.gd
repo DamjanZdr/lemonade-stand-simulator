@@ -9,8 +9,8 @@ signal host_pressed
 signal new_stand_requested(stand_name: String)
 signal load_stand_requested(slot_name: String)
 
-const HOVER_POP: float = 1.08
-const HOVER_DURATION: float = 0.05
+const HOVER_POP: float = 1.12
+const HOVER_DURATION: float = 0.08
 
 @onready var _play_button: Button = $MenuBox/PlayButton
 @onready var _title_label: Label = $MenuBox/TitleBox/TitleLabel
@@ -195,9 +195,7 @@ func _setup_hover_effect(btn: Button) -> void:
 	)
 
 
-## Slight scale "pop" on hover, back to normal on exit.
-## Pivot is set to bottom-left so the button grows up and right,
-## never pushing content below it down.
+## Juicy centered scale "pop" on hover, with slight overshoot.
 func _animate_hover(btn: Button, hover: bool) -> void:
 	if btn == null or not is_instance_valid(btn):
 		return
@@ -207,19 +205,23 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 	# Store the original scale on first hover.
 	if not btn.has_meta("_base_scale"):
 		btn.set_meta("_base_scale", btn.scale)
-	# Set pivot to bottom-left so the pop goes up and right.
-	btn.pivot_offset = Vector2(0, btn.size.y)
+	# Set pivot to center so the pop is vertically centered.
+	btn.pivot_offset = btn.size / 2.0
 	var base_scale: Vector2 = btn.get_meta("_base_scale")
 	var tw := create_tween()
 	btn.set_meta("_hover_tween", tw)
 	tw.set_parallel(true)
-	tw.set_ease(Tween.EASE_OUT)
 	if hover:
-		tw.tween_property(btn, "scale", base_scale * HOVER_POP, HOVER_DURATION)
-		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), HOVER_DURATION)
+		# Overshoot pop for a juicy feel.
+		tw.tween_property(btn, "scale", base_scale * HOVER_POP, HOVER_DURATION) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), HOVER_DURATION) \
+				.set_ease(Tween.EASE_OUT)
 	else:
-		tw.tween_property(btn, "scale", base_scale, HOVER_DURATION)
-		tw.tween_property(btn, "modulate", Color.WHITE, HOVER_DURATION)
+		tw.tween_property(btn, "scale", base_scale, HOVER_DURATION) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "modulate", Color.WHITE, HOVER_DURATION) \
+				.set_ease(Tween.EASE_OUT)
 
 
 ## Play click sound and run the callback.

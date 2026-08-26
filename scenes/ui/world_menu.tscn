@@ -58,21 +58,21 @@ text = "Play"
 
 [node name="SavesButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 50)
-theme_override_font_sizes/font_size = 34
+custom_minimum_size = Vector2(0, 54)
+theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
-text = "Saves"
+text = "Stands"
 
 [node name="JoinButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 50)
-theme_override_font_sizes/font_size = 34
+custom_minimum_size = Vector2(0, 54)
+theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
-text = "Join by ID"
+text = "Join"
 
 [node name="JoinRow" type="HBoxContainer" parent="MenuBox"]
 visible = false
