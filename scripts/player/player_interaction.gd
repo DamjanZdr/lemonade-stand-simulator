@@ -182,6 +182,11 @@ func poll_hint() -> void:
 				and not hint.contains("pick up")
 			):
 				hint = hint + "  |  RMB: pick up" if hint != "" else "RMB: pick up"
+			elif not hint.contains("pick up"):
+				# Also check container-based pickup (workstations, bins, etc.)
+				var ctype := _player.placement._get_container_type_for_node(interactable)
+				if ctype != "":
+					hint = hint + "  |  RMB: pick up" if hint != "" else "RMB: pick up"
 	if hint != _last_hint:
 		_last_hint = hint
 		EventBus.interaction_hint_changed.emit(hint)

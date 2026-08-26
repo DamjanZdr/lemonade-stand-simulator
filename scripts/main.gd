@@ -943,6 +943,9 @@ func _start_game_phase() -> void:
 		stand_unit.set_stand_name(GameState.stand_name)
 	if stand_unit2:
 		stand_unit2.set_stand_name(GameState.stand_name)
+	# Sync stand name to all clients so they see the host's save name.
+	if multiplayer.is_server():
+		_sync_stand_name.rpc(GameState.stand_name)
 	# QueueMarkerActive is the spot for the customer currently at the stand.
 	# QueueMarker1 is the first waiting spot (second customer in line).
 	# QueueMarker2 sets the direction and spacing for the rest of the waiting line.
@@ -1162,6 +1165,8 @@ func _on_peer_connected(peer_id: int) -> void:
 		# Send the full world state to the newly joined client so they
 		# see all containers/supply boxes that were placed before they joined.
 		call_deferred("_push_world_state_to_client", peer_id)
+		# Sync the host's stand name to the new client.
+		_sync_stand_name.rpc_id(peer_id, GameState.stand_name)
 
 
 ## Called when a client disconnects. The host removes their player
@@ -1191,6 +1196,17 @@ func _request_spawn() -> void:
 			print("[Main] Still in lobby, deferring spawn for peer %d" % sender_id)
 		else:
 			_spawn_player_for_peer(sender_id)
+
+
+## Host -> client: sync the host's stand name so all players see the
+## same name on the stand sign.
+@rpc("authority", "call_local", "reliable")
+func _sync_stand_name(name: String) -> void:
+	GameState.stand_name = name
+	if stand_unit:
+		stand_unit.set_stand_name(name)
+	if stand_unit2:
+		stand_unit2.set_stand_name(name)
 
 
 func _spawn_player_for_peer(peer_id: int) -> void:

@@ -182,7 +182,7 @@ func _process(delta: float) -> void:
 			_player.velocity = Vector3.ZERO
 		else:
 			# Decay _player.velocity for smooth interpolation between RPCs
-			_player.velocity = _player.velocity.move_toward(Vector3.ZERO, 30.0 * delta)
+			_player.velocity = _player.velocity.move_toward(Vector3.ZERO, 10.0 * delta)
 		# Smoothly interpolate toward the network target position
 		if _has_net_target:
 			var t := clampf(NET_LERP_SPEED * delta, 0.0, 1.0)
