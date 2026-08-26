@@ -19,8 +19,25 @@ var _streams: Dictionary = { }
 
 
 func _ready() -> void:
+	_ensure_buses()
 	_preload_all()
 	EventBus.change_finalized.connect(_on_change_finalized)
+
+
+## Ensure SFX and Music buses exist (created at runtime so we don't
+## need a .bus layout file). Master is always bus 0.
+func _ensure_buses() -> void:
+	# Master is bus 0 by default.
+	# Add SFX bus if missing.
+	if AudioServer.get_bus_count() < 2:
+		AudioServer.add_bus()
+		AudioServer.set_bus_name(1, "SFX")
+		AudioServer.set_bus_send(1, "Master")
+	# Add Music bus if missing.
+	if AudioServer.get_bus_count() < 3:
+		AudioServer.add_bus()
+		AudioServer.set_bus_name(2, "Music")
+		AudioServer.set_bus_send(2, "Master")
 
 
 func _preload_all() -> void:
@@ -83,6 +100,7 @@ func play_sfx(
 
 	var player := AudioStreamPlayer3D.new()
 	player.stream = stream
+	player.bus = "SFX"
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_SQUARE_DISTANCE
 	player.unit_size = 5.0
 	player.max_distance = 50.0
@@ -123,6 +141,7 @@ func play_sfx_ui(
 		return
 	var player := AudioStreamPlayer.new()
 	player.stream = stream
+	player.bus = "SFX"
 	player.volume_db = UI_VOLUME_DB
 	player.pitch_scale = randf_range(base_pitch - pitch_variation, base_pitch + pitch_variation)
 	player.finished.connect(player.queue_free)
