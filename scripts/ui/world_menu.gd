@@ -194,9 +194,11 @@ func _make_flat_button(btn: Button) -> void:
 
 
 ## Wire hover sound + pop animation + press animation for a button.
-func _setup_hover_effect(btn: Button) -> void:
+## pop_left: if true, the button grows to the left on hover (pivot at right).
+func _setup_hover_effect(btn: Button, pop_left: bool = false) -> void:
 	if btn == null:
 		return
+	btn.set_meta("_pop_left", pop_left)
 	btn.mouse_entered.connect(
 		func():
 			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
@@ -227,8 +229,12 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 	# Store the original scale on first hover.
 	if not btn.has_meta("_base_scale"):
 		btn.set_meta("_base_scale", btn.scale)
-	# Pivot at left-center: grows right, stays vertically centered.
-	btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
+	# Pivot at left-center (grows right) or right-center (grows left).
+	var pop_left: bool = btn.has_meta("_pop_left") and btn.get_meta("_pop_left")
+	if pop_left:
+		btn.pivot_offset = Vector2(btn.size.x, btn.size.y / 2.0)
+	else:
+		btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
 	var base_scale: Vector2 = btn.get_meta("_base_scale")
 	var tw := create_tween()
 	btn.set_meta("_hover_tween", tw)
@@ -486,8 +492,8 @@ func _build_save_row(
 	top_row.add_child(btn)
 	# Delete button — replaced by Yes/No inline when clicked.
 	var del_btn := Button.new()
-	del_btn.custom_minimum_size = Vector2(70, 36)
-	del_btn.add_theme_font_size_override("font_size", 14)
+	del_btn.custom_minimum_size = Vector2(90, 36)
+	del_btn.add_theme_font_size_override("font_size", 20)
 	del_btn.add_theme_color_override("font_color", Color(1, 0.5, 0.5, 0.7))
 	del_btn.add_theme_color_override("font_hover_color", Color(1, 0.3, 0.3, 1))
 	del_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -496,11 +502,11 @@ func _build_save_row(
 	_setup_hover_effect(del_btn)
 	# Yes/No container (hidden until Delete is pressed).
 	var confirm_row := HBoxContainer.new()
-	confirm_row.add_theme_constant_override("separation", 8)
+	confirm_row.add_theme_constant_override("separation", 12)
 	confirm_row.visible = false
 	var yes_btn := Button.new()
-	yes_btn.custom_minimum_size = Vector2(50, 36)
-	yes_btn.add_theme_font_size_override("font_size", 14)
+	yes_btn.custom_minimum_size = Vector2(60, 36)
+	yes_btn.add_theme_font_size_override("font_size", 20)
 	yes_btn.add_theme_color_override("font_color", Color(1, 0.3, 0.3, 0.9))
 	yes_btn.add_theme_color_override("font_hover_color", Color(1, 0.2, 0.2, 1))
 	yes_btn.text = "Yes"
@@ -516,13 +522,13 @@ func _build_save_row(
 			),
 	)
 	var no_btn := Button.new()
-	no_btn.custom_minimum_size = Vector2(50, 36)
-	no_btn.add_theme_font_size_override("font_size", 14)
+	no_btn.custom_minimum_size = Vector2(60, 36)
+	no_btn.add_theme_font_size_override("font_size", 20)
 	no_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
 	no_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 0.8))
 	no_btn.text = "No"
 	_make_flat_button(no_btn)
-	_setup_hover_effect(no_btn)
+	_setup_hover_effect(no_btn, true) # pop_left = true
 	no_btn.pressed.connect(
 		func():
 			_on_button_click(
