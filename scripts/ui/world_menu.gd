@@ -520,6 +520,8 @@ func _build_save_row(
 			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.4), 0.08) \
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.06) \
+					.set_ease(Tween.EASE_OUT)
+			tw.tween_property(info, "modulate", Color(1, 1, 1, 0.7), 0.06) \
 					.set_ease(Tween.EASE_OUT),
 	)
 	panel.mouse_exited.connect(
@@ -534,6 +536,8 @@ func _build_save_row(
 			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.15), 0.12) \
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
+					.set_ease(Tween.EASE_OUT)
+			tw.tween_property(info, "modulate", Color(1, 1, 1, 0.4), 0.08) \
 					.set_ease(Tween.EASE_OUT),
 	)
 	# Click anywhere on the panel loads the save.
