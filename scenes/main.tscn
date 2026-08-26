@@ -46,7 +46,7 @@
 [ext_resource type="PackedScene" uid="uid://bpv1s2p3k4q5x" path="res://scenes/player/player_visuals.tscn" id="69_pvis"]
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
-[ext_resource type="Shader" path="res://shaders/transition_motion_blur.gdshader" id="72_tblur"]
+[ext_resource type="Shader" uid="uid://bacxbwma0dens" path="res://shaders/transition_motion_blur.gdshader" id="72_tblur"]
 
 [sub_resource type="ShaderMaterial" id="TransitionBlurMat"]
 shader = ExtResource("72_tblur")
@@ -145,30 +145,33 @@ transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, -2.6603372, 0.934
 [node name="LobbyUI" parent="." unique_id=-1589934587 instance=ExtResource("68_lobbyui")]
 visible = false
 
-[node name="MainMenuCamera" type="Camera3D" parent="." unique_id=1523728213]
-transform = Transform3D(0.98489964, -0.013518769, -0.17259757, -0.013518771, 0.98789716, -0.15452006, 0.17259756, 0.15452006, 0.97279686, -13.700001, 1.3345039, -19.05366)
-current = true
-fov = 80.0
-
-[node name="StandChangeCameraEnd" type="Marker3D" parent="." unique_id=1999270952]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 180, 1.3345039, -19)
-
-[node name="StandChangeCameraStart" type="Marker3D" parent="." unique_id=706505586]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -211.17914, 1.3345039, -19)
-
-[node name="TransitionOverlay" type="CanvasLayer" parent="."]
+[node name="TransitionOverlay" type="CanvasLayer" parent="." unique_id=1225346968]
 layer = 100
 visible = false
 
-[node name="BackBufferCopy" type="BackBufferCopy" parent="TransitionOverlay"]
+[node name="BackBufferCopy" type="BackBufferCopy" parent="TransitionOverlay" unique_id=922325330]
 copy_mode = 0
 
-[node name="BlurRect" type="ColorRect" parent="TransitionOverlay"]
+[node name="BlurRect" type="ColorRect" parent="TransitionOverlay" unique_id=744049912]
+material = SubResource("TransitionBlurMat")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-material = SubResource("TransitionBlurMat")
-color = Color(0, 0, 0, 0)
 mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="MainMenuCameras" type="Node3D" parent="." unique_id=783341319]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.49334335)
+
+[node name="MainMenuCamera" type="Camera3D" parent="MainMenuCameras" unique_id=1523728213]
+transform = Transform3D(0.98489964, -0.013518769, -0.17259757, -0.013518771, 0.98789716, -0.15452006, 0.17259756, 0.15452006, 0.97279686, -14.33595, 1.3345039, -19.05366)
+current = true
+fov = 80.0
+
+[node name="StandChangeCameraEnd" type="Marker3D" parent="MainMenuCameras" unique_id=1999270952]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 180, 1.3345039, -19)
+
+[node name="StandChangeCameraStart" type="Marker3D" parent="MainMenuCameras" unique_id=706505586]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -211.17914, 1.3345039, -19)

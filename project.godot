@@ -36,8 +36,8 @@ HeldItem="*res://scripts/autoloads/held_item.gd"
 
 [debug]
 
-gdscript/warnings/treat_warnings_as_errors=false
 gdscript/warnings/unused_signal=0
+gdscript/warnings/treat_warnings_as_errors=false
 
 [display]
 

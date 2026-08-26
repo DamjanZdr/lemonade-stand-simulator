@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://5vcydvt8kwa6"
+path="res://.godot/imported/stand transition swoosh.mp3-ebe80d4f6e0ab8be221e2210c3b8a517.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/sfx/stand transition swoosh.mp3"
+dest_files=["res://.godot/imported/stand transition swoosh.mp3-ebe80d4f6e0ab8be221e2210c3b8a517.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
