@@ -425,7 +425,7 @@ func _do_transition_whip() -> void:
 	if _transition_tween:
 		_transition_tween.kill()
 	_transition_tween = create_tween()
-	_transition_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_transition_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	# Tween only position, keep rotation fixed to avoid dipping.
 	_transition_tween.tween_property(
 		main_menu_camera,
@@ -444,7 +444,7 @@ func _do_transition_whip() -> void:
 			var target := _get_main_menu_cam_transform()
 			print("[Transition] SETTLE to target pos=%s" % target.origin)
 			var settle := create_tween()
-			settle.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			settle.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 			settle.tween_property(
 				main_menu_camera,
 				"global_position",
