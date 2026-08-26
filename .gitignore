@@ -28,3 +28,4 @@ export/
 export.zip
 scripts/blahblah.gd
 scripts/blahblah.gd.uid
+*.uid
