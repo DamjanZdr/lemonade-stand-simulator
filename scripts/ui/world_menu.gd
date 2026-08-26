@@ -10,11 +10,11 @@ signal new_stand_requested(stand_name: String)
 signal load_stand_requested(slot_name: String)
 
 const HOVER_POP: float = 1.08
-const HOVER_DURATION: float = 0.12
+const HOVER_DURATION: float = 0.05
 
 @onready var _play_button: Button = $MenuBox/PlayButton
-@onready var _title_label: Label = $MenuBox/TitleLabel
-@onready var _subtitle_label: Label = $MenuBox/SubtitleLabel
+@onready var _title_label: Label = $MenuBox/TitleBox/TitleLabel
+@onready var _subtitle_label: Label = $MenuBox/TitleBox/SubtitleLabel
 @onready var _saves_button: Button = $MenuBox/SavesButton
 @onready var _join_button: Button = $MenuBox/JoinButton
 @onready var _join_row: HBoxContainer = $MenuBox/JoinRow
@@ -196,6 +196,8 @@ func _setup_hover_effect(btn: Button) -> void:
 
 
 ## Slight scale "pop" on hover, back to normal on exit.
+## Pivot is set to bottom-left so the button grows up and right,
+## never pushing content below it down.
 func _animate_hover(btn: Button, hover: bool) -> void:
 	if btn == null or not is_instance_valid(btn):
 		return
@@ -205,6 +207,8 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 	# Store the original scale on first hover.
 	if not btn.has_meta("_base_scale"):
 		btn.set_meta("_base_scale", btn.scale)
+	# Set pivot to bottom-left so the pop goes up and right.
+	btn.pivot_offset = Vector2(0, btn.size.y)
 	var base_scale: Vector2 = btn.get_meta("_base_scale")
 	var tw := create_tween()
 	btn.set_meta("_hover_tween", tw)
