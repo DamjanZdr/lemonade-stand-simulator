@@ -31,7 +31,13 @@ alignment = 0
 layout_mode = 2
 theme_override_font_sizes/font_size = 42
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
-text = "Lemonade Stand Simulator"
+text = "Lemonade Stand"
+
+[node name="SubtitleLabel" type="Label" parent="MenuBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 60
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+text = "Simulator"
 
 [node name="Spacer" type="Control" parent="MenuBox"]
 custom_minimum_size = Vector2(0, 24)

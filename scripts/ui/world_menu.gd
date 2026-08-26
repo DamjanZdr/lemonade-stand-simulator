@@ -13,6 +13,8 @@ const HOVER_POP: float = 1.08
 const HOVER_DURATION: float = 0.12
 
 @onready var _play_button: Button = $MenuBox/PlayButton
+@onready var _title_label: Label = $MenuBox/TitleLabel
+@onready var _subtitle_label: Label = $MenuBox/SubtitleLabel
 @onready var _saves_button: Button = $MenuBox/SavesButton
 @onready var _join_button: Button = $MenuBox/JoinButton
 @onready var _join_row: HBoxContainer = $MenuBox/JoinRow
@@ -102,6 +104,8 @@ func _ready() -> void:
 	_setup_hover_effect(_saves_back)
 	_make_flat_button(_new_stand_button)
 	_setup_hover_effect(_new_stand_button)
+	# Size "Simulator" to match the width of "Lemonade Stand".
+	_fit_subtitle_width()
 
 
 func show_menu() -> void:
@@ -137,6 +141,31 @@ func show_name_entry() -> void:
 	_name_entry_field.text = ""
 	_name_entry_dialog.popup_centered()
 	_name_entry_field.grab_focus()
+
+
+## Size the "Simulator" subtitle so its rendered width matches the
+## "Lemonade Stand" title width.
+func _fit_subtitle_width() -> void:
+	if _title_label == null or _subtitle_label == null:
+		return
+	var title_font := _title_label.get_theme_font("font")
+	var title_size := _title_label.get_theme_font_size("font_size")
+	var title_width := title_font \
+			.get_string_size(_title_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_size) \
+			.x
+	if title_width <= 0:
+		return
+	var sub_font := _subtitle_label.get_theme_font("font")
+	# Start from the title font size and increase until we match width.
+	var sub_size := title_size
+	var sub_width := sub_font \
+			.get_string_size(_subtitle_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, sub_size) \
+			.x
+	if sub_width <= 0:
+		return
+	# Scale proportionally to match.
+	sub_size = int(round(title_size * title_width / sub_width))
+	_subtitle_label.add_theme_font_size_override("font_size", sub_size)
 
 
 ## Remove all stylebox backgrounds so the button looks like plain text.
