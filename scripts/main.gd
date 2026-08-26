@@ -258,19 +258,20 @@ func _enter_main_menu() -> void:
 		_world_menu.new_stand_requested.connect(_on_menu_new_stand)
 		_world_menu.load_stand_requested.connect(_on_menu_load_stand)
 	_world_menu.show_menu()
+	# If no save is loaded yet, peek at the most recent save's stand name
+	# so the sign shows the right name on startup (without actually
+	# loading the full save — that happens on Play).
+	if GameState.stand_name == "":
+		var saves := SaveManager.list_saves()
+		if not saves.is_empty():
+			GameState.stand_name = saves[0].get("stand_name", saves[0].get("slot", ""))
 	# Update stand sign: show the loaded stand name, or default text
 	# if no save is loaded yet (first launch).
 	var sign_text := GameState.stand_name
 	if sign_text == "":
 		sign_text = "🍋 LEMONADE STAND 🍋"
-	print(
-		"[Main] _enter_main_menu: GameState.stand_name='%s' sign_text='%s'"
-		% [GameState.stand_name, sign_text]
-	)
-	print("[Main] stand_unit=%s stand_unit2=%s" % [stand_unit, stand_unit2])
 	if stand_unit:
 		stand_unit.set_stand_name(sign_text)
-		print("[Main] after set, get_stand_name='%s'" % stand_unit.get_stand_name())
 	if stand_unit2:
 		stand_unit2.set_stand_name(sign_text)
 	# Freeze game systems while in the menu.
@@ -440,10 +441,8 @@ func _finish_transition() -> void:
 		_world_menu.set_status("")
 		_world_menu.set_enabled(true)
 	# Update stand sign with the newly loaded stand name.
-	print("[Transition] FINISH sign update: GameState.stand_name='%s'" % GameState.stand_name)
 	if stand_unit:
 		stand_unit.set_stand_name(GameState.stand_name)
-		print("[Transition] after set, get_stand_name='%s'" % stand_unit.get_stand_name())
 	if stand_unit2:
 		stand_unit2.set_stand_name(GameState.stand_name)
 		# Check MenuBox visibility
