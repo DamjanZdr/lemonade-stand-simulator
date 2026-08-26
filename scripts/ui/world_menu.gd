@@ -6,10 +6,9 @@ signal play_pressed
 signal saves_pressed
 signal join_pressed(lobby_id: int)
 signal host_pressed
+signal new_stand_requested(stand_name: String)
+signal load_stand_requested(slot_name: String)
 
-const SLOT_NAMES: Array[String] = ["Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5"]
-
-# Text button scene for reuse
 const HOVER_OFFSET: float = 12.0
 const HOVER_DURATION: float = 0.12
 
@@ -25,14 +24,15 @@ const HOVER_DURATION: float = 0.12
 
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
-@onready var _slots_row: VBoxContainer = $SavesPanel/SavesList
+@onready var _saves_list: VBoxContainer = $SavesPanel/SavesList
+@onready var _slots_container: VBoxContainer = $SavesPanel/SavesList/SlotsContainer
+@onready var _new_stand_button: Button = $SavesPanel/SavesList/NewStandButton
 @onready var _saves_back: Button = $SavesPanel/SavesList/BackButton
 @onready var _confirm_dialog: ConfirmationDialog = $ConfirmDialog
+@onready var _name_entry_dialog: AcceptDialog = $NameEntryDialog
+@onready var _name_entry_field: LineEdit = $NameEntryDialog/NameEntry
 
-var _slot_buttons: Array[Button] = []
-var _slot_infos: Array[Label] = []
-var _delete_buttons: Array[Button] = []
-var _saves_by_slot: Dictionary = { }
+var _saves_data: Array = []
 var _pending_delete: String = ""
 var _menu_buttons: Array[Button] = []
 
@@ -71,10 +71,25 @@ func _ready() -> void:
 		func():
 			_on_button_click(_saves_back, _on_saves_back),
 	)
+	_new_stand_button.pressed.connect(
+		func():
+			_on_button_click(_new_stand_button, _on_new_stand_pressed),
+	)
 	_confirm_dialog.confirmed.connect(_on_confirm_delete)
 	_confirm_dialog.canceled.connect(
 		func():
 			_pending_delete = "",
+	)
+	_name_entry_dialog.confirmed.connect(_on_name_entry_confirmed)
+	_name_entry_dialog.canceled.connect(
+		func():
+			_name_entry_field.text = "",
+	)
+	# Allow Enter in the line edit to confirm the dialog.
+	_name_entry_field.text_submitted.connect(
+		func(_text):
+			_name_entry_dialog.hide()
+			_on_name_entry_confirmed(),
 	)
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	# Remove button backgrounds so they look like plain text, then wire hover.
@@ -85,8 +100,8 @@ func _ready() -> void:
 	_setup_hover_effect(_join_submit)
 	_make_flat_button(_saves_back)
 	_setup_hover_effect(_saves_back)
-	_collect_slot_nodes()
-	_refresh_saves()
+	_make_flat_button(_new_stand_button)
+	_setup_hover_effect(_new_stand_button)
 
 
 func show_menu() -> void:
@@ -115,6 +130,13 @@ func set_busy(text: String) -> void:
 func set_enabled(enabled: bool) -> void:
 	for btn in _menu_buttons:
 		btn.disabled = not enabled
+
+
+## Show the name entry dialog (used by Play button when no saves exist).
+func show_name_entry() -> void:
+	_name_entry_field.text = ""
+	_name_entry_dialog.popup_centered()
+	_name_entry_field.grab_focus()
 
 
 ## Remove all stylebox backgrounds so the button looks like plain text.
@@ -220,79 +242,106 @@ func _on_saves_back() -> void:
 	$MenuBox.visible = true
 
 
-func _collect_slot_nodes() -> void:
-	_slot_buttons.clear()
-	_slot_infos.clear()
-	_delete_buttons.clear()
-	# The SavesList VBoxContainer has: SavesTitle, Spacer, Slot1..5, Spacer2, BackButton
-	# Slots are children at indices 2..6.
-	for i in SLOT_NAMES.size():
-		var slot_node := _slots_row.get_child(2 + i) as HBoxContainer
-		_slot_buttons.append(slot_node.get_node("SlotButton") as Button)
-		_slot_infos.append(slot_node.get_node("SlotInfo") as Label)
-		_delete_buttons.append(slot_node.get_node("DeleteButton") as Button)
-		# Make flat and wire hover/click for slot buttons
-		_make_flat_button(_slot_buttons[i])
-		_make_flat_button(_delete_buttons[i])
-		_setup_hover_effect(_slot_buttons[i])
-		_setup_hover_effect(_delete_buttons[i])
+func _on_new_stand_pressed() -> void:
+	_name_entry_field.text = ""
+	_name_entry_dialog.popup_centered()
+	_name_entry_field.grab_focus()
 
 
+func _on_name_entry_confirmed() -> void:
+	var name := _name_entry_field.text.strip_edges()
+	if name == "":
+		return
+	set_busy("Creating '%s'..." % name)
+	new_stand_requested.emit(name)
+
+
+## Build the saves list dynamically from SaveManager.list_saves().
 func _refresh_saves() -> void:
-	_saves_by_slot.clear()
-	for save in SaveManager.list_saves():
-		var slot: String = save.get("slot", "")
-		if SLOT_NAMES.has(slot):
-			_saves_by_slot[slot] = save
-	for i in SLOT_NAMES.size():
-		var slot_name := SLOT_NAMES[i]
-		var btn := _slot_buttons[i]
-		var info := _slot_infos[i]
-		var del_btn := _delete_buttons[i]
-		if _saves_by_slot.has(slot_name):
-			var save: Dictionary = _saves_by_slot[slot_name]
-			var display_name: String = save.get("name", slot_name)
-			var day: int = save.get("day", 1)
-			var money: float = save.get("money", 0.0)
-			var saved_at: float = save.get("saved_at", 0.0)
-			var date_text := ""
-			if saved_at > 0:
-				var dict := Time.get_datetime_dict_from_unix_time(int(saved_at))
-				date_text = "%02d/%02d %02d:%02d" % [
-					dict["month"],
-					dict["day"],
-					dict["hour"],
-					dict["minute"],
-				]
-			btn.text = display_name
-			info.text = "Day %d  |  $%.2f\n%s" % [day, money, date_text]
-			del_btn.visible = true
-		else:
-			btn.text = "New Game"
-			info.text = ""
-			del_btn.visible = false
-		if not btn.pressed.is_connected(_on_slot_pressed):
-			btn.pressed.connect(_on_slot_pressed.bind(slot_name))
-		if not del_btn.pressed.is_connected(_on_delete_pressed):
-			del_btn.pressed.connect(_on_delete_pressed.bind(slot_name))
+	_saves_data = SaveManager.list_saves()
+	# Clear old slot rows.
+	for child in _slots_container.get_children():
+		child.queue_free()
+	# Build a row for each save.
+	for save in _saves_data:
+		var slot_name: String = save.get("slot", "")
+		var stand_name: String = save.get("stand_name", slot_name)
+		var day: int = save.get("day", 1)
+		var money: float = save.get("money", 0.0)
+		var saved_at: float = save.get("saved_at", 0.0)
+		var date_text := ""
+		if saved_at > 0:
+			var dict := Time.get_datetime_dict_from_unix_time(int(saved_at))
+			date_text = "%02d/%02d %02d:%02d" % [
+				dict["month"],
+				dict["day"],
+				dict["hour"],
+				dict["minute"],
+			]
+		var row := _build_save_row(slot_name, stand_name, day, money, date_text)
+		_slots_container.add_child(row)
 
 
-func _on_slot_pressed(slot_name: String) -> void:
-	AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-	if _saves_by_slot.has(slot_name):
-		set_busy("Loading %s..." % _saves_by_slot[slot_name].get("name", slot_name))
-		SaveManager.load_existing_game(slot_name)
-	else:
-		set_busy("Starting new game...")
-		SaveManager.start_new_game(slot_name)
-	host_pressed.emit()
+## Build a single save row: [Button(colored text) | Delete].
+func _build_save_row(
+	slot_name: String,
+	stand_name: String,
+	day: int,
+	money: float,
+	date_text: String,
+) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.theme_override_constants = { "separation": 12 }
+	# The main button shows stand name + info on two lines.
+	var btn := Button.new()
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.custom_minimum_size = Vector2(0, 50)
+	btn.add_theme_font_size_override("font_size", 24)
+	btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
+	btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.text = "%s  (last played %s)\nDay %d  |  $%.2f" % [stand_name, date_text, day, money]
+	_make_flat_button(btn)
+	_setup_hover_effect(btn)
+	btn.pressed.connect(
+		func():
+			_on_button_click(
+				btn,
+				func():
+					_on_load_save(slot_name, stand_name),
+			),
+	)
+	row.add_child(btn)
+	# Delete button.
+	var del_btn := Button.new()
+	del_btn.custom_minimum_size = Vector2(70, 36)
+	del_btn.add_theme_font_size_override("font_size", 14)
+	del_btn.add_theme_color_override("font_color", Color(1, 0.5, 0.5, 0.7))
+	del_btn.add_theme_color_override("font_hover_color", Color(1, 0.3, 0.3, 1))
+	del_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	del_btn.text = "Delete"
+	_make_flat_button(del_btn)
+	_setup_hover_effect(del_btn)
+	del_btn.pressed.connect(
+		func():
+			_on_button_click(
+				del_btn,
+				func():
+					_on_delete_save(slot_name, stand_name),
+			),
+	)
+	row.add_child(del_btn)
+	return row
 
 
-func _on_delete_pressed(slot_name: String) -> void:
-	AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+func _on_load_save(slot_name: String, stand_name: String) -> void:
+	set_busy("Loading %s..." % stand_name)
+	load_stand_requested.emit(slot_name)
+
+
+func _on_delete_save(slot_name: String, stand_name: String) -> void:
 	_pending_delete = slot_name
-	var display_name: String = _saves_by_slot.get(slot_name, { }).get("name", slot_name)
-	_confirm_dialog.dialog_text = "Delete '%s'? This cannot be undone." % display_name
+	_confirm_dialog.dialog_text = "Delete '%s'? This cannot be undone." % stand_name
 	_confirm_dialog.popup_centered()
 
 

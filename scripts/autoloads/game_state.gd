@@ -6,6 +6,7 @@ const FRUIT_TYPES: Array[String] = ["lemon", "strawberry", "blueberry", "peach",
 var money: float
 var popularity: float
 var temperature: float
+var stand_name: String = "Lemonade Stand"
 var prices: Dictionary = { }
 var recipes: Dictionary = { }
 var ice_degrees_per_scoop: float = 4.0

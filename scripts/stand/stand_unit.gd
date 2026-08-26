@@ -78,6 +78,7 @@ var highest_money: float = 0.0
 @onready var thermometer: Node3D = $Thermometer
 @onready var water_dispenser: Node3D = $WaterDispenser
 @onready var stand_mesh: Node3D = $Stand
+@onready var _sign_label: Label3D = stand_mesh.get_node_or_null("SignLabel")
 
 
 ## Networked (Stage B): host-authoritative stand state. Instead of a
@@ -540,3 +541,16 @@ func can_be_served_by(player: Node) -> bool:
 	if player == null or not ("assigned_stand" in player):
 		return false
 	return player.assigned_stand == self
+
+
+## Set the text on the stand's sign (the Label3D above the counter).
+func set_stand_name(name: String) -> void:
+	if _sign_label:
+		_sign_label.text = name
+
+
+## Get the current stand sign text.
+func get_stand_name() -> String:
+	if _sign_label:
+		return _sign_label.text
+	return ""

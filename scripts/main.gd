@@ -237,6 +237,8 @@ func _enter_main_menu() -> void:
 		_world_menu.saves_pressed.connect(_on_menu_saves)
 		_world_menu.join_pressed.connect(_on_menu_join)
 		_world_menu.host_pressed.connect(_on_menu_host)
+		_world_menu.new_stand_requested.connect(_on_menu_new_stand)
+		_world_menu.load_stand_requested.connect(_on_menu_load_stand)
 	_world_menu.show_menu()
 	# Freeze game systems while in the menu.
 	_set_systems_paused(true)
@@ -262,30 +264,33 @@ func _set_systems_paused(paused: bool) -> void:
 		DayManager.process_mode = process_mode_val
 
 
-## Play button: start a new solo game with the most recent save (or a
-## fresh one if no saves exist). Tween the camera to the lobby, then
-## enter the LOBBY state.
+## Play button: load the most recent save, or if no saves exist, prompt
+## the player to name their first stand.
 func _on_menu_play() -> void:
-	# Load the most recent save, or start a new game if none exists.
 	var saves := SaveManager.list_saves()
 	if not saves.is_empty():
-		# Pick the most recent by saved_at timestamp.
+		# Pick the most recent by saved_at timestamp (list_saves is pre-sorted).
 		var latest: Dictionary = saves[0]
-		for s in saves:
-			if s.get("saved_at", 0.0) > latest.get("saved_at", 0.0):
-				latest = s
 		var slot: String = latest.get("slot", "")
 		if slot != "":
 			SaveManager.load_existing_game(slot)
-		else:
-			SaveManager.start_new_game()
-	else:
-		SaveManager.start_new_game()
-	# Host a local offline game so the solo player can play.
+			NetworkManager.host_game()
+			_world_menu.set_busy("Loading %s..." % latest.get("stand_name", slot))
+			return
+	# No saves — prompt for a stand name.
+	_world_menu.show_name_entry()
+
+
+## New stand created from the saves panel name dialog.
+func _on_menu_new_stand(stand_name: String) -> void:
+	SaveManager.start_new_game(stand_name)
 	NetworkManager.host_game()
-	_world_menu.set_busy("Loading...")
-	# Wait for the lobby to be created, then transition.
-	# The actual camera tween happens once we enter the lobby.
+
+
+## Load an existing stand from the saves panel.
+func _on_menu_load_stand(slot_name: String) -> void:
+	SaveManager.load_existing_game(slot_name)
+	NetworkManager.host_game()
 
 
 ## Host button (from Saves panel): a save was selected, host a new game.
@@ -611,6 +616,11 @@ func _on_late_join_denied(reason: String) -> void:
 ## Starts all game systems. This is what _ready() used to do directly,
 ## but now it's deferred until the lobby phase ends.
 func _start_game_phase() -> void:
+	# Update stand signs with the loaded stand name.
+	if stand_unit:
+		stand_unit.set_stand_name(GameState.stand_name)
+	if stand_unit2:
+		stand_unit2.set_stand_name(GameState.stand_name)
 	# QueueMarkerActive is the spot for the customer currently at the stand.
 	# QueueMarker1 is the first waiting spot (second customer in line).
 	# QueueMarker2 sets the direction and spacing for the rest of the waiting line.

@@ -143,8 +143,8 @@ func delete_slot(slot_name: String) -> void:
 
 
 ## Returns info about all save slots for the Load Game UI.
-## Each entry: { "slot": String, "name": String, "day": int, "money": float,
-##               "saved_at": float (unix timestamp) }
+## Each entry: { "slot": String, "stand_name": String, "day": int,
+##               "money": float, "saved_at": float (unix timestamp) }
 func list_saves() -> Array:
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		return []
@@ -162,7 +162,7 @@ func list_saves() -> Array:
 				saves.append(
 					{
 						"slot": slot_name,
-						"name": data.get("slot_name", slot_name),
+						"stand_name": data.get("stand_name", slot_name),
 						"day": data.get("day_number", 1),
 						"money": data.get("money", 0.0),
 						"saved_at": data.get("saved_at", 0.0),
@@ -178,13 +178,16 @@ func list_saves() -> Array:
 	return saves
 
 
-## Start a new game with a fresh save slot. Deletes any existing slot
-## with the same name and initializes defaults.
-func start_new_game(slot_name: String = "") -> void:
-	if slot_name == "":
-		slot_name = "Game " + str(Time.get_datetime_dict_from_system()["day"])
-	current_slot = slot_name
+## Start a new game with a fresh save slot. The stand_name becomes both
+## the save file name and the text on the stand sign in-game.
+func start_new_game(stand_name: String = "") -> void:
+	if stand_name == "":
+		stand_name = "Lemonade Stand"
+	# Use the stand name as the slot (file) name.
+	current_slot = stand_name
 	auto_save_enabled = true
+	# Store the stand name so the sign can be set when loaded.
+	GameState.stand_name = stand_name
 	# Reset GameState to defaults
 	GameState.money = Balancing.STARTING_MONEY
 	GameState.popularity = 0.1
@@ -252,6 +255,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		return
 	_pending_container_respawn = data.get("placed_containers", [])
 	_pending_supply_box_respawn = data.get("supply_boxes", [])
+	GameState.stand_name = data.get("stand_name", current_slot)
 	GameState.money = data.get("money", Balancing.STARTING_MONEY)
 	GameState.popularity = data.get("popularity", 0.1)
 	GameState.temperature = data.get("temperature", 25.0)
@@ -313,6 +317,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 
 func _build_save_dict() -> Dictionary:
 	return {
+		"stand_name": GameState.stand_name,
 		"money": GameState.money,
 		"popularity": GameState.popularity,
 		"temperature": GameState.temperature,
