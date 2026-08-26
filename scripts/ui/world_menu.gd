@@ -128,6 +128,8 @@ func show_menu_immediate() -> void:
 	_saves_panel.visible = false
 	_join_row.visible = false
 	_status_label.text = ""
+	# MenuBox may have been hidden by _on_saves_pressed().
+	$MenuBox.visible = true
 	# Make sure all buttons are fully visible immediately.
 	for btn in _menu_buttons:
 		if btn != null and is_instance_valid(btn):
