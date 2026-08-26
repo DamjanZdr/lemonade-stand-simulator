@@ -517,6 +517,10 @@ func _transition_to_lobby() -> void:
 		# works, then switch back to main_menu_camera for the tween.
 		lobby_camera.current = false
 		main_menu_camera.current = true
+		# Show lobby UI now but at 0 alpha so it can fade in during the tween.
+		if lobby_ui:
+			lobby_ui.visible = true
+			lobby_ui.modulate = Color(1, 1, 1, 0)
 		var target := lobby_camera.global_transform
 		var target_fov: float = lobby_camera.fov
 		var tw := create_tween()
@@ -525,6 +529,9 @@ func _transition_to_lobby() -> void:
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tw.tween_property(main_menu_camera, "fov", target_fov, CAMERA_TWEEN_TIME) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		if lobby_ui:
+			tw.tween_property(lobby_ui, "modulate:a", 1.0, CAMERA_TWEEN_TIME * 0.7) \
+					.set_ease(Tween.EASE_OUT)
 		tw.chain().tween_callback(
 			func():
 				main_menu_camera.global_transform = target
@@ -532,7 +539,7 @@ func _transition_to_lobby() -> void:
 				main_menu_camera.current = false
 				lobby_camera.current = true
 				if lobby_ui:
-					lobby_ui.visible = true,
+					lobby_ui.modulate = Color(1, 1, 1, 1),
 		)
 	else:
 		if lobby_camera:
