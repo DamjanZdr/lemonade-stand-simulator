@@ -219,7 +219,7 @@ func _setup_hover_effect(btn: Button) -> void:
 		return
 	btn.mouse_entered.connect(
 		func():
-			AudioManager.play_sfx_ui("hover", 1.0, 0.05)
+			AudioManager.play_sfx_ui("blip_select", 1.0, 0.05)
 			if not btn.disabled:
 				_animate_hover(btn, true),
 	)
@@ -259,14 +259,25 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 				.set_ease(Tween.EASE_OUT)
 
 
-## Play click sound and run the callback.
+## Play click sound and run the callback with a satisfying press anim.
 func _on_button_click(btn: Button, callback: Callable) -> void:
 	AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-	# Quick press animation
 	if btn != null and is_instance_valid(btn):
+		# Press: squash down + darken, then pop back.
+		var base_scale: Vector2 = btn.scale
+		btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
 		var tw := create_tween()
-		tw.tween_property(btn, "modulate", Color(0.8, 0.8, 0.85), 0.05)
-		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.1)
+		tw.set_parallel(true)
+		# Squash: scale down slightly with a wider feel.
+		tw.tween_property(btn, "scale", base_scale * 0.92, 0.05) \
+				.set_ease(Tween.EASE_IN)
+		tw.tween_property(btn, "modulate", Color(0.7, 0.7, 0.75), 0.05)
+		# Release: pop back with slight overshoot.
+		tw.chain().set_parallel(true)
+		tw.tween_property(btn, "scale", base_scale, 0.12) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.12) \
+				.set_ease(Tween.EASE_OUT)
 	callback.call()
 
 

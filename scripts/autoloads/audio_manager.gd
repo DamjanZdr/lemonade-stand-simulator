@@ -39,6 +39,7 @@ func _preload_all() -> void:
 		"swoosh": "swoosh.mp3",
 		"button_hover": "button hover.mp3",
 		"hover": "hover.mp3",
+		"blip_select": "blipSelect.wav",
 		"tab_click": "tab click.mp3",
 		"upgrade_bought": "upgradebought.mp3",
 		"pitcher": "pitcher.mp3",
