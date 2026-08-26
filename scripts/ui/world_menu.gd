@@ -522,15 +522,10 @@ func _build_save_row(
 	# Divider between Yes and No.
 	var divider := VSeparator.new()
 	divider.add_theme_constant_override("separation", 0)
-	divider.add_theme_stylebox_override(
-		"separator",
-		(func():
-			var s := StyleBoxLine.new()
-			s.color = Color(1, 1, 1, 0.3)
-			s.thickness = 1
-			return s
-		).call(),
-	)
+	var div_style := StyleBoxLine.new()
+	div_style.color = Color(1, 1, 1, 0.3)
+	div_style.thickness = 1
+	divider.add_theme_stylebox_override("separator", div_style)
 	var no_btn := Button.new()
 	no_btn.add_theme_font_size_override("font_size", 20)
 	no_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
