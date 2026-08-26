@@ -628,33 +628,36 @@ func _on_return_to_menu() -> void:
 	NetworkManager.leave_game()
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
-	# Make sure lobby camera is the current one for the tween.
-	if lobby_camera:
-		lobby_camera.current = true
 	# Fade out lobby UI.
 	if lobby_ui:
 		var fade_tw := create_tween()
 		fade_tw.tween_property(lobby_ui, "modulate:a", 0.0, 0.3) \
 				.set_ease(Tween.EASE_OUT)
-	# Tween lobby camera back to main menu camera transform.
+	# Switch to main menu camera immediately, but set it to the lobby
+	# camera's current transform so there's no visual snap. Then tween
+	# the main menu camera back to its home position.
 	if main_menu_camera and lobby_camera:
+		var start_transform := lobby_camera.global_transform
+		var start_fov: float = lobby_camera.fov
 		var target := _get_main_menu_cam_transform()
 		var target_fov: float = main_menu_camera.fov
+		# Snap main menu camera to lobby camera's current view.
+		main_menu_camera.global_transform = start_transform
+		main_menu_camera.fov = start_fov
+		lobby_camera.current = false
+		main_menu_camera.current = true
+		# Tween main menu camera to its home position.
 		var tw := create_tween()
 		tw.set_parallel(true)
-		tw.tween_property(lobby_camera, "global_transform", target, CAMERA_TWEEN_TIME) \
+		tw.tween_property(main_menu_camera, "global_transform", target, CAMERA_TWEEN_TIME) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		tw.tween_property(lobby_camera, "fov", target_fov, CAMERA_TWEEN_TIME) \
+		tw.tween_property(main_menu_camera, "fov", target_fov, CAMERA_TWEEN_TIME) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tw.chain().tween_callback(
 			func():
-				# Switch to main menu camera in-place.
-				lobby_camera.current = false
-				main_menu_camera.current = true
 				main_menu_camera.global_transform = target
 				main_menu_camera.fov = target_fov
 				_menu_cam_base_pos = target.origin
-				# Hide lobby UI, show world menu.
 				if lobby_ui:
 					lobby_ui.visible = false
 					lobby_ui.modulate = Color(1, 1, 1, 1)
@@ -665,7 +668,6 @@ func _on_return_to_menu() -> void:
 				_transition_active = false,
 		)
 	else:
-		# Fallback: just switch state directly.
 		if lobby_ui:
 			lobby_ui.visible = false
 		if _world_menu:
