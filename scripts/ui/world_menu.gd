@@ -484,25 +484,19 @@ func _build_save_row(
 	panel.add_theme_stylebox_override("panel", panel_style)
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 2)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(row)
-	# Stand name button (large, yellow) — no own hover, panel handles it.
-	# mouse_filter = MOUSE_FILTER_PASS so it doesn't steal hover from panel.
-	var btn := Button.new()
+	# Stand name label (large, yellow) — no mouse interaction, panel handles everything.
+	var btn := Label.new()
 	btn.custom_minimum_size = Vector2(0, 36)
 	btn.add_theme_font_size_override("font_size", 26)
 	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
+	btn.add_theme_constant_override("shadow_offset_x", 2)
+	btn.add_theme_constant_override("shadow_offset_y", 2)
+	btn.add_theme_constant_override("shadow_outline_size", 4)
+	btn.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.text = stand_name
-	_make_flat_button(btn)
-	btn.mouse_filter = Control.MOUSE_FILTER_PASS
-	btn.pressed.connect(
-		func():
-			_on_button_click(
-				btn,
-				func():
-					_on_load_save(slot_name, stand_name),
-			),
-	)
 	row.add_child(btn)
 	# Info line: small, dim text under the name.
 	var info := Label.new()
@@ -540,6 +534,16 @@ func _build_save_row(
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
 					.set_ease(Tween.EASE_OUT),
+	)
+	# Click anywhere on the panel loads the save.
+	panel.gui_input.connect(
+		func(event):
+			if (
+				event is InputEventMouseButton and event.pressed
+				and event.button_index == MOUSE_BUTTON_LEFT
+			):
+				AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+				_on_load_save(slot_name, stand_name),
 	)
 	outer.add_child(panel)
 	# Delete button — replaced by Yes/No inline when clicked.
