@@ -139,155 +139,199 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.5)
 
-[node name="SlotsRow" type="HBoxContainer" parent="SavesPanel"]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -400.0
-offset_top = -150.0
-offset_right = 400.0
-offset_bottom = 150.0
-grow_horizontal = 2
+[node name="SavesList" type="VBoxContainer" parent="SavesPanel"]
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = 80.0
+offset_right = 500.0
+offset_bottom = -80.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
-theme_override_constants/separation = 16
+theme_override_constants/separation = 6
+alignment = 0
 
-[node name="Slot1" type="VBoxContainer" parent="SavesPanel/SlotsRow"]
+[node name="SavesTitle" type="Label" parent="SavesPanel/SavesList"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+text = "Saves"
+
+[node name="Spacer" type="Control" parent="SavesPanel/SavesList"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="Slot1" type="HBoxContainer" parent="SavesPanel/SavesList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SlotButton" type="Button" parent="SavesPanel/SavesList/Slot1"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="SlotButton" type="Button" parent="SavesPanel/SlotsRow/Slot1"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 60)
-theme_override_font_sizes/font_size = 16
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
+alignment = 0
 text = "New Game"
 
-[node name="SlotInfo" type="Label" parent="SavesPanel/SlotsRow/Slot1"]
+[node name="SlotInfo" type="Label" parent="SavesPanel/SavesList/Slot1"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
-horizontal_alignment = 1
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+vertical_alignment = 1
 text = ""
 
-[node name="DeleteButton" type="Button" parent="SavesPanel/SlotsRow/Slot1"]
+[node name="DeleteButton" type="Button" parent="SavesPanel/SavesList/Slot1"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(0, 24)
-theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(70, 36)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.5, 0.5, 0.7)
+theme_override_colors/font_hover_color = Color(1, 0.3, 0.3, 1)
+alignment = 0
 text = "Delete"
 
-[node name="Slot2" type="VBoxContainer" parent="SavesPanel/SlotsRow"]
+[node name="Slot2" type="HBoxContainer" parent="SavesPanel/SavesList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SlotButton" type="Button" parent="SavesPanel/SavesList/Slot2"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="SlotButton" type="Button" parent="SavesPanel/SlotsRow/Slot2"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 60)
-theme_override_font_sizes/font_size = 16
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
+alignment = 0
 text = "New Game"
 
-[node name="SlotInfo" type="Label" parent="SavesPanel/SlotsRow/Slot2"]
+[node name="SlotInfo" type="Label" parent="SavesPanel/SavesList/Slot2"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
-horizontal_alignment = 1
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+vertical_alignment = 1
 text = ""
 
-[node name="DeleteButton" type="Button" parent="SavesPanel/SlotsRow/Slot2"]
+[node name="DeleteButton" type="Button" parent="SavesPanel/SavesList/Slot2"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(0, 24)
-theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(70, 36)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.5, 0.5, 0.7)
+theme_override_colors/font_hover_color = Color(1, 0.3, 0.3, 1)
+alignment = 0
 text = "Delete"
 
-[node name="Slot3" type="VBoxContainer" parent="SavesPanel/SlotsRow"]
+[node name="Slot3" type="HBoxContainer" parent="SavesPanel/SavesList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SlotButton" type="Button" parent="SavesPanel/SavesList/Slot3"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="SlotButton" type="Button" parent="SavesPanel/SlotsRow/Slot3"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 60)
-theme_override_font_sizes/font_size = 16
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
+alignment = 0
 text = "New Game"
 
-[node name="SlotInfo" type="Label" parent="SavesPanel/SlotsRow/Slot3"]
+[node name="SlotInfo" type="Label" parent="SavesPanel/SavesList/Slot3"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
-horizontal_alignment = 1
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+vertical_alignment = 1
 text = ""
 
-[node name="DeleteButton" type="Button" parent="SavesPanel/SlotsRow/Slot3"]
+[node name="DeleteButton" type="Button" parent="SavesPanel/SavesList/Slot3"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(0, 24)
-theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(70, 36)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.5, 0.5, 0.7)
+theme_override_colors/font_hover_color = Color(1, 0.3, 0.3, 1)
+alignment = 0
 text = "Delete"
 
-[node name="Slot4" type="VBoxContainer" parent="SavesPanel/SlotsRow"]
+[node name="Slot4" type="HBoxContainer" parent="SavesPanel/SavesList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SlotButton" type="Button" parent="SavesPanel/SavesList/Slot4"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="SlotButton" type="Button" parent="SavesPanel/SlotsRow/Slot4"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 60)
-theme_override_font_sizes/font_size = 16
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
+alignment = 0
 text = "New Game"
 
-[node name="SlotInfo" type="Label" parent="SavesPanel/SlotsRow/Slot4"]
+[node name="SlotInfo" type="Label" parent="SavesPanel/SavesList/Slot4"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
-horizontal_alignment = 1
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+vertical_alignment = 1
 text = ""
 
-[node name="DeleteButton" type="Button" parent="SavesPanel/SlotsRow/Slot4"]
+[node name="DeleteButton" type="Button" parent="SavesPanel/SavesList/Slot4"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(0, 24)
-theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(70, 36)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.5, 0.5, 0.7)
+theme_override_colors/font_hover_color = Color(1, 0.3, 0.3, 1)
+alignment = 0
 text = "Delete"
 
-[node name="Slot5" type="VBoxContainer" parent="SavesPanel/SlotsRow"]
+[node name="Slot5" type="HBoxContainer" parent="SavesPanel/SavesList"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SlotButton" type="Button" parent="SavesPanel/SavesList/Slot5"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="SlotButton" type="Button" parent="SavesPanel/SlotsRow/Slot5"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 60)
-theme_override_font_sizes/font_size = 16
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
+alignment = 0
 text = "New Game"
 
-[node name="SlotInfo" type="Label" parent="SavesPanel/SlotsRow/Slot5"]
+[node name="SlotInfo" type="Label" parent="SavesPanel/SavesList/Slot5"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
-horizontal_alignment = 1
+custom_minimum_size = Vector2(0, 44)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+vertical_alignment = 1
 text = ""
 
-[node name="DeleteButton" type="Button" parent="SavesPanel/SlotsRow/Slot5"]
+[node name="DeleteButton" type="Button" parent="SavesPanel/SavesList/Slot5"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(0, 24)
-theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(70, 36)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.5, 0.5, 0.7)
+theme_override_colors/font_hover_color = Color(1, 0.3, 0.3, 1)
+alignment = 0
 text = "Delete"
 
-[node name="BackButton" type="Button" parent="SavesPanel"]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -60.0
-offset_top = -56.0
-offset_right = 60.0
-offset_bottom = -16.0
-grow_horizontal = 2
-grow_vertical = 0
-theme = ExtResource("2_theme")
-theme_override_font_sizes/font_size = 20
+[node name="Spacer2" type="Control" parent="SavesPanel/SavesList"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="SavesPanel/SavesList"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 36)
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 0.8)
+alignment = 0
 text = "Back"
 
 [node name="ConfirmDialog" type="ConfirmationDialog" parent="."]

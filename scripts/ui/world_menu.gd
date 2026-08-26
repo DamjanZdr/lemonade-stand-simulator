@@ -25,8 +25,8 @@ const HOVER_DURATION: float = 0.12
 
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
-@onready var _slots_row: HBoxContainer = $SavesPanel/SlotsRow
-@onready var _saves_back: Button = $SavesPanel/BackButton
+@onready var _slots_row: VBoxContainer = $SavesPanel/SavesList
+@onready var _saves_back: Button = $SavesPanel/SavesList/BackButton
 @onready var _confirm_dialog: ConfirmationDialog = $ConfirmDialog
 
 var _slot_buttons: Array[Button] = []
@@ -211,22 +211,29 @@ func _on_join_submit() -> void:
 func _on_saves_pressed() -> void:
 	_refresh_saves()
 	_saves_panel.visible = true
+	# Hide the main menu buttons while browsing saves.
+	$MenuBox.visible = false
 
 
 func _on_saves_back() -> void:
 	_saves_panel.visible = false
+	$MenuBox.visible = true
 
 
 func _collect_slot_nodes() -> void:
 	_slot_buttons.clear()
 	_slot_infos.clear()
 	_delete_buttons.clear()
+	# The SavesList VBoxContainer has: SavesTitle, Spacer, Slot1..5, Spacer2, BackButton
+	# Slots are children at indices 2..6.
 	for i in SLOT_NAMES.size():
-		var slot_node := _slots_row.get_child(i) as VBoxContainer
+		var slot_node := _slots_row.get_child(2 + i) as HBoxContainer
 		_slot_buttons.append(slot_node.get_node("SlotButton") as Button)
 		_slot_infos.append(slot_node.get_node("SlotInfo") as Label)
 		_delete_buttons.append(slot_node.get_node("DeleteButton") as Button)
-		# Wire hover/click for slot buttons
+		# Make flat and wire hover/click for slot buttons
+		_make_flat_button(_slot_buttons[i])
+		_make_flat_button(_delete_buttons[i])
 		_setup_hover_effect(_slot_buttons[i])
 		_setup_hover_effect(_delete_buttons[i])
 
