@@ -130,6 +130,15 @@ func update_display() -> void:
 
 
 func add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
+	# Client-side: send a request to the host. Do NOT mutate locally.
+	if not WorldSync.is_host():
+		_rpc_request_add_amount.rpc_id(1, qty, from_pos)
+		return
+	_apply_add_amount(qty, from_pos)
+	_sync_state_to_peers()
+
+
+func _apply_add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if ingredient_type == "ice" and _ice_bucket != null:
 		current_amount = minf(current_amount + qty, max_capacity)
 		_sync_ice_display(true)
@@ -142,6 +151,19 @@ func add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	for i in range(old_count, new_count):
 		_drop_item(i, from_pos)
 	EventBus.bin_amount_changed.emit(ingredient_type, current_amount)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_request_add_amount(qty: float, from_pos: Vector3) -> void:
+	if not is_multiplayer_authority():
+		return
+	_apply_add_amount(qty, from_pos)
+	_sync_state_to_peers()
+
+
+func _sync_state_to_peers() -> void:
+	WorldSync.sync_property(self, "current_amount", current_amount)
+	WorldSync.sync_call(self, "update_display")
 
 
 func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:
@@ -157,6 +179,17 @@ func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 
 
 func take_amount(qty: float) -> float:
+	# Client-side: send a request to the host. Do NOT mutate locally.
+	if not WorldSync.is_host():
+		_rpc_request_take_amount.rpc_id(1, qty)
+		# Return optimistic value so the client can proceed immediately
+		return minf(qty, current_amount)
+	var taken := _apply_take_amount(qty)
+	_sync_state_to_peers()
+	return taken
+
+
+func _apply_take_amount(qty: float) -> float:
 	var taken := minf(qty, current_amount)
 	current_amount -= taken
 	if ingredient_type == "ice" and _ice_bucket != null:
@@ -165,6 +198,14 @@ func take_amount(qty: float) -> float:
 		update_display()
 	EventBus.bin_amount_changed.emit(ingredient_type, current_amount)
 	return taken
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_request_take_amount(qty: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	_apply_take_amount(qty)
+	_sync_state_to_peers()
 
 
 # Local constants matching Player.HeldItem enum (breaks circular dependency)

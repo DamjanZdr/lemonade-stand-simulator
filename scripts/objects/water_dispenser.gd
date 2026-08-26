@@ -31,6 +31,74 @@ func _ready() -> void:
 	_update_water_visual()
 
 
+## Host-only: apply a refill and sync to all clients.
+func _apply_refill(to_add: int) -> void:
+	water_fillings = mini(water_fillings + to_add, max_fillings)
+	_update_water_visual()
+	WorldSync.sync_property(self, "water_fillings", water_fillings)
+	WorldSync.sync_call(self, "_update_water_visual")
+
+
+## Host-only: apply finishing a fill and sync to all clients.
+func _apply_finish_fill() -> void:
+	_is_filling = false
+	_fill_progress = 0.0
+	water_fillings = maxi(water_fillings - 1, 0)
+	_update_water_visual()
+	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
+		_snapped_pitcher.water += _fill_amount
+		_snapped_pitcher.update_label()
+		_snapped_pitcher.end_press_eraser_animation()
+		_snapped_pitcher.update_liquid_color()
+		EventBus.pitcher_ingredient_added.emit("water", _fill_amount)
+		if _snapped_pitcher.fruit_count > 0.0 and _snapped_pitcher.water > 0.0 \
+				and _snapped_pitcher.state == Pitcher.PitcherState.PREPPING:
+			_snapped_pitcher.state = Pitcher.PitcherState.COMPLETE
+			EventBus.pitcher_state_changed.emit(int(_snapped_pitcher.state))
+	# Return tap to closed
+	if _tap_mesh:
+		if _tap_tween and _tap_tween.is_valid():
+			_tap_tween.kill()
+		_tap_tween = create_tween()
+		_tap_tween.tween_property(_tap_mesh, "rotation_degrees:y", TAP_Y_CLOSED, 0.3)
+	WorldSync.sync_property(self, "water_fillings", water_fillings)
+	WorldSync.sync_call(self, "_update_water_visual")
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_request_refill(to_add: int) -> void:
+	if not is_multiplayer_authority():
+		return
+	_apply_refill(to_add)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_request_start_fill(water_amount: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	_start_fill(water_amount)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_request_finish_fill() -> void:
+	if not is_multiplayer_authority():
+		return
+	_apply_finish_fill()
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_request_take_pitcher() -> void:
+	if not is_multiplayer_authority():
+		return
+	# Host doesn't take the pitcher for the client — just clears the snap
+	# reference so the host knows it's gone. The client picks it up locally.
+	if _snapped_pitcher != null:
+		_snapped_pitcher = null
+		_is_filling = false
+		_fill_progress = 0.0
+		_reset_tap()
+
+
 func _process(delta: float) -> void:
 	_update_snap()
 	if _is_filling and _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
@@ -105,6 +173,11 @@ func interact(player: Node) -> void:
 			else:
 				p.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 			_animate_water_drop(start_pos, to_add)
+			# Route through host for authoritative state.
+			if not WorldSync.is_host():
+				_rpc_request_refill.rpc_id(1, to_add)
+			else:
+				_apply_refill(to_add)
 			return
 
 	# Place pitcher on dispenser — handled by player script ghost placement
@@ -122,11 +195,17 @@ func interact(player: Node) -> void:
 						"Dispenser empty! Buy water boxes from the shop.",
 					)
 					return
-				_start_fill(space)
+				# Route through host for authoritative state.
+				if not WorldSync.is_host():
+					_rpc_request_start_fill.rpc_id(1, space)
+				else:
+					_start_fill(space)
 				return
 			# Pitcher full — pick it up
 			var pitcher := _snapped_pitcher
 			_snapped_pitcher = null
+			if not WorldSync.is_host():
+				_rpc_request_take_pitcher.rpc_id(1)
 			p.pickup_container(pitcher, "pitcher")
 			return
 
@@ -142,6 +221,8 @@ func interact_secondary(player: Node) -> void:
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling:
 		var pitcher := _snapped_pitcher
 		_snapped_pitcher = null
+		if not WorldSync.is_host():
+			_rpc_request_take_pitcher.rpc_id(1)
 		p.pickup_container(pitcher, "pitcher")
 		return
 	# The dispenser itself is fixed in place — no pickup on RMB either.
@@ -249,31 +330,14 @@ func _start_fill(water_amount: float) -> void:
 
 
 func _finish_fill() -> void:
-	_is_filling = false
-	_fill_progress = 0.0
-	water_fillings -= 1
-	_update_water_visual()
-
-	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
-		_snapped_pitcher.water += _fill_amount
-		# Trigger label/eraser refresh — _update_label is conventionally private
-		# but called across classes for state sync in this codebase
-		_snapped_pitcher.update_label()
-		_snapped_pitcher.end_press_eraser_animation()
-		_snapped_pitcher.update_liquid_color()
-		EventBus.pitcher_ingredient_added.emit("water", _fill_amount)
-		# Transition to COMPLETE if both fruit and water present
-		if _snapped_pitcher.fruit_count > 0.0 and _snapped_pitcher.water > 0.0 \
-				and _snapped_pitcher.state == Pitcher.PitcherState.PREPPING:
-			_snapped_pitcher.state = Pitcher.PitcherState.COMPLETE
-			EventBus.pitcher_state_changed.emit(int(_snapped_pitcher.state))
-
-	# Return tap to closed
-	if _tap_mesh:
-		if _tap_tween and _tap_tween.is_valid():
-			_tap_tween.kill()
-		_tap_tween = create_tween()
-		_tap_tween.tween_property(_tap_mesh, "rotation_degrees:y", TAP_Y_CLOSED, 0.3)
+	# Route through host for authoritative state.
+	if not WorldSync.is_host():
+		_rpc_request_finish_fill.rpc_id(1)
+		# Still update local visual state for the client
+		_is_filling = false
+		_fill_progress = 0.0
+		return
+	_apply_finish_fill()
 
 
 func _animate_water_drop(start_pos: Vector3, to_add: int) -> void:

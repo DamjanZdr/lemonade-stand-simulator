@@ -792,16 +792,20 @@ func _on_game_starting() -> void:
 
 ## Tweens the lobby camera into the local player's first-person camera.
 ## Called deferred after _start_game_phase so the player has spawned.
-func _tween_camera_to_player() -> void:
+func _tween_camera_to_player(is_late_join: bool = false) -> void:
 	if _local_player and _local_player.has_node("Head/Camera3D"):
 		var player_cam := _local_player.get_node("Head/Camera3D") as Camera3D
 		var target_transform := player_cam.global_transform
+		# Use a shorter tween for late join to avoid the freeze.
+		var tween_time: float = 0.5 if is_late_join else CAMERA_TWEEN_TIME
 		var tw := create_tween()
-		tw.tween_property(lobby_camera, "global_transform", target_transform, CAMERA_TWEEN_TIME) \
+		# Tween position only first, then snap rotation at the end.
+		tw.tween_property(lobby_camera, "global_position", target_transform.origin, tween_time) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		# When the tween finishes, switch to the player's camera
 		tw.tween_callback(
 			func():
+				lobby_camera.global_transform = target_transform
 				lobby_camera.current = false
 				player_cam.make_current()
 				if hud:
@@ -836,7 +840,9 @@ func _on_late_join_starting(peer_id: int) -> void:
 			ep.global_position,
 			ep.global_rotation,
 		)
-	_push_world_state_to_client(peer_id)
+	# Defer the world state push so the client doesn't process everything
+	# in a single frame (which causes the 1fps freeze).
+	call_deferred("_push_world_state_to_client", peer_id)
 	_start_late_join.rpc_id(peer_id, peer_id)
 
 
@@ -1310,7 +1316,7 @@ func _on_local_player_ready(p: Player) -> void:
 	# If this is a late joiner, the camera tween was waiting for the player to exist.
 	if _late_join_camera_pending:
 		_late_join_camera_pending = false
-		call_deferred("_tween_camera_to_player")
+		call_deferred("_tween_camera_to_player", true)
 
 
 ## Called when the server (host) disconnects. Shows a popup so the
