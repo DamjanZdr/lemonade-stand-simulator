@@ -10,7 +10,6 @@ signal new_stand_requested(stand_name: String)
 signal load_stand_requested(slot_name: String)
 
 const HOVER_POP: float = 1.12
-const HOVER_OVERSHOOT: float = 1.18
 const HOVER_DURATION: float = 0.18
 
 @onready var _play_button: Button = $MenuBox/PlayButton
@@ -230,7 +229,9 @@ func _setup_hover_effect(btn: Button) -> void:
 	)
 
 
-## Juicy centered scale "pop" on hover — overshoots then settles.
+## Responsive scale pop on hover. Pivot at right-center so it grows
+## to the right, staying vertically centered. No bounce — just a
+## quick, snappy scale up and back.
 func _animate_hover(btn: Button, hover: bool) -> void:
 	if btn == null or not is_instance_valid(btn):
 		return
@@ -240,25 +241,21 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 	# Store the original scale on first hover.
 	if not btn.has_meta("_base_scale"):
 		btn.set_meta("_base_scale", btn.scale)
-	# Set pivot to center so the pop is vertically centered.
-	btn.pivot_offset = btn.size / 2.0
+	# Pivot at right-center: grows right, stays vertically centered.
+	btn.pivot_offset = Vector2(btn.size.x, btn.size.y / 2.0)
 	var base_scale: Vector2 = btn.get_meta("_base_scale")
 	var tw := create_tween()
 	btn.set_meta("_hover_tween", tw)
+	tw.set_parallel(true)
 	if hover:
-		# Two-step bounce: snap to overshoot, then settle back.
-		tw.set_parallel(true)
-		tw.tween_property(btn, "scale", base_scale * HOVER_OVERSHOOT, 0.08) \
+		tw.tween_property(btn, "scale", base_scale * HOVER_POP, 0.06) \
 				.set_ease(Tween.EASE_OUT)
-		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.1) \
+		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.06) \
 				.set_ease(Tween.EASE_OUT)
-		tw.chain().tween_property(btn, "scale", base_scale * HOVER_POP, 0.1) \
-				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	else:
-		tw.set_parallel(true)
-		tw.tween_property(btn, "scale", base_scale, 0.12) \
-				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tw.tween_property(btn, "modulate", Color.WHITE, 0.12) \
+		tw.tween_property(btn, "scale", base_scale, 0.08) \
+				.set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
 				.set_ease(Tween.EASE_OUT)
 
 
