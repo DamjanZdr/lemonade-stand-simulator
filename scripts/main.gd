@@ -518,11 +518,17 @@ func _transition_to_lobby() -> void:
 		lobby_camera.current = false
 		main_menu_camera.current = true
 		var target := lobby_camera.global_transform
+		var target_fov: float = lobby_camera.fov
 		var tw := create_tween()
+		tw.set_parallel(true)
 		tw.tween_property(main_menu_camera, "global_transform", target, CAMERA_TWEEN_TIME) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		tw.tween_callback(
+		tw.tween_property(main_menu_camera, "fov", target_fov, CAMERA_TWEEN_TIME) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw.chain().tween_callback(
 			func():
+				main_menu_camera.global_transform = target
+				main_menu_camera.fov = target_fov
 				main_menu_camera.current = false
 				lobby_camera.current = true
 				if lobby_ui:
