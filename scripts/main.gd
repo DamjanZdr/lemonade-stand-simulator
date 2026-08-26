@@ -392,8 +392,9 @@ func _start_stand_transition(slot_name: String, stand_name: String) -> void:
 	_transition_loaded = false
 	if _transition_overlay:
 		_transition_overlay.visible = true
-	# Play the transition swoosh sound immediately on click.
-	AudioManager.play_sfx_ui("stand_transition_swoosh", 1.0, 0.0)
+	# Play the transition swoosh sound immediately on click,
+	# skipping the first 0.3s with a short fade-in.
+	AudioManager.play_sfx_ui("stand_transition_swoosh", 1.0, 0.0, 0.3, 0.1)
 	_world_menu.set_busy("Loading %s..." % stand_name)
 	# Hide the menu UI but keep the blur panel.
 	_world_menu.hide_menu()

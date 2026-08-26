@@ -115,6 +115,8 @@ func play_sfx_ui(
 	key: String,
 	base_pitch: float = 1.0,
 	pitch_variation: float = _UI_PITCH_VARIATION,
+	seek_offset: float = 0.0,
+	fade_in: float = 0.0,
 ) -> void:
 	var stream: AudioStream = _streams.get(key)
 	if stream == null:
@@ -125,4 +127,12 @@ func play_sfx_ui(
 	player.pitch_scale = randf_range(base_pitch - pitch_variation, base_pitch + pitch_variation)
 	player.finished.connect(player.queue_free)
 	add_child(player)
-	player.play()
+	if seek_offset > 0.0 and stream is AudioStreamMP3:
+		player.play(seek_offset)
+	else:
+		player.play()
+	if fade_in > 0.0:
+		var start_vol := player.volume_db
+		player.volume_db = -40.0
+		var tween := create_tween()
+		tween.tween_property(player, "volume_db", start_vol, fade_in)
