@@ -48,7 +48,7 @@ var _join_error_label: Label = null
 @onready var _version_label: Label = $VersionLabel
 
 # Music player widget
-var _music_vinyl: TextureRect = null
+var _music_vinyl: Control = null
 var _music_label: Label = null
 var _music_widget: Control = null
 var _music_spin_tween: Tween = null
