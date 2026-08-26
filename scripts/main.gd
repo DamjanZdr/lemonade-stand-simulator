@@ -247,10 +247,10 @@ func _enter_main_menu() -> void:
 	if main_menu_camera:
 		main_menu_camera.current = true
 		_menu_cam_base_pos = main_menu_camera.global_position
-		# Eagerly store the home transform so it's available even if
-		# _get_main_menu_cam_transform() is first called after the camera
-		# has been moved (e.g. by _transition_to_lobby()).
+		# Eagerly store the home transform and FOV so they're available
+		# even after _transition_to_lobby() moves the camera.
 		set_meta("_main_menu_cam_transform", main_menu_camera.global_transform)
+		set_meta("_main_menu_cam_fov", main_menu_camera.fov)
 	if lobby_camera:
 		lobby_camera.current = false
 	# Hide the HUD and lobby UI during the menu.
@@ -645,6 +645,8 @@ func _on_return_to_menu() -> void:
 		var start_fov: float = lobby_camera.fov
 		var target := _get_main_menu_cam_transform()
 		var target_fov: float = main_menu_camera.fov
+		if has_meta("_main_menu_cam_fov"):
+			target_fov = get_meta("_main_menu_cam_fov") as float
 		# Snap main menu camera to lobby camera's current view.
 		main_menu_camera.global_transform = start_transform
 		main_menu_camera.fov = start_fov
