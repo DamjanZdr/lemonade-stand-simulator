@@ -35,8 +35,11 @@ var _join_error_label: Label = null
 @onready var _settings_panel: Control = $SettingsPanel
 @onready var _settings_back: Button = $SettingsPanel/SettingsBack
 @onready var _master_slider: HSlider = $SettingsPanel/SettingsList/MasterRow/MasterSlider
+@onready var _master_value: Label = $SettingsPanel/SettingsList/MasterRow/MasterValue
 @onready var _sfx_slider: HSlider = $SettingsPanel/SettingsList/SFXRow/SFXSlider
+@onready var _sfx_value: Label = $SettingsPanel/SettingsList/SFXRow/SFXValue
 @onready var _music_slider: HSlider = $SettingsPanel/SettingsList/MusicRow/MusicSlider
+@onready var _music_value: Label = $SettingsPanel/SettingsList/MusicRow/MusicValue
 @onready var _fullscreen_check: CheckBox = $SettingsPanel/SettingsList/FullscreenRow/FullscreenCheck
 @onready var _vsync_check: CheckBox = $SettingsPanel/SettingsList/VSyncRow/VSyncCheck
 @onready var _lighting_check: CheckBox = $SettingsPanel/SettingsList/LightingRow/LightingCheck
@@ -157,20 +160,35 @@ func _ready() -> void:
 		func():
 			_on_button_click(_settings_back, _on_settings_back),
 	)
-	# Audio sliders — control bus volumes directly.
+	# Audio sliders — control bus volumes, show value, play sound on release.
 	_master_slider.value_changed.connect(
 		func(v: float):
-			AudioServer.set_bus_volume_db(0, linear_to_db(v)),
+			AudioServer.set_bus_volume_db(0, linear_to_db(v))
+			_master_value.text = "%d" % int(round(v * 100)),
+	)
+	_master_slider.drag_ended.connect(
+		func(_changed: bool):
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03),
 	)
 	_sfx_slider.value_changed.connect(
 		func(v: float):
 			if AudioServer.get_bus_count() > 1:
-				AudioServer.set_bus_volume_db(1, linear_to_db(v)),
+				AudioServer.set_bus_volume_db(1, linear_to_db(v))
+			_sfx_value.text = "%d" % int(round(v * 100)),
+	)
+	_sfx_slider.drag_ended.connect(
+		func(_changed: bool):
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03),
 	)
 	_music_slider.value_changed.connect(
 		func(v: float):
 			if AudioServer.get_bus_count() > 2:
-				AudioServer.set_bus_volume_db(2, linear_to_db(v)),
+				AudioServer.set_bus_volume_db(2, linear_to_db(v))
+			_music_value.text = "%d" % int(round(v * 100)),
+	)
+	_music_slider.drag_ended.connect(
+		func(_changed: bool):
+			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0),
 	)
 	# Graphics toggles.
 	_fullscreen_check.toggled.connect(
@@ -212,6 +230,38 @@ func _ready() -> void:
 	_make_flat_button(_settings_back)
 	_add_drop_shadow(_settings_back)
 	_setup_hover_effect(_settings_back)
+	# Style checkboxes: transparent bg, white outline, minimalist.
+	for cb in [_fullscreen_check, _vsync_check, _lighting_check, _fps_check]:
+		var cb_normal := StyleBoxFlat.new()
+		cb_normal.bg_color = Color(0, 0, 0, 0)
+		cb_normal.border_color = Color(1, 1, 1, 0.4)
+		cb_normal.set_border_width_all(1)
+		cb_normal.set_content_margin_all(4)
+		cb_normal.set_corner_radius_all(2)
+		cb.add_theme_stylebox_override("normal", cb_normal)
+		var cb_hover := StyleBoxFlat.new()
+		cb_hover.bg_color = Color(0, 0, 0, 0)
+		cb_hover.border_color = Color(1, 1, 1, 0.8)
+		cb_hover.set_border_width_all(1)
+		cb_hover.set_content_margin_all(4)
+		cb_hover.set_corner_radius_all(2)
+		cb.add_theme_stylebox_override("hover", cb_hover)
+		var cb_pressed := StyleBoxFlat.new()
+		cb_pressed.bg_color = Color(1, 1, 1, 0.1)
+		cb_pressed.border_color = Color(1, 1, 1, 1.0)
+		cb_pressed.set_border_width_all(1)
+		cb_pressed.set_content_margin_all(4)
+		cb_pressed.set_corner_radius_all(2)
+		cb.add_theme_stylebox_override("pressed", cb_pressed)
+		var cb_checked := StyleBoxFlat.new()
+		cb_checked.bg_color = Color(1, 0.95, 0.7, 0.15)
+		cb_checked.border_color = Color(1, 0.95, 0.7, 1.0)
+		cb_checked.set_border_width_all(1)
+		cb_checked.set_content_margin_all(4)
+		cb_checked.set_corner_radius_all(2)
+		cb.add_theme_stylebox_override("checked", cb_checked)
+		cb.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+		cb.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	# Style join field same as stand box outline.
 	var jf_style := StyleBoxFlat.new()
 	jf_style.bg_color = Color(0, 0, 0, 0)
@@ -482,13 +532,25 @@ func _on_settings_pressed() -> void:
 	_settings_panel.visible = true
 	$MenuBox.visible = false
 	# Sync current state into the controls.
-	_master_slider.value = db_to_linear(AudioServer.get_bus_volume_db(0))
+	var master_val := db_to_linear(AudioServer.get_bus_volume_db(0))
+	_master_slider.value = master_val
+	_master_value.text = "%d" % int(round(master_val * 100))
+	var sfx_val := 1.0
+	if AudioServer.get_bus_count() > 1:
+		sfx_val = db_to_linear(AudioServer.get_bus_volume_db(1))
+	_sfx_slider.value = sfx_val
+	_sfx_value.text = "%d" % int(round(sfx_val * 100))
+	var music_val := 1.0
+	if AudioServer.get_bus_count() > 2:
+		music_val = db_to_linear(AudioServer.get_bus_volume_db(2))
+	_music_slider.value = music_val
+	_music_value.text = "%d" % int(round(music_val * 100))
 	_fullscreen_check.button_pressed = (
 		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	)
 	_vsync_check.button_pressed = DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
-	_lighting_check.button_pressed = true # default, main.gd will sync
-	_fps_check.button_pressed = false # default, main.gd will sync
+	_lighting_check.button_pressed = true
+	_fps_check.button_pressed = false
 
 
 func _on_settings_back() -> void:

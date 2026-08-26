@@ -318,7 +318,7 @@ offset_right = 500.0
 offset_bottom = -70.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
-theme_override_constants/separation = 6
+theme_override_constants/separation = 8
 alignment = 0
 
 [node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsList"]
@@ -328,7 +328,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 0.95)
 text = "Settings"
 
 [node name="Spacer" type="Control" parent="SettingsPanel/SettingsList"]
-custom_minimum_size = Vector2(0, 20)
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
 [node name="AudioHeader" type="Label" parent="SettingsPanel/SettingsList"]
@@ -350,12 +350,20 @@ text = "Master"
 
 [node name="MasterSlider" type="HSlider" parent="SettingsPanel/SettingsList/MasterRow"]
 layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(200, 0)
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 1.0
+
+[node name="MasterValue" type="Label" parent="SettingsPanel/SettingsList/MasterRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 0)
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+text = "100"
+horizontal_alignment = 2
 
 [node name="SFXRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -370,12 +378,20 @@ text = "SFX"
 
 [node name="SFXSlider" type="HSlider" parent="SettingsPanel/SettingsList/SFXRow"]
 layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(200, 0)
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 1.0
+
+[node name="SFXValue" type="Label" parent="SettingsPanel/SettingsList/SFXRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 0)
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+text = "100"
+horizontal_alignment = 2
 
 [node name="MusicRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -390,15 +406,23 @@ text = "Music"
 
 [node name="MusicSlider" type="HSlider" parent="SettingsPanel/SettingsList/MusicRow"]
 layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(200, 0)
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 1.0
 
+[node name="MusicValue" type="Label" parent="SettingsPanel/SettingsList/MusicRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 0)
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+text = "100"
+horizontal_alignment = 2
+
 [node name="Spacer2" type="Control" parent="SettingsPanel/SettingsList"]
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
 [node name="GraphicsHeader" type="Label" parent="SettingsPanel/SettingsList"]
@@ -420,6 +444,7 @@ text = "Fullscreen"
 
 [node name="FullscreenCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FullscreenRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
 
 [node name="VSyncRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -434,6 +459,7 @@ text = "VSync"
 
 [node name="VSyncCheck" type="CheckBox" parent="SettingsPanel/SettingsList/VSyncRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
 
 [node name="LightingRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -448,6 +474,7 @@ text = "Enhanced Lighting"
 
 [node name="LightingCheck" type="CheckBox" parent="SettingsPanel/SettingsList/LightingRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
 
 [node name="FPSRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -462,19 +489,20 @@ text = "Show FPS"
 
 [node name="FPSCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FPSRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
 
 [node name="SettingsBack" type="Button" parent="SettingsPanel"]
 layout_mode = 2
 theme = ExtResource("2_theme")
-anchors_preset = 5
+anchors_preset = 7
 anchor_left = 0.0
-anchor_top = 0.0
+anchor_top = 1.0
 anchor_right = 0.0
-anchor_bottom = 0.0
+anchor_bottom = 1.0
 offset_left = 60.0
-offset_top = 390.0
+offset_top = -70.0
 offset_right = 500.0
-offset_bottom = 444.0
+offset_bottom = -16.0
 grow_vertical = 0
 custom_minimum_size = Vector2(0, 54)
 theme_override_font_sizes/font_size = 38
