@@ -355,7 +355,18 @@ func show_menu_immediate(duration: float = 0.4) -> void:
 
 
 func hide_menu() -> void:
-	visible = false
+	# Fade out the MenuBox before hiding.
+	if $MenuBox.modulate.a > 0:
+		$MenuBox.modulate = Color(1, 1, 1, 1)
+		var tw := create_tween()
+		tw.set_ease(Tween.EASE_IN)
+		tw.tween_property($MenuBox, "modulate:a", 0.0, 0.2)
+		tw.tween_callback(
+			func():
+				visible = false,
+		)
+	else:
+		visible = false
 
 
 func set_status(text: String) -> void:
