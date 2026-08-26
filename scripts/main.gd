@@ -545,6 +545,15 @@ func _transition_to_lobby() -> void:
 			lobby_camera.current = true
 		if lobby_ui:
 			lobby_ui.visible = true
+	# Update stand signs with the loaded stand name.
+	print("[Main] Setting stand signs to: %s" % GameState.stand_name)
+	if stand_unit:
+		stand_unit.set_stand_name(GameState.stand_name)
+		print("[Main] stand_unit sign set, get=%s" % stand_unit.get_stand_name())
+	else:
+		print("[Main] stand_unit is NULL")
+	if stand_unit2:
+		stand_unit2.set_stand_name(GameState.stand_name)
 	# Unfreeze game systems for the lobby phase (still no day cycle).
 	_set_systems_paused(false)
 	# Set up networking now that we're entering the lobby.
