@@ -4,8 +4,17 @@ extends Node
 const CASH_PICKUP_SCENE: PackedScene = preload("res://scenes/objects/cash_pickup.tscn")
 const OUTLINE_SCENE: PackedScene = preload("res://scenes/ui/outline_overlay.tscn")
 const DAY_SUMMARY_SCENE: PackedScene = preload("res://scenes/ui/day_summary.tscn")
+const WORLD_MENU_SCENE: PackedScene = preload("res://scenes/ui/world_menu.tscn")
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
+
+## Game states. MAIN_MENU shows the in-world menu overlay; LOBBY is the
+## pre-game customization phase; PLAYING is the active simulation.
+enum MenuState {
+	MAIN_MENU,
+	LOBBY,
+	PLAYING,
+}
 
 @onready var world: Node3D = $World
 @onready var players_node: Node3D = $Players
@@ -21,6 +30,7 @@ const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 @onready var stand_unit: StandUnit = world.find_child("StandUnit", true, false) as StandUnit
 @onready var stand_unit2: StandUnit = world.find_child("StandUnit2", true, false) as StandUnit
 @onready var lobby_camera: Camera3D = $LobbyCamera
+@onready var main_menu_camera: Camera3D = $MainMenuCamera
 @onready var lobby_ui: Control = $LobbyUI
 @onready var lobby_player_models: Node3D = $LobbyPlayerModels
 @onready var lobby_cam_stand1: Camera3D = $LobbyCamStand1
@@ -71,6 +81,13 @@ var _orig_fill_energy: float = 0.5
 ## Lobby phase: true while in the lobby, false once the game starts.
 ## During lobby, the LobbyCamera is active and game systems are paused.
 var _in_lobby: bool = true
+
+## Current game state. MAIN_MENU is the in-world menu overlay shown on
+## first load; LOBBY is the pre-game customization; PLAYING is active sim.
+var _game_state: MenuState = MenuState.LOBBY
+
+## The in-world main menu overlay (instantiated when entering MAIN_MENU).
+var _world_menu: CanvasLayer = null
 
 ## True for the local late joiner once the host has started their spawn-in.
 var _late_join_camera_pending: bool = false
@@ -143,21 +160,20 @@ func _ready() -> void:
 	LobbyManager.late_join_starting.connect(_on_late_join_starting)
 	LobbyManager.late_join_denied.connect(_on_late_join_denied)
 
-	# If there's no lobby roster AND we're not connected to a server
-	# (e.g. testing main.tscn directly in the editor), skip the lobby
-	# and start the game immediately. Clients must wait for the roster
-	# to arrive over the network before the lobby can proceed.
-	if LobbyManager.roster.is_empty() and not multiplayer.has_multiplayer_peer():
-		print("[Main] No lobby roster — starting game directly (solo/test mode)")
-		_on_game_starting()
-	else:
-		# Set up networking now so the spawner is ready when the host
-		# starts the game. This must happen before any spawn requests
-		# arrive from clients.
+	# If we're connected to a server (joining an existing game), go
+	# straight to the lobby/game flow. Otherwise, show the in-world
+	# main menu so the player can choose Play, Saves, or Join.
+	if multiplayer.has_multiplayer_peer():
+		# Already connected — set up networking and enter lobby/game flow.
 		_setup_networking()
-		# Listen for host disconnect so clients get a popup instead of
-		# getting stuck.
 		NetworkManager.server_disconnected.connect(_on_host_left)
+		# If there's already a roster, we're joining mid-game as a late
+		# joiner; the lobby flow handles that. If no roster yet, the
+		# lobby will populate from the host.
+		_game_state = MenuState.LOBBY
+	else:
+		# No multiplayer session — show the in-world main menu.
+		_enter_main_menu()
 
 
 ## Sets up the lobby phase: positions the lobby camera, wires the lobby UI
@@ -187,6 +203,151 @@ func _setup_lobby() -> void:
 	# Connect stand switch signal from lobby UI for camera tweening
 	if lobby_ui.has_signal("stand_switched"):
 		lobby_ui.stand_switched.connect(_on_stand_switched)
+	# Hide lobby UI during main menu — it'll be shown when Play is pressed.
+	lobby_ui.visible = false
+
+## --- In-world main menu ---
+
+
+## Enter the MAIN_MENU state: show the MainMenuCamera, instantiate the
+## world menu overlay, and freeze game systems.
+func _enter_main_menu() -> void:
+	_game_state = MenuState.MAIN_MENU
+	_in_lobby = false
+	# Use the MainMenuCamera as the active camera.
+	if main_menu_camera:
+		main_menu_camera.current = true
+	if lobby_camera:
+		lobby_camera.current = false
+	# Hide the HUD and lobby UI during the menu.
+	if hud:
+		hud.visible = false
+	if lobby_ui:
+		lobby_ui.visible = false
+	# Instantiate the world menu overlay if not already present.
+	if _world_menu == null or not is_instance_valid(_world_menu):
+		_world_menu = WORLD_MENU_SCENE.instantiate() as CanvasLayer
+		add_child(_world_menu)
+		_world_menu.play_pressed.connect(_on_menu_play)
+		_world_menu.saves_pressed.connect(_on_menu_saves)
+		_world_menu.join_pressed.connect(_on_menu_join)
+		_world_menu.host_pressed.connect(_on_menu_host)
+	_world_menu.show_menu()
+	# Freeze game systems while in the menu.
+	_set_systems_paused(true)
+	# Connect network signals so we transition to the lobby when a
+	# session is established (from Play/Host or Join).
+	if not NetworkManager.lobby_created.is_connected(_on_menu_session_ready):
+		NetworkManager.lobby_created.connect(_on_menu_session_ready)
+	if not NetworkManager.server_connected.is_connected(_on_menu_session_ready):
+		NetworkManager.server_connected.connect(_on_menu_session_ready)
+	if not NetworkManager.connection_failed.is_connected(_on_menu_session_failed):
+		NetworkManager.connection_failed.connect(_on_menu_session_failed)
+	GameLog.log("[Main] Entered MAIN_MENU state")
+
+
+## Pause or unpause game systems (spawners, day cycle, etc.) so the world
+## stays frozen during the main menu.
+func _set_systems_paused(paused: bool) -> void:
+	var process_mode_val := Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
+	for node in [spawner, spawner2, ped_spawner, delivery, delivery2]:
+		if node:
+			node.process_mode = process_mode_val
+	if DayManager:
+		DayManager.process_mode = process_mode_val
+
+
+## Play button: start a new solo game with the most recent save (or a
+## fresh one if no saves exist). Tween the camera to the lobby, then
+## enter the LOBBY state.
+func _on_menu_play() -> void:
+	# Load the most recent save, or start a new game if none exists.
+	var saves := SaveManager.list_saves()
+	if not saves.is_empty():
+		# Pick the most recent by saved_at timestamp.
+		var latest: Dictionary = saves[0]
+		for s in saves:
+			if s.get("saved_at", 0.0) > latest.get("saved_at", 0.0):
+				latest = s
+		var slot: String = latest.get("slot", "")
+		if slot != "":
+			SaveManager.load_existing_game(slot)
+		else:
+			SaveManager.start_new_game()
+	else:
+		SaveManager.start_new_game()
+	# Host a local offline game so the solo player can play.
+	NetworkManager.host_game()
+	_world_menu.set_busy("Loading...")
+	# Wait for the lobby to be created, then transition.
+	# The actual camera tween happens once we enter the lobby.
+
+
+## Host button (from Saves panel): a save was selected, host a new game.
+func _on_menu_host() -> void:
+	NetworkManager.host_game()
+
+
+## Join button: connect to an existing lobby by ID.
+func _on_menu_join(lobby_id: int) -> void:
+	NetworkManager.join_game(lobby_id)
+
+
+## Called when a lobby is created or a server connection succeeds while
+## in the MAIN_MENU state. Transitions to the LOBBY state.
+func _on_menu_session_ready(_arg: Variant = null) -> void:
+	if _game_state != MenuState.MAIN_MENU:
+		return
+	GameLog.log("[Main] Session ready, transitioning to lobby")
+	_transition_to_lobby()
+
+
+## Called when a connection fails while in the MAIN_MENU state.
+func _on_menu_session_failed(reason: String) -> void:
+	if _world_menu:
+		_world_menu.set_status("Failed: %s" % reason)
+		_world_menu.set_enabled(true)
+
+
+## Saves button: the world_menu handles showing the saves panel internally.
+## Nothing extra needed here — the panel is toggled within world_menu.gd.
+func _on_menu_saves() -> void:
+	pass
+
+
+## Transition from MAIN_MENU to LOBBY: tween the MainMenuCamera to the
+## LobbyCamera, then activate the lobby UI.
+func _transition_to_lobby() -> void:
+	if _game_state != MenuState.MAIN_MENU:
+		return
+	_game_state = MenuState.LOBBY
+	_in_lobby = true
+	if _world_menu:
+		_world_menu.hide_menu()
+	# Tween MainMenuCamera to the LobbyCamera's transform, then switch.
+	if main_menu_camera and lobby_camera:
+		var target := lobby_camera.global_transform
+		var tw := create_tween()
+		tw.tween_property(main_menu_camera, "global_transform", target, CAMERA_TWEEN_TIME) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw.tween_callback(
+			func():
+				main_menu_camera.current = false
+				lobby_camera.current = true
+				if lobby_ui:
+					lobby_ui.visible = true,
+		)
+	else:
+		if lobby_camera:
+			lobby_camera.current = true
+		if lobby_ui:
+			lobby_ui.visible = true
+	# Unfreeze game systems for the lobby phase (still no day cycle).
+	_set_systems_paused(false)
+	# Set up networking now that we're entering the lobby.
+	_setup_networking()
+	NetworkManager.server_disconnected.connect(_on_host_left)
+	GameLog.log("[Main] Transitioned to LOBBY state")
 
 
 ## Positions the lobby camera at the given stand index, optionally tweening.
@@ -253,6 +414,7 @@ func _on_game_starting() -> void:
 	if not _in_lobby:
 		return
 	_in_lobby = false
+	_game_state = MenuState.PLAYING
 
 	# Determine which stand this player is on
 	var my_id := multiplayer.get_unique_id()
@@ -409,6 +571,7 @@ func _start_late_join(peer_id: int) -> void:
 ## Transitions the local player from the late-join lobby into the running game.
 func _do_late_join_transition() -> void:
 	_in_lobby = false
+	_game_state = MenuState.PLAYING
 	# Hide the lobby UI and player models, show the HUD.
 	if lobby_ui:
 		lobby_ui.visible = false
