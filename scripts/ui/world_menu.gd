@@ -306,6 +306,25 @@ func show_menu() -> void:
 	_join_panel.visible = false
 	_settings_panel.visible = false
 	_status_label.text = ""
+	$MenuBox.visible = true
+	$MenuBox.modulate = Color(1, 1, 1, 1)
+	# Reset all buttons: kill stale tweens, reset modulate + scale,
+	# and re-apply flat style + drop shadow + hover effects.
+	for btn in _menu_buttons:
+		if btn == null or not is_instance_valid(btn):
+			continue
+		# Kill any stale hover/press tweens.
+		if btn.has_meta("_hover_tween") and btn.get_meta("_hover_tween") is Tween:
+			(btn.get_meta("_hover_tween") as Tween).kill()
+		if btn.has_meta("_press_tween") and btn.get_meta("_press_tween") is Tween:
+			(btn.get_meta("_press_tween") as Tween).kill()
+		btn.modulate = Color(1, 1, 1, 1)
+		if btn.has_meta("_base_scale"):
+			btn.scale = btn.get_meta("_base_scale")
+		else:
+			btn.scale = Vector2.ONE
+		_make_flat_button(btn)
+		_add_drop_shadow(btn)
 	# Animate buttons in
 	_animate_buttons_in()
 
