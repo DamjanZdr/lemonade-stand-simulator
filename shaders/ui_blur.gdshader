@@ -1,7 +1,7 @@
 shader_type canvas_item;
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
-uniform float blur_radius : hint_range(0.0, 16.0) = 8.0;
+uniform float blur_radius : hint_range(0.0, 16.0) = 12.0;
 // UV.x at which the fade starts (0=left edge, 1=right edge).
 uniform float fade_start : hint_range(0.0, 1.0) = 0.6;
 
