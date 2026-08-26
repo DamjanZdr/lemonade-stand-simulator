@@ -38,6 +38,7 @@ enum MenuState {
 @onready var stand_change_cam_end: Marker3D = $StandChangeCameraEnd
 @onready var stand_change_cam_start: Marker3D = $StandChangeCameraStart
 @onready var _transition_blur_rect: ColorRect = $TransitionOverlay/BlurRect
+@onready var _transition_overlay: CanvasLayer = $TransitionOverlay
 
 ## FPS counter label (toggled with F key)
 var _fps_label: Label = null
@@ -328,6 +329,8 @@ func _start_stand_transition(slot_name: String, stand_name: String) -> void:
 		return
 	_transition_active = true
 	_transition_loaded = false
+	if _transition_overlay:
+		_transition_overlay.visible = true
 	_world_menu.set_busy("Loading %s..." % stand_name)
 	# Hide the menu UI but keep the blur panel.
 	_world_menu.hide_menu()
@@ -391,6 +394,13 @@ func _do_transition_whip() -> void:
 func _finish_transition() -> void:
 	_transition_active = false
 	_tween_blur(0.0, 0.2)
+	if _transition_overlay:
+		# Hide after the blur fade completes.
+		get_tree().create_timer(0.3).timeout.connect(
+			func():
+				if _transition_overlay:
+					_transition_overlay.visible = false,
+		)
 	# Show the menu again.
 	if _world_menu:
 		_world_menu.show_menu()

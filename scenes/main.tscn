@@ -158,6 +158,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -211.17914, 0, -19)
 
 [node name="TransitionOverlay" type="CanvasLayer" parent="."]
 layer = 100
+visible = false
 
 [node name="BackBufferCopy" type="BackBufferCopy" parent="TransitionOverlay"]
 copy_mode = 0
@@ -170,3 +171,4 @@ grow_horizontal = 2
 grow_vertical = 2
 material = SubResource("TransitionBlurMat")
 color = Color(0, 0, 0, 0)
+mouse_filter = 2
