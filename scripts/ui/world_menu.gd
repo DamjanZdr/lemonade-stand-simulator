@@ -30,7 +30,7 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 @onready var _saves_list: VBoxContainer = $SavesPanel/SavesList
 @onready var _slots_container: VBoxContainer = $SavesPanel/SavesList/SlotsContainer
 @onready var _new_stand_button: Button = $SavesPanel/SavesList/NewStandButton
-@onready var _saves_back: Button = $SavesPanel/SavesList/BackButton
+@onready var _saves_back: Button = $SavesPanel/BackButton
 
 var _saves_data: Array = []
 var _menu_buttons: Array[Button] = []
