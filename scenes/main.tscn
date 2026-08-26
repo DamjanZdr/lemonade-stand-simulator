@@ -46,6 +46,13 @@
 [ext_resource type="PackedScene" uid="uid://bpv1s2p3k4q5x" path="res://scenes/player/player_visuals.tscn" id="69_pvis"]
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
+[ext_resource type="Shader" path="res://shaders/transition_motion_blur.gdshader" id="72_tblur"]
+
+[sub_resource type="ShaderMaterial" id="TransitionBlurMat"]
+shader = ExtResource("72_tblur")
+shader_parameter/blur_amount = 0.0
+shader_parameter/blur_dir = Vector2(1, 0)
+shader_parameter/samples = 16
 
 [node name="Main" type="Node" unique_id=1191278377]
 script = ExtResource("1_main")
@@ -139,6 +146,27 @@ transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, -2.6603372, 0.934
 visible = false
 
 [node name="MainMenuCamera" type="Camera3D" parent="." unique_id=1523728213]
-transform = Transform3D(-0.98489964, 0.013518753, 0.17259747, -0.013518779, 0.98789716, -0.15452011, -0.17259747, -0.15452012, -0.9727968, 5.2999997, 1.3345039, -4.5)
+transform = Transform3D(0.98489964, -0.013518769, -0.17259757, -0.013518771, 0.98789716, -0.15452006, 0.17259756, 0.15452006, 0.97279686, -13.700001, 1.3345039, -19.05366)
 current = true
 fov = 80.0
+
+[node name="StandChangeCameraEnd" type="Marker3D" parent="." unique_id=1999270952]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 180, 0, -19)
+
+[node name="StandChangeCameraStart" type="Marker3D" parent="." unique_id=706505586]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -211.17914, 0, -19)
+
+[node name="TransitionOverlay" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="BackBufferCopy" type="BackBufferCopy" parent="TransitionOverlay"]
+copy_mode = 0
+
+[node name="BlurRect" type="ColorRect" parent="TransitionOverlay"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+material = SubResource("TransitionBlurMat")
+color = Color(0, 0, 0, 0)

@@ -35,6 +35,9 @@ enum MenuState {
 @onready var lobby_player_models: Node3D = $LobbyPlayerModels
 @onready var lobby_cam_stand1: Camera3D = $LobbyCamStand1
 @onready var lobby_cam_stand2: Camera3D = $LobbyCamStand2
+@onready var stand_change_cam_end: Marker3D = $StandChangeCameraEnd
+@onready var stand_change_cam_start: Marker3D = $StandChangeCameraStart
+@onready var _transition_blur_rect: ColorRect = $TransitionOverlay/BlurRect
 
 ## FPS counter label (toggled with F key)
 var _fps_label: Label = null
@@ -94,6 +97,20 @@ var _late_join_camera_pending: bool = false
 
 ## Camera tween time for stand switching and game-start transition.
 const CAMERA_TWEEN_TIME: float = 1.0
+
+## --- Stand change transition ---
+## When the player selects/creates a save from the menu, we play a
+## looping camera whip transition while the save loads in the background.
+## The camera tweens from current pos -> StandChangeCameraEnd, snaps to
+## StandChangeCameraStart, then tweens back toward MainMenuCamera. If the
+## save isn't loaded yet, it loops again. Motion blur intensifies during
+## the whip and fades at the settle point.
+var _transition_active: bool = false
+var _transition_loaded: bool = false
+var _transition_tween: Tween = null
+var _transition_blur_tween: Tween = null
+const TRANSITION_WHIP_TIME: float = 0.4
+const TRANSITION_SETTLE_TIME: float = 0.6
 
 
 ## Returns the camera node for the given stand index. These are
@@ -264,18 +281,15 @@ func _set_systems_paused(paused: bool) -> void:
 		DayManager.process_mode = process_mode_val
 
 
-## Play button: load the most recent save, or if no saves exist, prompt
-## the player to name their first stand.
+## Play button: load the most recent save with a transition, or if no
+## saves exist, prompt the player to name their first stand.
 func _on_menu_play() -> void:
 	var saves := SaveManager.list_saves()
 	if not saves.is_empty():
-		# Pick the most recent by saved_at timestamp (list_saves is pre-sorted).
 		var latest: Dictionary = saves[0]
 		var slot: String = latest.get("slot", "")
 		if slot != "":
-			SaveManager.load_existing_game(slot)
-			NetworkManager.host_game()
-			_world_menu.set_busy("Loading %s..." % latest.get("stand_name", slot))
+			_start_stand_transition(slot, latest.get("stand_name", slot))
 			return
 	# No saves — prompt for a stand name.
 	_world_menu.show_name_entry()
@@ -284,18 +298,137 @@ func _on_menu_play() -> void:
 ## New stand created from the saves panel name dialog.
 func _on_menu_new_stand(stand_name: String) -> void:
 	SaveManager.start_new_game(stand_name)
-	NetworkManager.host_game()
+	_start_stand_transition(stand_name, stand_name)
 
 
 ## Load an existing stand from the saves panel.
 func _on_menu_load_stand(slot_name: String) -> void:
+	var saves := SaveManager.list_saves()
+	var stand_name := slot_name
+	for s in saves:
+		if s.get("slot", "") == slot_name:
+			stand_name = s.get("stand_name", slot_name)
+			break
 	SaveManager.load_existing_game(slot_name)
-	NetworkManager.host_game()
+	_start_stand_transition(slot_name, stand_name)
 
 
 ## Host button (from Saves panel): a save was selected, host a new game.
 func _on_menu_host() -> void:
 	NetworkManager.host_game()
+
+## --- Stand change transition ---
+
+
+## Start the camera whip transition. The save should already be loaded
+## (or loading) via SaveManager. We play a looping whip effect and
+## settle once the world is ready.
+func _start_stand_transition(slot_name: String, stand_name: String) -> void:
+	if _transition_active:
+		return
+	_transition_active = true
+	_transition_loaded = false
+	_world_menu.set_busy("Loading %s..." % stand_name)
+	# Hide the menu UI but keep the blur panel.
+	_world_menu.hide_menu()
+	# Make sure the MainMenuCamera is the active camera.
+	if main_menu_camera:
+		main_menu_camera.current = true
+	# Mark as loaded — SaveManager.load_existing_game/start_new_game are
+	# synchronous, so by the time we get here the state is already applied.
+	# In the future if loading becomes async, this is where we'd wait.
+	_transition_loaded = true
+	# Start the whip loop.
+	_do_transition_whip()
+
+
+## One iteration of the whip: current pos -> End, snap to Start, then
+## either settle to MainMenuCamera (if loaded) or loop again.
+func _do_transition_whip() -> void:
+	if not _transition_active:
+		return
+	# Blur in.
+	_tween_blur(1.0, TRANSITION_WHIP_TIME * 0.5)
+	# Whip to End.
+	if _transition_tween:
+		_transition_tween.kill()
+	_transition_tween = create_tween()
+	_transition_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_transition_tween.tween_property(
+		main_menu_camera,
+		"global_transform",
+		stand_change_cam_end.global_transform,
+		TRANSITION_WHIP_TIME,
+	)
+	_transition_tween.tween_callback(
+		func():
+			# Snap to Start.
+			main_menu_camera.global_transform = stand_change_cam_start.global_transform
+			# Blur out slightly.
+			_tween_blur(0.3, TRANSITION_SETTLE_TIME * 0.3)
+			# Tween toward MainMenuCamera position.
+			var settle := create_tween()
+			settle.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			settle.tween_property(
+				main_menu_camera,
+				"global_transform",
+				_get_main_menu_cam_transform(),
+				TRANSITION_SETTLE_TIME,
+			)
+			settle.tween_callback(
+				func():
+					_tween_blur(0.0, 0.3)
+					if _transition_loaded:
+						_finish_transition()
+					else:
+						# Not loaded yet — loop.
+						_do_transition_whip(),
+			),
+	)
+
+
+## Finish the transition: restore the menu, stop blur.
+func _finish_transition() -> void:
+	_transition_active = false
+	_tween_blur(0.0, 0.2)
+	# Show the menu again.
+	if _world_menu:
+		_world_menu.show_menu()
+		_world_menu.set_status("")
+		_world_menu.set_enabled(true)
+	# Ensure camera is exactly at the main menu position.
+	if main_menu_camera:
+		main_menu_camera.global_transform = _get_main_menu_cam_transform()
+		main_menu_camera.current = true
+
+
+## Returns the stored original transform of the MainMenuCamera, since
+## we may have moved it during the transition.
+func _get_main_menu_cam_transform() -> Transform3D:
+	# Store the original transform on first call.
+	if not has_meta("_main_menu_cam_transform"):
+		set_meta("_main_menu_cam_transform", main_menu_camera.global_transform)
+	return get_meta("_main_menu_cam_transform") as Transform3D
+
+
+## Tween the motion blur amount.
+func _tween_blur(target: float, duration: float) -> void:
+	if _transition_blur_tween:
+		_transition_blur_tween.kill()
+	if _transition_blur_rect == null or _transition_blur_rect.material == null:
+		return
+	var mat := _transition_blur_rect.material as ShaderMaterial
+	var current: float = mat.get_shader_parameter("blur_amount")
+	_transition_blur_tween = create_tween()
+	_transition_blur_tween \
+			.tween_method(
+		func(v: float):
+			mat.set_shader_parameter("blur_amount", v),
+		current,
+		target,
+		duration,
+	) \
+			.set_ease(Tween.EASE_OUT)
 
 
 ## Join button: connect to an existing lobby by ID.
