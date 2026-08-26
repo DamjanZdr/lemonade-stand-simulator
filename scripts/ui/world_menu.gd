@@ -459,6 +459,9 @@ func _refresh_saves() -> void:
 
 
 ## Build a single save row: [Button(colored text) | Delete].
+const SAVE_BOX_WIDTH: float = 360.0
+
+
 func _build_save_row(
 	slot_name: String,
 	stand_name: String,
@@ -469,9 +472,9 @@ func _build_save_row(
 	# Outer row: [Panel(box) | Delete/Yes/No]
 	var outer := HBoxContainer.new()
 	outer.add_theme_constant_override("separation", 12)
-	# Panel with subtle outline that highlights on hover.
+	# Panel with subtle outline that pops as a whole on hover.
 	var panel := PanelContainer.new()
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	panel.custom_minimum_size = Vector2(SAVE_BOX_WIDTH, 0)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0, 0, 0, 0)
 	panel_style.border_color = Color(1, 1, 1, 0.15)
@@ -479,38 +482,50 @@ func _build_save_row(
 	panel_style.set_content_margin_all(10)
 	panel_style.set_corner_radius_all(4)
 	panel.add_theme_stylebox_override("panel", panel_style)
-	# Hover: brighten the border.
+	# Store base scale and set pivot for pop.
+	panel.set_meta("_base_scale", Vector2.ONE)
+	# Hover: pop the whole panel + brighten border.
 	panel.mouse_entered.connect(
 		func():
-			if panel.has_meta("_border_tween") and panel.get_meta("_border_tween") is Tween:
-				(panel.get_meta("_border_tween") as Tween).kill()
+			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
+			if panel.has_meta("_hover_tween") and panel.get_meta("_hover_tween") is Tween:
+				(panel.get_meta("_hover_tween") as Tween).kill()
+			panel.pivot_offset = Vector2(0, panel.size.y / 2.0)
 			var tw := create_tween()
-			panel.set_meta("_border_tween", tw)
+			panel.set_meta("_hover_tween", tw)
+			tw.set_parallel(true)
+			tw.tween_property(panel, "scale", Vector2.ONE * HOVER_POP, 0.06) \
+					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.4), 0.08) \
+					.set_ease(Tween.EASE_OUT)
+			tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.06) \
 					.set_ease(Tween.EASE_OUT),
 	)
 	panel.mouse_exited.connect(
 		func():
-			if panel.has_meta("_border_tween") and panel.get_meta("_border_tween") is Tween:
-				(panel.get_meta("_border_tween") as Tween).kill()
+			if panel.has_meta("_hover_tween") and panel.get_meta("_hover_tween") is Tween:
+				(panel.get_meta("_hover_tween") as Tween).kill()
 			var tw := create_tween()
-			panel.set_meta("_border_tween", tw)
+			panel.set_meta("_hover_tween", tw)
+			tw.set_parallel(true)
+			tw.tween_property(panel, "scale", Vector2.ONE, 0.08) \
+					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.15), 0.12) \
+					.set_ease(Tween.EASE_OUT)
+			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
 					.set_ease(Tween.EASE_OUT),
 	)
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 2)
 	panel.add_child(row)
-	# Stand name button (large, yellow).
+	# Stand name button (large, yellow) — no own hover, panel handles it.
 	var btn := Button.new()
 	btn.custom_minimum_size = Vector2(0, 36)
 	btn.add_theme_font_size_override("font_size", 26)
 	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.5, 1))
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.text = stand_name
 	_make_flat_button(btn)
-	_setup_hover_effect(btn)
 	btn.pressed.connect(
 		func():
 			_on_button_click(
