@@ -160,8 +160,12 @@ func _ready() -> void:
 	# If we're connected to a server (joining an existing game), go
 	# straight to the lobby/game flow. Otherwise, show the in-world
 	# main menu so the player can choose Play, Saves, or Join.
-	if multiplayer.has_multiplayer_peer():
-		# Already connected — set up networking and enter lobby/game flow.
+	var has_peer := multiplayer.has_multiplayer_peer()
+	var has_roster := not LobbyManager.roster.is_empty()
+	GameLog.log("[Main] _ready: has_peer=%s has_roster=%s" % [has_peer, has_roster])
+	if has_peer or has_roster:
+		# Already connected or have a roster — set up networking and
+		# enter lobby/game flow.
 		_setup_lobby()
 		_setup_networking()
 		NetworkManager.server_disconnected.connect(_on_host_left)
