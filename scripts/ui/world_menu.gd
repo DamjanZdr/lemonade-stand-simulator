@@ -291,7 +291,7 @@ func _build_save_row(
 	date_text: String,
 ) -> HBoxContainer:
 	var row := HBoxContainer.new()
-	row.theme_override_constants = { "separation": 12 }
+	row.add_theme_constant_override("separation", 12)
 	# The main button shows stand name + info on two lines.
 	var btn := Button.new()
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
