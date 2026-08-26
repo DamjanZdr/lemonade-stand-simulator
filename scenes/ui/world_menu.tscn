@@ -1,12 +1,18 @@
-[gd_scene load_steps=4 format=3 uid="uid://cworldmenu01"]
+[gd_scene load_steps=6 format=3 uid="uid://cworldmenu01"]
 
 [ext_resource type="Script" path="res://scripts/ui/world_menu.gd" id="1_script"]
 [ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
 [ext_resource type="Shader" path="res://shaders/ui_blur.gdshader" id="3_blur"]
+[ext_resource type="Shader" path="res://shaders/ui_dim_fade.gdshader" id="4_dimfade"]
 
 [sub_resource type="ShaderMaterial" id="BlurMat"]
 shader = ExtResource("3_blur")
 shader_parameter/blur_radius = 8.0
+shader_parameter/fade_start = 0.6
+
+[sub_resource type="ShaderMaterial" id="DimFadeMat"]
+shader = ExtResource("4_dimfade")
+shader_parameter/dim_color = Color(0, 0, 0, 0.35)
 shader_parameter/fade_start = 0.6
 
 [node name="WorldMenu" type="CanvasLayer"]
@@ -28,12 +34,15 @@ material = SubResource("BlurMat")
 color = Color(0, 0, 0, 0)
 
 [node name="DimLayer" type="ColorRect" parent="."]
-anchors_preset = 15
-anchor_right = 1.0
+anchors_preset = 9
 anchor_bottom = 1.0
-grow_horizontal = 2
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 420.0
+offset_bottom = 0.0
 grow_vertical = 2
-color = Color(0, 0, 0, 0.35)
+material = SubResource("DimFadeMat")
+color = Color(0, 0, 0, 0)
 
 [node name="MenuBox" type="VBoxContainer" parent="."]
 anchors_preset = 9
