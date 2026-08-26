@@ -211,6 +211,7 @@ func _make_flat_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("hover", empty)
 	btn.add_theme_stylebox_override("pressed", empty)
 	btn.add_theme_stylebox_override("focus", empty)
+	btn.add_theme_stylebox_override("disabled", empty)
 
 
 ## Wire hover sound + pop animation + press animation for a button.
