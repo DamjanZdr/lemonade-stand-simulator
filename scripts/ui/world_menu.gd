@@ -9,7 +9,7 @@ signal host_pressed
 signal new_stand_requested(stand_name: String)
 signal load_stand_requested(slot_name: String)
 
-const HOVER_OFFSET: float = 12.0
+const HOVER_POP: float = 1.08
 const HOVER_DURATION: float = 0.12
 
 @onready var _play_button: Button = $MenuBox/PlayButton
@@ -166,26 +166,26 @@ func _setup_hover_effect(btn: Button) -> void:
 	)
 
 
-## Slide button slightly right on hover, back on exit.
+## Slight scale "pop" on hover, back to normal on exit.
 func _animate_hover(btn: Button, hover: bool) -> void:
 	if btn == null or not is_instance_valid(btn):
 		return
 	# Kill any existing tween on this button to avoid drift.
 	if btn.has_meta("_hover_tween") and btn.get_meta("_hover_tween") is Tween:
 		(btn.get_meta("_hover_tween") as Tween).kill()
-	# Store the original position on first hover.
-	if not btn.has_meta("_base_pos"):
-		btn.set_meta("_base_pos", btn.position)
-	var base_pos: Vector2 = btn.get_meta("_base_pos")
+	# Store the original scale on first hover.
+	if not btn.has_meta("_base_scale"):
+		btn.set_meta("_base_scale", btn.scale)
+	var base_scale: Vector2 = btn.get_meta("_base_scale")
 	var tw := create_tween()
 	btn.set_meta("_hover_tween", tw)
 	tw.set_parallel(true)
 	tw.set_ease(Tween.EASE_OUT)
 	if hover:
-		tw.tween_property(btn, "position", base_pos + Vector2(HOVER_OFFSET, 0), HOVER_DURATION)
+		tw.tween_property(btn, "scale", base_scale * HOVER_POP, HOVER_DURATION)
 		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), HOVER_DURATION)
 	else:
-		tw.tween_property(btn, "position", base_pos, HOVER_DURATION)
+		tw.tween_property(btn, "scale", base_scale, HOVER_DURATION)
 		tw.tween_property(btn, "modulate", Color.WHITE, HOVER_DURATION)
 
 
