@@ -52,6 +52,11 @@ var _music_vinyl: Control = null
 var _music_label: Label = null
 var _music_widget: Control = null
 var _music_spin_tween: Tween = null
+var _music_prev_btn: Button = null
+var _music_next_btn: Button = null
+var _music_progress: ProgressBar = null
+var _music_time_current: Label = null
+var _music_time_total: Label = null
 
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
@@ -943,75 +948,183 @@ func _on_load_save(slot_name: String, stand_name: String) -> void:
 
 # ─── Music Player Widget ───
 
+const MUSIC_WIDGET_W: float = 280.0
+const MUSIC_WIDGET_H: float = 96.0
+
 
 func _build_music_player() -> void:
-	# Container anchored to bottom-right.
-	_music_widget = Control.new()
+	# Panel container anchored to bottom-right.
+	_music_widget = PanelContainer.new()
 	_music_widget.name = "MusicPlayer"
-	_music_widget.anchors_preset = Control.PRESET_BOTTOM_RIGHT
 	_music_widget.anchor_left = 1.0
 	_music_widget.anchor_top = 1.0
 	_music_widget.anchor_right = 1.0
 	_music_widget.anchor_bottom = 1.0
-	_music_widget.offset_left = -210.0
-	_music_widget.offset_top = -70.0
+	_music_widget.offset_left = -(MUSIC_WIDGET_W + 12.0)
+	_music_widget.offset_top = -(MUSIC_WIDGET_H + 12.0)
 	_music_widget.offset_right = -12.0
 	_music_widget.offset_bottom = -12.0
+	_music_widget.custom_minimum_size = Vector2(MUSIC_WIDGET_W, MUSIC_WIDGET_H)
 	_music_widget.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Semi-transparent background with subtle border.
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.05, 0.08, 0.55)
+	bg.border_color = Color(1, 1, 1, 0.12)
+	bg.set_border_width_all(1)
+	bg.set_content_margin_all(10)
+	bg.set_corner_radius_all(6)
+	_music_widget.add_theme_stylebox_override("panel", bg)
 	add_child(_music_widget)
 
-	# HBox: vinyl disc + track name.
-	var hbox := HBoxContainer.new()
-	hbox.name = "Row"
-	hbox.anchors_preset = Control.PRESET_FULL_RECT
-	hbox.alignment = BoxContainer.ALIGNMENT_END
-	hbox.add_theme_constant_override("separation", 10)
-	_music_widget.add_child(hbox)
+	# Inner VBox: top row (controls + disc + title), progress bar, time row.
+	var vbox := VBoxContainer.new()
+	vbox.name = "VBox"
+	vbox.add_theme_constant_override("separation", 4)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_music_widget.add_child(vbox)
 
-	# Track name label.
+	# Top row: prev | disc + now playing | next
+	var top_row := HBoxContainer.new()
+	top_row.name = "TopRow"
+	top_row.add_theme_constant_override("separation", 8)
+	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(top_row)
+
+	# Prev button.
+	_music_prev_btn = Button.new()
+	_music_prev_btn.name = "Prev"
+	_music_prev_btn.text = "<"
+	_music_prev_btn.custom_minimum_size = Vector2(24, 24)
+	_music_prev_btn.add_theme_font_size_override("font_size", 16)
+	_music_prev_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	_music_prev_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_music_prev_btn.add_theme_color_override("font_pressed_color", Color(1, 0.95, 0.7, 0.6))
+	_make_flat_button(_music_prev_btn)
+	top_row.add_child(_music_prev_btn)
+	_music_prev_btn.pressed.connect(
+		func():
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			AudioManager.prev_track(),
+	)
+
+	# Disc + now-playing column.
+	var disc_col := VBoxContainer.new()
+	disc_col.name = "DiscCol"
+	disc_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	disc_col.add_theme_constant_override("separation", 2)
+	disc_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	disc_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_row.add_child(disc_col)
+
+	# Disc + label row.
+	var disc_row := HBoxContainer.new()
+	disc_row.name = "DiscRow"
+	disc_row.add_theme_constant_override("separation", 8)
+	disc_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	disc_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc_col.add_child(disc_row)
+
+	# Vinyl disc.
+	var disc := Control.new()
+	disc.name = "Vinyl"
+	disc.custom_minimum_size = Vector2(32, 32)
+	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc.set_script(load("res://scripts/ui/vinyl_disc.gd"))
+	disc_row.add_child(disc)
+	_music_vinyl = disc
+
+	# Now playing label.
 	_music_label = Label.new()
 	_music_label.name = "TrackName"
-	_music_label.custom_minimum_size = Vector2(140, 0)
-	_music_label.add_theme_font_size_override("font_size", 14)
-	_music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
-	_music_label.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 0.9))
-	_music_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_music_label.add_theme_font_size_override("font_size", 13)
+	_music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	_music_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_music_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_music_label.text = "—"
 	_music_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_child(_music_label)
+	_music_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	disc_row.add_child(_music_label)
 
-	# Vinyl disc — drawn as a TextureRect with a custom drawn circle.
-	# We use a Control with _draw to render the vinyl.
-	var disc := Control.new()
-	disc.name = "Vinyl"
-	disc.custom_minimum_size = Vector2(40, 40)
-	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	disc.set_script(load("res://scripts/ui/vinyl_disc.gd"))
-	hbox.add_child(disc)
-	_music_vinyl = disc
+	# "NOW PLAYING" small header above disc row.
+	var np_label := Label.new()
+	np_label.name = "NowPlaying"
+	np_label.add_theme_font_size_override("font_size", 9)
+	np_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.5))
+	np_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	np_label.text = "♪ NOW PLAYING"
+	np_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc_col.add_child(np_label)
+	# Move now-playing above disc row.
+	disc_col.move_child(np_label, 0)
 
-	# Click on the widget to cycle to the next track.
-	_music_widget.gui_input.connect(
-		func(event):
-			if (
-				event is InputEventMouseButton and event.pressed
-				and event.button_index == MOUSE_BUTTON_LEFT
-			):
-				AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-				AudioManager.next_track(),
-	)
-	# Hover effect on the label.
-	_music_widget.mouse_entered.connect(
+	# Next button.
+	_music_next_btn = Button.new()
+	_music_next_btn.name = "Next"
+	_music_next_btn.text = ">"
+	_music_next_btn.custom_minimum_size = Vector2(24, 24)
+	_music_next_btn.add_theme_font_size_override("font_size", 16)
+	_music_next_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	_music_next_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_music_next_btn.add_theme_color_override("font_pressed_color", Color(1, 0.95, 0.7, 0.6))
+	_make_flat_button(_music_next_btn)
+	top_row.add_child(_music_next_btn)
+	_music_next_btn.pressed.connect(
 		func():
-			if _music_label:
-				_music_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7, 0.9)),
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			AudioManager.next_track(),
 	)
-	_music_widget.mouse_exited.connect(
-		func():
-			if _music_label:
-				_music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.5)),
-	)
+
+	# Progress bar (read-only).
+	_music_progress = ProgressBar.new()
+	_music_progress.name = "Progress"
+	_music_progress.min_value = 0.0
+	_music_progress.max_value = 1.0
+	_music_progress.value = 0.0
+	_music_progress.custom_minimum_size = Vector2(0, 4)
+	_music_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_music_progress.show_percentage = false
+	# Style the progress bar — minimal.
+	var pb_bg := StyleBoxFlat.new()
+	pb_bg.bg_color = Color(1, 1, 1, 0.08)
+	pb_bg.set_corner_radius_all(2)
+	_music_progress.add_theme_stylebox_override("background", pb_bg)
+	var pb_fill := StyleBoxFlat.new()
+	pb_fill.bg_color = Color(1, 0.85, 0.4, 0.7)
+	pb_fill.set_corner_radius_all(2)
+	_music_progress.add_theme_stylebox_override("fill", pb_fill)
+	vbox.add_child(_music_progress)
+
+	# Time row: current | total.
+	var time_row := HBoxContainer.new()
+	time_row.name = "TimeRow"
+	time_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(time_row)
+
+	_music_time_current = Label.new()
+	_music_time_current.name = "TimeCurrent"
+	_music_time_current.add_theme_font_size_override("font_size", 10)
+	_music_time_current.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	_music_time_current.text = "0:00"
+	_music_time_current.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	time_row.add_child(_music_time_current)
+
+	var spacer := Control.new()
+	spacer.name = "TimeSpacer"
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	time_row.add_child(spacer)
+
+	_music_time_total = Label.new()
+	_music_time_total.name = "TimeTotal"
+	_music_time_total.add_theme_font_size_override("font_size", 10)
+	_music_time_total.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	_music_time_total.text = "0:00"
+	_music_time_total.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_music_time_total.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	time_row.add_child(_music_time_total)
+
+	# Connect progress signal.
+	AudioManager.music_progress.connect(_update_music_progress)
 
 
 func _update_music_display(track_name: String) -> void:
@@ -1019,3 +1132,18 @@ func _update_music_display(track_name: String) -> void:
 		_music_label.text = track_name if track_name != "" else "—"
 	if _music_vinyl and _music_vinyl.has_method("set_spinning"):
 		_music_vinyl.set_spinning(track_name != "")
+
+
+func _update_music_progress(current: float, total: float) -> void:
+	if _music_progress and total > 0:
+		_music_progress.value = current / total
+	if _music_time_current:
+		_music_time_current.text = _format_time(current)
+	if _music_time_total:
+		_music_time_total.text = _format_time(total)
+
+
+func _format_time(seconds: float) -> String:
+	var mins := int(seconds) / 60
+	var secs := int(seconds) % 60
+	return "%d:%02d" % [mins, secs]

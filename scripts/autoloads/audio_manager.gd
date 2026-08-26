@@ -22,6 +22,7 @@ var _music_tracks: Array[String] = []
 var _music_index: int = 0
 
 signal music_track_changed(track_name: String)
+signal music_progress(current: float, total: float)
 
 
 func _ready() -> void:
@@ -32,6 +33,13 @@ func _ready() -> void:
 	# Start menu music immediately — it loops and persists across
 	# scene transitions since AudioManager is an autoload.
 	_play_music("Crinoline Dreams")
+
+
+func _process(_delta: float) -> void:
+	if _music_player and _music_player.playing:
+		var stream := _music_player.stream as AudioStreamMP3
+		if stream:
+			music_progress.emit(_music_player.get_playback_position(), stream.get_length())
 
 
 ## Ensure SFX and Music buses exist (created at runtime so we don't
