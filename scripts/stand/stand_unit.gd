@@ -545,12 +545,32 @@ func can_be_served_by(player: Node) -> bool:
 
 ## Set the text on the stand's sign (the Label3D above the counter).
 ## Wraps the name in lemon emojis unless it already has them.
+## Auto-scales pixel_size so the text always fits within a max width,
+## regardless of how wide the characters are (e.g. 'W' vs 'i').
+const SIGN_MAX_WIDTH: float = 8.0 # Max sign width in world units.
+const SIGN_DEFAULT_PIXEL_SIZE: float = 0.004
+
+
 func set_stand_name(name: String) -> void:
-	if _sign_label:
-		if name.begins_with("🍋"):
-			_sign_label.text = name
-		else:
-			_sign_label.text = "🍋 %s 🍋" % name
+	if not _sign_label:
+		return
+	if name.begins_with("🍋"):
+		_sign_label.text = name
+	else:
+		_sign_label.text = "🍋 %s 🍋" % name
+	# Auto-scale: measure the text width and shrink pixel_size if needed.
+	var font := _sign_label.get_theme_font("font")
+	var font_size := _sign_label.get_theme_font_size("font_size")
+	var text_width := font \
+			.get_string_size(_sign_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size) \
+			.x
+	# text_width is in pixels at font_size; pixel_size converts to world units.
+	# World width = text_width * pixel_size * parent_scale (stand is 0.2).
+	# We want text_width * pixel_size * 0.2 <= SIGN_MAX_WIDTH.
+	# Also account for the Label3D's own scale (5x from transform).
+	# Effective world width = text_width * pixel_size * 5 * 0.2 = text_width * pixel_size.
+	var max_pixel_size := SIGN_MAX_WIDTH / text_width
+	_sign_label.pixel_size = min(SIGN_DEFAULT_PIXEL_SIZE, max_pixel_size)
 
 
 ## Get the current stand sign text.
