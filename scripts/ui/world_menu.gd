@@ -213,19 +213,25 @@ func _make_flat_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("focus", empty)
 
 
-## Wire hover sound + slide-right animation for a button.
+## Wire hover sound + pop animation + press animation for a button.
 func _setup_hover_effect(btn: Button) -> void:
 	if btn == null:
 		return
 	btn.mouse_entered.connect(
 		func():
-			AudioManager.play_sfx_ui("blip_select", 1.0, 0.05)
+			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
 			if not btn.disabled:
 				_animate_hover(btn, true),
 	)
 	btn.mouse_exited.connect(
 		func():
 			_animate_hover(btn, false),
+	)
+	# Press animation on mouse down.
+	btn.button_down.connect(
+		func():
+			if not btn.disabled:
+				_animate_press(btn),
 	)
 
 
@@ -259,21 +265,36 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 				.set_ease(Tween.EASE_OUT)
 
 
-## Play click sound and run the callback with a satisfying press anim.
+## Press animation: squash down + darken on mouse down.
+func _animate_press(btn: Button) -> void:
+	if btn == null or not is_instance_valid(btn):
+		return
+	if btn.has_meta("_press_tween") and btn.get_meta("_press_tween") is Tween:
+		(btn.get_meta("_press_tween") as Tween).kill()
+	if not btn.has_meta("_base_scale"):
+		btn.set_meta("_base_scale", btn.scale)
+	var base_scale: Vector2 = btn.get_meta("_base_scale")
+	btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
+	var tw := create_tween()
+	btn.set_meta("_press_tween", tw)
+	tw.set_parallel(true)
+	tw.tween_property(btn, "scale", base_scale * 0.92, 0.05) \
+			.set_ease(Tween.EASE_IN)
+	tw.tween_property(btn, "modulate", Color(0.7, 0.7, 0.75), 0.05)
+
+
+## Play click sound and run the callback. Release animation happens here.
 func _on_button_click(btn: Button, callback: Callable) -> void:
 	AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
 	if btn != null and is_instance_valid(btn):
-		# Press: squash down + darken, then pop back.
-		var base_scale: Vector2 = btn.scale
+		if not btn.has_meta("_base_scale"):
+			btn.set_meta("_base_scale", btn.scale)
+		var base_scale: Vector2 = btn.get_meta("_base_scale")
 		btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
+		if btn.has_meta("_press_tween") and btn.get_meta("_press_tween") is Tween:
+			(btn.get_meta("_press_tween") as Tween).kill()
 		var tw := create_tween()
 		tw.set_parallel(true)
-		# Squash: scale down slightly with a wider feel.
-		tw.tween_property(btn, "scale", base_scale * 0.92, 0.05) \
-				.set_ease(Tween.EASE_IN)
-		tw.tween_property(btn, "modulate", Color(0.7, 0.7, 0.75), 0.05)
-		# Release: pop back with slight overshoot.
-		tw.chain().set_parallel(true)
 		tw.tween_property(btn, "scale", base_scale, 0.12) \
 				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.12) \
