@@ -131,13 +131,13 @@ func _on_leave_pressed() -> void:
 	NetworkManager.leave_game()
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
-	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
 func _on_server_disconnected() -> void:
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
-	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
 func _refresh() -> void:

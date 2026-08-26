@@ -1169,7 +1169,7 @@ func _on_host_left() -> void:
 func _go_to_main_menu() -> void:
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
-	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
 func _on_cash_dropped(drop_pos: Vector3, payment: float, change_due: float) -> void:

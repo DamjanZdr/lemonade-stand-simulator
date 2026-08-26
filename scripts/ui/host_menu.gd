@@ -122,7 +122,7 @@ func _on_connection_failed(reason: String) -> void:
 
 
 func _on_back() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
 func _set_busy(text: String) -> void:
