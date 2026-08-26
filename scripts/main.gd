@@ -350,24 +350,30 @@ func _spawn_player_on_client(
 	spawn_pos: Vector3,
 	spawn_rot: Vector3,
 ) -> void:
-	GameLog.log("[Main] _spawn_player_on_client received: %s" % player_name)
-	# If the spawner already created it, don't duplicate.
+	GameLog.log(
+		"[Main] _spawn_player_on_client received: %s pos=%s" % [player_name, str(spawn_pos)]
+	)
+	var p: Player = null
+	# If the spawner already created it, use the existing node but still
+	# apply the correct position (the spawner may have placed it at 0,0,0).
 	if players_node.has_node(player_name):
-		GameLog.log("[Main] Player %s already exists, skipping manual spawn" % player_name)
-		return
-	var scene := load(scene_path) as PackedScene
-	if scene == null:
-		GameLog.log("[Main] Failed to load player scene: %s" % scene_path)
-		return
-	var p: Player = scene.instantiate() as Player
-	p.name = player_name
-	players_node.add_child(p)
+		p = players_node.get_node(player_name) as Player
+		GameLog.log("[Main] Player %s already exists, updating pos" % player_name)
+	else:
+		var scene := load(scene_path) as PackedScene
+		if scene == null:
+			GameLog.log("[Main] Failed to load player scene: %s" % scene_path)
+			return
+		p = scene.instantiate() as Player
+		p.name = player_name
+		players_node.add_child(p)
+		GameLog.log(
+			"[Main] Manually spawned player %s, authority=%d my_id=%d"
+			% [p.name, p.get_multiplayer_authority(), multiplayer.get_unique_id()]
+		)
+	# Always apply the host-provided position.
 	p.global_position = spawn_pos
 	p.global_rotation = spawn_rot
-	GameLog.log(
-		"[Main] Manually spawned player %s, authority=%d my_id=%d"
-		% [p.name, p.get_multiplayer_authority(), multiplayer.get_unique_id()]
-	)
 	# If this is our own player, claim authority and configure as local.
 	var name_peer: int = int(player_name) if player_name.is_valid_int() else 0
 	var is_local := name_peer == multiplayer.get_unique_id()
