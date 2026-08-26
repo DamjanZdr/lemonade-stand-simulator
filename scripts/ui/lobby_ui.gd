@@ -41,6 +41,7 @@ var _player_visuals: Array[PlayerVisuals] = []
 ## Signal emitted when the local player switches stands in the lobby.
 ## main.gd connects to this to tween the LobbyCamera.
 signal stand_switched(stand_index: int)
+signal return_to_menu_requested
 
 const STAND_NAMES: Array[String] = ["Stand 1", "Stand 2"]
 
@@ -222,10 +223,7 @@ func _on_ready_pressed() -> void:
 
 
 func _on_leave_pressed() -> void:
-	NetworkManager.leave_game()
-	LobbyManager.reset()
-	SaveManager.clear_current_slot()
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	return_to_menu_requested.emit()
 
 
 func _on_server_disconnected() -> void:
@@ -244,9 +242,7 @@ func _on_server_disconnected() -> void:
 
 
 func _go_to_main_menu() -> void:
-	LobbyManager.reset()
-	SaveManager.clear_current_slot()
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	return_to_menu_requested.emit()
 
 
 func _refresh() -> void:

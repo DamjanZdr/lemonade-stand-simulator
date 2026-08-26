@@ -231,6 +231,7 @@ func _setup_lobby() -> void:
 	# Connect stand switch signal from lobby UI for camera tweening
 	if lobby_ui.has_signal("stand_switched"):
 		lobby_ui.stand_switched.connect(_on_stand_switched)
+		lobby_ui.return_to_menu_requested.connect(_on_return_to_menu)
 	# Lobby UI is visible during the lobby phase.
 	lobby_ui.visible = true
 
@@ -613,6 +614,45 @@ func _transition_to_lobby() -> void:
 	_setup_networking()
 	NetworkManager.server_disconnected.connect(_on_host_left)
 	GameLog.log("[Main] Transitioned to LOBBY state")
+
+
+## Smoothly transition from the lobby back to the main menu.
+## Tweens the lobby camera back to the main menu camera's transform,
+## fades out the lobby UI, then reloads the main scene.
+func _on_return_to_menu() -> void:
+	if _transition_active:
+		return
+	_transition_active = true
+	# Fade out lobby UI.
+	if lobby_ui:
+		var fade_tw := create_tween()
+		fade_tw.tween_property(lobby_ui, "modulate:a", 0.0, 0.3) \
+				.set_ease(Tween.EASE_OUT)
+	# Tween lobby camera back to main menu camera transform.
+	if main_menu_camera and lobby_camera:
+		var target := _get_main_menu_cam_transform()
+		var target_fov: float = main_menu_camera.fov
+		# Store base pos for parallax after reload.
+		_menu_cam_base_pos = target.origin
+		var tw := create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(lobby_camera, "global_transform", target, CAMERA_TWEEN_TIME) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw.tween_property(lobby_camera, "fov", target_fov, CAMERA_TWEEN_TIME) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw.chain().tween_callback(
+			func():
+				# Clean up networking and save state, then reload.
+				NetworkManager.leave_game()
+				LobbyManager.reset()
+				SaveManager.clear_current_slot()
+				get_tree().change_scene_to_file("res://scenes/main.tscn"),
+		)
+	else:
+		NetworkManager.leave_game()
+		LobbyManager.reset()
+		SaveManager.clear_current_slot()
+		get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
 ## Positions the lobby camera at the given stand index, optionally tweening.
