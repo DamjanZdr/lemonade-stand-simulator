@@ -407,6 +407,8 @@ func _start_stand_transition(slot_name: String, stand_name: String) -> void:
 	# synchronous, so by the time we get here the state is already applied.
 	# In the future if loading becomes async, this is where we'd wait.
 	_transition_loaded = true
+	# Play the transition swoosh sound.
+	AudioManager.play_sfx_ui("swoosh", 1.0, 0.0)
 	# Start the whip loop.
 	_do_transition_whip()
 
