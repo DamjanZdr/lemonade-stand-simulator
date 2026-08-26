@@ -492,7 +492,6 @@ func _build_save_row(
 	top_row.add_child(btn)
 	# Delete button — replaced by Yes/No inline when clicked.
 	var del_btn := Button.new()
-	del_btn.custom_minimum_size = Vector2(90, 36)
 	del_btn.add_theme_font_size_override("font_size", 20)
 	del_btn.add_theme_color_override("font_color", Color(1, 0.5, 0.5, 0.7))
 	del_btn.add_theme_color_override("font_hover_color", Color(1, 0.3, 0.3, 1))
@@ -505,7 +504,6 @@ func _build_save_row(
 	confirm_row.add_theme_constant_override("separation", 12)
 	confirm_row.visible = false
 	var yes_btn := Button.new()
-	yes_btn.custom_minimum_size = Vector2(60, 36)
 	yes_btn.add_theme_font_size_override("font_size", 20)
 	yes_btn.add_theme_color_override("font_color", Color(1, 0.3, 0.3, 0.9))
 	yes_btn.add_theme_color_override("font_hover_color", Color(1, 0.2, 0.2, 1))
@@ -521,8 +519,19 @@ func _build_save_row(
 					_refresh_saves(),
 			),
 	)
+	# Divider between Yes and No.
+	var divider := VSeparator.new()
+	divider.add_theme_constant_override("separation", 0)
+	divider.add_theme_stylebox_override(
+		"separator",
+		(func():
+			var s := StyleBoxLine.new()
+			s.color = Color(1, 1, 1, 0.3)
+			s.thickness = 1
+			return s
+		).call(),
+	)
 	var no_btn := Button.new()
-	no_btn.custom_minimum_size = Vector2(60, 36)
 	no_btn.add_theme_font_size_override("font_size", 20)
 	no_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
 	no_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 0.8))
@@ -539,6 +548,7 @@ func _build_save_row(
 			),
 	)
 	confirm_row.add_child(yes_btn)
+	confirm_row.add_child(divider)
 	confirm_row.add_child(no_btn)
 	del_btn.pressed.connect(
 		func():
