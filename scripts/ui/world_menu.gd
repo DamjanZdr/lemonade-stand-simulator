@@ -47,6 +47,12 @@ var _join_error_label: Label = null
 @onready var _status_label: Label = $MenuBox/StatusLabel
 @onready var _version_label: Label = $VersionLabel
 
+# Music player widget
+var _music_vinyl: TextureRect = null
+var _music_label: Label = null
+var _music_widget: Control = null
+var _music_spin_tween: Tween = null
+
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
 @onready var _saves_list: VBoxContainer = $SavesPanel/SavesList
@@ -298,6 +304,11 @@ func _ready() -> void:
 	_setup_hover_effect(_new_stand_button)
 	# Size "Simulator" to match the width of "Lemonade Stand".
 	_fit_subtitle_width()
+	# Build the music player widget (bottom-right corner).
+	_build_music_player()
+	# Sync to current track.
+	_update_music_display(AudioManager.get_current_track())
+	AudioManager.music_track_changed.connect(_update_music_display)
 
 
 func show_menu() -> void:
@@ -929,3 +940,82 @@ func _build_save_row(
 func _on_load_save(slot_name: String, stand_name: String) -> void:
 	set_busy("Loading %s..." % stand_name)
 	load_stand_requested.emit(slot_name)
+
+# ─── Music Player Widget ───
+
+
+func _build_music_player() -> void:
+	# Container anchored to bottom-right.
+	_music_widget = Control.new()
+	_music_widget.name = "MusicPlayer"
+	_music_widget.anchors_preset = Control.PRESET_BOTTOM_RIGHT
+	_music_widget.anchor_left = 1.0
+	_music_widget.anchor_top = 1.0
+	_music_widget.anchor_right = 1.0
+	_music_widget.anchor_bottom = 1.0
+	_music_widget.offset_left = -210.0
+	_music_widget.offset_top = -70.0
+	_music_widget.offset_right = -12.0
+	_music_widget.offset_bottom = -12.0
+	_music_widget.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_music_widget)
+
+	# HBox: vinyl disc + track name.
+	var hbox := HBoxContainer.new()
+	hbox.name = "Row"
+	hbox.anchors_preset = Control.PRESET_FULL_RECT
+	hbox.alignment = BoxContainer.ALIGNMENT_END
+	hbox.add_theme_constant_override("separation", 10)
+	_music_widget.add_child(hbox)
+
+	# Track name label.
+	_music_label = Label.new()
+	_music_label.name = "TrackName"
+	_music_label.custom_minimum_size = Vector2(140, 0)
+	_music_label.add_theme_font_size_override("font_size", 14)
+	_music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
+	_music_label.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 0.9))
+	_music_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_music_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_music_label.text = "—"
+	_music_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_child(_music_label)
+
+	# Vinyl disc — drawn as a TextureRect with a custom drawn circle.
+	# We use a Control with _draw to render the vinyl.
+	var disc := Control.new()
+	disc.name = "Vinyl"
+	disc.custom_minimum_size = Vector2(40, 40)
+	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc.set_script(load("res://scripts/ui/vinyl_disc.gd"))
+	hbox.add_child(disc)
+	_music_vinyl = disc
+
+	# Click on the widget to cycle to the next track.
+	_music_widget.gui_input.connect(
+		func(event):
+			if (
+				event is InputEventMouseButton and event.pressed
+				and event.button_index == MOUSE_BUTTON_LEFT
+			):
+				AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+				AudioManager.next_track(),
+	)
+	# Hover effect on the label.
+	_music_widget.mouse_entered.connect(
+		func():
+			if _music_label:
+				_music_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7, 0.9)),
+	)
+	_music_widget.mouse_exited.connect(
+		func():
+			if _music_label:
+				_music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.5)),
+	)
+
+
+func _update_music_display(track_name: String) -> void:
+	if _music_label:
+		_music_label.text = track_name if track_name != "" else "—"
+	if _music_vinyl and _music_vinyl.has_method("set_spinning"):
+		_music_vinyl.set_spinning(track_name != "")

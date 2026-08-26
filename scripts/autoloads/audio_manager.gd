@@ -18,6 +18,10 @@ const UI_VOLUME_DB: float = -8.0
 
 var _streams: Dictionary = { }
 var _music_player: AudioStreamPlayer = null
+var _music_tracks: Array[String] = []
+var _music_index: int = 0
+
+signal music_track_changed(track_name: String)
 
 
 func _ready() -> void:
@@ -106,8 +110,10 @@ func _preload_music() -> void:
 			if stream:
 				stream.loop = true
 				_streams["music_" + key] = stream
+				_music_tracks.append(key)
 		file_name = dir.get_next()
 	dir.list_dir_end()
+	_music_tracks.sort()
 
 
 ## Play a music track on the Music bus. Loops indefinitely.
@@ -128,6 +134,42 @@ func _play_music(track_name: String) -> void:
 		add_child(_music_player)
 	_music_player.stream = stream
 	_music_player.play()
+	var idx := _music_tracks.find(track_name)
+	if idx >= 0:
+		_music_index = idx
+	music_track_changed.emit(track_name)
+
+
+## Get the current track name.
+func get_current_track() -> String:
+	if _music_tracks.is_empty():
+		return ""
+	return _music_tracks[_music_index]
+
+
+## Cycle to the next music track. Returns the new track name.
+func next_track() -> String:
+	if _music_tracks.is_empty():
+		return ""
+	_music_index = (_music_index + 1) % _music_tracks.size()
+	var track := _music_tracks[_music_index]
+	_play_music(track)
+	return track
+
+
+## Cycle to the previous music track. Returns the new track name.
+func prev_track() -> String:
+	if _music_tracks.is_empty():
+		return ""
+	_music_index = (_music_index - 1 + _music_tracks.size()) % _music_tracks.size()
+	var track := _music_tracks[_music_index]
+	_play_music(track)
+	return track
+
+
+## Get all available music track names.
+func get_track_list() -> Array[String]:
+	return _music_tracks.duplicate()
 
 
 func play_sfx(
