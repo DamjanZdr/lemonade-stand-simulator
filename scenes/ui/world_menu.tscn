@@ -49,6 +49,7 @@ layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="MenuBox"]
 layout_mode = 2
+size_flags_horizontal = 0
 custom_minimum_size = Vector2(0, 54)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
@@ -58,6 +59,7 @@ text = "Play"
 
 [node name="SavesButton" type="Button" parent="MenuBox"]
 layout_mode = 2
+size_flags_horizontal = 0
 custom_minimum_size = Vector2(0, 54)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
@@ -67,6 +69,7 @@ text = "Stands"
 
 [node name="JoinButton" type="Button" parent="MenuBox"]
 layout_mode = 2
+size_flags_horizontal = 0
 custom_minimum_size = Vector2(0, 54)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
@@ -109,6 +112,7 @@ layout_mode = 2
 
 [node name="QuitButton" type="Button" parent="MenuBox"]
 layout_mode = 2
+size_flags_horizontal = 0
 custom_minimum_size = Vector2(0, 44)
 theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(1, 1, 1, 0.5)
