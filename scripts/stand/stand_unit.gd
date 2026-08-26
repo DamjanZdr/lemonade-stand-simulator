@@ -560,7 +560,7 @@ func set_stand_name(name: String) -> void:
 		_sign_label.text = "🍋 %s 🍋" % name
 	# Auto-scale: measure the text width and shrink pixel_size if needed.
 	var font: Font = _sign_label.get_theme_font("font")
-	var font_size := _sign_label.get_theme_font_size("font_size")
+	var font_size: int = _sign_label.get_theme_font_size("font_size")
 	var text_width := font \
 			.get_string_size(_sign_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size) \
 			.x
