@@ -456,6 +456,10 @@ func _setup_networking() -> void:
 	player_spawner.spawned.connect(_on_spawner_spawned)
 	NetworkManager.peer_connected.connect(_on_peer_connected)
 	NetworkManager.peer_disconnected.connect(_on_peer_disconnected)
+	GameLog.log(
+		"[Main] _setup_networking done, spawner=%s spawn_path=%s"
+		% [player_spawner.name, player_spawner.spawn_path]
+	)
 
 
 ## Spawns players for all connected peers. Called from _start_game_phase()
@@ -478,6 +482,7 @@ func _spawn_all_players() -> void:
 ## spawn() is invoked. The data parameter is the peer ID (int).
 func _spawn_player(data: Variant) -> Node:
 	var peer_id: int = int(data)
+	GameLog.log("[Main] _spawn_player called with data=%s peer_id=%d" % [str(data), peer_id])
 	var scene := load(PLAYER_SCENE_PATH) as PackedScene
 	var p: Player = scene.instantiate()
 	p.name = str(peer_id)
@@ -613,10 +618,12 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 	var stand := _stand_for_peer(peer_id)
 	# Use the spawner's spawn() with the peer_id as data. The spawn_function
 	# (_spawn_player) creates the node with the correct name.
+	GameLog.log("[Main] Spawning player for peer %d via spawner.spawn()" % peer_id)
 	var p: Player = player_spawner.spawn(peer_id) as Player
 	if p == null:
-		GameLog.log("[Main] Failed to spawn player for peer %d" % peer_id)
+		GameLog.log("[Main] Failed to spawn player for peer %d — spawn() returned null" % peer_id)
 		return
+	GameLog.log("[Main] Spawned player %s, now in tree=%s" % [p.name, p.is_inside_tree()])
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
