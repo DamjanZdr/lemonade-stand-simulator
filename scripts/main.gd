@@ -282,7 +282,7 @@ func _set_systems_paused(paused: bool) -> void:
 		DayManager.process_mode = process_mode_val
 
 
-## Play button: load the most recent save with a transition, or if no
+## Play button: load the most recent save and go to lobby, or if no
 ## saves exist, prompt the player to name their first stand.
 func _on_menu_play() -> void:
 	var saves := SaveManager.list_saves()
@@ -290,7 +290,9 @@ func _on_menu_play() -> void:
 		var latest: Dictionary = saves[0]
 		var slot: String = latest.get("slot", "")
 		if slot != "":
-			_start_stand_transition(slot, latest.get("stand_name", slot))
+			SaveManager.load_existing_game(slot)
+			NetworkManager.host_game()
+			_world_menu.set_busy("Loading %s..." % latest.get("stand_name", slot))
 			return
 	# No saves — prompt for a stand name.
 	_world_menu.show_name_entry()
