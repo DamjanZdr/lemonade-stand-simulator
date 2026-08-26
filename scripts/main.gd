@@ -618,11 +618,16 @@ func _transition_to_lobby() -> void:
 
 ## Smoothly transition from the lobby back to the main menu.
 ## Tweens the lobby camera back to the main menu camera's transform,
-## fades out the lobby UI, then reloads the main scene.
+## fades out the lobby UI, then switches to the main menu in-place
+## (no scene reload = no black flash).
 func _on_return_to_menu() -> void:
 	if _transition_active:
 		return
 	_transition_active = true
+	# Clean up networking and save state now.
+	NetworkManager.leave_game()
+	LobbyManager.reset()
+	SaveManager.clear_current_slot()
 	# Fade out lobby UI.
 	if lobby_ui:
 		var fade_tw := create_tween()
@@ -632,8 +637,6 @@ func _on_return_to_menu() -> void:
 	if main_menu_camera and lobby_camera:
 		var target := _get_main_menu_cam_transform()
 		var target_fov: float = main_menu_camera.fov
-		# Store base pos for parallax after reload.
-		_menu_cam_base_pos = target.origin
 		var tw := create_tween()
 		tw.set_parallel(true)
 		tw.tween_property(lobby_camera, "global_transform", target, CAMERA_TWEEN_TIME) \
@@ -642,17 +645,31 @@ func _on_return_to_menu() -> void:
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tw.chain().tween_callback(
 			func():
-				# Clean up networking and save state, then reload.
-				NetworkManager.leave_game()
-				LobbyManager.reset()
-				SaveManager.clear_current_slot()
-				get_tree().change_scene_to_file("res://scenes/main.tscn"),
+				# Switch to main menu camera in-place.
+				lobby_camera.current = false
+				main_menu_camera.current = true
+				main_menu_camera.global_transform = target
+				main_menu_camera.fov = target_fov
+				_menu_cam_base_pos = target.origin
+				# Hide lobby UI, show world menu.
+				if lobby_ui:
+					lobby_ui.visible = false
+					lobby_ui.modulate = Color(1, 1, 1, 1)
+				if _world_menu:
+					_world_menu.show_menu_immediate(0.4)
+				_game_state = MenuState.MAIN_MENU
+				_in_lobby = false
+				_transition_active = false,
 		)
 	else:
-		NetworkManager.leave_game()
-		LobbyManager.reset()
-		SaveManager.clear_current_slot()
-		get_tree().change_scene_to_file("res://scenes/main.tscn")
+		# Fallback: just switch state directly.
+		if lobby_ui:
+			lobby_ui.visible = false
+		if _world_menu:
+			_world_menu.show_menu_immediate(0.4)
+		_game_state = MenuState.MAIN_MENU
+		_in_lobby = false
+		_transition_active = false
 
 
 ## Positions the lobby camera at the given stand index, optionally tweening.

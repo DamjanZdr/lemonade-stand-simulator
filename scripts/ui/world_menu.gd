@@ -230,36 +230,49 @@ func _ready() -> void:
 	_make_flat_button(_settings_back)
 	_add_drop_shadow(_settings_back)
 	_setup_hover_effect(_settings_back)
-	# Style checkboxes: transparent bg, white outline, minimalist.
+	# Style checkboxes: transparent bg, white outline, square, minimalist.
 	for cb in [_fullscreen_check, _vsync_check, _lighting_check, _fps_check]:
-		var cb_normal := StyleBoxFlat.new()
-		cb_normal.bg_color = Color(0, 0, 0, 0)
-		cb_normal.border_color = Color(1, 1, 1, 0.4)
-		cb_normal.set_border_width_all(1)
-		cb_normal.set_content_margin_all(4)
-		cb_normal.set_corner_radius_all(2)
-		cb.add_theme_stylebox_override("normal", cb_normal)
-		var cb_hover := StyleBoxFlat.new()
-		cb_hover.bg_color = Color(0, 0, 0, 0)
-		cb_hover.border_color = Color(1, 1, 1, 0.8)
-		cb_hover.set_border_width_all(1)
-		cb_hover.set_content_margin_all(4)
-		cb_hover.set_corner_radius_all(2)
-		cb.add_theme_stylebox_override("hover", cb_hover)
-		var cb_pressed := StyleBoxFlat.new()
-		cb_pressed.bg_color = Color(1, 1, 1, 0.1)
-		cb_pressed.border_color = Color(1, 1, 1, 1.0)
-		cb_pressed.set_border_width_all(1)
-		cb_pressed.set_content_margin_all(4)
-		cb_pressed.set_corner_radius_all(2)
-		cb.add_theme_stylebox_override("pressed", cb_pressed)
-		var cb_checked := StyleBoxFlat.new()
-		cb_checked.bg_color = Color(1, 0.95, 0.7, 0.15)
-		cb_checked.border_color = Color(1, 0.95, 0.7, 1.0)
-		cb_checked.set_border_width_all(1)
-		cb_checked.set_content_margin_all(4)
-		cb_checked.set_corner_radius_all(2)
-		cb.add_theme_stylebox_override("checked", cb_checked)
+		# Use a helper to make square styleboxes with equal content margins.
+		var make_sb := func(bg: Color, border: Color) -> StyleBoxFlat:
+			var s := StyleBoxFlat.new()
+			s.bg_color = bg
+			s.border_color = border
+			s.set_border_width_all(1)
+			s.content_margin_left = 6
+			s.content_margin_right = 6
+			s.content_margin_top = 6
+			s.content_margin_bottom = 6
+			s.set_corner_radius_all(2)
+			return s
+		cb.add_theme_stylebox_override(
+			"normal",
+			make_sb.call(Color(0, 0, 0, 0), Color(1, 1, 1, 0.4)),
+		)
+		cb.add_theme_stylebox_override(
+			"hover",
+			make_sb.call(Color(0, 0, 0, 0), Color(1, 1, 1, 0.8)),
+		)
+		cb.add_theme_stylebox_override(
+			"pressed",
+			make_sb.call(Color(1, 1, 1, 0.1), Color(1, 1, 1, 1.0)),
+		)
+		cb.add_theme_stylebox_override(
+			"checked",
+			make_sb.call(Color(1, 0.95, 0.7, 0.15), Color(1, 0.95, 0.7, 1.0)),
+		)
+		# Hover while checked — keep the checked style, don't go invisible.
+		cb.add_theme_stylebox_override(
+			"hover_pressed",
+			make_sb.call(Color(1, 0.95, 0.7, 0.15), Color(1, 0.95, 0.7, 1.0)),
+		)
+		cb.add_theme_stylebox_override(
+			"hover_checked",
+			make_sb.call(Color(1, 0.95, 0.7, 0.2), Color(1, 0.95, 0.7, 1.0)),
+		)
+		cb.add_theme_stylebox_override(
+			"pressed_checked",
+			make_sb.call(Color(1, 0.95, 0.7, 0.1), Color(1, 0.95, 0.7, 1.0)),
+		)
 		cb.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 		cb.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	# Style join field same as stand box outline.
