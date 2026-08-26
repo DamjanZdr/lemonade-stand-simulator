@@ -119,21 +119,6 @@ visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 offset_left = 20.0
-
-[node name="JoinField" type="LineEdit" parent="MenuBox/JoinRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 36)
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_color = Color(1, 1, 1, 0.9)
-placeholder_text = "Lobby ID..."
-
-[node name="JoinSubmit" type="Button" parent="MenuBox/JoinRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 36)
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_color = Color(1, 1, 1, 0.85)
-theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
 text = "Join"
 
@@ -222,6 +207,74 @@ custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
 [node name="BackButton" type="Button" parent="SavesPanel"]
+layout_mode = 2
+anchors_preset = 7
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = -50.0
+offset_right = 500.0
+offset_bottom = -20.0
+grow_vertical = 0
+custom_minimum_size = Vector2(0, 36)
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 0.8)
+alignment = 0
+text = "Back"
+
+[node name="JoinPanel" type="Control" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="JoinList" type="VBoxContainer" parent="JoinPanel"]
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = 80.0
+offset_right = 500.0
+offset_bottom = -70.0
+grow_vertical = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 6
+alignment = 0
+
+[node name="JoinTitle" type="Label" parent="JoinPanel/JoinList"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+text = "Join a Stand"
+
+[node name="Spacer" type="Control" parent="JoinPanel/JoinList"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="JoinField" type="LineEdit" parent="JoinPanel/JoinList"]
+layout_mode = 2
+custom_minimum_size = Vector2(360, 0)
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 1, 1, 1.0)
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 0.7)
+theme_override_colors/caret_color = Color(1, 1, 1, 1.0)
+placeholder_text = "Lobby ID..."
+
+[node name="JoinSubmit" type="Button" parent="JoinPanel/JoinList"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.7, 1, 0.7, 0.8)
+theme_override_colors/font_hover_color = Color(0.8, 1, 0.8, 1)
+alignment = 0
+text = "Join"
+
+[node name="JoinBack" type="Button" parent="JoinPanel"]
 layout_mode = 2
 anchors_preset = 7
 anchor_left = 0.0

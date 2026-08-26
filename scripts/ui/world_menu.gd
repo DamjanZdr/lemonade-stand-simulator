@@ -18,9 +18,10 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 @onready var _subtitle_label: Label = $MenuBox/TitleBox/SubtitleLabel
 @onready var _saves_button: Button = $MenuBox/SavesButton
 @onready var _join_button: Button = $MenuBox/JoinButton
-@onready var _join_row: HBoxContainer = $MenuBox/JoinRow
-@onready var _join_field: LineEdit = $MenuBox/JoinRow/JoinField
-@onready var _join_submit: Button = $MenuBox/JoinRow/JoinSubmit
+@onready var _join_panel: Control = $JoinPanel
+@onready var _join_field: LineEdit = $JoinPanel/JoinList/JoinField
+@onready var _join_submit: Button = $JoinPanel/JoinList/JoinSubmit
+@onready var _join_back: Button = $JoinPanel/JoinBack
 @onready var _quit_button: Button = $MenuBox/QuitButton
 @onready var _status_label: Label = $MenuBox/StatusLabel
 @onready var _version_label: Label = $VersionLabel
@@ -58,6 +59,14 @@ func _ready() -> void:
 		func():
 			_on_button_click(_join_submit, _on_join_submit),
 	)
+	_join_back.pressed.connect(
+		func():
+			_on_button_click(_join_back, _on_join_back),
+	)
+	_join_field.text_submitted.connect(
+		func(_text):
+			_on_join_submit(),
+	)
 	_quit_button.pressed.connect(
 		func():
 			_on_button_click(
@@ -83,6 +92,24 @@ func _ready() -> void:
 	_make_flat_button(_join_submit)
 	_add_drop_shadow(_join_submit)
 	_setup_hover_effect(_join_submit)
+	_make_flat_button(_join_back)
+	_add_drop_shadow(_join_back)
+	_setup_hover_effect(_join_back)
+	# Style join field same as stand box outline.
+	var jf_style := StyleBoxFlat.new()
+	jf_style.bg_color = Color(0, 0, 0, 0)
+	jf_style.border_color = Color(1, 1, 1, 0.4)
+	jf_style.set_border_width_all(1)
+	jf_style.set_content_margin_all(10)
+	jf_style.set_corner_radius_all(4)
+	_join_field.add_theme_stylebox_override("normal", jf_style)
+	var jf_focus := StyleBoxFlat.new()
+	jf_focus.bg_color = Color(0, 0, 0, 0)
+	jf_focus.border_color = Color(1, 1, 1, 1.0)
+	jf_focus.set_border_width_all(1)
+	jf_focus.set_content_margin_all(10)
+	jf_focus.set_corner_radius_all(4)
+	_join_field.add_theme_stylebox_override("focus", jf_focus)
 	_make_flat_button(_saves_back)
 	_add_drop_shadow(_saves_back)
 	_setup_hover_effect(_saves_back)
@@ -96,7 +123,7 @@ func _ready() -> void:
 func show_menu() -> void:
 	visible = true
 	_saves_panel.visible = false
-	_join_row.visible = false
+	_join_panel.visible = false
 	_status_label.text = ""
 	# Animate buttons in
 	_animate_buttons_in()
@@ -107,7 +134,7 @@ func show_menu() -> void:
 func show_menu_immediate(duration: float = 0.4) -> void:
 	visible = true
 	_saves_panel.visible = false
-	_join_row.visible = false
+	_join_panel.visible = false
 	_status_label.text = ""
 	# MenuBox may have been hidden by _on_saves_pressed().
 	$MenuBox.visible = true
@@ -304,15 +331,21 @@ func _animate_buttons_in() -> void:
 
 
 func _toggle_join_row() -> void:
-	_join_row.visible = not _join_row.visible
-	if _join_row.visible:
-		_join_field.grab_focus()
+	_join_panel.visible = true
+	$MenuBox.visible = false
+	_join_field.text = ""
+	_join_field.grab_focus()
+
+
+func _on_join_back() -> void:
+	_join_panel.visible = false
+	$MenuBox.visible = true
 
 
 func _on_join_submit() -> void:
 	var text := _join_field.text.strip_edges()
 	if not text.is_valid_int():
-		_status_label.text = "Enter a valid lobby ID"
+		_join_field.text = ""
 		return
 	set_busy("Joining lobby...")
 	join_pressed.emit(int(text))
