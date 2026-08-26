@@ -24,7 +24,6 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 @onready var _join_back: Button = $JoinPanel/JoinBack
 var _join_paste_btn: Button = null
 var _join_error_label: Label = null
-@onready var _join_back: Button = $JoinPanel/JoinBack
 @onready var _quit_button: Button = $MenuBox/QuitButton
 @onready var _status_label: Label = $MenuBox/StatusLabel
 @onready var _version_label: Label = $VersionLabel
