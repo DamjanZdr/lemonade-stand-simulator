@@ -763,25 +763,26 @@ func _do_throw(charge: float) -> void:
 	# Create a RigidBody3D for the throw — position only, no rotation.
 	var body := RigidBody3D.new()
 	body.name = "ThrownTrash"
-	body.global_position = start_pos
 	# Lock ALL rotation so it never spins.
 	body.axis_lock_angular_x = true
 	body.axis_lock_angular_y = true
 	body.axis_lock_angular_z = true
 	# Copy the correct collision shapes from the per-variant scene.
 	_copy_trash_collision_shapes(body, trash_type)
-	# Attach the visual mesh.
+	# Attach the visual mesh — keep its original scale and rotation
+	# so it doesn't change when physics is frozen later.
 	if hand_mesh and is_instance_valid(hand_mesh):
 		var visual := hand_mesh.duplicate() as Node3D
 		if visual:
 			visual.visible = true
 			visual.position = Vector3.ZERO
-			visual.rotation = Vector3.ZERO
 			body.add_child(visual)
-	# Add to scene.
+	# Add to scene FIRST, then set global position (avoids the
+	# "not inside tree" error).
 	var scene := get_tree().current_scene
 	if scene:
 		scene.add_child(body)
+	body.global_position = start_pos
 	# Apply throw velocity (position only, no angular velocity).
 	body.linear_velocity = aim_dir * force
 	# The moment it hits anything, freeze and spawn the real trash item.
