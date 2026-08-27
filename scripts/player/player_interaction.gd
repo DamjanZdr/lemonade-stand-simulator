@@ -6,6 +6,8 @@ extends Node
 
 ## Currently highlighted interactable.
 var hovered: Interactable = null
+## Currently highlighted thrown trash body (RigidBody3D, in-flight or landed).
+var _hovered_trash_body: RigidBody3D = null
 
 var _last_hint: String = ""
 var _last_press_holding_fruit: bool = false
@@ -46,6 +48,9 @@ func set_money_mode(active: bool) -> void:
 	if active and hovered and is_instance_valid(hovered):
 		hovered.set_highlight(false)
 		hovered = null
+	if active and _hovered_trash_body and is_instance_valid(_hovered_trash_body):
+		_set_trash_body_highlight(_hovered_trash_body, false)
+		_hovered_trash_body = null
 	if active:
 		_last_hint = ""
 		EventBus.interaction_hint_changed.emit("")
@@ -88,8 +93,23 @@ func update_frame_lookups() -> void:
 	_frame_lookups_done = false
 
 
+## Check if the player's raycast is hitting a thrown-trash body.
+## Returns the RigidBody3D if so, null otherwise. Works mid-air.
+func _get_looked_at_thrown_trash() -> RigidBody3D:
+	if not _player.ray.is_colliding():
+		return null
+	var node: Node = _player.ray.get_collider()
+	while node != null:
+		if node is RigidBody3D and node.has_meta("is_thrown_trash"):
+			return node as RigidBody3D
+		node = node.get_parent()
+	return null
+
+
 func poll_hint() -> void:
 	var interactable := get_looked_at_interactable()
+	# Check for thrown trash body (works mid-air or after landing).
+	var thrown := _get_looked_at_thrown_trash() if interactable == null else null
 	# Update interactable highlight.
 	if interactable != hovered:
 		if hovered and is_instance_valid(hovered):
@@ -97,6 +117,13 @@ func poll_hint() -> void:
 		hovered = interactable
 		if hovered:
 			hovered.set_highlight(true)
+	# Update thrown trash highlight.
+	if thrown != _hovered_trash_body:
+		if _hovered_trash_body and is_instance_valid(_hovered_trash_body):
+			_set_trash_body_highlight(_hovered_trash_body, false)
+		_hovered_trash_body = thrown
+		if _hovered_trash_body:
+			_set_trash_body_highlight(_hovered_trash_body, true)
 	elif hovered and is_instance_valid(hovered) and hovered is Press:
 		# Re-apply highlight only when held-item state changes (not every frame)
 		var holding_fruit_now: bool = _player.inventory.held_item == HeldItem.SUPPLY_BOX \
@@ -206,6 +233,9 @@ func poll_hint() -> void:
 				hint = "Filled Cup | LMB: serve lemonade"
 	else:
 		hint = interactable.get_hint(_player) if interactable else ""
+		# Thrown trash (mid-air or landed) — pickupable with empty hands.
+		if not interactable and _player.inventory.held_item == HeldItem.NONE and thrown:
+			hint = "Trash | LMB: pick up"
 		# Append pickup hint when looking at a pickupable object with empty hands
 		if interactable and _player.inventory.held_item == HeldItem.NONE:
 			var pickupable := interactable.find_child("Pickupable", false, false)
@@ -240,6 +270,25 @@ func primary_interact() -> void:
 		var pickupable := interactable.find_child("Pickupable", false, false)
 		if pickupable != null and pickupable.can_pick_up(_player):
 			pickupable.pick_up(_player)
+			return
+
+	# Pick up thrown trash (RigidBody3D, mid-air or landed) with empty hands.
+	if _player.inventory.held_item == HeldItem.NONE:
+		var thrown_body := _get_looked_at_thrown_trash()
+		if thrown_body:
+			var t_type: String = thrown_body.get_meta("trash_type", "empty_box")
+			var t_value: float = thrown_body.get_meta("trash_value", 0.0)
+			# Get the visual from the body to use as hand mesh.
+			var visual: Node3D = null
+			for child in thrown_body.get_children():
+				if child is Node3D and not child is CollisionShape3D:
+					visual = (child as Node3D).duplicate()
+					break
+			# Clear highlight before freeing the body.
+			if _hovered_trash_body == thrown_body:
+				_hovered_trash_body = null
+			thrown_body.queue_free()
+			_player.inventory.make_held_trash(t_value, t_type, visual)
 			return
 
 	# Trash items can be disposed of at a trashcan or thrown.
@@ -764,6 +813,10 @@ func _do_throw(charge: float) -> void:
 	var body := _create_trash_physics_body(trash_type)
 	if body == null:
 		return
+	# Tag with metadata so it's pickupable mid-air or after landing.
+	body.set_meta("is_thrown_trash", true)
+	body.set_meta("trash_type", trash_type)
+	body.set_meta("trash_value", trash_value)
 	# Add to scene FIRST, then set global position.
 	var scene := get_tree().current_scene
 	if scene:
@@ -834,13 +887,18 @@ func _create_trash_physics_body(trash_type: String) -> RigidBody3D:
 
 
 ## Freeze the physics body and spawn the actual TrashItem at its
-## exact position. The body is then removed.
+## exact position. The body is then removed. Does nothing if the
+## body was already picked up mid-air.
 func _freeze_and_spawn_trash(body: RigidBody3D, trash_type: String, trash_value: float) -> void:
 	if not is_instance_valid(body):
 		return
 	var land_pos := body.global_position
 	# Freeze immediately so it stops exactly where it hit.
 	body.freeze = true
+	# Clear highlight reference if this body was being hovered.
+	if _hovered_trash_body == body:
+		_set_trash_body_highlight(body, false)
+		_hovered_trash_body = null
 	# Spawn the real trash item at this exact position.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
@@ -869,3 +927,35 @@ func _freeze_and_spawn_trash(body: RigidBody3D, trash_type: String, trash_value:
 			WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
 	# Remove the physics body.
 	body.queue_free()
+
+
+## Toggle highlight on a thrown trash body (outline on all MeshInstance3D children).
+func _set_trash_body_highlight(body: RigidBody3D, on: bool) -> void:
+	for child in body.get_children():
+		if child is Node3D and not child is CollisionShape3D:
+			_apply_outline_recursive(child, on)
+
+
+func _apply_outline_recursive(node: Node, on: bool) -> void:
+	if node is MeshInstance3D and node.name != "_Outline":
+		var mi := node as MeshInstance3D
+		var existing := mi.get_node_or_null("_Outline") as MeshInstance3D
+		if on and existing == null and mi.mesh != null:
+			var ol := MeshInstance3D.new()
+			ol.name = "_Outline"
+			ol.mesh = mi.mesh
+			ol.layers = 2
+			ol.material_override = StandardMaterial3D.new()
+			ol.material_override.albedo_color = Color.WHITE
+			ol.material_override.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			ol.material_override.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+			ol.add_to_group("outline_fill")
+			ol.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mi.add_child(ol)
+			ol.transform = Transform3D.IDENTITY
+		elif not on and existing != null:
+			existing.queue_free()
+	for child in node.get_children():
+		if child.name == "_Outline":
+			continue
+		_apply_outline_recursive(child, on)
