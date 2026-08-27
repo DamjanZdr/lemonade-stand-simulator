@@ -57,6 +57,23 @@ func is_host() -> bool:
 	return multiplayer.is_server()
 
 
+## Find the local player (the one this peer has authority over).
+## Returns null if no local player exists yet. In single-player, returns
+## the first player found.
+static func get_local_player() -> Node:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.current_scene == null:
+		return null
+	for p in tree.current_scene.find_children("*", "Player", true, false):
+		if p.is_multiplayer_authority():
+			return p
+	# Fallback: first player (single-player or not yet claimed authority).
+	var players := tree.get_nodes_in_group("player")
+	if not players.is_empty():
+		return players[0]
+	return null
+
+
 ## Assign a stable network ID to a node. Returns the ID. If the node is
 ## freed, the ID is automatically unregistered.
 func _assign_net_id(obj: Node) -> int:

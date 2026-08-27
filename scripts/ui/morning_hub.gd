@@ -1713,6 +1713,13 @@ func _get_local_stand() -> Node:
 	var root := get_tree().current_scene
 	if root == null:
 		return null
+	# Find the local player first, then use their assigned_stand.
+	for p in root.find_children("*", "Player", true, false):
+		if p.is_multiplayer_authority():
+			var stand: Node = p.get("assigned_stand")
+			if stand != null and is_instance_valid(stand):
+				return stand
+	# Fallback: return the first StandUnit (single-player or unassigned).
 	for s in root.find_children("*", "StandUnit", true, false):
 		return s
 	return null

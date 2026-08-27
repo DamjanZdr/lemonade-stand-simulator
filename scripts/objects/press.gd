@@ -302,7 +302,7 @@ func set_highlight(on: bool) -> void:
 	# When a pitcher is snapped, highlight the pitcher (not the press body)
 	# unless the player is holding fruit (in which case highlight the press).
 	if has_snapped_pitcher():
-		var player := get_tree().get_first_node_in_group("player") as Player
+		var player := WorldSync.get_local_player() as Player
 		var holding_fruit := false
 		if player != null and player.held_item == HeldItem.SUPPLY_BOX \
 				and player.held_item_data.get("source") == "bin_scoop":

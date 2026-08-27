@@ -101,7 +101,7 @@ func _preload_all() -> void:
 
 
 func _on_change_finalized(_earned: float) -> void:
-	var player := get_tree().get_first_node_in_group("player")
+	var player := WorldSync.get_local_player()
 	var pos: Vector3 = (player as Node3D).global_position if player else Vector3.ZERO
 	play_sfx("transaction_complete", pos, -1.0, 0.1)
 

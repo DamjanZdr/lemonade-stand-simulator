@@ -98,7 +98,7 @@ func _on_sale_initiated(payment: float, change_due: float) -> void:
 	_set_areas_enabled(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if _player == null:
-		_player = get_tree().get_first_node_in_group("player")
+		_player = WorldSync.get_local_player()
 	if _player and _player.has_method("set_money_mode"):
 		_player.set_money_mode(true)
 	EventBus.change_tendered_updated.emit(_tendered_cents, _change_due_cents)
