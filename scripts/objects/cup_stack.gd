@@ -152,12 +152,22 @@ func interact(player: Node) -> void:
 	var p := player as Player
 	if p == null:
 		return
+	# Only the stand that owns this cup stack can interact with it.
+	if not Interactable.can_player_use(player, self):
+		return
 
 	# Deposit ONE cup from box at a time
 	if p.held_item == HeldItem.SUPPLY_BOX:
 		var data := p.held_item_data
 		if data.get("source") == "delivery" \
 				and data.get("ingredient_type", "") == "cups":
+			# A box can only be deposited into a cup stack on the same stand.
+			var box_owner: String = data.get("box_stand_owner", "")
+			if box_owner != "" and stand_owner != "" and box_owner != stand_owner:
+				EventBus.interaction_hint_changed.emit(
+					"Can only deposit into your own stand's cup stack!"
+				)
+				return
 			var space: int = max_capacity - current_count
 			if space <= 0:
 				return

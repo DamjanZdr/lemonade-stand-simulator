@@ -977,6 +977,7 @@ func _start_game_phase() -> void:
 
 	# Wire delivery grid (now sourced from StandUnit)
 	if stand_unit:
+		delivery.set_stand_name(stand_unit.name)
 		var dgrid := stand_unit.get_delivery_grid()
 		if dgrid == null:
 			delivery.set_delivery_zone(stand_unit.get_delivery_marker_position())
@@ -984,6 +985,7 @@ func _start_game_phase() -> void:
 			delivery.set_grid(dgrid)
 	if stand_unit2:
 		delivery2.set_truck_name("DeliveryTruck2")
+		delivery2.set_stand_name(stand_unit2.name)
 		var dgrid2 := stand_unit2.get_delivery_grid()
 		if dgrid2 == null:
 			delivery2.set_delivery_zone(stand_unit2.get_delivery_marker_position())

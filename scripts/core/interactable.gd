@@ -12,6 +12,31 @@ extends Node3D
 ## Shared flat-white fill material (lazy-created, truly one instance per game).
 static var _fill_mat: StandardMaterial3D = null
 
+## Which StandUnit this item belongs to. "" = unassigned (anyone can
+## interact). Set when the item is placed or bought. Synced via WorldSync
+## spawn state so all peers see the same ownership.
+var stand_owner: String = ""
+
+
+## Returns true if the given player is allowed to interact with this item.
+## In single-player (no peers), always true. In multiplayer, the player's
+## assigned_stand name must match this item's stand_owner. If stand_owner
+## is empty (unassigned), anyone can interact.
+static func can_player_use(player: Node, item: Node) -> bool:
+	if multiplayer == null or multiplayer.multiplayer_peer == null:
+		return true
+	if multiplayer.get_peers().is_empty():
+		return true
+	if player == null or not ("assigned_stand" in player):
+		return false
+	var owner: String = item.get("stand_owner") if "stand_owner" in item else ""
+	if owner == "":
+		return true
+	var stand: Node = player.assigned_stand
+	if stand == null or not is_instance_valid(stand):
+		return false
+	return stand.name == owner
+
 
 func interact(player: Node) -> void:
 	pass
@@ -79,7 +104,9 @@ func _get_hand_pos(player: Node) -> Vector3:
 ## cubic-bezier arc, mimicking the delivery truck's throwing motion.
 ## Returns the Tween so callers can chain finished callbacks.
 func _animate_throw_arc(
-	node: Node3D, start_global: Vector3, target_local: Vector3,
+	node: Node3D,
+	start_global: Vector3,
+	target_local: Vector3,
 	duration: float = 0.35,
 ) -> Tween:
 	var parent := node.get_parent()
@@ -93,14 +120,21 @@ func _animate_throw_arc(
 	node.global_position = start_global
 	AudioManager.play_sfx("swoosh", start_global)
 	var tween := node.create_tween()
-	tween.tween_method(
+	tween \
+			.tween_method(
 		func(t: float):
 			var p: Vector3 = start_global * (1.0 - t) ** 3 \
-				+ cp1 * 3.0 * ((1.0 - t) ** 2) * t \
-				+ cp2 * 3.0 * (1.0 - t) * (t ** 2) \
-				+ target_global * (t ** 3)
+					+ cp1 * 3.0 * ((1.0 - t) ** 2) * t \
+					+ cp2 * 3.0 * (1.0 - t) * (t ** 2) \
+					+ target_global * (t ** 3)
 			node.global_position = p,
-		0.0, 1.0, duration,
-	).set_trans(Tween.TRANS_LINEAR)
-	tween.finished.connect(func(): node.position = target_local)
+		0.0,
+		1.0,
+		duration,
+	) \
+			.set_trans(Tween.TRANS_LINEAR)
+	tween.finished.connect(
+		func():
+			node.position = target_local,
+	)
 	return tween

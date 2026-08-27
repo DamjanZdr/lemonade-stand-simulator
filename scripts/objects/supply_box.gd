@@ -110,6 +110,9 @@ func _pick_up_player(player: Node) -> void:
 	var p := player as Player
 	if p == null or p.held_item != HeldItem.NONE:
 		return
+	# Transfer box ownership to the picking player's stand.
+	if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
+		stand_owner = p.assigned_stand.name
 	GameLog.log("[SupplyBox] pick_up name=%s is_host=%s" % [name, WorldSync.is_host()])
 	# Release the delivery-grid slot immediately on this peer as a
 	# prediction; the host will also release it when it authoritatively
@@ -125,6 +128,7 @@ func _pick_up_player(player: Node) -> void:
 			"source": "delivery",
 			"is_equipment": true,
 			"equipment_type": equipment_type,
+			"box_stand_owner": stand_owner,
 		}
 		p.inventory.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
 	else:
@@ -132,6 +136,7 @@ func _pick_up_player(player: Node) -> void:
 			"ingredient_type": ingredient_type,
 			"amount": quantity,
 			"source": "delivery",
+			"box_stand_owner": stand_owner,
 		}
 		p.inventory.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
 

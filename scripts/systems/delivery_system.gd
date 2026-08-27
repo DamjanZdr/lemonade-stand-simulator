@@ -15,6 +15,9 @@ var _batched_boxes: Array[SupplyBox] = []
 ## DeliverySystem instance (for a second stand) sets this to
 ## "DeliveryTruck2" via set_truck_name() before its first delivery.
 var _truck_name: String = "DeliveryTruck"
+## Which stand this delivery system serves. Set by main.gd during setup.
+## Used to assign stand_owner on spawned supply boxes.
+var _stand_name: String = ""
 
 
 func _ready() -> void:
@@ -38,6 +41,12 @@ func set_delivery_zone(pos: Vector3) -> void:
 func set_truck_name(truck_name: String) -> void:
 	_truck_name = truck_name
 	_truck = null # force re-lookup with the new name
+
+
+## Set which stand this delivery system serves (by StandUnit node name).
+## Spawned supply boxes will be assigned to this stand.
+func set_stand_name(stand_name: String) -> void:
+	_stand_name = stand_name
 
 
 func _ensure_truck() -> void:
@@ -67,6 +76,9 @@ func _spawn_box_on_truck(box: SupplyBox) -> void:
 		"is_equipment": box.is_equipment,
 		"equipment_type": box.equipment_type,
 	}
+	# Assign stand ownership so the box belongs to the stand that ordered it.
+	if _stand_name != "":
+		state["stand_owner"] = _stand_name
 
 	# Calculate position on truck grid
 	var target := _truck_grid.global_position

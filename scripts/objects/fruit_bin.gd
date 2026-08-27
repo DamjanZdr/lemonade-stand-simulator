@@ -209,6 +209,9 @@ const HELD_SUPPLY_BOX := 3
 
 
 func interact(player: Node) -> void:
+	# Only the stand that owns this bin can interact with it.
+	if not Interactable.can_player_use(player, self):
+		return
 	var held_item: int = player.get("held_item")
 	var data: Dictionary = player.get("held_item_data")
 
@@ -227,6 +230,13 @@ func interact(player: Node) -> void:
 			return
 		# Depositing from delivery box
 		if data.get("source") == "delivery":
+			# A box can only be deposited into a bin on the same stand.
+			var box_owner: String = data.get("box_stand_owner", "")
+			if box_owner != "" and stand_owner != "" and box_owner != stand_owner:
+				EventBus.interaction_hint_changed.emit(
+					"Can only deposit into your own stand's bins!"
+				)
+				return
 			var to_deposit: float = data.get("amount", 0.0)
 			# One-fruit-type rule: refuse if bin has a different fruit.
 			for ft in fruit_amounts.keys():

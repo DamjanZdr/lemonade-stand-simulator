@@ -106,6 +106,9 @@ func interact(player: Node) -> void:
 	var p := player as Player
 	if p == null:
 		return
+	# Only the stand that owns this press can interact with it.
+	if not Interactable.can_player_use(player, self):
+		return
 
 	# Deposit fruit scoops into press
 	if p.held_item == HeldItem.SUPPLY_BOX \

@@ -366,6 +366,7 @@ func _scan_placed_containers() -> Array:
 			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
 			"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
 			"scale": [node.scale.x, node.scale.y, node.scale.z],
+			"stand_owner": node.get("stand_owner") if "stand_owner" in node else "",
 		}
 		# Capture container contents
 		if node is FruitBin:
@@ -439,6 +440,7 @@ func _scan_supply_boxes() -> Array:
 				"quantity": box.quantity,
 				"is_equipment": box.is_equipment,
 				"equipment_type": box.equipment_type,
+				"stand_owner": box.stand_owner,
 			},
 		)
 	return result
@@ -504,6 +506,7 @@ func capture_default_containers() -> void:
 			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
 			"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
 			"scale": [node.scale.x, node.scale.y, node.scale.z],
+			"stand_owner": node.get("stand_owner") if "stand_owner" in node else "",
 		}
 		if node is WaterDispenser:
 			entry["water_fillings"] = (node as WaterDispenser).max_fillings
@@ -554,6 +557,9 @@ func _do_respawn() -> void:
 			if instance is Press:
 				instance.fruit_type = entry.get("fruit_type", "")
 				instance.fruit_count = entry.get("fruit_count", 0.0)
+			# Restore stand ownership.
+			if "stand_owner" in instance:
+				instance.stand_owner = entry.get("stand_owner", "")
 			if scl.size() >= 3:
 				instance.scale = Vector3(scl[0], scl[1], scl[2])
 			root.add_child(instance)
@@ -639,6 +645,7 @@ func _do_respawn() -> void:
 			box.quantity = entry.get("quantity", 10.0)
 			box.is_equipment = entry.get("is_equipment", false)
 			box.equipment_type = entry.get("equipment_type", "")
+			box.stand_owner = entry.get("stand_owner", "")
 			root.add_child(box)
 			box.global_position = Vector3(pos[0], pos[1], pos[2])
 			box.global_rotation = Vector3(

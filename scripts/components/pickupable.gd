@@ -112,7 +112,10 @@ static func setup_for_container(container: Interactable, container_type: String)
 	p.name = "Pickupable"
 	p.held_item_type = HeldItem.CONTAINER
 	p.can_pickup_callback = func(player: Node) -> bool:
-		return player != null and player.get("held_item") == HeldItem.NONE
+		if player == null or player.get("held_item") != HeldItem.NONE:
+			return false
+		# Only allow pickup if the player's stand owns this container.
+		return Interactable.can_player_use(player, container)
 	p.pick_up_callback = func(player: Node) -> Dictionary:
 		var pl := player as Player
 		if pl == null or pl.held_item != HeldItem.NONE:

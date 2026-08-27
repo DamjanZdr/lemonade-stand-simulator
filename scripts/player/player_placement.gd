@@ -412,6 +412,9 @@ func _place_held_supply_box_on(
 	else:
 		state["ingredient_type"] = _player.held_item_data.get("ingredient_type", "lemon")
 		state["quantity"] = _player.held_item_data.get("amount", 1.0)
+	# Transfer box ownership to the placing player's stand.
+	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+		state["stand_owner"] = _player.assigned_stand.name
 	var box := WorldSync.request_spawn(
 		"res://scenes/objects/supply_box.tscn",
 		place_pos,
@@ -1363,6 +1366,10 @@ func _try_place_container() -> Node3D:
 			source_node.global_transform = _ghost.global_transform
 			_enable_physics(source_node)
 			source_node.visible = true
+			# Update stand ownership to the placing player's stand.
+			if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+				source_node.set("stand_owner", _player.assigned_stand.name)
+				WorldSync.sync_property(source_node, "stand_owner", source_node.stand_owner)
 			# _enable_physics already called above re-enables collision
 			# Sync the move + show to clients in a single RPC so the
 			# position and visibility are set atomically. This is more
@@ -1409,6 +1416,9 @@ func _try_place_container() -> Node3D:
 			state["_net_pitcher_recipe"] = recipe.duplicate()
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
+	# Assign stand ownership based on the placing player's stand.
+	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+		state["stand_owner"] = _player.assigned_stand.name
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance == null:
 		_destroy_ghost()

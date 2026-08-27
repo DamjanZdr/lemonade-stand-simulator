@@ -34,6 +34,8 @@ func _ready() -> void:
 	_load_price_prefixes()
 	if _stand:
 		_stand.price_changed.connect(_on_price_changed)
+		# Assign stand ownership based on parent StandUnit.
+		stand_owner = _stand.name
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 	_refresh_label()
 
@@ -47,7 +49,12 @@ func get_hint(_player: Node) -> String:
 func interact(_player: Node) -> void:
 	if _editing_index < 0:
 		var p := _player as Player
-		if p != null and board_camera != null:
+		if p == null:
+			return
+		# Only the stand that owns this board can edit it.
+		if not Interactable.can_player_use(p, self):
+			return
+		if board_camera != null:
 			_editing_player = p
 			p.enter_priceboard_focus(board_camera.global_transform)
 		_start_edit()

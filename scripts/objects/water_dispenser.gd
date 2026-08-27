@@ -28,6 +28,10 @@ const WATER_Y_EMPTY: float = 0.74
 func _ready() -> void:
 	add_to_group("water_dispenser")
 	add_to_group("container")
+	# Assign stand ownership based on parent StandUnit.
+	var parent := get_parent()
+	if parent != null and parent is StandUnit:
+		stand_owner = parent.name
 	_update_water_visual()
 
 
@@ -151,11 +155,21 @@ func interact(player: Node) -> void:
 	var p := player as Player
 	if p == null:
 		return
+	# Only the stand that owns this dispenser can interact with it.
+	if not Interactable.can_player_use(player, self):
+		return
 
 	# Refill dispenser from water supply box
 	if p.held_item == HeldItem.SUPPLY_BOX:
 		var itype: String = p.held_item_data.get("ingredient_type", "")
 		if itype == "water":
+			# A box can only be deposited into a dispenser on the same stand.
+			var box_owner: String = p.held_item_data.get("box_stand_owner", "")
+			if box_owner != "" and stand_owner != "" and box_owner != stand_owner:
+				EventBus.interaction_hint_changed.emit(
+					"Can only refill your own stand's dispenser!"
+				)
+				return
 			if water_fillings >= max_fillings:
 				EventBus.interaction_hint_changed.emit("Dispenser is full!")
 				return

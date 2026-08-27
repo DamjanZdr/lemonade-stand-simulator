@@ -270,6 +270,7 @@ func _serialize_supply_box(node: Node) -> Dictionary:
 		"quantity": box.quantity,
 		"is_equipment": box.is_equipment,
 		"equipment_type": box.equipment_type,
+		"stand_owner": box.stand_owner,
 		"delivery_cell_idx": box.get_meta("delivery_cell_idx", -1) as int,
 		"delivery_grid_path": str(box.get_meta("delivery_grid_path", "")),
 	}
@@ -445,6 +446,7 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 	box.quantity = float(entry.get("quantity", 10.0))
 	box.is_equipment = bool(entry.get("is_equipment", false))
 	box.equipment_type = entry.get("equipment_type", "")
+	box.stand_owner = entry.get("stand_owner", "")
 	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
 	if scl.size() >= 3:
 		box.scale = Vector3(scl[0], scl[1], scl[2])
