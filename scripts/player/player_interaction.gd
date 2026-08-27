@@ -824,26 +824,22 @@ func _do_throw(charge: float) -> void:
 	body.global_position = start_pos
 	# Apply throw velocity (position only, no angular velocity).
 	body.linear_velocity = aim_dir * force
-	# The moment it hits anything, wait one physics frame for the
-	# engine to resolve the contact, then freeze and spawn the real item.
+	# No bounce, high damping so it settles quickly.
+	body.physics_material_override = _make_no_bounce_material()
+	body.linear_damp = 5.0
+	# Wait for the body to sleep (fully settled) before spawning the
+	# real TrashItem. The body is pickupable mid-air via metadata, so
+	# there's no pickup delay while it settles.
 	var landed := false
-	body.body_entered.connect(
-		func(_other):
-			if landed:
+	body.sleeping_state_changed.connect(
+		func():
+			if landed or not body.sleeping:
 				return
 			landed = true
-			# Stop velocity immediately so it doesn't penetrate further.
-			body.linear_velocity = Vector3.ZERO
-			# Defer to next physics frame so the engine can resolve
-			# the contact and push the body to the correct position.
-			get_tree().physics_frame.connect(
-				func():
-					_freeze_and_spawn_trash(body, trash_type, trash_value),
-				CONNECT_ONE_SHOT,
-			),
+			_freeze_and_spawn_trash(body, trash_type, trash_value),
 	)
-	# Fallback: after 5 seconds, freeze wherever it is.
-	get_tree().create_timer(5.0).timeout.connect(
+	# Fallback: after 3 seconds, freeze wherever it is.
+	get_tree().create_timer(3.0).timeout.connect(
 		func():
 			if not landed and is_instance_valid(body):
 				landed = true
@@ -852,6 +848,18 @@ func _do_throw(charge: float) -> void:
 	AudioManager.play_sfx("box_drop", start_pos)
 	_player.placement._destroy_ghost()
 	_player.inventory.clear_held()
+
+
+## No-bounce physics material for thrown/dropped trash.
+static var _no_bounce_mat: PhysicsMaterial = null
+
+
+static func _make_no_bounce_material() -> PhysicsMaterial:
+	if _no_bounce_mat == null:
+		_no_bounce_mat = PhysicsMaterial.new()
+		_no_bounce_mat.bounce = 0.0
+		_no_bounce_mat.friction = 1.0
+	return _no_bounce_mat
 
 
 ## Create a RigidBody3D with the real trash scene's model and collision

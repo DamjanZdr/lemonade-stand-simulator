@@ -96,6 +96,12 @@ func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vec
 	body.axis_lock_angular_x = true
 	body.axis_lock_angular_y = true
 	body.axis_lock_angular_z = true
+	# No bounce, high damping so it settles quickly.
+	var mat := PhysicsMaterial.new()
+	mat.bounce = 0.0
+	mat.friction = 1.0
+	body.physics_material_override = mat
+	body.linear_damp = 5.0
 	# Copy model and collision shapes from the scene.
 	var instance := trash_scene.instantiate()
 	for child in instance.get_children():
@@ -112,23 +118,15 @@ func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vec
 	if scene:
 		scene.add_child(body)
 	body.global_position = drop_pos
-	# When it hits the ground, wait one physics frame for the engine
-	# to resolve the contact, then spawn the real TrashItem.
+	# Wait for the body to sleep (fully settled) before spawning the
+	# real TrashItem. This ensures the position is correct.
 	var landed := false
-	body.body_entered.connect(
-		func(_other):
-			if landed:
+	body.sleeping_state_changed.connect(
+		func():
+			if landed or not body.sleeping:
 				return
 			landed = true
-			# Stop velocity immediately so it doesn't penetrate further.
-			body.linear_velocity = Vector3.ZERO
-			# Defer to next physics frame so the engine can resolve
-			# the contact and push the body to the correct position.
-			get_tree().physics_frame.connect(
-				func():
-					_finalize_drop(body, scene_path, variant),
-				CONNECT_ONE_SHOT,
-			),
+			_finalize_drop(body, scene_path, variant),
 	)
 	# Fallback: after 3 seconds, finalize wherever it is.
 	get_tree().create_timer(3.0).timeout.connect(
