@@ -37,12 +37,17 @@ func _pick_random_variant() -> void:
 	_visible_variant = available[randi() % available.size()]
 	_visible_variant.visible = true
 	trash_type = _visible_variant.name
+	_reparent_collision_shapes(_visible_variant)
 	var manager := _get_trash_manager()
 	if manager != null:
 		trash_value = manager.get_value(_visible_variant.name)
 
 
 func show_variant(variant_name: String) -> void:
+	# Remove any previously reparented collision shapes from the root.
+	for child in get_children():
+		if child is CollisionShape3D:
+			child.queue_free()
 	for variant_name_ in _VARIANT_NAMES:
 		var node := get_node_or_null(variant_name_) as Node3D
 		if node != null:
@@ -50,9 +55,24 @@ func show_variant(variant_name: String) -> void:
 	_visible_variant = get_node_or_null(variant_name) as Node3D
 	if _visible_variant != null:
 		trash_type = variant_name
+		_reparent_collision_shapes(_visible_variant)
 		var manager := _get_trash_manager()
 		if manager != null:
 			trash_value = manager.get_value(variant_name)
+
+
+## Reparent CollisionShape3D children from a variant Node3D to the
+## root Area3D so they actually function as collision shapes.
+func _reparent_collision_shapes(variant: Node3D) -> void:
+	for child in variant.get_children():
+		if child is CollisionShape3D:
+			# Duplicate the shape with its transform so the original
+			# stays in the scene tree (hidden under the variant).
+			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
+			# Compute world transform of the original and apply it
+			# relative to the root Area3D.
+			dup.transform = child.global_transform * variant.global_transform.affine_inverse()
+			add_child(dup)
 
 
 func interact(player: Node) -> void:
