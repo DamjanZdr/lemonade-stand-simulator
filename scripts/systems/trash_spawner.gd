@@ -3,7 +3,13 @@ extends Node3D
 ## Spawns are anchored to existing NPCs, so they never appear outside the
 ## walkable/playable area.
 
-const TRASH_SCENE: PackedScene = preload("res://scenes/objects/trash.tscn")
+const _VARIANT_SCENES: Dictionary = {
+	"apple": "res://scenes/objects/trash_apple.tscn",
+	"banana": "res://scenes/objects/trash_banana.tscn",
+	"can": "res://scenes/objects/trash_can.tscn",
+	"cigarettes": "res://scenes/objects/trash_cigarettes.tscn",
+	"cup": "res://scenes/objects/trash_cup.tscn",
+}
 
 # Offset to put the collision shape bottom at ground level.
 # Calculated from trash.tscn: CollisionShape3D at Y=-0.104, BoxShape3D height=0.161
@@ -71,9 +77,10 @@ func _spawn_trash() -> void:
 	# Pick a variant deterministically so all clients see the same trash type
 	var variants: Array[String] = ["apple", "banana", "can", "cigarettes", "cup"]
 	var variant := variants[randi() % variants.size()]
-	# Use WorldSync to spawn and replicate; pass variant in spawn state
+	# Use the per-variant scene directly.
+	var scene_path: String = _VARIANT_SCENES.get(variant, "res://scenes/objects/trash_apple.tscn")
 	WorldSync.spawn_networked(
-		"res://scenes/objects/trash.tscn",
+		scene_path,
 		get_tree().current_scene,
 		Vector3(spawn_x, ground_y + TRASH_Y_OFFSET, spawn_z),
 		trash_rot,

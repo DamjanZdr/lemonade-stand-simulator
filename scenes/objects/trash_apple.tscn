@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3 uid="uid://btrashapple01"]
+
+[ext_resource type="PackedScene" uid="uid://bpajh6l57i4ot" path="res://assets/models/props/trash/apple.glb" id="1_model"]
+[ext_resource type="Script" uid="uid://b6t8ua6o6f24p" path="res://scripts/objects/trash_item.gd" id="2_item"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.18244171, 0.13891602, 0.07446289)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2"]
+size = Vector3(0.03640747, 0.063759804, 0.12812805)
+
+[node name="TrashApple" type="Area3D"]
+script = ExtResource("2_item")
+
+[node name="apple" parent="." instance=ExtResource("1_model")]
+transform = Transform3D(-3.059797e-09, 0.07, 0, -0.07, -3.059797e-09, 0, 0, 0, 0.07, -0.025597572, -0.12511949, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.023712159, -0.12461534, 0.0014953614)
+shape = SubResource("BoxShape3D_1")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.096603395, -0.12461534, -0.00035858155)
+shape = SubResource("BoxShape3D_2")
+
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.049157465, -0.12461534, -0.00035858155)
+shape = SubResource("BoxShape3D_2")

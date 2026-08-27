@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://btrashcup05"]
+
+[ext_resource type="PackedScene" uid="uid://dwsgij0uju838" path="res://assets/models/props/trash/cup.glb" id="1_model"]
+[ext_resource type="Script" uid="uid://b6t8ua6o6f24p" path="res://scripts/objects/trash_item.gd" id="2_item"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_1"]
+height = 2.4794922
+radius = 0.91748047
+
+[node name="TrashCup" type="Area3D"]
+script = ExtResource("2_item")
+
+[node name="cup" parent="." instance=ExtResource("1_model")]
+transform = Transform3D(0.0060802945, 0.059681598, -0.0010664015, -0.037275188, 0.0046335654, 0.046787716, 0.046621785, -0.00407888, 0.03754693, -0.0065013766, -0.1315321, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(0.00094948438, 0.059982624, 0.0010886391, -0.037659057, -0.00025160316, 0.046709032, 0.046700046, -0.0014224688, 0.037644146, -0.0036214149, -0.12655287, -0.004726827)
+shape = SubResource("CylinderShape3D_1")

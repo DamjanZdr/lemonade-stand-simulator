@@ -842,8 +842,17 @@ func _do_throw(charge: float) -> void:
 	_player.inventory.clear_held()
 
 
-## Copy the correct collision shapes from trash.tscn for the given
-## trash variant into the RigidBody3D.
+## Copy the correct collision shapes from the per-variant trash scene
+## into the RigidBody3D.
+const _TRASH_VARIANT_SCENES: Dictionary = {
+	"apple": "res://scenes/objects/trash_apple.tscn",
+	"banana": "res://scenes/objects/trash_banana.tscn",
+	"can": "res://scenes/objects/trash_can.tscn",
+	"cigarettes": "res://scenes/objects/trash_cigarettes.tscn",
+	"cup": "res://scenes/objects/trash_cup.tscn",
+}
+
+
 func _copy_trash_collision_shapes(body: RigidBody3D, trash_type: String) -> void:
 	# For empty_box trash, use a simple box shape.
 	if trash_type == "empty_box":
@@ -853,10 +862,11 @@ func _copy_trash_collision_shapes(body: RigidBody3D, trash_type: String) -> void
 		col.shape = shape
 		body.add_child(col)
 		return
-	# For other trash types, load trash.tscn and copy the variant's
-	# CollisionShape3D children with correct transforms.
-	var trash_scene := load("res://scenes/objects/trash.tscn") as PackedScene
-	if trash_scene == null:
+	# For other trash types, load the per-variant scene and copy its
+	# CollisionShape3D children (already at correct transforms relative
+	# to the root Area3D).
+	var scene_path: String = _TRASH_VARIANT_SCENES.get(trash_type, "")
+	if scene_path == "":
 		# Fallback: small box.
 		var col := CollisionShape3D.new()
 		var shape := BoxShape3D.new()
@@ -864,24 +874,18 @@ func _copy_trash_collision_shapes(body: RigidBody3D, trash_type: String) -> void
 		col.shape = shape
 		body.add_child(col)
 		return
-	var instance := trash_scene.instantiate()
-	var variant := instance.get_node_or_null(trash_type) as Node3D
-	if variant == null:
-		instance.queue_free()
-		var col := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = Vector3(0.15, 0.15, 0.15)
-		col.shape = shape
-		body.add_child(col)
+	var trash_scene := load(scene_path) as PackedScene
+	if trash_scene == null:
+		var col2 := CollisionShape3D.new()
+		var shape2 := BoxShape3D.new()
+		shape2.size = Vector3(0.15, 0.15, 0.15)
+		col2.shape = shape2
+		body.add_child(col2)
 		return
-	# The variant's transform in the scene is its local transform.
-	# We need to apply that transform to the collision shapes when
-	# adding them to the body (which is at spawn_pos).
-	for child in variant.get_children():
+	var instance := trash_scene.instantiate()
+	for child in instance.get_children():
 		if child is CollisionShape3D:
 			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
-			# Compose: variant transform * collision shape local transform
-			dup.transform = variant.transform * child.transform
 			body.add_child(dup)
 	instance.queue_free()
 

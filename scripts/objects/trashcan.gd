@@ -4,7 +4,13 @@ extends Interactable
 
 @export var empty_box_refund: float = 1.0
 
-const TRASH_SCENE: PackedScene = preload("res://scenes/objects/trash.tscn")
+const _VARIANT_SCENES: Dictionary = {
+	"apple": "res://scenes/objects/trash_apple.tscn",
+	"banana": "res://scenes/objects/trash_banana.tscn",
+	"can": "res://scenes/objects/trash_can.tscn",
+	"cigarettes": "res://scenes/objects/trash_cigarettes.tscn",
+	"cup": "res://scenes/objects/trash_cup.tscn",
+}
 
 
 func _ready() -> void:
@@ -75,8 +81,6 @@ func _request_trash_disposal(trash_type: String, refund: float) -> void:
 
 
 func _spawn_disposed_trash(trash_type: String = "") -> void:
-	if TRASH_SCENE == null:
-		return
 	if not WorldSync.is_host():
 		return
 	var start := global_position + Vector3.UP * 1.0
@@ -84,8 +88,13 @@ func _spawn_disposed_trash(trash_type: String = "") -> void:
 	var state: Dictionary = { }
 	if trash_type != "":
 		state["trash_type"] = trash_type
+	# Use the per-variant scene if available, otherwise default to apple.
+	var scene_path: String = _VARIANT_SCENES.get(
+		trash_type,
+		"res://scenes/objects/trash_apple.tscn",
+	)
 	var trash := WorldSync.spawn_networked(
-		"res://scenes/objects/trash.tscn",
+		scene_path,
 		get_tree().current_scene,
 		start,
 		Vector3.ZERO,
@@ -96,8 +105,6 @@ func _spawn_disposed_trash(trash_type: String = "") -> void:
 	if trash is Area3D:
 		trash.monitoring = false
 		trash.monitorable = false
-	if trash_type != "" and trash.has_method("show_variant"):
-		trash.show_variant(trash_type)
 	var tw := create_tween()
 	tw.tween_property(trash, "global_position", end, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(
 		Tween.EASE_IN

@@ -1,6 +1,8 @@
 ﻿class_name TrashItem
 extends Interactable
 ## A piece of litter the player can pick up and throw in the trashcan for a refund.
+## Each trash type has its own scene (trash_apple.tscn, trash_banana.tscn, etc.)
+## with the model and collision shapes as direct children of the root Area3D.
 
 @export var trash_value: float = 1.0
 @export var trash_type: String = "trash"
@@ -12,66 +14,78 @@ var trash_variant: String = ""
 var _visible_variant: Node3D = null
 const _VARIANT_NAMES: Array[String] = ["apple", "banana", "can", "cigarettes", "cup"]
 
+## Map from trash type to its scene path.
+const _VARIANT_SCENES: Dictionary = {
+	"apple": "res://scenes/objects/trash_apple.tscn",
+	"banana": "res://scenes/objects/trash_banana.tscn",
+	"can": "res://scenes/objects/trash_can.tscn",
+	"cigarettes": "res://scenes/objects/trash_cigarettes.tscn",
+	"cup": "res://scenes/objects/trash_cup.tscn",
+}
+
 
 func _ready() -> void:
 	add_to_group("trash_item")
-	if trash_variant != "":
-		show_variant(trash_variant)
-	else:
-		_pick_random_variant()
-	# Clients can interact with trash — the pickup routes through the
-	# host via WorldSync.despawn_networked() which sends a despawn RPC
-	# to all peers. The host handles the actual despawn.
-	# We keep collision enabled on all peers so raycasts can hit trash.
+	# Find the visible model child (the GLB instance).
+	# In the split scenes, the model is a direct child named after the variant.
+	for child in get_children():
+		if child is Node3D and not child is CollisionShape3D:
+			_visible_variant = child as Node3D
+			break
+	if trash_variant != "" and trash_type != trash_variant:
+		# If trash_variant was set but doesn't match the current scene's type,
+		# swap to the correct variant scene.
+		_swap_to_variant(trash_variant)
+	# Set trash_type from the visible variant if not already set.
+	if trash_type == "trash" and _visible_variant != null:
+		trash_type = _visible_variant.name
+	# Set trash_value from the trash manager if not already set.
+	if trash_value <= 0.0:
+		var manager := _get_trash_manager()
+		if manager != null and _visible_variant != null:
+			trash_value = manager.get_value(_visible_variant.name)
 
 
-func _pick_random_variant() -> void:
-	var available: Array[Node3D] = []
-	for variant_name in _VARIANT_NAMES:
-		var node := get_node_or_null(variant_name) as Node3D
-		if node != null:
-			node.visible = false
-			available.append(node)
-	if available.is_empty():
+## Swap this trash item to a different variant by replacing it with
+## the appropriate scene instance at the same position/rotation.
+func _swap_to_variant(variant_name: String) -> void:
+	var scene_path: String = _VARIANT_SCENES.get(variant_name, "")
+	if scene_path == "":
 		return
-	_visible_variant = available[randi() % available.size()]
-	_visible_variant.visible = true
-	trash_type = _visible_variant.name
-	_reparent_collision_shapes(_visible_variant)
-	var manager := _get_trash_manager()
-	if manager != null:
-		trash_value = manager.get_value(_visible_variant.name)
+	var scene := load(scene_path) as PackedScene
+	if scene == null:
+		return
+	var pos := global_position
+	var rot := global_rotation
+	var parent := get_parent()
+	# Hide current variant.
+	if _visible_variant:
+		_visible_variant.visible = false
+	# Instance the new variant scene as a child.
+	var inst := scene.instantiate()
+	# We only want the model child, not the Area3D root.
+	# So we'll grab the model node from the instanced scene.
+	var model_node: Node3D = null
+	for child in inst.get_children():
+		if child is Node3D and not child is CollisionShape3D:
+			model_node = child as Node3D
+			break
+	if model_node:
+		# Remove from the instanced scene and add to ourself.
+		inst.remove_child(model_node)
+		# Remove old model if any.
+		if _visible_variant and is_instance_valid(_visible_variant):
+			_visible_variant.queue_free()
+		add_child(model_node)
+		_visible_variant = model_node
+		_visible_variant.visible = true
+	inst.queue_free()
+	trash_type = variant_name
 
 
 func show_variant(variant_name: String) -> void:
-	# Remove any previously reparented collision shapes from the root.
-	for child in get_children():
-		if child is CollisionShape3D:
-			child.queue_free()
-	for variant_name_ in _VARIANT_NAMES:
-		var node := get_node_or_null(variant_name_) as Node3D
-		if node != null:
-			node.visible = (variant_name_ == variant_name)
-	_visible_variant = get_node_or_null(variant_name) as Node3D
-	if _visible_variant != null:
-		trash_type = variant_name
-		_reparent_collision_shapes(_visible_variant)
-		var manager := _get_trash_manager()
-		if manager != null:
-			trash_value = manager.get_value(variant_name)
-
-
-## Reparent CollisionShape3D children from a variant Node3D to the
-## root Area3D so they actually function as collision shapes.
-func _reparent_collision_shapes(variant: Node3D) -> void:
-	for child in variant.get_children():
-		if child is CollisionShape3D:
-			# Duplicate the shape so the original stays in the scene tree.
-			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
-			# Add first, then set global_transform so Godot converts
-			# it to the correct local transform relative to the root.
-			add_child(dup)
-			dup.global_transform = child.global_transform
+	trash_variant = variant_name
+	_swap_to_variant(variant_name)
 
 
 func interact(player: Node) -> void:
