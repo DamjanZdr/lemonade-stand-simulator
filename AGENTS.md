@@ -60,16 +60,18 @@ func _rpc_do_thing(params) -> void:
 - `Blackboard` and `morning_hub` no longer call `GameState.set_*()` directly.
 **Files:** `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/objects/blackboard.gd`, `scripts/ui/morning_hub.gd`.
 
-### 4. Unified pickup/placement lifecycle
+### 4. Unified pickup/placement lifecycle — DONE
 **Problem:** `pickup_container()` has a special workstation branch and separate paths for other containers. Every new placeable item repeats this.
 **Target:** A `Pickupable` component or base class with `save_state()`, `restore_state()`, `on_pickup()`, `on_place(parent)` virtuals. Workstation only differs by child-attachment rule.
-**In progress:**
+**Done:**
 - [x] Create `scripts/components/pickupable.gd` base component with virtual methods and documentation.
-- [ ] Migrate `SupplyBox` to use `Pickupable`.
-- [ ] Migrate containers (`FruitBin`, `IngredientBin`, `Pitcher`, `CupStack`, `WaterDispenser`, `Press`) to use `Pickupable`.
-- [ ] Migrate workstation/table to use `Pickupable` with child-attachment rule.
-- [ ] Refactor `Player.gd` pickup/place code to dispatch through `Pickupable` instead of branching by type.
-**Files:** `scripts/player/player.gd`, `scripts/components/pickupable.gd`, placeable object scripts.
+- [x] Migrate `SupplyBox` to use `Pickupable`.
+- [x] Migrate containers (`FruitBin`, `IngredientBin`, `Pitcher`, `CupStack`, `Press`) to use `Pickupable`.
+- [x] Migrate workstation/table to use `Pickupable` with child-attachment rule.
+- [x] Refactor `Player` pickup dispatch to check for `Pickupable` component first instead of branching by type.
+- `WaterDispenser` is a fixed appliance — not pickupable, intentionally skipped.
+- Internal container-to-container pickup calls (e.g. picking up a pitcher from a press) still call `pickup_container()` directly since they're internal interactions.
+**Files:** `scripts/player/player_interaction.gd`, `scripts/components/pickupable.gd`, placeable object scripts.
 
 ### 5. Split `player.gd` — DONE
 **Problem:** `scripts/player/player.gd` was ~3,000 lines and handled movement, camera, input, interaction, placement, inventory, MP sync, and serving.
