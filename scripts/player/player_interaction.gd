@@ -743,22 +743,20 @@ const _TRASH_VARIANT_SCENES: Dictionary = {
 
 
 ## Throw the currently held trash item with force based on charge.
-## Uses a simple arc tween (like the lemon-drop animation) — no
-## RigidBody3D, no physics, no bouncing or rotation.
+## Uses a simple arc tween — goes in the direction you aim, with
+## distance based on charge. No physics, no bouncing or rotation.
 func _do_throw(charge: float) -> void:
 	if _player.inventory.held_item != HeldItem.TRASH:
 		return
-	# Calculate throw distance from charge.
+	# Throw distance based on charge.
 	var distance := lerpf(1.0, 6.0, charge)
-	# Direction: forward from head, flattened to horizontal.
-	var forward := -_player.head.global_transform.basis.z
-	forward.y = 0.0
-	forward = forward.normalized()
+	# Direction: where the player is aiming (includes pitch).
+	var aim_dir := -_player.head.global_transform.basis.z.normalized()
 	# Start position: at the player's head.
 	var start_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
-	# Target position: forward by distance, then raycast down to find ground.
-	var target_xz := start_pos + forward * distance
-	var land_pos := _find_ground_below(target_xz)
+	# Target: along aim direction by distance, then find ground below.
+	var target := start_pos + aim_dir * distance
+	var land_pos := _find_ground_below(target)
 	# Get the held mesh visual for the flying trash.
 	var hand_mesh := _player.inventory.get_hand_mesh()
 	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
@@ -777,11 +775,12 @@ func _do_throw(charge: float) -> void:
 	var scene := get_tree().current_scene
 	if scene:
 		scene.add_child(flying)
-	# Animate along a bezier arc (like the lemon drop).
-	var arc_h := clampf(distance * 0.4, 0.5, 2.0)
+	# Small arc — just enough to look natural. Control points are
+	# slightly above the start and end, not a huge hump.
+	var arc_h := clampf(distance * 0.15, 0.15, 0.6)
 	var cp1 := start_pos + Vector3(0, arc_h, 0)
 	var cp2 := land_pos + Vector3(0, arc_h, 0)
-	var duration := clampf(distance * 0.15, 0.3, 0.8)
+	var duration := clampf(distance * 0.12, 0.25, 0.6)
 	var tw := flying.create_tween()
 	tw \
 			.tween_method(
