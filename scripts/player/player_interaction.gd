@@ -20,6 +20,15 @@ var _rapid_fire_timer: float = 0.0
 # into and keep targeting it while held, as long as it's still valid.
 var _rapid_fire_cup_target: CupStack = null
 
+# --- Throw charge ---
+var _throw_charging: bool = false
+var _throw_charge: float = 0.0
+const THROW_MAX_CHARGE: float = 1.0
+const THROW_CHARGE_RATE: float = 1.5 # seconds to full charge
+const THROW_MIN_FORCE: float = 3.0
+const THROW_MAX_FORCE: float = 12.0
+const THROW_UPWARD: float = 0.4 # upward bias for arc
+
 # --- Per-frame lookup cache (avoids redundant tree walks) ---
 var _frame_press: Press = null
 var _frame_dispenser: WaterDispenser = null
@@ -48,8 +57,30 @@ func set_primary_held(held: bool) -> void:
 	if held:
 		_rapid_fire_timer = _player._get_rapid_fire_interval()
 		_rapid_fire_cup_target = null
+		# Start throw charging if holding trash and not looking at a trashcan.
+		if _player.inventory.held_item == HeldItem.TRASH:
+			var interactable := get_looked_at_interactable()
+			var looking_at_trashcan := false
+			if interactable and interactable.is_in_group("trashcan"):
+				looking_at_trashcan = true
+			if not looking_at_trashcan and _player.ray.is_colliding():
+				var node: Node = _player.ray.get_collider()
+				while node != null:
+					if node is Interactable and node.is_in_group("trashcan"):
+						looking_at_trashcan = true
+						break
+					node = node.get_parent()
+			if not looking_at_trashcan:
+				_throw_charging = true
+				_throw_charge = 0.0
 	else:
 		_rapid_fire_cup_target = null
+		# Release throw if charging.
+		if _throw_charging:
+			_throw_charging = false
+			_do_throw(_throw_charge)
+			_throw_charge = 0.0
+			EventBus.throw_charge_changed.emit(0.0, false)
 
 
 ## Reset the per-frame press/dispenser cache at the start of each physics tick.
@@ -84,9 +115,9 @@ func poll_hint() -> void:
 		if interactable != null and interactable.is_in_group("trashcan"):
 			hint = interactable.get_hint(_player)
 		elif _player.inventory.held_item_data.get("trash_type", "") == "empty_box":
-			hint = "Trash | LMB: place or use trashcan"
+			hint = "Trash | LMB: hold to throw | use trashcan to recycle"
 		else:
-			hint = "Trash | find a trashcan"
+			hint = "Trash | LMB: hold to throw | find a trashcan"
 		if hint != _last_hint:
 			_last_hint = hint
 			EventBus.interaction_hint_changed.emit(hint)
@@ -210,10 +241,9 @@ func primary_interact() -> void:
 			pickupable.pick_up(_player)
 			return
 
-	# Trash items can be disposed of at a trashcan.
-	# Empty box trash can also be placed on the ground like supply boxes.
+	# Trash items can be disposed of at a trashcan or thrown.
 	if _player.inventory.held_item_data.get("is_trash", false):
-		var is_box_trash: bool = _player.inventory.held_item_data.get("trash_type", "") == "empty_box"
+		# If looking at a trashcan, dispose immediately.
 		if interactable != null and interactable.is_in_group("trashcan"):
 			interactable.interact(_player)
 			_player.placement._destroy_ghost()
@@ -227,18 +257,9 @@ func primary_interact() -> void:
 					_player.placement._destroy_ghost()
 					return
 				node = node.get_parent()
-		if is_box_trash:
-			if _player.placement._ghost != null and _player.placement._ghost_valid:
-				_player.placement._drop_trash(_player.placement._ghost.global_position)
-			elif (
-				_player.ray.is_colliding()
-				and _player._is_placement_surface(_player.ray.get_collider())
-			):
-				_player.placement._drop_trash(
-					_player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
-				)
-			else:
-				_player.placement._drop_trash()
+		# Not looking at a trashcan — the throw charge system handles
+		# release. Don't place immediately; set_primary_held started
+		# charging and set_primary_held(false) will throw on release.
 		return
 
 	# Containers can be recycled at a trashcan for 70% refund.
@@ -538,6 +559,11 @@ func secondary_interact() -> void:
 
 
 func update_rapid_fire(delta: float) -> void:
+	# Update throw charge if charging.
+	if _throw_charging:
+		_throw_charge = minf(_throw_charge + delta / THROW_CHARGE_RATE, THROW_MAX_CHARGE)
+		EventBus.throw_charge_changed.emit(_throw_charge, true)
+		return
 	if not _primary_held:
 		return
 	if _player.inventory.held_item != HeldItem.SUPPLY_BOX:
@@ -703,3 +729,62 @@ func _find_looked_at_dispenser() -> WaterDispenser:
 				break
 			node = node.get_parent()
 	return _frame_dispenser
+
+# ─── Throw Trash ───
+
+
+## Throw the currently held trash item with force based on charge.
+func _do_throw(charge: float) -> void:
+	if _player.inventory.held_item != HeldItem.TRASH:
+		return
+	# Calculate throw force from charge.
+	var force := lerpf(THROW_MIN_FORCE, THROW_MAX_FORCE, charge)
+	# Direction: forward from head, with upward bias for arc.
+	var dir := -_player.head.global_transform.basis.z
+	dir.y += THROW_UPWARD
+	dir = dir.normalized()
+	# Spawn the trash as a supply box.
+	var state: Dictionary = {
+		"is_trash_box": true,
+		"ingredient_type": "trash",
+		"quantity": 0.0,
+		"trash_value": _player.held_item_data.get("trash_value", 0.0),
+		"trash_type": _player.held_item_data.get("trash_type", "empty_box"),
+	}
+	var spawn_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
+	var box := WorldSync.request_spawn(
+		"res://scenes/objects/supply_box.tscn",
+		spawn_pos,
+		Vector3.ZERO,
+		state,
+	) as SupplyBox
+	if box:
+		box.update_metrics()
+		# Simulate projectile motion with a tween since supply boxes use
+		# StaticBody3D, not RigidBody3D.
+		_animate_throw(box, spawn_pos, dir, force)
+	AudioManager.play_sfx("box_drop", spawn_pos)
+	_player.placement._destroy_ghost()
+	_player.inventory.clear_held()
+
+
+## Animate a thrown box along a parabolic arc.
+func _animate_throw(box: Node3D, start_pos: Vector3, dir: Vector3, force: float) -> void:
+	var vel := dir * force
+	var gravity := 9.8
+	var duration := 2.0
+	var steps := 30
+	var tw := create_tween()
+	for i in range(1, steps + 1):
+		var t := float(i) / steps * duration
+		var pos := start_pos + vel * t + Vector3(0, -0.5 * gravity * t * t, 0)
+		# Stop if the box hits the ground (y <= 0 relative to world).
+		if pos.y < 0.0:
+			pos.y = 0.0
+			tw.tween_property(box, "global_position", pos, t * (1.0 / steps))
+			break
+		tw.tween_property(box, "global_position", pos, duration / steps)
+	# Add a little spin.
+	var spin := create_tween()
+	spin.set_loops()
+	spin.tween_property(box, "rotation", Vector3(0, PI * 2, 0), 1.0)

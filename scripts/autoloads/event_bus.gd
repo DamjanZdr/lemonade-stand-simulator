@@ -5,6 +5,7 @@ extends Node
 # --- Player ---
 signal held_item_changed(item_type: int, item_data: Dictionary)
 signal interaction_hint_changed(hint: String)
+signal throw_charge_changed(charge: float, active: bool)
 
 # --- Bins ---
 signal bin_amount_changed(ingredient_type: String, new_amount: float)

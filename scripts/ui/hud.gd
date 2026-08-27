@@ -36,6 +36,9 @@ var _info_col: VBoxContainer
 var _prev_money: float = 0.0
 var _gain_label: Label = null
 
+# Throw charge bar
+var _throw_charge_bar: ProgressBar = null
+
 ## Which stand's economy this HUD displays. Assigned by whatever wires up
 ## the player-to-stand relationship (main.gd in Stage A; later, whichever
 ## system assigns a local player to their controlled StandUnit). Money
@@ -415,6 +418,8 @@ func _connect_signals() -> void:
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.weather_changed.connect(_on_weather)
 	EventBus.interaction_hint_changed.connect(_on_hint)
+	EventBus.throw_charge_changed.connect(_on_throw_charge)
+	_build_throw_charge_bar()
 
 
 ## Assigns which stand this HUD displays and hooks up its per-stand money
@@ -491,3 +496,43 @@ func set_hud_visible(vis: bool) -> void:
 		_main_panel.visible = vis
 	if _hint_box:
 		_hint_box.visible = vis
+
+# ─── Throw Charge Bar ───
+
+
+func _build_throw_charge_bar() -> void:
+	_throw_charge_bar = ProgressBar.new()
+	_throw_charge_bar.name = "ThrowChargeBar"
+	_throw_charge_bar.min_value = 0.0
+	_throw_charge_bar.max_value = 1.0
+	_throw_charge_bar.value = 0.0
+	_throw_charge_bar.custom_minimum_size = Vector2(80, 6)
+	_throw_charge_bar.show_percentage = false
+	_throw_charge_bar.visible = false
+	_throw_charge_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Position below the crosshair (center of screen, offset down).
+	_throw_charge_bar.anchor_left = 0.5
+	_throw_charge_bar.anchor_top = 0.5
+	_throw_charge_bar.anchor_right = 0.5
+	_throw_charge_bar.anchor_bottom = 0.5
+	_throw_charge_bar.offset_left = -40.0
+	_throw_charge_bar.offset_top = 16.0
+	_throw_charge_bar.offset_right = 40.0
+	_throw_charge_bar.offset_bottom = 22.0
+	# Style: minimal bar with golden fill.
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0, 0, 0, 0.5)
+	bg.set_corner_radius_all(3)
+	_throw_charge_bar.add_theme_stylebox_override("background", bg)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color(1, 0.85, 0.3, 0.9)
+	fill.set_corner_radius_all(3)
+	_throw_charge_bar.add_theme_stylebox_override("fill", fill)
+	add_child(_throw_charge_bar)
+
+
+func _on_throw_charge(charge: float, active: bool) -> void:
+	if _throw_charge_bar == null:
+		return
+	_throw_charge_bar.visible = active
+	_throw_charge_bar.value = charge
