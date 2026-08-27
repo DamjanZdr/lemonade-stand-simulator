@@ -6,6 +6,8 @@ extends Node
 
 ## Currently highlighted interactable.
 var hovered: Interactable = null
+## Currently highlighted thrown trash body (frozen RigidBody3D).
+var _hovered_trash_body: RigidBody3D = null
 
 var _last_hint: String = ""
 var _last_press_holding_fruit: bool = false
@@ -46,6 +48,9 @@ func set_money_mode(active: bool) -> void:
 	if active and hovered and is_instance_valid(hovered):
 		hovered.set_highlight(false)
 		hovered = null
+	if active and _hovered_trash_body and is_instance_valid(_hovered_trash_body):
+		_set_thrown_trash_highlight(_hovered_trash_body, false)
+		_hovered_trash_body = null
 	if active:
 		_last_hint = ""
 		EventBus.interaction_hint_changed.emit("")
@@ -103,12 +108,22 @@ func _get_looked_at_thrown_trash() -> RigidBody3D:
 
 func poll_hint() -> void:
 	var interactable := get_looked_at_interactable()
+	# Check for thrown trash body when no interactable is found.
+	var thrown := _get_looked_at_thrown_trash() if interactable == null else null
+	# Update interactable highlight.
 	if interactable != hovered:
 		if hovered and is_instance_valid(hovered):
 			hovered.set_highlight(false)
 		hovered = interactable
 		if hovered:
 			hovered.set_highlight(true)
+	# Update thrown trash highlight.
+	if thrown != _hovered_trash_body:
+		if _hovered_trash_body and is_instance_valid(_hovered_trash_body):
+			_set_thrown_trash_highlight(_hovered_trash_body, false)
+		_hovered_trash_body = thrown
+		if _hovered_trash_body:
+			_set_thrown_trash_highlight(_hovered_trash_body, true)
 	elif hovered and is_instance_valid(hovered) and hovered is Press:
 		# Re-apply highlight only when held-item state changes (not every frame)
 		var holding_fruit_now: bool = _player.inventory.held_item == HeldItem.SUPPLY_BOX \
@@ -768,8 +783,8 @@ func _find_looked_at_dispenser() -> WaterDispenser:
 
 
 ## Throw the currently held trash item with force based on charge.
-## Uses a temporary RigidBody3D for real physics, then spawns the
-## actual trash item at the landing position.
+## Uses a temporary RigidBody3D for real physics with the correct
+## per-variant collision shapes from trash.tscn.
 func _do_throw(charge: float) -> void:
 	if _player.inventory.held_item != HeldItem.TRASH:
 		return
@@ -788,12 +803,8 @@ func _do_throw(charge: float) -> void:
 	var body := RigidBody3D.new()
 	body.name = "ThrownTrash"
 	body.global_position = spawn_pos
-	# Collision shape — small box.
-	var col := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	shape.size = Vector3(0.2, 0.2, 0.2)
-	col.shape = shape
-	body.add_child(col)
+	# Load the trash scene to get the correct collision shapes for this variant.
+	_copy_trash_collision_shapes(body, trash_type)
 	# Attach the visual mesh.
 	if hand_mesh and is_instance_valid(hand_mesh):
 		var visual := hand_mesh.duplicate() as Node3D
@@ -801,7 +812,6 @@ func _do_throw(charge: float) -> void:
 			visual.visible = true
 			visual.position = Vector3.ZERO
 			visual.rotation = Vector3.ZERO
-			# Keep the hand mesh's original scale (already small).
 			body.add_child(visual)
 	# Add to scene.
 	var scene := get_tree().current_scene
@@ -833,6 +843,50 @@ func _do_throw(charge: float) -> void:
 	_player.inventory.clear_held()
 
 
+## Copy the correct collision shapes from trash.tscn for the given
+## trash variant into the RigidBody3D.
+func _copy_trash_collision_shapes(body: RigidBody3D, trash_type: String) -> void:
+	# For empty_box trash, use a simple box shape.
+	if trash_type == "empty_box":
+		var col := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(0.2, 0.2, 0.2)
+		col.shape = shape
+		body.add_child(col)
+		return
+	# For other trash types, load trash.tscn and copy the variant's
+	# CollisionShape3D children with correct transforms.
+	var trash_scene := load("res://scenes/objects/trash.tscn") as PackedScene
+	if trash_scene == null:
+		# Fallback: small box.
+		var col := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(0.15, 0.15, 0.15)
+		col.shape = shape
+		body.add_child(col)
+		return
+	var instance := trash_scene.instantiate()
+	var variant := instance.get_node_or_null(trash_type) as Node3D
+	if variant == null:
+		instance.queue_free()
+		var col := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(0.15, 0.15, 0.15)
+		col.shape = shape
+		body.add_child(col)
+		return
+	# The variant's transform in the scene is its local transform.
+	# We need to apply that transform to the collision shapes when
+	# adding them to the body (which is at spawn_pos).
+	for child in variant.get_children():
+		if child is CollisionShape3D:
+			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
+			# Compose: variant transform * collision shape local transform
+			dup.transform = variant.transform * child.transform
+			body.add_child(dup)
+	instance.queue_free()
+
+
 ## Freeze the thrown trash body in place and make it pickupable.
 ## No new item is spawned — the body stays exactly where it landed.
 func _freeze_trash_body(body: RigidBody3D, trash_type: String, trash_value: float) -> void:
@@ -846,3 +900,35 @@ func _freeze_trash_body(body: RigidBody3D, trash_type: String, trash_value: floa
 	body.set_meta("is_thrown_trash", true)
 	# Add to trash_item group so the interaction system recognizes it.
 	body.add_to_group("trash_item")
+
+
+## Toggle highlight on a thrown trash body (outline on all MeshInstance3D children).
+func _set_thrown_trash_highlight(body: RigidBody3D, on: bool) -> void:
+	for child in body.get_children():
+		if child is Node3D and not child is CollisionShape3D:
+			_apply_outline_recursive(child, on)
+
+
+func _apply_outline_recursive(node: Node, on: bool) -> void:
+	if node is MeshInstance3D and node.name != "_Outline":
+		var mi := node as MeshInstance3D
+		var existing := mi.get_node_or_null("_Outline") as MeshInstance3D
+		if on and existing == null and mi.mesh != null:
+			var ol := MeshInstance3D.new()
+			ol.name = "_Outline"
+			ol.mesh = mi.mesh
+			ol.layers = 2
+			ol.material_override = StandardMaterial3D.new()
+			ol.material_override.albedo_color = Color.WHITE
+			ol.material_override.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			ol.material_override.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+			ol.add_to_group("outline_fill")
+			ol.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mi.add_child(ol)
+			ol.transform = Transform3D.IDENTITY
+		elif not on and existing != null:
+			existing.queue_free()
+	for child in node.get_children():
+		if child.name == "_Outline":
+			continue
+		_apply_outline_recursive(child, on)

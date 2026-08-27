@@ -8,26 +8,83 @@
 [ext_resource type="Script" uid="uid://b6t8ua6o6f24p" path="res://scripts/objects/trash_item.gd" id="6_item"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
-size = Vector3(0.32836914, 0.16104507, 0.26660156)
+size = Vector3(0.18244171, 0.13891602, 0.07446289)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fah8g"]
+size = Vector3(0.03640747, 0.063759804, 0.12812805)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_i7nlu"]
+size = Vector3(1.1682129, 0.41121155, 1.1598635)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_82f87"]
+height = 0.13769531
+radius = 2.0722656
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_vclkp"]
+height = 2.4794922
+radius = 0.91748047
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ckysh"]
+size = Vector3(0.07519531, 0.13891602, 0.040039063)
 
 [node name="Trash" type="Area3D" unique_id=1821045829]
 script = ExtResource("6_item")
 
 [node name="apple" parent="." unique_id=1129128294 instance=ExtResource("1_c82h1")]
 transform = Transform3D(-3.059797e-09, 0.07, 0, -0.07, -3.059797e-09, 0, 0, 0, 0.07, -0.025597572, -0.12511949, 0)
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="apple" unique_id=1698581307]
+transform = Transform3D(-6.244484e-07, -14.285714, 0, 14.285714, -6.244484e-07, 0, 0, 0, 14.285714, -0.0072021484, 0.026934475, 0.021362305)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="apple" unique_id=389908853]
+transform = Transform3D(-6.244484e-07, -14.285714, 0, 14.285714, -6.244484e-07, 0, 0, 0, 14.285714, -0.007202029, -1.0143689, -0.0051225936)
+shape = SubResource("BoxShape3D_fah8g")
+
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="apple" unique_id=23168886]
+transform = Transform3D(-6.244484e-07, -14.285714, 0, 14.285714, -6.244484e-07, 0, 0, 0, 14.285714, -0.0072021484, 1.0679291, -0.0051225936)
+shape = SubResource("BoxShape3D_fah8g")
 
 [node name="banana" parent="." unique_id=228157671 instance=ExtResource("2_aet8u")]
 transform = Transform3D(0.09, 0, 0, 0, 0.123, 0, 0, 0, 0.09, -0.022753775, -0.12130388, 0)
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="banana" unique_id=960588416]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0040740967, 0.394758, -0.016471863)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="banana" unique_id=248201508]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0040740967, -0.15164655, -0.021843435)
+shape = SubResource("BoxShape3D_i7nlu")
+
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="banana" unique_id=1965990825]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29133606, -0.432437, 0.027558455)
+shape = SubResource("CylinderShape3D_82f87")
 
 [node name="can" parent="." unique_id=749226613 instance=ExtResource("3_pavn5")]
 transform = Transform3D(-3.0597969e-09, -0.07, 2.2199032e-16, 0.04112389, -1.7975823e-09, -0.0566465, 0.0566465, -2.4760964e-09, 0.04112389, -0.00026643276, -0.11588739, 0.0032512695)
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="can" unique_id=460752309]
+transform = Transform3D(1, -1.7763568e-15, -2.9802322e-08, -5.8619776e-14, 1, -9.006129e-13, 2.9802322e-08, -3.375078e-14, 1, -0.05952388, -0.009172666, 0.059908032)
+shape = SubResource("CylinderShape3D_vclkp")
 
 [node name="cigarettes" parent="." unique_id=1959417058 instance=ExtResource("4_twpq8")]
 transform = Transform3D(-2.8412401e-09, -0.065, 2.1649348e-16, 0.065, -2.8412401e-09, 9.463232e-24, -1.6408306e-30, 2.1649348e-16, 0.065, 0.03317994, -0.12265132, 0.016256422)
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="cigarettes" unique_id=1992214287]
+transform = Transform3D(-6.2444826e-07, -14.285731, -1.6489287e-26, 14.285731, -6.2444826e-07, -1.4568967e-18, 1.4568967e-18, -4.8467614e-27, 14.285731, -0.0072028637, 0.01173082, 0.006115675)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="cigarettes" unique_id=118647876]
+transform = Transform3D(-6.3558343e-07, -14.285731, -1.17398066e-07, 14.031004, -6.0217906e-07, -2.685759, 2.685759, -2.3479569e-07, 14.031004, -0.007204175, 1.8602147, -0.7257321)
+shape = SubResource("BoxShape3D_ckysh")
 
 [node name="cup" parent="." unique_id=1299882216 instance=ExtResource("5_xgoid")]
 transform = Transform3D(0.0060802945, 0.059681598, -0.0010664015, -0.037275188, 0.0046335654, 0.046787716, 0.046621785, -0.00407888, 0.03754693, -0.0065013766, -0.1315321, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1698581307]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.10359969, 0)
-shape = SubResource("BoxShape3D_g4v7s")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="cup" unique_id=1518904620]
+transform = Transform3D(0.9963224, 0.08549236, 0.0057134926, -0.08564245, 0.995693, 0.035515316, -0.0026528835, -0.035874117, 0.99935293, -0.10790658, 0.05950901, 0.014560461)
+shape = SubResource("CylinderShape3D_vclkp")

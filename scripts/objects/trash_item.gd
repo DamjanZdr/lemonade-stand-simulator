@@ -66,13 +66,12 @@ func show_variant(variant_name: String) -> void:
 func _reparent_collision_shapes(variant: Node3D) -> void:
 	for child in variant.get_children():
 		if child is CollisionShape3D:
-			# Duplicate the shape with its transform so the original
-			# stays in the scene tree (hidden under the variant).
+			# Duplicate the shape so the original stays in the scene tree.
 			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
-			# Compute world transform of the original and apply it
-			# relative to the root Area3D.
-			dup.transform = child.global_transform * variant.global_transform.affine_inverse()
+			# Add first, then set global_transform so Godot converts
+			# it to the correct local transform relative to the root.
 			add_child(dup)
+			dup.global_transform = child.global_transform
 
 
 func interact(player: Node) -> void:
