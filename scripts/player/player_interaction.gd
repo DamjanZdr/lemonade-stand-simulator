@@ -767,8 +767,7 @@ func _do_throw(charge: float) -> void:
 			visual.visible = true
 			visual.position = Vector3.ZERO
 			visual.rotation = Vector3.ZERO
-			# Reset scale to something visible (hand mesh is scaled down).
-			visual.scale = Vector3.ONE * 0.5
+			# Keep the hand mesh's original scale (already small).
 			body.add_child(visual)
 	# Add to scene.
 	var scene := get_tree().current_scene
