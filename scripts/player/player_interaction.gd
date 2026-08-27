@@ -235,7 +235,6 @@ func poll_hint() -> void:
 		hint = interactable.get_hint(_player) if interactable else ""
 		# Check for thrown trash body (frozen RigidBody3D)
 		if not interactable and _player.inventory.held_item == HeldItem.NONE:
-			var thrown := _get_looked_at_thrown_trash()
 			if thrown:
 				hint = "Trash | LMB: pick up"
 		# Append pickup hint when looking at a pickupable object with empty hands
