@@ -101,10 +101,19 @@ func _rpc_do_thing(params) -> void:
 - Default-scene objects not spawned through `WorldSync` are lazily registered on the first snapshot so they are included.
 **Files:** `scripts/multiplayer/world_sync.gd`, `scripts/systems/save_manager.gd`.
 
-### 8. Per-peer UI focus ownership
+### 8. Per-peer UI focus ownership — DONE
 **Problem:** Global UI systems (blackboard, menus) sometimes assume only one player exists.
 **Target:** Every UI-focus action carries the initiating player reference; focus release affects only that player.
-**Files:** `scripts/objects/blackboard.gd`, UI scripts under `scripts/ui/`.
+**Done:**
+- `Blackboard` and `PriceBoard` already tracked `_editing_player` and released focus for that specific player.
+- `PlayerMirror` already checked `is_multiplayer_authority()`.
+- Added `WorldSync.get_local_player()` static helper that finds the player this peer has authority over.
+- Fixed `press.gd` highlight to use local player for held-item check.
+- Fixed `audio_manager.gd` to play transaction sound at local player's position.
+- Fixed `money_controller.gd` to assign local player when opening register.
+- Fixed `morning_hub.gd` `_get_local_stand()` to use local player's `assigned_stand` instead of first StandUnit found.
+- NPC visual look-at systems left as-is (visual nicety, not correctness).
+**Files:** `scripts/multiplayer/world_sync.gd`, `scripts/objects/press.gd`, `scripts/autoloads/audio_manager.gd`, `scripts/player/money_controller.gd`, `scripts/ui/morning_hub.gd`.
 
 ## Common Bug Patterns
 
