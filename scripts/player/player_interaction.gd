@@ -97,13 +97,6 @@ func poll_hint() -> void:
 		hovered = interactable
 		if hovered:
 			hovered.set_highlight(true)
-	# Update thrown trash highlight.
-	if thrown != _hovered_trash_body:
-		if _hovered_trash_body and is_instance_valid(_hovered_trash_body):
-			_set_thrown_trash_highlight(_hovered_trash_body, false)
-		_hovered_trash_body = thrown
-		if _hovered_trash_body:
-			_set_thrown_trash_highlight(_hovered_trash_body, true)
 	elif hovered and is_instance_valid(hovered) and hovered is Press:
 		# Re-apply highlight only when held-item state changes (not every frame)
 		var holding_fruit_now: bool = _player.inventory.held_item == HeldItem.SUPPLY_BOX \
