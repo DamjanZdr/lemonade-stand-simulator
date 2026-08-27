@@ -112,14 +112,23 @@ func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vec
 	if scene:
 		scene.add_child(body)
 	body.global_position = drop_pos
-	# When it hits the ground, spawn the real TrashItem and remove body.
+	# When it hits the ground, wait one physics frame for the engine
+	# to resolve the contact, then spawn the real TrashItem.
 	var landed := false
 	body.body_entered.connect(
 		func(_other):
 			if landed:
 				return
 			landed = true
-			_finalize_drop(body, scene_path, variant),
+			# Stop velocity immediately so it doesn't penetrate further.
+			body.linear_velocity = Vector3.ZERO
+			# Defer to next physics frame so the engine can resolve
+			# the contact and push the body to the correct position.
+			get_tree().physics_frame.connect(
+				func():
+					_finalize_drop(body, scene_path, variant),
+				CONNECT_ONE_SHOT,
+			),
 	)
 	# Fallback: after 3 seconds, finalize wherever it is.
 	get_tree().create_timer(3.0).timeout.connect(
@@ -133,8 +142,9 @@ func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vec
 func _finalize_drop(body: RigidBody3D, scene_path: String, variant: String) -> void:
 	if not is_instance_valid(body):
 		return
-	var land_pos := body.global_position
+	# Freeze and capture position after the engine has resolved contact.
 	body.freeze = true
+	var land_pos := body.global_position
 	WorldSync.spawn_networked(
 		scene_path,
 		get_tree().current_scene,

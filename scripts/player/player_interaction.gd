@@ -824,14 +824,23 @@ func _do_throw(charge: float) -> void:
 	body.global_position = start_pos
 	# Apply throw velocity (position only, no angular velocity).
 	body.linear_velocity = aim_dir * force
-	# The moment it hits anything, freeze and spawn the real trash item.
+	# The moment it hits anything, wait one physics frame for the
+	# engine to resolve the contact, then freeze and spawn the real item.
 	var landed := false
 	body.body_entered.connect(
 		func(_other):
 			if landed:
 				return
 			landed = true
-			_freeze_and_spawn_trash(body, trash_type, trash_value),
+			# Stop velocity immediately so it doesn't penetrate further.
+			body.linear_velocity = Vector3.ZERO
+			# Defer to next physics frame so the engine can resolve
+			# the contact and push the body to the correct position.
+			get_tree().physics_frame.connect(
+				func():
+					_freeze_and_spawn_trash(body, trash_type, trash_value),
+				CONNECT_ONE_SHOT,
+			),
 	)
 	# Fallback: after 5 seconds, freeze wherever it is.
 	get_tree().create_timer(5.0).timeout.connect(
@@ -892,9 +901,9 @@ func _create_trash_physics_body(trash_type: String) -> RigidBody3D:
 func _freeze_and_spawn_trash(body: RigidBody3D, trash_type: String, trash_value: float) -> void:
 	if not is_instance_valid(body):
 		return
-	var land_pos := body.global_position
-	# Freeze immediately so it stops exactly where it hit.
+	# Freeze and capture position after the engine has resolved contact.
 	body.freeze = true
+	var land_pos := body.global_position
 	# Clear highlight reference if this body was being hovered.
 	if _hovered_trash_body == body:
 		_set_trash_body_highlight(body, false)
