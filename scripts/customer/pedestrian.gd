@@ -239,27 +239,12 @@ func _apply_motion(delta: float) -> void:
 	else:
 		velocity.y = 0.0
 		global_position += velocity * delta
-		# Raycast down to find the actual surface height beneath us.
-		# This handles walking between street and sidewalk at different Y.
-		var surface_y := _find_surface_y(global_position)
-		if surface_y != INF:
-			global_position.y = surface_y
+		# Use the current target waypoint's Y as the ground height.
+		# The route markers have the correct Y offsets for each surface.
+		if _waypoints.size() > 0 and _waypoint_idx < _waypoints.size():
+			global_position.y = _waypoints[_waypoint_idx].global_position.y
 		else:
 			global_position.y = _ground_y
-
-
-## Raycast straight down from above the NPC to find the surface height.
-func _find_surface_y(pos: Vector3) -> float:
-	var space := get_world_3d().direct_space_state
-	var from := pos + Vector3(0, 2.0, 0)
-	var to := pos + Vector3(0, -2.0, 0)
-	var query := PhysicsRayQueryParameters3D.create(from, to)
-	query.collision_mask = 0xFFFFFFFF
-	query.exclude = [get_rid()]
-	var result := space.intersect_ray(query)
-	if result:
-		return result.position.y
-	return INF
 
 
 # ── Client-side interpolation ─────────────────────────────────────────────────
