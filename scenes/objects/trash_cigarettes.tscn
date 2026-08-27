@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://btrashcig04"]
+[gd_scene format=3 uid="uid://btrashcig04"]
 
 [ext_resource type="PackedScene" uid="uid://r34p8hgm7gji" path="res://assets/models/props/trash/cigarettes.glb" id="1_model"]
 [ext_resource type="Script" uid="uid://b6t8ua6o6f24p" path="res://scripts/objects/trash_item.gd" id="2_item"]
@@ -9,16 +9,16 @@ size = Vector3(0.18244171, 0.13891602, 0.07446289)
 [sub_resource type="BoxShape3D" id="BoxShape3D_2"]
 size = Vector3(0.07519531, 0.13891602, 0.040039063)
 
-[node name="TrashCigarettes" type="Area3D"]
+[node name="TrashCigarettes" type="Area3D" unique_id=891830598]
 script = ExtResource("2_item")
 
-[node name="cigarettes" parent="." instance=ExtResource("1_model")]
+[node name="cigarettes" parent="." unique_id=1240470031 instance=ExtResource("1_model")]
 transform = Transform3D(-2.8412401e-09, -0.065, 2.1649348e-16, 0.065, -2.8412401e-09, 9.463232e-24, -1.6408306e-30, 2.1649348e-16, 0.065, 0.03317994, -0.12265132, 0.016256422)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(-0.92857252, 8.117833e-08, 0, -8.117833e-08, -0.92857252, 0, 0, 0, 0.92857252, 0.032417437, -0.12311951, 0.016653941)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=775429621]
+transform = Transform3D(-0.92857254, 8.117833e-08, 0, -8.117833e-08, -0.92857254, 0, 0, 0, 0.92857254, 0.032417435, -0.12311951, 0.01665394)
 shape = SubResource("BoxShape3D_1")
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="."]
-transform = Transform3D(-0.91201526, 7.973083e-08, 0.17457434, -8.117837e-08, -0.92857252, 0, 0.17457434, -1.526172e-08, 0.91201526, -0.087734015, -0.1231196, -0.030916165)
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="." unique_id=1695722834]
+transform = Transform3D(-0.91201526, 7.973083e-08, 0.17457435, -8.117837e-08, -0.92857254, 0, 0.17457435, -1.526172e-08, 0.91201526, -0.087734014, -0.1231196, -0.030916166)
 shape = SubResource("BoxShape3D_2")

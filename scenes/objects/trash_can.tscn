@@ -1,18 +1,18 @@
-[gd_scene load_steps=4 format=3 uid="uid://btrashcan03"]
+[gd_scene format=3 uid="uid://btrashcan03"]
 
 [ext_resource type="PackedScene" uid="uid://chmgc6ym81tdm" path="res://assets/models/props/trash/can.glb" id="1_model"]
 [ext_resource type="Script" uid="uid://b6t8ua6o6f24p" path="res://scripts/objects/trash_item.gd" id="2_item"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_1"]
-height = 2.4794922
+height = 3.1689453
 radius = 0.91748047
 
-[node name="TrashCan" type="Area3D"]
+[node name="TrashCan" type="Area3D" unique_id=1336726182]
 script = ExtResource("2_item")
 
-[node name="can" parent="." instance=ExtResource("1_model")]
+[node name="can" parent="." unique_id=240252715 instance=ExtResource("1_model")]
 transform = Transform3D(-3.0597969e-09, -0.07, 2.2199032e-16, 0.04112389, -1.7975823e-09, -0.0566465, 0.0566465, -2.4760964e-09, 0.04112389, -0.00026643276, -0.11588739, 0.0032512695)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(-3.0597928e-09, -0.07, 0, 0.041123888, -1.7975805e-09, -0.056646501, 0.056646501, -2.4760979e-09, 0.041123888, 0.00037565404, -0.12172882, 0.0023431014)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1946993845]
+transform = Transform3D(-3.0597929e-09, -0.07, 0, 0.04112389, -1.7975805e-09, -0.0566465, 0.0566465, -2.476098e-09, 0.04112389, 0.00037565405, -0.12172882, 0.0023431014)
 shape = SubResource("CylinderShape3D_1")

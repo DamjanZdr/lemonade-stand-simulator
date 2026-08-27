@@ -6,8 +6,6 @@ extends Node
 
 ## Currently highlighted interactable.
 var hovered: Interactable = null
-## Currently highlighted thrown trash body (frozen RigidBody3D).
-var _hovered_trash_body: RigidBody3D = null
 
 var _last_hint: String = ""
 var _last_press_holding_fruit: bool = false
@@ -48,9 +46,6 @@ func set_money_mode(active: bool) -> void:
 	if active and hovered and is_instance_valid(hovered):
 		hovered.set_highlight(false)
 		hovered = null
-	if active and _hovered_trash_body and is_instance_valid(_hovered_trash_body):
-		_set_thrown_trash_highlight(_hovered_trash_body, false)
-		_hovered_trash_body = null
 	if active:
 		_last_hint = ""
 		EventBus.interaction_hint_changed.emit("")
@@ -93,23 +88,8 @@ func update_frame_lookups() -> void:
 	_frame_lookups_done = false
 
 
-## Check if the player's raycast is hitting a frozen thrown-trash body.
-## Returns the RigidBody3D if so, null otherwise.
-func _get_looked_at_thrown_trash() -> RigidBody3D:
-	if not _player.ray.is_colliding():
-		return null
-	var node: Node = _player.ray.get_collider()
-	while node != null:
-		if node is RigidBody3D and node.has_meta("is_thrown_trash"):
-			return node as RigidBody3D
-		node = node.get_parent()
-	return null
-
-
 func poll_hint() -> void:
 	var interactable := get_looked_at_interactable()
-	# Check for thrown trash body when no interactable is found.
-	var thrown := _get_looked_at_thrown_trash() if interactable == null else null
 	# Update interactable highlight.
 	if interactable != hovered:
 		if hovered and is_instance_valid(hovered):
@@ -233,10 +213,6 @@ func poll_hint() -> void:
 				hint = "Filled Cup | LMB: serve lemonade"
 	else:
 		hint = interactable.get_hint(_player) if interactable else ""
-		# Check for thrown trash body (frozen RigidBody3D)
-		if not interactable and _player.inventory.held_item == HeldItem.NONE:
-			if thrown:
-				hint = "Trash | LMB: pick up"
 		# Append pickup hint when looking at a pickupable object with empty hands
 		if interactable and _player.inventory.held_item == HeldItem.NONE:
 			var pickupable := interactable.find_child("Pickupable", false, false)
@@ -271,22 +247,6 @@ func primary_interact() -> void:
 		var pickupable := interactable.find_child("Pickupable", false, false)
 		if pickupable != null and pickupable.can_pick_up(_player):
 			pickupable.pick_up(_player)
-			return
-
-	# Pick up thrown trash (frozen RigidBody3D) with empty hands.
-	if _player.inventory.held_item == HeldItem.NONE:
-		var thrown := _get_looked_at_thrown_trash()
-		if thrown:
-			var trash_type: String = thrown.get_meta("trash_type", "empty_box")
-			var trash_value: float = thrown.get_meta("trash_value", 0.0)
-			# Get the visual from the body to use as hand mesh.
-			var visual: Node3D = null
-			for child in thrown.get_children():
-				if child is Node3D and not child is CollisionShape3D:
-					visual = (child as Node3D).duplicate()
-					break
-			_player.inventory.make_held_trash(trash_value, trash_type, visual)
-			thrown.queue_free()
 			return
 
 	# Trash items can be disposed of at a trashcan or thrown.
@@ -780,70 +740,6 @@ func _find_looked_at_dispenser() -> WaterDispenser:
 
 # ─── Throw Trash ───
 
-
-## Throw the currently held trash item with force based on charge.
-## Uses a temporary RigidBody3D for real physics with the correct
-## per-variant collision shapes from trash.tscn.
-func _do_throw(charge: float) -> void:
-	if _player.inventory.held_item != HeldItem.TRASH:
-		return
-	# Calculate throw force from charge.
-	var force := lerpf(THROW_MIN_FORCE, THROW_MAX_FORCE, charge)
-	# Direction: forward from head, with upward bias for arc.
-	var dir := -_player.head.global_transform.basis.z
-	dir.y += THROW_UPWARD
-	dir = dir.normalized()
-	var spawn_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
-	# Get the held mesh visual to attach to the physics body.
-	var hand_mesh := _player.inventory.get_hand_mesh()
-	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
-	var trash_value: float = _player.held_item_data.get("trash_value", 0.0)
-	# Create a temporary RigidBody3D for the throw.
-	var body := RigidBody3D.new()
-	body.name = "ThrownTrash"
-	body.global_position = spawn_pos
-	# Load the trash scene to get the correct collision shapes for this variant.
-	_copy_trash_collision_shapes(body, trash_type)
-	# Attach the visual mesh.
-	if hand_mesh and is_instance_valid(hand_mesh):
-		var visual := hand_mesh.duplicate() as Node3D
-		if visual:
-			visual.visible = true
-			visual.position = Vector3.ZERO
-			visual.rotation = Vector3.ZERO
-			body.add_child(visual)
-	# Add to scene.
-	var scene := get_tree().current_scene
-	if scene:
-		scene.add_child(body)
-	# Apply throw velocity.
-	body.linear_velocity = dir * force
-	body.angular_velocity = Vector3(randf_range(-2, 2), randf_range(-2, 2), randf_range(-2, 2))
-	# When the body settles (sleeps), freeze it in place and make it
-	# pickupable. No new spawn — the visual stays exactly where it landed.
-	var settled := false
-	body.sleeping_state_changed.connect(
-		func():
-			if settled:
-				return
-			if body.sleeping:
-				settled = true
-				_freeze_trash_body(body, trash_type, trash_value),
-	)
-	# Fallback: after 5 seconds, freeze wherever it is.
-	get_tree().create_timer(5.0).timeout.connect(
-		func():
-			if not settled and is_instance_valid(body):
-				settled = true
-				_freeze_trash_body(body, trash_type, trash_value),
-	)
-	AudioManager.play_sfx("box_drop", spawn_pos)
-	_player.placement._destroy_ghost()
-	_player.inventory.clear_held()
-
-
-## Copy the correct collision shapes from the per-variant trash scene
-## into the RigidBody3D.
 const _TRASH_VARIANT_SCENES: Dictionary = {
 	"apple": "res://scenes/objects/trash_apple.tscn",
 	"banana": "res://scenes/objects/trash_banana.tscn",
@@ -853,85 +749,113 @@ const _TRASH_VARIANT_SCENES: Dictionary = {
 }
 
 
-func _copy_trash_collision_shapes(body: RigidBody3D, trash_type: String) -> void:
-	# For empty_box trash, use a simple box shape.
-	if trash_type == "empty_box":
-		var col := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = Vector3(0.2, 0.2, 0.2)
-		col.shape = shape
-		body.add_child(col)
+## Throw the currently held trash item with force based on charge.
+## Uses a simple arc tween (like the lemon-drop animation) — no
+## RigidBody3D, no physics, no bouncing or rotation.
+func _do_throw(charge: float) -> void:
+	if _player.inventory.held_item != HeldItem.TRASH:
 		return
-	# For other trash types, load the per-variant scene and copy its
-	# CollisionShape3D children (already at correct transforms relative
-	# to the root Area3D).
+	# Calculate throw distance from charge.
+	var distance := lerpf(1.0, 6.0, charge)
+	# Direction: forward from head, flattened to horizontal.
+	var forward := -_player.head.global_transform.basis.z
+	forward.y = 0.0
+	forward = forward.normalized()
+	# Start position: at the player's head.
+	var start_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
+	# Target position: forward by distance, then raycast down to find ground.
+	var target_xz := start_pos + forward * distance
+	var land_pos := _find_ground_below(target_xz)
+	# Get the held mesh visual for the flying trash.
+	var hand_mesh := _player.inventory.get_hand_mesh()
+	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
+	var trash_value: float = _player.held_item_data.get("trash_value", 0.0)
+	# Create a temporary visual node that flies along the arc.
+	var flying := Node3D.new()
+	flying.name = "FlyingTrash"
+	flying.global_position = start_pos
+	if hand_mesh and is_instance_valid(hand_mesh):
+		var visual := hand_mesh.duplicate() as Node3D
+		if visual:
+			visual.visible = true
+			visual.position = Vector3.ZERO
+			visual.rotation = Vector3.ZERO
+			flying.add_child(visual)
+	var scene := get_tree().current_scene
+	if scene:
+		scene.add_child(flying)
+	# Animate along a bezier arc (like the lemon drop).
+	var arc_h := clampf(distance * 0.4, 0.5, 2.0)
+	var cp1 := start_pos + Vector3(0, arc_h, 0)
+	var cp2 := land_pos + Vector3(0, arc_h, 0)
+	var duration := clampf(distance * 0.15, 0.3, 0.8)
+	var tw := flying.create_tween()
+	tw \
+			.tween_method(
+		func(t: float):
+			var p: Vector3 = start_pos * (1.0 - t) ** 3 \
+					+ cp1 * 3.0 * ((1.0 - t) ** 2) * t \
+					+ cp2 * 3.0 * (1.0 - t) * (t ** 2) \
+					+ land_pos * (t ** 3)
+			flying.global_position = p,
+		0.0,
+		1.0,
+		duration,
+	) \
+			.set_trans(Tween.TRANS_LINEAR)
+	# When the arc finishes, spawn the actual trash item and remove the visual.
+	tw.finished.connect(
+		func():
+			flying.queue_free()
+			_spawn_landed_trash(land_pos, trash_type, trash_value),
+	)
+	AudioManager.play_sfx("box_drop", start_pos)
+	_player.placement._destroy_ghost()
+	_player.inventory.clear_held()
+
+
+## Raycast downward from a position to find the ground/surface below.
+func _find_ground_below(pos: Vector3) -> Vector3:
+	var space := _player.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		pos + Vector3(0, 2.0, 0),
+		pos + Vector3(0, -10.0, 0),
+	)
+	var result := space.intersect_ray(query)
+	if result:
+		return result.position + Vector3(0, 0.05, 0)
+	# Fallback: just use the original position at ground level.
+	return pos
+
+
+## Spawn the actual trash item (Area3D with correct collisions) at the
+## landing position. This is what the player can pick up.
+func _spawn_landed_trash(land_pos: Vector3, trash_type: String, trash_value: float) -> void:
+	if trash_type == "empty_box":
+		# Spawn as a supply box (empty box trash).
+		var state: Dictionary = {
+			"is_trash_box": true,
+			"ingredient_type": "trash",
+			"quantity": 0.0,
+			"trash_value": trash_value,
+			"trash_type": trash_type,
+		}
+		var box := WorldSync.request_spawn(
+			"res://scenes/objects/supply_box.tscn",
+			land_pos,
+			Vector3.ZERO,
+			state,
+		) as SupplyBox
+		if box:
+			box.update_metrics()
+		return
+	# Spawn the per-variant trash scene.
 	var scene_path: String = _TRASH_VARIANT_SCENES.get(trash_type, "")
 	if scene_path == "":
-		# Fallback: small box.
-		var col := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = Vector3(0.15, 0.15, 0.15)
-		col.shape = shape
-		body.add_child(col)
 		return
-	var trash_scene := load(scene_path) as PackedScene
-	if trash_scene == null:
-		var col2 := CollisionShape3D.new()
-		var shape2 := BoxShape3D.new()
-		shape2.size = Vector3(0.15, 0.15, 0.15)
-		col2.shape = shape2
-		body.add_child(col2)
-		return
-	var instance := trash_scene.instantiate()
-	for child in instance.get_children():
-		if child is CollisionShape3D:
-			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
-			body.add_child(dup)
-	instance.queue_free()
-
-
-## Freeze the thrown trash body in place and make it pickupable.
-## No new item is spawned — the body stays exactly where it landed.
-func _freeze_trash_body(body: RigidBody3D, trash_type: String, trash_value: float) -> void:
-	if not is_instance_valid(body):
-		return
-	# Freeze physics — body stays where it is.
-	body.freeze = true
-	# Store pickup data as metadata.
-	body.set_meta("trash_type", trash_type)
-	body.set_meta("trash_value", trash_value)
-	body.set_meta("is_thrown_trash", true)
-	# Add to trash_item group so the interaction system recognizes it.
-	body.add_to_group("trash_item")
-
-
-## Toggle highlight on a thrown trash body (outline on all MeshInstance3D children).
-func _set_thrown_trash_highlight(body: RigidBody3D, on: bool) -> void:
-	for child in body.get_children():
-		if child is Node3D and not child is CollisionShape3D:
-			_apply_outline_recursive(child, on)
-
-
-func _apply_outline_recursive(node: Node, on: bool) -> void:
-	if node is MeshInstance3D and node.name != "_Outline":
-		var mi := node as MeshInstance3D
-		var existing := mi.get_node_or_null("_Outline") as MeshInstance3D
-		if on and existing == null and mi.mesh != null:
-			var ol := MeshInstance3D.new()
-			ol.name = "_Outline"
-			ol.mesh = mi.mesh
-			ol.layers = 2
-			ol.material_override = StandardMaterial3D.new()
-			ol.material_override.albedo_color = Color.WHITE
-			ol.material_override.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-			ol.material_override.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
-			ol.add_to_group("outline_fill")
-			ol.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mi.add_child(ol)
-			ol.transform = Transform3D.IDENTITY
-		elif not on and existing != null:
-			existing.queue_free()
-	for child in node.get_children():
-		if child.name == "_Outline":
-			continue
-		_apply_outline_recursive(child, on)
+	var state2: Dictionary = {
+		"trash_variant": trash_type,
+		"trash_type": trash_type,
+		"trash_value": trash_value,
+	}
+	WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
