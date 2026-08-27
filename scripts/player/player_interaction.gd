@@ -746,7 +746,8 @@ const _TRASH_VARIANT_SCENES: Dictionary = {
 ## Uses a RigidBody3D for position physics (gravity, collision) but
 ## locks rotation so it doesn't spin. The moment it hits something,
 ## physics is disabled and the actual TrashItem is spawned at that
-## exact position.
+## exact position. Uses the real trash scene model (normal scale),
+## not the scaled-down hand mesh.
 func _do_throw(charge: float) -> void:
 	if _player.inventory.held_item != HeldItem.TRASH:
 		return
@@ -756,29 +757,14 @@ func _do_throw(charge: float) -> void:
 	var aim_dir := -_player.head.global_transform.basis.z.normalized()
 	# Start position: at the player's head.
 	var start_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
-	# Get the held mesh visual to attach to the physics body.
-	var hand_mesh := _player.inventory.get_hand_mesh()
 	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
 	var trash_value: float = _player.held_item_data.get("trash_value", 0.0)
-	# Create a RigidBody3D for the throw — position only, no rotation.
-	var body := RigidBody3D.new()
-	body.name = "ThrownTrash"
-	# Lock ALL rotation so it never spins.
-	body.axis_lock_angular_x = true
-	body.axis_lock_angular_y = true
-	body.axis_lock_angular_z = true
-	# Copy the correct collision shapes from the per-variant scene.
-	_copy_trash_collision_shapes(body, trash_type)
-	# Attach the visual mesh — keep its original scale and rotation
-	# so it doesn't change when physics is frozen later.
-	if hand_mesh and is_instance_valid(hand_mesh):
-		var visual := hand_mesh.duplicate() as Node3D
-		if visual:
-			visual.visible = true
-			visual.position = Vector3.ZERO
-			body.add_child(visual)
-	# Add to scene FIRST, then set global position (avoids the
-	# "not inside tree" error).
+	# Create the physics body with the real trash scene's model and
+	# collision shapes (at normal scale, not the 0.1x hand mesh).
+	var body := _create_trash_physics_body(trash_type)
+	if body == null:
+		return
+	# Add to scene FIRST, then set global position.
 	var scene := get_tree().current_scene
 	if scene:
 		scene.add_child(body)
@@ -804,6 +790,45 @@ func _do_throw(charge: float) -> void:
 	AudioManager.play_sfx("box_drop", start_pos)
 	_player.placement._destroy_ghost()
 	_player.inventory.clear_held()
+
+
+## Create a RigidBody3D with the real trash scene's model and collision
+## shapes at normal scale. Rotation is locked on all axes.
+func _create_trash_physics_body(trash_type: String) -> RigidBody3D:
+	var body := RigidBody3D.new()
+	body.name = "ThrownTrash"
+	# Lock ALL rotation so it never spins.
+	body.axis_lock_angular_x = true
+	body.axis_lock_angular_y = true
+	body.axis_lock_angular_z = true
+	if trash_type == "empty_box":
+		# Simple box for empty-box trash.
+		var col := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(0.2, 0.2, 0.2)
+		col.shape = shape
+		body.add_child(col)
+		return body
+	# Load the per-variant scene and copy both the model and collision
+	# shapes into the body at their original transforms.
+	var scene_path: String = _TRASH_VARIANT_SCENES.get(trash_type, "")
+	if scene_path == "":
+		return null
+	var trash_scene := load(scene_path) as PackedScene
+	if trash_scene == null:
+		return null
+	var instance := trash_scene.instantiate()
+	for child in instance.get_children():
+		if child is CollisionShape3D:
+			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
+			body.add_child(dup)
+		elif child is Node3D:
+			# The model node — duplicate at its original transform.
+			var dup := (child as Node3D).duplicate() as Node3D
+			dup.visible = true
+			body.add_child(dup)
+	instance.queue_free()
+	return body
 
 
 ## Freeze the physics body and spawn the actual TrashItem at its
@@ -842,41 +867,3 @@ func _freeze_and_spawn_trash(body: RigidBody3D, trash_type: String, trash_value:
 			WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
 	# Remove the physics body.
 	body.queue_free()
-
-
-## Copy the correct collision shapes from the per-variant trash scene
-## into the RigidBody3D.
-func _copy_trash_collision_shapes(body: RigidBody3D, trash_type: String) -> void:
-	# For empty_box trash, use a simple box shape.
-	if trash_type == "empty_box":
-		var col := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = Vector3(0.2, 0.2, 0.2)
-		col.shape = shape
-		body.add_child(col)
-		return
-	# For other trash types, load the per-variant scene and copy its
-	# CollisionShape3D children (already at correct transforms relative
-	# to the root Area3D).
-	var scene_path: String = _TRASH_VARIANT_SCENES.get(trash_type, "")
-	if scene_path == "":
-		var col := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = Vector3(0.15, 0.15, 0.15)
-		col.shape = shape
-		body.add_child(col)
-		return
-	var trash_scene := load(scene_path) as PackedScene
-	if trash_scene == null:
-		var col2 := CollisionShape3D.new()
-		var shape2 := BoxShape3D.new()
-		shape2.size = Vector3(0.15, 0.15, 0.15)
-		col2.shape = shape2
-		body.add_child(col2)
-		return
-	var instance := trash_scene.instantiate()
-	for child in instance.get_children():
-		if child is CollisionShape3D:
-			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
-			body.add_child(dup)
-	instance.queue_free()

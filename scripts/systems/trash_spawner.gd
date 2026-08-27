@@ -70,22 +70,77 @@ func _spawn_trash() -> void:
 	var radius := randf() * horizontal_spread
 	var spawn_x := base_pos.x + cos(angle) * radius
 	var spawn_z := base_pos.z + sin(angle) * radius
-	var ground_y := _find_ground_y(spawn_x, feet_y + 0.5, spawn_z, feet_y, npc)
 	if not WorldSync.is_host():
 		return
-	var trash_rot := Vector3(0, randf() * TAU, 0)
 	# Pick a variant deterministically so all clients see the same trash type
 	var variants: Array[String] = ["apple", "banana", "can", "cigarettes", "cup"]
 	var variant := variants[randi() % variants.size()]
-	# Use the per-variant scene directly.
 	var scene_path: String = _VARIANT_SCENES.get(variant, "res://scenes/objects/trash_apple.tscn")
+	# Spawn a temporary RigidBody3D that falls from above, then spawns
+	# the real TrashItem when it hits the ground.
+	var drop_pos := Vector3(spawn_x, feet_y + 1.5, spawn_z)
+	_drop_trash_with_physics(scene_path, variant, drop_pos)
+
+
+## Drop trash from a position using a temporary RigidBody3D. When it
+## hits the ground, the actual TrashItem is spawned at that position.
+func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vector3) -> void:
+	var trash_scene := load(scene_path) as PackedScene
+	if trash_scene == null:
+		return
+	var body := RigidBody3D.new()
+	body.name = "DroppingTrash"
+	# Lock rotation so it doesn't spin.
+	body.axis_lock_angular_x = true
+	body.axis_lock_angular_y = true
+	body.axis_lock_angular_z = true
+	# Copy model and collision shapes from the scene.
+	var instance := trash_scene.instantiate()
+	for child in instance.get_children():
+		if child is CollisionShape3D:
+			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
+			body.add_child(dup)
+		elif child is Node3D:
+			var dup := (child as Node3D).duplicate() as Node3D
+			dup.visible = true
+			body.add_child(dup)
+	instance.queue_free()
+	# Add to scene, then set position.
+	var scene := get_tree().current_scene
+	if scene:
+		scene.add_child(body)
+	body.global_position = drop_pos
+	# When it hits the ground, spawn the real TrashItem and remove body.
+	var landed := false
+	body.body_entered.connect(
+		func(_other):
+			if landed:
+				return
+			landed = true
+			_finalize_drop(body, scene_path, variant),
+	)
+	# Fallback: after 3 seconds, finalize wherever it is.
+	get_tree().create_timer(3.0).timeout.connect(
+		func():
+			if not landed and is_instance_valid(body):
+				landed = true
+				_finalize_drop(body, scene_path, variant),
+	)
+
+
+func _finalize_drop(body: RigidBody3D, scene_path: String, variant: String) -> void:
+	if not is_instance_valid(body):
+		return
+	var land_pos := body.global_position
+	body.freeze = true
 	WorldSync.spawn_networked(
 		scene_path,
 		get_tree().current_scene,
-		Vector3(spawn_x, ground_y + TRASH_Y_OFFSET, spawn_z),
-		trash_rot,
+		land_pos,
+		Vector3.ZERO,
 		{ "trash_variant": variant },
 	)
+	body.queue_free()
 
 
 func _get_feet_y(npc: Node3D) -> float:
