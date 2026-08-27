@@ -115,8 +115,31 @@ func _on_playable_area_entered(body: Node3D) -> void:
 	if body != self or _playable_snapped:
 		return
 	_playable_snapped = true
-	_ground_snapped = false
-	_snap_attempts = 0
+	# Raycast down to find the actual floor height at this position.
+	# This aligns the NPC's feet to the surface the moment they enter
+	# the playable area, regardless of where they spawned.
+	var surface_y := _find_surface_y(global_position)
+	if surface_y != INF:
+		global_position.y = surface_y
+		_ground_y = surface_y
+		_ground_snapped = true
+	else:
+		_ground_snapped = false
+		_snap_attempts = 0
+
+
+## Raycast straight down to find the surface height at a position.
+func _find_surface_y(pos: Vector3) -> float:
+	var space := get_world_3d().direct_space_state
+	var from := pos + Vector3(0, 3.0, 0)
+	var to := pos + Vector3(0, -3.0, 0)
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = 0xFFFFFFFF
+	query.exclude = [get_rid()]
+	var result := space.intersect_ray(query)
+	if result:
+		return result.position.y
+	return INF
 
 
 ## Called by PedestrianSpawner right after instantiation.
@@ -239,12 +262,7 @@ func _apply_motion(delta: float) -> void:
 	else:
 		velocity.y = 0.0
 		global_position += velocity * delta
-		# Use the current target waypoint's Y as the ground height.
-		# The route markers have the correct Y offsets for each surface.
-		if _waypoints.size() > 0 and _waypoint_idx < _waypoints.size():
-			global_position.y = _waypoints[_waypoint_idx].global_position.y
-		else:
-			global_position.y = _ground_y
+		global_position.y = _ground_y
 
 
 # ── Client-side interpolation ─────────────────────────────────────────────────
