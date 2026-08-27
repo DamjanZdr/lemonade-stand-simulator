@@ -3,14 +3,6 @@ extends Node3D
 ## Spawns are anchored to existing NPCs, so they never appear outside the
 ## walkable/playable area.
 
-const _VARIANT_SCENES: Dictionary = {
-	"apple": "res://scenes/objects/trash_apple.tscn",
-	"banana": "res://scenes/objects/trash_banana.tscn",
-	"can": "res://scenes/objects/trash_can.tscn",
-	"cigarettes": "res://scenes/objects/trash_cigarettes.tscn",
-	"cup": "res://scenes/objects/trash_cup.tscn",
-}
-
 # Offset to put the collision shape bottom at ground level.
 # Calculated from trash.tscn: CollisionShape3D at Y=-0.104, BoxShape3D height=0.161
 # bottom = -0.104 - 0.0805 = -0.1845, so offset = 0.1845
@@ -75,81 +67,24 @@ func _spawn_trash() -> void:
 	# Pick a variant deterministically so all clients see the same trash type
 	var variants: Array[String] = ["apple", "banana", "can", "cigarettes", "cup"]
 	var variant := variants[randi() % variants.size()]
-	var scene_path: String = _VARIANT_SCENES.get(variant, "res://scenes/objects/trash_apple.tscn")
-	# Spawn a temporary RigidBody3D that falls from above, then spawns
-	# the real TrashItem when it hits the ground.
+	# Spawn a networked ThrownTrash body that falls from above, then
+	# spawns the real TrashItem when it hits the ground.
 	var drop_pos := Vector3(spawn_x, feet_y + 1.5, spawn_z)
-	_drop_trash_with_physics(scene_path, variant, drop_pos)
+	_drop_trash_with_physics(variant, drop_pos)
 
 
-## Drop trash from a position using a temporary RigidBody3D. When it
-## hits the ground, the actual TrashItem is spawned at that position.
-func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vector3) -> void:
-	var trash_scene := load(scene_path) as PackedScene
-	if trash_scene == null:
-		return
-	var body := RigidBody3D.new()
-	body.name = "DroppingTrash"
-	# Collide with all layers (streets are on layer 2, ground on 1, etc.)
-	body.collision_mask = 0xFFFFFFFF
-	# Lock rotation so it doesn't spin.
-	body.axis_lock_angular_x = true
-	body.axis_lock_angular_y = true
-	body.axis_lock_angular_z = true
-	# No bounce so it doesn't fly off on impact.
-	var mat := PhysicsMaterial.new()
-	mat.bounce = 0.0
-	mat.friction = 1.0
-	body.physics_material_override = mat
-	# Copy model and collision shapes from the scene.
-	var instance := trash_scene.instantiate()
-	for child in instance.get_children():
-		if child is CollisionShape3D:
-			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
-			body.add_child(dup)
-		elif child is Node3D:
-			var dup := (child as Node3D).duplicate() as Node3D
-			dup.visible = true
-			body.add_child(dup)
-	instance.queue_free()
-	# Add to scene, then set position.
-	var scene := get_tree().current_scene
-	if scene:
-		scene.add_child(body)
-	body.global_position = drop_pos
-	# Wait for the body to sleep (fully settled) before spawning the
-	# real TrashItem. This ensures the position is correct.
-	var landed := false
-	body.sleeping_state_changed.connect(
-		func():
-			if landed or not is_instance_valid(body) or not body.sleeping:
-				return
-			landed = true
-			_finalize_drop(body, scene_path, variant),
-	)
-	# Fallback: after 3 seconds, finalize wherever it is.
-	get_tree().create_timer(3.0).timeout.connect(
-		func():
-			if not landed and is_instance_valid(body):
-				landed = true
-				_finalize_drop(body, scene_path, variant),
-	)
-
-
-func _finalize_drop(body: RigidBody3D, scene_path: String, variant: String) -> void:
-	if not is_instance_valid(body):
-		return
-	# Freeze and capture position after the engine has resolved contact.
-	body.freeze = true
-	var land_pos := body.global_position
+## Drop trash from a position using the networked ThrownTrash scene.
+## The host runs physics and syncs to clients. When it lands, the
+## ThrownTrash script spawns the real TrashItem via WorldSync.
+func _drop_trash_with_physics(variant: String, drop_pos: Vector3) -> void:
+	var state: Dictionary = { "trash_type": variant, "trash_value": 1.0, "is_npc_drop": true }
 	WorldSync.spawn_networked(
-		scene_path,
-		get_tree().current_scene,
-		land_pos,
+		"res://scenes/objects/thrown_trash.tscn",
+		WorldSync.get_world_objects(),
+		drop_pos,
 		Vector3.ZERO,
-		{ "trash_variant": variant },
+		state,
 	)
-	body.queue_free()
 
 
 func _get_feet_y(npc: Node3D) -> float:

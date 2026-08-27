@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://thrown_trash01"]
+
+[ext_resource type="Script" path="res://scripts/objects/thrown_trash.gd" id="1_thrown"]
+
+[node name="ThrownTrash" type="RigidBody3D"]
+script = ExtResource("1_thrown")

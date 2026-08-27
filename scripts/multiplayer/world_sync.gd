@@ -562,6 +562,37 @@ func _rpc_request_despawn(parent_path_str: String, obj_name: String, net_id: int
 		GameLog.log("[WorldSync] Host despawn: object not found: " + obj_name)
 
 
+## Request a thrown-trash pickup from any peer. On the host, picks up
+## directly. On a client, sends an RPC to the host.
+func request_thrown_trash_pickup(obj: Node, player_path: String) -> void:
+	if obj == null or not is_instance_valid(obj):
+		return
+	var net_id := _get_net_id(obj)
+	if is_host():
+		_do_thrown_trash_pickup(net_id, player_path)
+		return
+	_rpc_request_thrown_trash_pickup.rpc_id(1, net_id, player_path)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_thrown_trash_pickup(net_id: int, player_path: String) -> void:
+	if not is_host():
+		return
+	_do_thrown_trash_pickup(net_id, player_path)
+
+
+func _do_thrown_trash_pickup(net_id: int, player_path: String) -> void:
+	var obj := _find_node_by_net_id(net_id)
+	if obj == null or not is_instance_valid(obj):
+		return
+	if not obj is ThrownTrash:
+		return
+	var player := _string_to_node(player_path)
+	if player == null or not is_instance_valid(player):
+		return
+	(obj as ThrownTrash).pickup_by(player)
+
+
 ## Spawn a world object on the host and replicate to all clients.
 ## 'state' is a Dictionary of property_name -> value pairs to set on the
 ## object before adding it to the tree (so its _ready sees them).

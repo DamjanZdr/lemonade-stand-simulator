@@ -273,22 +273,18 @@ func primary_interact() -> void:
 			return
 
 	# Pick up thrown trash (RigidBody3D, mid-air or landed) with empty hands.
+	# Uses WorldSync so the pickup is networked — any player can catch it.
 	if _player.inventory.held_item == HeldItem.NONE:
 		var thrown_body := _get_looked_at_thrown_trash()
 		if thrown_body:
-			var t_type: String = thrown_body.get_meta("trash_type", "empty_box")
-			var t_value: float = thrown_body.get_meta("trash_value", 0.0)
-			# Get the visual from the body to use as hand mesh.
-			var visual: Node3D = null
-			for child in thrown_body.get_children():
-				if child is Node3D and not child is CollisionShape3D:
-					visual = (child as Node3D).duplicate()
-					break
-			# Clear highlight before freeing the body.
+			# Clear highlight.
 			if _hovered_trash_body == thrown_body:
+				_set_trash_body_highlight(thrown_body, false)
 				_hovered_trash_body = null
-			thrown_body.queue_free()
-			_player.inventory.make_held_trash(t_value, t_type, visual)
+			# Request pickup via WorldSync (host picks up directly, clients
+			# send RPC to host). The host gives the trash to the player
+			# and despawns the body for all peers.
+			WorldSync.request_thrown_trash_pickup(thrown_body, _player.get_path())
 			return
 
 	# Trash items can be disposed of at a trashcan or thrown.
@@ -782,21 +778,12 @@ func _find_looked_at_dispenser() -> WaterDispenser:
 
 # ─── Throw Trash ───
 
-const _TRASH_VARIANT_SCENES: Dictionary = {
-	"apple": "res://scenes/objects/trash_apple.tscn",
-	"banana": "res://scenes/objects/trash_banana.tscn",
-	"can": "res://scenes/objects/trash_can.tscn",
-	"cigarettes": "res://scenes/objects/trash_cigarettes.tscn",
-	"cup": "res://scenes/objects/trash_cup.tscn",
-}
-
 
 ## Throw the currently held trash item with force based on charge.
-## Uses a RigidBody3D for position physics (gravity, collision) but
-## locks rotation so it doesn't spin. The moment it hits something,
-## physics is disabled and the actual TrashItem is spawned at that
-## exact position. Uses the real trash scene model (normal scale),
-## not the scaled-down hand mesh.
+## Uses a networked ThrownTrash scene (RigidBody3D) for position physics.
+## The host runs physics and syncs transform to clients. Any player can
+## pick it up mid-air. When it lands, the real TrashItem is spawned via
+## WorldSync so all peers see it.
 func _do_throw(charge: float) -> void:
 	if _player.inventory.held_item != HeldItem.TRASH:
 		return
@@ -808,141 +795,21 @@ func _do_throw(charge: float) -> void:
 	var start_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
 	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
 	var trash_value: float = _player.held_item_data.get("trash_value", 0.0)
-	# Create the physics body with the real trash scene's model and
-	# collision shapes (at normal scale, not the 0.1x hand mesh).
-	var body := _create_trash_physics_body(trash_type)
-	if body == null:
-		return
-	# Tag with metadata so it's pickupable mid-air or after landing.
-	body.set_meta("is_thrown_trash", true)
-	body.set_meta("trash_type", trash_type)
-	body.set_meta("trash_value", trash_value)
-	# Add to scene FIRST, then set global position.
-	var scene := get_tree().current_scene
-	if scene:
-		scene.add_child(body)
-	body.global_position = start_pos
-	# Apply throw velocity (position only, no angular velocity).
-	body.linear_velocity = aim_dir * force
-	# No bounce so it doesn't fly off on impact.
-	body.physics_material_override = _make_no_bounce_material()
-	# Wait for the body to sleep (fully settled) before spawning the
-	# real TrashItem. The body is pickupable mid-air via metadata, so
-	# there's no pickup delay while it settles.
-	var landed := false
-	body.sleeping_state_changed.connect(
-		func():
-			if landed or not is_instance_valid(body) or not body.sleeping:
-				return
-			landed = true
-			_freeze_and_spawn_trash(body, trash_type, trash_value),
-	)
-	# Fallback: after 3 seconds, freeze wherever it is.
-	get_tree().create_timer(3.0).timeout.connect(
-		func():
-			if not landed and is_instance_valid(body):
-				landed = true
-				_freeze_and_spawn_trash(body, trash_type, trash_value),
-	)
+	# Spawn the networked thrown trash body via WorldSync.
+	var state: Dictionary = {
+		"trash_type": trash_type,
+		"trash_value": trash_value,
+		"_initial_velocity": aim_dir * force,
+	}
+	var body := WorldSync.request_spawn(
+		"res://scenes/objects/thrown_trash.tscn",
+		start_pos,
+		Vector3.ZERO,
+		state,
+	) as ThrownTrash
 	AudioManager.play_sfx("box_drop", start_pos)
 	_player.placement._destroy_ghost()
 	_player.inventory.clear_held()
-
-
-## No-bounce physics material for thrown/dropped trash.
-static var _no_bounce_mat: PhysicsMaterial = null
-
-
-static func _make_no_bounce_material() -> PhysicsMaterial:
-	if _no_bounce_mat == null:
-		_no_bounce_mat = PhysicsMaterial.new()
-		_no_bounce_mat.bounce = 0.0
-		_no_bounce_mat.friction = 1.0
-	return _no_bounce_mat
-
-
-## Create a RigidBody3D with the real trash scene's model and collision
-## shapes at normal scale. Rotation is locked on all axes.
-func _create_trash_physics_body(trash_type: String) -> RigidBody3D:
-	var body := RigidBody3D.new()
-	body.name = "ThrownTrash"
-	# Collide with all layers (streets are on layer 2, ground on 1, etc.)
-	body.collision_mask = 0xFFFFFFFF
-	# Lock ALL rotation so it never spins.
-	body.axis_lock_angular_x = true
-	body.axis_lock_angular_y = true
-	body.axis_lock_angular_z = true
-	if trash_type == "empty_box":
-		# Simple box for empty-box trash.
-		var col := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = Vector3(0.2, 0.2, 0.2)
-		col.shape = shape
-		body.add_child(col)
-		return body
-	# Load the per-variant scene and copy both the model and collision
-	# shapes into the body at their original transforms.
-	var scene_path: String = _TRASH_VARIANT_SCENES.get(trash_type, "")
-	if scene_path == "":
-		return null
-	var trash_scene := load(scene_path) as PackedScene
-	if trash_scene == null:
-		return null
-	var instance := trash_scene.instantiate()
-	for child in instance.get_children():
-		if child is CollisionShape3D:
-			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
-			body.add_child(dup)
-		elif child is Node3D:
-			# The model node — duplicate at its original transform.
-			var dup := (child as Node3D).duplicate() as Node3D
-			dup.visible = true
-			body.add_child(dup)
-	instance.queue_free()
-	return body
-
-
-## Freeze the physics body and spawn the actual TrashItem at its
-## exact position. The body is then removed. Does nothing if the
-## body was already picked up mid-air.
-func _freeze_and_spawn_trash(body: RigidBody3D, trash_type: String, trash_value: float) -> void:
-	if not is_instance_valid(body):
-		return
-	# Freeze and capture position after the engine has resolved contact.
-	body.freeze = true
-	var land_pos := body.global_position
-	# Clear highlight reference if this body was being hovered.
-	if _hovered_trash_body == body:
-		_set_trash_body_highlight(body, false)
-		_hovered_trash_body = null
-	# Spawn the real trash item at this exact position.
-	if trash_type == "empty_box":
-		var state: Dictionary = {
-			"is_trash_box": true,
-			"ingredient_type": "trash",
-			"quantity": 0.0,
-			"trash_value": trash_value,
-			"trash_type": trash_type,
-		}
-		var box := WorldSync.request_spawn(
-			"res://scenes/objects/supply_box.tscn",
-			land_pos,
-			Vector3.ZERO,
-			state,
-		) as SupplyBox
-		if box:
-			box.update_metrics()
-	else:
-		var scene_path: String = _TRASH_VARIANT_SCENES.get(trash_type, "")
-		if scene_path != "":
-			var state2: Dictionary = {
-				"trash_variant": trash_type,
-				"trash_type": trash_type,
-				"trash_value": trash_value,
-			}
-			WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
-	# Remove the physics body.
-	body.queue_free()
 
 
 ## Toggle highlight on a thrown trash body (outline on all MeshInstance3D children).
