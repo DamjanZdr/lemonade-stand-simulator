@@ -90,6 +90,8 @@ func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vec
 		return
 	var body := RigidBody3D.new()
 	body.name = "DroppingTrash"
+	# Collide with all layers (streets are on layer 2, ground on 1, etc.)
+	body.collision_mask = 0xFFFFFFFF
 	# Lock rotation so it doesn't spin.
 	body.axis_lock_angular_x = true
 	body.axis_lock_angular_y = true

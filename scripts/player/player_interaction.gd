@@ -797,6 +797,8 @@ func _do_throw(charge: float) -> void:
 func _create_trash_physics_body(trash_type: String) -> RigidBody3D:
 	var body := RigidBody3D.new()
 	body.name = "ThrownTrash"
+	# Collide with all layers (streets are on layer 2, ground on 1, etc.)
+	body.collision_mask = 0xFFFFFFFF
 	# Lock ALL rotation so it never spins.
 	body.axis_lock_angular_x = true
 	body.axis_lock_angular_y = true
