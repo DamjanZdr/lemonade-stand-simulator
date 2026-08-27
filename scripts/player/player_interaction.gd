@@ -734,6 +734,8 @@ func _find_looked_at_dispenser() -> WaterDispenser:
 
 
 ## Throw the currently held trash item with force based on charge.
+## Uses a temporary RigidBody3D for real physics, then spawns the
+## actual trash item at the landing position.
 func _do_throw(charge: float) -> void:
 	if _player.inventory.held_item != HeldItem.TRASH:
 		return
@@ -743,48 +745,86 @@ func _do_throw(charge: float) -> void:
 	var dir := -_player.head.global_transform.basis.z
 	dir.y += THROW_UPWARD
 	dir = dir.normalized()
-	# Spawn the trash as a supply box.
-	var state: Dictionary = {
-		"is_trash_box": true,
-		"ingredient_type": "trash",
-		"quantity": 0.0,
-		"trash_value": _player.held_item_data.get("trash_value", 0.0),
-		"trash_type": _player.held_item_data.get("trash_type", "empty_box"),
-	}
 	var spawn_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
-	var box := WorldSync.request_spawn(
-		"res://scenes/objects/supply_box.tscn",
-		spawn_pos,
-		Vector3.ZERO,
-		state,
-	) as SupplyBox
-	if box:
-		box.update_metrics()
-		# Simulate projectile motion with a tween since supply boxes use
-		# StaticBody3D, not RigidBody3D.
-		_animate_throw(box, spawn_pos, dir, force)
+	# Get the held mesh visual to attach to the physics body.
+	var hand_mesh := _player.inventory.get_hand_mesh()
+	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
+	var trash_value: float = _player.held_item_data.get("trash_value", 0.0)
+	# Create a temporary RigidBody3D for the throw.
+	var body := RigidBody3D.new()
+	body.name = "ThrownTrash"
+	body.global_position = spawn_pos
+	# Collision shape — small box.
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(0.2, 0.2, 0.2)
+	col.shape = shape
+	body.add_child(col)
+	# Attach the visual mesh.
+	if hand_mesh and is_instance_valid(hand_mesh):
+		var visual := hand_mesh.duplicate() as Node3D
+		if visual:
+			visual.visible = true
+			visual.position = Vector3.ZERO
+			visual.rotation = Vector3.ZERO
+			# Reset scale to something visible (hand mesh is scaled down).
+			visual.scale = Vector3.ONE * 0.5
+			body.add_child(visual)
+	# Add to scene.
+	var scene := get_tree().current_scene
+	if scene:
+		scene.add_child(body)
+	# Apply throw velocity.
+	body.linear_velocity = dir * force
+	body.angular_velocity = Vector3(randf_range(-2, 2), randf_range(-2, 2), randf_range(-2, 2))
+	# When the body lands (sleeps or hits something), spawn the trash item.
+	var landed := false
+	body.body_entered.connect(
+		func(_other):
+			if landed:
+				return
+			landed = true
+			_spawn_trash_at_landing(body, trash_type, trash_value),
+	)
+	# Fallback: after 5 seconds, spawn wherever it is.
+	get_tree().create_timer(5.0).timeout.connect(
+		func():
+			if not landed and is_instance_valid(body):
+				landed = true
+				_spawn_trash_at_landing(body, trash_type, trash_value),
+	)
 	AudioManager.play_sfx("box_drop", spawn_pos)
 	_player.placement._destroy_ghost()
 	_player.inventory.clear_held()
 
 
-## Animate a thrown box along a parabolic arc.
-func _animate_throw(box: Node3D, start_pos: Vector3, dir: Vector3, force: float) -> void:
-	var vel := dir * force
-	var gravity := 9.8
-	var duration := 2.0
-	var steps := 30
-	var tw := create_tween()
-	for i in range(1, steps + 1):
-		var t := float(i) / steps * duration
-		var pos := start_pos + vel * t + Vector3(0, -0.5 * gravity * t * t, 0)
-		# Stop if the box hits the ground (y <= 0 relative to world).
-		if pos.y < 0.0:
-			pos.y = 0.0
-			tw.tween_property(box, "global_position", pos, t * (1.0 / steps))
-			break
-		tw.tween_property(box, "global_position", pos, duration / steps)
-	# Add a little spin.
-	var spin := create_tween()
-	spin.set_loops()
-	spin.tween_property(box, "rotation", Vector3(0, PI * 2, 0), 1.0)
+## Spawn the actual trash item at the landing position and remove
+## the temporary physics body.
+func _spawn_trash_at_landing(body: RigidBody3D, trash_type: String, trash_value: float) -> void:
+	if not is_instance_valid(body):
+		return
+	var land_pos := body.global_position
+	# Determine which scene to spawn.
+	var is_box_trash := trash_type == "empty_box"
+	if is_box_trash:
+		# Spawn as a supply box (empty box trash).
+		var state: Dictionary = {
+			"is_trash_box": true,
+			"ingredient_type": "trash",
+			"quantity": 0.0,
+			"trash_value": trash_value,
+			"trash_type": trash_type,
+		}
+		var box := WorldSync.request_spawn(
+			"res://scenes/objects/supply_box.tscn",
+			land_pos,
+			Vector3.ZERO,
+			state,
+		) as SupplyBox
+		if box:
+			box.update_metrics()
+	else:
+		# Spawn as a trash item (apple, banana, can, etc.).
+		var state: Dictionary = { "trash_variant": trash_type, "trash_value": trash_value }
+		WorldSync.request_spawn("res://scenes/objects/trash.tscn", land_pos, Vector3.ZERO, state)
+	body.queue_free()
