@@ -824,9 +824,8 @@ func _do_throw(charge: float) -> void:
 	body.global_position = start_pos
 	# Apply throw velocity (position only, no angular velocity).
 	body.linear_velocity = aim_dir * force
-	# No bounce, high damping so it settles quickly.
+	# No bounce so it doesn't fly off on impact.
 	body.physics_material_override = _make_no_bounce_material()
-	body.linear_damp = 5.0
 	# Wait for the body to sleep (fully settled) before spawning the
 	# real TrashItem. The body is pickupable mid-air via metadata, so
 	# there's no pickup delay while it settles.

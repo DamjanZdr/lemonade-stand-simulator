@@ -96,12 +96,11 @@ func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vec
 	body.axis_lock_angular_x = true
 	body.axis_lock_angular_y = true
 	body.axis_lock_angular_z = true
-	# No bounce, high damping so it settles quickly.
+	# No bounce so it doesn't fly off on impact.
 	var mat := PhysicsMaterial.new()
 	mat.bounce = 0.0
 	mat.friction = 1.0
 	body.physics_material_override = mat
-	body.linear_damp = 5.0
 	# Copy model and collision shapes from the scene.
 	var instance := trash_scene.instantiate()
 	for child in instance.get_children():
