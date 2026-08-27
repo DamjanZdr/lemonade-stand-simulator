@@ -776,20 +776,22 @@ func _do_throw(charge: float) -> void:
 	# Apply throw velocity.
 	body.linear_velocity = dir * force
 	body.angular_velocity = Vector3(randf_range(-2, 2), randf_range(-2, 2), randf_range(-2, 2))
-	# When the body lands (sleeps or hits something), spawn the trash item.
-	var landed := false
-	body.body_entered.connect(
-		func(_other):
-			if landed:
+	# Wait for the body to settle (sleep) before spawning the trash item.
+	# This prevents the pickup gap and preserves the landing rotation.
+	var settled := false
+	body.sleeping_state_changed.connect(
+		func():
+			if settled:
 				return
-			landed = true
-			_spawn_trash_at_landing(body, trash_type, trash_value),
+			if body.sleeping:
+				settled = true
+				_spawn_trash_at_landing(body, trash_type, trash_value),
 	)
 	# Fallback: after 5 seconds, spawn wherever it is.
 	get_tree().create_timer(5.0).timeout.connect(
 		func():
-			if not landed and is_instance_valid(body):
-				landed = true
+			if not settled and is_instance_valid(body):
+				settled = true
 				_spawn_trash_at_landing(body, trash_type, trash_value),
 	)
 	AudioManager.play_sfx("box_drop", spawn_pos)
@@ -797,12 +799,13 @@ func _do_throw(charge: float) -> void:
 	_player.inventory.clear_held()
 
 
-## Spawn the actual trash item at the landing position and remove
-## the temporary physics body.
+## Spawn the actual trash item at the landing position + rotation
+## and remove the temporary physics body.
 func _spawn_trash_at_landing(body: RigidBody3D, trash_type: String, trash_value: float) -> void:
 	if not is_instance_valid(body):
 		return
 	var land_pos := body.global_position
+	var land_rot := body.global_rotation
 	# Determine which scene to spawn.
 	var is_box_trash := trash_type == "empty_box"
 	if is_box_trash:
@@ -817,7 +820,7 @@ func _spawn_trash_at_landing(body: RigidBody3D, trash_type: String, trash_value:
 		var box := WorldSync.request_spawn(
 			"res://scenes/objects/supply_box.tscn",
 			land_pos,
-			Vector3.ZERO,
+			land_rot,
 			state,
 		) as SupplyBox
 		if box:
@@ -825,5 +828,5 @@ func _spawn_trash_at_landing(body: RigidBody3D, trash_type: String, trash_value:
 	else:
 		# Spawn as a trash item (apple, banana, can, etc.).
 		var state: Dictionary = { "trash_variant": trash_type, "trash_value": trash_value }
-		WorldSync.request_spawn("res://scenes/objects/trash.tscn", land_pos, Vector3.ZERO, state)
+		WorldSync.request_spawn("res://scenes/objects/trash.tscn", land_pos, land_rot, state)
 	body.queue_free()
