@@ -5,6 +5,7 @@ extends Interactable
 
 func _ready() -> void:
 	add_to_group("container")
+	Pickupable.setup_for_container(self, "workstation")
 
 
 func get_hint(_player: Node) -> String:

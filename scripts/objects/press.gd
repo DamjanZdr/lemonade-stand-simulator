@@ -45,6 +45,7 @@ var _last_juice_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 func _ready() -> void:
 	add_to_group("press")
 	add_to_group("container")
+	Pickupable.setup_for_container(self, "press")
 	_build_merged_animation()
 
 

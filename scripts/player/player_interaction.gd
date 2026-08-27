@@ -244,11 +244,6 @@ func poll_hint() -> void:
 				and not hint.contains("pick up")
 			):
 				hint = hint + "  |  RMB: pick up" if hint != "" else "RMB: pick up"
-			elif not hint.contains("pick up"):
-				# Also check container-based pickup (workstations, bins, etc.)
-				var ctype := _player.placement._get_container_type_for_node(interactable)
-				if ctype != "":
-					hint = hint + "  |  RMB: pick up" if hint != "" else "RMB: pick up"
 	if hint != _last_hint:
 		_last_hint = hint
 		EventBus.interaction_hint_changed.emit(hint)
@@ -579,15 +574,15 @@ func secondary_interact() -> void:
 
 	var interactable := get_looked_at_interactable()
 	if interactable:
-		# If hands empty and looking at container, pick it up
+		# If hands empty and looking at container, pick it up via Pickupable
 		if _player.inventory.held_item == HeldItem.NONE:
 			# Press with snapped pitcher: pick up the pitcher, not the press
 			if interactable is Press and (interactable as Press).has_snapped_pitcher():
 				(interactable as Press).interact(_player)
 				return
-			var ctype := _player.placement._get_container_type_for_node(interactable)
-			if ctype != "":
-				_player.pickup_container(interactable, ctype)
+			var pickupable := interactable.find_child("Pickupable", false, false) as Pickupable
+			if pickupable != null and pickupable.can_pick_up(_player):
+				pickupable.pick_up(_player)
 				return
 		# Otherwise let the interactable handle secondary interact
 		interactable.interact_secondary(_player)

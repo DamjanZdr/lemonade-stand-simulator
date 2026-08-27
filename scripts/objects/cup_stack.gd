@@ -30,6 +30,8 @@ const CUP_SCENE: PackedScene = preload("res://scenes/objects/cup.tscn")
 
 
 func _ready() -> void:
+	add_to_group("container")
+	Pickupable.setup_for_container(self, "cup_stack")
 	_item_nodes.clear()
 	for child in item_grid.get_children():
 		_item_nodes.append(child as Node3D)

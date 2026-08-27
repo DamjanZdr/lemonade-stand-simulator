@@ -102,3 +102,22 @@ func place(state: Dictionary, parent: Node, pos: Vector3, rot: Vector3) -> Node:
 
 func _place(_state: Dictionary, _parent: Node, _pos: Vector3, _rot: Vector3) -> Node:
 	return null
+
+
+## Helper for container-type Interactables (FruitBin, IngredientBin, etc.)
+## to add a Pickupable component that delegates to PlayerPlacement.pickup_container().
+## Call this from the container's _ready().
+static func setup_for_container(container: Interactable, container_type: String) -> Pickupable:
+	var p := Pickupable.new()
+	p.name = "Pickupable"
+	p.held_item_type = HeldItem.CONTAINER
+	p.can_pickup_callback = func(player: Node) -> bool:
+		return player != null and player.get("held_item") == HeldItem.NONE
+	p.pick_up_callback = func(player: Node) -> Dictionary:
+		var pl := player as Player
+		if pl == null or pl.held_item != HeldItem.NONE:
+			return { }
+		pl.pickup_container(container, container_type)
+		return { }
+	container.add_child(p)
+	return p

@@ -43,6 +43,9 @@ func _ready() -> void:
 		var res := load("res://resources/data/lemon.tres") as IngredientData
 		if res != null:
 			ingredient_data = res
+	# Set up pickupable based on resolved ingredient type.
+	var ctype := "fruit_bin" if ingredient_type == "lemon" else ingredient_type + "_bin"
+	Pickupable.setup_for_container(self, ctype)
 
 	# Collect all children of ItemGrid placed manually in the scene.
 	_item_nodes.clear()
