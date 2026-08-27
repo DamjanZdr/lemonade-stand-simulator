@@ -743,88 +743,78 @@ const _TRASH_VARIANT_SCENES: Dictionary = {
 
 
 ## Throw the currently held trash item with force based on charge.
-## Uses a simple arc tween — goes in the direction you aim, with
-## distance based on charge. No physics, no bouncing or rotation.
+## Uses a RigidBody3D for position physics (gravity, collision) but
+## locks rotation so it doesn't spin. The moment it hits something,
+## physics is disabled and the actual TrashItem is spawned at that
+## exact position.
 func _do_throw(charge: float) -> void:
 	if _player.inventory.held_item != HeldItem.TRASH:
 		return
-	# Throw distance based on charge.
-	var distance := lerpf(1.0, 6.0, charge)
+	# Throw force based on charge.
+	var force := lerpf(THROW_MIN_FORCE, THROW_MAX_FORCE, charge)
 	# Direction: where the player is aiming (includes pitch).
 	var aim_dir := -_player.head.global_transform.basis.z.normalized()
 	# Start position: at the player's head.
 	var start_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
-	# Target: along aim direction by distance, then find ground below.
-	var target := start_pos + aim_dir * distance
-	var land_pos := _find_ground_below(target)
-	# Get the held mesh visual for the flying trash.
+	# Get the held mesh visual to attach to the physics body.
 	var hand_mesh := _player.inventory.get_hand_mesh()
 	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
 	var trash_value: float = _player.held_item_data.get("trash_value", 0.0)
-	# Create a temporary visual node that flies along the arc.
-	var flying := Node3D.new()
-	flying.name = "FlyingTrash"
-	flying.global_position = start_pos
+	# Create a RigidBody3D for the throw — position only, no rotation.
+	var body := RigidBody3D.new()
+	body.name = "ThrownTrash"
+	body.global_position = start_pos
+	# Lock ALL rotation so it never spins.
+	body.axis_lock_angular_x = true
+	body.axis_lock_angular_y = true
+	body.axis_lock_angular_z = true
+	# Copy the correct collision shapes from the per-variant scene.
+	_copy_trash_collision_shapes(body, trash_type)
+	# Attach the visual mesh.
 	if hand_mesh and is_instance_valid(hand_mesh):
 		var visual := hand_mesh.duplicate() as Node3D
 		if visual:
 			visual.visible = true
 			visual.position = Vector3.ZERO
 			visual.rotation = Vector3.ZERO
-			flying.add_child(visual)
+			body.add_child(visual)
+	# Add to scene.
 	var scene := get_tree().current_scene
 	if scene:
-		scene.add_child(flying)
-	# Small arc — just enough to look natural. Control points are
-	# slightly above the start and end, not a huge hump.
-	var arc_h := clampf(distance * 0.15, 0.15, 0.6)
-	var cp1 := start_pos + Vector3(0, arc_h, 0)
-	var cp2 := land_pos + Vector3(0, arc_h, 0)
-	var duration := clampf(distance * 0.12, 0.25, 0.6)
-	var tw := flying.create_tween()
-	tw \
-			.tween_method(
-		func(t: float):
-			var p: Vector3 = start_pos * (1.0 - t) ** 3 \
-					+ cp1 * 3.0 * ((1.0 - t) ** 2) * t \
-					+ cp2 * 3.0 * (1.0 - t) * (t ** 2) \
-					+ land_pos * (t ** 3)
-			flying.global_position = p,
-		0.0,
-		1.0,
-		duration,
-	) \
-			.set_trans(Tween.TRANS_LINEAR)
-	# When the arc finishes, spawn the actual trash item and remove the visual.
-	tw.finished.connect(
+		scene.add_child(body)
+	# Apply throw velocity (position only, no angular velocity).
+	body.linear_velocity = aim_dir * force
+	# The moment it hits anything, freeze and spawn the real trash item.
+	var landed := false
+	body.body_entered.connect(
+		func(_other):
+			if landed:
+				return
+			landed = true
+			_freeze_and_spawn_trash(body, trash_type, trash_value),
+	)
+	# Fallback: after 5 seconds, freeze wherever it is.
+	get_tree().create_timer(5.0).timeout.connect(
 		func():
-			flying.queue_free()
-			_spawn_landed_trash(land_pos, trash_type, trash_value),
+			if not landed and is_instance_valid(body):
+				landed = true
+				_freeze_and_spawn_trash(body, trash_type, trash_value),
 	)
 	AudioManager.play_sfx("box_drop", start_pos)
 	_player.placement._destroy_ghost()
 	_player.inventory.clear_held()
 
 
-## Raycast downward from a position to find the ground/surface below.
-func _find_ground_below(pos: Vector3) -> Vector3:
-	var space := _player.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(
-		pos + Vector3(0, 2.0, 0),
-		pos + Vector3(0, -10.0, 0),
-	)
-	var result := space.intersect_ray(query)
-	if result:
-		return result.position + Vector3(0, 0.05, 0)
-	# Fallback: just use the original position at ground level.
-	return pos
-
-
-## Spawn the actual trash item (Area3D with correct collisions) at the
-## landing position. This is what the player can pick up.
-func _spawn_landed_trash(land_pos: Vector3, trash_type: String, trash_value: float) -> void:
+## Freeze the physics body and spawn the actual TrashItem at its
+## exact position. The body is then removed.
+func _freeze_and_spawn_trash(body: RigidBody3D, trash_type: String, trash_value: float) -> void:
+	if not is_instance_valid(body):
+		return
+	var land_pos := body.global_position
+	# Freeze immediately so it stops exactly where it hit.
+	body.freeze = true
+	# Spawn the real trash item at this exact position.
 	if trash_type == "empty_box":
-		# Spawn as a supply box (empty box trash).
 		var state: Dictionary = {
 			"is_trash_box": true,
 			"ingredient_type": "trash",
@@ -840,14 +830,52 @@ func _spawn_landed_trash(land_pos: Vector3, trash_type: String, trash_value: flo
 		) as SupplyBox
 		if box:
 			box.update_metrics()
+	else:
+		var scene_path: String = _TRASH_VARIANT_SCENES.get(trash_type, "")
+		if scene_path != "":
+			var state2: Dictionary = {
+				"trash_variant": trash_type,
+				"trash_type": trash_type,
+				"trash_value": trash_value,
+			}
+			WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
+	# Remove the physics body.
+	body.queue_free()
+
+
+## Copy the correct collision shapes from the per-variant trash scene
+## into the RigidBody3D.
+func _copy_trash_collision_shapes(body: RigidBody3D, trash_type: String) -> void:
+	# For empty_box trash, use a simple box shape.
+	if trash_type == "empty_box":
+		var col := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(0.2, 0.2, 0.2)
+		col.shape = shape
+		body.add_child(col)
 		return
-	# Spawn the per-variant trash scene.
+	# For other trash types, load the per-variant scene and copy its
+	# CollisionShape3D children (already at correct transforms relative
+	# to the root Area3D).
 	var scene_path: String = _TRASH_VARIANT_SCENES.get(trash_type, "")
 	if scene_path == "":
+		var col := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(0.15, 0.15, 0.15)
+		col.shape = shape
+		body.add_child(col)
 		return
-	var state2: Dictionary = {
-		"trash_variant": trash_type,
-		"trash_type": trash_type,
-		"trash_value": trash_value,
-	}
-	WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
+	var trash_scene := load(scene_path) as PackedScene
+	if trash_scene == null:
+		var col2 := CollisionShape3D.new()
+		var shape2 := BoxShape3D.new()
+		shape2.size = Vector3(0.15, 0.15, 0.15)
+		col2.shape = shape2
+		body.add_child(col2)
+		return
+	var instance := trash_scene.instantiate()
+	for child in instance.get_children():
+		if child is CollisionShape3D:
+			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
+			body.add_child(dup)
+	instance.queue_free()
