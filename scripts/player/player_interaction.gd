@@ -832,7 +832,7 @@ func _do_throw(charge: float) -> void:
 	var landed := false
 	body.sleeping_state_changed.connect(
 		func():
-			if landed or not body.sleeping:
+			if landed or not is_instance_valid(body) or not body.sleeping:
 				return
 			landed = true
 			_freeze_and_spawn_trash(body, trash_type, trash_value),

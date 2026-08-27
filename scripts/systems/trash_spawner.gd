@@ -122,7 +122,7 @@ func _drop_trash_with_physics(scene_path: String, variant: String, drop_pos: Vec
 	var landed := false
 	body.sleeping_state_changed.connect(
 		func():
-			if landed or not body.sleeping:
+			if landed or not is_instance_valid(body) or not body.sleeping:
 				return
 			landed = true
 			_finalize_drop(body, scene_path, variant),
