@@ -3,6 +3,17 @@ extends Node
 
 const FRUIT_TYPES: Array[String] = ["lemon", "strawberry", "blueberry", "peach", "watermelon"]
 
+## Game mode enum. Stored in save data and read by the lobby to determine
+## how many stands to show and how players are assigned.
+enum GameMode {
+	SOLO,
+	COOP,
+	VERSUS,
+}
+
+## The current game mode. Set when creating/loading a save.
+var game_mode: GameMode = GameMode.SOLO
+
 var money: float
 var popularity: float
 var temperature: float

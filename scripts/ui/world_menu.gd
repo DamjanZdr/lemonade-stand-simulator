@@ -11,7 +11,7 @@ signal fullscreen_toggled(enabled: bool)
 signal vsync_toggled(enabled: bool)
 signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
-signal new_stand_requested(stand_name: String)
+signal new_stand_requested(stand_name: String, game_mode: int)
 signal load_stand_requested(slot_name: String)
 
 const HOVER_POP: float = 1.12
@@ -647,12 +647,56 @@ func _on_saves_back() -> void:
 
 
 func _on_new_stand_pressed() -> void:
-	# Inline name entry: hide the New Stand button, show a LineEdit +
-	# Create button in its place.
+	# Inline creation panel: mode selection + name entry + Create button.
 	_new_stand_button.visible = false
-	var row := HBoxContainer.new()
-	row.name = "InlineNameEntry"
-	row.add_theme_constant_override("separation", 12)
+	var panel := VBoxContainer.new()
+	panel.name = "InlineNameEntry"
+	panel.add_theme_constant_override("separation", 10)
+
+	# --- Mode selection ---
+	var mode_label := Label.new()
+	mode_label.text = "Game Mode"
+	mode_label.add_theme_font_size_override("font_size", 18)
+	mode_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
+	panel.add_child(mode_label)
+
+	var mode_row := HBoxContainer.new()
+	mode_row.name = "ModeRow"
+	mode_row.add_theme_constant_override("separation", 8)
+	var selected_mode: int = GameState.GameMode.SOLO
+	var mode_buttons: Dictionary = { } # mode -> Button
+	for mode_info in [
+		{ "mode": GameState.GameMode.SOLO, "text": "Solo" },
+		{ "mode": GameState.GameMode.COOP, "text": "Co-op" },
+		{ "mode": GameState.GameMode.VERSUS, "text": "Versus" },
+	]:
+		var mb := Button.new()
+		mb.text = mode_info["text"]
+		mb.toggle_mode = true
+		mb.add_theme_font_size_override("font_size", 18)
+		mb.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+		mb.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+		mb.add_theme_color_override("font_pressed_color", Color(1, 0.95, 0.7, 1))
+		_make_flat_button(mb)
+		_add_drop_shadow(mb)
+		_setup_hover_effect(mb)
+		var mode_val: int = mode_info["mode"]
+		mb.pressed.connect(
+			func():
+				selected_mode = mode_val
+				for key in mode_buttons:
+					(mode_buttons[key] as Button).button_pressed = (key == mode_val),
+		)
+		mode_buttons[mode_val] = mb
+		mode_row.add_child(mb)
+	# Default: Solo selected.
+	(mode_buttons[GameState.GameMode.SOLO] as Button).button_pressed = true
+	panel.add_child(mode_row)
+
+	# --- Name entry ---
+	var name_row := HBoxContainer.new()
+	name_row.name = "NameRow"
+	name_row.add_theme_constant_override("separation", 12)
 	var field := LineEdit.new()
 	field.name = "NameField"
 	field.custom_minimum_size = Vector2(SAVE_BOX_WIDTH, 0)
@@ -695,14 +739,14 @@ func _on_new_stand_pressed() -> void:
 	field.add_theme_color_override("caret_color", Color(1, 1, 1, 1.0))
 	field.text_submitted.connect(
 		func(text):
-			_confirm_inline_name(row, field),
+			_confirm_inline_name(panel, field, selected_mode),
 	)
 	field.focus_exited.connect(
 		func():
 			# Cancel if focus lost and field is empty; otherwise keep it
 			# so the Create button can still be clicked.
 			if field.text.strip_edges() == "":
-				_cancel_inline_name(row),
+				_cancel_inline_name(panel),
 	)
 	var create_btn := Button.new()
 	create_btn.name = "CreateBtn"
@@ -714,30 +758,31 @@ func _on_new_stand_pressed() -> void:
 	_add_drop_shadow(create_btn)
 	create_btn.pressed.connect(
 		func():
-			_confirm_inline_name(row, field),
+			_confirm_inline_name(panel, field, selected_mode),
 	)
-	row.add_child(field)
-	row.add_child(create_btn)
-	# Insert the inline row where the New Stand button was (before Spacer2).
+	name_row.add_child(field)
+	name_row.add_child(create_btn)
+	panel.add_child(name_row)
+	# Insert the inline panel where the New Stand button was.
 	var idx := _new_stand_button.get_index()
-	_saves_list.add_child(row)
-	_saves_list.move_child(row, idx)
+	_saves_list.add_child(panel)
+	_saves_list.move_child(panel, idx)
 	field.grab_focus()
 
 
-func _confirm_inline_name(row: HBoxContainer, field: LineEdit) -> void:
+func _confirm_inline_name(panel: VBoxContainer, field: LineEdit, mode: int) -> void:
 	var name := field.text.strip_edges()
 	if name == "":
-		_cancel_inline_name(row)
+		_cancel_inline_name(panel)
 		return
-	row.queue_free()
+	panel.queue_free()
 	_new_stand_button.visible = true
 	set_busy("Creating '%s'..." % name)
-	new_stand_requested.emit(name)
+	new_stand_requested.emit(name, mode)
 
 
-func _cancel_inline_name(row: HBoxContainer) -> void:
-	row.queue_free()
+func _cancel_inline_name(panel: VBoxContainer) -> void:
+	panel.queue_free()
 	_new_stand_button.visible = true
 
 
@@ -752,6 +797,19 @@ func _name_weight(s: String) -> float:
 	return weight
 
 
+## Human-readable label for a GameMode value.
+func _mode_label(mode: int) -> String:
+	match mode:
+		GameState.GameMode.SOLO:
+			return "Solo"
+		GameState.GameMode.COOP:
+			return "Co-op"
+		GameState.GameMode.VERSUS:
+			return "Versus"
+		_:
+			return "Solo"
+
+
 ## Build the saves list dynamically from SaveManager.list_saves().
 func _refresh_saves() -> void:
 	_saves_data = SaveManager.list_saves()
@@ -762,6 +820,7 @@ func _refresh_saves() -> void:
 	for save in _saves_data:
 		var slot_name: String = save.get("slot", "")
 		var stand_name: String = save.get("stand_name", slot_name)
+		var game_mode: int = save.get("game_mode", GameState.GameMode.SOLO)
 		var day: int = save.get("day", 1)
 		var money: float = save.get("money", 0.0)
 		var saved_at: float = save.get("saved_at", 0.0)
@@ -774,7 +833,7 @@ func _refresh_saves() -> void:
 				dict["hour"],
 				dict["minute"],
 			]
-		var row := _build_save_row(slot_name, stand_name, day, money, date_text)
+		var row := _build_save_row(slot_name, stand_name, game_mode, day, money, date_text)
 		_slots_container.add_child(row)
 
 
@@ -785,6 +844,7 @@ const SAVE_BOX_WIDTH: float = 360.0
 func _build_save_row(
 	slot_name: String,
 	stand_name: String,
+	game_mode: int,
 	day: int,
 	money: float,
 	date_text: String,
@@ -822,7 +882,8 @@ func _build_save_row(
 	var info := Label.new()
 	info.add_theme_font_size_override("font_size", 14)
 	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	info.text = "Day %d  |  $%.2f  |  last played %s" % [day, money, date_text]
+	var mode_text := _mode_label(game_mode)
+	info.text = "%s  |  Day %d  |  $%.2f  |  %s" % [mode_text, day, money, date_text]
 	row.add_child(info)
 	# Hover: pop the inner content (row) + brighten border. Panel outline stays put.
 	panel.mouse_entered.connect(

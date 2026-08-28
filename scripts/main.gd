@@ -344,6 +344,7 @@ func _on_menu_play() -> void:
 		var slot: String = latest.get("slot", "")
 		if slot != "":
 			SaveManager.load_existing_game(slot)
+			LobbyManager.game_mode = GameState.game_mode
 			NetworkManager.host_game()
 			_world_menu.hide_menu()
 			return
@@ -352,8 +353,9 @@ func _on_menu_play() -> void:
 
 
 ## New stand created from the saves panel name dialog.
-func _on_menu_new_stand(stand_name: String) -> void:
-	SaveManager.start_new_game(stand_name)
+func _on_menu_new_stand(stand_name: String, game_mode: int) -> void:
+	SaveManager.start_new_game(stand_name, game_mode)
+	LobbyManager.game_mode = game_mode
 	_start_stand_transition(stand_name, stand_name)
 
 
@@ -366,6 +368,7 @@ func _on_menu_load_stand(slot_name: String) -> void:
 			stand_name = s.get("stand_name", slot_name)
 			break
 	SaveManager.load_existing_game(slot_name)
+	LobbyManager.game_mode = GameState.game_mode
 	_start_stand_transition(slot_name, stand_name)
 
 

@@ -165,6 +165,8 @@ func list_saves() -> Array:
 					{
 						"slot": slot_name,
 						"stand_name": data.get("stand_name", slot_name),
+						"game_mode": data.get("game_mode", GameState.GameMode.SOLO)
+						as GameState.GameMode,
 						"day": data.get("day_number", 1),
 						"money": data.get("money", 0.0),
 						"saved_at": data.get("saved_at", 0.0),
@@ -182,14 +184,16 @@ func list_saves() -> Array:
 
 ## Start a new game with a fresh save slot. The stand_name becomes both
 ## the save file name and the text on the stand sign in-game.
-func start_new_game(stand_name: String = "") -> void:
+## game_mode determines the lobby layout (solo/coop/versus).
+func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode.SOLO) -> void:
 	if stand_name == "":
 		stand_name = "Lemonade Stand"
 	# Use the stand name as the slot (file) name.
 	current_slot = stand_name
 	auto_save_enabled = true
-	# Store the stand name so the sign can be set when loaded.
+	# Store the stand name and mode so they're available when loaded.
 	GameState.stand_name = stand_name
+	GameState.game_mode = game_mode as GameState.GameMode
 	# Reset GameState to defaults
 	GameState.money = Balancing.STARTING_MONEY
 	GameState.popularity = 0.1
@@ -258,6 +262,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	_pending_container_respawn = data.get("placed_containers", [])
 	_pending_supply_box_respawn = data.get("supply_boxes", [])
 	GameState.stand_name = data.get("stand_name", current_slot)
+	GameState.game_mode = data.get("game_mode", GameState.GameMode.SOLO) as GameState.GameMode
 	GameState.money = data.get("money", Balancing.STARTING_MONEY)
 	GameState.popularity = data.get("popularity", 0.1)
 	GameState.temperature = data.get("temperature", 25.0)
@@ -320,6 +325,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 func _build_save_dict() -> Dictionary:
 	return {
 		"stand_name": GameState.stand_name,
+		"game_mode": GameState.game_mode,
 		"money": GameState.money,
 		"popularity": GameState.popularity,
 		"temperature": GameState.temperature,

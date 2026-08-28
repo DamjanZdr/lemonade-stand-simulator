@@ -23,6 +23,40 @@ var roster: Dictionary = { }
 ## lobby UI but are auto-assigned a free stand, then spawned when they ready up.
 var game_started: bool = false
 
+## The game mode for this lobby (Solo/Coop/Versus). Set by the host when
+## creating/loading a save. Determines how many stands are available and
+## how players are assigned.
+var game_mode: int = GameState.GameMode.SOLO
+
+## Maximum total players across all stands.
+const MAX_PLAYERS: int = 4
+
+
+## Returns the number of stands for the current game mode.
+func stand_count() -> int:
+	match game_mode:
+		GameState.GameMode.SOLO:
+			return 1
+		GameState.GameMode.COOP:
+			return 1
+		GameState.GameMode.VERSUS:
+			return 2
+		_:
+			return 1
+
+
+## Returns the maximum players per stand for the current game mode.
+func max_players_per_stand() -> int:
+	match game_mode:
+		GameState.GameMode.SOLO:
+			return 1
+		GameState.GameMode.COOP:
+			return MAX_PLAYERS
+		GameState.GameMode.VERSUS:
+			return MAX_PLAYERS / 2 # 2 per stand (2v2)
+		_:
+			return 1
+
 
 func _ready() -> void:
 	NetworkManager.lobby_created.connect(_on_lobby_created)
@@ -64,6 +98,8 @@ func _local_display_name() -> String:
 ## Reset roster state for a fresh lobby (call before hosting/joining again).
 func reset() -> void:
 	roster.clear()
+	game_started = false
+	game_mode = GameState.GameMode.SOLO
 
 
 ## Re-emits the current roster so a newly-loaded scene (e.g. the Lobby)
@@ -98,6 +134,8 @@ func _register(peer_id: int, player_name: String) -> void:
 	# Sync the game-started flag so the new client knows the lobby is in late-join mode.
 	if game_started:
 		_sync_game_started.rpc_id(peer_id, game_started)
+	# Sync the game mode so the client's lobby UI renders correctly.
+	_sync_game_mode.rpc_id(peer_id, game_mode)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -119,7 +157,8 @@ func _first_free_stand() -> int:
 		var idx: int = roster[id].get("stand_index", -1)
 		if idx >= 0:
 			used.append(idx)
-	for i in [0, 1]:
+	var count := stand_count()
+	for i in range(count):
 		if not used.has(i):
 			return i
 	return -1
@@ -147,6 +186,12 @@ func mark_game_started() -> void:
 @rpc("authority", "call_local", "reliable")
 func _sync_game_started(is_started: bool) -> void:
 	game_started = is_started
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_game_mode(mode: int) -> void:
+	game_mode = mode
+	roster_changed.emit() # trigger lobby UI to re-apply mode layout
 
 
 @rpc("authority", "call_local", "reliable")

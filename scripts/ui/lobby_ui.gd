@@ -249,6 +249,42 @@ func _apply_menu_style() -> void:
 	_version_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.3))
 
 
+## Adapt the lobby layout based on the game mode.
+## Solo: hide stand 2, switch, invite. Single stand only.
+## Co-op: hide stand 2, switch. Single stand, invite friends.
+## Versus: show both stands, switch, invite.
+func _apply_mode_layout() -> void:
+	var mode: int = LobbyManager.game_mode
+	var is_versus := mode == GameState.GameMode.VERSUS
+	var is_solo := mode == GameState.GameMode.SOLO
+	# Stand 2 column + header + separator.
+	var stand2_col: VBoxContainer = $LeftContainer/LobbyPanel/VBox/PlayersRow/Stand2Col
+	var stand2_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand2Header
+	var stand_sep: ColorRect = $LeftContainer/LobbyPanel/VBox/PlayersRow/StandSep
+	stand2_col.visible = is_versus
+	stand2_header.visible = is_versus
+	stand_sep.visible = is_versus
+	# Switch button only makes sense in Versus.
+	_switch_button.visible = is_versus
+	# Invite button hidden in Solo (no friends needed).
+	_invite_button.visible = not is_solo
+	# Stand 1 header: in Solo/Co-op, just say "Players" instead of "Stand 1".
+	var stand1_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
+	if is_versus:
+		stand1_header.text = "Stand 1"
+	else:
+		stand1_header.text = "Players"
+	# Update the lobby title to show the mode.
+	var lobby_title: Label = $LeftContainer/LobbyPanel/VBox/TitleLabel
+	var mode_name := "Solo"
+	match mode:
+		GameState.GameMode.COOP:
+			mode_name = "Co-op"
+		GameState.GameMode.VERSUS:
+			mode_name = "Versus"
+	lobby_title.text = "%s — %s" % [GameState.stand_name, mode_name]
+
+
 ## Recursively style all labels in a node tree: white text.
 func _style_labels_recursive(node: Node) -> void:
 	if node is Label:
@@ -340,6 +376,7 @@ func _get_node(path: String) -> Node:
 func _ready() -> void:
 	_color_manager = get_tree().get_first_node_in_group("color_manager")
 	_apply_menu_style()
+	_apply_mode_layout()
 	_update_room_display()
 	_eye_button.pressed.connect(_on_eye_pressed)
 	_copy_button.pressed.connect(_on_copy_pressed)
@@ -458,6 +495,8 @@ func _go_to_main_menu() -> void:
 
 
 func _refresh() -> void:
+	# Re-apply mode layout in case the mode was synced from the host.
+	_apply_mode_layout()
 	for child in _stand1_list.get_children():
 		child.queue_free()
 	for child in _stand2_list.get_children():

@@ -93,7 +93,7 @@ func _on_slot_pressed(slot_name: String) -> void:
 		SaveManager.load_existing_game(slot_name)
 	else:
 		_set_busy("Starting new game...")
-		SaveManager.start_new_game(slot_name)
+		SaveManager.start_new_game(slot_name, GameState.GameMode.SOLO)
 	NetworkManager.host_game()
 
 
