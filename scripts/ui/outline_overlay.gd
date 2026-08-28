@@ -86,14 +86,10 @@ func _on_viewport_size_changed() -> void:
 func _update_shader_width() -> void:
 	if _display == null or _display.material == null:
 		return
-	# Scale outline width proportionally to the SubViewport size so the
-	# visual thickness stays consistent regardless of window resolution.
-	var base := _get_base_viewport_size()
-	var scale_x := float(_subvp.size.x) / float(base.x) if base.x > 0 else 1.0
-	(_display.material as ShaderMaterial).set_shader_parameter(
-		"outline_width",
-		_target_width * scale_x,
-	)
+	# Use a fixed outline width in pixels — don't scale with resolution.
+	# The shader divides this by the texture size to get UV-space step,
+	# so a constant pixel width looks the same on any screen size.
+	(_display.material as ShaderMaterial).set_shader_parameter("outline_width", _target_width)
 
 
 func _on_set_color(color: Color) -> void:
