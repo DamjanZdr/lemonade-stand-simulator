@@ -709,7 +709,7 @@ func _show_mode_select() -> void:
 	var mode_descs: Dictionary = {
 		GameState.GameMode.SOLO: "One player runs their own lemonade stand.",
 		GameState.GameMode.COOP: "Up to 4 players share a stand and work together.",
-		GameState.GameMode.VERSUS: "2 teams of up to 2 players compete on separate stands.",
+		GameState.GameMode.VERSUS: "Run 2 stands against each other with up to 4 friends.",
 	}
 	var mode_names: Dictionary = {
 		GameState.GameMode.SOLO: "Solo",
@@ -724,8 +724,9 @@ func _show_mode_select() -> void:
 
 	# Description label (declared before the loop so card click lambdas can reference it).
 	var desc_label := Label.new()
-	desc_label.add_theme_font_size_override("font_size", 14)
-	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	desc_label.add_theme_font_size_override("font_size", 18)
+	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_label.text = mode_descs[GameState.GameMode.SOLO]
 
 	for mode_info in [
@@ -764,13 +765,26 @@ func _show_mode_select() -> void:
 		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_vbox.add_child(name_lbl)
 
-		# Click handling.
+		# Click handling — pop down then back up + select.
 		card.gui_input.connect(
 			func(event):
 				if (
 					event is InputEventMouseButton and event.pressed
 					and event.button_index == MOUSE_BUTTON_LEFT
 				):
+					AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
+					if card.has_meta("_ht") and card.get_meta("_ht") is Tween:
+						(card.get_meta("_ht") as Tween).kill()
+					card.pivot_offset = card.size / 2.0
+					# Squash down, then pop back up.
+					var tw := create_tween()
+					card.set_meta("_ht", tw)
+					tw.tween_property(card, "scale", Vector2.ONE * 0.92, 0.06) \
+							.set_ease(Tween.EASE_IN)
+					tw.tween_property(card, "scale", Vector2.ONE * HOVER_POP, 0.12) \
+							.set_ease(Tween.EASE_OUT) \
+							.set_trans(Tween.TRANS_BACK)
+					# Update selection after the pop starts.
 					selected_mode = mode_val
 					desc_label.text = mode_descs[mode_val]
 					_update_mode_card_selection(mode_cards, mode_styles, mode_val),
@@ -812,14 +826,14 @@ func _show_mode_select() -> void:
 	# Add the description label to the vbox (declared earlier, before the loop).
 	vbox.add_child(desc_label)
 
-	# Buttons: Cancel + Next (left-aligned, matching saves list).
-	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 12)
-	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	# Buttons: Cancel + Next (full-width, stacked, matching back button style).
+	var btn_col := VBoxContainer.new()
+	btn_col.add_theme_constant_override("separation", 8)
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(120, 40)
-	cancel_btn.add_theme_font_size_override("font_size", 22)
+	cancel_btn.custom_minimum_size = Vector2(0, 48)
+	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel_btn.add_theme_font_size_override("font_size", 38)
 	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(cancel_btn)
@@ -832,8 +846,9 @@ func _show_mode_select() -> void:
 	)
 	var confirm_btn := Button.new()
 	confirm_btn.text = "Next"
-	confirm_btn.custom_minimum_size = Vector2(120, 40)
-	confirm_btn.add_theme_font_size_override("font_size", 22)
+	confirm_btn.custom_minimum_size = Vector2(0, 48)
+	confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	confirm_btn.add_theme_font_size_override("font_size", 38)
 	confirm_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
 	confirm_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(confirm_btn)
@@ -844,9 +859,9 @@ func _show_mode_select() -> void:
 			vbox.queue_free()
 			_show_name_entry(selected_mode),
 	)
-	btn_row.add_child(cancel_btn)
-	btn_row.add_child(confirm_btn)
-	vbox.add_child(btn_row)
+	btn_col.add_child(cancel_btn)
+	btn_col.add_child(confirm_btn)
+	vbox.add_child(btn_col)
 
 	# Default: Solo selected.
 	_update_mode_card_selection(mode_cards, mode_styles, GameState.GameMode.SOLO)
@@ -959,14 +974,14 @@ func _show_name_entry(selected_mode: int) -> void:
 	)
 	vbox.add_child(field)
 
-	# Buttons: Cancel + Create (left-aligned, matching saves list).
-	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 12)
-	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	# Buttons: Cancel + Create (full-width, stacked, matching back button style).
+	var btn_col := VBoxContainer.new()
+	btn_col.add_theme_constant_override("separation", 8)
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(120, 40)
-	cancel_btn.add_theme_font_size_override("font_size", 22)
+	cancel_btn.custom_minimum_size = Vector2(0, 48)
+	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel_btn.add_theme_font_size_override("font_size", 38)
 	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(cancel_btn)
@@ -980,8 +995,9 @@ func _show_name_entry(selected_mode: int) -> void:
 	var create_btn := Button.new()
 	create_btn.name = "CreateBtn"
 	create_btn.text = "Create"
-	create_btn.custom_minimum_size = Vector2(120, 40)
-	create_btn.add_theme_font_size_override("font_size", 22)
+	create_btn.custom_minimum_size = Vector2(0, 48)
+	create_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	create_btn.add_theme_font_size_override("font_size", 38)
 	create_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
 	create_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(create_btn)
@@ -991,9 +1007,9 @@ func _show_name_entry(selected_mode: int) -> void:
 		func():
 			_confirm_inline_name(vbox, field, selected_mode),
 	)
-	btn_row.add_child(cancel_btn)
-	btn_row.add_child(create_btn)
-	vbox.add_child(btn_row)
+	btn_col.add_child(cancel_btn)
+	btn_col.add_child(create_btn)
+	vbox.add_child(btn_col)
 
 	var idx := _new_stand_button.get_index()
 	_saves_list.add_child(vbox)
