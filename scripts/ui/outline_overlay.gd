@@ -28,10 +28,14 @@ func _get_base_viewport_size() -> Vector2i:
 
 
 func _get_actual_viewport_size() -> Vector2i:
-	# Use the actual viewport rendering size so the SubViewport's aspect
-	# ratio matches the main camera's viewport. This prevents the outline
-	# silhouette from being stretched relative to the main view when the
-	# window has a different aspect ratio than the project base (1280x720).
+	# Use the main viewport's actual rendering rect, not the window size.
+	# With canvas_items stretch mode, the viewport size can differ from
+	# the window size, causing the outline silhouette to be scaled wrong.
+	var vp := get_viewport()
+	if vp != null:
+		var rect := vp.get_visible_rect()
+		if rect.size.x > 0 and rect.size.y > 0:
+			return rect.size
 	var win := get_window()
 	if win != null:
 		var sz := win.get_size()
