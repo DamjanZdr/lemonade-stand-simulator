@@ -1585,8 +1585,9 @@ func _on_esc_back_to_menu() -> void:
 			# Reset lighting to main menu defaults.
 			_enhanced_lighting = true
 			_enable_enhanced_lighting()
-			if sun:
-				sun._update_for_time(0.0)
+			var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
+			if sun_node and sun_node.has_method("_update_for_time"):
+				sun_node._update_for_time(0.0)
 			# Show the main menu.
 			if _world_menu:
 				_world_menu.show_menu()
