@@ -110,6 +110,7 @@ const CAMERA_TWEEN_TIME: float = 1.0
 ## the whip and fades at the settle point.
 var _transition_active: bool = false
 var _transition_loaded: bool = false
+var _world_setup_done: bool = false
 var _transition_tween: Tween = null
 var _transition_blur_tween: Tween = null
 const TRANSITION_WHIP_TIME: float = 0.5
@@ -472,9 +473,11 @@ func _do_transition_whip() -> void:
 	)
 
 
-## Finish the transition: restore the menu, stop blur.
+## Finish the transition: restore the menu, stop blur, and run world setup
+## (day cycle, containers, spawners, etc.) so it's ready before the lobby.
 func _finish_transition() -> void:
 	_transition_active = false
+	_setup_world_systems()
 	print("[Transition] FINISH, final pos=%s" % main_menu_camera.global_position)
 	_tween_blur(0.0, 0.2)
 	if _transition_overlay:
@@ -984,41 +987,29 @@ func _on_late_join_denied(reason: String) -> void:
 	dialog.popup_centered()
 
 
-## Starts all game systems. This is what _ready() used to do directly,
-## but now it's deferred until the lobby phase ends.
-func _start_game_phase() -> void:
+## Sets up world systems (stand signs, spawners, delivery, day cycle,
+## containers, etc.) during the main menu stand transition so they're
+## ready before the player enters the lobby. Called from _finish_transition().
+func _setup_world_systems() -> void:
+	if _world_setup_done:
+		return
+	_world_setup_done = true
 	# Update stand signs with the loaded stand name.
 	if stand_unit:
 		stand_unit.set_stand_name(GameState.stand_name)
 	if stand_unit2:
 		stand_unit2.set_stand_name(GameState.stand_name)
-	# Sync stand name to all clients so they see the host's save name.
-	if multiplayer.is_server():
-		_sync_stand_name.rpc(GameState.stand_name)
-	# QueueMarkerActive is the spot for the customer currently at the stand.
-	# QueueMarker1 is the first waiting spot (second customer in line).
-	# QueueMarker2 sets the direction and spacing for the rest of the waiting line.
-	# Move/rotate these markers in the editor to reorient the whole queue.
-	# Up to 299 waiting customer slots are generated automatically from that direction.
-	# (Now sourced from StandUnit so multiple stands can each have their own queue.)
+	# Queue markers / spawner wiring.
 	if stand_unit:
 		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
 		spawner.set_stand(stand_unit)
 	if stand_unit2:
 		spawner2.set_queue_spots(stand_unit2.get_queue_spots(), stand_unit2.get_queue_step())
 		spawner2.set_stand(stand_unit2)
-
-	# Pedestrian spawner reads its PedestrianPath children automatically.
-	# No wiring needed here — add paths in the editor as children of PedestrianSpawner.
-	# Registered with its StandUnit so pedestrians are routed here weighted
-	# by this stand's actual popularity once other stands are also
-	# registered (see register_stand()); with only one stand registered,
-	# every pedestrian who wants to join ends up here regardless of weight.
 	ped_spawner.register_stand(spawner, stand_unit)
 	if stand_unit2:
 		ped_spawner.register_stand(spawner2, stand_unit2)
-
-	# Wire delivery grid (now sourced from StandUnit)
+	# Wire delivery grid.
 	if stand_unit:
 		delivery.set_stand_name(stand_unit.name)
 		var dgrid := stand_unit.get_delivery_grid()
@@ -1034,41 +1025,42 @@ func _start_game_phase() -> void:
 			delivery2.set_delivery_zone(stand_unit2.get_delivery_marker_position())
 		else:
 			delivery2.set_grid(dgrid2)
-
-	# Find the CashPickup placed in the stand scene — use its position, then hide it
+	# Cash pickup position.
 	var cash_template: Node3D = world.find_child("CashPickup", true, false) as Node3D
 	if cash_template:
 		_cash_drop_pos = cash_template.global_position
 		cash_template.visible = false
-		# The Physics node is an Area3D (not StaticBody3D) — disable its
-		# collision_layer so raycasts don't hit the invisible template.
 		var phys: Area3D = cash_template.get_node_or_null("Physics") as Area3D
 		if phys:
 			phys.collision_layer = 0
-
-	# Pitcher is placed in world.tscn — its _ready() captures its own position.
-	EventBus.cash_dropped.connect(_on_cash_dropped)
-	EventBus.day_timer_updated.connect(_on_day_timer_updated)
-	EventBus.debug_set_rain.connect(_on_debug_set_rain)
-
-	# Players are now spawned dynamically per connected peer (host + anyone
-	# who joins) instead of being a static scene node. The screen-space
-	# outline overlay, HUD stand assignment, etc. that depend on "the"
-	# local player now happen in _on_local_player_ready() once our own
-	# player actually exists, instead of here.
-	# _setup_networking() is called during _ready() so the spawner is
-	# ready before any spawn requests arrive. Actual spawning happens now.
-	_spawn_all_players()
-	WorldSync.setup(world_objects, world_spawner)
-
-	# Add the evening summary overlay
-	add_child(DAY_SUMMARY_SCENE.instantiate())
-
-	# Start the day cycle — morning setup then immediately begin the day
+	# Event wiring.
+	if not EventBus.cash_dropped.is_connected(_on_cash_dropped):
+		EventBus.cash_dropped.connect(_on_cash_dropped)
+	if not EventBus.day_timer_updated.is_connected(_on_day_timer_updated):
+		EventBus.day_timer_updated.connect(_on_day_timer_updated)
+	if not EventBus.debug_set_rain.is_connected(_on_debug_set_rain):
+		EventBus.debug_set_rain.connect(_on_debug_set_rain)
+	# Day cycle + containers.
 	DayManager.start_morning()
 	DayManager.start_day()
 	SaveManager.capture_default_containers()
 	SaveManager.respawn_placed_containers()
+	# Evening summary overlay.
+	add_child(DAY_SUMMARY_SCENE.instantiate())
+
+
+## Starts the multiplayer game phase: spawns players and sets up network
+## sync. World systems are already set up from the stand transition.
+func _start_game_phase() -> void:
+	# If world systems weren't set up during the stand transition
+	# (e.g. late join, direct testing), do it now.
+	_setup_world_systems()
+	# Sync stand name to all clients so they see the host's save name.
+	if multiplayer.is_server():
+		_sync_stand_name.rpc(GameState.stand_name)
+	# Spawn players and set up network sync.
+	_spawn_all_players()
+	WorldSync.setup(world_objects, world_spawner)
 	# Push initial stand state to clients (money, prices, etc.)
 	if WorldSync.is_host():
 		call_deferred("_push_initial_stand_state")
