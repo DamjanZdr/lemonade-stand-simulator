@@ -820,9 +820,13 @@ func _tween_camera_to_player(is_late_join: bool = false) -> void:
 			diff += TAU
 		var start_pitch: float = start_euler.x
 		var end_pitch: float = end_euler.x
+		var start_fov: float = lobby_camera.fov
+		var end_fov: float = player_cam.fov
 		var tw := create_tween()
 		tw.set_parallel(true)
 		tw.tween_property(lobby_camera, "global_position", target_transform.origin, tween_time) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw.tween_property(lobby_camera, "fov", end_fov, tween_time) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tw \
 				.tween_method(
