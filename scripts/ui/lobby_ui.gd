@@ -643,6 +643,8 @@ func _build_avatar_options_row() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.name = "AvatarOptionsRow"
 	vbox.add_theme_constant_override("separation", 8)
+	# Shrink to content width and center horizontally in the panel.
+	vbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	options_col.add_child(vbox)
 	# Move it above the ColumnsRow (which is hidden) and below GenderRow.
 	options_col.move_child(vbox, options_col.get_child_count() - 2)
