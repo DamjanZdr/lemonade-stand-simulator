@@ -185,10 +185,9 @@ func _apply_menu_style() -> void:
 			btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 			btn.add_theme_font_size_override("font_size", 22)
 
-	# Ready button: no hover color change, just pop + shadow.
+	# Ready button: no hover color change at all, just flat + shadow.
 	_make_flat_button(_ready_button)
 	_add_drop_shadow(_ready_button)
-	_setup_hover_effect(_ready_button)
 	_ready_button.add_theme_font_size_override("font_size", 28)
 	_start_button.add_theme_font_size_override("font_size", 28)
 	_back_button.add_theme_font_size_override("font_size", 24)
@@ -275,6 +274,7 @@ func _apply_mode_layout() -> void:
 func _update_lobby_title(mode: int) -> void:
 	for child in _customize_title.get_children():
 		child.queue_free()
+	_customize_title.alignment = BoxContainer.ALIGNMENT_CENTER
 	var name_lbl := Label.new()
 	name_lbl.text = GameState.stand_name
 	name_lbl.add_theme_font_size_override("font_size", 28)
@@ -283,8 +283,13 @@ func _update_lobby_title(mode: int) -> void:
 	_customize_title.add_child(name_lbl)
 	var icon := _build_mode_icon(mode)
 	if icon:
-		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		_customize_title.add_child(icon)
+		# Wrap in a VBoxContainer that vertically centers the icon
+		# so it aligns with the text baseline.
+		var wrapper := VBoxContainer.new()
+		wrapper.alignment = BoxContainer.ALIGNMENT_CENTER
+		wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		wrapper.add_child(icon)
+		_customize_title.add_child(wrapper)
 
 
 ## Build a silhouette icon for the given game mode.
