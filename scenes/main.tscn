@@ -137,10 +137,10 @@ transform = Transform3D(0.9659258, 0, 0.2588191, 0, 1, 0, -0.2588191, 0, 0.96592
 [node name="LobbyPlayerModels" type="Node3D" parent="." unique_id=-1589934590]
 
 [node name="PlayerModel1" parent="LobbyPlayerModels" unique_id=-1589934589 instance=ExtResource("69_pvis")]
-transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, -2.6603372, 0.9346231, -34.91608)
+transform = Transform3D(-0.063, 0, 5.507635e-09, 0, 0.063, 0, -5.507635e-09, 0, -0.063, -5.682295, 0.935688, 11.632187)
 
 [node name="PlayerModel2" parent="LobbyPlayerModels" unique_id=-1589934588 instance=ExtResource("69_pvis")]
-transform = Transform3D(-0.063, 0, 5.507635e-09, 0, 0.063, 0, -5.507635e-09, 0, -0.063, -5.682295, 0.935688, 11.632187)
+transform = Transform3D(0.063, 0, 0, 0, 0.063, 0, 0, 0, 0.063, -2.6603372, 0.9346231, -34.91608)
 
 [node name="LobbyUI" parent="." unique_id=-1589934587 instance=ExtResource("68_lobbyui")]
 visible = false
