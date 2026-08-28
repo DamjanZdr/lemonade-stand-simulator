@@ -123,6 +123,13 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Lobby"
 
+[node name="TabSeparator" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol/TabRow" unique_id=1667017140]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.4)
+theme_override_font_sizes/font_size = 18
+text = "|"
+horizontal_alignment = 1
+
 [node name="CustomizeTab" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/TabRow" unique_id=1667017138]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
@@ -697,18 +704,18 @@ custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
 color = Color(0.35, 0.6, 0.9, 0.25)
 
-[node name="BottomRow" type="HBoxContainer" parent="LeftContainer/LobbyPanel/VBox" unique_id=1591330613]
+[node name="BottomRow" type="HBoxContainer" parent="LeftContainer" unique_id=1591330613]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="BackButton" type="Button" parent="LeftContainer/LobbyPanel/VBox/BottomRow" unique_id=1378795500]
+[node name="BackButton" type="Button" parent="LeftContainer/BottomRow" unique_id=1378795500]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Back"
 
-[node name="ReadyButton" type="Button" parent="LeftContainer/LobbyPanel/VBox/BottomRow" unique_id=1994469555]
+[node name="ReadyButton" type="Button" parent="LeftContainer/BottomRow" unique_id=1994469555]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -719,7 +726,7 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_ready")
 theme_override_styles/focus = SubResource("StyleBoxFlat_ready")
 text = "Ready Up"
 
-[node name="StartButton" type="Button" parent="LeftContainer/LobbyPanel/VBox/BottomRow" unique_id=1045027807]
+[node name="StartButton" type="Button" parent="LeftContainer/BottomRow" unique_id=1045027807]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 size_flags_horizontal = 3

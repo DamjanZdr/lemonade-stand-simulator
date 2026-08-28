@@ -17,9 +17,9 @@ const HOVER_POP: float = 1.12
 @onready var _stand2_list: VBoxContainer = (
 	$LeftContainer/LobbyPanel/VBox/PlayersRow/Stand2Col/Stand2List
 )
-@onready var _ready_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/ReadyButton
-@onready var _start_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/StartButton
-@onready var _back_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/BackButton
+@onready var _ready_button: Button = $LeftContainer/BottomRow/ReadyButton
+@onready var _start_button: Button = $LeftContainer/BottomRow/StartButton
+@onready var _back_button: Button = $LeftContainer/BottomRow/BackButton
 @onready var _version_label: Label = $VersionLabel
 @onready var _customize_panel: PanelContainer = $LeftContainer/CustomizePanel
 @onready var _lobby_panel: PanelContainer = $LeftContainer/LobbyPanel
@@ -35,18 +35,10 @@ const HOVER_POP: float = 1.12
 	$LeftContainer/CustomizePanel/OptionsCol/GenderRow/FemaleButton
 )
 @onready var _columns_row: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow
-@onready var _walls_color_name: Label = (
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow/WallsColorName
-)
-@onready var _roof_color_name: Label = (
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow/RoofColorName
-)
 
 # New single-line avatar controls (built dynamically).
 var _hair_name_lbl: Label = null
 var _eyebrow_name_lbl: Label = null
-var _walls_name_lbl: Label = null
-var _roof_name_lbl: Label = null
 var _head_slider: HSlider = null
 
 ## PlayerVisuals nodes in the 3D world. Customization applies to ALL of
@@ -335,7 +327,7 @@ func _setup_hover_effect(btn: Button) -> void:
 			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
 			if btn.has_meta("_hover_tween") and btn.get_meta("_hover_tween") is Tween:
 				(btn.get_meta("_hover_tween") as Tween).kill()
-			btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
+			btn.pivot_offset = Vector2(btn.size.x / 2.0, btn.size.y / 2.0)
 			var tw := create_tween()
 			btn.set_meta("_hover_tween", tw)
 			tw.set_parallel(true)
@@ -348,7 +340,7 @@ func _setup_hover_effect(btn: Button) -> void:
 		func():
 			if btn.has_meta("_hover_tween") and btn.get_meta("_hover_tween") is Tween:
 				(btn.get_meta("_hover_tween") as Tween).kill()
-			btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
+			btn.pivot_offset = Vector2(btn.size.x / 2.0, btn.size.y / 2.0)
 			var tw := create_tween()
 			btn.set_meta("_hover_tween", tw)
 			tw.set_parallel(true)
@@ -467,20 +459,20 @@ func _on_leave_pressed() -> void:
 	return_to_menu_requested.emit()
 
 
-## Switch to the Lobby tab — show room/players/ready, hide customization.
+## Switch to the Lobby tab — show room/players, hide customization.
 func _on_lobby_tab() -> void:
-	_lobby_tab.button_pressed = true
-	_customize_tab.button_pressed = false
+	_lobby_tab.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
+	_customize_tab.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	_lobby_panel.visible = true
 	_gender_row.visible = false
 	_random_button.visible = false
 	_set_node_visible("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow", false)
 
 
-## Switch to the Customize tab — show all customization (avatar + house).
+## Switch to the Customize tab — show all customization.
 func _on_customize_tab() -> void:
-	_lobby_tab.button_pressed = false
-	_customize_tab.button_pressed = true
+	_lobby_tab.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	_customize_tab.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 	_lobby_panel.visible = false
 	_gender_row.visible = true
 	_random_button.visible = true
@@ -637,40 +629,6 @@ func _setup_customization() -> void:
 			_on_customization_changed(),
 	)
 
-	# Wire walls/roof (still using the old scene nodes, visible only on House tab).
-	var wall_count := _get_wall_colors().size()
-	if wall_count > 0:
-		$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow/WallsColorPrev \
-				.pressed \
-				.connect(
-			func():
-				_walls_color_index = (_walls_color_index - 1 + wall_count) % wall_count
-				_on_customization_changed(),
-		)
-		$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow/WallsColorNext \
-				.pressed \
-				.connect(
-			func():
-				_walls_color_index = (_walls_color_index + 1) % wall_count
-				_on_customization_changed(),
-		)
-	var roof_count := _get_roof_colors().size()
-	if roof_count > 0:
-		$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow/RoofColorPrev \
-				.pressed \
-				.connect(
-			func():
-				_roof_color_index = (_roof_color_index - 1 + roof_count) % roof_count
-				_on_customization_changed(),
-		)
-		$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow/RoofColorNext \
-				.pressed \
-				.connect(
-			func():
-				_roof_color_index = (_roof_color_index + 1) % roof_count
-				_on_customization_changed(),
-		)
-
 	$LeftContainer/CustomizePanel/OptionsCol/RandomButton.pressed.connect(_on_randomize)
 
 	_apply_customization_to_all()
@@ -699,29 +657,39 @@ func _build_avatar_options_row() -> void:
 
 	var pv := _player_visuals[0]
 
-	# -- Hair: [<] name [>] [color picker] --
+	# -- Hair: [<] name [>] --
 	_hair_name_lbl = _add_style_section(
 		vbox,
 		"Hair",
-		pv.get_hair_count(),
 		func(delta):
 			_hair_index = (_hair_index + delta + pv.get_hair_count()) % pv.get_hair_count()
 			_on_customization_changed(),
+	)
+
+	# -- Hair Color: [color picker] (aligned with <> area) --
+	_add_color_section(
+		vbox,
+		"Hair Color",
 		_hair_color,
 		func(color):
 			_hair_color = color
 			_on_customization_changed(),
 	)
 
-	# -- Brows: [<] name [>] [color picker] --
+	# -- Brows: [<] name [>] --
 	_eyebrow_name_lbl = _add_style_section(
 		vbox,
 		"Brows",
-		pv.get_eyebrow_count(),
 		func(delta):
 			var n := pv.get_eyebrow_count()
 			_eyebrow_index = (_eyebrow_index + delta + n) % n
 			_on_customization_changed(),
+	)
+
+	# -- Brow Color: [color picker] (aligned with <> area) --
+	_add_color_section(
+		vbox,
+		"Brow Color",
 		_eyebrow_color,
 		func(color):
 			_eyebrow_color = color
@@ -791,59 +759,12 @@ func _build_avatar_options_row() -> void:
 	)
 	head_row.add_child(_head_slider)
 
-	# -- Walls: [<] name [>] (cycles through color_manager wall colors) --
-	var wc := _get_wall_colors()
-	if not wc.is_empty():
-		_walls_name_lbl = _add_style_section(
-			vbox,
-			"Walls",
-			wc.size(),
-			func(delta):
-				_walls_color_index = (_walls_color_index + delta + wc.size()) % wc.size()
-				_on_customization_changed(),
-			wc[_walls_color_index] if _walls_color_index < wc.size() else wc[0],
-			func(color):
-				# Find closest index in the wall colors array.
-				for i in wc.size():
-					if wc[i].is_equal_approx(color):
-						_walls_color_index = i
-						_on_customization_changed()
-						return,
-		)
 
-	# -- Roof: [<] name [>] (cycles through color_manager roof colors) --
-	var rc := _get_roof_colors()
-	if not rc.is_empty():
-		_roof_name_lbl = _add_style_section(
-			vbox,
-			"Roof",
-			rc.size(),
-			func(delta):
-				_roof_color_index = (_roof_color_index + delta + rc.size()) % rc.size()
-				_on_customization_changed(),
-			rc[_roof_color_index] if _roof_color_index < rc.size() else rc[0],
-			func(color):
-				for i in rc.size():
-					if rc[i].is_equal_approx(color):
-						_roof_color_index = i
-						_on_customization_changed()
-						return,
-		)
-
-
-## Add a style row inside a VBox: Label | [<] | name | [>] | [color picker]
+## Add a style row inside a VBox: Label | [<] | name | [>]
 ## The name label has a fixed width so the <> distance is consistent
-## regardless of the name text. The color picker is centered in the
-## space after >.
+## regardless of the name text.
 ## Returns the name label so it can be updated.
-func _add_style_section(
-	parent: Control,
-	title: String,
-	_count: int,
-	on_step: Callable,
-	initial_color: Color,
-	on_color: Callable,
-) -> Label:
+func _add_style_section(parent: Control, title: String, on_step: Callable) -> Label:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	parent.add_child(row)
@@ -892,17 +813,12 @@ func _add_style_section(
 	)
 	row.add_child(next)
 
-	# Spacer to center the color picker relative to the <> area.
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(spacer)
-
-	_add_color_picker(row, initial_color, on_color)
 	return name_lbl
 
 
-## Add a color row inside a VBox: Label | [spacer] | [color picker]
-## The color picker is centered, matching the position of style rows.
+## Add a color row inside a VBox: Label | [color picker]
+## The color picker is aligned with the <> area of style rows by
+## using the same label width plus the width of one arrow + spacing.
 func _add_color_section(
 	parent: Control,
 	title: String,
@@ -920,10 +836,11 @@ func _add_color_section(
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	row.add_child(lbl)
 
-	# Spacer to align the color picker with the style rows' pickers.
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(spacer)
+	# Offset to align the color picker with the <> area:
+	# one arrow width + one separation.
+	var offset := Control.new()
+	offset.custom_minimum_size = Vector2(ARROW_SIZE + 8, 0)
+	row.add_child(offset)
 
 	_add_color_picker(row, initial_color, on_color)
 
@@ -1013,6 +930,12 @@ func _head_size_to_scale() -> float:
 func _update_gender_buttons() -> void:
 	_male_button.button_pressed = _is_male
 	_female_button.button_pressed = not _is_male
+	if _is_male:
+		_male_button.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
+		_female_button.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	else:
+		_male_button.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+		_female_button.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 
 
 func _update_all_names() -> void:
@@ -1023,25 +946,6 @@ func _update_all_names() -> void:
 		_hair_name_lbl.text = pv.get_hair_name(_hair_index)
 	if _eyebrow_name_lbl:
 		_eyebrow_name_lbl.text = pv.get_eyebrow_name(_eyebrow_index)
-	if _walls_name_lbl:
-		if _walls_color_index < WALL_COLOR_NAMES.size():
-			_walls_name_lbl.text = WALL_COLOR_NAMES[_walls_color_index]
-		else:
-			_walls_name_lbl.text = "—"
-	if _roof_name_lbl:
-		if _roof_color_index < ROOF_COLOR_NAMES.size():
-			_roof_name_lbl.text = ROOF_COLOR_NAMES[_roof_color_index]
-		else:
-			_roof_name_lbl.text = "—"
-	# Also update the old scene labels (still used by the hidden ColumnsRow).
-	if _walls_color_index < WALL_COLOR_NAMES.size():
-		_walls_color_name.text = WALL_COLOR_NAMES[_walls_color_index]
-	else:
-		_walls_color_name.text = "—"
-	if _roof_color_index < ROOF_COLOR_NAMES.size():
-		_roof_color_name.text = ROOF_COLOR_NAMES[_roof_color_index]
-	else:
-		_roof_color_name.text = "—"
 
 
 func _on_randomize() -> void:
@@ -1060,12 +964,6 @@ func _on_randomize() -> void:
 	if _head_slider:
 		_head_slider.value = _head_size_index
 	# Update the color picker buttons to reflect new colors.
-	var wc := _get_wall_colors()
-	if not wc.is_empty():
-		_walls_color_index = randi() % wc.size()
-	var rc := _get_roof_colors()
-	if not rc.is_empty():
-		_roof_color_index = randi() % rc.size()
 	_sync_color_picker_buttons()
 	_on_customization_changed()
 
@@ -1076,8 +974,6 @@ func _sync_color_picker_buttons() -> void:
 	if row == null:
 		return
 	var cpbs := row.find_children("*", "ColorPickerButton", true, false)
-	var wc := _get_wall_colors()
-	var rc := _get_roof_colors()
 	for i in cpbs.size():
 		var cpb := cpbs[i] as ColorPickerButton
 		match i:
@@ -1093,12 +989,6 @@ func _sync_color_picker_buttons() -> void:
 				cpb.color = _shoes_color
 			5:
 				cpb.color = _skin_color
-			6:
-				if not wc.is_empty() and _walls_color_index < wc.size():
-					cpb.color = wc[_walls_color_index]
-			7:
-				if not rc.is_empty() and _roof_color_index < rc.size():
-					cpb.color = rc[_roof_color_index]
 
 
 func _broadcast_customization() -> void:
