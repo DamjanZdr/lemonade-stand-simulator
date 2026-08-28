@@ -752,9 +752,9 @@ func _on_stand_switched(stand_index: int) -> void:
 
 
 ## Called when the host starts the game (LobbyManager.game_starting signal).
-## Fades to black, snaps the camera to the player's first-person position,
-## then fades back in with a "Day X" overlay — like the player opening
-## their eyes to start the day.
+## Fades to black from the lobby, snaps the camera to the player's
+## first-person position, then fades back in with a "Day X" overlay —
+## like the player opening their eyes to start the day.
 func _on_game_starting() -> void:
 	if not _in_lobby:
 		return
@@ -770,24 +770,7 @@ func _on_game_starting() -> void:
 		_start_game_phase()
 		return
 
-	# Fade out the lobby UI immediately
-	if lobby_ui:
-		lobby_ui.modulate = Color(1, 1, 1, 0)
-		lobby_ui.visible = false
-
-	# Start game systems NOW so the player exists before we snap the camera.
-	Player.defer_camera_claim = true
-	_start_game_phase()
-
-	# Do the fade-to-black → snap → fade-in transition.
-	# Deferred because _start_game_phase() defers player spawning on the
-	# host, so _local_player may not be set until next frame.
-	call_deferred("_fade_to_player")
-
-
-## Fade-to-black → snap to player camera → fade-in with "Day X" overlay.
-func _fade_to_player(is_late_join: bool = false) -> void:
-	# Create a black fade overlay (separate from the blur transition overlay).
+	# Create the fade overlay immediately so it's on top of the lobby.
 	var fade_rect := ColorRect.new()
 	fade_rect.color = Color(0, 0, 0, 0)
 	fade_rect.anchors_preset = Control.PRESET_FULL_RECT
@@ -807,41 +790,57 @@ func _fade_to_player(is_late_join: bool = false) -> void:
 	day_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_transition_overlay.add_child(day_label)
 
-	# Phase 1: Fade to black (0.4s).
+	# Phase 1: Fade to black (0.4s) — lobby is still visible underneath.
 	var tw := create_tween()
 	tw.tween_property(fade_rect, "color:a", 1.0, 0.4) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	# Phase 2: Snap camera to player (instant, behind black).
+	# Phase 2: Behind the black screen — hide lobby, spawn player, snap camera.
 	tw.tween_callback(
 		func():
-			if _local_player and _local_player.has_node("Head/Camera3D"):
-				var player_cam := _local_player.get_node("Head/Camera3D") as Camera3D
-				lobby_camera.current = false
-				player_cam.make_current()
-				Player.defer_camera_claim = false
+			# Hide lobby UI and player models.
+			if lobby_ui:
+				lobby_ui.modulate = Color(1, 1, 1, 0)
+				lobby_ui.visible = false
 			if lobby_player_models:
 				lobby_player_models.visible = false
-			if hud:
-				hud.visible = true
-			# Start the day cycle (sun transitions smoothly).
-			DayManager.start_morning()
-			DayManager.start_day(),
+			# Spawn the player (deferred on host, so camera snap is also deferred).
+			Player.defer_camera_claim = true
+			_start_game_phase()
+			call_deferred("_snap_to_player_camera", fade_rect, day_label),
 	)
+
+
+## Snap the camera to the player's first-person position, then fade in
+## from black with a "Day X" overlay. Called after the player has spawned.
+func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label) -> void:
+	if _local_player and _local_player.has_node("Head/Camera3D"):
+		var player_cam := _local_player.get_node("Head/Camera3D") as Camera3D
+		lobby_camera.current = false
+		player_cam.make_current()
+		Player.defer_camera_claim = false
+	if hud:
+		hud.visible = true
+	# Start the day cycle (sun transitions smoothly).
+	DayManager.start_morning()
+	DayManager.start_day()
 	# Phase 3: Fade in "Day X" label (0.3s), hold (1.0s), fade out (0.3s).
-	tw.tween_property(day_label, "modulate:a", 1.0, 0.3) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(1.0)
-	tw.tween_property(day_label, "modulate:a", 0.0, 0.3) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	# Phase 4: Fade in from black (0.5s) — like opening eyes.
-	# Run in parallel with the day label hold/fade.
+	var tw := create_tween()
+	tw.set_parallel(true)
 	tw.tween_property(fade_rect, "color:a", 0.0, 0.5) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if day_label:
+		tw.tween_property(day_label, "modulate:a", 1.0, 0.3) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.chain().tween_interval(1.0)
+		tw.tween_property(day_label, "modulate:a", 0.0, 0.3) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	# Cleanup.
 	tw.tween_callback(
 		func():
 			fade_rect.queue_free()
-			day_label.queue_free()
+			if day_label:
+				day_label.queue_free()
 			_transition_overlay.visible = false,
 	)
 
@@ -1342,7 +1341,14 @@ func _on_local_player_ready(p: Player) -> void:
 	# If this is a late joiner, the fade transition was waiting for the player to exist.
 	if _late_join_camera_pending:
 		_late_join_camera_pending = false
-		call_deferred("_fade_to_player", true)
+		# Create a quick fade for late joiners.
+		var fade_rect := ColorRect.new()
+		fade_rect.color = Color(0, 0, 0, 1)
+		fade_rect.anchors_preset = Control.PRESET_FULL_RECT
+		fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_transition_overlay.add_child(fade_rect)
+		_transition_overlay.visible = true
+		call_deferred("_snap_to_player_camera", fade_rect, null)
 
 
 ## Called when the server (host) disconnects. Shows a popup so the
