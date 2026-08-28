@@ -245,6 +245,7 @@ func _build_ui() -> void:
 func _make_menu_button(text: String) -> Button:
 	var btn := Button.new()
 	btn.custom_minimum_size = Vector2(0, 48)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	btn.add_theme_font_size_override("font_size", 38)
 	btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 	btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
