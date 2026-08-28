@@ -782,6 +782,9 @@ func _on_game_starting() -> void:
 
 	# Start game systems NOW (spawn player, start day, etc.) so the player
 	# exists by the time the camera tween finishes.
+	# Prevent the player's camera from claiming "current" immediately so
+	# the lobby camera can tween into first-person smoothly.
+	Player.defer_camera_claim = true
 	_start_game_phase()
 
 	# Tween the lobby camera into the player's first-person position.
@@ -833,12 +836,14 @@ func _tween_camera_to_player(is_late_join: bool = false) -> void:
 				lobby_camera.global_transform = target_transform
 				lobby_camera.current = false
 				player_cam.make_current()
+				Player.defer_camera_claim = false
 				if hud:
 					hud.visible = true,
 		)
 	else:
 		# No local player (spectator?) — just stop the lobby camera
 		lobby_camera.current = false
+		Player.defer_camera_claim = false
 		if hud:
 			hud.visible = true
 
@@ -949,6 +954,9 @@ func _do_late_join_transition() -> void:
 		lobby_player_models.visible = false
 	if hud:
 		hud.visible = true
+	# Prevent the player's camera from claiming "current" immediately so
+	# the lobby camera can tween into first-person smoothly.
+	Player.defer_camera_claim = true
 	# The local player will be spawned by the spawner; _on_local_player_ready
 	# will finish the camera tween when it's ready.
 

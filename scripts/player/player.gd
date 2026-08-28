@@ -14,6 +14,11 @@ const HINT_STAND := "Aim at stand or workstation to place"
 ## without blocking solo testing of every stand.
 var assigned_stand: StandUnit = null
 
+## When true, the local player's camera won't make_current() immediately
+## on spawn — the lobby-to-game camera tween handles the switch instead.
+## Set by main.gd before spawning the player during game start.
+static var defer_camera_claim: bool = false
+
 var held_item: int = HeldItem.NONE
 var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
@@ -147,8 +152,10 @@ func _configure_local_player() -> void:
 	# Layer 2 is used by the screen-space outline system for white fill nodes.
 	# The main camera must not render them ΓÇö only the SubViewport OutlineCamera does.
 	$Head/Camera3D.cull_mask &= ~2
-	$Head/Camera3D.make_current()
-	GameLog.log("[Player] Camera made current for local player %s" % name)
+	# Don't claim the camera if the lobby-to-game tween is handling it.
+	if not defer_camera_claim:
+		$Head/Camera3D.make_current()
+		GameLog.log("[Player] Camera made current for local player %s" % name)
 	var listener := $Head/Camera3D/AudioListener3D as AudioListener3D
 	if listener:
 		listener.make_current()
