@@ -807,7 +807,7 @@ func _on_game_starting() -> void:
 	var menu_font := load("res://assets/fonts/AmaticSC-Bold.ttf") as FontFile
 	if menu_font:
 		day_label.add_theme_font_override("font", menu_font)
-	day_label.add_theme_font_size_override("font_size", 72)
+	day_label.add_theme_font_size_override("font_size", 120)
 	day_label.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 1))
 	day_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	day_label.add_theme_constant_override("shadow_offset_x", 3)
@@ -822,10 +822,19 @@ func _on_game_starting() -> void:
 		% _transition_overlay.visible
 	)
 	var tw := create_tween()
+	# Phase 1: Fade to black AND fade in Day X label + dim panel at the same time.
+	tw.set_parallel(true)
 	tw.tween_property(fade_rect, "color:a", 1.0, 0.4) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if day_label:
+		tw.tween_property(day_label, "modulate:a", 1.0, 0.4) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if dim_panel:
+		tw.tween_property(dim_panel, "modulate:a", 1.0, 0.4) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	# Phase 2: Behind the black screen — hide lobby, spawn player, snap camera.
-	tw.tween_callback(
+	# Day X label stays visible during the snap.
+	tw.chain().tween_callback(
 		func():
 			print("[Main] _on_game_starting: fade complete, snapping camera")
 			# Hide lobby UI and player models.
@@ -855,34 +864,25 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: C
 	DayManager.start_morning()
 	DayManager.start_day()
 	# Sequential timeline:
-	# 1. Fade in from black (eyes opening) — 0.5s
-	# 2. Fade in Day X label + dim panel — 0.5s
-	# 3. Hold for 3 seconds
-	# 4. Fade out Day X label + dim panel — 0.5s
-	# 5. Cleanup
+	# 1. Fade in from black (eyes opening) — 0.5s (Day X already visible)
+	# 2. Hold for 5 seconds (Day X stays on screen)
+	# 3. Fade out Day X label + dim panel — 1.0s
+	# 4. Cleanup
 	var tw := create_tween()
-	# Step 1: Fade in from black (eyes opening).
+	# Step 1: Fade in from black (eyes opening). Day X is already visible.
 	tw.tween_property(fade_rect, "color:a", 0.0, 0.5) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	# Step 2: Fade in label + dim panel (parallel).
+	# Step 2: Hold for 5 seconds.
+	tw.tween_interval(5.0)
+	# Step 3: Fade out label + dim panel (parallel) over 1 second.
 	tw.set_parallel(true)
 	if day_label:
-		tw.tween_property(day_label, "modulate:a", 1.0, 0.5) \
-				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	if dim_panel:
-		tw.tween_property(dim_panel, "modulate:a", 1.0, 0.5) \
-				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	# Step 3: Hold for 3 seconds.
-	tw.chain().tween_interval(3.0)
-	# Step 4: Fade out label + dim panel (parallel).
-	tw.set_parallel(true)
-	if day_label:
-		tw.tween_property(day_label, "modulate:a", 0.0, 0.5) \
+		tw.tween_property(day_label, "modulate:a", 0.0, 1.0) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	if dim_panel:
-		tw.tween_property(dim_panel, "modulate:a", 0.0, 0.5) \
+		tw.tween_property(dim_panel, "modulate:a", 0.0, 1.0) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	# Step 5: Cleanup.
+	# Step 4: Cleanup.
 	tw.chain().tween_callback(
 		func():
 			fade_rect.queue_free()
