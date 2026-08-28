@@ -79,6 +79,7 @@ const HEAD_SIZE_STEPS: int = 9
 
 const WALL_COLOR_NAMES: Array[String] = ["Cream", "Salmon", "Sky", "Sage", "Lilac"]
 const ROOF_COLOR_NAMES: Array[String] = ["Brown", "Grey", "Green", "Blue", "Yellow"]
+const LABEL_WIDTH: float = 60.0
 
 # ── State ─────────────────────────────────────────────────────────────────────
 var _room_visible: bool = false
@@ -700,25 +701,28 @@ func _setup_customization() -> void:
 	_update_gender_buttons()
 
 
-## Build a single-line row with all avatar customization controls:
-## Hair [<] name [>] [color] | Brows [<] name [>] [color] |
-## Shirt [color] | Pants [color] | Shoes [color] | Skin [color] |
-## Head [slider]
+## Build a vertical stack of avatar customization rows, one option per row:
+## Hair   [<] name [>] [color]
+## Brows  [<] name [>] [color]
+## Shirt  [color]
+## Pants  [color]
+## Shoes  [color]
+## Skin   [color]
+## Head   [slider]
 func _build_avatar_options_row() -> void:
 	var options_col: VBoxContainer = $LeftContainer/CustomizePanel/OptionsCol
-	var row := HBoxContainer.new()
-	row.name = "AvatarOptionsRow"
-	row.add_theme_constant_override("separation", 6)
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	options_col.add_child(row)
+	var vbox := VBoxContainer.new()
+	vbox.name = "AvatarOptionsRow"
+	vbox.add_theme_constant_override("separation", 4)
+	options_col.add_child(vbox)
 	# Move it above the ColumnsRow (which is hidden) and below GenderRow.
-	options_col.move_child(row, options_col.get_child_count() - 2)
+	options_col.move_child(vbox, options_col.get_child_count() - 2)
 
 	var pv := _player_visuals[0]
 
 	# -- Hair: [<] name [>] [color picker] --
 	_hair_name_lbl = _add_style_section(
-		row,
+		vbox,
 		"Hair",
 		pv.get_hair_count(),
 		func(delta):
@@ -732,7 +736,7 @@ func _build_avatar_options_row() -> void:
 
 	# -- Brows: [<] name [>] [color picker] --
 	_eyebrow_name_lbl = _add_style_section(
-		row,
+		vbox,
 		"Brows",
 		pv.get_eyebrow_count(),
 		func(delta):
@@ -746,7 +750,7 @@ func _build_avatar_options_row() -> void:
 
 	# -- Shirt: [color picker] --
 	_add_color_section(
-		row,
+		vbox,
 		"Shirt",
 		_shirt_color,
 		func(color):
@@ -756,7 +760,7 @@ func _build_avatar_options_row() -> void:
 
 	# -- Pants: [color picker] --
 	_add_color_section(
-		row,
+		vbox,
 		"Pants",
 		_pants_color,
 		func(color):
@@ -766,7 +770,7 @@ func _build_avatar_options_row() -> void:
 
 	# -- Shoes: [color picker] --
 	_add_color_section(
-		row,
+		vbox,
 		"Shoes",
 		_shoes_color,
 		func(color):
@@ -776,7 +780,7 @@ func _build_avatar_options_row() -> void:
 
 	# -- Skin: [color picker] --
 	_add_color_section(
-		row,
+		vbox,
 		"Skin",
 		_skin_color,
 		func(color):
@@ -785,11 +789,15 @@ func _build_avatar_options_row() -> void:
 	)
 
 	# -- Head: [slider] --
+	var head_row := HBoxContainer.new()
+	head_row.add_theme_constant_override("separation", 6)
+	vbox.add_child(head_row)
 	var head_lbl := Label.new()
 	head_lbl.text = "Head"
-	head_lbl.add_theme_font_size_override("font_size", 12)
+	head_lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
+	head_lbl.add_theme_font_size_override("font_size", 14)
 	head_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	row.add_child(head_lbl)
+	head_row.add_child(head_lbl)
 	_head_slider = HSlider.new()
 	_head_slider.custom_minimum_size = Vector2(80, 24)
 	_head_slider.min_value = 0
@@ -801,10 +809,10 @@ func _build_avatar_options_row() -> void:
 			_head_size_index = int(v)
 			_on_customization_changed(),
 	)
-	row.add_child(_head_slider)
+	head_row.add_child(_head_slider)
 
 
-## Add a style section: Label | [<] | name | [>] | [color picker]
+## Add a style row inside a VBox: Label | [<] | name | [>] | [color picker]
 ## Returns the name label so it can be updated.
 func _add_style_section(
 	parent: Control,
@@ -814,66 +822,82 @@ func _add_style_section(
 	initial_color: Color,
 	on_color: Callable,
 ) -> Label:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	parent.add_child(row)
+
 	var lbl := Label.new()
 	lbl.text = title
-	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
+	lbl.add_theme_font_size_override("font_size", 14)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	parent.add_child(lbl)
+	row.add_child(lbl)
 
 	var prev := Button.new()
 	prev.text = "<"
-	prev.custom_minimum_size = Vector2(20, 24)
-	prev.add_theme_font_size_override("font_size", 12)
+	prev.custom_minimum_size = Vector2(24, 24)
+	prev.add_theme_font_size_override("font_size", 14)
 	_make_flat_button(prev)
 	_setup_hover_effect(prev)
 	prev.pressed.connect(
 		func():
 			on_step.call(-1),
 	)
-	parent.add_child(prev)
+	row.add_child(prev)
 
 	var name_lbl := Label.new()
 	name_lbl.text = "—"
-	name_lbl.add_theme_font_size_override("font_size", 12)
+	name_lbl.add_theme_font_size_override("font_size", 14)
 	name_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
-	name_lbl.custom_minimum_size = Vector2(50, 0)
-	parent.add_child(name_lbl)
+	name_lbl.custom_minimum_size = Vector2(60, 0)
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_lbl)
 
 	var next := Button.new()
 	next.text = ">"
-	next.custom_minimum_size = Vector2(20, 24)
-	next.add_theme_font_size_override("font_size", 12)
+	next.custom_minimum_size = Vector2(24, 24)
+	next.add_theme_font_size_override("font_size", 14)
 	_make_flat_button(next)
 	_setup_hover_effect(next)
 	next.pressed.connect(
 		func():
 			on_step.call(1),
 	)
-	parent.add_child(next)
+	row.add_child(next)
 
-	_add_color_picker(parent, initial_color, on_color)
+	_add_color_picker(row, initial_color, on_color)
 	return name_lbl
 
 
-## Add a color section: Label | [color picker]
+## Add a color row inside a VBox: Label | [color picker]
 func _add_color_section(
 	parent: Control,
 	title: String,
 	initial_color: Color,
 	on_color: Callable,
 ) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	parent.add_child(row)
+
 	var lbl := Label.new()
 	lbl.text = title
-	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
+	lbl.add_theme_font_size_override("font_size", 14)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	parent.add_child(lbl)
-	_add_color_picker(parent, initial_color, on_color)
+	row.add_child(lbl)
+	# Spacer to align the color picker with the style rows.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 0)
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(spacer)
+	_add_color_picker(row, initial_color, on_color)
 
 
 ## Add a ColorPickerButton with styling.
 func _add_color_picker(parent: Control, initial_color: Color, on_color: Callable) -> void:
 	var cpb := ColorPickerButton.new()
-	cpb.custom_minimum_size = Vector2(24, 24)
+	cpb.custom_minimum_size = Vector2(28, 28)
 	cpb.color = initial_color
 	cpb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	# Style: flat, no border.
