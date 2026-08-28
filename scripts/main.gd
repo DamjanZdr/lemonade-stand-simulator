@@ -1556,32 +1556,56 @@ func _on_esc_back_to_game() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-## ESC menu: Back to Menu — leave the game and return to main menu.
+## ESC menu: Back to Menu — fade to black, leave the game, fade back in.
 func _on_esc_back_to_menu() -> void:
 	_esc_menu_visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	# Leave the multiplayer session.
-	NetworkManager.leave_game()
-	# Clean up players.
-	for child in players_node.get_children():
-		child.queue_free()
-	_local_player = null
-	# Reset game state.
-	_game_state = MenuState.MAIN_MENU
-	# Show the main menu.
-	if _world_menu:
-		_world_menu.show_menu()
-	# Hide the HUD.
-	if hud:
-		hud.visible = false
-	# Switch to the main menu camera and restore its original transform.
-	if main_menu_camera:
-		main_menu_camera.global_transform = _get_main_menu_cam_transform()
-		if has_meta("_main_menu_cam_fov"):
-			main_menu_camera.fov = get_meta("_main_menu_cam_fov") as float
-		main_menu_camera.current = true
-	if lobby_camera:
-		lobby_camera.current = false
+	# Create the fade overlay.
+	var fade_rect := ColorRect.new()
+	fade_rect.color = Color(0, 0, 0, 0)
+	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_transition_overlay.add_child(fade_rect)
+	_transition_overlay.visible = true
+	# Phase 1: Fade to black (0.4s).
+	var tw := create_tween()
+	tw.tween_property(fade_rect, "color:a", 1.0, 0.4) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Phase 2: Behind the black screen — leave game, clean up, swap camera.
+	tw.chain().tween_callback(
+		func():
+			# Leave the multiplayer session.
+			NetworkManager.leave_game()
+			# Clean up players.
+			for child in players_node.get_children():
+				child.queue_free()
+			_local_player = null
+			# Reset game state.
+			_game_state = MenuState.MAIN_MENU
+			# Show the main menu.
+			if _world_menu:
+				_world_menu.show_menu()
+			# Hide the HUD.
+			if hud:
+				hud.visible = false
+			# Restore the main menu camera.
+			if main_menu_camera:
+				main_menu_camera.global_transform = _get_main_menu_cam_transform()
+				if has_meta("_main_menu_cam_fov"):
+					main_menu_camera.fov = get_meta("_main_menu_cam_fov") as float
+				main_menu_camera.current = true
+			if lobby_camera:
+				lobby_camera.current = false,
+	)
+	# Phase 3: Fade in from black (eyes opening) — 1.5s.
+	tw.tween_property(fade_rect, "color:a", 0.0, 1.5) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# Phase 4: Cleanup.
+	tw.chain().tween_callback(
+		func():
+			fade_rect.queue_free()
+			_transition_overlay.visible = false,
+	)
 
 
 ## ESC menu: Quit Game.
