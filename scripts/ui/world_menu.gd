@@ -821,14 +821,18 @@ func _show_mode_select() -> void:
 		mode_cards[mode_val] = card
 		cards_row.add_child(card)
 
-	vbox.add_child(cards_row)
+	# Wrap cards + description in a shrink-to-content VBox so the
+	# description centers relative to the cards' combined width.
+	var cards_wrap := VBoxContainer.new()
+	cards_wrap.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	cards_wrap.add_theme_constant_override("separation", 10)
+	cards_wrap.add_child(cards_row)
+	cards_wrap.add_child(desc_label)
+	vbox.add_child(cards_wrap)
 
-	# Add the description label to the vbox (declared earlier, before the loop).
-	vbox.add_child(desc_label)
-
-	# Buttons: Cancel + Next (full-width, stacked, matching back button style).
-	var btn_col := VBoxContainer.new()
-	btn_col.add_theme_constant_override("separation", 8)
+	# Buttons: Cancel + Next (side by side, full-width, matching back button size).
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 8)
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(0, 48)
@@ -859,9 +863,9 @@ func _show_mode_select() -> void:
 			vbox.queue_free()
 			_show_name_entry(selected_mode),
 	)
-	btn_col.add_child(cancel_btn)
-	btn_col.add_child(confirm_btn)
-	vbox.add_child(btn_col)
+	btn_row.add_child(cancel_btn)
+	btn_row.add_child(confirm_btn)
+	vbox.add_child(btn_row)
 
 	# Default: Solo selected.
 	_update_mode_card_selection(mode_cards, mode_styles, GameState.GameMode.SOLO)
@@ -974,9 +978,9 @@ func _show_name_entry(selected_mode: int) -> void:
 	)
 	vbox.add_child(field)
 
-	# Buttons: Cancel + Create (full-width, stacked, matching back button style).
-	var btn_col := VBoxContainer.new()
-	btn_col.add_theme_constant_override("separation", 8)
+	# Buttons: Cancel + Create (side by side, full-width, matching back button size).
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 8)
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(0, 48)
@@ -1007,9 +1011,9 @@ func _show_name_entry(selected_mode: int) -> void:
 		func():
 			_confirm_inline_name(vbox, field, selected_mode),
 	)
-	btn_col.add_child(cancel_btn)
-	btn_col.add_child(create_btn)
-	vbox.add_child(btn_col)
+	btn_row.add_child(cancel_btn)
+	btn_row.add_child(create_btn)
+	vbox.add_child(btn_row)
 
 	var idx := _new_stand_button.get_index()
 	_saves_list.add_child(vbox)
