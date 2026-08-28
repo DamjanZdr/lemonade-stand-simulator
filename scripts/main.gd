@@ -854,27 +854,34 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: C
 	# Start the day cycle (sun transitions smoothly).
 	DayManager.start_morning()
 	DayManager.start_day()
-	# Phase 3: Fade in "Day X" label + dim panel (0.3s), hold (1.0s), fade out (0.3s).
-	# Phase 4: Fade in from black (0.5s) — like opening eyes.
+	# Sequential timeline:
+	# 1. Fade in from black + fade in Day X label + dim panel (parallel, 0.5s)
+	# 2. Hold for 3 seconds
+	# 3. Fade out Day X label + dim panel (0.5s)
+	# 4. Cleanup
 	var tw := create_tween()
+	# Step 1: Fade in from black and fade in label/dim panel at the same time.
 	tw.set_parallel(true)
 	tw.tween_property(fade_rect, "color:a", 0.0, 0.5) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	if day_label:
-		tw.tween_property(day_label, "modulate:a", 1.0, 0.3) \
+		tw.tween_property(day_label, "modulate:a", 1.0, 0.5) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	if dim_panel:
-		tw.tween_property(dim_panel, "modulate:a", 1.0, 0.3) \
+		tw.tween_property(dim_panel, "modulate:a", 1.0, 0.5) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# Step 2: Hold for 3 seconds (switch back to sequential).
+	tw.chain().tween_interval(3.0)
+	# Step 3: Fade out label + dim panel (parallel).
+	tw.set_parallel(true)
 	if day_label:
-		tw.chain().tween_interval(3.0)
 		tw.tween_property(day_label, "modulate:a", 0.0, 0.5) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	if dim_panel:
 		tw.tween_property(dim_panel, "modulate:a", 0.0, 0.5) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	# Cleanup.
-	tw.tween_callback(
+	# Step 4: Cleanup.
+	tw.chain().tween_callback(
 		func():
 			fade_rect.queue_free()
 			if day_label:
