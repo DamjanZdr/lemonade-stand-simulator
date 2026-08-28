@@ -60,18 +60,8 @@ func _ready() -> void:
 
 
 func _build_version_label() -> void:
-	var label := Label.new()
-	label.name = "VersionLabel"
-	label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
-	label.add_theme_font_size_override("font_size", 10)
-	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
-	label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	label.offset_left = -90.0
-	label.offset_top = -24.0
-	label.offset_right = -8.0
-	label.offset_bottom = -6.0
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	add_child(label)
+	# Version label is only shown in menus, not during gameplay.
+	pass
 
 
 func _on_money(value: float) -> void:
