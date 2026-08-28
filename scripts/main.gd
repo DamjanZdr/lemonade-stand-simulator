@@ -1270,16 +1270,9 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
-		# Spawn the player at the lobby visual's position so the
-		# camera transition from lobby to game is seamless.
-		var lobby_pos := _get_lobby_visual_position(peer_id)
-		if lobby_pos != Vector3.ZERO:
-			p.global_position = lobby_pos
-			# Match the visual's facing direction
-			var lobby_yaw := _get_lobby_visual_yaw(peer_id)
-			p.global_rotation = Vector3(0, lobby_yaw, 0)
-		else:
-			p.global_position = stand.global_position + Vector3(0, 0, 2)
+		# Spawn the player at their stand's position. The lobby camera
+		# tween will smoothly fly from the lobby view to first-person.
+		p.global_position = stand.global_position + Vector3(0, 0, 2)
 	GameLog.log(
 		"[Main] Spawned player %d (stand=%s, is_me=%s)"
 		% [peer_id, stand.name if stand else "null", peer_id == multiplayer.get_unique_id()]
