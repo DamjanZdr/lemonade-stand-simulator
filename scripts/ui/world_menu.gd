@@ -873,13 +873,14 @@ func _show_mode_select() -> void:
 	)
 	cards_wrap.add_child(field)
 
-	# Buttons: Back + Create (side by side, left-aligned, matching back button size).
+	# Buttons: Back (left) + Create (right), inside cards_wrap so they
+	# span the same width as the name field.
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 8)
-	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	var back_btn := Button.new()
 	back_btn.text = "Back"
 	back_btn.custom_minimum_size = Vector2(0, 48)
+	back_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	back_btn.add_theme_font_size_override("font_size", 38)
 	back_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	back_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -907,7 +908,7 @@ func _show_mode_select() -> void:
 	)
 	btn_row.add_child(back_btn)
 	btn_row.add_child(create_btn)
-	vbox.add_child(btn_row)
+	cards_wrap.add_child(btn_row)
 
 	# Default: Solo selected.
 	_update_mode_card_selection(mode_cards, mode_styles, GameState.GameMode.SOLO)
