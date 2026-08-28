@@ -524,6 +524,11 @@ func show_menu() -> void:
 	_settings_panel.visible = false
 	_menu_box.visible = true
 	_menu_box.modulate = Color(1, 1, 1, 0)
+	# Restore version label and music widget (hidden during back-to-menu).
+	if _version_label:
+		_version_label.visible = true
+	if _music_widget:
+		_music_widget.visible = true
 	# Fade in.
 	var tw := create_tween()
 	tw.set_ease(Tween.EASE_OUT)
