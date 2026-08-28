@@ -172,6 +172,9 @@ func _ready() -> void:
 			_on_button_click(_settings_back, _on_settings_back),
 	)
 	# Audio sliders — control bus volumes, show value, play sound on release.
+	_style_slider(_master_slider)
+	_style_slider(_sfx_slider)
+	_style_slider(_music_slider)
 	_master_slider.value_changed.connect(
 		func(v: float):
 			AudioServer.set_bus_volume_db(0, linear_to_db(v))
@@ -439,6 +442,81 @@ func _add_drop_shadow(btn: Button) -> void:
 	btn.add_theme_constant_override("shadow_offset_x", 2)
 	btn.add_theme_constant_override("shadow_offset_y", 2)
 	btn.add_theme_constant_override("shadow_outline_size", 4)
+
+
+## Style an HSlider with a custom flat look: thin track + lemon grabber.
+func _style_slider(slider: HSlider) -> void:
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(1, 1, 1, 0.15)
+	track.set_corner_radius_all(3)
+	track.content_margin_top = 6.0
+	track.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("slider", track)
+	var grab_area := StyleBoxFlat.new()
+	grab_area.bg_color = Color(1, 0.9, 0.3, 0.4)
+	grab_area.set_corner_radius_all(3)
+	grab_area.content_margin_top = 6.0
+	grab_area.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("grabber_area", grab_area)
+	var grab_area_hl := StyleBoxFlat.new()
+	grab_area_hl.bg_color = Color(1, 0.9, 0.3, 0.6)
+	grab_area_hl.set_corner_radius_all(3)
+	grab_area_hl.content_margin_top = 6.0
+	grab_area_hl.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("grabber_area_highlight", grab_area_hl)
+	slider.add_theme_icon_override("grabber", _make_lemon_icon(16))
+	slider.add_theme_icon_override("grabber_highlight", _make_lemon_icon(18))
+	slider.add_theme_icon_override(
+		"grabber_disabled",
+		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5, 0.5), 1),
+	)
+
+
+## Create a lemon-shaped icon for slider grabbers.
+func _make_lemon_icon(size: int) -> Texture2D:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var center := Vector2(size / 2.0, size / 2.0)
+	var rx: float = size / 2.0 - 1.0
+	var ry: float = size / 2.0 - 3.0
+	var lemon := Color(1, 0.85, 0.2, 1)
+	var dark := Color(0.8, 0.65, 0.1, 1)
+	var leaf := Color(0.3, 0.7, 0.2, 1)
+	for y in size:
+		for x in size:
+			var dx := (x - center.x) / rx
+			var dy := (y - center.y) / ry
+			var d := dx * dx + dy * dy
+			if d <= 1.0:
+				img.set_pixel(x, y, lemon)
+			elif d <= 1.15:
+				img.set_pixel(x, y, dark)
+	# Add a small leaf on top.
+	var leaf_c := Vector2(center.x + 1, 1)
+	for y in 4:
+		for x in 4:
+			if Vector2(x, y).distance_to(Vector2(1.5, 1.5)) <= 2.0:
+				var px := int(leaf_c.x + x - 2)
+				var py := int(leaf_c.y + y - 2)
+				if px >= 0 and px < size and py >= 0 and py < size:
+					img.set_pixel(px, py, leaf)
+	return ImageTexture.create_from_image(img)
+
+
+## Create a circular icon texture at runtime.
+func _make_circle_icon(size: int, fill: Color, border: Color, border_width: int) -> Texture2D:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var center := Vector2(size / 2.0, size / 2.0)
+	var radius: float = size / 2.0 - border_width
+	for y in size:
+		for x in size:
+			var d := Vector2(x, y).distance_to(center)
+			if d <= radius:
+				img.set_pixel(x, y, fill)
+			elif d <= radius + border_width:
+				img.set_pixel(x, y, border)
+	return ImageTexture.create_from_image(img)
 
 
 ## Remove all stylebox backgrounds so the button looks like plain text.
