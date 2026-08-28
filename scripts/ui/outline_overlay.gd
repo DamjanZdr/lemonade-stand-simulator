@@ -17,7 +17,7 @@ extends Node
 @onready var _display: TextureRect = $OverlayLayer/DisplayRect
 
 var _main_cam: Camera3D = null
-var _target_width: float = 2.5
+var _target_width: float = 1.5
 
 
 func _get_base_viewport_size() -> Vector2i:

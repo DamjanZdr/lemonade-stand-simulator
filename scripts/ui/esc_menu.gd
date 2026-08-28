@@ -832,6 +832,8 @@ func _build_music_player() -> void:
 	AudioManager.music_progress.connect(_update_music_progress)
 	# Connect track change signal.
 	AudioManager.music_track_changed.connect(_update_music_display)
+	# Sync current track display.
+	_update_music_display(AudioManager.get_current_track())
 
 
 func _update_music_display(track_name: String) -> void:
