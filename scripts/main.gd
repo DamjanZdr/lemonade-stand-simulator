@@ -799,6 +799,10 @@ func _tween_camera_to_player(is_late_join: bool = false) -> void:
 	if _local_player and _local_player.has_node("Head/Camera3D"):
 		var player_cam := _local_player.get_node("Head/Camera3D") as Camera3D
 		var target_transform := player_cam.global_transform
+		GameLog.log(
+			"[Main] _tween_camera_to_player: lobby_cam=%s player_cam=%s player_pos=%s"
+			% [lobby_camera.global_position, target_transform.origin, _local_player.global_position]
+		)
 		# Use a shorter tween for late join to avoid the freeze.
 		var tween_time: float = 0.5 if is_late_join else CAMERA_TWEEN_TIME
 		# Interpolate yaw and pitch smoothly instead of snapping rotation.
