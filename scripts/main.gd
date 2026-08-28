@@ -756,6 +756,7 @@ func _on_stand_switched(stand_index: int) -> void:
 ## first-person position, then fades back in with a "Day X" overlay —
 ## like the player opening their eyes to start the day.
 func _on_game_starting() -> void:
+	print("[Main] _on_game_starting called, _in_lobby=%s" % _in_lobby)
 	if not _in_lobby:
 		return
 	_in_lobby = false
@@ -769,6 +770,8 @@ func _on_game_starting() -> void:
 	if stand == null:
 		_start_game_phase()
 		return
+
+	print("[Main] _on_game_starting: creating fade overlay")
 
 	# Create the fade overlay immediately so it's on top of the lobby.
 	var fade_rect := ColorRect.new()
@@ -791,12 +794,17 @@ func _on_game_starting() -> void:
 	_transition_overlay.add_child(day_label)
 
 	# Phase 1: Fade to black (0.4s) — lobby is still visible underneath.
+	print(
+		"[Main] _on_game_starting: starting fade tween, overlay visible=%s"
+		% _transition_overlay.visible
+	)
 	var tw := create_tween()
 	tw.tween_property(fade_rect, "color:a", 1.0, 0.4) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	# Phase 2: Behind the black screen — hide lobby, spawn player, snap camera.
 	tw.tween_callback(
 		func():
+			print("[Main] _on_game_starting: fade complete, snapping camera")
 			# Hide lobby UI and player models.
 			if lobby_ui:
 				lobby_ui.modulate = Color(1, 1, 1, 0)
