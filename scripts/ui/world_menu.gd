@@ -830,106 +830,7 @@ func _show_mode_select() -> void:
 	cards_wrap.add_child(desc_label)
 	vbox.add_child(cards_wrap)
 
-	# Buttons: Cancel + Next (side by side, left-aligned, matching back button size).
-	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 8)
-	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
-	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(0, 48)
-	cancel_btn.add_theme_font_size_override("font_size", 38)
-	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
-	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-	_make_flat_button(cancel_btn)
-	_add_drop_shadow(cancel_btn)
-	_setup_hover_effect(cancel_btn)
-	cancel_btn.pressed.connect(
-		func():
-			vbox.queue_free()
-			_restore_saves_list(),
-	)
-	var confirm_btn := Button.new()
-	confirm_btn.text = "Next"
-	confirm_btn.custom_minimum_size = Vector2(0, 48)
-	confirm_btn.add_theme_font_size_override("font_size", 38)
-	confirm_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	confirm_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-	_make_flat_button(confirm_btn)
-	_add_drop_shadow(confirm_btn)
-	_setup_hover_effect(confirm_btn)
-	confirm_btn.pressed.connect(
-		func():
-			vbox.queue_free()
-			_show_name_entry(selected_mode),
-	)
-	btn_row.add_child(cancel_btn)
-	btn_row.add_child(confirm_btn)
-	vbox.add_child(btn_row)
-
-	# Default: Solo selected.
-	_update_mode_card_selection(mode_cards, mode_styles, GameState.GameMode.SOLO)
-
-	var idx := _new_stand_button.get_index()
-	_saves_list.add_child(vbox)
-	_saves_list.move_child(vbox, idx)
-
-
-## Update mode card borders: selected = bright yellow, others = dim.
-func _update_mode_card_selection(cards: Dictionary, styles: Dictionary, selected: int) -> void:
-	for key in cards:
-		var style: StyleBoxFlat = styles[key]
-		var card: PanelContainer = cards[key]
-		if key == selected:
-			style.border_color = Color(1, 0.9, 0.3, 1.0)
-			style.bg_color = Color(0.15, 0.12, 0.05, 0.3)
-		else:
-			style.border_color = Color(1, 1, 1, 0.25)
-			style.bg_color = Color(0, 0, 0, 0.2)
-		card.add_theme_stylebox_override("panel", style)
-
-
-## Step 2: Show name entry after mode is confirmed.
-## Shows the selected mode icon + name at top, name field, and
-## Cancel + Create buttons.
-func _show_name_entry(selected_mode: int) -> void:
-	var vbox := VBoxContainer.new()
-	vbox.name = "InlineNameEntry"
-	vbox.add_theme_constant_override("separation", 14)
-
-	# Selected mode header: icon + name.
-	var mode_names: Dictionary = {
-		GameState.GameMode.SOLO: "Solo",
-		GameState.GameMode.COOP: "Co-op",
-		GameState.GameMode.VERSUS: "Versus",
-	}
-	var mode_counts: Dictionary = {
-		GameState.GameMode.SOLO: 1,
-		GameState.GameMode.COOP: 4,
-		GameState.GameMode.VERSUS: 2,
-	}
-	var mode_vs: Dictionary = {
-		GameState.GameMode.SOLO: false,
-		GameState.GameMode.COOP: false,
-		GameState.GameMode.VERSUS: true,
-	}
-	var header := HBoxContainer.new()
-	header.alignment = BoxContainer.ALIGNMENT_BEGIN
-	header.add_theme_constant_override("separation", 8)
-	var header_icon := _build_silhouette_icon(mode_counts[selected_mode], mode_vs[selected_mode])
-	header_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	header.add_child(header_icon)
-	var mode_title := Label.new()
-	mode_title.text = mode_names[selected_mode]
-	mode_title.add_theme_font_size_override("font_size", 24)
-	mode_title.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.95))
-	mode_title.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
-	mode_title.add_theme_constant_override("shadow_offset_x", 2)
-	mode_title.add_theme_constant_override("shadow_offset_y", 2)
-	mode_title.add_theme_constant_override("shadow_outline_size", 4)
-	header.add_child(mode_title)
-	vbox.add_child(header)
-
-	# Name field.
+	# Name field (below the description).
 	var field := LineEdit.new()
 	field.name = "NameField"
 	field.custom_minimum_size = Vector2(0, 40)
@@ -970,27 +871,22 @@ func _show_name_entry(selected_mode: int) -> void:
 		func(text):
 			_confirm_inline_name(vbox, field, selected_mode),
 	)
-	field.focus_exited.connect(
-		func():
-			if field.text.strip_edges() == "":
-				_cancel_inline_name(vbox),
-	)
 	vbox.add_child(field)
 
-	# Buttons: Cancel + Create (side by side, left-aligned, matching back button size).
+	# Buttons: Back + Create (side by side, left-aligned, matching back button size).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 8)
 	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
-	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(0, 48)
-	cancel_btn.add_theme_font_size_override("font_size", 38)
-	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
-	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-	_make_flat_button(cancel_btn)
-	_add_drop_shadow(cancel_btn)
-	_setup_hover_effect(cancel_btn)
-	cancel_btn.pressed.connect(
+	var back_btn := Button.new()
+	back_btn.text = "Back"
+	back_btn.custom_minimum_size = Vector2(0, 48)
+	back_btn.add_theme_font_size_override("font_size", 38)
+	back_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	back_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_make_flat_button(back_btn)
+	_add_drop_shadow(back_btn)
+	_setup_hover_effect(back_btn)
+	back_btn.pressed.connect(
 		func():
 			vbox.queue_free()
 			_restore_saves_list(),
@@ -1009,9 +905,12 @@ func _show_name_entry(selected_mode: int) -> void:
 		func():
 			_confirm_inline_name(vbox, field, selected_mode),
 	)
-	btn_row.add_child(cancel_btn)
+	btn_row.add_child(back_btn)
 	btn_row.add_child(create_btn)
 	vbox.add_child(btn_row)
+
+	# Default: Solo selected.
+	_update_mode_card_selection(mode_cards, mode_styles, GameState.GameMode.SOLO)
 
 	var idx := _new_stand_button.get_index()
 	_saves_list.add_child(vbox)
@@ -1019,20 +918,28 @@ func _show_name_entry(selected_mode: int) -> void:
 	field.grab_focus()
 
 
+## Update mode card borders: selected = bright yellow, others = dim.
+func _update_mode_card_selection(cards: Dictionary, styles: Dictionary, selected: int) -> void:
+	for key in cards:
+		var style: StyleBoxFlat = styles[key]
+		var card: PanelContainer = cards[key]
+		if key == selected:
+			style.border_color = Color(1, 0.9, 0.3, 1.0)
+			style.bg_color = Color(0.15, 0.12, 0.05, 0.3)
+		else:
+			style.border_color = Color(1, 1, 1, 0.25)
+			style.bg_color = Color(0, 0, 0, 0.2)
+		card.add_theme_stylebox_override("panel", style)
+
+
 func _confirm_inline_name(panel: VBoxContainer, field: LineEdit, mode: int) -> void:
 	var name := field.text.strip_edges()
 	if name == "":
-		_cancel_inline_name(panel)
 		return
 	panel.queue_free()
 	_restore_saves_list()
 	set_busy("Creating '%s'..." % name)
 	new_stand_requested.emit(name, mode)
-
-
-func _cancel_inline_name(panel: VBoxContainer) -> void:
-	panel.queue_free()
-	_restore_saves_list()
 
 
 ## Weighted character count: capitals count as 1.5, everything else as 1.
