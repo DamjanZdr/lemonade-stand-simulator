@@ -391,6 +391,10 @@ func _setup_hover_effect(btn: Button) -> void:
 			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
 					.set_ease(Tween.EASE_OUT),
 	)
+	btn.pressed.connect(
+		func():
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.0),
+	)
 
 
 ## Wire hover sound + pop animation only (no modulate color change).
@@ -421,6 +425,10 @@ func _setup_hover_pop_only(btn: Button) -> void:
 			btn.set_meta("_hover_tween", tw)
 			tw.tween_property(btn, "scale", base_scale, 0.08) \
 					.set_ease(Tween.EASE_OUT),
+	)
+	btn.pressed.connect(
+		func():
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.0),
 	)
 
 
@@ -990,18 +998,20 @@ func _add_color_picker(parent: Control, initial_color: Color, on_color: Callable
 			on_color.call(color)
 			swatch.color = color,
 	)
-	# Show popup to the right of the button on press.
+	# Show popup to the right of the button on press + click sound.
 	btn.pressed.connect(
 		func():
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.0)
 			popup.position = btn.global_position + Vector2(btn.size.x + 4, 0)
 			popup.popup(),
 	)
-	# Hover pop effect.
+	# Hover sound + pop effect.
 	var base_scale := btn.scale
 	btn.mouse_entered.connect(
 		func():
 			if btn.disabled:
 				return
+			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
 			btn.pivot_offset = Vector2(btn.size.x / 2.0, btn.size.y / 2.0)
 			var tw := create_tween()
 			tw.tween_property(btn, "scale", base_scale * HOVER_POP, 0.06) \
