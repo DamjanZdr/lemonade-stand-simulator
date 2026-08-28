@@ -880,7 +880,6 @@ func _show_mode_select() -> void:
 	var back_btn := Button.new()
 	back_btn.text = "Back"
 	back_btn.custom_minimum_size = Vector2(0, 48)
-	back_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	back_btn.add_theme_font_size_override("font_size", 38)
 	back_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	back_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -892,6 +891,9 @@ func _show_mode_select() -> void:
 			vbox.queue_free()
 			_restore_saves_list(),
 	)
+	# Spacer pushes Create to the right edge.
+	var btn_spacer := Control.new()
+	btn_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var create_btn := Button.new()
 	create_btn.name = "CreateBtn"
 	create_btn.text = "Create"
@@ -907,6 +909,7 @@ func _show_mode_select() -> void:
 			_confirm_inline_name(vbox, field, selected_mode),
 	)
 	btn_row.add_child(back_btn)
+	btn_row.add_child(btn_spacer)
 	btn_row.add_child(create_btn)
 	cards_wrap.add_child(btn_row)
 
