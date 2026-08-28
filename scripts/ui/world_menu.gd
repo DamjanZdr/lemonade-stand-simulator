@@ -693,6 +693,12 @@ func _show_mode_select() -> void:
 	cards_row.add_theme_constant_override("separation", 10)
 	cards_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 
+	# Description label (declared before the loop so card click lambdas can reference it).
+	var desc_label := Label.new()
+	desc_label.add_theme_font_size_override("font_size", 14)
+	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	desc_label.text = mode_descs[GameState.GameMode.SOLO]
+
 	for mode_info in [
 		{ "mode": GameState.GameMode.SOLO, "count": 1, "vs": false },
 		{ "mode": GameState.GameMode.COOP, "count": 4, "vs": false },
@@ -772,11 +778,7 @@ func _show_mode_select() -> void:
 
 	vbox.add_child(cards_row)
 
-	# Single description label for the selected mode.
-	var desc_label := Label.new()
-	desc_label.add_theme_font_size_override("font_size", 14)
-	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
-	desc_label.text = mode_descs[GameState.GameMode.SOLO]
+	# Add the description label to the vbox (declared earlier, before the loop).
 	vbox.add_child(desc_label)
 
 	# Buttons: Cancel (left) + Next (right).
