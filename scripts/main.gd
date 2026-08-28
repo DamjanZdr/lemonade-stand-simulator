@@ -37,6 +37,8 @@ enum MenuState {
 @onready var lobby_cam_stand2: Camera3D = $LobbyCamStand2
 @onready var stand_change_cam_end: Marker3D = $MainMenuCameras/StandChangeCameraEnd
 @onready var stand_change_cam_start: Marker3D = $MainMenuCameras/StandChangeCameraStart
+@onready var stand1_start_position: Marker3D = $Stand1StartPosition
+@onready var stand2_start_position: Marker3D = $Stand2StartPosition
 @onready var _transition_blur_rect: ColorRect = $TransitionOverlay/BlurRect
 @onready var _transition_overlay: CanvasLayer = $TransitionOverlay
 
@@ -1270,15 +1272,28 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
-		# Spawn the player at their stand's position. The lobby camera
-		# tween will smoothly fly from the lobby view to first-person.
-		p.global_position = stand.global_position + Vector3(0, 0, 2)
+		# Spawn the player at the stand's start marker position.
+		var spawn_marker := _get_stand_start_position(stand)
+		if spawn_marker != Vector3.ZERO:
+			p.global_position = spawn_marker
+		else:
+			p.global_position = stand.global_position + Vector3(0, 0, 2)
 	GameLog.log(
 		"[Main] Spawned player %d (stand=%s, is_me=%s)"
 		% [peer_id, stand.name if stand else "null", peer_id == multiplayer.get_unique_id()]
 	)
 	if peer_id == multiplayer.get_unique_id():
 		_on_local_player_ready(p)
+
+
+## Returns the spawn position for the given stand from its start marker,
+## or Vector3.ZERO if no marker is found.
+func _get_stand_start_position(stand: StandUnit) -> Vector3:
+	if stand == stand_unit and stand1_start_position:
+		return stand1_start_position.global_position
+	if stand == stand_unit2 and stand2_start_position:
+		return stand2_start_position.global_position
+	return Vector3.ZERO
 
 
 ## Returns the world position of the lobby player visual for the given

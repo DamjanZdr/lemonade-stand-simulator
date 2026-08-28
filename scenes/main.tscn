@@ -175,3 +175,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 180, 1.3345039, -19)
 
 [node name="StandChangeCameraStart" type="Marker3D" parent="MainMenuCameras" unique_id=706505586]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -211.17914, 1.3345039, -19)
+
+[node name="Stand2StartPosition" type="Marker3D" parent="." unique_id=29676175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6774569, 0.23767251, -34.659767)
+
+[node name="Stand1StartPosition" type="Marker3D" parent="." unique_id=538939789]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.688334, 0.23163146, 11.260717)
