@@ -40,6 +40,9 @@ const HOVER_POP: float = 1.12
 var _hair_name_lbl: Label = null
 var _eyebrow_name_lbl: Label = null
 var _head_slider: HSlider = null
+var _appearance_name_lbl: Label = null
+
+const GENDER_NAMES: Array[String] = ["Male", "Female"]
 
 ## PlayerVisuals nodes in the 3D world. Customization applies to ALL of
 ## them so the player sees their character regardless of which stand
@@ -73,10 +76,12 @@ const HEAD_SIZE_STEPS: int = 9
 
 const WALL_COLOR_NAMES: Array[String] = ["Cream", "Salmon", "Sky", "Sage", "Lilac"]
 const ROOF_COLOR_NAMES: Array[String] = ["Brown", "Grey", "Green", "Blue", "Yellow"]
+const LABEL_WIDTH: float = 80.0
 const NAME_WIDTH: float = 100.0
 const ARROW_SIZE: float = 32.0
 const COLOR_PICKER_SIZE: float = 36.0
 const OPTION_FONT_SIZE: int = 18
+const ROW_SEPARATION: float = 8.0
 
 # ── State ─────────────────────────────────────────────────────────────────────
 var _room_visible: bool = false
@@ -166,8 +171,6 @@ func _apply_menu_style() -> void:
 		_invite_button,
 		_copy_button,
 		_eye_button,
-		_male_button,
-		_female_button,
 		_lobby_tab,
 		_customize_tab,
 	]
@@ -473,7 +476,8 @@ func _on_customize_tab() -> void:
 	_lobby_tab.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	_customize_tab.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 	_lobby_panel.visible = false
-	_gender_row.visible = true
+	# GenderRow is hidden — gender is now an Appearance option in the list.
+	_gender_row.visible = false
 	_random_button.visible = true
 	_set_node_visible("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow", true)
 
@@ -616,18 +620,7 @@ func _setup_customization() -> void:
 	# Build the single-line avatar options row.
 	_build_avatar_options_row()
 
-	# Wire gender buttons.
-	_male_button.pressed.connect(
-		func():
-			_is_male = true
-			_on_customization_changed(),
-	)
-	_female_button.pressed.connect(
-		func():
-			_is_male = false
-			_on_customization_changed(),
-	)
-
+	# Gender is now an Appearance option — no toggle buttons to wire.
 	$LeftContainer/CustomizePanel/OptionsCol/RandomButton.pressed.connect(_on_randomize)
 
 	_apply_customization_to_all()
@@ -655,6 +648,17 @@ func _build_avatar_options_row() -> void:
 	options_col.move_child(vbox, options_col.get_child_count() - 2)
 
 	var pv := _player_visuals[0]
+
+	# -- Appearance: [<] Male/Female [>] --
+	_appearance_name_lbl = _add_style_section(
+		vbox,
+		"Appearance",
+		func(delta):
+			var idx := 0 if _is_male else 1
+			idx = (idx + delta + GENDER_NAMES.size()) % GENDER_NAMES.size()
+			_is_male = idx == 0
+			_on_customization_changed(),
+	)
 
 	# -- Hair: [<] name [>] --
 	_hair_name_lbl = _add_style_section(
@@ -737,17 +741,14 @@ func _build_avatar_options_row() -> void:
 
 	# -- Head: [slider] --
 	var head_row := HBoxContainer.new()
-	head_row.add_theme_constant_override("separation", 4)
+	head_row.add_theme_constant_override("separation", ROW_SEPARATION)
 	vbox.add_child(head_row)
 	var head_lbl := Label.new()
 	head_lbl.text = "Head"
+	head_lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	head_lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	head_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	head_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head_row.add_child(head_lbl)
-	var head_opts := HBoxContainer.new()
-	head_opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head_row.add_child(head_opts)
 	_head_slider = HSlider.new()
 	_head_slider.custom_minimum_size = Vector2(100, 32)
 	_head_slider.min_value = 0
@@ -759,31 +760,28 @@ func _build_avatar_options_row() -> void:
 			_head_size_index = int(v)
 			_on_customization_changed(),
 	)
-	head_opts.add_child(_head_slider)
+	head_row.add_child(_head_slider)
 
 
-## Add a style row: [Label (left half)] | [<] name [>] (right half)
-## The label takes the same column as the Male button. The options
-## are in the right half, aligned under the Female button.
+## Width of the <> area: < + sep + name + sep + >
+func _get_arrows_area_width() -> float:
+	return ARROW_SIZE + ROW_SEPARATION + NAME_WIDTH + ROW_SEPARATION + ARROW_SIZE
+
+
+## Add a style row: [Label] | [<] [name] [>]
+## Fixed-width label, fixed-width name, consistent <> spacing.
 ## Returns the name label so it can be updated.
 func _add_style_section(parent: Control, title: String, on_step: Callable) -> Label:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
+	row.add_theme_constant_override("separation", ROW_SEPARATION)
 	parent.add_child(row)
 
-	# Left half: label (same column as Male button).
 	var lbl := Label.new()
 	lbl.text = title
+	lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
-
-	# Right half: options container (same column as Female button).
-	var opts := HBoxContainer.new()
-	opts.add_theme_constant_override("separation", 4)
-	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(opts)
 
 	var prev := Button.new()
 	prev.text = "<"
@@ -797,7 +795,7 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 		func():
 			on_step.call(-1),
 	)
-	opts.add_child(prev)
+	row.add_child(prev)
 
 	var name_lbl := Label.new()
 	name_lbl.text = "—"
@@ -806,7 +804,7 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 	name_lbl.custom_minimum_size = Vector2(NAME_WIDTH, 0)
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	opts.add_child(name_lbl)
+	row.add_child(name_lbl)
 
 	var next := Button.new()
 	next.text = ">"
@@ -820,14 +818,14 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 		func():
 			on_step.call(1),
 	)
-	opts.add_child(next)
+	row.add_child(next)
 
 	return name_lbl
 
 
-## Add a color row: [Label (left half)] | [color picker] (right half)
-## The label takes the same column as Male. The color picker is in
-## the right half, aligned under the Female button area.
+## Add a color row: [Label] | [centered color picker]
+## The color picker is centered in the same space that <> occupies
+## in style rows, so it visually aligns with the middle of <>.
 func _add_color_section(
 	parent: Control,
 	title: String,
@@ -835,24 +833,30 @@ func _add_color_section(
 	on_color: Callable,
 ) -> void:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
+	row.add_theme_constant_override("separation", ROW_SEPARATION)
 	parent.add_child(row)
 
-	# Left half: label (same column as Male button).
 	var lbl := Label.new()
 	lbl.text = title
+	lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 
-	# Right half: color picker (same column as Female button).
-	var opts := HBoxContainer.new()
-	opts.add_theme_constant_override("separation", 4)
-	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(opts)
+	# Container with the same width as the <> area, color picker centered.
+	var area := HBoxContainer.new()
+	area.custom_minimum_size = Vector2(_get_arrows_area_width(), 0)
+	area.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	row.add_child(area)
 
-	_add_color_picker(opts, initial_color, on_color)
+	# Left spacer (expand) + color picker (center) + right spacer (expand).
+	var left_spacer := Control.new()
+	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	area.add_child(left_spacer)
+	_add_color_picker(area, initial_color, on_color)
+	var right_spacer := Control.new()
+	right_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	area.add_child(right_spacer)
 
 
 ## Add a ColorPickerButton with styling. The popup is simplified to
@@ -938,20 +942,18 @@ func _head_size_to_scale() -> float:
 
 
 func _update_gender_buttons() -> void:
-	_male_button.button_pressed = _is_male
-	_female_button.button_pressed = not _is_male
-	if _is_male:
-		_male_button.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
-		_female_button.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	else:
-		_male_button.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-		_female_button.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
+	# Gender is now an Appearance option in the list, not toggle buttons.
+	# Just update the appearance name label.
+	if _appearance_name_lbl:
+		_appearance_name_lbl.text = GENDER_NAMES[0] if _is_male else GENDER_NAMES[1]
 
 
 func _update_all_names() -> void:
 	if _player_visuals.is_empty():
 		return
 	var pv := _player_visuals[0]
+	if _appearance_name_lbl:
+		_appearance_name_lbl.text = GENDER_NAMES[0] if _is_male else GENDER_NAMES[1]
 	if _hair_name_lbl:
 		_hair_name_lbl.text = pv.get_hair_name(_hair_index)
 	if _eyebrow_name_lbl:
