@@ -751,7 +751,6 @@ func _build_avatar_options_row() -> void:
 	head_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	head_row.add_child(head_lbl)
-	_add_divider(head_row)
 	var head_opts := HBoxContainer.new()
 	head_opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head_row.add_child(head_opts)
@@ -769,18 +768,7 @@ func _build_avatar_options_row() -> void:
 	head_opts.add_child(_head_slider)
 
 
-## Add a `|` divider label matching the tab separator style.
-func _add_divider(parent: Control) -> void:
-	var div := Label.new()
-	div.text = "|"
-	div.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
-	div.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
-	div.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	parent.add_child(div)
-
-
-## Add a style row: [Label (left half)] | [<] [name] [>] (right half)
-## The `|` divider sits at the same x as the Lobby|Customize divider.
+## Add a style row: [Label (left half)] [<] [name] [>] (right half, centered)
 ## Returns the name label so it can be updated.
 func _add_style_section(parent: Control, title: String, on_step: Callable) -> Label:
 	var row := HBoxContainer.new()
@@ -796,14 +784,16 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(lbl)
 
-	# Divider.
-	_add_divider(row)
-
-	# Right half: options (expand fill, matching Customize tab).
+	# Right half: options centered (expand fill, matching Customize tab).
 	var opts := HBoxContainer.new()
 	opts.add_theme_constant_override("separation", 4)
 	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(opts)
+
+	# Left spacer to center the <> group.
+	var left_spacer := Control.new()
+	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opts.add_child(left_spacer)
 
 	var prev := Button.new()
 	prev.text = "<"
@@ -842,12 +832,15 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 	)
 	opts.add_child(next)
 
+	# Right spacer to center the <> group.
+	var right_spacer := Control.new()
+	right_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opts.add_child(right_spacer)
+
 	return name_lbl
 
 
-## Add a color row: [Label (left half)] | [centered color picker] (right half)
-## The `|` divider sits at the same x as the style rows. The color
-## picker is centered in the right half.
+## Add a color row: [Label (left half)] [centered color picker] (right half)
 func _add_color_section(
 	parent: Control,
 	title: String,
@@ -867,15 +860,11 @@ func _add_color_section(
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(lbl)
 
-	# Divider.
-	_add_divider(row)
-
 	# Right half: color picker centered (expand fill, matching style rows).
 	var opts := HBoxContainer.new()
 	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(opts)
 
-	# Left spacer + color picker + right spacer for centering.
 	var left_spacer := Control.new()
 	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	opts.add_child(left_spacer)
