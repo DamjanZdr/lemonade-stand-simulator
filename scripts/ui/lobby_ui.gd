@@ -356,13 +356,8 @@ func _style_slider(slider: HSlider) -> void:
 	grab_area_hl.content_margin_top = 6.0
 	grab_area_hl.content_margin_bottom = 6.0
 	slider.add_theme_stylebox_override("grabber_area_highlight", grab_area_hl)
-	# Lemon emoji grabber.
-	slider.add_theme_icon_override("grabber", _make_emoji_icon("🍋", 16))
-	slider.add_theme_icon_override("grabber_highlight", _make_emoji_icon("🍋", 20))
-	slider.add_theme_icon_override(
-		"grabber_disabled",
-		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5, 0.5), 1),
-	)
+	# Lemon emoji grabber (set asynchronously via SubViewport rendering).
+	_set_slider_emoji_icons(slider)
 
 
 ## Create a circular icon texture at runtime for slider grabbers.
@@ -382,24 +377,39 @@ func _make_circle_icon(size: int, fill: Color, border: Color, border_width: int)
 	return tex
 
 
-## Render an emoji to a texture using the default font for slider grabbers.
-func _make_emoji_icon(emoji: String, font_size: int) -> Texture2D:
-	var font := ThemeDB.get_default_theme().default_font
-	var text_size := font.get_string_size(emoji, font_size)
-	var pad := 2
-	var w := int(text_size.x) + pad * 2
-	var h := int(text_size.y) + pad * 2
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-	font.draw_string(
-		img,
-		Vector2(pad, text_size.y + pad),
-		emoji,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		font_size,
-		Color(1, 1, 1, 1),
+## Set lemon emoji icons on a slider, rendered via SubViewport (async).
+func _set_slider_emoji_icons(slider: HSlider) -> void:
+	var grabber := await _render_emoji_texture("🍋", 16)
+	var grabber_hl := await _render_emoji_texture("🍋", 20)
+	if not is_instance_valid(slider):
+		return
+	slider.add_theme_icon_override("grabber", grabber)
+	slider.add_theme_icon_override("grabber_highlight", grabber_hl)
+	slider.add_theme_icon_override(
+		"grabber_disabled",
+		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5, 0.5), 1),
 	)
+
+
+## Render an emoji to a texture via a SubViewport Label (supports emoji fallback).
+func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
+	var sz := font_size + 8
+	var vp := SubViewport.new()
+	vp.size = Vector2(sz, sz)
+	vp.transparent_bg = true
+	vp.render_target_clear_mode = SubViewport.CLEAR_MODE_ONCE
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var lbl := Label.new()
+	lbl.text = emoji
+	lbl.add_theme_font_size_override("font_size", font_size)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.size = Vector2(sz, sz)
+	vp.add_child(lbl)
+	add_child(vp)
+	await get_tree().process_frame
+	var img := vp.get_texture().get_image()
+	vp.queue_free()
 	return ImageTexture.create_from_image(img)
 
 
