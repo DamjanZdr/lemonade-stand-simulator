@@ -261,31 +261,20 @@ func _apply_mode_layout() -> void:
 	_switch_button.visible = is_versus
 	# Invite button hidden in Solo (no friends needed).
 	_invite_button.visible = not is_solo
-	# Stand 1 header: in Solo/Co-op, just say "Players" instead of "Stand 1".
+	# Stand 1 header: always show the stand/save name.
 	var stand1_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
-	if is_versus:
-		stand1_header.text = "Stand 1"
-	else:
-		stand1_header.text = "Players"
-	# Update the lobby title to show the stand name + mode icons.
+	stand1_header.text = GameState.stand_name
+	# Update the lobby title to show the mode icons only.
 	_update_lobby_title(mode)
 
 
-## Build the lobby title: stand name + silhouette mode icons.
+## Build the lobby title: silhouette mode icons only.
 func _update_lobby_title(mode: int) -> void:
 	for child in _customize_title.get_children():
 		child.queue_free()
 	_customize_title.alignment = BoxContainer.ALIGNMENT_CENTER
-	var name_lbl := Label.new()
-	name_lbl.text = GameState.stand_name
-	name_lbl.add_theme_font_size_override("font_size", 28)
-	name_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	name_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_customize_title.add_child(name_lbl)
 	var icon := _build_mode_icon(mode)
 	if icon:
-		# Wrap in a VBoxContainer that vertically centers the icon
-		# so it aligns with the text baseline.
 		var wrapper := VBoxContainer.new()
 		wrapper.alignment = BoxContainer.ALIGNMENT_CENTER
 		wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -635,7 +624,7 @@ func _refresh() -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.add_theme_color_override(
 			"font_color",
-			Color(1, 0.95, 0.7, 1) if entry.get("ready", false) else Color(1, 1, 1, 0.85),
+			Color(0.3, 0.9, 0.3, 1) if entry.get("ready", false) else Color(1, 0.6, 0.2, 1),
 		)
 		label.add_theme_font_size_override("font_size", 18)
 		if stand_idx == 0:
