@@ -697,6 +697,7 @@ func _show_mode_select() -> void:
 	var desc_label := Label.new()
 	desc_label.add_theme_font_size_override("font_size", 14)
 	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_label.text = mode_descs[GameState.GameMode.SOLO]
 
 	for mode_info in [
@@ -746,30 +747,32 @@ func _show_mode_select() -> void:
 					desc_label.text = mode_descs[mode_val]
 					_update_mode_card_selection(mode_cards, mode_styles, mode_val),
 		)
-		# Hover effect on the card.
+		# Hover effect on the card — pop the whole card panel.
 		card.mouse_entered.connect(
 			func():
 				AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
 				if card.has_meta("_ht") and card.get_meta("_ht") is Tween:
 					(card.get_meta("_ht") as Tween).kill()
+				card.pivot_offset = card.size / 2.0
 				var tw := create_tween()
 				card.set_meta("_ht", tw)
 				tw.set_parallel(true)
 				if mode_val != selected_mode:
 					tw.tween_property(card_style, "border_color", Color(1, 1, 1, 0.6), 0.08)
-				tw.tween_property(card_vbox, "scale", Vector2.ONE * HOVER_POP, 0.06) \
+				tw.tween_property(card, "scale", Vector2.ONE * HOVER_POP, 0.06) \
 						.set_ease(Tween.EASE_OUT),
 		)
 		card.mouse_exited.connect(
 			func():
 				if card.has_meta("_ht") and card.get_meta("_ht") is Tween:
 					(card.get_meta("_ht") as Tween).kill()
+				card.pivot_offset = card.size / 2.0
 				var tw := create_tween()
 				card.set_meta("_ht", tw)
 				tw.set_parallel(true)
 				if mode_val != selected_mode:
 					tw.tween_property(card_style, "border_color", Color(1, 1, 1, 0.25), 0.12)
-				tw.tween_property(card_vbox, "scale", Vector2.ONE, 0.08) \
+				tw.tween_property(card, "scale", Vector2.ONE, 0.08) \
 						.set_ease(Tween.EASE_OUT),
 		)
 
@@ -781,13 +784,14 @@ func _show_mode_select() -> void:
 	# Add the description label to the vbox (declared earlier, before the loop).
 	vbox.add_child(desc_label)
 
-	# Buttons: Cancel (left) + Next (right).
+	# Buttons: Cancel + Next (full-width, evenly spaced).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
-	btn_row.alignment = BoxContainer.ALIGNMENT_END
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
-	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.custom_minimum_size = Vector2(0, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel_btn.add_theme_font_size_override("font_size", 22)
 	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(cancel_btn)
@@ -801,7 +805,9 @@ func _show_mode_select() -> void:
 	)
 	var confirm_btn := Button.new()
 	confirm_btn.text = "Next"
-	confirm_btn.add_theme_font_size_override("font_size", 18)
+	confirm_btn.custom_minimum_size = Vector2(0, 40)
+	confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	confirm_btn.add_theme_font_size_override("font_size", 22)
 	confirm_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
 	confirm_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(confirm_btn)
@@ -927,13 +933,14 @@ func _show_name_entry(selected_mode: int) -> void:
 	)
 	vbox.add_child(field)
 
-	# Buttons: Cancel (left) + Create (right).
+	# Buttons: Cancel + Create (full-width, evenly spaced).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
-	btn_row.alignment = BoxContainer.ALIGNMENT_END
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
-	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.custom_minimum_size = Vector2(0, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel_btn.add_theme_font_size_override("font_size", 22)
 	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(cancel_btn)
@@ -948,7 +955,9 @@ func _show_name_entry(selected_mode: int) -> void:
 	var create_btn := Button.new()
 	create_btn.name = "CreateBtn"
 	create_btn.text = "Create"
-	create_btn.add_theme_font_size_override("font_size", 18)
+	create_btn.custom_minimum_size = Vector2(0, 40)
+	create_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	create_btn.add_theme_font_size_override("font_size", 22)
 	create_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
 	create_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(create_btn)
