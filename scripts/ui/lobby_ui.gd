@@ -76,7 +76,6 @@ const HEAD_SIZE_STEPS: int = 9
 
 const WALL_COLOR_NAMES: Array[String] = ["Cream", "Salmon", "Sky", "Sage", "Lilac"]
 const ROOF_COLOR_NAMES: Array[String] = ["Brown", "Grey", "Green", "Blue", "Yellow"]
-const LABEL_WIDTH: float = 80.0
 const NAME_WIDTH: float = 100.0
 const ARROW_SIZE: float = 32.0
 const COLOR_PICKER_SIZE: float = 36.0
@@ -643,8 +642,8 @@ func _build_avatar_options_row() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.name = "AvatarOptionsRow"
 	vbox.add_theme_constant_override("separation", 8)
-	# Shrink to content width and center horizontally in the panel.
-	vbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# Fill the panel width so the 50/50 split + divider align with tabs.
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	options_col.add_child(vbox)
 	# Move it above the ColumnsRow (which is hidden) and below GenderRow.
 	options_col.move_child(vbox, options_col.get_child_count() - 2)
@@ -747,10 +746,15 @@ func _build_avatar_options_row() -> void:
 	vbox.add_child(head_row)
 	var head_lbl := Label.new()
 	head_lbl.text = "Head"
-	head_lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	head_lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	head_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	head_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	head_row.add_child(head_lbl)
+	_add_divider(head_row)
+	var head_opts := HBoxContainer.new()
+	head_opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head_row.add_child(head_opts)
 	_head_slider = HSlider.new()
 	_head_slider.custom_minimum_size = Vector2(100, 32)
 	_head_slider.min_value = 0
@@ -762,28 +766,44 @@ func _build_avatar_options_row() -> void:
 			_head_size_index = int(v)
 			_on_customization_changed(),
 	)
-	head_row.add_child(_head_slider)
+	head_opts.add_child(_head_slider)
 
 
-## Width of the <> area: < + sep + name + sep + >
-func _get_arrows_area_width() -> float:
-	return ARROW_SIZE + ROW_SEPARATION + NAME_WIDTH + ROW_SEPARATION + ARROW_SIZE
+## Add a `|` divider label matching the tab separator style.
+func _add_divider(parent: Control) -> void:
+	var div := Label.new()
+	div.text = "|"
+	div.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
+	div.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	div.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(div)
 
 
-## Add a style row: [Label] | [<] [name] [>]
-## Fixed-width label, fixed-width name, consistent <> spacing.
+## Add a style row: [Label (left half)] | [<] [name] [>] (right half)
+## The `|` divider sits at the same x as the Lobby|Customize divider.
 ## Returns the name label so it can be updated.
 func _add_style_section(parent: Control, title: String, on_step: Callable) -> Label:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", ROW_SEPARATION)
 	parent.add_child(row)
 
+	# Left half: label (expand fill, matching Lobby tab).
 	var lbl := Label.new()
 	lbl.text = title
-	lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(lbl)
+
+	# Divider.
+	_add_divider(row)
+
+	# Right half: options (expand fill, matching Customize tab).
+	var opts := HBoxContainer.new()
+	opts.add_theme_constant_override("separation", 4)
+	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(opts)
 
 	var prev := Button.new()
 	prev.text = "<"
@@ -797,7 +817,7 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 		func():
 			on_step.call(-1),
 	)
-	row.add_child(prev)
+	opts.add_child(prev)
 
 	var name_lbl := Label.new()
 	name_lbl.text = "—"
@@ -806,7 +826,7 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 	name_lbl.custom_minimum_size = Vector2(NAME_WIDTH, 0)
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	row.add_child(name_lbl)
+	opts.add_child(name_lbl)
 
 	var next := Button.new()
 	next.text = ">"
@@ -820,14 +840,14 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 		func():
 			on_step.call(1),
 	)
-	row.add_child(next)
+	opts.add_child(next)
 
 	return name_lbl
 
 
-## Add a color row: [Label] | [centered color picker]
-## The color picker is centered in the same space that <> occupies
-## in style rows, so it visually aligns with the middle of <>.
+## Add a color row: [Label (left half)] | [centered color picker] (right half)
+## The `|` divider sits at the same x as the style rows. The color
+## picker is centered in the right half.
 func _add_color_section(
 	parent: Control,
 	title: String,
@@ -838,27 +858,31 @@ func _add_color_section(
 	row.add_theme_constant_override("separation", ROW_SEPARATION)
 	parent.add_child(row)
 
+	# Left half: label (expand fill, matching style rows).
 	var lbl := Label.new()
 	lbl.text = title
-	lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(lbl)
 
-	# Container with the same width as the <> area, color picker centered.
-	var area := HBoxContainer.new()
-	area.custom_minimum_size = Vector2(_get_arrows_area_width(), 0)
-	area.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	row.add_child(area)
+	# Divider.
+	_add_divider(row)
 
-	# Left spacer (expand) + color picker (center) + right spacer (expand).
+	# Right half: color picker centered (expand fill, matching style rows).
+	var opts := HBoxContainer.new()
+	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(opts)
+
+	# Left spacer + color picker + right spacer for centering.
 	var left_spacer := Control.new()
 	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	area.add_child(left_spacer)
-	_add_color_picker(area, initial_color, on_color)
+	opts.add_child(left_spacer)
+	_add_color_picker(opts, initial_color, on_color)
 	var right_spacer := Control.new()
 	right_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	area.add_child(right_spacer)
+	opts.add_child(right_spacer)
 
 
 ## Add a ColorPickerButton with styling. The popup is simplified to
