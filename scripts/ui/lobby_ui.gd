@@ -28,19 +28,14 @@ const HOVER_POP: float = 1.12
 # Customization UI — left column (under Male)
 @onready var _male_button: Button = $LeftContainer/CustomizePanel/OptionsCol/GenderRow/MaleButton
 @onready var _female_button: Button = $LeftContainer/CustomizePanel/OptionsCol/GenderRow/FemaleButton
-@onready var _hair_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow/HairName
-@onready var _eyebrow_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow/EyebrowName
-@onready var _shirt_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow/ShirtColorName
-@onready var _shoes_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow/ShoesColorName
+@onready var _columns_row: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow
 @onready var _walls_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow/WallsColorName
-
-# Customization UI — right column (under Female)
-@onready var _hair_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow/HairColorName
-@onready var _eyebrow_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow/EyebrowColorName
-@onready var _pants_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow/PantsColorName
-@onready var _head_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow/HeadName
 @onready var _roof_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow/RoofColorName
-@onready var _skin_color_slider: HSlider = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow/SkinColorSlider
+
+# New single-line avatar controls (built dynamically).
+var _hair_name_lbl: Label = null
+var _eyebrow_name_lbl: Label = null
+var _head_slider: HSlider = null
 
 ## PlayerVisuals nodes in the 3D world. Customization applies to ALL of
 ## them so the player sees their character regardless of which stand
@@ -57,48 +52,21 @@ const STAND_NAMES: Array[String] = ["Stand 1", "Stand 2"]
 # Customization state
 var _is_male: bool = true
 var _hair_index: int = 0
-var _hair_color_index: int = 2 # medium brown
+var _hair_color: Color = Color(0.4, 0.25, 0.15) # medium brown
 var _eyebrow_index: int = 0
-var _eyebrow_color_index: int = 0 # black
-var _shirt_color_index: int = 0
-var _pants_color_index: int = 1
-var _shoes_color_index: int = 2
+var _eyebrow_color: Color = Color(0.05, 0.03, 0.02) # black
+var _shirt_color: Color = Color(0.8, 0.2, 0.2) # red
+var _pants_color: Color = Color(0.2, 0.3, 0.8) # blue
+var _shoes_color: Color = Color(0.2, 0.5, 0.3) # green
 var _head_size_index: int = 4 # 0-8, maps to 0.5x - 2.0x (index 4 = 1.3x default)
 var _walls_color_index: int = 0
 var _roof_color_index: int = 0
-var _skin_color_value: float = 0.0 # 0.0 = lightest, 1.0 = darkest
+var _skin_color: Color = Color(0.98, 0.87, 0.75) # light
 
 const HEAD_SIZE_MIN: float = 0.5
 const HEAD_SIZE_MAX: float = 2.0
 const HEAD_SIZE_STEPS: int = 9
 
-const HAIR_COLOR_NAMES: Array[String] = [
-	"Black",
-	"Dark Brown",
-	"Med Brown",
-	"Lt Brown",
-	"Blonde",
-	"Auburn",
-	"Grey",
-	"White",
-]
-const CLOTHING_COLOR_NAMES: Array[String] = [
-	"Red",
-	"Blue",
-	"Green",
-	"Yellow",
-	"Purple",
-	"Orange",
-	"Charcoal",
-	"Lt Grey",
-	"Tan",
-	"Teal",
-	"Maroon",
-	"Navy",
-	"Pink",
-	"Sky Blue",
-	"Lime",
-]
 const WALL_COLOR_NAMES: Array[String] = ["Cream", "Salmon", "Sky", "Sage", "Lilac"]
 const ROOF_COLOR_NAMES: Array[String] = ["Brown", "Grey", "Green", "Blue", "Yellow"]
 
@@ -490,50 +458,9 @@ func _on_avatar_tab() -> void:
 	_house_tab.button_pressed = false
 	_gender_row.visible = true
 	_random_button.visible = true
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow",
-		true,
-	)
+	# Show the single-line avatar options row, hide the old columns.
+	_set_node_visible("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow", true)
+	_columns_row.visible = false
 
 
 ## Switch to the House tab — show house customization options.
@@ -542,6 +469,26 @@ func _on_house_tab() -> void:
 	_house_tab.button_pressed = true
 	_gender_row.visible = false
 	_random_button.visible = false
+	# Hide avatar options, show the old columns (only walls/roof are relevant).
+	_set_node_visible("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow", false)
+	_columns_row.visible = true
+	# Hide all avatar rows in the columns, show only walls + roof.
+	for row_name in ["HairStyleRow", "EyebrowsRow", "ShirtColorRow", "ShoesColorRow"]:
+		_set_node_visible(
+			"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/" + row_name,
+			false,
+		)
+	for row_name in [
+		"HairColorRow",
+		"EyebrowColorRow",
+		"PantsColorRow",
+		"HeadSizeRow",
+		"SkinColorRow",
+	]:
+		_set_node_visible(
+			"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/" + row_name,
+			false,
+		)
 	_set_node_visible(
 		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow",
 		true,
@@ -549,42 +496,6 @@ func _on_house_tab() -> void:
 	_set_node_visible(
 		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow",
 		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow",
-		false,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow",
-		false,
 	)
 
 
@@ -719,9 +630,14 @@ func _setup_customization() -> void:
 	if _player_visuals.is_empty():
 		push_warning("LobbyUI: no PlayerVisuals found, customization will not be visible")
 		return
-	_apply_customization_to_all()
-	_update_all_names()
 
+	# Hide the old two-column layout — we build a single-line row instead.
+	_columns_row.visible = false
+
+	# Build the single-line avatar options row.
+	_build_avatar_options_row()
+
+	# Wire gender buttons.
 	_male_button.pressed.connect(
 		func():
 			_is_male = true
@@ -733,75 +649,7 @@ func _setup_customization() -> void:
 			_on_customization_changed(),
 	)
 
-	# Left column: Hair style, Eyebrows, Shirt color, Shoes color, Walls color
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow/HairPrev \
-			.pressed \
-			.connect(
-		func():
-			_hair_index = (_hair_index - 1 + _player_visuals[0].get_hair_count()) % _player_visuals[
-				0
-			].get_hair_count()
-			_on_customization_changed(),
-	)
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow/HairNext \
-			.pressed \
-			.connect(
-		func():
-			_hair_index = (_hair_index + 1) % _player_visuals[0].get_hair_count()
-			_on_customization_changed(),
-	)
-
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow/EyebrowPrev \
-			.pressed \
-			.connect(
-		func():
-			_eyebrow_index = (_eyebrow_index - 1 + _player_visuals[0].get_eyebrow_count()) % _player_visuals[
-				0
-			].get_eyebrow_count()
-			_on_customization_changed(),
-	)
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow/EyebrowNext \
-			.pressed \
-			.connect(
-		func():
-			_eyebrow_index = (_eyebrow_index + 1) % _player_visuals[0].get_eyebrow_count()
-			_on_customization_changed(),
-	)
-
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow/ShirtColorPrev \
-			.pressed \
-			.connect(
-		func():
-			_shirt_color_index = (_shirt_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
-					.CLOTHING_COLORS \
-					.size()
-			_on_customization_changed(),
-	)
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow/ShirtColorNext \
-			.pressed \
-			.connect(
-		func():
-			_shirt_color_index = (_shirt_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
-			_on_customization_changed(),
-	)
-
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow/ShoesColorPrev \
-			.pressed \
-			.connect(
-		func():
-			_shoes_color_index = (_shoes_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
-					.CLOTHING_COLORS \
-					.size()
-			_on_customization_changed(),
-	)
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow/ShoesColorNext \
-			.pressed \
-			.connect(
-		func():
-			_shoes_color_index = (_shoes_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
-			_on_customization_changed(),
-	)
-
+	# Wire walls/roof (still using the old scene nodes, visible only on House tab).
 	var wall_count := _get_wall_colors().size()
 	if wall_count > 0:
 		$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow/WallsColorPrev \
@@ -818,74 +666,6 @@ func _setup_customization() -> void:
 				_walls_color_index = (_walls_color_index + 1) % wall_count
 				_on_customization_changed(),
 		)
-
-	# Right column: Hair color, Eyebrow color, Pants color, Head size, Roof color
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow/HairColorPrev \
-			.pressed \
-			.connect(
-		func():
-			_hair_color_index = (_hair_color_index - 1 + PlayerVisuals.HAIR_COLORS.size()) % PlayerVisuals \
-					.HAIR_COLORS \
-					.size()
-			_on_customization_changed(),
-	)
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow/HairColorNext \
-			.pressed \
-			.connect(
-		func():
-			_hair_color_index = (_hair_color_index + 1) % PlayerVisuals.HAIR_COLORS.size()
-			_on_customization_changed(),
-	)
-
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow/EyebrowColorPrev \
-			.pressed \
-			.connect(
-		func():
-			_eyebrow_color_index = (_eyebrow_color_index - 1 + PlayerVisuals.HAIR_COLORS.size()) % PlayerVisuals \
-					.HAIR_COLORS \
-					.size()
-			_on_customization_changed(),
-	)
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow/EyebrowColorNext \
-			.pressed \
-			.connect(
-		func():
-			_eyebrow_color_index = (_eyebrow_color_index + 1) % PlayerVisuals.HAIR_COLORS.size()
-			_on_customization_changed(),
-	)
-
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow/PantsColorPrev \
-			.pressed \
-			.connect(
-		func():
-			_pants_color_index = (_pants_color_index - 1 + PlayerVisuals.CLOTHING_COLORS.size()) % PlayerVisuals \
-					.CLOTHING_COLORS \
-					.size()
-			_on_customization_changed(),
-	)
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow/PantsColorNext \
-			.pressed \
-			.connect(
-		func():
-			_pants_color_index = (_pants_color_index + 1) % PlayerVisuals.CLOTHING_COLORS.size()
-			_on_customization_changed(),
-	)
-
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow/HeadPrev \
-			.pressed \
-			.connect(
-		func():
-			_head_size_index = max(0, _head_size_index - 1)
-			_on_customization_changed(),
-	)
-	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow/HeadNext \
-			.pressed \
-			.connect(
-		func():
-			_head_size_index = min(HEAD_SIZE_STEPS - 1, _head_size_index + 1)
-			_on_customization_changed(),
-	)
-
 	var roof_count := _get_roof_colors().size()
 	if roof_count > 0:
 		$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow/RoofColorPrev \
@@ -904,14 +684,201 @@ func _setup_customization() -> void:
 		)
 
 	$LeftContainer/CustomizePanel/OptionsCol/RandomButton.pressed.connect(_on_randomize)
-	# Skin color slider
-	if _skin_color_slider:
-		_skin_color_slider.value_changed.connect(
-			func(v: float):
-				_skin_color_value = v
-				_on_customization_changed(),
-		)
+
+	_apply_customization_to_all()
+	_update_all_names()
 	_update_gender_buttons()
+
+
+## Build a single-line row with all avatar customization controls:
+## Hair [<] name [>] [color] | Brows [<] name [>] [color] |
+## Shirt [color] | Pants [color] | Shoes [color] | Skin [color] |
+## Head [slider]
+func _build_avatar_options_row() -> void:
+	var options_col: VBoxContainer = $LeftContainer/CustomizePanel/OptionsCol
+	var row := HBoxContainer.new()
+	row.name = "AvatarOptionsRow"
+	row.add_theme_constant_override("separation", 6)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	options_col.add_child(row)
+	# Move it above the ColumnsRow (which is hidden) and below GenderRow.
+	options_col.move_child(row, options_col.get_child_count() - 2)
+
+	var pv := _player_visuals[0]
+
+	# -- Hair: [<] name [>] [color picker] --
+	_hair_name_lbl = _add_style_section(
+		row,
+		"Hair",
+		pv.get_hair_count(),
+		func(delta):
+			_hair_index = (_hair_index + delta + pv.get_hair_count()) % pv.get_hair_count()
+			_on_customization_changed(),
+		_hair_color,
+		func(color):
+			_hair_color = color
+			_on_customization_changed(),
+	)
+
+	# -- Brows: [<] name [>] [color picker] --
+	_eyebrow_name_lbl = _add_style_section(
+		row,
+		"Brows",
+		pv.get_eyebrow_count(),
+		func(delta):
+			_eyebrow_index = (_eyebrow_index + delta + pv.get_eyebrow_count()) % pv.get_eyebrow_count()
+			_on_customization_changed(),
+		_eyebrow_color,
+		func(color):
+			_eyebrow_color = color
+			_on_customization_changed(),
+	)
+
+	# -- Shirt: [color picker] --
+	_add_color_section(
+		row,
+		"Shirt",
+		_shirt_color,
+		func(color):
+			_shirt_color = color
+			_on_customization_changed(),
+	)
+
+	# -- Pants: [color picker] --
+	_add_color_section(
+		row,
+		"Pants",
+		_pants_color,
+		func(color):
+			_pants_color = color
+			_on_customization_changed(),
+	)
+
+	# -- Shoes: [color picker] --
+	_add_color_section(
+		row,
+		"Shoes",
+		_shoes_color,
+		func(color):
+			_shoes_color = color
+			_on_customization_changed(),
+	)
+
+	# -- Skin: [color picker] --
+	_add_color_section(
+		row,
+		"Skin",
+		_skin_color,
+		func(color):
+			_skin_color = color
+			_on_customization_changed(),
+	)
+
+	# -- Head: [slider] --
+	var head_lbl := Label.new()
+	head_lbl.text = "Head"
+	head_lbl.add_theme_font_size_override("font_size", 12)
+	head_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	row.add_child(head_lbl)
+	_head_slider = HSlider.new()
+	_head_slider.custom_minimum_size = Vector2(80, 24)
+	_head_slider.min_value = 0
+	_head_slider.max_value = HEAD_SIZE_STEPS - 1
+	_head_slider.value = _head_size_index
+	_head_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_head_slider.value_changed.connect(
+		func(v: float):
+			_head_size_index = int(v)
+			_on_customization_changed(),
+	)
+	row.add_child(_head_slider)
+
+
+## Add a style section: Label | [<] | name | [>] | [color picker]
+## Returns the name label so it can be updated.
+func _add_style_section(
+	parent: Control,
+	title: String,
+	_count: int,
+	on_step: Callable,
+	initial_color: Color,
+	on_color: Callable,
+) -> Label:
+	var lbl := Label.new()
+	lbl.text = title
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	parent.add_child(lbl)
+
+	var prev := Button.new()
+	prev.text = "<"
+	prev.custom_minimum_size = Vector2(20, 24)
+	prev.add_theme_font_size_override("font_size", 12)
+	_make_flat_button(prev)
+	_setup_hover_effect(prev)
+	prev.pressed.connect(
+		func():
+			on_step.call(-1),
+	)
+	parent.add_child(prev)
+
+	var name_lbl := Label.new()
+	name_lbl.text = "—"
+	name_lbl.add_theme_font_size_override("font_size", 12)
+	name_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
+	name_lbl.custom_minimum_size = Vector2(50, 0)
+	parent.add_child(name_lbl)
+
+	var next := Button.new()
+	next.text = ">"
+	next.custom_minimum_size = Vector2(20, 24)
+	next.add_theme_font_size_override("font_size", 12)
+	_make_flat_button(next)
+	_setup_hover_effect(next)
+	next.pressed.connect(
+		func():
+			on_step.call(1),
+	)
+	parent.add_child(next)
+
+	_add_color_picker(parent, initial_color, on_color)
+	return name_lbl
+
+
+## Add a color section: Label | [color picker]
+func _add_color_section(
+	parent: Control,
+	title: String,
+	initial_color: Color,
+	on_color: Callable,
+) -> void:
+	var lbl := Label.new()
+	lbl.text = title
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	parent.add_child(lbl)
+	_add_color_picker(parent, initial_color, on_color)
+
+
+## Add a ColorPickerButton with styling.
+func _add_color_picker(parent: Control, initial_color: Color, on_color: Callable) -> void:
+	var cpb := ColorPickerButton.new()
+	cpb.custom_minimum_size = Vector2(24, 24)
+	cpb.color = initial_color
+	cpb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# Style: flat, no border.
+	var flat := StyleBoxFlat.new()
+	flat.bg_color = initial_color
+	flat.set_border_width_all(1)
+	flat.border_color = Color(1, 1, 1, 0.4)
+	flat.set_corner_radius_all(4)
+	cpb.add_theme_stylebox_override("normal", flat)
+	cpb.color_changed.connect(
+		func(color):
+			on_color.call(color)
+			flat.bg_color = color,
+	)
+	parent.add_child(cpb)
 
 
 func _get_wall_colors() -> Array[Color]:
@@ -946,17 +913,17 @@ func _apply_customization_to_all() -> void:
 		if pv == null:
 			continue
 		pv.set_gender(_is_male)
-		pv.set_hair(_hair_index, PlayerVisuals.HAIR_COLORS[_hair_color_index])
+		pv.set_hair(_hair_index, _hair_color)
 		pv.set_eyebrow(_eyebrow_index)
 		var colors: Dictionary = {
-			"shirt": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
-			"top": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
-			"pants": PlayerVisuals.CLOTHING_COLORS[_pants_color_index],
-			"trousers": PlayerVisuals.CLOTHING_COLORS[_pants_color_index],
-			"shoes": PlayerVisuals.CLOTHING_COLORS[_shoes_color_index],
+			"shirt": _shirt_color,
+			"top": _shirt_color,
+			"pants": _pants_color,
+			"trousers": _pants_color,
+			"shoes": _shoes_color,
 		}
 		pv.set_clothing_colors(colors)
-		pv.set_skin_color(_skin_color_value)
+		pv.set_skin_color_value(_skin_color)
 		pv.scale_head_bone(_head_size_to_scale())
 		pv.play_anim("Idle")
 
@@ -975,14 +942,10 @@ func _update_all_names() -> void:
 	if _player_visuals.is_empty():
 		return
 	var pv := _player_visuals[0]
-	_hair_name.text = pv.get_hair_name(_hair_index)
-	_hair_color_name.text = HAIR_COLOR_NAMES[_hair_color_index]
-	_eyebrow_name.text = pv.get_eyebrow_name(_eyebrow_index)
-	_eyebrow_color_name.text = HAIR_COLOR_NAMES[_eyebrow_color_index]
-	_shirt_color_name.text = CLOTHING_COLOR_NAMES[_shirt_color_index]
-	_pants_color_name.text = CLOTHING_COLOR_NAMES[_pants_color_index]
-	_shoes_color_name.text = CLOTHING_COLOR_NAMES[_shoes_color_index]
-	_head_name.text = "%.1fx" % _head_size_to_scale()
+	if _hair_name_lbl:
+		_hair_name_lbl.text = pv.get_hair_name(_hair_index)
+	if _eyebrow_name_lbl:
+		_eyebrow_name_lbl.text = pv.get_eyebrow_name(_eyebrow_index)
 	_walls_color_name.text = WALL_COLOR_NAMES[_walls_color_index] if _walls_color_index < WALL_COLOR_NAMES.size() else "—"
 	_roof_color_name.text = ROOF_COLOR_NAMES[_roof_color_index] if _roof_color_index < ROOF_COLOR_NAMES.size() else "—"
 
@@ -992,16 +955,18 @@ func _on_randomize() -> void:
 		return
 	_is_male = randi() % 2 == 0
 	_hair_index = randi() % _player_visuals[0].get_hair_count()
-	_hair_color_index = randi() % PlayerVisuals.HAIR_COLORS.size()
+	_hair_color = Color(randf(), randf(), randf())
 	_eyebrow_index = randi() % _player_visuals[0].get_eyebrow_count()
-	_eyebrow_color_index = randi() % PlayerVisuals.HAIR_COLORS.size()
-	_shirt_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
-	_pants_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
-	_shoes_color_index = randi() % PlayerVisuals.CLOTHING_COLORS.size()
+	_eyebrow_color = Color(randf(), randf(), randf())
+	_shirt_color = Color(randf(), randf(), randf())
+	_pants_color = Color(randf(), randf(), randf())
+	_shoes_color = Color(randf(), randf(), randf())
 	_head_size_index = randi() % HEAD_SIZE_STEPS
-	_skin_color_value = randf()
-	if _skin_color_slider:
-		_skin_color_slider.value = _skin_color_value
+	_skin_color = Color(randf_range(0.3, 0.95), randf_range(0.2, 0.8), randf_range(0.15, 0.7))
+	if _head_slider:
+		_head_slider.value = _head_size_index
+	# Update the color picker buttons to reflect new colors.
+	_sync_color_picker_buttons()
 	var wc := _get_wall_colors()
 	if not wc.is_empty():
 		_walls_color_index = randi() % wc.size()
@@ -1009,6 +974,29 @@ func _on_randomize() -> void:
 	if not rc.is_empty():
 		_roof_color_index = randi() % rc.size()
 	_on_customization_changed()
+
+
+## Sync all ColorPickerButton values to the current state (used by randomize).
+func _sync_color_picker_buttons() -> void:
+	var row := get_node_or_null("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow")
+	if row == null:
+		return
+	var cpbs := row.find_children("*", "ColorPickerButton", true, false)
+	for i in cpbs.size():
+		var cpb := cpbs[i] as ColorPickerButton
+		match i:
+			0:
+				cpb.color = _hair_color
+			1:
+				cpb.color = _eyebrow_color
+			2:
+				cpb.color = _shirt_color
+			3:
+				cpb.color = _pants_color
+			4:
+				cpb.color = _shoes_color
+			5:
+				cpb.color = _skin_color
 
 
 func _broadcast_customization() -> void:
@@ -1028,17 +1016,17 @@ func _get_customization_data() -> Dictionary:
 	return {
 		"male": _is_male,
 		"hair_index": _hair_index,
-		"hair_color": PlayerVisuals.HAIR_COLORS[_hair_color_index],
+		"hair_color": _hair_color,
 		"eyebrow_index": _eyebrow_index,
-		"eyebrow_color": PlayerVisuals.HAIR_COLORS[_eyebrow_color_index],
+		"eyebrow_color": _eyebrow_color,
 		"head_size": _head_size_to_scale(),
-		"skin_color": _skin_color_value,
+		"skin_color": _skin_color,
 		"clothing_colors": {
-			"shirt": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
-			"top": PlayerVisuals.CLOTHING_COLORS[_shirt_color_index],
-			"pants": PlayerVisuals.CLOTHING_COLORS[_pants_color_index],
-			"trousers": PlayerVisuals.CLOTHING_COLORS[_pants_color_index],
-			"shoes": PlayerVisuals.CLOTHING_COLORS[_shoes_color_index],
+			"shirt": _shirt_color,
+			"top": _shirt_color,
+			"pants": _pants_color,
+			"trousers": _pants_color,
+			"shoes": _shoes_color,
 		},
 		"wall_color": wall_color,
 		"roof_color": roof_color,

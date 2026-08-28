@@ -388,6 +388,15 @@ func set_clothing_color(surface_name: String, color: Color) -> void:
 ## so the skin tone matches around the eyes.
 func set_skin_color(slider_value: float) -> void:
 	var skin_color := _skin_color_from_slider(slider_value)
+	_apply_skin_color(skin_color)
+
+
+## Apply a skin color directly (bypasses the slider-to-color mapping).
+func set_skin_color_value(skin_color: Color) -> void:
+	_apply_skin_color(skin_color)
+
+
+func _apply_skin_color(skin_color: Color) -> void:
 	var body: MeshInstance3D = _man_mesh if _man.visible else _woman_mesh
 	var mesh := body.mesh as ArrayMesh
 	if mesh == null:
@@ -488,10 +497,12 @@ func apply_customization(data: Dictionary) -> void:
 		_tint_clothing(_man_mesh if male else _woman_mesh)
 	else:
 		set_clothing_colors(clothing)
-	# Skin color (0.0 = lightest, 1.0 = darkest)
-	var skin_val: float = data.get("skin_color", 0.0)
-	if skin_val > 0.0:
-		set_skin_color(skin_val)
+	# Skin color — can be a Color (new format) or float (legacy).
+	var skin_val = data.get("skin_color", 0.0)
+	if skin_val is Color:
+		set_skin_color_value(skin_val)
+	elif float(skin_val) > 0.0:
+		set_skin_color(float(skin_val))
 
 
 ## Get the current customization as a dictionary (for storing in roster).
