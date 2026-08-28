@@ -778,10 +778,6 @@ func _on_game_starting() -> void:
 				lobby_ui.visible = false,
 		)
 
-	# Hide lobby player models
-	if lobby_player_models:
-		lobby_player_models.visible = false
-
 	# Start game systems NOW (spawn player, start day, etc.) so the player
 	# exists by the time the camera tween finishes.
 	# Prevent the player's camera from claiming "current" immediately so
@@ -847,6 +843,8 @@ func _tween_camera_to_player(is_late_join: bool = false) -> void:
 				lobby_camera.current = false
 				player_cam.make_current()
 				Player.defer_camera_claim = false
+				if lobby_player_models:
+					lobby_player_models.visible = false
 				if hud:
 					hud.visible = true,
 		)
@@ -854,6 +852,8 @@ func _tween_camera_to_player(is_late_join: bool = false) -> void:
 		# No local player (spectator?) — just stop the lobby camera
 		lobby_camera.current = false
 		Player.defer_camera_claim = false
+		if lobby_player_models:
+			lobby_player_models.visible = false
 		if hud:
 			hud.visible = true
 
