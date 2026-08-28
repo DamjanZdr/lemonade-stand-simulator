@@ -1574,6 +1574,9 @@ func _on_esc_back_to_menu() -> void:
 	# Phase 2: Behind the black screen — leave game, clean up, swap camera.
 	tw.chain().tween_callback(
 		func():
+			# Now that the screen is fully black, hide the ESC menu's blur/dim.
+			if _esc_menu and is_instance_valid(_esc_menu):
+				_esc_menu.hide_full()
 			# Leave the multiplayer session.
 			NetworkManager.leave_game()
 			# Clean up players.

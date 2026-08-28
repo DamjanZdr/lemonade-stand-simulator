@@ -606,8 +606,20 @@ func _on_invite() -> void:
 
 
 func _on_back_to_menu() -> void:
-	hide_menu()
+	# Hide just the menu box + settings, but keep blur/dim visible
+	# so the screen stays covered during the fade-to-black transition.
+	_menu_box.visible = false
+	_settings_panel.visible = false
+	if _version_label:
+		_version_label.visible = false
+	if _music_widget:
+		_music_widget.visible = false
 	back_to_menu.emit()
+
+
+## Fully hide the ESC menu (blur, dim, everything).
+func hide_full() -> void:
+	visible = false
 
 
 func _on_quit() -> void:
