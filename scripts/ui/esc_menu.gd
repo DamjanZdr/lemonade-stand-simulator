@@ -84,7 +84,7 @@ func _build_ui() -> void:
 	# Title.
 	var title := Label.new()
 	title.text = "Menu"
-	title.add_theme_font_size_override("font_size", 56)
+	title.add_theme_font_size_override("font_size", 80)
 	title.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
 	title.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
 	title.add_theme_constant_override("shadow_offset_x", 3)
@@ -97,7 +97,37 @@ func _build_ui() -> void:
 	spacer.custom_minimum_size = Vector2(0, 16)
 	_menu_box.add_child(spacer)
 
-	# Room code row.
+	# Buttons.
+	_back_button = _make_menu_button("Resume")
+	_menu_box.add_child(_back_button)
+
+	_settings_button = _make_menu_button("Settings")
+	_menu_box.add_child(_settings_button)
+
+	_back_to_menu_button = _make_menu_button("Main Menu")
+	_menu_box.add_child(_back_to_menu_button)
+
+	_quit_button = _make_menu_button("Quit Game")
+	_menu_box.add_child(_quit_button)
+
+	# Spacer before room code.
+	var spacer2 := Control.new()
+	spacer2.custom_minimum_size = Vector2(0, 16)
+	_menu_box.add_child(spacer2)
+
+	# Separator.
+	var sep := ColorRect.new()
+	sep.custom_minimum_size = Vector2(0, 2)
+	sep.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	sep.color = Color(0.35, 0.6, 0.9, 0.25)
+	_menu_box.add_child(sep)
+
+	# Spacer.
+	var spacer3 := Control.new()
+	spacer3.custom_minimum_size = Vector2(0, 8)
+	_menu_box.add_child(spacer3)
+
+	# Room code row (below the menu buttons).
 	_room_row = HBoxContainer.new()
 	_room_row.add_theme_constant_override("separation", 6)
 	_menu_box.add_child(_room_row)
@@ -126,31 +156,6 @@ func _build_ui() -> void:
 	_invite_button.add_theme_font_size_override("font_size", 14)
 	_invite_button.text = "Invite"
 	_room_row.add_child(_invite_button)
-
-	# Separator.
-	var sep := ColorRect.new()
-	sep.custom_minimum_size = Vector2(0, 2)
-	sep.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	sep.color = Color(0.35, 0.6, 0.9, 0.25)
-	_menu_box.add_child(sep)
-
-	# Spacer.
-	var spacer2 := Control.new()
-	spacer2.custom_minimum_size = Vector2(0, 8)
-	_menu_box.add_child(spacer2)
-
-	# Buttons.
-	_back_button = _make_menu_button("Back to Game")
-	_menu_box.add_child(_back_button)
-
-	_settings_button = _make_menu_button("Settings")
-	_menu_box.add_child(_settings_button)
-
-	_back_to_menu_button = _make_menu_button("Main Menu")
-	_menu_box.add_child(_back_to_menu_button)
-
-	_quit_button = _make_menu_button("Quit Game")
-	_menu_box.add_child(_quit_button)
 
 	_menu_buttons = [_back_button, _settings_button, _back_to_menu_button, _quit_button]
 	for btn in _menu_buttons:
@@ -193,9 +198,10 @@ func _build_ui() -> void:
 	_add_drop_shadow(_settings_back)
 	_setup_hover_effect(_settings_back)
 
-	# Make the eye/copy/invite buttons flat too.
+	# Make the eye/copy/invite buttons flat with same hover color as menu buttons.
 	for btn in [_eye_button, _copy_button, _invite_button]:
 		_make_flat_button(btn)
+		btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 		_setup_hover_effect(btn)
 
 
