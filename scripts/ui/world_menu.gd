@@ -611,7 +611,9 @@ func _on_settings_pressed() -> void:
 	_fullscreen_check.button_pressed = (
 		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	)
-	_vsync_check.button_pressed = DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
+	_vsync_check.button_pressed = (
+		DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
+	)
 	_lighting_check.button_pressed = true
 	_fps_check.button_pressed = false
 
