@@ -356,9 +356,9 @@ func _style_slider(slider: HSlider) -> void:
 	grab_area_hl.content_margin_top = 6.0
 	grab_area_hl.content_margin_bottom = 6.0
 	slider.add_theme_stylebox_override("grabber_area_highlight", grab_area_hl)
-	# Lemon-shaped grabber icon.
-	slider.add_theme_icon_override("grabber", _make_lemon_icon(16))
-	slider.add_theme_icon_override("grabber_highlight", _make_lemon_icon(18))
+	# Lemon emoji grabber.
+	slider.add_theme_icon_override("grabber", _make_emoji_icon("🍋", 16))
+	slider.add_theme_icon_override("grabber_highlight", _make_emoji_icon("🍋", 20))
 	slider.add_theme_icon_override(
 		"grabber_disabled",
 		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5, 0.5), 1),
@@ -382,34 +382,24 @@ func _make_circle_icon(size: int, fill: Color, border: Color, border_width: int)
 	return tex
 
 
-## Create a lemon-shaped icon for slider grabbers.
-func _make_lemon_icon(size: int) -> Texture2D:
-	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+## Render an emoji to a texture using the default font for slider grabbers.
+func _make_emoji_icon(emoji: String, font_size: int) -> Texture2D:
+	var font := get_theme_default_font()
+	var text_size := font.get_string_size(emoji, font_size)
+	var pad := 2
+	var w := int(text_size.x) + pad * 2
+	var h := int(text_size.y) + pad * 2
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
-	var center := Vector2(size / 2.0, size / 2.0)
-	var rx: float = size / 2.0 - 1.0
-	var ry: float = size / 2.0 - 3.0
-	var lemon := Color(1, 0.85, 0.2, 1)
-	var dark := Color(0.8, 0.65, 0.1, 1)
-	var leaf := Color(0.3, 0.7, 0.2, 1)
-	for y in size:
-		for x in size:
-			var dx := (x - center.x) / rx
-			var dy := (y - center.y) / ry
-			var d := dx * dx + dy * dy
-			if d <= 1.0:
-				img.set_pixel(x, y, lemon)
-			elif d <= 1.15:
-				img.set_pixel(x, y, dark)
-	# Add a small leaf on top.
-	var leaf_c := Vector2(center.x + 1, 1)
-	for y in 4:
-		for x in 4:
-			if Vector2(x, y).distance_to(Vector2(1.5, 1.5)) <= 2.0:
-				var px := int(leaf_c.x + x - 2)
-				var py := int(leaf_c.y + y - 2)
-				if px >= 0 and px < size and py >= 0 and py < size:
-					img.set_pixel(px, py, leaf)
+	font.draw_string(
+		img,
+		Vector2(pad, text_size.y + pad),
+		emoji,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		font_size,
+		Color(1, 1, 1, 1),
+	)
 	return ImageTexture.create_from_image(img)
 
 
