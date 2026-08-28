@@ -300,11 +300,12 @@ func _build_settings_panel() -> Control:
 	master_row.add_child(master_label)
 	var master_slider := HSlider.new()
 	master_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	master_slider.custom_minimum_size = Vector2(100, 20)
+	master_slider.custom_minimum_size = Vector2(120, 24)
 	master_slider.min_value = 0.0
 	master_slider.max_value = 1.0
 	master_slider.step = 0.01
 	master_slider.value = 0.5
+	_style_slider(master_slider)
 	master_row.add_child(master_slider)
 	var master_value := Label.new()
 	master_value.custom_minimum_size = Vector2(40, 0)
@@ -326,11 +327,12 @@ func _build_settings_panel() -> Control:
 	sfx_row.add_child(sfx_label)
 	var sfx_slider := HSlider.new()
 	sfx_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	sfx_slider.custom_minimum_size = Vector2(100, 20)
+	sfx_slider.custom_minimum_size = Vector2(120, 24)
 	sfx_slider.min_value = 0.0
 	sfx_slider.max_value = 1.0
 	sfx_slider.step = 0.01
 	sfx_slider.value = 0.5
+	_style_slider(sfx_slider)
 	sfx_row.add_child(sfx_slider)
 	var sfx_value := Label.new()
 	sfx_value.custom_minimum_size = Vector2(40, 0)
@@ -352,11 +354,12 @@ func _build_settings_panel() -> Control:
 	music_row.add_child(music_label)
 	var music_slider := HSlider.new()
 	music_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	music_slider.custom_minimum_size = Vector2(100, 20)
+	music_slider.custom_minimum_size = Vector2(120, 24)
 	music_slider.min_value = 0.0
 	music_slider.max_value = 1.0
 	music_slider.step = 0.01
 	music_slider.value = 0.5
+	_style_slider(music_slider)
 	music_row.add_child(music_slider)
 	var music_value := Label.new()
 	music_value.custom_minimum_size = Vector2(40, 0)
@@ -874,6 +877,56 @@ func _on_button_click(btn: Button, callback: Callable) -> void:
 		tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.12) \
 				.set_ease(Tween.EASE_OUT)
 	callback.call()
+
+
+## Style an HSlider with a custom flat look: thin track + circular grabber.
+func _style_slider(slider: HSlider) -> void:
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(1, 1, 1, 0.15)
+	track.set_corner_radius_all(3)
+	track.content_margin_top = 6.0
+	track.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("slider", track)
+	var grab_area := StyleBoxFlat.new()
+	grab_area.bg_color = Color(1, 0.9, 0.3, 0.4)
+	grab_area.set_corner_radius_all(3)
+	grab_area.content_margin_top = 6.0
+	grab_area.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("grabber_area", grab_area)
+	var grab_area_hl := StyleBoxFlat.new()
+	grab_area_hl.bg_color = Color(1, 0.9, 0.3, 0.6)
+	grab_area_hl.set_corner_radius_all(3)
+	grab_area_hl.content_margin_top = 6.0
+	grab_area_hl.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("grabber_area_highlight", grab_area_hl)
+	slider.add_theme_icon_override(
+		"grabber",
+		_make_circle_icon(12, Color(1, 0.9, 0.3, 1), Color(1, 1, 1, 0.8), 2),
+	)
+	slider.add_theme_icon_override(
+		"grabber_highlight",
+		_make_circle_icon(14, Color(1, 0.95, 0.5, 1), Color(1, 1, 1, 1), 2),
+	)
+	slider.add_theme_icon_override(
+		"grabber_disabled",
+		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5, 0.5), 1),
+	)
+
+
+## Create a circular icon texture at runtime for slider grabbers.
+func _make_circle_icon(size: int, fill: Color, border: Color, border_width: int) -> Texture2D:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var center := Vector2(size / 2.0, size / 2.0)
+	var radius: float = size / 2.0 - border_width
+	for y in size:
+		for x in size:
+			var d := Vector2(x, y).distance_to(center)
+			if d <= radius:
+				img.set_pixel(x, y, fill)
+			elif d <= radius + border_width:
+				img.set_pixel(x, y, border)
+	return ImageTexture.create_from_image(img)
 
 
 func _make_flat_button(btn: Button) -> void:

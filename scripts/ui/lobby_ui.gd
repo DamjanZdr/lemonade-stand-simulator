@@ -334,6 +334,60 @@ func _find_all_buttons_recursive(node: Node) -> Array[Button]:
 	return result
 
 
+## Style an HSlider with a custom flat look: thin track + circular grabber.
+func _style_slider(slider: HSlider) -> void:
+	# Track: thin, semi-transparent white with rounded corners.
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(1, 1, 1, 0.15)
+	track.set_corner_radius_all(3)
+	track.content_margin_top = 6.0
+	track.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("slider", track)
+	# Grabber area (filled portion to the left of grabber): yellowish.
+	var grab_area := StyleBoxFlat.new()
+	grab_area.bg_color = Color(1, 0.9, 0.3, 0.4)
+	grab_area.set_corner_radius_all(3)
+	grab_area.content_margin_top = 6.0
+	grab_area.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("grabber_area", grab_area)
+	var grab_area_hl := StyleBoxFlat.new()
+	grab_area_hl.bg_color = Color(1, 0.9, 0.3, 0.6)
+	grab_area_hl.set_corner_radius_all(3)
+	grab_area_hl.content_margin_top = 6.0
+	grab_area_hl.content_margin_bottom = 6.0
+	slider.add_theme_stylebox_override("grabber_area_highlight", grab_area_hl)
+	# Generate a circular grabber icon at runtime.
+	slider.add_theme_icon_override(
+		"grabber",
+		_make_circle_icon(12, Color(1, 0.9, 0.3, 1), Color(1, 1, 1, 0.8), 2),
+	)
+	slider.add_theme_icon_override(
+		"grabber_highlight",
+		_make_circle_icon(14, Color(1, 0.95, 0.5, 1), Color(1, 1, 1, 1), 2),
+	)
+	slider.add_theme_icon_override(
+		"grabber_disabled",
+		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5, 0.5), 1),
+	)
+
+
+## Create a circular icon texture at runtime for slider grabbers.
+func _make_circle_icon(size: int, fill: Color, border: Color, border_width: int) -> Texture2D:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var center := Vector2(size / 2.0, size / 2.0)
+	var radius: float = size / 2.0 - border_width
+	for y in size:
+		for x in size:
+			var d := Vector2(x, y).distance_to(center)
+			if d <= radius:
+				img.set_pixel(x, y, fill)
+			elif d <= radius + border_width:
+				img.set_pixel(x, y, border)
+	var tex := ImageTexture.create_from_image(img)
+	return tex
+
+
 ## Remove all stylebox backgrounds so the button looks like plain text.
 func _make_flat_button(btn: Button) -> void:
 	if btn == null:
@@ -843,11 +897,12 @@ func _build_avatar_options_row() -> void:
 	head_opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head_row.add_child(head_opts)
 	_head_slider = HSlider.new()
-	_head_slider.custom_minimum_size = Vector2(100, 32)
+	_head_slider.custom_minimum_size = Vector2(120, 28)
 	_head_slider.min_value = 0
 	_head_slider.max_value = HEAD_SIZE_STEPS - 1
 	_head_slider.value = _head_size_index
 	_head_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_slider(_head_slider)
 	_head_slider.value_changed.connect(
 		func(v: float):
 			_head_size_index = int(v)
