@@ -212,13 +212,9 @@ func _apply_menu_style() -> void:
 		random_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 		random_btn.add_theme_font_size_override("font_size", 22)
 
-	# 6. Style the lobby title (HBoxContainer with labels inside).
+	# 6. Hide the lobby title (stand name is now in the Stand 1 header).
 	var title_container: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/Title
-	for child in title_container.get_children():
-		if child is Label:
-			var lbl := child as Label
-			lbl.add_theme_font_size_override("font_size", 28)
-			lbl.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 0.95))
+	title_container.visible = false
 
 	# 7. Style separators to be subtle white.
 	for sep in [
@@ -264,22 +260,12 @@ func _apply_mode_layout() -> void:
 	# Stand 1 header: always show the stand/save name.
 	var stand1_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
 	stand1_header.text = GameState.stand_name
-	# Update the lobby title to show the mode icons only.
-	_update_lobby_title(mode)
-
-
-## Build the lobby title: silhouette mode icons only.
-func _update_lobby_title(mode: int) -> void:
-	for child in _customize_title.get_children():
-		child.queue_free()
-	_customize_title.alignment = BoxContainer.ALIGNMENT_CENTER
-	var icon := _build_mode_icon(mode)
-	if icon:
-		var wrapper := VBoxContainer.new()
-		wrapper.alignment = BoxContainer.ALIGNMENT_CENTER
-		wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		wrapper.add_child(icon)
-		_customize_title.add_child(wrapper)
+	stand1_header.add_theme_font_size_override("font_size", 24)
+	stand1_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
+	# Stand 2 header: same styling.
+	var stand2_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand2Header
+	stand2_header.add_theme_font_size_override("font_size", 24)
+	stand2_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 
 
 ## Build a silhouette icon for the given game mode.
