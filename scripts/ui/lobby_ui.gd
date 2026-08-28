@@ -76,11 +76,11 @@ const HEAD_SIZE_STEPS: int = 9
 
 const WALL_COLOR_NAMES: Array[String] = ["Cream", "Salmon", "Sky", "Sage", "Lilac"]
 const ROOF_COLOR_NAMES: Array[String] = ["Brown", "Grey", "Green", "Blue", "Yellow"]
-const NAME_WIDTH: float = 80.0
-const ARROW_SIZE: float = 32.0
-const COLOR_PICKER_SIZE: float = 36.0
-const OPTION_FONT_SIZE: int = 22
-const ROW_SEPARATION: float = 4.0
+const NAME_WIDTH: float = 90.0
+const ARROW_SIZE: float = 36.0
+const COLOR_PICKER_SIZE: float = 40.0
+const OPTION_FONT_SIZE: int = 24
+const ROW_SEPARATION: float = 5.0
 
 # ── State ─────────────────────────────────────────────────────────────────────
 var _room_visible: bool = false
@@ -183,15 +183,15 @@ func _apply_menu_style() -> void:
 			_setup_hover_effect(btn)
 			btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 			btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-			btn.add_theme_font_size_override("font_size", 22)
+			btn.add_theme_font_size_override("font_size", 24)
 
 	# Ready button: pop effect + shadow, but no hover color change.
 	_make_flat_button(_ready_button)
 	_add_drop_shadow(_ready_button)
 	_setup_hover_pop_only(_ready_button)
-	_ready_button.add_theme_font_size_override("font_size", 28)
-	_start_button.add_theme_font_size_override("font_size", 28)
-	_back_button.add_theme_font_size_override("font_size", 24)
+	_ready_button.add_theme_font_size_override("font_size", 30)
+	_start_button.add_theme_font_size_override("font_size", 30)
+	_back_button.add_theme_font_size_override("font_size", 26)
 
 	# 5. Style arrow buttons: flat, smaller, white text.
 	var arrow_buttons := _find_all_buttons_recursive(customize_panel)
@@ -210,7 +210,7 @@ func _apply_menu_style() -> void:
 		_setup_hover_effect(random_btn)
 		random_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 		random_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-		random_btn.add_theme_font_size_override("font_size", 22)
+		random_btn.add_theme_font_size_override("font_size", 24)
 
 	# 6. Hide the lobby title (stand name is now in the Stand 1 header).
 	var title_container: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/Title
@@ -231,8 +231,8 @@ func _apply_menu_style() -> void:
 	var s2h: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand2Header
 	s1h.add_theme_color_override("font_color", Color(1, 0.95, 0.7, 0.9))
 	s2h.add_theme_color_override("font_color", Color(1, 0.95, 0.7, 0.9))
-	s1h.add_theme_font_size_override("font_size", 18)
-	s2h.add_theme_font_size_override("font_size", 18)
+	s1h.add_theme_font_size_override("font_size", 20)
+	s2h.add_theme_font_size_override("font_size", 20)
 
 	# 9. Version label: subtle white.
 	_version_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.3))
@@ -262,10 +262,10 @@ func _apply_mode_layout() -> void:
 	# Stand 1 header: always show the stand/save name.
 	var stand1_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
 	stand1_header.text = GameState.stand_name
-	stand1_header.add_theme_font_size_override("font_size", 24)
+	stand1_header.add_theme_font_size_override("font_size", 26)
 	stand1_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 	# Stand 2 header: same styling (already declared above).
-	stand2_header.add_theme_font_size_override("font_size", 24)
+	stand2_header.add_theme_font_size_override("font_size", 26)
 	stand2_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 
 
@@ -621,7 +621,7 @@ func _refresh() -> void:
 			"font_color",
 			Color(0.3, 0.9, 0.3, 1) if entry.get("ready", false) else Color(1, 0.6, 0.2, 1),
 		)
-		label.add_theme_font_size_override("font_size", 18)
+		label.add_theme_font_size_override("font_size", 20)
 		if stand_idx == 0:
 			_stand1_list.add_child(label)
 		elif stand_idx == 1:
