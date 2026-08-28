@@ -389,7 +389,7 @@ func _build_settings_panel() -> Control:
 	fs_row.add_child(fs_label)
 	var fs_check := CheckBox.new()
 	fs_check.custom_minimum_size = Vector2(24, 24)
-	fs_check.theme = Theme.new()
+	_style_checkbox(fs_check)
 	fs_row.add_child(fs_check)
 
 	# VSync.
@@ -404,7 +404,7 @@ func _build_settings_panel() -> Control:
 	vsync_row.add_child(vsync_label)
 	var vsync_check := CheckBox.new()
 	vsync_check.custom_minimum_size = Vector2(24, 24)
-	vsync_check.theme = Theme.new()
+	_style_checkbox(vsync_check)
 	vsync_row.add_child(vsync_check)
 
 	# Enhanced Lighting.
@@ -419,7 +419,7 @@ func _build_settings_panel() -> Control:
 	lighting_row.add_child(lighting_label)
 	var lighting_check := CheckBox.new()
 	lighting_check.custom_minimum_size = Vector2(24, 24)
-	lighting_check.theme = Theme.new()
+	_style_checkbox(lighting_check)
 	lighting_row.add_child(lighting_check)
 
 	# Show FPS.
@@ -434,7 +434,7 @@ func _build_settings_panel() -> Control:
 	fps_row.add_child(fps_label)
 	var fps_check := CheckBox.new()
 	fps_check.custom_minimum_size = Vector2(24, 24)
-	fps_check.theme = Theme.new()
+	_style_checkbox(fps_check)
 	fps_row.add_child(fps_check)
 
 	# Back button (anchored to bottom-left, same as main menu).
@@ -857,6 +857,26 @@ func _make_flat_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("hover", stylebox_empty)
 	btn.add_theme_stylebox_override("pressed", stylebox_empty)
 	btn.add_theme_stylebox_override("focus", stylebox_empty)
+
+
+## Style a CheckBox to be a transparent box with white outline (same as main menu).
+func _style_checkbox(cb: CheckBox) -> void:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0, 0, 0, 0)
+	box.border_color = Color(1, 1, 1, 0.8)
+	box.set_border_width_all(1)
+	box.set_corner_radius_all(2)
+	cb.add_theme_stylebox_override("normal", box)
+	cb.add_theme_stylebox_override("hover", box)
+	cb.add_theme_stylebox_override("pressed", box)
+	cb.add_theme_stylebox_override("focus", box)
+	cb.add_theme_stylebox_override("disabled", box)
+	cb.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
+	cb.add_theme_color_override("font_hover_color", Color(1, 1, 1, 0.9))
+	cb.add_theme_color_override("font_pressed_color", Color(1, 1, 1, 0.9))
+	cb.add_theme_color_override("icon_normal_color", Color(1, 1, 1, 0.9))
+	cb.add_theme_color_override("icon_hover_color", Color(1, 1, 1, 0.9))
+	cb.add_theme_color_override("icon_pressed_color", Color(1, 1, 1, 0.9))
 
 
 func _add_drop_shadow(btn: Button) -> void:
