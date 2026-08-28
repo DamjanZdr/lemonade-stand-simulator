@@ -11,8 +11,12 @@ const HOVER_POP: float = 1.12
 @onready var _copy_button: Button = $LeftContainer/LobbyPanel/VBox/RoomRow/CopyButton
 @onready var _invite_button: Button = $LeftContainer/LobbyPanel/VBox/RoomRow/InviteButton
 @onready var _switch_button: Button = $LeftContainer/LobbyPanel/VBox/SwitchRow/SwitchButton
-@onready var _stand1_list: VBoxContainer = $LeftContainer/LobbyPanel/VBox/PlayersRow/Stand1Col/Stand1List
-@onready var _stand2_list: VBoxContainer = $LeftContainer/LobbyPanel/VBox/PlayersRow/Stand2Col/Stand2List
+@onready var _stand1_list: VBoxContainer = (
+	$LeftContainer/LobbyPanel/VBox/PlayersRow/Stand1Col/Stand1List
+)
+@onready var _stand2_list: VBoxContainer = (
+	$LeftContainer/LobbyPanel/VBox/PlayersRow/Stand2Col/Stand2List
+)
 @onready var _ready_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/ReadyButton
 @onready var _start_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/StartButton
 @onready var _back_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/BackButton
@@ -27,10 +31,16 @@ const HOVER_POP: float = 1.12
 
 # Customization UI — left column (under Male)
 @onready var _male_button: Button = $LeftContainer/CustomizePanel/OptionsCol/GenderRow/MaleButton
-@onready var _female_button: Button = $LeftContainer/CustomizePanel/OptionsCol/GenderRow/FemaleButton
+@onready var _female_button: Button = (
+	$LeftContainer/CustomizePanel/OptionsCol/GenderRow/FemaleButton
+)
 @onready var _columns_row: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow
-@onready var _walls_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow/WallsColorName
-@onready var _roof_color_name: Label = $LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow/RoofColorName
+@onready var _walls_color_name: Label = (
+	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow/WallsColorName
+)
+@onready var _roof_color_name: Label = (
+	$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow/RoofColorName
+)
 
 # New single-line avatar controls (built dynamically).
 var _hair_name_lbl: Label = null
@@ -946,8 +956,14 @@ func _update_all_names() -> void:
 		_hair_name_lbl.text = pv.get_hair_name(_hair_index)
 	if _eyebrow_name_lbl:
 		_eyebrow_name_lbl.text = pv.get_eyebrow_name(_eyebrow_index)
-	_walls_color_name.text = WALL_COLOR_NAMES[_walls_color_index] if _walls_color_index < WALL_COLOR_NAMES.size() else "—"
-	_roof_color_name.text = ROOF_COLOR_NAMES[_roof_color_index] if _roof_color_index < ROOF_COLOR_NAMES.size() else "—"
+	if _walls_color_index < WALL_COLOR_NAMES.size():
+		_walls_color_name.text = WALL_COLOR_NAMES[_walls_color_index]
+	else:
+		_walls_color_name.text = "—"
+	if _roof_color_index < ROOF_COLOR_NAMES.size():
+		_roof_color_name.text = ROOF_COLOR_NAMES[_roof_color_index]
+	else:
+		_roof_color_name.text = "—"
 
 
 func _on_randomize() -> void:
