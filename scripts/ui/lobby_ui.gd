@@ -874,7 +874,7 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 
 	# Right half: options centered (expand fill, matching Customize tab).
 	var opts := HBoxContainer.new()
-	opts.add_theme_constant_override("separation", 4)
+	opts.add_theme_constant_override("separation", 2)
 	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(opts)
 
