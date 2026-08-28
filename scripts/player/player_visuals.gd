@@ -356,6 +356,16 @@ func set_eyebrow(index: int) -> void:
 		child.visible = i == index
 
 
+func set_eyebrow_color(color: Color) -> void:
+	var eb := _get_eyebrows_node()
+	if eb == null:
+		return
+	for child in eb.get_children():
+		var c := child as Node3D
+		if c and c.visible:
+			_tint_meshes_in(c, color)
+
+
 func _get_eyebrows_node() -> Node3D:
 	if _man.visible:
 		return get_node_or_null("man/Armature/Skeleton3D/Head/Eyebrows")

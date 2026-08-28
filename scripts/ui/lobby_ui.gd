@@ -79,7 +79,7 @@ const ROOF_COLOR_NAMES: Array[String] = ["Brown", "Grey", "Green", "Blue", "Yell
 const NAME_WIDTH: float = 80.0
 const ARROW_SIZE: float = 32.0
 const COLOR_PICKER_SIZE: float = 36.0
-const OPTION_FONT_SIZE: int = 18
+const OPTION_FONT_SIZE: int = 20
 const ROW_SEPARATION: float = 4.0
 
 # ── State ─────────────────────────────────────────────────────────────────────
@@ -598,7 +598,12 @@ func _refresh() -> void:
 		elif stand_idx == 1:
 			_stand2_list.add_child(label)
 
-	_ready_button.text = "Unready" if mine.get("ready", false) else "Ready Up"
+	var is_ready: bool = mine.get("ready", false)
+	_ready_button.text = "Not Ready" if is_ready else "Ready Up"
+	if is_ready:
+		_ready_button.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3, 1))
+	else:
+		_ready_button.add_theme_color_override("font_color", Color(1, 0.6, 0.2, 1))
 
 	var is_host := multiplayer.is_server()
 	_start_button.visible = is_host
@@ -991,6 +996,7 @@ func _apply_customization_to_all() -> void:
 		pv.set_gender(_is_male)
 		pv.set_hair(_hair_index, _hair_color)
 		pv.set_eyebrow(_eyebrow_index)
+		pv.set_eyebrow_color(_eyebrow_color)
 		var colors: Dictionary = {
 			"shirt": _shirt_color,
 			"top": _shirt_color,
