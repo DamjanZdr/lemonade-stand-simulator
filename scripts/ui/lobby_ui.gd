@@ -163,7 +163,6 @@ func _apply_menu_style() -> void:
 
 	# 4. Style main buttons: flat, white text, drop shadow, hover pop.
 	var main_buttons: Array[Button] = [
-		_ready_button,
 		_start_button,
 		_back_button,
 		_switch_button,
@@ -182,7 +181,10 @@ func _apply_menu_style() -> void:
 			btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 			btn.add_theme_font_size_override("font_size", 22)
 
-	# Ready and Start buttons: bigger, cream text.
+	# Ready button: no hover color change, just pop + shadow.
+	_make_flat_button(_ready_button)
+	_add_drop_shadow(_ready_button)
+	_setup_hover_effect(_ready_button)
 	_ready_button.add_theme_font_size_override("font_size", 28)
 	_start_button.add_theme_font_size_override("font_size", 28)
 	_back_button.add_theme_font_size_override("font_size", 24)
@@ -438,7 +440,8 @@ func _ready() -> void:
 	LobbyManager.request_refresh()
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	call_deferred("_setup_customization")
-	call_deferred("_default_to_stand_1")
+	# Default to stand 1 before refreshing so the player shows up immediately.
+	_default_to_stand_1()
 	_refresh()
 
 
@@ -448,6 +451,10 @@ func _default_to_stand_1() -> void:
 	var mine := LobbyManager.get_my_entry()
 	if mine.get("stand_index", -1) < 0:
 		LobbyManager.set_my_stand(0)
+		# Also update local roster immediately so _refresh shows us.
+		var my_id := multiplayer.get_unique_id()
+		if LobbyManager.roster.has(my_id):
+			LobbyManager.roster[my_id]["stand_index"] = 0
 		_current_stand = 0
 		stand_switched.emit(0)
 	else:
