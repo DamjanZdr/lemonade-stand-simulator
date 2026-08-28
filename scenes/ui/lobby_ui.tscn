@@ -697,6 +697,10 @@ theme_override_constants/separation = 3
 layout_mode = 2
 theme_override_constants/separation = 3
 
+[node name="BottomSpacer" type="Control" parent="LeftContainer" unique_id=877560186]
+layout_mode = 2
+size_flags_vertical = 3
+
 [node name="Sep2" type="ColorRect" parent="LeftContainer" unique_id=877560185]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2

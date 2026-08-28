@@ -211,7 +211,7 @@ func _apply_menu_style() -> void:
 	for child in title_container.get_children():
 		if child is Label:
 			var lbl := child as Label
-			lbl.add_theme_font_size_override("font_size", 20)
+			lbl.add_theme_font_size_override("font_size", 28)
 			lbl.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 0.95))
 
 	# 7. Style separators to be subtle white.
@@ -271,11 +271,13 @@ func _update_lobby_title(mode: int) -> void:
 		child.queue_free()
 	var name_lbl := Label.new()
 	name_lbl.text = GameState.stand_name
-	name_lbl.add_theme_font_size_override("font_size", 20)
+	name_lbl.add_theme_font_size_override("font_size", 28)
 	name_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	name_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_customize_title.add_child(name_lbl)
 	var icon := _build_mode_icon(mode)
 	if icon:
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		_customize_title.add_child(icon)
 
 
