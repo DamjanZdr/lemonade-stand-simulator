@@ -781,7 +781,20 @@ func _on_game_starting() -> void:
 	_transition_overlay.add_child(fade_rect)
 	_transition_overlay.visible = true
 
-	# Create the "Day X" label, hidden initially.
+	# Create a radial dim panel behind the "Day X" text (dark in center,
+	# fading to transparent at edges — like the menu's dim layer).
+	var dim_shader := load("res://shaders/radial_dim_fade.gdshader") as Shader
+	var dim_panel := ColorRect.new()
+	dim_panel.color = Color(1, 1, 1, 1)
+	dim_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim_panel.modulate = Color(1, 1, 1, 0)
+	var dim_mat := ShaderMaterial.new()
+	dim_mat.shader = dim_shader
+	dim_panel.material = dim_mat
+	_transition_overlay.add_child(dim_panel)
+
+	# Create the "Day X" label with the theme font, drop shadow, bigger size.
 	var day_label := Label.new()
 	var day_num := DayManager.day_number
 	day_label.text = "Day %d" % day_num
@@ -789,7 +802,12 @@ func _on_game_starting() -> void:
 	day_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	day_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	day_label.modulate = Color(1, 1, 1, 0)
-	day_label.add_theme_font_size_override("font_size", 48)
+	day_label.add_theme_font_size_override("font_size", 72)
+	day_label.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 1))
+	day_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	day_label.add_theme_constant_override("shadow_offset_x", 3)
+	day_label.add_theme_constant_override("shadow_offset_y", 3)
+	day_label.add_theme_constant_override("shadow_outline_size", 2)
 	day_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_transition_overlay.add_child(day_label)
 
@@ -814,13 +832,13 @@ func _on_game_starting() -> void:
 			# Spawn the player (deferred on host, so camera snap is also deferred).
 			Player.defer_camera_claim = true
 			_start_game_phase()
-			call_deferred("_snap_to_player_camera", fade_rect, day_label),
+			call_deferred("_snap_to_player_camera", fade_rect, day_label, dim_panel),
 	)
 
 
 ## Snap the camera to the player's first-person position, then fade in
 ## from black with a "Day X" overlay. Called after the player has spawned.
-func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label) -> void:
+func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: ColorRect) -> void:
 	if _local_player and _local_player.has_node("Head/Camera3D"):
 		var player_cam := _local_player.get_node("Head/Camera3D") as Camera3D
 		lobby_camera.current = false
@@ -831,7 +849,7 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label) -> void:
 	# Start the day cycle (sun transitions smoothly).
 	DayManager.start_morning()
 	DayManager.start_day()
-	# Phase 3: Fade in "Day X" label (0.3s), hold (1.0s), fade out (0.3s).
+	# Phase 3: Fade in "Day X" label + dim panel (0.3s), hold (1.0s), fade out (0.3s).
 	# Phase 4: Fade in from black (0.5s) — like opening eyes.
 	var tw := create_tween()
 	tw.set_parallel(true)
@@ -840,8 +858,15 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label) -> void:
 	if day_label:
 		tw.tween_property(day_label, "modulate:a", 1.0, 0.3) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if dim_panel:
+		tw.tween_property(dim_panel, "modulate:a", 1.0, 0.3) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if day_label:
 		tw.chain().tween_interval(1.0)
 		tw.tween_property(day_label, "modulate:a", 0.0, 0.3) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	if dim_panel:
+		tw.tween_property(dim_panel, "modulate:a", 0.0, 0.3) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	# Cleanup.
 	tw.tween_callback(
@@ -849,6 +874,8 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label) -> void:
 			fade_rect.queue_free()
 			if day_label:
 				day_label.queue_free()
+			if dim_panel:
+				dim_panel.queue_free()
 			_transition_overlay.visible = false,
 	)
 
@@ -1356,7 +1383,7 @@ func _on_local_player_ready(p: Player) -> void:
 		fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_transition_overlay.add_child(fade_rect)
 		_transition_overlay.visible = true
-		call_deferred("_snap_to_player_camera", fade_rect, null)
+		call_deferred("_snap_to_player_camera", fade_rect, null, null)
 
 
 ## Called when the server (host) disconnects. Shows a popup so the
