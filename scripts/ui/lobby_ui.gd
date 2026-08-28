@@ -837,6 +837,8 @@ func _add_style_section(
 	prev.text = "<"
 	prev.custom_minimum_size = Vector2(24, 24)
 	prev.add_theme_font_size_override("font_size", 14)
+	prev.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	prev.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(prev)
 	_setup_hover_effect(prev)
 	prev.pressed.connect(
@@ -849,14 +851,14 @@ func _add_style_section(
 	name_lbl.text = "—"
 	name_lbl.add_theme_font_size_override("font_size", 14)
 	name_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
-	name_lbl.custom_minimum_size = Vector2(60, 0)
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(name_lbl)
 
 	var next := Button.new()
 	next.text = ">"
 	next.custom_minimum_size = Vector2(24, 24)
 	next.add_theme_font_size_override("font_size", 14)
+	next.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	next.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_make_flat_button(next)
 	_setup_hover_effect(next)
 	next.pressed.connect(
@@ -886,11 +888,6 @@ func _add_color_section(
 	lbl.add_theme_font_size_override("font_size", 14)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	row.add_child(lbl)
-	# Spacer to align the color picker with the style rows.
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 0)
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(spacer)
 	_add_color_picker(row, initial_color, on_color)
 
 
