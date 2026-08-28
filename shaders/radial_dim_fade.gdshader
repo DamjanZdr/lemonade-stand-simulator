@@ -1,6 +1,6 @@
 shader_type canvas_item;
 
-uniform vec4 dim_color : source_color = vec4(0.0, 0.0, 0.0, 0.45);
+uniform vec4 dim_color : source_color = vec4(0.0, 0.0, 0.0, 0.25);
 // How far from center the fade starts (0=center, 1=edges).
 uniform float fade_radius : hint_range(0.0, 1.0) = 0.3;
 

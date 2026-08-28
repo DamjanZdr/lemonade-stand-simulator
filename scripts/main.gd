@@ -818,15 +818,16 @@ func _on_game_starting() -> void:
 		% _transition_overlay.visible
 	)
 	var tw := create_tween()
-	# Phase 1: Fade to black AND fade in Day X label + dim panel at the same time.
-	# Day X fades in over 1 second, blink fades to black over 0.4s.
+	# Phase 1: Fade to black immediately, Day X fades in 0.5s later.
 	tw.set_parallel(true)
 	tw.tween_property(fade_rect, "color:a", 1.0, 0.4) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	if day_label:
+		tw.tween_interval(0.5)
 		tw.tween_property(day_label, "modulate:a", 1.0, 1.0) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	if dim_panel:
+		tw.tween_interval(0.5)
 		tw.tween_property(dim_panel, "modulate:a", 1.0, 1.0) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	# Phase 2: Behind the black screen — hide lobby, spawn player, snap camera.
