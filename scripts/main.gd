@@ -1276,10 +1276,11 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
-		# Spawn the player at the stand's start marker position.
-		var spawn_marker := _get_stand_start_position(stand)
-		if spawn_marker != Vector3.ZERO:
-			p.global_position = spawn_marker
+		# Spawn the player at the stand's start marker position + rotation.
+		var spawn_marker := _get_stand_start_marker(stand)
+		if spawn_marker != null:
+			p.global_position = spawn_marker.global_position
+			p.global_rotation = Vector3(0, spawn_marker.global_rotation.y, 0)
 		else:
 			p.global_position = stand.global_position + Vector3(0, 0, 2)
 	GameLog.log(
@@ -1290,14 +1291,13 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 		_on_local_player_ready(p)
 
 
-## Returns the spawn position for the given stand from its start marker,
-## or Vector3.ZERO if no marker is found.
-func _get_stand_start_position(stand: StandUnit) -> Vector3:
+## Returns the start marker for the given stand, or null if not found.
+func _get_stand_start_marker(stand: StandUnit) -> Marker3D:
 	if stand == stand_unit and stand1_start_position:
-		return stand1_start_position.global_position
+		return stand1_start_position
 	if stand == stand_unit2 and stand2_start_position:
-		return stand2_start_position.global_position
-	return Vector3.ZERO
+		return stand2_start_position
+	return null
 
 
 ## Returns the world position of the lobby player visual for the given
