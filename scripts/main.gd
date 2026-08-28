@@ -802,6 +802,11 @@ func _on_game_starting() -> void:
 	day_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	day_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	day_label.modulate = Color(1, 1, 1, 0)
+	# Explicitly load the menu font (AmaticSC-Bold) since the TransitionOverlay
+	# CanvasLayer doesn't have the menu theme applied.
+	var menu_font := load("res://assets/fonts/AmaticSC-Bold.ttf") as FontFile
+	if menu_font:
+		day_label.add_theme_font_override("font", menu_font)
 	day_label.add_theme_font_size_override("font_size", 72)
 	day_label.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 1))
 	day_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
