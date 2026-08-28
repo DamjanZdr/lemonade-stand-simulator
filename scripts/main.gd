@@ -809,10 +809,6 @@ func _on_game_starting() -> void:
 		day_label.add_theme_font_override("font", menu_font)
 	day_label.add_theme_font_size_override("font_size", 120)
 	day_label.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 1))
-	day_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	day_label.add_theme_constant_override("shadow_offset_x", 3)
-	day_label.add_theme_constant_override("shadow_offset_y", 3)
-	day_label.add_theme_constant_override("shadow_outline_size", 2)
 	day_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_transition_overlay.add_child(day_label)
 
@@ -823,14 +819,15 @@ func _on_game_starting() -> void:
 	)
 	var tw := create_tween()
 	# Phase 1: Fade to black AND fade in Day X label + dim panel at the same time.
+	# Day X fades in over 1 second, blink fades to black over 0.4s.
 	tw.set_parallel(true)
 	tw.tween_property(fade_rect, "color:a", 1.0, 0.4) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	if day_label:
-		tw.tween_property(day_label, "modulate:a", 1.0, 0.4) \
+		tw.tween_property(day_label, "modulate:a", 1.0, 1.0) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	if dim_panel:
-		tw.tween_property(dim_panel, "modulate:a", 1.0, 0.4) \
+		tw.tween_property(dim_panel, "modulate:a", 1.0, 1.0) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	# Phase 2: Behind the black screen — hide lobby, spawn player, snap camera.
 	# Day X label stays visible during the snap.
@@ -870,7 +867,7 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: C
 	# 4. Cleanup
 	var tw := create_tween()
 	# Step 1: Fade in from black (eyes opening). Day X is already visible.
-	tw.tween_property(fade_rect, "color:a", 0.0, 0.5) \
+	tw.tween_property(fade_rect, "color:a", 0.0, 1.5) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	# Step 2: Hold for 5 seconds.
 	tw.tween_interval(5.0)
