@@ -1582,6 +1582,11 @@ func _on_esc_back_to_menu() -> void:
 			_local_player = null
 			# Reset game state.
 			_game_state = MenuState.MAIN_MENU
+			# Reset lighting to main menu defaults.
+			_enhanced_lighting = true
+			_enable_enhanced_lighting()
+			if sun:
+				sun._update_for_time(0.0)
 			# Show the main menu.
 			if _world_menu:
 				_world_menu.show_menu()
