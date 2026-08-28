@@ -1032,7 +1032,8 @@ func _refresh_saves() -> void:
 	# Clear old slot rows.
 	for child in _slots_container.get_children():
 		child.queue_free()
-	# Build a row for each save.
+	# Build a row for each save. The first (most recently saved) is "active".
+	var save_idx := 0
 	for save in _saves_data:
 		var slot_name: String = save.get("slot", "")
 		var stand_name: String = save.get("stand_name", slot_name)
@@ -1049,8 +1050,18 @@ func _refresh_saves() -> void:
 				dict["hour"],
 				dict["minute"],
 			]
-		var row := _build_save_row(slot_name, stand_name, game_mode, day, money, date_text)
+		var is_active := save_idx == 0
+		var row := _build_save_row(
+			slot_name,
+			stand_name,
+			game_mode,
+			day,
+			money,
+			date_text,
+			is_active,
+		)
 		_slots_container.add_child(row)
+		save_idx += 1
 
 
 ## Build a single save row: [Button(colored text) | Delete].
@@ -1064,17 +1075,23 @@ func _build_save_row(
 	day: int,
 	money: float,
 	date_text: String,
+	is_active: bool = false,
 ) -> HBoxContainer:
 	# Outer row: [Panel(box) | Delete/Yes/No]
 	var outer := HBoxContainer.new()
 	outer.add_theme_constant_override("separation", 12)
 	# Panel with subtle outline that pops as a whole on hover.
+	# Active save gets a yellow border; others get white.
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(SAVE_BOX_WIDTH, 0)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0, 0, 0, 0)
-	panel_style.border_color = Color(1, 1, 1, 0.4)
-	panel_style.set_border_width_all(1)
+	if is_active:
+		panel_style.border_color = Color(1, 0.9, 0.3, 1.0)
+		panel_style.set_border_width_all(2)
+	else:
+		panel_style.border_color = Color(1, 1, 1, 0.4)
+		panel_style.set_border_width_all(1)
 	panel_style.set_content_margin_all(10)
 	panel_style.set_corner_radius_all(4)
 	panel.add_theme_stylebox_override("panel", panel_style)
@@ -1082,11 +1099,14 @@ func _build_save_row(
 	row.add_theme_constant_override("separation", 2)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(row)
-	# Stand name label (large, yellow) — no mouse interaction, panel handles everything.
+	# Stand name label — yellow if active, white otherwise.
 	var btn := Label.new()
 	btn.custom_minimum_size = Vector2(0, 36)
 	btn.add_theme_font_size_override("font_size", 26)
-	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1.0))
+	if is_active:
+		btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1.0))
+	else:
+		btn.add_theme_color_override("font_color", Color(1, 1, 1, 1.0))
 	btn.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
 	btn.add_theme_constant_override("shadow_offset_x", 2)
 	btn.add_theme_constant_override("shadow_offset_y", 2)
@@ -1137,7 +1157,8 @@ func _build_save_row(
 			tw.set_parallel(true)
 			tw.tween_property(row, "scale", Vector2.ONE, 0.08) \
 					.set_ease(Tween.EASE_OUT)
-			tw.tween_property(panel_style, "border_color", Color(1, 1, 1, 0.4), 0.12) \
+			var restore_color := Color(1, 1, 1, 0.4) if not is_active else Color(1, 0.9, 0.3, 1.0)
+			tw.tween_property(panel_style, "border_color", restore_color, 0.12) \
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
 					.set_ease(Tween.EASE_OUT)
