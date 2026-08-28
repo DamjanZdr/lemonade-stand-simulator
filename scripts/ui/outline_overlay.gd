@@ -28,13 +28,15 @@ func _get_base_viewport_size() -> Vector2i:
 
 
 func _get_actual_viewport_size() -> Vector2i:
-	# The project uses canvas_items stretch mode with expand aspect.
-	# The DisplayRect is a canvas item laid out at the BASE resolution
-	# (1280x720) and then scaled to the window. The SubViewport texture
-	# is displayed on this canvas item. Rendering the SubViewport at the
-	# actual window size causes a scale mismatch (texture is squeezed
-	# into base-resolution canvas space then stretched back), so we
-	# render at the BASE resolution to match the canvas 1:1.
+	# Use the actual viewport rendering size so the SubViewport's aspect
+	# ratio matches the main camera's viewport. This prevents the outline
+	# silhouette from being stretched relative to the main view when the
+	# window has a different aspect ratio than the project base (1280x720).
+	var win := get_window()
+	if win != null:
+		var sz := win.get_size()
+		if sz.x > 0 and sz.y > 0:
+			return sz
 	return _get_base_viewport_size()
 
 
@@ -84,9 +86,14 @@ func _on_viewport_size_changed() -> void:
 func _update_shader_width() -> void:
 	if _display == null or _display.material == null:
 		return
-	# SubViewport matches the main viewport size, so the outline width
-	# in texture pixels maps 1:1 to screen pixels after canvas scaling.
-	(_display.material as ShaderMaterial).set_shader_parameter("outline_width", _target_width)
+	# Scale outline width proportionally to the SubViewport size so the
+	# visual thickness stays consistent regardless of window resolution.
+	var base := _get_base_viewport_size()
+	var scale_x := float(_subvp.size.x) / float(base.x) if base.x > 0 else 1.0
+	(_display.material as ShaderMaterial).set_shader_parameter(
+		"outline_width",
+		_target_width * scale_x,
+	)
 
 
 func _on_set_color(color: Color) -> void:

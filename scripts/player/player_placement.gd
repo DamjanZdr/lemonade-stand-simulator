@@ -209,6 +209,9 @@ func _place_cup_stack_from_box() -> void:
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
 	}
+	# Assign stand ownership based on the placing player's stand.
+	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+		state["stand_owner"] = _player.assigned_stand.name
 	var stack := WorldSync.request_spawn(
 		"res://scenes/objects/cup_stack.tscn",
 		stack_pos,
@@ -340,6 +343,9 @@ func _place_single_cup(_filled: bool) -> void:
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
 	}
+	# Assign stand ownership based on the placing player's stand.
+	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+		state["stand_owner"] = _player.assigned_stand.name
 	var stack := WorldSync.request_spawn(
 		"res://scenes/objects/cup_stack.tscn",
 		stack_pos,
@@ -555,6 +561,9 @@ func _drop_held_box() -> void:
 	else:
 		state["ingredient_type"] = _player.held_item_data.get("ingredient_type", "lemon")
 		state["quantity"] = _player.held_item_data.get("amount", 1.0)
+	# Transfer box ownership to the dropping player's stand.
+	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+		state["stand_owner"] = _player.assigned_stand.name
 	# Drop exactly where the raycast hits, or 0.8 m ahead if not hitting anything.
 	var drop_pos: Vector3
 	if _player.ray.is_colliding():
@@ -637,6 +646,9 @@ func _place_equipment_from_box() -> void:
 	state["starting_count"] = 0
 	state["_net_groups"] = ["container"]
 	state["_net_scale"] = placement_scale
+	# Assign stand ownership based on the placing player's stand.
+	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+		state["stand_owner"] = _player.assigned_stand.name
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance:
 		instance.scale = placement_scale

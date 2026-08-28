@@ -63,7 +63,10 @@ func set_primary_held(held: bool) -> void:
 		_rapid_fire_timer = _player._get_rapid_fire_interval()
 		_rapid_fire_cup_target = null
 		# Start throw charging if holding trash and not looking at a trashcan.
+		# Empty boxes are not throwable — they can only be disposed of at a trashcan.
 		if _player.inventory.held_item == HeldItem.TRASH:
+			var trash_type: String = _player.inventory.held_item_data.get("trash_type", "")
+			var is_empty_box := trash_type == "empty_box"
 			var interactable := get_looked_at_interactable()
 			var looking_at_trashcan := false
 			if interactable and interactable.is_in_group("trashcan"):
@@ -75,7 +78,7 @@ func set_primary_held(held: bool) -> void:
 						looking_at_trashcan = true
 						break
 					node = node.get_parent()
-			if not looking_at_trashcan:
+			if not looking_at_trashcan and not is_empty_box:
 				_throw_charging = true
 				_throw_charge = 0.0
 	else:
@@ -143,7 +146,7 @@ func poll_hint() -> void:
 		if interactable != null and interactable.is_in_group("trashcan"):
 			hint = interactable.get_hint(_player)
 		elif _player.inventory.held_item_data.get("trash_type", "") == "empty_box":
-			hint = "Trash | LMB: hold to throw | use trashcan to recycle"
+			hint = "Empty box | use trashcan to recycle"
 		else:
 			hint = "Trash | LMB: hold to throw | find a trashcan"
 		if hint != _last_hint:
