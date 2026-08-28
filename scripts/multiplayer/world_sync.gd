@@ -1175,6 +1175,8 @@ func sync_transforms_batch(
 ) -> void:
 	if not is_host():
 		return
+	if not multiplayer.multiplayer_peer:
+		return
 	_apply_transforms_batch.rpc_id(0, names, positions, rotations)
 
 

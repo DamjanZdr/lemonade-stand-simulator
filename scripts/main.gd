@@ -1582,12 +1582,6 @@ func _on_esc_back_to_menu() -> void:
 			_local_player = null
 			# Reset game state.
 			_game_state = MenuState.MAIN_MENU
-			# Reset lighting to main menu defaults.
-			_enhanced_lighting = true
-			_enable_enhanced_lighting()
-			var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
-			if sun_node and sun_node.has_method("_update_for_time"):
-				sun_node._update_for_time(0.0)
 			# Show the main menu.
 			if _world_menu:
 				_world_menu.show_menu()
@@ -1603,8 +1597,18 @@ func _on_esc_back_to_menu() -> void:
 			if lobby_camera:
 				lobby_camera.current = false,
 	)
-	# Hold at full black so lighting changes settle invisibly.
-	tw.tween_interval(0.2)
+	# Hold at full black, then reset lighting (so it settles invisibly).
+	tw.tween_interval(0.1)
+	tw.tween_callback(
+		func():
+			_enhanced_lighting = true
+			_enable_enhanced_lighting()
+			var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
+			if sun_node and sun_node.has_method("_update_for_time"):
+				sun_node._update_for_time(0.0),
+	)
+	# Hold a bit more so lighting fully settles.
+	tw.tween_interval(0.3)
 	# Phase 3: Fade in from black (eyes opening) — 1.5s.
 	tw.tween_property(fade_rect, "color:a", 0.0, 1.5) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
