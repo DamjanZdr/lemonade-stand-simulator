@@ -255,8 +255,10 @@ func _apply_mode_layout() -> void:
 	stand_sep.visible = is_versus
 	# Switch button only makes sense in Versus.
 	_switch_button.visible = is_versus
-	# Invite button hidden in Solo (no friends needed).
+	# Invite button + separator hidden in Solo (no friends needed).
 	_invite_button.visible = not is_solo
+	var copy_invite_sep: Label = $LeftContainer/LobbyPanel/VBox/RoomRow/CopyInviteSep
+	copy_invite_sep.visible = not is_solo
 	# Stand 1 header: always show the stand/save name.
 	var stand1_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
 	stand1_header.text = GameState.stand_name
