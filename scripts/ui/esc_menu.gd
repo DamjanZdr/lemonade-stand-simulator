@@ -389,6 +389,7 @@ func _build_settings_panel() -> Control:
 	fs_row.add_child(fs_label)
 	var fs_check := CheckBox.new()
 	fs_check.custom_minimum_size = Vector2(24, 24)
+	fs_check.theme = Theme.new()
 	fs_row.add_child(fs_check)
 
 	# VSync.
@@ -403,6 +404,7 @@ func _build_settings_panel() -> Control:
 	vsync_row.add_child(vsync_label)
 	var vsync_check := CheckBox.new()
 	vsync_check.custom_minimum_size = Vector2(24, 24)
+	vsync_check.theme = Theme.new()
 	vsync_row.add_child(vsync_check)
 
 	# Enhanced Lighting.
@@ -417,6 +419,7 @@ func _build_settings_panel() -> Control:
 	lighting_row.add_child(lighting_label)
 	var lighting_check := CheckBox.new()
 	lighting_check.custom_minimum_size = Vector2(24, 24)
+	lighting_check.theme = Theme.new()
 	lighting_row.add_child(lighting_check)
 
 	# Show FPS.
@@ -431,6 +434,7 @@ func _build_settings_panel() -> Control:
 	fps_row.add_child(fps_label)
 	var fps_check := CheckBox.new()
 	fps_check.custom_minimum_size = Vector2(24, 24)
+	fps_check.theme = Theme.new()
 	fps_row.add_child(fps_check)
 
 	# Back button (anchored to bottom-left, same as main menu).
