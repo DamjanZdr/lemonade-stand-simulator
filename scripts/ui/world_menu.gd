@@ -647,7 +647,8 @@ func _on_saves_back() -> void:
 
 
 func _on_new_stand_pressed() -> void:
-	# Step 1: Mode selection with descriptions. Step 2: Name entry.
+	# Hide the save list + new stand button — creation is a separate view.
+	_slots_container.visible = false
 	_new_stand_button.visible = false
 	_show_mode_select()
 
@@ -808,6 +809,7 @@ func _show_mode_select() -> void:
 	cancel_btn.pressed.connect(
 		func():
 			outer.queue_free()
+			_slots_container.visible = true
 			_new_stand_button.visible = true,
 	)
 	var confirm_btn := Button.new()
@@ -994,6 +996,7 @@ func _confirm_inline_name(panel: PanelContainer, field: LineEdit, mode: int) -> 
 		_cancel_inline_name(panel)
 		return
 	panel.queue_free()
+	_slots_container.visible = true
 	_new_stand_button.visible = true
 	set_busy("Creating '%s'..." % name)
 	new_stand_requested.emit(name, mode)
@@ -1001,6 +1004,7 @@ func _confirm_inline_name(panel: PanelContainer, field: LineEdit, mode: int) -> 
 
 func _cancel_inline_name(panel: PanelContainer) -> void:
 	panel.queue_free()
+	_slots_container.visible = true
 	_new_stand_button.visible = true
 
 
