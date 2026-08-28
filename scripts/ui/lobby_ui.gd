@@ -613,10 +613,11 @@ func _refresh() -> void:
 
 	var is_ready: bool = mine.get("ready", false)
 	_ready_button.text = "Ready" if is_ready else "Not Ready"
-	if is_ready:
-		_ready_button.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3, 1))
-	else:
-		_ready_button.add_theme_color_override("font_color", Color(1, 0.6, 0.2, 1))
+	var ready_color := Color(0.3, 0.9, 0.3, 1) if is_ready else Color(1, 0.6, 0.2, 1)
+	_ready_button.add_theme_color_override("font_color", ready_color)
+	_ready_button.add_theme_color_override("font_hover_color", ready_color)
+	_ready_button.add_theme_color_override("font_pressed_color", ready_color)
+	_ready_button.add_theme_color_override("font_focus_color", ready_color)
 
 	var is_host := multiplayer.is_server()
 	_start_button.visible = is_host
