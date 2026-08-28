@@ -954,42 +954,30 @@ func _add_color_section(
 	opts.add_child(right_spacer)
 
 
-## Add a ColorPickerButton with styling. The popup is simplified to
-## just the color square (no sliders, hex, presets, or modes).
+## Add a ColorPickerButton with a custom rounded swatch overlay.
+## The popup is simplified to just the color square.
 func _add_color_picker(parent: Control, initial_color: Color, on_color: Callable) -> void:
 	var cpb := ColorPickerButton.new()
 	cpb.custom_minimum_size = Vector2(COLOR_PICKER_SIZE, COLOR_PICKER_SIZE)
 	cpb.color = initial_color
 	cpb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	# Style: flat with a clean rounded border.
-	var flat := StyleBoxFlat.new()
-	flat.bg_color = initial_color
-	flat.set_border_width_all(2)
-	flat.border_color = Color(1, 1, 1, 0.6)
-	flat.set_corner_radius_all(6)
-	flat.content_margin_left = 2.0
-	flat.content_margin_top = 2.0
-	flat.content_margin_right = 2.0
-	flat.content_margin_bottom = 2.0
-	cpb.add_theme_stylebox_override("normal", flat)
-	# Hover: slightly brighter border.
-	var hover := StyleBoxFlat.new()
-	hover.bg_color = initial_color
-	hover.set_border_width_all(2)
-	hover.border_color = Color(1, 1, 1, 0.9)
-	hover.set_corner_radius_all(6)
-	hover.content_margin_left = 2.0
-	hover.content_margin_top = 2.0
-	hover.content_margin_right = 2.0
-	hover.content_margin_bottom = 2.0
-	cpb.add_theme_stylebox_override("hover", hover)
-	cpb.add_theme_stylebox_override("pressed", hover)
-	cpb.add_theme_stylebox_override("focus", flat)
+	# Hide the internal color square — we draw our own rounded one.
+	var empty := StyleBoxEmpty.new()
+	cpb.add_theme_stylebox_override("normal", empty)
+	cpb.add_theme_stylebox_override("hover", empty)
+	cpb.add_theme_stylebox_override("pressed", empty)
+	cpb.add_theme_stylebox_override("focus", empty)
+	# Custom rounded swatch drawn on top of the button.
+	var swatch := _ColorSwatch.new()
+	swatch.color = initial_color
+	swatch.custom_minimum_size = Vector2(COLOR_PICKER_SIZE, COLOR_PICKER_SIZE)
+	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cpb.add_child(swatch)
 	cpb.color_changed.connect(
 		func(color):
 			on_color.call(color)
-			flat.bg_color = color
-			hover.bg_color = color,
+			swatch.color = color,
 	)
 	# Simplify the popup: hide everything except the color square.
 	var picker := cpb.get_picker()
@@ -1175,3 +1163,30 @@ class _PersonSilhouette:
 		draw_rect(body, c, true)
 		draw_circle(Vector2(2.5, 9), 1.5, c)
 		draw_circle(Vector2(7.5, 9), 1.5, c)
+
+
+## Custom Control that draws a rounded-rect color swatch with a border.
+class _ColorSwatch:
+	extends Control
+
+	var color: Color = Color.WHITE:
+		set(v):
+			color = v
+			queue_redraw()
+
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+	func _draw() -> void:
+		var s := StyleBoxFlat.new()
+		s.bg_color = color
+		s.set_border_width_all(2)
+		s.border_color = Color(1, 1, 1, 0.6)
+		s.set_corner_radius_all(6)
+		s.content_margin_left = 2.0
+		s.content_margin_top = 2.0
+		s.content_margin_right = 2.0
+		s.content_margin_bottom = 2.0
+		draw_style_box(s, Rect2(Vector2.ZERO, size))
