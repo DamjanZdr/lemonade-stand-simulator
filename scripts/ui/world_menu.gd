@@ -821,8 +821,8 @@ func _show_mode_select() -> void:
 		mode_cards[mode_val] = card
 		cards_row.add_child(card)
 
-	# Wrap cards + description in a shrink-to-content VBox so the
-	# description centers relative to the cards' combined width.
+	# Wrap cards + description + name field in a shrink-to-content VBox so
+	# the description and field match the cards' combined width.
 	var cards_wrap := VBoxContainer.new()
 	cards_wrap.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	cards_wrap.add_theme_constant_override("separation", 10)
@@ -830,7 +830,7 @@ func _show_mode_select() -> void:
 	cards_wrap.add_child(desc_label)
 	vbox.add_child(cards_wrap)
 
-	# Name field (below the description).
+	# Name field (inside cards_wrap so it matches the cards' width).
 	var field := LineEdit.new()
 	field.name = "NameField"
 	field.custom_minimum_size = Vector2(0, 40)
@@ -845,33 +845,33 @@ func _show_mode_select() -> void:
 	)
 	var field_style := StyleBoxFlat.new()
 	field_style.bg_color = Color(0, 0, 0, 0.3)
-	field_style.border_color = Color(1, 1, 1, 0.4)
-	field_style.set_border_width_all(1)
+	field_style.border_color = Color(1, 1, 1, 1.0)
+	field_style.set_border_width_all(2)
 	field_style.set_content_margin_all(10)
 	field_style.set_corner_radius_all(4)
 	field.add_theme_stylebox_override("normal", field_style)
 	var field_focus := StyleBoxFlat.new()
 	field_focus.bg_color = Color(0, 0, 0, 0.3)
-	field_focus.border_color = Color(1, 0.9, 0.3, 1.0)
-	field_focus.set_border_width_all(1)
+	field_focus.border_color = Color(1, 1, 1, 1.0)
+	field_focus.set_border_width_all(2)
 	field_focus.set_content_margin_all(10)
 	field_focus.set_corner_radius_all(4)
 	field.add_theme_stylebox_override("focus", field_focus)
 	var field_readonly := StyleBoxFlat.new()
 	field_readonly.bg_color = Color(0, 0, 0, 0.3)
-	field_readonly.border_color = Color(1, 1, 1, 0.4)
-	field_readonly.set_border_width_all(1)
+	field_readonly.border_color = Color(1, 1, 1, 1.0)
+	field_readonly.set_border_width_all(2)
 	field_readonly.set_content_margin_all(10)
 	field_readonly.set_corner_radius_all(4)
 	field.add_theme_stylebox_override("read_only", field_readonly)
 	field.add_theme_color_override("font_color", Color(1, 1, 1, 1.0))
 	field.add_theme_color_override("font_placeholder_color", Color(1, 1, 1, 0.5))
-	field.add_theme_color_override("caret_color", Color(1, 0.9, 0.3, 1.0))
+	field.add_theme_color_override("caret_color", Color(1, 1, 1, 1.0))
 	field.text_submitted.connect(
 		func(text):
 			_confirm_inline_name(vbox, field, selected_mode),
 	)
-	vbox.add_child(field)
+	cards_wrap.add_child(field)
 
 	# Buttons: Back + Create (side by side, left-aligned, matching back button size).
 	var btn_row := HBoxContainer.new()
