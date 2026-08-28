@@ -185,9 +185,10 @@ func _apply_menu_style() -> void:
 			btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 			btn.add_theme_font_size_override("font_size", 22)
 
-	# Ready button: no hover color change at all, just flat + shadow.
+	# Ready button: pop effect + shadow, but no hover color change.
 	_make_flat_button(_ready_button)
 	_add_drop_shadow(_ready_button)
+	_setup_hover_pop_only(_ready_button)
 	_ready_button.add_theme_font_size_override("font_size", 28)
 	_start_button.add_theme_font_size_override("font_size", 28)
 	_back_button.add_theme_font_size_override("font_size", 24)
@@ -412,6 +413,37 @@ func _setup_hover_effect(btn: Button) -> void:
 			tw.tween_property(btn, "scale", base_scale, 0.08) \
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
+					.set_ease(Tween.EASE_OUT),
+	)
+
+
+## Wire hover sound + pop animation only (no modulate color change).
+func _setup_hover_pop_only(btn: Button) -> void:
+	if btn == null:
+		return
+	var base_scale := btn.scale
+	btn.set_meta("_base_scale", base_scale)
+	btn.mouse_entered.connect(
+		func():
+			if btn.disabled:
+				return
+			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
+			if btn.has_meta("_hover_tween") and btn.get_meta("_hover_tween") is Tween:
+				(btn.get_meta("_hover_tween") as Tween).kill()
+			btn.pivot_offset = Vector2(btn.size.x / 2.0, btn.size.y / 2.0)
+			var tw := create_tween()
+			btn.set_meta("_hover_tween", tw)
+			tw.tween_property(btn, "scale", base_scale * HOVER_POP, 0.06) \
+					.set_ease(Tween.EASE_OUT),
+	)
+	btn.mouse_exited.connect(
+		func():
+			if btn.has_meta("_hover_tween") and btn.get_meta("_hover_tween") is Tween:
+				(btn.get_meta("_hover_tween") as Tween).kill()
+			btn.pivot_offset = Vector2(btn.size.x / 2.0, btn.size.y / 2.0)
+			var tw := create_tween()
+			btn.set_meta("_hover_tween", tw)
+			tw.tween_property(btn, "scale", base_scale, 0.08) \
 					.set_ease(Tween.EASE_OUT),
 	)
 
