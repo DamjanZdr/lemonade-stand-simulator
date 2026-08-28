@@ -719,7 +719,8 @@ func _build_avatar_options_row() -> void:
 		"Brows",
 		pv.get_eyebrow_count(),
 		func(delta):
-			_eyebrow_index = (_eyebrow_index + delta + pv.get_eyebrow_count()) % pv.get_eyebrow_count()
+			var n := pv.get_eyebrow_count()
+			_eyebrow_index = (_eyebrow_index + delta + n) % n
 			_on_customization_changed(),
 		_eyebrow_color,
 		func(color):
