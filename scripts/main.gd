@@ -1574,8 +1574,11 @@ func _on_esc_back_to_menu() -> void:
 	# Hide the HUD.
 	if hud:
 		hud.visible = false
-	# Switch to the main menu camera.
+	# Switch to the main menu camera and restore its original transform.
 	if main_menu_camera:
+		main_menu_camera.global_transform = _get_main_menu_cam_transform()
+		if has_meta("_main_menu_cam_fov"):
+			main_menu_camera.fov = get_meta("_main_menu_cam_fov") as float
 		main_menu_camera.current = true
 	if lobby_camera:
 		lobby_camera.current = false
