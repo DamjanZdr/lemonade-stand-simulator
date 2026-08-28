@@ -867,11 +867,11 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: C
 		tw.tween_property(dim_panel, "modulate:a", 1.0, 0.3) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	if day_label:
-		tw.chain().tween_interval(1.0)
-		tw.tween_property(day_label, "modulate:a", 0.0, 0.3) \
+		tw.chain().tween_interval(3.0)
+		tw.tween_property(day_label, "modulate:a", 0.0, 0.5) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	if dim_panel:
-		tw.tween_property(dim_panel, "modulate:a", 0.0, 0.3) \
+		tw.tween_property(dim_panel, "modulate:a", 0.0, 0.5) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	# Cleanup.
 	tw.tween_callback(
