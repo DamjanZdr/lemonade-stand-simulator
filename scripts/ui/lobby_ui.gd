@@ -954,48 +954,49 @@ func _add_color_section(
 	opts.add_child(right_spacer)
 
 
-## Add a ColorPickerButton with a custom rounded swatch overlay.
-## The popup is simplified to just the color square.
+## Add a color picker button with a custom rounded swatch.
+## Uses a plain Button + ColorPicker popup for full control over styling.
 func _add_color_picker(parent: Control, initial_color: Color, on_color: Callable) -> void:
-	var cpb := ColorPickerButton.new()
-	cpb.custom_minimum_size = Vector2(COLOR_PICKER_SIZE, COLOR_PICKER_SIZE)
-	cpb.color = initial_color
-	cpb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	# Hide the internal color square — we draw our own rounded one.
+	var btn := Button.new()
+	btn.custom_minimum_size = Vector2(COLOR_PICKER_SIZE, COLOR_PICKER_SIZE)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# Flat button — no background at all.
 	var empty := StyleBoxEmpty.new()
-	cpb.add_theme_stylebox_override("normal", empty)
-	cpb.add_theme_stylebox_override("hover", empty)
-	cpb.add_theme_stylebox_override("pressed", empty)
-	cpb.add_theme_stylebox_override("focus", empty)
-	# Custom rounded swatch drawn on top of the button.
+	btn.add_theme_stylebox_override("normal", empty)
+	btn.add_theme_stylebox_override("hover", empty)
+	btn.add_theme_stylebox_override("pressed", empty)
+	btn.add_theme_stylebox_override("focus", empty)
+	btn.add_theme_stylebox_override("disabled", empty)
+	btn.text = ""
+	# Custom rounded swatch drawn on top.
 	var swatch := _ColorSwatch.new()
 	swatch.color = initial_color
-	swatch.custom_minimum_size = Vector2(COLOR_PICKER_SIZE, COLOR_PICKER_SIZE)
-	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	swatch.set_anchors_preset(Control.PRESET_FULL_RECT)
 	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cpb.add_child(swatch)
-	cpb.color_changed.connect(
+	btn.add_child(swatch)
+	# Build a ColorPicker popup.
+	var popup := PopupPanel.new()
+	var picker := ColorPicker.new()
+	picker.color = initial_color
+	picker.sampler_visible = false
+	picker.color_modes_visible = false
+	picker.sliders_visible = false
+	picker.hex_visible = false
+	picker.presets_visible = false
+	popup.add_child(picker)
+	btn.add_child(popup)
+	picker.color_changed.connect(
 		func(color):
 			on_color.call(color)
 			swatch.color = color,
 	)
-	# Simplify the popup: hide everything except the color square.
-	var picker := cpb.get_picker()
-	if picker:
-		picker.sampler_visible = false
-		picker.color_modes_visible = false
-		picker.sliders_visible = false
-		picker.hex_visible = false
-		picker.presets_visible = false
-	# Position the popup to the right of the button instead of below.
-	cpb.pressed.connect(
+	# Show popup to the right of the button on press.
+	btn.pressed.connect(
 		func():
-			var pop := cpb.get_picker().get_parent()
-			if pop is Popup:
-				var popup := pop as Popup
-				popup.position = cpb.global_position + Vector2(cpb.size.x + 4, 0),
+			popup.position = btn.global_position + Vector2(btn.size.x + 4, 0)
+			popup.popup(),
 	)
-	parent.add_child(cpb)
+	parent.add_child(btn)
 
 
 func _get_wall_colors() -> Array[Color]:
