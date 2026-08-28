@@ -1000,7 +1000,7 @@ func _add_color_picker(parent: Control, initial_color: Color, on_color: Callable
 		picker.hex_visible = false
 		picker.presets_visible = false
 	# Position the popup to the right of the button instead of below.
-	cpb.about_to_popup.connect(
+	cpb.pressed.connect(
 		func():
 			var pop := cpb.get_picker().get_parent()
 			if pop is Popup:
