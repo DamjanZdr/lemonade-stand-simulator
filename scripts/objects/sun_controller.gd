@@ -14,6 +14,7 @@ extends DirectionalLight3D
 @export var energy_end: float = 0.2
 
 var _current_t: float = 0.0
+var _transition_tween: Tween = null
 
 
 func _ready() -> void:
@@ -31,12 +32,30 @@ func _on_day_timer_updated(time_left: float, total_time: float) -> void:
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
 	if phase == DayManager.Phase.MORNING:
-		_update_for_time(0.0)
+		_tween_to_time(0.0, 0.6)
 	elif phase == DayManager.Phase.EVENING:
 		_update_for_time(1.0)
 
 
+## Smoothly tweens the sun to the target time over the given duration.
+func _tween_to_time(target_t: float, duration: float) -> void:
+	if _transition_tween:
+		_transition_tween.kill()
+	_transition_tween = create_tween()
+	_transition_tween \
+			.tween_method(
+		func(t: float) -> void:
+			_update_for_time(t),
+		_current_t,
+		target_t,
+		duration,
+	) \
+			.set_trans(Tween.TRANS_SINE) \
+			.set_ease(Tween.EASE_IN_OUT)
+
+
 func _update_for_time(t: float) -> void:
+	_current_t = t
 	# t = 0 (start of day) → start rotation/energy
 	# t = 0.5 (midday) → peak energy
 	# t = 1 (end of day) → end rotation/energy

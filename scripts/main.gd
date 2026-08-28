@@ -839,7 +839,8 @@ func _tween_camera_to_player(is_late_join: bool = false) -> void:
 		) \
 				.set_trans(Tween.TRANS_SINE) \
 				.set_ease(Tween.EASE_IN_OUT)
-		# When the tween finishes, switch to the player's camera
+		# When the tween finishes, switch to the player's camera and
+		# start the day cycle (sun/lighting transitions smoothly).
 		tw.chain().tween_callback(
 			func():
 				lobby_camera.global_transform = target_transform
@@ -849,7 +850,9 @@ func _tween_camera_to_player(is_late_join: bool = false) -> void:
 				if lobby_player_models:
 					lobby_player_models.visible = false
 				if hud:
-					hud.visible = true,
+					hud.visible = true
+				DayManager.start_morning()
+				DayManager.start_day(),
 		)
 	else:
 		# No local player (spectator?) — just stop the lobby camera
@@ -1040,12 +1043,10 @@ func _setup_world_systems() -> void:
 		EventBus.day_timer_updated.connect(_on_day_timer_updated)
 	if not EventBus.debug_set_rain.is_connected(_on_debug_set_rain):
 		EventBus.debug_set_rain.connect(_on_debug_set_rain)
-	# Day cycle + containers.
-	DayManager.start_morning()
-	DayManager.start_day()
+	# Containers + evening summary (no day cycle yet — that starts
+	# when the camera tween runs from lobby to first-person).
 	SaveManager.capture_default_containers()
 	SaveManager.respawn_placed_containers()
-	# Evening summary overlay.
 	add_child(DAY_SUMMARY_SCENE.instantiate())
 
 
