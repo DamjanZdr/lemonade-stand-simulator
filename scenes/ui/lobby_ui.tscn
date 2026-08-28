@@ -115,21 +115,21 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="AvatarTab" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/TabRow" unique_id=1667017137]
+[node name="LobbyTab" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/TabRow" unique_id=1667017137]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "Avatar"
+text = "Lobby"
 
-[node name="HouseTab" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/TabRow" unique_id=1667017138]
+[node name="CustomizeTab" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/TabRow" unique_id=1667017138]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "House"
+text = "Customize"
 
 [node name="TabSep" type="ColorRect" parent="LeftContainer/CustomizePanel/OptionsCol" unique_id=1667017139]
 custom_minimum_size = Vector2(0, 2)

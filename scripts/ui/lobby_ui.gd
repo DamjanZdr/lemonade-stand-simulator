@@ -23,8 +23,8 @@ const HOVER_POP: float = 1.12
 @onready var _version_label: Label = $VersionLabel
 @onready var _customize_panel: PanelContainer = $LeftContainer/CustomizePanel
 @onready var _lobby_panel: PanelContainer = $LeftContainer/LobbyPanel
-@onready var _avatar_tab: Button = $LeftContainer/CustomizePanel/OptionsCol/TabRow/AvatarTab
-@onready var _house_tab: Button = $LeftContainer/CustomizePanel/OptionsCol/TabRow/HouseTab
+@onready var _lobby_tab: Button = $LeftContainer/CustomizePanel/OptionsCol/TabRow/LobbyTab
+@onready var _customize_tab: Button = $LeftContainer/CustomizePanel/OptionsCol/TabRow/CustomizeTab
 @onready var _customize_title: Label = $LeftContainer/CustomizePanel/OptionsCol/Title
 @onready var _gender_row: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/GenderRow
 @onready var _random_button: Button = $LeftContainer/CustomizePanel/OptionsCol/RandomButton
@@ -45,6 +45,8 @@ const HOVER_POP: float = 1.12
 # New single-line avatar controls (built dynamically).
 var _hair_name_lbl: Label = null
 var _eyebrow_name_lbl: Label = null
+var _walls_name_lbl: Label = null
+var _roof_name_lbl: Label = null
 var _head_slider: HSlider = null
 
 ## PlayerVisuals nodes in the 3D world. Customization applies to ALL of
@@ -171,8 +173,8 @@ func _apply_menu_style() -> void:
 		_eye_button,
 		_male_button,
 		_female_button,
-		_avatar_tab,
-		_house_tab,
+		_lobby_tab,
+		_customize_tab,
 	]
 	for btn in main_buttons:
 		if btn:
@@ -375,10 +377,10 @@ func _ready() -> void:
 			LobbyManager.start_game(),
 	)
 	_back_button.pressed.connect(_on_leave_pressed)
-	_avatar_tab.pressed.connect(_on_avatar_tab)
-	_house_tab.pressed.connect(_on_house_tab)
-	# Default to Avatar tab.
-	_on_avatar_tab()
+	_lobby_tab.pressed.connect(_on_lobby_tab)
+	_customize_tab.pressed.connect(_on_customize_tab)
+	# Default to Lobby tab.
+	_on_lobby_tab()
 	LobbyManager.roster_changed.connect(_refresh)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
 	NetworkManager.peer_disconnected.connect(
@@ -463,51 +465,24 @@ func _on_leave_pressed() -> void:
 	return_to_menu_requested.emit()
 
 
-## Switch to the Avatar tab — show avatar customization options.
-func _on_avatar_tab() -> void:
-	_avatar_tab.button_pressed = true
-	_house_tab.button_pressed = false
-	_gender_row.visible = true
-	_random_button.visible = true
-	# Show the single-line avatar options row, hide the old columns.
-	_set_node_visible("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow", true)
-	_columns_row.visible = false
-
-
-## Switch to the House tab — show house customization options.
-func _on_house_tab() -> void:
-	_avatar_tab.button_pressed = false
-	_house_tab.button_pressed = true
+## Switch to the Lobby tab — show room/players/ready, hide customization.
+func _on_lobby_tab() -> void:
+	_lobby_tab.button_pressed = true
+	_customize_tab.button_pressed = false
+	_lobby_panel.visible = true
 	_gender_row.visible = false
 	_random_button.visible = false
-	# Hide avatar options, show the old columns (only walls/roof are relevant).
 	_set_node_visible("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow", false)
-	_columns_row.visible = true
-	# Hide all avatar rows in the columns, show only walls + roof.
-	for row_name in ["HairStyleRow", "EyebrowsRow", "ShirtColorRow", "ShoesColorRow"]:
-		_set_node_visible(
-			"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/" + row_name,
-			false,
-		)
-	for row_name in [
-		"HairColorRow",
-		"EyebrowColorRow",
-		"PantsColorRow",
-		"HeadSizeRow",
-		"SkinColorRow",
-	]:
-		_set_node_visible(
-			"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/" + row_name,
-			false,
-		)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow",
-		true,
-	)
-	_set_node_visible(
-		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow",
-		true,
-	)
+
+
+## Switch to the Customize tab — show all customization (avatar + house).
+func _on_customize_tab() -> void:
+	_lobby_tab.button_pressed = false
+	_customize_tab.button_pressed = true
+	_lobby_panel.visible = false
+	_gender_row.visible = true
+	_random_button.visible = true
+	_set_node_visible("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow", true)
 
 
 ## Helper to set a node's visibility by path.
@@ -811,6 +786,45 @@ func _build_avatar_options_row() -> void:
 	)
 	head_row.add_child(_head_slider)
 
+	# -- Walls: [<] name [>] (cycles through color_manager wall colors) --
+	var wc := _get_wall_colors()
+	if not wc.is_empty():
+		_walls_name_lbl = _add_style_section(
+			vbox,
+			"Walls",
+			wc.size(),
+			func(delta):
+				_walls_color_index = (_walls_color_index + delta + wc.size()) % wc.size()
+				_on_customization_changed(),
+			wc[_walls_color_index] if _walls_color_index < wc.size() else wc[0],
+			func(color):
+				# Find closest index in the wall colors array.
+				for i in wc.size():
+					if wc[i].is_equal_approx(color):
+						_walls_color_index = i
+						_on_customization_changed()
+						return,
+		)
+
+	# -- Roof: [<] name [>] (cycles through color_manager roof colors) --
+	var rc := _get_roof_colors()
+	if not rc.is_empty():
+		_roof_name_lbl = _add_style_section(
+			vbox,
+			"Roof",
+			rc.size(),
+			func(delta):
+				_roof_color_index = (_roof_color_index + delta + rc.size()) % rc.size()
+				_on_customization_changed(),
+			rc[_roof_color_index] if _roof_color_index < rc.size() else rc[0],
+			func(color):
+				for i in rc.size():
+					if rc[i].is_equal_approx(color):
+						_roof_color_index = i
+						_on_customization_changed()
+						return,
+		)
+
 
 ## Add a style row inside a VBox: Label | [<] | name | [>] | [color picker]
 ## Returns the name label so it can be updated.
@@ -977,6 +991,17 @@ func _update_all_names() -> void:
 		_hair_name_lbl.text = pv.get_hair_name(_hair_index)
 	if _eyebrow_name_lbl:
 		_eyebrow_name_lbl.text = pv.get_eyebrow_name(_eyebrow_index)
+	if _walls_name_lbl:
+		if _walls_color_index < WALL_COLOR_NAMES.size():
+			_walls_name_lbl.text = WALL_COLOR_NAMES[_walls_color_index]
+		else:
+			_walls_name_lbl.text = "—"
+	if _roof_name_lbl:
+		if _roof_color_index < ROOF_COLOR_NAMES.size():
+			_roof_name_lbl.text = ROOF_COLOR_NAMES[_roof_color_index]
+		else:
+			_roof_name_lbl.text = "—"
+	# Also update the old scene labels (still used by the hidden ColumnsRow).
 	if _walls_color_index < WALL_COLOR_NAMES.size():
 		_walls_color_name.text = WALL_COLOR_NAMES[_walls_color_index]
 	else:
@@ -1003,13 +1028,13 @@ func _on_randomize() -> void:
 	if _head_slider:
 		_head_slider.value = _head_size_index
 	# Update the color picker buttons to reflect new colors.
-	_sync_color_picker_buttons()
 	var wc := _get_wall_colors()
 	if not wc.is_empty():
 		_walls_color_index = randi() % wc.size()
 	var rc := _get_roof_colors()
 	if not rc.is_empty():
 		_roof_color_index = randi() % rc.size()
+	_sync_color_picker_buttons()
 	_on_customization_changed()
 
 
@@ -1019,6 +1044,8 @@ func _sync_color_picker_buttons() -> void:
 	if row == null:
 		return
 	var cpbs := row.find_children("*", "ColorPickerButton", true, false)
+	var wc := _get_wall_colors()
+	var rc := _get_roof_colors()
 	for i in cpbs.size():
 		var cpb := cpbs[i] as ColorPickerButton
 		match i:
@@ -1034,6 +1061,12 @@ func _sync_color_picker_buttons() -> void:
 				cpb.color = _shoes_color
 			5:
 				cpb.color = _skin_color
+			6:
+				if not wc.is_empty() and _walls_color_index < wc.size():
+					cpb.color = wc[_walls_color_index]
+			7:
+				if not rc.is_empty() and _roof_color_index < rc.size():
+					cpb.color = rc[_roof_color_index]
 
 
 func _broadcast_customization() -> void:
