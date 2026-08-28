@@ -861,6 +861,8 @@ func _make_flat_button(btn: Button) -> void:
 
 ## Style a CheckBox to be a transparent box with white outline (same as main menu).
 func _style_checkbox(cb: CheckBox) -> void:
+	# Block the parent menu theme from applying Button green styles.
+	cb.theme = Theme.new()
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0, 0, 0, 0)
 	box.border_color = Color(1, 1, 1, 0.8)
@@ -871,12 +873,16 @@ func _style_checkbox(cb: CheckBox) -> void:
 	cb.add_theme_stylebox_override("pressed", box)
 	cb.add_theme_stylebox_override("focus", box)
 	cb.add_theme_stylebox_override("disabled", box)
+	cb.add_theme_stylebox_override("hover_pressed", box)
 	cb.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
 	cb.add_theme_color_override("font_hover_color", Color(1, 1, 1, 0.9))
 	cb.add_theme_color_override("font_pressed_color", Color(1, 1, 1, 0.9))
 	cb.add_theme_color_override("icon_normal_color", Color(1, 1, 1, 0.9))
 	cb.add_theme_color_override("icon_hover_color", Color(1, 1, 1, 0.9))
 	cb.add_theme_color_override("icon_pressed_color", Color(1, 1, 1, 0.9))
+	cb.add_theme_color_override("icon_hover_pressed_color", Color(1, 1, 1, 0.9))
+	cb.add_theme_color_override("icon_focus_color", Color(1, 1, 1, 0.9))
+	cb.add_theme_color_override("icon_disabled_color", Color(1, 1, 1, 0.9))
 
 
 func _add_drop_shadow(btn: Button) -> void:
