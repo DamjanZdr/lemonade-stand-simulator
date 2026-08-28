@@ -28,10 +28,14 @@ func can_player_use(player: Node) -> bool:
 		return true
 	if mp.get_peers().is_empty():
 		return true
-	if player == null or not ("assigned_stand" in player):
-		return false
+	# Unassigned items can be used by anyone — check this BEFORE
+	# requiring the player to have an assigned stand, so that players
+	# whose stand assignment hasn't completed yet can still interact
+	# with shared/unassigned items.
 	if stand_owner == "":
 		return true
+	if player == null or not ("assigned_stand" in player):
+		return false
 	var stand: Node = player.assigned_stand
 	if stand == null or not is_instance_valid(stand):
 		return false
