@@ -474,7 +474,7 @@ func _style_slider(slider: HSlider) -> void:
 
 ## Render an emoji to a texture using the default font for slider grabbers.
 func _make_emoji_icon(emoji: String, font_size: int) -> Texture2D:
-	var font := get_theme_default_font()
+	var font := ThemeDB.get_default_font()
 	var text_size := font.get_string_size(emoji, font_size)
 	var pad := 2
 	var w := int(text_size.x) + pad * 2
