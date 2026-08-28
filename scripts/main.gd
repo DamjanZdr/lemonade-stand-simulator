@@ -1603,6 +1603,8 @@ func _on_esc_back_to_menu() -> void:
 			if lobby_camera:
 				lobby_camera.current = false,
 	)
+	# Hold at full black so lighting changes settle invisibly.
+	tw.tween_interval(0.2)
 	# Phase 3: Fade in from black (eyes opening) — 1.5s.
 	tw.tween_property(fade_rect, "color:a", 0.0, 1.5) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
