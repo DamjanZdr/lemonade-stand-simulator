@@ -79,7 +79,7 @@ const ROOF_COLOR_NAMES: Array[String] = ["Brown", "Grey", "Green", "Blue", "Yell
 const NAME_WIDTH: float = 80.0
 const ARROW_SIZE: float = 32.0
 const COLOR_PICKER_SIZE: float = 36.0
-const OPTION_FONT_SIZE: int = 20
+const OPTION_FONT_SIZE: int = 22
 const ROW_SEPARATION: float = 4.0
 
 # ── State ─────────────────────────────────────────────────────────────────────
@@ -599,7 +599,7 @@ func _refresh() -> void:
 			_stand2_list.add_child(label)
 
 	var is_ready: bool = mine.get("ready", false)
-	_ready_button.text = "Not Ready" if is_ready else "Ready Up"
+	_ready_button.text = "Ready" if is_ready else "Not Ready"
 	if is_ready:
 		_ready_button.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3, 1))
 	else:
@@ -1029,9 +1029,9 @@ func _update_all_names() -> void:
 	if _appearance_name_lbl:
 		_appearance_name_lbl.text = GENDER_NAMES[0] if _is_male else GENDER_NAMES[1]
 	if _hair_name_lbl:
-		_hair_name_lbl.text = pv.get_hair_name(_hair_index)
+		_hair_name_lbl.text = "Style %d" % (_hair_index + 1)
 	if _eyebrow_name_lbl:
-		_eyebrow_name_lbl.text = pv.get_eyebrow_name(_eyebrow_index)
+		_eyebrow_name_lbl.text = "Style %d" % (_eyebrow_index + 1)
 
 
 func _on_randomize() -> void:
