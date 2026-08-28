@@ -104,12 +104,10 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Title" type="Label" parent="LeftContainer/CustomizePanel/OptionsCol" unique_id=1667017135]
+[node name="Title" type="HBoxContainer" parent="LeftContainer/CustomizePanel/OptionsCol" unique_id=1667017135]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 20
-text = "Lobby"
-horizontal_alignment = 1
+alignment = 1
+theme_override_constants/separation = 6
 
 [node name="TabRow" type="HBoxContainer" parent="LeftContainer/CustomizePanel/OptionsCol" unique_id=1667017136]
 layout_mode = 2
@@ -699,7 +697,7 @@ theme_override_constants/separation = 3
 layout_mode = 2
 theme_override_constants/separation = 3
 
-[node name="Sep2" type="ColorRect" parent="LeftContainer/LobbyPanel/VBox" unique_id=877560185]
+[node name="Sep2" type="ColorRect" parent="LeftContainer" unique_id=877560185]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
 color = Color(0.35, 0.6, 0.9, 0.25)

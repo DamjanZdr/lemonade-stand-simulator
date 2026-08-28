@@ -25,7 +25,7 @@ const HOVER_POP: float = 1.12
 @onready var _lobby_panel: PanelContainer = $LeftContainer/LobbyPanel
 @onready var _lobby_tab: Button = $LeftContainer/CustomizePanel/OptionsCol/TabRow/LobbyTab
 @onready var _customize_tab: Button = $LeftContainer/CustomizePanel/OptionsCol/TabRow/CustomizeTab
-@onready var _customize_title: Label = $LeftContainer/CustomizePanel/OptionsCol/Title
+@onready var _customize_title: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/Title
 @onready var _gender_row: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/GenderRow
 @onready var _random_button: Button = $LeftContainer/CustomizePanel/OptionsCol/RandomButton
 
@@ -258,14 +258,62 @@ func _apply_mode_layout() -> void:
 		stand1_header.text = "Stand 1"
 	else:
 		stand1_header.text = "Players"
-	# Update the lobby title to show the stand name + mode.
-	var mode_name := "Solo"
+	# Update the lobby title to show the stand name + mode icons.
+	_update_lobby_title(mode)
+
+
+## Build the lobby title: stand name + silhouette mode icons.
+func _update_lobby_title(mode: int) -> void:
+	for child in _customize_title.get_children():
+		child.queue_free()
+	var name_lbl := Label.new()
+	name_lbl.text = GameState.stand_name
+	name_lbl.add_theme_font_size_override("font_size", 20)
+	name_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	_customize_title.add_child(name_lbl)
+	var icon := _build_mode_icon(mode)
+	if icon:
+		_customize_title.add_child(icon)
+
+
+## Build a silhouette icon for the given game mode.
+func _build_mode_icon(mode: int) -> Control:
+	var count := 1
+	var vs := false
 	match mode:
 		GameState.GameMode.COOP:
-			mode_name = "Co-op"
+			count = 4
 		GameState.GameMode.VERSUS:
-			mode_name = "Versus"
-	_customize_title.text = "%s — %s" % [GameState.stand_name, mode_name]
+			count = 2
+			vs = true
+	return _build_silhouette_icon(count, vs)
+
+
+## Build a person silhouette icon group.
+func _build_silhouette_icon(count: int, vs: bool) -> Control:
+	var container := HBoxContainer.new()
+	container.add_theme_constant_override("separation", 4)
+	container.alignment = BoxContainer.ALIGNMENT_CENTER
+	if vs:
+		var left := HBoxContainer.new()
+		left.add_theme_constant_override("separation", 2)
+		for i in count:
+			left.add_child(_PersonSilhouette.new())
+		container.add_child(left)
+		var vs_label := Label.new()
+		vs_label.text = "VS"
+		vs_label.add_theme_font_size_override("font_size", 14)
+		vs_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.8))
+		container.add_child(vs_label)
+		var right := HBoxContainer.new()
+		right.add_theme_constant_override("separation", 2)
+		for i in count:
+			right.add_child(_PersonSilhouette.new())
+		container.add_child(right)
+	else:
+		for i in count:
+			container.add_child(_PersonSilhouette.new())
+	return container
 
 
 ## Recursively style all labels in a node tree: white text.
@@ -1050,3 +1098,21 @@ func _get_customization_data() -> Dictionary:
 		"wall_color": wall_color,
 		"roof_color": roof_color,
 	}
+
+
+## Custom Control that draws a simple person silhouette (head + body).
+class _PersonSilhouette:
+	extends Control
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(10, 22)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+	func _draw() -> void:
+		var c := Color(1, 1, 1, 0.85)
+		draw_circle(Vector2(5, 4), 3.5, c)
+		var body := Rect2(1.5, 8, 7, 12)
+		draw_rect(body, c, true)
+		draw_circle(Vector2(2.5, 9), 1.5, c)
+		draw_circle(Vector2(7.5, 9), 1.5, c)
