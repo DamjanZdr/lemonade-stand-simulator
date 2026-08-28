@@ -268,7 +268,7 @@ func _build_settings_panel() -> Control:
 	master_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	master_slider.custom_minimum_size = Vector2(100, 20)
 	master_slider.min_value = 0.0
-	master_slider.max_value = 0.5
+	master_slider.max_value = 1.0
 	master_slider.step = 0.01
 	master_slider.value = 0.5
 	master_row.add_child(master_slider)
@@ -294,7 +294,7 @@ func _build_settings_panel() -> Control:
 	sfx_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	sfx_slider.custom_minimum_size = Vector2(100, 20)
 	sfx_slider.min_value = 0.0
-	sfx_slider.max_value = 0.5
+	sfx_slider.max_value = 1.0
 	sfx_slider.step = 0.01
 	sfx_slider.value = 0.5
 	sfx_row.add_child(sfx_slider)
@@ -320,7 +320,7 @@ func _build_settings_panel() -> Control:
 	music_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	music_slider.custom_minimum_size = Vector2(100, 20)
 	music_slider.min_value = 0.0
-	music_slider.max_value = 0.5
+	music_slider.max_value = 1.0
 	music_slider.step = 0.01
 	music_slider.value = 0.5
 	music_row.add_child(music_slider)
@@ -356,6 +356,7 @@ func _build_settings_panel() -> Control:
 	fs_row.add_child(fs_label)
 	var fs_check := CheckBox.new()
 	fs_check.custom_minimum_size = Vector2(24, 24)
+	_remove_checkbox_focus(fs_check)
 	fs_row.add_child(fs_check)
 
 	# VSync.
@@ -370,6 +371,7 @@ func _build_settings_panel() -> Control:
 	vsync_row.add_child(vsync_label)
 	var vsync_check := CheckBox.new()
 	vsync_check.custom_minimum_size = Vector2(24, 24)
+	_remove_checkbox_focus(vsync_check)
 	vsync_row.add_child(vsync_check)
 
 	# Enhanced Lighting.
@@ -384,6 +386,7 @@ func _build_settings_panel() -> Control:
 	lighting_row.add_child(lighting_label)
 	var lighting_check := CheckBox.new()
 	lighting_check.custom_minimum_size = Vector2(24, 24)
+	_remove_checkbox_focus(lighting_check)
 	lighting_row.add_child(lighting_check)
 
 	# Show FPS.
@@ -398,6 +401,7 @@ func _build_settings_panel() -> Control:
 	fps_row.add_child(fps_label)
 	var fps_check := CheckBox.new()
 	fps_check.custom_minimum_size = Vector2(24, 24)
+	_remove_checkbox_focus(fps_check)
 	fps_row.add_child(fps_check)
 
 	# Back button (anchored to bottom-left, same as main menu).
@@ -620,6 +624,15 @@ func _make_flat_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("hover", stylebox_empty)
 	btn.add_theme_stylebox_override("pressed", stylebox_empty)
 	btn.add_theme_stylebox_override("focus", stylebox_empty)
+
+
+## Remove the green focus box from checkboxes (inherited from Button focus style).
+func _remove_checkbox_focus(cb: CheckBox) -> void:
+	var stylebox_empty := StyleBoxEmpty.new()
+	cb.add_theme_stylebox_override("focus", stylebox_empty)
+	cb.add_theme_stylebox_override("hover", stylebox_empty)
+	cb.add_theme_stylebox_override("normal", stylebox_empty)
+	cb.add_theme_stylebox_override("pressed", stylebox_empty)
 
 
 func _add_drop_shadow(btn: Button) -> void:

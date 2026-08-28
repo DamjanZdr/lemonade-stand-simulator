@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://cworldmenu01"]
+[gd_scene load_steps=7 format=3 uid="uid://cworldmenu01"]
 
 [ext_resource type="Script" path="res://scripts/ui/world_menu.gd" id="1_script"]
 [ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
@@ -14,6 +14,8 @@ shader_parameter/fade_start = 0.35
 shader = ExtResource("4_dimfade")
 shader_parameter/dim_color = Color(0, 0, 0, 0.35)
 shader_parameter/fade_start = 0.35
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_cb"]
 
 [node name="WorldMenu" type="CanvasLayer"]
 layer = 50
@@ -353,7 +355,7 @@ layout_mode = 2
 size_flags_horizontal = 0
 custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
-max_value = 0.5
+max_value = 1.0
 step = 0.01
 value = 0.5
 
@@ -381,7 +383,7 @@ layout_mode = 2
 size_flags_horizontal = 0
 custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
-max_value = 0.5
+max_value = 1.0
 step = 0.01
 value = 0.5
 
@@ -409,7 +411,7 @@ layout_mode = 2
 size_flags_horizontal = 0
 custom_minimum_size = Vector2(100, 20)
 min_value = 0.0
-max_value = 0.5
+max_value = 1.0
 step = 0.01
 value = 0.5
 
@@ -445,6 +447,10 @@ text = "Fullscreen"
 [node name="FullscreenCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FullscreenRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
+theme_override_styles/focus = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_cb")
 
 [node name="VSyncRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -460,6 +466,10 @@ text = "VSync"
 [node name="VSyncCheck" type="CheckBox" parent="SettingsPanel/SettingsList/VSyncRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
+theme_override_styles/focus = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_cb")
 
 [node name="LightingRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -475,6 +485,10 @@ text = "Enhanced Lighting"
 [node name="LightingCheck" type="CheckBox" parent="SettingsPanel/SettingsList/LightingRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
+theme_override_styles/focus = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_cb")
 
 [node name="FPSRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -490,6 +504,10 @@ text = "Show FPS"
 [node name="FPSCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FPSRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
+theme_override_styles/focus = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_cb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_cb")
 
 [node name="SettingsBack" type="Button" parent="SettingsPanel"]
 layout_mode = 2
