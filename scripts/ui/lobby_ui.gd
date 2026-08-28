@@ -961,17 +961,35 @@ func _add_color_picker(parent: Control, initial_color: Color, on_color: Callable
 	cpb.custom_minimum_size = Vector2(COLOR_PICKER_SIZE, COLOR_PICKER_SIZE)
 	cpb.color = initial_color
 	cpb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	# Style: flat with a subtle border.
+	# Style: flat with a clean rounded border.
 	var flat := StyleBoxFlat.new()
 	flat.bg_color = initial_color
-	flat.set_border_width_all(1)
-	flat.border_color = Color(1, 1, 1, 0.4)
-	flat.set_corner_radius_all(4)
+	flat.set_border_width_all(2)
+	flat.border_color = Color(1, 1, 1, 0.6)
+	flat.set_corner_radius_all(6)
+	flat.content_margin_left = 2.0
+	flat.content_margin_top = 2.0
+	flat.content_margin_right = 2.0
+	flat.content_margin_bottom = 2.0
 	cpb.add_theme_stylebox_override("normal", flat)
+	# Hover: slightly brighter border.
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = initial_color
+	hover.set_border_width_all(2)
+	hover.border_color = Color(1, 1, 1, 0.9)
+	hover.set_corner_radius_all(6)
+	hover.content_margin_left = 2.0
+	hover.content_margin_top = 2.0
+	hover.content_margin_right = 2.0
+	hover.content_margin_bottom = 2.0
+	cpb.add_theme_stylebox_override("hover", hover)
+	cpb.add_theme_stylebox_override("pressed", hover)
+	cpb.add_theme_stylebox_override("focus", flat)
 	cpb.color_changed.connect(
 		func(color):
 			on_color.call(color)
-			flat.bg_color = color,
+			flat.bg_color = color
+			hover.bg_color = color,
 	)
 	# Simplify the popup: hide everything except the color square.
 	var picker := cpb.get_picker()
@@ -981,6 +999,14 @@ func _add_color_picker(parent: Control, initial_color: Color, on_color: Callable
 		picker.sliders_visible = false
 		picker.hex_visible = false
 		picker.presets_visible = false
+	# Position the popup to the right of the button instead of below.
+	cpb.about_to_popup.connect(
+		func():
+			var pop := cpb.get_picker().get_parent()
+			if pop is Popup:
+				var popup := pop as Popup
+				popup.position = cpb.global_position + Vector2(cpb.size.x + 4, 0),
+	)
 	parent.add_child(cpb)
 
 
