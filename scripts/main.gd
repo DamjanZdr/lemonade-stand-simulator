@@ -1579,6 +1579,9 @@ func _on_esc_back_to_menu() -> void:
 				_esc_menu.hide_full()
 			# Leave the multiplayer session.
 			NetworkManager.leave_game()
+			# Reset lobby state so the next game doesn't auto-start.
+			LobbyManager.game_started = false
+			LobbyManager.reset()
 			# Clean up players.
 			for child in players_node.get_children():
 				child.queue_free()
