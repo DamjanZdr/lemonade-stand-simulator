@@ -206,15 +206,18 @@ func _apply_menu_style() -> void:
 		random_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 		random_btn.add_theme_font_size_override("font_size", 22)
 
-	# 6. Style the lobby title.
-	var customize_title: Label = $LeftContainer/CustomizePanel/OptionsCol/Title
-	customize_title.add_theme_font_size_override("font_size", 36)
-	customize_title.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 0.95))
+	# 6. Style the lobby title (HBoxContainer with labels inside).
+	var title_container: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/Title
+	for child in title_container.get_children():
+		if child is Label:
+			var lbl := child as Label
+			lbl.add_theme_font_size_override("font_size", 20)
+			lbl.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 0.95))
 
 	# 7. Style separators to be subtle white.
 	for sep in [
 		_get_node("LeftContainer/LobbyPanel/VBox/Sep1"),
-		_get_node("LeftContainer/LobbyPanel/VBox/Sep2"),
+		_get_node("LeftContainer/Sep2"),
 		_get_node("LeftContainer/LobbyPanel/VBox/PlayersRow/StandSep"),
 		_get_node("LeftContainer/CustomizePanel/OptionsCol/TabSep"),
 	]:
