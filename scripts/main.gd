@@ -776,7 +776,7 @@ func _on_game_starting() -> void:
 	# Create the fade overlay immediately so it's on top of the lobby.
 	var fade_rect := ColorRect.new()
 	fade_rect.color = Color(0, 0, 0, 0)
-	fade_rect.anchors_preset = Control.PRESET_FULL_RECT
+	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_transition_overlay.add_child(fade_rect)
 	_transition_overlay.visible = true
@@ -787,7 +787,7 @@ func _on_game_starting() -> void:
 	day_label.text = "Day %d" % day_num
 	day_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	day_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	day_label.anchors_preset = Control.PRESET_FULL_RECT
+	day_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	day_label.modulate = Color(1, 1, 1, 0)
 	day_label.add_theme_font_size_override("font_size", 48)
 	day_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1352,7 +1352,7 @@ func _on_local_player_ready(p: Player) -> void:
 		# Create a quick fade for late joiners.
 		var fade_rect := ColorRect.new()
 		fade_rect.color = Color(0, 0, 0, 1)
-		fade_rect.anchors_preset = Control.PRESET_FULL_RECT
+		fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 		fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_transition_overlay.add_child(fade_rect)
 		_transition_overlay.visible = true
