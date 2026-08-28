@@ -389,7 +389,6 @@ func _build_settings_panel() -> Control:
 	fs_row.add_child(fs_label)
 	var fs_check := CheckBox.new()
 	fs_check.custom_minimum_size = Vector2(24, 24)
-	_remove_checkbox_focus(fs_check)
 	fs_row.add_child(fs_check)
 
 	# VSync.
@@ -404,7 +403,6 @@ func _build_settings_panel() -> Control:
 	vsync_row.add_child(vsync_label)
 	var vsync_check := CheckBox.new()
 	vsync_check.custom_minimum_size = Vector2(24, 24)
-	_remove_checkbox_focus(vsync_check)
 	vsync_row.add_child(vsync_check)
 
 	# Enhanced Lighting.
@@ -419,7 +417,6 @@ func _build_settings_panel() -> Control:
 	lighting_row.add_child(lighting_label)
 	var lighting_check := CheckBox.new()
 	lighting_check.custom_minimum_size = Vector2(24, 24)
-	_remove_checkbox_focus(lighting_check)
 	lighting_row.add_child(lighting_check)
 
 	# Show FPS.
@@ -434,7 +431,6 @@ func _build_settings_panel() -> Control:
 	fps_row.add_child(fps_label)
 	var fps_check := CheckBox.new()
 	fps_check.custom_minimum_size = Vector2(24, 24)
-	_remove_checkbox_focus(fps_check)
 	fps_row.add_child(fps_check)
 
 	# Back button (anchored to bottom-left, same as main menu).
@@ -857,14 +853,6 @@ func _make_flat_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("hover", stylebox_empty)
 	btn.add_theme_stylebox_override("pressed", stylebox_empty)
 	btn.add_theme_stylebox_override("focus", stylebox_empty)
-
-
-## Remove the green focus box from checkboxes (inherited from Button focus style).
-## Only removes focus + hover — keeps the native checkbox outline.
-func _remove_checkbox_focus(cb: CheckBox) -> void:
-	var stylebox_empty := StyleBoxEmpty.new()
-	cb.add_theme_stylebox_override("focus", stylebox_empty)
-	cb.add_theme_stylebox_override("hover", stylebox_empty)
 
 
 func _add_drop_shadow(btn: Button) -> void:
