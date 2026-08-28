@@ -252,7 +252,7 @@ func interact(player: Node) -> void:
 	if p == null:
 		return
 	# Only the stand that owns this pitcher can interact with it.
-	if not Interactable.can_player_use(player, self):
+	if not can_player_use(player):
 		return
 
 	match state:

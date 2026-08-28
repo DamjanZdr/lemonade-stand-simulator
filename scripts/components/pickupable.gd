@@ -115,7 +115,9 @@ static func setup_for_container(container: Interactable, container_type: String)
 		if player == null or player.get("held_item") != HeldItem.NONE:
 			return false
 		# Only allow pickup if the player's stand owns this container.
-		return Interactable.can_player_use(player, container)
+		if container.has_method("can_player_use"):
+			return container.can_player_use(player)
+		return true
 	p.pick_up_callback = func(player: Node) -> Dictionary:
 		var pl := player as Player
 		if pl == null or pl.held_item != HeldItem.NONE:

@@ -52,7 +52,7 @@ func interact(_player: Node) -> void:
 		if p == null:
 			return
 		# Only the stand that owns this board can edit it.
-		if not Interactable.can_player_use(p, self):
+		if not can_player_use(p):
 			return
 		if board_camera != null:
 			_editing_player = p

@@ -22,20 +22,20 @@ var stand_owner: String = ""
 ## In single-player (no peers), always true. In multiplayer, the player's
 ## assigned_stand name must match this item's stand_owner. If stand_owner
 ## is empty (unassigned), anyone can interact.
-static func can_player_use(player: Node, item: Node) -> bool:
-	if multiplayer == null or multiplayer.multiplayer_peer == null:
+func can_player_use(player: Node) -> bool:
+	var mp := multiplayer
+	if mp == null or mp.multiplayer_peer == null:
 		return true
-	if multiplayer.get_peers().is_empty():
+	if mp.get_peers().is_empty():
 		return true
 	if player == null or not ("assigned_stand" in player):
 		return false
-	var owner: String = item.get("stand_owner") if "stand_owner" in item else ""
-	if owner == "":
+	if stand_owner == "":
 		return true
 	var stand: Node = player.assigned_stand
 	if stand == null or not is_instance_valid(stand):
 		return false
-	return stand.name == owner
+	return stand.name == stand_owner
 
 
 func interact(player: Node) -> void:

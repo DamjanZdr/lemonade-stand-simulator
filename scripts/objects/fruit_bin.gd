@@ -210,7 +210,7 @@ const HELD_SUPPLY_BOX := 3
 
 func interact(player: Node) -> void:
 	# Only the stand that owns this bin can interact with it.
-	if not Interactable.can_player_use(player, self):
+	if not can_player_use(player):
 		return
 	var held_item: int = player.get("held_item")
 	var data: Dictionary = player.get("held_item_data")
