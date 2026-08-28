@@ -830,13 +830,13 @@ func _show_mode_select() -> void:
 	cards_wrap.add_child(desc_label)
 	vbox.add_child(cards_wrap)
 
-	# Buttons: Cancel + Next (side by side, full-width, matching back button size).
+	# Buttons: Cancel + Next (side by side, left-aligned, matching back button size).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 8)
+	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(0, 48)
-	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cancel_btn.add_theme_font_size_override("font_size", 38)
 	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -851,7 +851,6 @@ func _show_mode_select() -> void:
 	var confirm_btn := Button.new()
 	confirm_btn.text = "Next"
 	confirm_btn.custom_minimum_size = Vector2(0, 48)
-	confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	confirm_btn.add_theme_font_size_override("font_size", 38)
 	confirm_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
 	confirm_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -978,13 +977,13 @@ func _show_name_entry(selected_mode: int) -> void:
 	)
 	vbox.add_child(field)
 
-	# Buttons: Cancel + Create (side by side, full-width, matching back button size).
+	# Buttons: Cancel + Create (side by side, left-aligned, matching back button size).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 8)
+	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(0, 48)
-	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cancel_btn.add_theme_font_size_override("font_size", 38)
 	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -1000,7 +999,6 @@ func _show_name_entry(selected_mode: int) -> void:
 	create_btn.name = "CreateBtn"
 	create_btn.text = "Create"
 	create_btn.custom_minimum_size = Vector2(0, 48)
-	create_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	create_btn.add_theme_font_size_override("font_size", 38)
 	create_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
 	create_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
