@@ -649,10 +649,38 @@ func _on_saves_back() -> void:
 
 
 func _on_new_stand_pressed() -> void:
-	# Hide the save list + new stand button — creation is a separate view.
+	# Hide the save list, new stand button, and back button — creation
+	# is a separate overlay view.
 	_slots_container.visible = false
 	_new_stand_button.visible = false
+	_saves_back.visible = false
+	# Also hide the saves title + spacers.
+	var saves_title := _saves_list.get_node_or_null("SavesTitle")
+	if saves_title:
+		saves_title.visible = false
+	var spacer1 := _saves_list.get_node_or_null("Spacer")
+	if spacer1:
+		spacer1.visible = false
+	var spacer2 := _saves_list.get_node_or_null("Spacer2")
+	if spacer2:
+		spacer2.visible = false
 	_show_mode_select()
+
+
+## Restore the saves list visibility after cancelling/confirming creation.
+func _restore_saves_list() -> void:
+	_slots_container.visible = true
+	_new_stand_button.visible = true
+	_saves_back.visible = true
+	var saves_title := _saves_list.get_node_or_null("SavesTitle")
+	if saves_title:
+		saves_title.visible = true
+	var spacer1 := _saves_list.get_node_or_null("Spacer")
+	if spacer1:
+		spacer1.visible = true
+	var spacer2 := _saves_list.get_node_or_null("Spacer2")
+	if spacer2:
+		spacer2.visible = true
 
 
 ## Step 1: Show mode selection with silhouette icons.
@@ -672,6 +700,7 @@ func _show_mode_select() -> void:
 	title.add_theme_constant_override("shadow_offset_x", 2)
 	title.add_theme_constant_override("shadow_offset_y", 2)
 	title.add_theme_constant_override("shadow_outline_size", 4)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
 	var selected_mode: int = GameState.GameMode.SOLO
@@ -691,7 +720,7 @@ func _show_mode_select() -> void:
 	# Mode cards row.
 	var cards_row := HBoxContainer.new()
 	cards_row.add_theme_constant_override("separation", 10)
-	cards_row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	# Description label (declared before the loop so card click lambdas can reference it).
 	var desc_label := Label.new()
@@ -784,13 +813,13 @@ func _show_mode_select() -> void:
 	# Add the description label to the vbox (declared earlier, before the loop).
 	vbox.add_child(desc_label)
 
-	# Buttons: Cancel + Next (full-width, evenly spaced).
+	# Buttons: Cancel + Next (centered, next to each other).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(0, 40)
-	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel_btn.custom_minimum_size = Vector2(120, 40)
 	cancel_btn.add_theme_font_size_override("font_size", 22)
 	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -800,13 +829,11 @@ func _show_mode_select() -> void:
 	cancel_btn.pressed.connect(
 		func():
 			vbox.queue_free()
-			_slots_container.visible = true
-			_new_stand_button.visible = true,
+			_restore_saves_list(),
 	)
 	var confirm_btn := Button.new()
 	confirm_btn.text = "Next"
-	confirm_btn.custom_minimum_size = Vector2(0, 40)
-	confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	confirm_btn.custom_minimum_size = Vector2(120, 40)
 	confirm_btn.add_theme_font_size_override("font_size", 22)
 	confirm_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
 	confirm_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -869,7 +896,7 @@ func _show_name_entry(selected_mode: int) -> void:
 		GameState.GameMode.VERSUS: true,
 	}
 	var header := HBoxContainer.new()
-	header.alignment = BoxContainer.ALIGNMENT_BEGIN
+	header.alignment = BoxContainer.ALIGNMENT_CENTER
 	header.add_theme_constant_override("separation", 8)
 	var header_icon := _build_silhouette_icon(mode_counts[selected_mode], mode_vs[selected_mode])
 	header_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -933,13 +960,13 @@ func _show_name_entry(selected_mode: int) -> void:
 	)
 	vbox.add_child(field)
 
-	# Buttons: Cancel + Create (full-width, evenly spaced).
+	# Buttons: Cancel + Create (centered, next to each other).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(0, 40)
-	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel_btn.custom_minimum_size = Vector2(120, 40)
 	cancel_btn.add_theme_font_size_override("font_size", 22)
 	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -949,14 +976,12 @@ func _show_name_entry(selected_mode: int) -> void:
 	cancel_btn.pressed.connect(
 		func():
 			vbox.queue_free()
-			_slots_container.visible = true
-			_new_stand_button.visible = true,
+			_restore_saves_list(),
 	)
 	var create_btn := Button.new()
 	create_btn.name = "CreateBtn"
 	create_btn.text = "Create"
-	create_btn.custom_minimum_size = Vector2(0, 40)
-	create_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	create_btn.custom_minimum_size = Vector2(120, 40)
 	create_btn.add_theme_font_size_override("font_size", 22)
 	create_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
 	create_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -983,16 +1008,14 @@ func _confirm_inline_name(panel: VBoxContainer, field: LineEdit, mode: int) -> v
 		_cancel_inline_name(panel)
 		return
 	panel.queue_free()
-	_slots_container.visible = true
-	_new_stand_button.visible = true
+	_restore_saves_list()
 	set_busy("Creating '%s'..." % name)
 	new_stand_requested.emit(name, mode)
 
 
 func _cancel_inline_name(panel: VBoxContainer) -> void:
 	panel.queue_free()
-	_slots_container.visible = true
-	_new_stand_button.visible = true
+	_restore_saves_list()
 
 
 ## Weighted character count: capitals count as 1.5, everything else as 1.
