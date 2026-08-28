@@ -694,14 +694,14 @@ func _show_mode_select() -> void:
 	# Title.
 	var title := Label.new()
 	title.text = "Game Mode"
-	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.95))
-	title.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
-	title.add_theme_constant_override("shadow_offset_x", 2)
-	title.add_theme_constant_override("shadow_offset_y", 2)
-	title.add_theme_constant_override("shadow_outline_size", 4)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 36)
+	title.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
 	vbox.add_child(title)
+
+	# Spacer matching the saves list layout.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 20)
+	vbox.add_child(spacer)
 
 	var selected_mode: int = GameState.GameMode.SOLO
 	var mode_cards: Dictionary = { } # mode -> PanelContainer
@@ -720,13 +720,12 @@ func _show_mode_select() -> void:
 	# Mode cards row.
 	var cards_row := HBoxContainer.new()
 	cards_row.add_theme_constant_override("separation", 10)
-	cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	cards_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 
 	# Description label (declared before the loop so card click lambdas can reference it).
 	var desc_label := Label.new()
 	desc_label.add_theme_font_size_override("font_size", 14)
 	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
-	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_label.text = mode_descs[GameState.GameMode.SOLO]
 
 	for mode_info in [
@@ -813,10 +812,10 @@ func _show_mode_select() -> void:
 	# Add the description label to the vbox (declared earlier, before the loop).
 	vbox.add_child(desc_label)
 
-	# Buttons: Cancel + Next (centered, next to each other).
+	# Buttons: Cancel + Next (left-aligned, matching saves list).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
-	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
@@ -896,7 +895,7 @@ func _show_name_entry(selected_mode: int) -> void:
 		GameState.GameMode.VERSUS: true,
 	}
 	var header := HBoxContainer.new()
-	header.alignment = BoxContainer.ALIGNMENT_CENTER
+	header.alignment = BoxContainer.ALIGNMENT_BEGIN
 	header.add_theme_constant_override("separation", 8)
 	var header_icon := _build_silhouette_icon(mode_counts[selected_mode], mode_vs[selected_mode])
 	header_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -960,10 +959,10 @@ func _show_name_entry(selected_mode: int) -> void:
 	)
 	vbox.add_child(field)
 
-	# Buttons: Cancel + Create (centered, next to each other).
+	# Buttons: Cancel + Create (left-aligned, matching saves list).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
-	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
