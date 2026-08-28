@@ -291,6 +291,10 @@ func _enter_main_menu() -> void:
 		_esc_menu.back_to_game.connect(_on_esc_back_to_game)
 		_esc_menu.back_to_menu.connect(_on_esc_back_to_menu)
 		_esc_menu.quit_game.connect(_on_esc_quit_game)
+		_esc_menu.fullscreen_toggled.connect(_on_fullscreen_toggled)
+		_esc_menu.vsync_toggled.connect(_on_vsync_toggled)
+		_esc_menu.enhanced_lighting_toggled.connect(_on_enhanced_lighting_toggled)
+		_esc_menu.fps_toggled.connect(_on_fps_toggled)
 	# If no save has been loaded yet (current_slot is empty), peek at
 	# the most recent save's stand name so the sign shows the right
 	# name on startup. The full save is only loaded on Play.
