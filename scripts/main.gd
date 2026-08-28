@@ -42,6 +42,10 @@ enum MenuState {
 @onready var _transition_blur_rect: ColorRect = $TransitionOverlay/BlurRect
 @onready var _transition_overlay: CanvasLayer = $TransitionOverlay
 
+## In-game ESC menu (built at runtime).
+var _esc_menu: CanvasLayer = null
+var _esc_menu_visible: bool = false
+
 ## FPS counter label (toggled with F key)
 var _fps_label: Label = null
 var _fps_shown: bool = false
@@ -278,6 +282,15 @@ func _enter_main_menu() -> void:
 		_world_menu.enhanced_lighting_toggled.connect(_on_enhanced_lighting_toggled)
 		_world_menu.fps_toggled.connect(_on_fps_toggled)
 	_world_menu.show_menu()
+	# Instantiate the in-game ESC menu.
+	if _esc_menu == null or not is_instance_valid(_esc_menu):
+		var esc_menu_script := load("res://scripts/ui/esc_menu.gd") as GDScript
+		_esc_menu = CanvasLayer.new()
+		_esc_menu.set_script(esc_menu_script)
+		add_child(_esc_menu)
+		_esc_menu.back_to_game.connect(_on_esc_back_to_game)
+		_esc_menu.back_to_menu.connect(_on_esc_back_to_menu)
+		_esc_menu.quit_game.connect(_on_esc_quit_game)
 	# If no save has been loaded yet (current_slot is empty), peek at
 	# the most recent save's stand name so the sign shows the right
 	# name on startup. The full save is only loaded on Play.
@@ -1498,6 +1511,11 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed:
+		if _game_state == MenuState.PLAYING:
+			_toggle_esc_menu()
+			get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.keycode == KEY_F2 and event.pressed:
 		_enhanced_lighting = not _enhanced_lighting
 		if _enhanced_lighting:
@@ -1510,6 +1528,62 @@ func _input(event: InputEvent) -> void:
 		if _fps_label:
 			_fps_label.visible = _fps_shown
 		get_viewport().set_input_as_handled()
+
+
+## Toggle the in-game ESC menu.
+func _toggle_esc_menu() -> void:
+	if _esc_menu == null or not is_instance_valid(_esc_menu):
+		return
+	if _esc_menu_visible:
+		_esc_menu.hide_menu()
+		_esc_menu_visible = false
+		_set_systems_paused(false)
+		# Release the mouse.
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		_esc_menu.show_menu()
+		_esc_menu_visible = true
+		_set_systems_paused(true)
+		# Free the mouse.
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## ESC menu: Back to Game.
+func _on_esc_back_to_game() -> void:
+	_esc_menu_visible = false
+	_set_systems_paused(false)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+## ESC menu: Back to Menu — leave the game and return to main menu.
+func _on_esc_back_to_menu() -> void:
+	_esc_menu_visible = false
+	_set_systems_paused(false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Leave the multiplayer session.
+	NetworkManager.leave_game()
+	# Clean up players.
+	for child in players_node.get_children():
+		child.queue_free()
+	_local_player = null
+	# Reset game state.
+	_game_state = MenuState.MAIN_MENU
+	# Show the main menu.
+	if _world_menu:
+		_world_menu.show_menu()
+	# Hide the HUD.
+	if hud:
+		hud.visible = false
+	# Switch to the main menu camera.
+	if main_menu_camera:
+		main_menu_camera.current = true
+	if lobby_camera:
+		lobby_camera.current = false
+
+
+## ESC menu: Quit Game.
+func _on_esc_quit_game() -> void:
+	get_tree().quit()
 
 
 func _enable_enhanced_lighting() -> void:
