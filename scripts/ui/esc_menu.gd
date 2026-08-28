@@ -3,6 +3,8 @@ extends CanvasLayer
 ## Buttons: Back to Game, Settings, Invite, Back to Menu, Quit Game.
 ## Lobby code row with eye toggle + copy button.
 
+const MENU_THEME := preload("res://assets/themes/menu_theme.tres")
+
 signal back_to_game
 signal back_to_menu
 signal quit_game
@@ -92,7 +94,7 @@ func _build_ui() -> void:
 	_menu_box.offset_right = 400.0
 	_menu_box.offset_bottom = -80.0
 	_menu_box.grow_vertical = Control.GROW_DIRECTION_BOTH
-	var theme := load("res://assets/themes/menu_theme.tres") as Theme
+	var theme := MENU_THEME as Theme
 	_menu_box.theme = theme
 	_menu_box.add_theme_constant_override("separation", 4)
 	add_child(_menu_box)
@@ -266,7 +268,7 @@ func _build_settings_panel() -> Control:
 	list.offset_right = 500.0
 	list.offset_bottom = -70.0
 	list.grow_vertical = Control.GROW_DIRECTION_BOTH
-	var theme := load("res://assets/themes/menu_theme.tres") as Theme
+	var theme := MENU_THEME as Theme
 	list.theme = theme
 	list.add_theme_constant_override("separation", 8)
 	panel.add_child(list)
