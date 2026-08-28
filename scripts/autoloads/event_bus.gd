@@ -2,6 +2,9 @@ extends Node
 ## Central signal dispatcher. The ONLY channel for cross-system communication.
 ## No script holds a direct reference to another system's script.
 
+## True when the in-game ESC menu is open. Player movement checks this.
+static var esc_menu_open: bool = false
+
 # --- Player ---
 signal held_item_changed(item_type: int, item_data: Dictionary)
 signal interaction_hint_changed(hint: String)

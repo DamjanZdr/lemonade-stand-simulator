@@ -1541,11 +1541,13 @@ func _toggle_esc_menu() -> void:
 	if _esc_menu_visible:
 		_esc_menu.hide_menu()
 		_esc_menu_visible = false
+		EventBus.esc_menu_open = false
 		# Release the mouse.
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
 		_esc_menu.show_menu()
 		_esc_menu_visible = true
+		EventBus.esc_menu_open = true
 		# Free the mouse.
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -1553,6 +1555,7 @@ func _toggle_esc_menu() -> void:
 ## ESC menu: Back to Game.
 func _on_esc_back_to_game() -> void:
 	_esc_menu_visible = false
+	EventBus.esc_menu_open = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 

@@ -138,6 +138,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _in_priceboard_mode:
 		return
+	# ESC menu open: ignore all gameplay input (except ui_cancel for toggle).
+	if EventBus.esc_menu_open and not event.is_action("ui_cancel"):
+		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Update stored yaw/pitch and re-apply the _player.head _player.rotation as a single
@@ -231,6 +234,14 @@ func _physics_process(delta: float) -> void:
 		_player.velocity = Vector3.ZERO
 		_player.move_and_slide()
 		_try_sync_position(delta)
+		return
+
+	# ESC menu open: freeze movement.
+	if EventBus.esc_menu_open:
+		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
+		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
+		_player.move_and_slide()
+		_update_anim()
 		return
 
 	if not _player.is_on_floor():
