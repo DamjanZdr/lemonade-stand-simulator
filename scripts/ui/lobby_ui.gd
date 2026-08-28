@@ -874,7 +874,7 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 
 	# Right half: options centered (expand fill, matching Customize tab).
 	var opts := HBoxContainer.new()
-	opts.add_theme_constant_override("separation", 2)
+	opts.add_theme_constant_override("separation", 0)
 	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(opts)
 
@@ -901,7 +901,6 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 	name_lbl.text = "—"
 	name_lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	name_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
-	name_lbl.custom_minimum_size = Vector2(NAME_WIDTH, 0)
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	opts.add_child(name_lbl)
