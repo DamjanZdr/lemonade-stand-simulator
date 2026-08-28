@@ -80,7 +80,7 @@ const NAME_WIDTH: float = 100.0
 const ARROW_SIZE: float = 32.0
 const COLOR_PICKER_SIZE: float = 36.0
 const OPTION_FONT_SIZE: int = 18
-const ROW_SEPARATION: float = 8.0
+const ROW_SEPARATION: float = 4.0
 
 # ── State ─────────────────────────────────────────────────────────────────────
 var _room_visible: bool = false

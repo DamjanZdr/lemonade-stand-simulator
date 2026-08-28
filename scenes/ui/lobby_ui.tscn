@@ -5,10 +5,10 @@
 [ext_resource type="Theme" uid="uid://gd20br3y4m22" path="res://assets/themes/menu_theme.tres" id="4_theme"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-content_margin_left = 14.0
-content_margin_top = 14.0
-content_margin_right = 14.0
-content_margin_bottom = 14.0
+content_margin_left = 8.0
+content_margin_top = 10.0
+content_margin_right = 8.0
+content_margin_bottom = 10.0
 bg_color = Color(0.06, 0.06, 0.08, 0.88)
 border_width_left = 2
 border_width_top = 2
@@ -90,7 +90,7 @@ anchors_preset = 9
 anchor_bottom = 1.0
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 420.0
+offset_right = 300.0
 offset_bottom = -16.0
 grow_horizontal = 0
 theme_override_constants/separation = 10
@@ -113,7 +113,7 @@ horizontal_alignment = 1
 
 [node name="TabRow" type="HBoxContainer" parent="LeftContainer/CustomizePanel/OptionsCol" unique_id=1667017136]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 
 [node name="LobbyTab" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol/TabRow" unique_id=1667017137]
 custom_minimum_size = Vector2(0, 32)
