@@ -4,6 +4,8 @@ extends Control
 ## is visible on the right. Player models look at the camera and can
 ## be spun by clicking and dragging on the 3D viewport area.
 
+const HOVER_POP: float = 1.12
+
 @onready var _eye_button: Button = $LeftContainer/LobbyPanel/VBox/RoomRow/EyeButton
 @onready var _room_code_label: Label = $LeftContainer/LobbyPanel/VBox/RoomRow/RoomCodeLabel
 @onready var _copy_button: Button = $LeftContainer/LobbyPanel/VBox/RoomRow/CopyButton
@@ -126,8 +128,218 @@ func set_look_at_target(target: Node3D) -> void:
 			pv.look_at_target = target
 
 
+## Apply main menu visual style: blur/dim overlay, transparent panels,
+## flat buttons with hover pop effects, white text with drop shadows.
+func _apply_menu_style() -> void:
+	# 1. Add blur + dim overlay on the left side (matching main menu).
+	var bbc := BackBufferCopy.new()
+	bbc.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
+	add_child(bbc)
+
+	var blur_shader := load("res://shaders/ui_blur.gdshader") as Shader
+	var blur_panel := ColorRect.new()
+	blur_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	blur_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var blur_mat := ShaderMaterial.new()
+	blur_mat.shader = blur_shader
+	blur_mat.set_shader_parameter("blur_radius", 12.0)
+	blur_mat.set_shader_parameter("fade_start", 0.35)
+	blur_panel.material = blur_mat
+	blur_panel.color = Color(0, 0, 0, 0)
+	add_child(blur_panel)
+
+	var dim_shader := load("res://shaders/ui_dim_fade.gdshader") as Shader
+	var dim_panel := ColorRect.new()
+	dim_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var dim_mat := ShaderMaterial.new()
+	dim_mat.shader = dim_shader
+	dim_mat.set_shader_parameter("dim_color", Color(0, 0, 0, 0.35))
+	dim_mat.set_shader_parameter("fade_start", 0.35)
+	dim_panel.material = dim_mat
+	dim_panel.color = Color(0, 0, 0, 0)
+	add_child(dim_panel)
+
+	# Move LeftContainer to be on top of blur/dim.
+	move_child(_get_node("LeftContainer"), -1)
+
+	# 2. Remove panel backgrounds — make transparent.
+	var customize_panel: PanelContainer = $LeftContainer/CustomizePanel
+	var lobby_panel: PanelContainer = $LeftContainer/LobbyPanel
+	var empty_sb := StyleBoxEmpty.new()
+	customize_panel.add_theme_stylebox_override("panel", empty_sb)
+	lobby_panel.add_theme_stylebox_override("panel", empty_sb)
+
+	# 3. Style all labels: white text, larger fonts.
+	_style_labels_recursive(customize_panel)
+	_style_labels_recursive(lobby_panel)
+
+	# 4. Style main buttons: flat, white text, drop shadow, hover pop.
+	var main_buttons: Array[Button] = [
+		_ready_button,
+		_start_button,
+		_back_button,
+		_switch_button,
+		_invite_button,
+		_copy_button,
+		_eye_button,
+		_male_button,
+		_female_button,
+	]
+	for btn in main_buttons:
+		if btn:
+			_make_flat_button(btn)
+			_add_drop_shadow(btn)
+			_setup_hover_effect(btn)
+			btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
+			btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+			btn.add_theme_font_size_override("font_size", 22)
+
+	# Ready and Start buttons: bigger, cream text.
+	_ready_button.add_theme_font_size_override("font_size", 28)
+	_start_button.add_theme_font_size_override("font_size", 28)
+	_back_button.add_theme_font_size_override("font_size", 24)
+
+	# 5. Style arrow buttons: flat, smaller, white text.
+	var arrow_buttons := _find_all_buttons_recursive(customize_panel)
+	for btn in arrow_buttons:
+		if btn not in main_buttons:
+			_make_flat_button(btn)
+			_setup_hover_effect(btn)
+			btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+			btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+
+	# Randomize button.
+	var random_btn: Button = $LeftContainer/CustomizePanel/OptionsCol/RandomButton
+	if random_btn:
+		_make_flat_button(random_btn)
+		_add_drop_shadow(random_btn)
+		_setup_hover_effect(random_btn)
+		random_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
+		random_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+		random_btn.add_theme_font_size_override("font_size", 22)
+
+	# 6. Style title labels.
+	var customize_title: Label = $LeftContainer/CustomizePanel/OptionsCol/Title
+	customize_title.add_theme_font_size_override("font_size", 36)
+	customize_title.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 0.95))
+
+	var lobby_title: Label = $LeftContainer/LobbyPanel/VBox/TitleLabel
+	lobby_title.add_theme_font_size_override("font_size", 36)
+	lobby_title.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 0.95))
+
+	# 7. Style separators to be subtle white.
+	for sep in [
+		_get_node("LeftContainer/LobbyPanel/VBox/Sep1"),
+		_get_node("LeftContainer/LobbyPanel/VBox/Sep2"),
+		_get_node("LeftContainer/LobbyPanel/VBox/PlayersRow/StandSep"),
+	]:
+		if sep is ColorRect:
+			(sep as ColorRect).color = Color(1, 1, 1, 0.15)
+
+	# 8. Style stand headers.
+	var s1h: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
+	var s2h: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand2Header
+	s1h.add_theme_color_override("font_color", Color(1, 0.95, 0.7, 0.9))
+	s2h.add_theme_color_override("font_color", Color(1, 0.95, 0.7, 0.9))
+	s1h.add_theme_font_size_override("font_size", 18)
+	s2h.add_theme_font_size_override("font_size", 18)
+
+	# 9. Version label: subtle white.
+	_version_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.3))
+
+
+## Recursively style all labels in a node tree: white text.
+func _style_labels_recursive(node: Node) -> void:
+	if node is Label:
+		var lbl := node as Label
+		var current_color: Color = lbl.get_theme_color("font_color")
+		# If it's a small label (font_size <= 14), keep it dimmer.
+		var fs: int = lbl.get_theme_font_size("font_size")
+		if fs <= 13:
+			lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8, 0.9))
+		else:
+			lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
+	for child in node.get_children():
+		_style_labels_recursive(child)
+
+
+## Find all Button nodes recursively in a tree.
+func _find_all_buttons_recursive(node: Node) -> Array[Button]:
+	var result: Array[Button] = []
+	if node is Button:
+		result.append(node as Button)
+	for child in node.get_children():
+		result.append_array(_find_all_buttons_recursive(child))
+	return result
+
+
+## Remove all stylebox backgrounds so the button looks like plain text.
+func _make_flat_button(btn: Button) -> void:
+	if btn == null:
+		return
+	var empty := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty)
+	btn.add_theme_stylebox_override("hover", empty)
+	btn.add_theme_stylebox_override("pressed", empty)
+	btn.add_theme_stylebox_override("focus", empty)
+	btn.add_theme_stylebox_override("disabled", empty)
+
+
+## Add a drop shadow to a button's text.
+func _add_drop_shadow(btn: Button) -> void:
+	if btn == null:
+		return
+	btn.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
+	btn.add_theme_constant_override("shadow_offset_x", 2)
+	btn.add_theme_constant_override("shadow_offset_y", 2)
+	btn.add_theme_constant_override("shadow_outline_size", 4)
+
+
+## Wire hover sound + pop animation for a button.
+func _setup_hover_effect(btn: Button) -> void:
+	if btn == null:
+		return
+	var base_scale := btn.scale
+	btn.set_meta("_base_scale", base_scale)
+	btn.mouse_entered.connect(
+		func():
+			if btn.disabled:
+				return
+			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
+			if btn.has_meta("_hover_tween") and btn.get_meta("_hover_tween") is Tween:
+				(btn.get_meta("_hover_tween") as Tween).kill()
+			btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
+			var tw := create_tween()
+			btn.set_meta("_hover_tween", tw)
+			tw.set_parallel(true)
+			tw.tween_property(btn, "scale", base_scale * HOVER_POP, 0.06) \
+					.set_ease(Tween.EASE_OUT)
+			tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.06) \
+					.set_ease(Tween.EASE_OUT),
+	)
+	btn.mouse_exited.connect(
+		func():
+			if btn.has_meta("_hover_tween") and btn.get_meta("_hover_tween") is Tween:
+				(btn.get_meta("_hover_tween") as Tween).kill()
+			btn.pivot_offset = Vector2(0, btn.size.y / 2.0)
+			var tw := create_tween()
+			btn.set_meta("_hover_tween", tw)
+			tw.set_parallel(true)
+			tw.tween_property(btn, "scale", base_scale, 0.08) \
+					.set_ease(Tween.EASE_OUT)
+			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
+					.set_ease(Tween.EASE_OUT),
+	)
+
+
+func _get_node(path: String) -> Node:
+	return get_node_or_null(path)
+
+
 func _ready() -> void:
 	_color_manager = get_tree().get_first_node_in_group("color_manager")
+	_apply_menu_style()
 	_update_room_display()
 	_eye_button.pressed.connect(_on_eye_pressed)
 	_copy_button.pressed.connect(_on_copy_pressed)
@@ -271,8 +483,11 @@ func _refresh() -> void:
 		var label := Label.new()
 		label.text = "%s%s%s" % [ready_mark, player_name, you_text]
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-		label.add_theme_font_size_override("font_size", 14)
+		label.add_theme_color_override(
+			"font_color",
+			Color(1, 0.95, 0.7, 1) if entry.get("ready", false) else Color(1, 1, 1, 0.85),
+		)
+		label.add_theme_font_size_override("font_size", 18)
 		if stand_idx == 0:
 			_stand1_list.add_child(label)
 		elif stand_idx == 1:
