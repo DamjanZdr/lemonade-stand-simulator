@@ -21,7 +21,9 @@ const HOVER_POP: float = 1.12
 @onready var _house_button: Button = $LeftContainer/LobbyPanel/VBox/CustomizeRow/HouseButton
 @onready var _customize_panel: PanelContainer = $LeftContainer/CustomizePanel
 @onready var _lobby_panel: PanelContainer = $LeftContainer/LobbyPanel
-@onready var _customize_back_button: Button = $LeftContainer/CustomizePanel/OptionsCol/CustomizeBackButton
+@onready var _customize_back_button: Button = (
+	$LeftContainer/CustomizePanel/OptionsCol/CustomizeBackButton
+)
 @onready var _customize_title: Label = $LeftContainer/CustomizePanel/OptionsCol/Title
 @onready var _gender_row: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/GenderRow
 @onready var _random_button: Button = $LeftContainer/CustomizePanel/OptionsCol/RandomButton
