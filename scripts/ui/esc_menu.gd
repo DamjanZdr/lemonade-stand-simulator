@@ -83,7 +83,7 @@ func _build_ui() -> void:
 
 	# Title.
 	var title := Label.new()
-	title.text = "Paused"
+	title.text = "Menu"
 	title.add_theme_font_size_override("font_size", 56)
 	title.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
 	title.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
@@ -110,7 +110,6 @@ func _build_ui() -> void:
 	_room_row.add_child(_eye_button)
 
 	_room_code_label = Label.new()
-	_room_code_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_room_code_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	_room_code_label.add_theme_font_size_override("font_size", 18)
 	_room_code_label.text = "Room: ************"
