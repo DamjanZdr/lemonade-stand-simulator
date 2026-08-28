@@ -662,24 +662,24 @@ func _on_new_stand_pressed() -> void:
 
 	var mode_row := HBoxContainer.new()
 	mode_row.name = "ModeRow"
-	mode_row.add_theme_constant_override("separation", 8)
+	mode_row.add_theme_constant_override("separation", 12)
 	var selected_mode: int = GameState.GameMode.SOLO
 	var mode_buttons: Dictionary = { } # mode -> Button
 	for mode_info in [
-		{ "mode": GameState.GameMode.SOLO, "text": "Solo" },
-		{ "mode": GameState.GameMode.COOP, "text": "Co-op" },
-		{ "mode": GameState.GameMode.VERSUS, "text": "Versus" },
+		{ "mode": GameState.GameMode.SOLO, "count": 1, "vs": false, "label": "Solo" },
+		{ "mode": GameState.GameMode.COOP, "count": 4, "vs": false, "label": "Co-op" },
+		{ "mode": GameState.GameMode.VERSUS, "count": 2, "vs": true, "label": "Versus" },
 	]:
 		var mb := Button.new()
-		mb.text = mode_info["text"]
 		mb.toggle_mode = true
-		mb.add_theme_font_size_override("font_size", 18)
-		mb.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-		mb.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-		mb.add_theme_color_override("font_pressed_color", Color(1, 0.95, 0.7, 1))
+		mb.custom_minimum_size = Vector2(80, 40)
 		_make_flat_button(mb)
 		_add_drop_shadow(mb)
 		_setup_hover_effect(mb)
+		# Build silhouette icon inside the button.
+		var icon := _build_silhouette_icon(mode_info["count"], mode_info["vs"])
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mb.add_child(icon)
 		var mode_val: int = mode_info["mode"]
 		mb.pressed.connect(
 			func():
@@ -808,6 +808,62 @@ func _mode_label(mode: int) -> String:
 			return "Versus"
 		_:
 			return "Solo"
+
+
+## Build a person silhouette icon for the mode selection buttons.
+## count = number of people per side. vs = show two groups separated by "VS".
+## Each person is a simple head circle + body shape drawn with a custom Control.
+func _build_silhouette_icon(count: int, vs: bool) -> Control:
+	var container := HBoxContainer.new()
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.add_theme_constant_override("separation", 4)
+	container.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	if vs:
+		# Left group (count people).
+		var left := HBoxContainer.new()
+		left.add_theme_constant_override("separation", 2)
+		for i in count:
+			left.add_child(_PersonSilhouette.new())
+		container.add_child(left)
+		# VS label.
+		var vs_label := Label.new()
+		vs_label.text = "VS"
+		vs_label.add_theme_font_size_override("font_size", 14)
+		vs_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.8))
+		vs_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		container.add_child(vs_label)
+		# Right group (count people).
+		var right := HBoxContainer.new()
+		right.add_theme_constant_override("separation", 2)
+		for i in count:
+			right.add_child(_PersonSilhouette.new())
+		container.add_child(right)
+	else:
+		for i in count:
+			container.add_child(_PersonSilhouette.new())
+	return container
+
+
+## Custom Control that draws a simple person silhouette (head + body).
+class _PersonSilhouette:
+	extends Control
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(10, 22)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+	func _draw() -> void:
+		var c := Color(1, 1, 1, 0.85)
+		# Head: circle.
+		draw_circle(Vector2(5, 4), 3.5, c)
+		# Body: rounded rectangle (shoulders + torso).
+		var body := Rect2(1.5, 8, 7, 12)
+		draw_rect(body, c, true)
+		# Round the shoulders slightly by drawing circles at top corners.
+		draw_circle(Vector2(2.5, 9), 1.5, c)
+		draw_circle(Vector2(7.5, 9), 1.5, c)
 
 
 ## Build the saves list dynamically from SaveManager.list_saves().
