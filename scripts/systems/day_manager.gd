@@ -36,6 +36,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not _day_running:
 		return
+	# No multiplayer peer yet — can't determine host/client.
+	if not multiplayer.multiplayer_peer:
+		return
 	# Only the host advances the day timer. Clients receive the time
 	# via RPC from the host (see _broadcast_day_timer below).
 	if not multiplayer.is_server():
@@ -71,6 +74,8 @@ func _sync_day_timer(timer: float, duration: float, is_over: bool) -> void:
 ## Sync the current day phase and day number to all clients.
 ## Called whenever the host changes the phase (morning/day/evening).
 func _sync_phase_to_clients() -> void:
+	if not multiplayer.multiplayer_peer:
+		return
 	if not multiplayer.is_server():
 		return
 	if multiplayer.get_peers().size() > 0:
