@@ -17,13 +17,10 @@ const HOVER_POP: float = 1.12
 @onready var _start_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/StartButton
 @onready var _back_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/BackButton
 @onready var _version_label: Label = $VersionLabel
-@onready var _avatar_button: Button = $LeftContainer/LobbyPanel/VBox/CustomizeRow/AvatarButton
-@onready var _house_button: Button = $LeftContainer/LobbyPanel/VBox/CustomizeRow/HouseButton
 @onready var _customize_panel: PanelContainer = $LeftContainer/CustomizePanel
 @onready var _lobby_panel: PanelContainer = $LeftContainer/LobbyPanel
-@onready var _customize_back_button: Button = (
-	$LeftContainer/CustomizePanel/OptionsCol/CustomizeBackButton
-)
+@onready var _avatar_tab: Button = $LeftContainer/CustomizePanel/OptionsCol/TabRow/AvatarTab
+@onready var _house_tab: Button = $LeftContainer/CustomizePanel/OptionsCol/TabRow/HouseTab
 @onready var _customize_title: Label = $LeftContainer/CustomizePanel/OptionsCol/Title
 @onready var _gender_row: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/GenderRow
 @onready var _random_button: Button = $LeftContainer/CustomizePanel/OptionsCol/RandomButton
@@ -195,9 +192,8 @@ func _apply_menu_style() -> void:
 		_eye_button,
 		_male_button,
 		_female_button,
-		_avatar_button,
-		_house_button,
-		_customize_back_button,
+		_avatar_tab,
+		_house_tab,
 	]
 	for btn in main_buttons:
 		if btn:
@@ -232,20 +228,17 @@ func _apply_menu_style() -> void:
 		random_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 		random_btn.add_theme_font_size_override("font_size", 22)
 
-	# 6. Style title labels.
+	# 6. Style the lobby title.
 	var customize_title: Label = $LeftContainer/CustomizePanel/OptionsCol/Title
 	customize_title.add_theme_font_size_override("font_size", 36)
 	customize_title.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 0.95))
-
-	var lobby_title: Label = $LeftContainer/LobbyPanel/VBox/TitleLabel
-	lobby_title.add_theme_font_size_override("font_size", 36)
-	lobby_title.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 0.95))
 
 	# 7. Style separators to be subtle white.
 	for sep in [
 		_get_node("LeftContainer/LobbyPanel/VBox/Sep1"),
 		_get_node("LeftContainer/LobbyPanel/VBox/Sep2"),
 		_get_node("LeftContainer/LobbyPanel/VBox/PlayersRow/StandSep"),
+		_get_node("LeftContainer/CustomizePanel/OptionsCol/TabSep"),
 	]:
 		if sep is ColorRect:
 			(sep as ColorRect).color = Color(1, 1, 1, 0.15)
@@ -287,15 +280,14 @@ func _apply_mode_layout() -> void:
 		stand1_header.text = "Stand 1"
 	else:
 		stand1_header.text = "Players"
-	# Update the lobby title to show the mode.
-	var lobby_title: Label = $LeftContainer/LobbyPanel/VBox/TitleLabel
+	# Update the lobby title to show the stand name + mode.
 	var mode_name := "Solo"
 	match mode:
 		GameState.GameMode.COOP:
 			mode_name = "Co-op"
 		GameState.GameMode.VERSUS:
 			mode_name = "Versus"
-	lobby_title.text = "%s — %s" % [GameState.stand_name, mode_name]
+	_customize_title.text = "%s — %s" % [GameState.stand_name, mode_name]
 
 
 ## Recursively style all labels in a node tree: white text.
@@ -404,11 +396,10 @@ func _ready() -> void:
 			LobbyManager.start_game(),
 	)
 	_back_button.pressed.connect(_on_leave_pressed)
-	_avatar_button.pressed.connect(_on_avatar_pressed)
-	_house_button.pressed.connect(_on_house_pressed)
-	_customize_back_button.pressed.connect(_on_customize_back_pressed)
-	# CustomizePanel is hidden by default; lobby is the main view.
-	_customize_panel.visible = false
+	_avatar_tab.pressed.connect(_on_avatar_tab)
+	_house_tab.pressed.connect(_on_house_tab)
+	# Default to Avatar tab.
+	_on_avatar_tab()
 	LobbyManager.roster_changed.connect(_refresh)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
 	NetworkManager.peer_disconnected.connect(
@@ -493,13 +484,10 @@ func _on_leave_pressed() -> void:
 	return_to_menu_requested.emit()
 
 
-## Show the avatar customization view (hide lobby, show customize panel
-## with only avatar options visible).
-func _on_avatar_pressed() -> void:
-	_lobby_panel.visible = false
-	_customize_panel.visible = true
-	_customize_title.text = "Avatar"
-	# Show avatar-only rows, hide house-only rows.
+## Switch to the Avatar tab — show avatar customization options.
+func _on_avatar_tab() -> void:
+	_avatar_tab.button_pressed = true
+	_house_tab.button_pressed = false
 	_gender_row.visible = true
 	_random_button.visible = true
 	_set_node_visible(
@@ -548,13 +536,10 @@ func _on_avatar_pressed() -> void:
 	)
 
 
-## Show the house customization view (hide lobby, show customize panel
-## with only house options visible).
-func _on_house_pressed() -> void:
-	_lobby_panel.visible = false
-	_customize_panel.visible = true
-	_customize_title.text = "House"
-	# Hide avatar-only rows, show house-only rows.
+## Switch to the House tab — show house customization options.
+func _on_house_tab() -> void:
+	_avatar_tab.button_pressed = false
+	_house_tab.button_pressed = true
 	_gender_row.visible = false
 	_random_button.visible = false
 	_set_node_visible(
@@ -601,12 +586,6 @@ func _on_house_pressed() -> void:
 		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow",
 		false,
 	)
-
-
-## Return from customization view to the lobby.
-func _on_customize_back_pressed() -> void:
-	_customize_panel.visible = false
-	_lobby_panel.visible = true
 
 
 ## Helper to set a node's visibility by path.
