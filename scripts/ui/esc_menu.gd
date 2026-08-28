@@ -131,6 +131,7 @@ func _build_ui() -> void:
 	# Separator.
 	var sep := ColorRect.new()
 	sep.custom_minimum_size = Vector2(0, 2)
+	sep.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	sep.color = Color(0.35, 0.6, 0.9, 0.25)
 	_menu_box.add_child(sep)
 
@@ -146,7 +147,7 @@ func _build_ui() -> void:
 	_settings_button = _make_menu_button("Settings")
 	_menu_box.add_child(_settings_button)
 
-	_back_to_menu_button = _make_menu_button("Back to Menu")
+	_back_to_menu_button = _make_menu_button("Main Menu")
 	_menu_box.add_child(_back_to_menu_button)
 
 	_quit_button = _make_menu_button("Quit Game")
@@ -475,7 +476,6 @@ func _sync_settings() -> void:
 		DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
 	)
 
-
 # --- Button handlers ---
 
 
@@ -532,7 +532,6 @@ func _on_copy_pressed() -> void:
 			_copy_button.text = "Copy",
 	)
 
-
 # --- Button styling helpers (copied from world_menu.gd) ---
 
 
@@ -575,9 +574,7 @@ func _setup_hover_effect(btn: Button) -> void:
 				(btn.get_meta("_hover_tween") as Tween).kill()
 			var hover_tween := create_tween()
 			hover_tween.set_ease(Tween.EASE_OUT)
-			hover_tween.tween_property(
-				btn, "scale", base_scale * HOVER_POP, HOVER_DURATION
-			)
+			hover_tween.tween_property(btn, "scale", base_scale * HOVER_POP, HOVER_DURATION)
 			btn.set_meta("_hover_tween", hover_tween),
 	)
 	btn.mouse_exited.connect(
