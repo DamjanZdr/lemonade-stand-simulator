@@ -32,6 +32,18 @@ var _room_code_label: Label
 var _copy_button: Button
 var _menu_buttons: Array[Button] = []
 var _room_visible: bool = false
+var _version_label: Label
+var _music_widget: PanelContainer
+var _music_vinyl: Control
+var _music_label: Label
+var _music_prev_btn: Button
+var _music_next_btn: Button
+var _music_progress: ProgressBar
+var _music_time_current: Label
+var _music_time_total: Label
+
+const MUSIC_WIDGET_W: float = 280.0
+const MUSIC_WIDGET_H: float = 88.0
 
 
 func _ready() -> void:
@@ -207,6 +219,27 @@ func _build_ui() -> void:
 		_make_flat_button(btn)
 		btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 		_setup_hover_effect(btn)
+
+	# Version label (bottom-left, same as main menu).
+	_version_label = Label.new()
+	_version_label.anchor_left = 0.0
+	_version_label.anchor_top = 1.0
+	_version_label.anchor_right = 0.0
+	_version_label.anchor_bottom = 1.0
+	_version_label.offset_left = 12.0
+	_version_label.offset_top = -28.0
+	_version_label.offset_right = 100.0
+	_version_label.offset_bottom = -8.0
+	_version_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_version_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_version_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_version_label.add_theme_font_size_override("font_size", 14)
+	_version_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.3))
+	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
+	add_child(_version_label)
+
+	# Music player widget (bottom-right, same as main menu).
+	_build_music_player()
 
 
 func _make_menu_button(text: String) -> Button:
@@ -604,6 +637,206 @@ func _on_copy_pressed() -> void:
 
 # --- Button styling helpers (copied from world_menu.gd) ---
 
+# ─── Music Player Widget (copied from world_menu.gd) ───
+
+
+func _build_music_player() -> void:
+	# Panel container anchored to bottom-right.
+	_music_widget = PanelContainer.new()
+	_music_widget.name = "MusicPlayer"
+	_music_widget.anchor_left = 1.0
+	_music_widget.anchor_top = 1.0
+	_music_widget.anchor_right = 1.0
+	_music_widget.anchor_bottom = 1.0
+	_music_widget.offset_left = -(MUSIC_WIDGET_W + 12.0)
+	_music_widget.offset_top = -(MUSIC_WIDGET_H + 12.0)
+	_music_widget.offset_right = -12.0
+	_music_widget.offset_bottom = -12.0
+	_music_widget.custom_minimum_size = Vector2(MUSIC_WIDGET_W, MUSIC_WIDGET_H)
+	_music_widget.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Semi-transparent background with subtle border.
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.05, 0.08, 0.55)
+	bg.border_color = Color(1, 1, 1, 0.12)
+	bg.set_border_width_all(1)
+	bg.set_content_margin_all(10)
+	bg.set_corner_radius_all(6)
+	_music_widget.add_theme_stylebox_override("panel", bg)
+	add_child(_music_widget)
+
+	# Inner VBox: top row (controls + disc + title), progress bar, time row.
+	var vbox := VBoxContainer.new()
+	vbox.name = "VBox"
+	vbox.add_theme_constant_override("separation", 4)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_music_widget.add_child(vbox)
+
+	# Top row: prev | disc + now playing | next
+	var top_row := HBoxContainer.new()
+	top_row.name = "TopRow"
+	top_row.add_theme_constant_override("separation", 8)
+	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(top_row)
+
+	# Prev button.
+	_music_prev_btn = Button.new()
+	_music_prev_btn.name = "Prev"
+	_music_prev_btn.text = "<"
+	_music_prev_btn.custom_minimum_size = Vector2(24, 24)
+	_music_prev_btn.add_theme_font_size_override("font_size", 16)
+	_music_prev_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	_music_prev_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_music_prev_btn.add_theme_color_override("font_pressed_color", Color(1, 0.95, 0.7, 0.6))
+	_make_flat_button(_music_prev_btn)
+	top_row.add_child(_music_prev_btn)
+	_music_prev_btn.pressed.connect(
+		func():
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			AudioManager.prev_track(),
+	)
+
+	# Disc + text column (disc on left, text stacked on right).
+	var disc_row := HBoxContainer.new()
+	disc_row.name = "DiscRow"
+	disc_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	disc_row.add_theme_constant_override("separation", 8)
+	disc_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	disc_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_row.add_child(disc_row)
+
+	# Vinyl disc — taller so it spans both text lines.
+	var disc := Control.new()
+	disc.name = "Vinyl"
+	disc.custom_minimum_size = Vector2(44, 44)
+	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc.set_script(load("res://scripts/ui/vinyl_disc.gd"))
+	disc_row.add_child(disc)
+	_music_vinyl = disc
+
+	# Text column: NOW PLAYING header + track name.
+	var text_col := VBoxContainer.new()
+	text_col.name = "TextCol"
+	text_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_col.add_theme_constant_override("separation", 1)
+	text_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	text_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc_row.add_child(text_col)
+
+	# "NOW PLAYING" small header.
+	var np_label := Label.new()
+	np_label.name = "NowPlaying"
+	np_label.add_theme_font_size_override("font_size", 9)
+	np_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.5))
+	np_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	np_label.text = "♪ NOW PLAYING"
+	np_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_col.add_child(np_label)
+
+	# Track name label.
+	_music_label = Label.new()
+	_music_label.name = "TrackName"
+	_music_label.add_theme_font_size_override("font_size", 13)
+	_music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	_music_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_music_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_music_label.text = "—"
+	_music_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_music_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_col.add_child(_music_label)
+
+	# Next button.
+	_music_next_btn = Button.new()
+	_music_next_btn.name = "Next"
+	_music_next_btn.text = ">"
+	_music_next_btn.custom_minimum_size = Vector2(24, 24)
+	_music_next_btn.add_theme_font_size_override("font_size", 16)
+	_music_next_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	_music_next_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_music_next_btn.add_theme_color_override("font_pressed_color", Color(1, 0.95, 0.7, 0.6))
+	_make_flat_button(_music_next_btn)
+	top_row.add_child(_music_next_btn)
+	_music_next_btn.pressed.connect(
+		func():
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			AudioManager.next_track(),
+	)
+
+	# Progress bar (read-only).
+	_music_progress = ProgressBar.new()
+	_music_progress.name = "Progress"
+	_music_progress.min_value = 0.0
+	_music_progress.max_value = 1.0
+	_music_progress.value = 0.0
+	_music_progress.custom_minimum_size = Vector2(0, 4)
+	_music_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_music_progress.show_percentage = false
+	# Style the progress bar — minimal.
+	var pb_bg := StyleBoxFlat.new()
+	pb_bg.bg_color = Color(1, 1, 1, 0.08)
+	pb_bg.set_corner_radius_all(2)
+	_music_progress.add_theme_stylebox_override("background", pb_bg)
+	var pb_fill := StyleBoxFlat.new()
+	pb_fill.bg_color = Color(1, 0.85, 0.4, 0.7)
+	pb_fill.set_corner_radius_all(2)
+	_music_progress.add_theme_stylebox_override("fill", pb_fill)
+	vbox.add_child(_music_progress)
+
+	# Time row: current | total.
+	var time_row := HBoxContainer.new()
+	time_row.name = "TimeRow"
+	time_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(time_row)
+
+	_music_time_current = Label.new()
+	_music_time_current.name = "TimeCurrent"
+	_music_time_current.add_theme_font_size_override("font_size", 10)
+	_music_time_current.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	_music_time_current.text = "0:00"
+	_music_time_current.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	time_row.add_child(_music_time_current)
+
+	var spacer := Control.new()
+	spacer.name = "TimeSpacer"
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	time_row.add_child(spacer)
+
+	_music_time_total = Label.new()
+	_music_time_total.name = "TimeTotal"
+	_music_time_total.add_theme_font_size_override("font_size", 10)
+	_music_time_total.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	_music_time_total.text = "0:00"
+	_music_time_total.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_music_time_total.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	time_row.add_child(_music_time_total)
+
+	# Connect progress signal.
+	AudioManager.music_progress.connect(_update_music_progress)
+	# Connect track change signal.
+	AudioManager.music_track_changed.connect(_update_music_display)
+
+
+func _update_music_display(track_name: String) -> void:
+	if _music_label:
+		_music_label.text = track_name if track_name != "" else "—"
+	if _music_vinyl and _music_vinyl.has_method("set_spinning"):
+		_music_vinyl.set_spinning(track_name != "")
+
+
+func _update_music_progress(current: float, total: float) -> void:
+	if _music_progress and total > 0:
+		_music_progress.value = current / total
+	if _music_time_current:
+		_music_time_current.text = _format_time(current)
+	if _music_time_total:
+		_music_time_total.text = _format_time(total)
+
+
+func _format_time(seconds: float) -> String:
+	var mins := int(seconds) / 60
+	var secs := int(seconds) % 60
+	return "%d:%02d" % [mins, secs]
+
 
 func _on_button_click(btn: Button, callback: Callable) -> void:
 	AudioManager.play_sfx_ui("button_click", 1.0, 0.0, 0.0, 0.0)
@@ -627,12 +860,11 @@ func _make_flat_button(btn: Button) -> void:
 
 
 ## Remove the green focus box from checkboxes (inherited from Button focus style).
+## Only removes focus + hover — keeps the native checkbox outline.
 func _remove_checkbox_focus(cb: CheckBox) -> void:
 	var stylebox_empty := StyleBoxEmpty.new()
 	cb.add_theme_stylebox_override("focus", stylebox_empty)
 	cb.add_theme_stylebox_override("hover", stylebox_empty)
-	cb.add_theme_stylebox_override("normal", stylebox_empty)
-	cb.add_theme_stylebox_override("pressed", stylebox_empty)
 
 
 func _add_drop_shadow(btn: Button) -> void:

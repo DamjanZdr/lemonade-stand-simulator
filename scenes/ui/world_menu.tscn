@@ -449,8 +449,6 @@ layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_cb")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_cb")
-theme_override_styles/normal = SubResource("StyleBoxEmpty_cb")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_cb")
 
 [node name="VSyncRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -468,8 +466,6 @@ layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_cb")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_cb")
-theme_override_styles/normal = SubResource("StyleBoxEmpty_cb")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_cb")
 
 [node name="LightingRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -487,8 +483,6 @@ layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_cb")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_cb")
-theme_override_styles/normal = SubResource("StyleBoxEmpty_cb")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_cb")
 
 [node name="FPSRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
 layout_mode = 2
@@ -506,8 +500,6 @@ layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_cb")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_cb")
-theme_override_styles/normal = SubResource("StyleBoxEmpty_cb")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_cb")
 
 [node name="SettingsBack" type="Button" parent="SettingsPanel"]
 layout_mode = 2
