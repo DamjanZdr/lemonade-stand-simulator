@@ -17,6 +17,14 @@ const HOVER_POP: float = 1.12
 @onready var _start_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/StartButton
 @onready var _back_button: Button = $LeftContainer/LobbyPanel/VBox/BottomRow/BackButton
 @onready var _version_label: Label = $VersionLabel
+@onready var _avatar_button: Button = $LeftContainer/LobbyPanel/VBox/CustomizeRow/AvatarButton
+@onready var _house_button: Button = $LeftContainer/LobbyPanel/VBox/CustomizeRow/HouseButton
+@onready var _customize_panel: PanelContainer = $LeftContainer/CustomizePanel
+@onready var _lobby_panel: PanelContainer = $LeftContainer/LobbyPanel
+@onready var _customize_back_button: Button = $LeftContainer/CustomizePanel/OptionsCol/CustomizeBackButton
+@onready var _customize_title: Label = $LeftContainer/CustomizePanel/OptionsCol/Title
+@onready var _gender_row: HBoxContainer = $LeftContainer/CustomizePanel/OptionsCol/GenderRow
+@onready var _random_button: Button = $LeftContainer/CustomizePanel/OptionsCol/RandomButton
 
 # Customization UI — left column (under Male)
 @onready var _male_button: Button = $LeftContainer/CustomizePanel/OptionsCol/GenderRow/MaleButton
@@ -185,6 +193,9 @@ func _apply_menu_style() -> void:
 		_eye_button,
 		_male_button,
 		_female_button,
+		_avatar_button,
+		_house_button,
+		_customize_back_button,
 	]
 	for btn in main_buttons:
 		if btn:
@@ -391,6 +402,11 @@ func _ready() -> void:
 			LobbyManager.start_game(),
 	)
 	_back_button.pressed.connect(_on_leave_pressed)
+	_avatar_button.pressed.connect(_on_avatar_pressed)
+	_house_button.pressed.connect(_on_house_pressed)
+	_customize_back_button.pressed.connect(_on_customize_back_pressed)
+	# CustomizePanel is hidden by default; lobby is the main view.
+	_customize_panel.visible = false
 	LobbyManager.roster_changed.connect(_refresh)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
 	NetworkManager.peer_disconnected.connect(
@@ -473,6 +489,129 @@ func _on_ready_pressed() -> void:
 
 func _on_leave_pressed() -> void:
 	return_to_menu_requested.emit()
+
+
+## Show the avatar customization view (hide lobby, show customize panel
+## with only avatar options visible).
+func _on_avatar_pressed() -> void:
+	_lobby_panel.visible = false
+	_customize_panel.visible = true
+	_customize_title.text = "Avatar"
+	# Show avatar-only rows, hide house-only rows.
+	_gender_row.visible = true
+	_random_button.visible = true
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow",
+		true,
+	)
+
+
+## Show the house customization view (hide lobby, show customize panel
+## with only house options visible).
+func _on_house_pressed() -> void:
+	_lobby_panel.visible = false
+	_customize_panel.visible = true
+	_customize_title.text = "House"
+	# Hide avatar-only rows, show house-only rows.
+	_gender_row.visible = false
+	_random_button.visible = false
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/WallsColorRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/RoofColorRow",
+		true,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/HairStyleRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/EyebrowsRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShirtColorRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/LeftCol/ShoesColorRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HairColorRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/EyebrowColorRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/PantsColorRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/HeadSizeRow",
+		false,
+	)
+	_set_node_visible(
+		"LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow",
+		false,
+	)
+
+
+## Return from customization view to the lobby.
+func _on_customize_back_pressed() -> void:
+	_customize_panel.visible = false
+	_lobby_panel.visible = true
+
+
+## Helper to set a node's visibility by path.
+func _set_node_visible(path: String, visible: bool) -> void:
+	var node := get_node_or_null(path)
+	if node is CanvasItem:
+		(node as CanvasItem).visible = visible
 
 
 func _on_server_disconnected() -> void:

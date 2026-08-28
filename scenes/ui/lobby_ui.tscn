@@ -563,6 +563,13 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 15
 text = "Randomize"
 
+[node name="CustomizeBackButton" type="Button" parent="LeftContainer/CustomizePanel/OptionsCol" unique_id=1807004537]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Back to Lobby"
+
 [node name="LobbyPanel" type="PanelContainer" parent="LeftContainer" unique_id=552777177]
 layout_mode = 2
 size_flags_vertical = 3
@@ -678,6 +685,26 @@ theme_override_constants/separation = 3
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
 color = Color(0.35, 0.6, 0.9, 0.25)
+
+[node name="CustomizeRow" type="HBoxContainer" parent="LeftContainer/LobbyPanel/VBox" unique_id=877560186]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="AvatarButton" type="Button" parent="LeftContainer/LobbyPanel/VBox/CustomizeRow" unique_id=877560187]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Avatar"
+
+[node name="HouseButton" type="Button" parent="LeftContainer/LobbyPanel/VBox/CustomizeRow" unique_id=877560188]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "House"
 
 [node name="BottomRow" type="HBoxContainer" parent="LeftContainer/LobbyPanel/VBox" unique_id=1591330613]
 layout_mode = 2
