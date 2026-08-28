@@ -105,6 +105,10 @@ func set_player_visuals(models: Array[PlayerVisuals]) -> void:
 			_model_base_transforms.append(pv.transform)
 		else:
 			_model_base_transforms.append(Transform3D.IDENTITY)
+	# Now that the lobby is actually entered, default to stand 1 and refresh.
+	# This can't happen in _ready because the roster isn't populated yet.
+	_default_to_stand_1()
+	_refresh()
 
 
 ## Called by main.gd to set the look-at target (the lobby camera) so
@@ -440,9 +444,6 @@ func _ready() -> void:
 	LobbyManager.request_refresh()
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	call_deferred("_setup_customization")
-	# Default to stand 1 before refreshing so the player shows up immediately.
-	_default_to_stand_1()
-	_refresh()
 
 
 ## Defaults the local player to stand 1 on entering the lobby, if they
