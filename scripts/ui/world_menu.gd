@@ -647,28 +647,44 @@ func _on_saves_back() -> void:
 
 
 func _on_new_stand_pressed() -> void:
-	# Inline creation panel: mode selection + name entry + Create button.
+	# Step 1: Mode selection with descriptions. Step 2: Name entry.
 	_new_stand_button.visible = false
+	_show_mode_select()
+
+
+## Step 1: Show mode selection with silhouette icons + descriptions.
+func _show_mode_select() -> void:
 	var panel := VBoxContainer.new()
-	panel.name = "InlineNameEntry"
+	panel.name = "InlineModeSelect"
 	panel.add_theme_constant_override("separation", 10)
 
-	# --- Mode selection ---
-	var mode_label := Label.new()
-	mode_label.text = "Game Mode"
-	mode_label.add_theme_font_size_override("font_size", 18)
-	mode_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	panel.add_child(mode_label)
+	var title := Label.new()
+	title.text = "Choose Game Mode"
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
+	panel.add_child(title)
+
+	var selected_mode: int = GameState.GameMode.SOLO
+	var mode_buttons: Dictionary = { } # mode -> Button
+	var desc_label := Label.new()
+	desc_label.add_theme_font_size_override("font_size", 14)
+	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	desc_label.custom_minimum_size = Vector2(SAVE_BOX_WIDTH, 0)
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel.add_child(desc_label)
 
 	var mode_row := HBoxContainer.new()
 	mode_row.name = "ModeRow"
 	mode_row.add_theme_constant_override("separation", 12)
-	var selected_mode: int = GameState.GameMode.SOLO
-	var mode_buttons: Dictionary = { } # mode -> Button
+	var mode_descs: Dictionary = {
+		GameState.GameMode.SOLO: "One player runs their own lemonade stand.",
+		GameState.GameMode.COOP: "Up to 4 players share a stand and work together.",
+		GameState.GameMode.VERSUS: "2 teams of up to 2 players compete on separate stands.",
+	}
 	for mode_info in [
-		{ "mode": GameState.GameMode.SOLO, "count": 1, "vs": false, "label": "Solo" },
-		{ "mode": GameState.GameMode.COOP, "count": 4, "vs": false, "label": "Co-op" },
-		{ "mode": GameState.GameMode.VERSUS, "count": 2, "vs": true, "label": "Versus" },
+		{ "mode": GameState.GameMode.SOLO, "count": 1, "vs": false },
+		{ "mode": GameState.GameMode.COOP, "count": 4, "vs": false },
+		{ "mode": GameState.GameMode.VERSUS, "count": 2, "vs": true },
 	]:
 		var mb := Button.new()
 		mb.toggle_mode = true
@@ -676,7 +692,6 @@ func _on_new_stand_pressed() -> void:
 		_make_flat_button(mb)
 		_add_drop_shadow(mb)
 		_setup_hover_effect(mb)
-		# Build silhouette icon inside the button.
 		var icon := _build_silhouette_icon(mode_info["count"], mode_info["vs"])
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		mb.add_child(icon)
@@ -684,6 +699,7 @@ func _on_new_stand_pressed() -> void:
 		mb.pressed.connect(
 			func():
 				selected_mode = mode_val
+				desc_label.text = mode_descs[mode_val]
 				for key in mode_buttons:
 					(mode_buttons[key] as Button).button_pressed = (key == mode_val),
 		)
@@ -691,9 +707,66 @@ func _on_new_stand_pressed() -> void:
 		mode_row.add_child(mb)
 	# Default: Solo selected.
 	(mode_buttons[GameState.GameMode.SOLO] as Button).button_pressed = true
+	desc_label.text = mode_descs[GameState.GameMode.SOLO]
 	panel.add_child(mode_row)
+	panel.add_child(desc_label)
 
-	# --- Name entry ---
+	# Confirm + Cancel buttons.
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 12)
+	var confirm_btn := Button.new()
+	confirm_btn.text = "Next"
+	confirm_btn.add_theme_font_size_override("font_size", 20)
+	confirm_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
+	confirm_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_make_flat_button(confirm_btn)
+	_add_drop_shadow(confirm_btn)
+	_setup_hover_effect(confirm_btn)
+	confirm_btn.pressed.connect(
+		func():
+			panel.queue_free()
+			_show_name_entry(selected_mode),
+	)
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.add_theme_font_size_override("font_size", 20)
+	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_make_flat_button(cancel_btn)
+	_add_drop_shadow(cancel_btn)
+	_setup_hover_effect(cancel_btn)
+	cancel_btn.pressed.connect(
+		func():
+			panel.queue_free()
+			_new_stand_button.visible = true,
+	)
+	btn_row.add_child(confirm_btn)
+	btn_row.add_child(cancel_btn)
+	panel.add_child(btn_row)
+
+	var idx := _new_stand_button.get_index()
+	_saves_list.add_child(panel)
+	_saves_list.move_child(panel, idx)
+
+
+## Step 2: Show name entry after mode is confirmed.
+func _show_name_entry(selected_mode: int) -> void:
+	var panel := VBoxContainer.new()
+	panel.name = "InlineNameEntry"
+	panel.add_theme_constant_override("separation", 10)
+
+	# Show selected mode icon at top.
+	var mode_names: Dictionary = {
+		GameState.GameMode.SOLO: "Solo",
+		GameState.GameMode.COOP: "Co-op",
+		GameState.GameMode.VERSUS: "Versus",
+	}
+	var mode_title := Label.new()
+	mode_title.text = mode_names[selected_mode]
+	mode_title.add_theme_font_size_override("font_size", 22)
+	mode_title.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
+	panel.add_child(mode_title)
+
 	var name_row := HBoxContainer.new()
 	name_row.name = "NameRow"
 	name_row.add_theme_constant_override("separation", 12)
@@ -704,15 +777,13 @@ func _on_new_stand_pressed() -> void:
 	field.add_theme_font_size_override("font_size", 20)
 	field.placeholder_text = "Stand name..."
 	# Limit by weighted char count: capitals = 1.5, others = 1.0.
-	# Reject typed/deleted text that would exceed NAME_MAX_WEIGHT.
 	field.text_changed.connect(
 		func(new_text: String):
 			if _name_weight(new_text) > NAME_MAX_WEIGHT:
-				# Revert to the previous text by trimming the last char.
 				field.text = new_text.substr(0, new_text.length() - 1)
 				field.caret_column = field.text.length(),
 	)
-	# Transparent background, white outline border — matches stand box style.
+	# Transparent background, white outline border.
 	var field_style := StyleBoxFlat.new()
 	field_style.bg_color = Color(0, 0, 0, 0)
 	field_style.border_color = Color(1, 1, 1, 0.4)
@@ -743,8 +814,6 @@ func _on_new_stand_pressed() -> void:
 	)
 	field.focus_exited.connect(
 		func():
-			# Cancel if focus lost and field is empty; otherwise keep it
-			# so the Create button can still be clicked.
 			if field.text.strip_edges() == "":
 				_cancel_inline_name(panel),
 	)
@@ -763,7 +832,6 @@ func _on_new_stand_pressed() -> void:
 	name_row.add_child(field)
 	name_row.add_child(create_btn)
 	panel.add_child(name_row)
-	# Insert the inline panel where the New Stand button was.
 	var idx := _new_stand_button.get_index()
 	_saves_list.add_child(panel)
 	_saves_list.move_child(panel, idx)
@@ -797,17 +865,17 @@ func _name_weight(s: String) -> float:
 	return weight
 
 
-## Human-readable label for a GameMode value.
-func _mode_label(mode: int) -> String:
+## Build a compact silhouette icon for a save row (smaller than the button version).
+func _build_save_mode_icon(mode: int) -> Control:
+	var count := 1
+	var vs := false
 	match mode:
-		GameState.GameMode.SOLO:
-			return "Solo"
 		GameState.GameMode.COOP:
-			return "Co-op"
+			count = 4
 		GameState.GameMode.VERSUS:
-			return "Versus"
-		_:
-			return "Solo"
+			count = 2
+			vs = true
+	return _build_silhouette_icon(count, vs)
 
 
 ## Build a person silhouette icon for the mode selection buttons.
@@ -934,13 +1002,21 @@ func _build_save_row(
 	btn.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.text = stand_name
 	row.add_child(btn)
-	# Info line: small, dim text under the name.
+	# Info line: silhouette mode icon + small dim text.
+	var info_row := HBoxContainer.new()
+	info_row.add_theme_constant_override("separation", 6)
+	info_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Build the silhouette icon for this save's mode.
+	var mode_icon := _build_save_mode_icon(game_mode)
+	mode_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_row.add_child(mode_icon)
 	var info := Label.new()
 	info.add_theme_font_size_override("font_size", 14)
 	info.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	var mode_text := _mode_label(game_mode)
-	info.text = "%s  |  Day %d  |  $%.2f  |  %s" % [mode_text, day, money, date_text]
-	row.add_child(info)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.text = "Day %d  |  $%.2f  |  %s" % [day, money, date_text]
+	info_row.add_child(info)
+	row.add_child(info_row)
 	# Hover: pop the inner content (row) + brighten border. Panel outline stays put.
 	panel.mouse_entered.connect(
 		func():
@@ -957,7 +1033,7 @@ func _build_save_row(
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color(1.0, 0.95, 0.7), 0.06) \
 					.set_ease(Tween.EASE_OUT)
-			tw.tween_property(info, "modulate", Color(1, 1, 1, 1.0), 0.06) \
+			tw.tween_property(info_row, "modulate", Color(1, 1, 1, 1.0), 0.06) \
 					.set_ease(Tween.EASE_OUT),
 	)
 	panel.mouse_exited.connect(
@@ -973,7 +1049,7 @@ func _build_save_row(
 					.set_ease(Tween.EASE_OUT)
 			tw.tween_property(btn, "modulate", Color.WHITE, 0.08) \
 					.set_ease(Tween.EASE_OUT)
-			tw.tween_property(info, "modulate", Color(1, 1, 1, 0.7), 0.08) \
+			tw.tween_property(info_row, "modulate", Color(1, 1, 1, 0.7), 0.08) \
 					.set_ease(Tween.EASE_OUT),
 	)
 	# Click anywhere on the panel loads the save.
