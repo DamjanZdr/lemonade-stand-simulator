@@ -163,7 +163,7 @@ mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
 [node name="MainMenuCameras" type="Node3D" parent="." unique_id=783341319]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.49334335)
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -7.6095896, 0, -25.412727)
 
 [node name="MainMenuCamera" type="Camera3D" parent="MainMenuCameras" unique_id=1523728213]
 transform = Transform3D(0.98489964, -0.013518769, -0.17259757, -0.013518771, 0.98789716, -0.15452006, 0.17259756, 0.15452006, 0.97279686, -14.33595, 1.3345039, -19.05366)

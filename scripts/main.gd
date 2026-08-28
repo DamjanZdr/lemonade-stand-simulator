@@ -798,12 +798,37 @@ func _tween_camera_to_player(is_late_join: bool = false) -> void:
 		var target_transform := player_cam.global_transform
 		# Use a shorter tween for late join to avoid the freeze.
 		var tween_time: float = 0.5 if is_late_join else CAMERA_TWEEN_TIME
+		# Interpolate yaw and pitch smoothly instead of snapping rotation.
+		var start_euler := lobby_camera.global_transform.basis.get_euler()
+		var end_euler := target_transform.basis.get_euler()
+		var start_yaw: float = start_euler.y
+		var end_yaw: float = end_euler.y
+		var diff: float = end_yaw - start_yaw
+		# Normalize to [-PI, PI] (shortest path)
+		while diff > PI:
+			diff -= TAU
+		while diff < -PI:
+			diff += TAU
+		var start_pitch: float = start_euler.x
+		var end_pitch: float = end_euler.x
 		var tw := create_tween()
-		# Tween position only first, then snap rotation at the end.
+		tw.set_parallel(true)
 		tw.tween_property(lobby_camera, "global_position", target_transform.origin, tween_time) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw \
+				.tween_method(
+			func(t: float) -> void:
+				var yaw: float = start_yaw + diff * t
+				var pitch: float = lerpf(start_pitch, end_pitch, t)
+				lobby_camera.global_rotation = Vector3(pitch, yaw, 0.0),
+			0.0,
+			1.0,
+			tween_time,
+		) \
+				.set_trans(Tween.TRANS_SINE) \
+				.set_ease(Tween.EASE_IN_OUT)
 		# When the tween finishes, switch to the player's camera
-		tw.tween_callback(
+		tw.chain().tween_callback(
 			func():
 				lobby_camera.global_transform = target_transform
 				lobby_camera.current = false

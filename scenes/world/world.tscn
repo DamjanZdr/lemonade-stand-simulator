@@ -9,7 +9,6 @@
 [ext_resource type="PackedScene" uid="uid://vc244erl2bi2" path="res://assets/models/props/Desk2.0.glb" id="14_mxkvs"]
 [ext_resource type="PackedScene" uid="uid://csb7yl8gpw1q3" path="res://scenes/objects/computer.tscn" id="15_m114p"]
 [ext_resource type="PackedScene" uid="uid://3iu5tq16nvb0" path="res://scenes/building_blocks/neighborhood.tscn" id="15_mxkvs"]
-[ext_resource type="PackedScene" path="res://scenes/props/player_mirror.tscn" id="20_tytul"]
 [ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
 [ext_resource type="Script" uid="uid://cp361e4vcklhx" path="res://scripts/objects/sky_controller.gd" id="37_sky"]
@@ -567,6 +566,3 @@ occluder = SubResource("BoxOccluder3D_g4v7s")
 [node name="OccluderInstance3D8" type="OccluderInstance3D" parent="Occlusions" unique_id=1479579451]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50.80826, 2.313859, -41.21746)
 occluder = SubResource("BoxOccluder3D_g4v7s")
-
-[node name="PlayerMirror" parent="." unique_id=928550735 instance=ExtResource("20_tytul")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.631445, 1.0064697, 5.6535645)
