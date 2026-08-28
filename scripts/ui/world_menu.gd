@@ -655,39 +655,25 @@ func _on_new_stand_pressed() -> void:
 	_show_mode_select()
 
 
-## Step 1: Show mode selection with silhouette icons + descriptions.
-## Each mode is a clickable card: icon on top, name below, description under that.
-## The whole panel is bordered like a save row for visual consistency.
+## Step 1: Show mode selection with silhouette icons.
+## Cards have icon + name only. A single description label below the
+## cards shows the description for the currently selected mode.
 func _show_mode_select() -> void:
-	# Outer bordered panel (matches save row style).
-	var outer := PanelContainer.new()
-	outer.name = "InlineModeSelect"
-	outer.custom_minimum_size = Vector2(SAVE_BOX_WIDTH, 0)
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0, 0, 0, 0.25)
-	panel_style.border_color = Color(1, 1, 1, 0.4)
-	panel_style.set_border_width_all(1)
-	panel_style.set_content_margin_all(14)
-	panel_style.set_corner_radius_all(6)
-	outer.add_theme_stylebox_override("panel", panel_style)
-
 	var vbox := VBoxContainer.new()
+	vbox.name = "InlineModeSelect"
 	vbox.add_theme_constant_override("separation", 14)
-	outer.add_child(vbox)
 
 	# Title.
 	var title := Label.new()
-	title.text = "Choose Game Mode"
+	title.text = "Game Mode"
 	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.95))
 	title.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
 	title.add_theme_constant_override("shadow_offset_x", 2)
 	title.add_theme_constant_override("shadow_offset_y", 2)
 	title.add_theme_constant_override("shadow_outline_size", 4)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
-	# Mode cards row.
 	var selected_mode: int = GameState.GameMode.SOLO
 	var mode_cards: Dictionary = { } # mode -> PanelContainer
 	var mode_styles: Dictionary = { } # mode -> StyleBoxFlat (for border tweening)
@@ -702,9 +688,10 @@ func _show_mode_select() -> void:
 		GameState.GameMode.VERSUS: "Versus",
 	}
 
+	# Mode cards row.
 	var cards_row := HBoxContainer.new()
 	cards_row.add_theme_constant_override("separation", 10)
-	cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	cards_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 
 	for mode_info in [
 		{ "mode": GameState.GameMode.SOLO, "count": 1, "vs": false },
@@ -712,7 +699,6 @@ func _show_mode_select() -> void:
 		{ "mode": GameState.GameMode.VERSUS, "count": 2, "vs": true },
 	]:
 		var mode_val: int = mode_info["mode"]
-		# Card = bordered PanelContainer with vertical content.
 		var card := PanelContainer.new()
 		card.custom_minimum_size = Vector2(100, 0)
 		var card_style := StyleBoxFlat.new()
@@ -743,17 +729,6 @@ func _show_mode_select() -> void:
 		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_vbox.add_child(name_lbl)
 
-		# Description (wraps, centered).
-		var desc_lbl := Label.new()
-		desc_lbl.text = mode_descs[mode_val]
-		desc_lbl.add_theme_font_size_override("font_size", 12)
-		desc_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
-		desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		desc_lbl.custom_minimum_size = Vector2(90, 0)
-		desc_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card_vbox.add_child(desc_lbl)
-
 		# Click handling.
 		card.gui_input.connect(
 			func(event):
@@ -762,6 +737,7 @@ func _show_mode_select() -> void:
 					and event.button_index == MOUSE_BUTTON_LEFT
 				):
 					selected_mode = mode_val
+					desc_label.text = mode_descs[mode_val]
 					_update_mode_card_selection(mode_cards, mode_styles, mode_val),
 		)
 		# Hover effect on the card.
@@ -796,7 +772,14 @@ func _show_mode_select() -> void:
 
 	vbox.add_child(cards_row)
 
-	# Buttons row (right-aligned).
+	# Single description label for the selected mode.
+	var desc_label := Label.new()
+	desc_label.add_theme_font_size_override("font_size", 14)
+	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	desc_label.text = mode_descs[GameState.GameMode.SOLO]
+	vbox.add_child(desc_label)
+
+	# Buttons: Cancel (left) + Next (right).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
 	btn_row.alignment = BoxContainer.ALIGNMENT_END
@@ -810,7 +793,7 @@ func _show_mode_select() -> void:
 	_setup_hover_effect(cancel_btn)
 	cancel_btn.pressed.connect(
 		func():
-			outer.queue_free()
+			vbox.queue_free()
 			_slots_container.visible = true
 			_new_stand_button.visible = true,
 	)
@@ -824,7 +807,7 @@ func _show_mode_select() -> void:
 	_setup_hover_effect(confirm_btn)
 	confirm_btn.pressed.connect(
 		func():
-			outer.queue_free()
+			vbox.queue_free()
 			_show_name_entry(selected_mode),
 	)
 	btn_row.add_child(cancel_btn)
@@ -835,8 +818,8 @@ func _show_mode_select() -> void:
 	_update_mode_card_selection(mode_cards, mode_styles, GameState.GameMode.SOLO)
 
 	var idx := _new_stand_button.get_index()
-	_saves_list.add_child(outer)
-	_saves_list.move_child(outer, idx)
+	_saves_list.add_child(vbox)
+	_saves_list.move_child(vbox, idx)
 
 
 ## Update mode card borders: selected = bright yellow, others = dim.
@@ -854,25 +837,14 @@ func _update_mode_card_selection(cards: Dictionary, styles: Dictionary, selected
 
 
 ## Step 2: Show name entry after mode is confirmed.
-## Bordered panel matching the mode select style, with the selected mode
-## icon + name at top, name field, and Back/Create buttons.
+## Shows the selected mode icon + name at top, name field, and
+## Cancel + Create buttons.
 func _show_name_entry(selected_mode: int) -> void:
-	var outer := PanelContainer.new()
-	outer.name = "InlineNameEntry"
-	outer.custom_minimum_size = Vector2(SAVE_BOX_WIDTH, 0)
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0, 0, 0, 0.25)
-	panel_style.border_color = Color(1, 0.9, 0.3, 0.5)
-	panel_style.set_border_width_all(2)
-	panel_style.set_content_margin_all(14)
-	panel_style.set_corner_radius_all(6)
-	outer.add_theme_stylebox_override("panel", panel_style)
-
 	var vbox := VBoxContainer.new()
+	vbox.name = "InlineNameEntry"
 	vbox.add_theme_constant_override("separation", 14)
-	outer.add_child(vbox)
 
-	# Selected mode header: icon + name centered.
+	# Selected mode header: icon + name.
 	var mode_names: Dictionary = {
 		GameState.GameMode.SOLO: "Solo",
 		GameState.GameMode.COOP: "Co-op",
@@ -889,14 +861,14 @@ func _show_name_entry(selected_mode: int) -> void:
 		GameState.GameMode.VERSUS: true,
 	}
 	var header := HBoxContainer.new()
-	header.alignment = BoxContainer.ALIGNMENT_CENTER
+	header.alignment = BoxContainer.ALIGNMENT_BEGIN
 	header.add_theme_constant_override("separation", 8)
 	var header_icon := _build_silhouette_icon(mode_counts[selected_mode], mode_vs[selected_mode])
 	header_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header.add_child(header_icon)
 	var mode_title := Label.new()
 	mode_title.text = mode_names[selected_mode]
-	mode_title.add_theme_font_size_override("font_size", 22)
+	mode_title.add_theme_font_size_override("font_size", 24)
 	mode_title.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.95))
 	mode_title.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
 	mode_title.add_theme_constant_override("shadow_offset_x", 2)
@@ -944,30 +916,32 @@ func _show_name_entry(selected_mode: int) -> void:
 	field.add_theme_color_override("caret_color", Color(1, 0.9, 0.3, 1.0))
 	field.text_submitted.connect(
 		func(text):
-			_confirm_inline_name(outer, field, selected_mode),
+			_confirm_inline_name(vbox, field, selected_mode),
 	)
 	field.focus_exited.connect(
 		func():
 			if field.text.strip_edges() == "":
-				_cancel_inline_name(outer),
+				_cancel_inline_name(vbox),
 	)
 	vbox.add_child(field)
 
-	# Buttons: Back (left) + Create (right).
+	# Buttons: Cancel (left) + Create (right).
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
-	var back_btn := Button.new()
-	back_btn.text = "Back"
-	back_btn.add_theme_font_size_override("font_size", 18)
-	back_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
-	back_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-	_make_flat_button(back_btn)
-	_add_drop_shadow(back_btn)
-	_setup_hover_effect(back_btn)
-	back_btn.pressed.connect(
+	btn_row.alignment = BoxContainer.ALIGNMENT_END
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_make_flat_button(cancel_btn)
+	_add_drop_shadow(cancel_btn)
+	_setup_hover_effect(cancel_btn)
+	cancel_btn.pressed.connect(
 		func():
-			outer.queue_free()
-			_show_mode_select(),
+			vbox.queue_free()
+			_slots_container.visible = true
+			_new_stand_button.visible = true,
 	)
 	var create_btn := Button.new()
 	create_btn.name = "CreateBtn"
@@ -980,19 +954,19 @@ func _show_name_entry(selected_mode: int) -> void:
 	_setup_hover_effect(create_btn)
 	create_btn.pressed.connect(
 		func():
-			_confirm_inline_name(outer, field, selected_mode),
+			_confirm_inline_name(vbox, field, selected_mode),
 	)
-	btn_row.add_child(back_btn)
+	btn_row.add_child(cancel_btn)
 	btn_row.add_child(create_btn)
 	vbox.add_child(btn_row)
 
 	var idx := _new_stand_button.get_index()
-	_saves_list.add_child(outer)
-	_saves_list.move_child(outer, idx)
+	_saves_list.add_child(vbox)
+	_saves_list.move_child(vbox, idx)
 	field.grab_focus()
 
 
-func _confirm_inline_name(panel: PanelContainer, field: LineEdit, mode: int) -> void:
+func _confirm_inline_name(panel: VBoxContainer, field: LineEdit, mode: int) -> void:
 	var name := field.text.strip_edges()
 	if name == "":
 		_cancel_inline_name(panel)
@@ -1004,7 +978,7 @@ func _confirm_inline_name(panel: PanelContainer, field: LineEdit, mode: int) -> 
 	new_stand_requested.emit(name, mode)
 
 
-func _cancel_inline_name(panel: PanelContainer) -> void:
+func _cancel_inline_name(panel: VBoxContainer) -> void:
 	panel.queue_free()
 	_slots_container.visible = true
 	_new_stand_button.visible = true
