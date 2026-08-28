@@ -73,7 +73,6 @@ const HEAD_SIZE_STEPS: int = 9
 
 const WALL_COLOR_NAMES: Array[String] = ["Cream", "Salmon", "Sky", "Sage", "Lilac"]
 const ROOF_COLOR_NAMES: Array[String] = ["Brown", "Grey", "Green", "Blue", "Yellow"]
-const LABEL_WIDTH: float = 80.0
 const NAME_WIDTH: float = 100.0
 const ARROW_SIZE: float = 32.0
 const COLOR_PICKER_SIZE: float = 36.0
@@ -738,14 +737,17 @@ func _build_avatar_options_row() -> void:
 
 	# -- Head: [slider] --
 	var head_row := HBoxContainer.new()
-	head_row.add_theme_constant_override("separation", 8)
+	head_row.add_theme_constant_override("separation", 4)
 	vbox.add_child(head_row)
 	var head_lbl := Label.new()
 	head_lbl.text = "Head"
-	head_lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	head_lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	head_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	head_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head_row.add_child(head_lbl)
+	var head_opts := HBoxContainer.new()
+	head_opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head_row.add_child(head_opts)
 	_head_slider = HSlider.new()
 	_head_slider.custom_minimum_size = Vector2(100, 32)
 	_head_slider.min_value = 0
@@ -757,24 +759,31 @@ func _build_avatar_options_row() -> void:
 			_head_size_index = int(v)
 			_on_customization_changed(),
 	)
-	head_row.add_child(_head_slider)
+	head_opts.add_child(_head_slider)
 
 
-## Add a style row inside a VBox: Label | [<] | name | [>]
-## The name label has a fixed width so the <> distance is consistent
-## regardless of the name text.
+## Add a style row: [Label (left half)] | [<] name [>] (right half)
+## The label takes the same column as the Male button. The options
+## are in the right half, aligned under the Female button.
 ## Returns the name label so it can be updated.
 func _add_style_section(parent: Control, title: String, on_step: Callable) -> Label:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 4)
 	parent.add_child(row)
 
+	# Left half: label (same column as Male button).
 	var lbl := Label.new()
 	lbl.text = title
-	lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
+
+	# Right half: options container (same column as Female button).
+	var opts := HBoxContainer.new()
+	opts.add_theme_constant_override("separation", 4)
+	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(opts)
 
 	var prev := Button.new()
 	prev.text = "<"
@@ -788,7 +797,7 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 		func():
 			on_step.call(-1),
 	)
-	row.add_child(prev)
+	opts.add_child(prev)
 
 	var name_lbl := Label.new()
 	name_lbl.text = "—"
@@ -797,7 +806,7 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 	name_lbl.custom_minimum_size = Vector2(NAME_WIDTH, 0)
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	row.add_child(name_lbl)
+	opts.add_child(name_lbl)
 
 	var next := Button.new()
 	next.text = ">"
@@ -811,14 +820,14 @@ func _add_style_section(parent: Control, title: String, on_step: Callable) -> La
 		func():
 			on_step.call(1),
 	)
-	row.add_child(next)
+	opts.add_child(next)
 
 	return name_lbl
 
 
-## Add a color row inside a VBox: Label | [color picker]
-## The color picker is aligned with the <> area of style rows by
-## using the same label width plus the width of one arrow + spacing.
+## Add a color row: [Label (left half)] | [color picker] (right half)
+## The label takes the same column as Male. The color picker is in
+## the right half, aligned under the Female button area.
 func _add_color_section(
 	parent: Control,
 	title: String,
@@ -826,23 +835,24 @@ func _add_color_section(
 	on_color: Callable,
 ) -> void:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 4)
 	parent.add_child(row)
 
+	# Left half: label (same column as Male button).
 	var lbl := Label.new()
 	lbl.text = title
-	lbl.custom_minimum_size = Vector2(LABEL_WIDTH, 0)
 	lbl.add_theme_font_size_override("font_size", OPTION_FONT_SIZE)
 	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 
-	# Offset to align the color picker with the <> area:
-	# one arrow width + one separation.
-	var offset := Control.new()
-	offset.custom_minimum_size = Vector2(ARROW_SIZE + 8, 0)
-	row.add_child(offset)
+	# Right half: color picker (same column as Female button).
+	var opts := HBoxContainer.new()
+	opts.add_theme_constant_override("separation", 4)
+	opts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(opts)
 
-	_add_color_picker(row, initial_color, on_color)
+	_add_color_picker(opts, initial_color, on_color)
 
 
 ## Add a ColorPickerButton with styling. The popup is simplified to
