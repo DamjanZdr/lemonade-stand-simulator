@@ -262,8 +262,7 @@ func _apply_mode_layout() -> void:
 	stand1_header.text = GameState.stand_name
 	stand1_header.add_theme_font_size_override("font_size", 24)
 	stand1_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
-	# Stand 2 header: same styling.
-	var stand2_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand2Header
+	# Stand 2 header: same styling (already declared above).
 	stand2_header.add_theme_font_size_override("font_size", 24)
 	stand2_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 
