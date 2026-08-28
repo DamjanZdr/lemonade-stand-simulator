@@ -383,8 +383,6 @@ func _ready() -> void:
 	_back_button.pressed.connect(_on_leave_pressed)
 	_lobby_tab.pressed.connect(_on_lobby_tab)
 	_customize_tab.pressed.connect(_on_customize_tab)
-	# Default to Lobby tab.
-	_on_lobby_tab()
 	LobbyManager.roster_changed.connect(_refresh)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
 	NetworkManager.peer_disconnected.connect(
@@ -678,6 +676,8 @@ func _setup_customization() -> void:
 	_apply_customization_to_all()
 	_update_all_names()
 	_update_gender_buttons()
+	# Default to Lobby tab — must be called after AvatarOptionsRow is built.
+	_on_lobby_tab()
 
 
 ## Build a vertical stack of avatar customization rows, one option per row:
