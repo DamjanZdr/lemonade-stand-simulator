@@ -737,7 +737,7 @@ func _find_closer_interactable_along_ray(workstation: Workstation) -> Interactab
 	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
 	var space := _player.get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(from, to, _player.ray.collision_mask)
-	query.exclude = [_player.rid]
+	query.exclude = [_player.get_rid()]
 	var hits := space.intersect_ray(query)
 	if hits.is_empty():
 		return null
