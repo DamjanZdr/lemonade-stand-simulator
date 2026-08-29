@@ -102,6 +102,10 @@ var _world_menu: CanvasLayer = null
 ## True for the local late joiner once the host has started their spawn-in.
 var _late_join_camera_pending: bool = false
 
+## True after the host has notified clients to start their game transition.
+## Prevents duplicate notify_clients_start() calls.
+var _host_ready_notified: bool = false
+
 ## Camera tween time for stand switching and game-start transition.
 const CAMERA_TWEEN_TIME: float = 1.0
 
@@ -1465,6 +1469,24 @@ func _on_local_player_ready(p: Player) -> void:
 		_transition_overlay.add_child(fade_rect)
 		_transition_overlay.visible = true
 		call_deferred("_snap_to_player_camera", fade_rect, null, null)
+	# Host-first readiness: after the host's local player is ready and
+	# world state has been pushed (both deferred), notify clients that
+	# they can safely start their game transition. This prevents joiners
+	# from loading into an incomplete world with a broken camera.
+	if multiplayer.is_server() and not _host_ready_notified and not _late_join_camera_pending:
+		_host_ready_notified = true
+		call_deferred("_notify_clients_ready")
+
+
+## Host-first readiness: called after the host's local player is ready
+## and world state has been pushed. Tells all clients to start their
+## game transition so they don't load into an incomplete world.
+func _notify_clients_ready() -> void:
+	if not multiplayer.is_server():
+		return
+	# Give deferred world-state pushes time to arrive before clients start.
+	await get_tree().process_frame
+	LobbyManager.notify_clients_start()
 
 
 ## Called when the server (host) disconnects. Shows a popup so the

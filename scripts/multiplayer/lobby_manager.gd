@@ -293,11 +293,24 @@ func start_game() -> void:
 	if not all_ready():
 		return
 	mark_game_started()
-	_do_start_game.rpc()
+	# Host starts its own transition immediately. Clients are notified
+	# via notify_clients_start() after the host has finished loading.
+	game_starting.emit()
+
+
+## Called by the host after its local player is ready and world state
+## has been pushed. Tells all clients to start their game transition.
+func notify_clients_start() -> void:
+	if not multiplayer.is_server():
+		return
+	_notify_clients_start.rpc()
 
 
 @rpc("authority", "call_local", "reliable")
-func _do_start_game() -> void:
+func _notify_clients_start() -> void:
+	# On the host this is a no-op — it already started via start_game().
+	if multiplayer.is_server():
+		return
 	# Don't change scenes — main.tscn is already loaded (the lobby runs
 	# inside it). Just emit the signal so main.gd can transition from
 	# the lobby phase to the game phase (tween camera to first-person,
