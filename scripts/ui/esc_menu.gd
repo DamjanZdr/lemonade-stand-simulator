@@ -120,11 +120,11 @@ func _build_ui() -> void:
 	_back_button = _make_menu_button("Resume")
 	_menu_box.add_child(_back_button)
 
-	_settings_button = _make_menu_button("Settings")
-	_menu_box.add_child(_settings_button)
-
 	_save_button = _make_menu_button("Save Game")
 	_menu_box.add_child(_save_button)
+
+	_settings_button = _make_menu_button("Settings")
+	_menu_box.add_child(_settings_button)
 
 	_back_to_menu_button = _make_menu_button("Main Menu")
 	_menu_box.add_child(_back_to_menu_button)
@@ -181,8 +181,8 @@ func _build_ui() -> void:
 
 	_menu_buttons = [
 		_back_button,
-		_settings_button,
 		_save_button,
+		_settings_button,
 		_back_to_menu_button,
 		_quit_button,
 	]
