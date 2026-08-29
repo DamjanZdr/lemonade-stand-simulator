@@ -72,8 +72,8 @@ func _update_anim() -> void:
 	var target_speed: float = 1.0
 
 	if not on_floor:
-		# Jumping/falling — play idle for now
-		target_anim = "Idle"
+		# Jumping/falling — play Jump animation
+		target_anim = "Jump"
 		target_speed = 1.0
 	elif _player.is_crouching:
 		if moving:
@@ -98,6 +98,24 @@ func _update_anim() -> void:
 	# Apply animation
 	var crouch_freeze := _player.is_crouching and not moving and on_floor
 	if _current_anim != target_anim or _crouch_frozen != crouch_freeze:
+		print(
+			"[ANIM] ",
+			_player.name,
+			" cur=",
+			_current_anim,
+			" target=",
+			target_anim,
+			" crouch_freeze=",
+			crouch_freeze,
+			" frozen=",
+			_crouch_frozen,
+			" crouching=",
+			_player.is_crouching,
+			" moving=",
+			moving,
+			" on_floor=",
+			on_floor,
+		)
 		if crouch_freeze:
 			# Standing crouched: freeze on first frame of Crouch (it's a
 			# crouch-walk cycle, so frame 0 is already the crouched pose).
