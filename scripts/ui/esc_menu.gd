@@ -23,6 +23,7 @@ var _dim_layer: ColorRect
 var _menu_box: VBoxContainer
 var _back_button: Button
 var _settings_button: Button
+var _save_button: Button
 var _invite_button: Button
 var _back_to_menu_button: Button
 var _quit_button: Button
@@ -122,6 +123,9 @@ func _build_ui() -> void:
 	_settings_button = _make_menu_button("Settings")
 	_menu_box.add_child(_settings_button)
 
+	_save_button = _make_menu_button("Save Game")
+	_menu_box.add_child(_save_button)
+
 	_back_to_menu_button = _make_menu_button("Main Menu")
 	_menu_box.add_child(_back_to_menu_button)
 
@@ -175,7 +179,13 @@ func _build_ui() -> void:
 	_invite_button.text = "Invite"
 	_room_row.add_child(_invite_button)
 
-	_menu_buttons = [_back_button, _settings_button, _back_to_menu_button, _quit_button]
+	_menu_buttons = [
+		_back_button,
+		_settings_button,
+		_save_button,
+		_back_to_menu_button,
+		_quit_button,
+	]
 	for btn in _menu_buttons:
 		_make_flat_button(btn)
 		_add_drop_shadow(btn)
@@ -193,6 +203,10 @@ func _build_ui() -> void:
 	_settings_button.pressed.connect(
 		func():
 			_on_button_click(_settings_button, _on_settings_pressed),
+	)
+	_save_button.pressed.connect(
+		func():
+			_on_button_click(_save_button, _on_save_game),
 	)
 	_invite_button.pressed.connect(
 		func():
@@ -610,6 +624,41 @@ func _on_settings_pressed() -> void:
 	_settings_panel.visible = true
 	_menu_box.visible = false
 	settings_pressed.emit()
+
+
+func _on_save_game() -> void:
+	# Only the host can save (clients don't have full game state).
+	if WorldSync.is_host():
+		# Flush the active stand's research before saving.
+		UpgradeManager.flush_active_stand()
+		SaveManager.save_game(true)
+		GameLog.log("[ESCMenu] Game saved to slot: %s" % SaveManager.current_slot)
+		# Show a brief confirmation.
+		_show_save_confirmation()
+	else:
+		GameLog.log("[ESCMenu] Save requested by non-host — ignored")
+
+
+## Show a brief "Game Saved" confirmation text that fades out.
+func _show_save_confirmation() -> void:
+	var label := Label.new()
+	label.text = "Game Saved!"
+	label.add_theme_font_size_override("font_size", 28)
+	label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
+	label.add_theme_color_override("shadow_color", Color(0, 0, 0, 0.6))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 2)
+	label.add_theme_constant_override("shadow_outline_size", 4)
+	label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	label.position.y = 100
+	label.z_index = 100
+	add_child(label)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(label, "modulate:a", 1.0, 0.15)
+	tween.tween_interval(1.5)
+	tween.tween_property(label, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(label.queue_free)
 
 
 func _on_settings_back() -> void:
