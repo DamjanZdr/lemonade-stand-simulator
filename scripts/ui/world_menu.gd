@@ -891,7 +891,9 @@ func _show_mode_select() -> void:
 	spacer.custom_minimum_size = Vector2(0, 20)
 	vbox.add_child(spacer)
 
-	var selected_mode: int = GameState.GameMode.SOLO
+	# Use an Array to hold the selected mode so lambdas can modify it
+	# (GDScript lambdas capture local ints by value, not reference).
+	var selected_mode: Array[int] = [GameState.GameMode.SOLO]
 	var mode_cards: Dictionary = { } # mode -> PanelContainer
 	var mode_styles: Dictionary = { } # mode -> StyleBoxFlat (for border tweening)
 	var mode_descs: Dictionary = {
@@ -973,7 +975,7 @@ func _show_mode_select() -> void:
 							.set_ease(Tween.EASE_OUT) \
 							.set_trans(Tween.TRANS_BACK)
 					# Update selection after the pop starts.
-					selected_mode = mode_val
+					selected_mode[0] = mode_val
 					desc_label.text = mode_descs[mode_val]
 					_update_mode_card_selection(mode_cards, mode_styles, mode_val),
 		)
@@ -987,7 +989,7 @@ func _show_mode_select() -> void:
 				var tw := create_tween()
 				card.set_meta("_ht", tw)
 				tw.set_parallel(true)
-				if mode_val != selected_mode:
+				if mode_val != selected_mode[0]:
 					tw.tween_property(card_style, "border_color", Color(1, 1, 1, 0.6), 0.08)
 				tw.tween_property(card, "scale", Vector2.ONE * HOVER_POP, 0.06) \
 						.set_ease(Tween.EASE_OUT),
@@ -1000,7 +1002,7 @@ func _show_mode_select() -> void:
 				var tw := create_tween()
 				card.set_meta("_ht", tw)
 				tw.set_parallel(true)
-				if mode_val != selected_mode:
+				if mode_val != selected_mode[0]:
 					tw.tween_property(card_style, "border_color", Color(1, 1, 1, 0.25), 0.12)
 				tw.tween_property(card, "scale", Vector2.ONE, 0.08) \
 						.set_ease(Tween.EASE_OUT),
@@ -1057,7 +1059,7 @@ func _show_mode_select() -> void:
 	field.add_theme_color_override("caret_color", Color(1, 1, 1, 1.0))
 	field.text_submitted.connect(
 		func(text):
-			_confirm_inline_name(vbox, field, selected_mode),
+			_confirm_inline_name(vbox, field, selected_mode[0]),
 	)
 	cards_wrap.add_child(field)
 
@@ -1100,7 +1102,7 @@ func _show_mode_select() -> void:
 	_setup_hover_effect(create_btn)
 	create_btn.pressed.connect(
 		func():
-			_confirm_inline_name(vbox, field, selected_mode),
+			_confirm_inline_name(vbox, field, selected_mode[0]),
 	)
 	btn_row.add_child(back_btn)
 	btn_row.add_child(btn_spacer)
