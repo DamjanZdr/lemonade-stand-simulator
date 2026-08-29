@@ -397,8 +397,8 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	var vp := SubViewport.new()
 	vp.size = Vector2(sz, sz)
 	vp.transparent_bg = true
-	vp.render_target_clear_mode = SubViewport.CLEAR_MODE_ONCE
-	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	vp.render_target_clear_mode = SubViewport.CLEAR_MODE_NEVER
+	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	var lbl := Label.new()
 	lbl.text = emoji
 	lbl.add_theme_font_size_override("font_size", font_size)
@@ -407,6 +407,8 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	lbl.size = Vector2(sz, sz)
 	vp.add_child(lbl)
 	add_child(vp)
+	# Wait for two frames so the SubViewport has time to render.
+	await get_tree().process_frame
 	await get_tree().process_frame
 	var img := vp.get_texture().get_image()
 	vp.queue_free()
