@@ -182,8 +182,11 @@ func _ready() -> void:
 		# when there are more saves than fit. SHRINK_BEGIN prevents the
 		# VBoxContainer from expanding this beyond its minimum size.
 		save_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		save_scroll.custom_minimum_size = Vector2(0, 280)
+		save_scroll.custom_minimum_size = Vector2(0, 340)
 		save_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		# Add right padding so the scrollbar doesn't overlap the Yes/No
+		# delete confirmation buttons on each save row.
+		_slots_container.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		# Defer styling — the scrollbar child may not exist yet at _ready.
 		call_deferred("_style_scroll_container", save_scroll)
 	_master_slider.value_changed.connect(
@@ -1241,7 +1244,7 @@ func _refresh_saves() -> void:
 
 
 ## Build a single save row: [Button(colored text) | Delete].
-const SAVE_BOX_WIDTH: float = 360.0
+const SAVE_BOX_WIDTH: float = 340.0
 
 
 func _build_save_row(
