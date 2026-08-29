@@ -361,7 +361,10 @@ func _on_menu_play() -> void:
 func _on_menu_new_stand(stand_name: String, game_mode: int) -> void:
 	SaveManager.start_new_game(stand_name, game_mode)
 	LobbyManager.game_mode = game_mode
-	_start_stand_transition(stand_name, stand_name)
+	# Go to the lobby (same flow as Play with an existing save) so the
+	# player can invite friends, pick teams, etc. before starting.
+	NetworkManager.host_game()
+	_world_menu.hide_menu()
 
 
 ## Load an existing stand from the saves panel.

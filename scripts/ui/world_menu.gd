@@ -61,6 +61,7 @@ var _music_time_total: Label = null
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
 @onready var _saves_list: VBoxContainer = $SavesPanel/SavesList
+@onready var _save_scroll: ScrollContainer = $SavesPanel/SavesList/SaveScroll
 @onready var _slots_container: VBoxContainer = $SavesPanel/SavesList/SaveScroll/SlotsContainer
 @onready var _new_stand_button: Button = $SavesPanel/SavesList/NewStandButton
 @onready var _saves_back: Button = $SavesPanel/SavesList/BackButton
@@ -176,19 +177,15 @@ func _ready() -> void:
 	_style_slider(_sfx_slider)
 	_style_slider(_music_slider)
 	# Style the saves list scroll container to match the game's palette.
-	var save_scroll := _saves_list.get_node_or_null("SaveScroll") as ScrollContainer
-	if save_scroll:
-		# Clamp the scroll container height so the scrollbar appears
-		# when there are more saves than fit. SHRINK_BEGIN prevents the
-		# VBoxContainer from expanding this beyond its minimum size.
-		save_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		save_scroll.custom_minimum_size = Vector2(0, 340)
-		save_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-		# Add right padding so the scrollbar doesn't overlap the Yes/No
-		# delete confirmation buttons on each save row.
-		_slots_container.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		# Defer styling — the scrollbar child may not exist yet at _ready.
-		call_deferred("_style_scroll_container", save_scroll)
+	# Use the cached _save_scroll reference. SHRINK_BEGIN prevents the
+	# VBoxContainer from expanding it beyond its minimum size.
+	_save_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_save_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	# Add right padding so the scrollbar doesn't overlap the Yes/No
+	# delete confirmation buttons on each save row.
+	_slots_container.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	# Defer styling — the scrollbar child may not exist yet at _ready.
+	call_deferred("_style_scroll_container", _save_scroll)
 	_master_slider.value_changed.connect(
 		func(v: float):
 			AudioServer.set_bus_volume_db(0, linear_to_db(v))
@@ -811,9 +808,7 @@ func _on_saves_pressed() -> void:
 	$MenuBox.visible = false
 	# Re-style the scrollbar after saves are populated — the scrollbar
 	# child may not exist until the ScrollContainer has content.
-	var save_scroll := _saves_list.get_node_or_null("SaveScroll") as ScrollContainer
-	if save_scroll:
-		call_deferred("_style_scroll_container", save_scroll)
+	call_deferred("_style_scroll_container", _save_scroll)
 
 
 func _on_saves_back() -> void:
@@ -825,9 +820,7 @@ func _on_new_stand_pressed() -> void:
 	# Hide the save list, new stand button, and back button — creation
 	# is a separate overlay view.
 	_slots_container.visible = false
-	var save_scroll := _saves_list.get_node_or_null("SaveScroll")
-	if save_scroll:
-		save_scroll.visible = false
+	_save_scroll.visible = false
 	_new_stand_button.visible = false
 	_saves_back.visible = false
 	# Also hide the saves title + spacers.
@@ -846,9 +839,7 @@ func _on_new_stand_pressed() -> void:
 ## Restore the saves list visibility after cancelling/confirming creation.
 func _restore_saves_list() -> void:
 	_slots_container.visible = true
-	var save_scroll := _saves_list.get_node_or_null("SaveScroll")
-	if save_scroll:
-		save_scroll.visible = true
+	_save_scroll.visible = true
 	_new_stand_button.visible = true
 	_saves_back.visible = true
 	var saves_title := _saves_list.get_node_or_null("SavesTitle")
@@ -1241,6 +1232,30 @@ func _refresh_saves() -> void:
 		)
 		_slots_container.add_child(row)
 		save_idx += 1
+	# Dynamically size the scroll container so the New Stand button sits
+	# right below the stands when there are few, and only scrolls when
+	# there are enough to exceed the max height.
+	_resize_save_scroll()
+
+
+## Resize the SaveScroll to fit its content, up to a maximum height.
+## This keeps the New Stand button close to the stands when there are
+# few/no saves, instead of leaving a large empty gap.
+const SAVE_SCROLL_MAX_HEIGHT: float = 340.0
+const SAVE_ROW_ESTIMATE: float = 90.0 # Approximate height per row + separation
+
+
+func _resize_save_scroll() -> void:
+	var count := _saves_data.size()
+	if count == 0:
+		# No stands: shrink the scroll area to a minimal height so the
+		# New Stand button is right near the top.
+		_save_scroll.custom_minimum_size = Vector2(0, 10)
+		return
+	# Estimate the content height and cap at the max.
+	var estimated_height: float = count * SAVE_ROW_ESTIMATE
+	var scroll_height: float = minf(estimated_height, SAVE_SCROLL_MAX_HEIGHT)
+	_save_scroll.custom_minimum_size = Vector2(0, scroll_height)
 
 
 ## Build a single save row: [Button(colored text) | Delete].
