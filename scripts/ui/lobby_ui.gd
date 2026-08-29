@@ -267,6 +267,11 @@ func _apply_mode_layout() -> void:
 	# Stand 2 header: same styling (already declared above).
 	stand2_header.add_theme_font_size_override("font_size", 26)
 	stand2_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
+	# Set stand 2 header text — in versus, it's the rival's stand.
+	if is_versus:
+		stand2_header.text = "Rival Stand"
+	else:
+		stand2_header.text = ""
 
 
 ## Build a silhouette icon for the given game mode.

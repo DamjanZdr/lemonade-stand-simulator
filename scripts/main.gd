@@ -218,6 +218,18 @@ func _ready() -> void:
 
 ## Sets up the lobby phase: positions the lobby camera, wires the lobby UI
 ## to the player model, and hides the HUD.
+## Set stand 2's sign name based on the game mode.
+## In versus mode, it's the rival's stand. In solo/coop, it mirrors
+## stand 1 (shared stand).
+func _set_stand2_name() -> void:
+	if stand_unit2 == null:
+		return
+	if LobbyManager.game_mode == GameState.GameMode.VERSUS:
+		stand_unit2.set_stand_name("Rival Stand")
+	else:
+		stand_unit2.set_stand_name(GameState.stand_name)
+
+
 func _setup_lobby() -> void:
 	_in_lobby = true
 	# LobbyCamera is the active camera during the lobby
@@ -248,6 +260,10 @@ func _setup_lobby() -> void:
 			lobby_ui.return_to_menu_requested.connect(_on_return_to_menu)
 	# Lobby UI is visible during the lobby phase.
 	lobby_ui.visible = true
+	# Re-apply the mode layout so the lobby UI reflects the current
+	# game mode (it was read in _ready() before the mode was set).
+	if lobby_ui.has_method("_apply_mode_layout"):
+		lobby_ui._apply_mode_layout()
 
 ## --- In-world main menu ---
 
@@ -525,7 +541,7 @@ func _finish_transition() -> void:
 	if stand_unit:
 		stand_unit.set_stand_name(GameState.stand_name)
 	if stand_unit2:
-		stand_unit2.set_stand_name(GameState.stand_name)
+		_set_stand2_name()
 		# Check MenuBox visibility
 		var menu_box := _world_menu.get_node_or_null("MenuBox")
 		if menu_box:
@@ -649,7 +665,7 @@ func _transition_to_lobby() -> void:
 	if stand_unit:
 		stand_unit.set_stand_name(GameState.stand_name)
 	if stand_unit2:
-		stand_unit2.set_stand_name(GameState.stand_name)
+		_set_stand2_name()
 	# Unfreeze game systems for the lobby phase (still no day cycle).
 	_set_systems_paused(false)
 	# Set up networking now that we're entering the lobby.
@@ -1057,7 +1073,7 @@ func _setup_world_systems() -> void:
 	if stand_unit:
 		stand_unit.set_stand_name(GameState.stand_name)
 	if stand_unit2:
-		stand_unit2.set_stand_name(GameState.stand_name)
+		_set_stand2_name()
 	# Queue markers / spawner wiring.
 	if stand_unit:
 		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
