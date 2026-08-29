@@ -89,7 +89,7 @@ size = Vector3(124.999756, 85.6239, 1)
 size = Vector3(2.7165565, 1.725708, 1.3293457)
 
 [sub_resource type="BoxOccluder3D" id="BoxOccluder3D_g4v7s"]
-size = Vector3(18.82469, 15.440681, 5.7122664)
+size = Vector3(18.811771, 15.440681, 5.7122664)
 
 [node name="World" type="Node3D" unique_id=1769167416]
 script = ExtResource("70_neigh")
@@ -233,20 +233,35 @@ shape = SubResource("BoxShape3D_5fxch")
 
 [node name="Props" type="Node3D" parent="." unique_id=196630855]
 
-[node name="Desk2_0" parent="Props" unique_id=215635169 instance=ExtResource("14_mxkvs")]
+[node name="Stand1Desk" parent="Props" unique_id=215635169 instance=ExtResource("14_mxkvs")]
 transform = Transform3D(-3.628045e-08, 0, 0.83, 0, 0.83, 0, -0.83, 0, -3.628045e-08, -1.7846328, 0.041442253, 10.290646)
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Props/Desk2_0" unique_id=1797473411]
+[node name="StaticBody3D" type="StaticBody3D" parent="Props/Stand1Desk" unique_id=1797473411]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Desk2_0/StaticBody3D" unique_id=210846437]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Stand1Desk/StaticBody3D" unique_id=210846437]
 transform = Transform3D(1, 0, 1.0658141e-14, 0, 1, 0, -1.0658141e-14, 0, 1, -0.0076351166, 0.362854, 0.00012207031)
 shape = SubResource("BoxShape3D_g4v7s")
 
-[node name="Computer" parent="Props" unique_id=1111887378 instance=ExtResource("15_m114p")]
-transform = Transform3D(-1.7703115e-08, 0, 0.40500003, 0, 0.40500003, 0, -0.40500003, 0, -1.7703115e-08, -1.797764, 1.1196927, 10.66297)
+[node name="Computer" parent="Props/Stand1Desk" unique_id=1111887378 instance=ExtResource("15_m114p")]
+transform = Transform3D(0.48795187, 0, 5.3290705e-15, 0, 0.48795187, 0, -5.3290705e-15, 0, 0.48795187, -0.44858265, 1.299097, -0.015820742)
 
-[node name="Blackboard" parent="Props" unique_id=2117954484 instance=ExtResource("45_kx0xk")]
+[node name="Stand2Desk" parent="Props" unique_id=652328111 instance=ExtResource("14_mxkvs")]
+transform = Transform3D(-3.628045e-08, 0, -0.83, 0, 0.83, 0, 0.83, 0, -3.628045e-08, -6.4838943, 0.041442253, -34.0705)
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Props/Stand2Desk" unique_id=660584642]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Stand2Desk/StaticBody3D" unique_id=1559563773]
+transform = Transform3D(1, 0, 1.0658141e-14, 0, 1, 0, -1.0658141e-14, 0, 1, -0.0076351166, 0.362854, 0.00012207031)
+shape = SubResource("BoxShape3D_g4v7s")
+
+[node name="Computer" parent="Props/Stand2Desk" unique_id=1997786383 instance=ExtResource("15_m114p")]
+transform = Transform3D(0.48795187, 0, 5.3290705e-15, 0, 0.48795187, 0, -5.3290705e-15, 0, 0.48795187, -0.44858265, 1.299097, -0.015820742)
+
+[node name="Stand1Blackboard" parent="Props" unique_id=2117954484 instance=ExtResource("45_kx0xk")]
 transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3, 1.8940175, 16.6)
+
+[node name="Stand2Blackboard" parent="Props" unique_id=649107669 instance=ExtResource("45_kx0xk")]
+transform = Transform3D(1, 0, -1.7484555e-07, 0, 1, 0, 1.7484555e-07, 0, 1, -8.857837, 1.8940175, -40.498135)
 
 [node name="Trucks" type="Node3D" parent="." unique_id=240288447]
 
@@ -552,7 +567,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.808262, 2.313859, -41.2174
 occluder = SubResource("BoxOccluder3D_g4v7s")
 
 [node name="OccluderInstance3D5" type="OccluderInstance3D" parent="Occlusions" unique_id=2144192711]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.191738, 2.313859, -41.21746)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.4083614, 4.2864704, -48.099907)
 occluder = SubResource("BoxOccluder3D_g4v7s")
 
 [node name="OccluderInstance3D6" type="OccluderInstance3D" parent="Occlusions" unique_id=1469577070]
