@@ -116,6 +116,10 @@ func _setup_replication() -> void:
 ## refreshes. Only the host calls this; only clients apply it (the host
 ## already has the correct values locally).
 func _push_state() -> void:
+	# Guard: if no multiplayer peer is assigned (e.g. loading a save
+	# from the main menu before hosting), skip the RPC entirely.
+	if not multiplayer.has_multiplayer_peer():
+		return
 	if not is_multiplayer_authority():
 		return
 	if multiplayer.get_peers().is_empty():
