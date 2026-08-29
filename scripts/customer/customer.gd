@@ -24,13 +24,11 @@ var state: CustomerState = CustomerState.WALKING
 ## Stun timer: when > 0, the customer stops moving (hit by trash).
 var _stun_timer: float = 0.0
 
-## Recovery timer: when > 0, the customer is recovering from ragdoll.
+## Recovery timer: when > 0, the customer is recovering from Fall.
 var _recover_timer: float = 0.0
 const _RECOVER_DURATION: float = 3.0
 
-## Ragdoll fall rotation (randomized on stun).
-var _ragdoll_rot: Vector3 = Vector3.ZERO
-## Upright rotation of NPCBody (saved before ragdoll).
+## Upright rotation of NPCBody (saved before Fall animation).
 var _npc_base_rot: Vector3 = Vector3.ZERO
 ## Remaining order: fruit_type -> cups still needed. Set by the spawner
 ## before the customer engages; mutated as the price-check removes items
@@ -177,31 +175,27 @@ func _physics_process(delta: float) -> void:
 			basis = _facing_target
 			_is_rotating_to_face = false
 
-	# Tick stun timer — stunned customers can't walk (ragdoll state).
+	# Tick stun timer — stunned customers can't walk (Fall animation).
 	if _stun_timer > 0.0:
 		_stun_timer = maxf(_stun_timer - delta, 0.0)
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		# When stun ends, start recovery (tween back to upright + idle).
+		# When stun ends, start recovery (idle for 3s before walking).
 		if _stun_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
 			_recover_timer = _RECOVER_DURATION
+			_npc.rotation = _npc_base_rot
 			_npc.play_anim("Idle")
 		return
 
-	# Recovery phase: tween NPCBody back to upright over _RECOVER_DURATION.
+	# Recovery phase: play idle, then resume walking after _RECOVER_DURATION.
 	if _recover_timer > 0.0:
 		_recover_timer = maxf(_recover_timer - delta, 0.0)
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		if _npc != null and is_instance_valid(_npc):
-			var t := 1.0 - (_recover_timer / _RECOVER_DURATION)
-			var eased := t * t * (3.0 - 2.0 * t) # smoothstep
-			_npc.rotation = _ragdoll_rot.lerp(_npc_base_rot, eased)
 		# When recovery ends, resume walking.
-		if _recover_timer <= 0.0:
-			_npc.rotation = _npc_base_rot
+		if _recover_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
 			_npc.play_anim("Walk")
 		return
 
@@ -272,9 +266,9 @@ func _apply_motion(delta: float) -> void:
 
 
 ## Stun the customer for duration seconds (host-authoritative).
-## Called when hit by thrown trash. The NPC falls over (fake ragdoll),
-## stays down for the stun duration, then smoothly recovers to upright
-## over _RECOVER_DURATION seconds before resuming their walk.
+## Called when hit by thrown trash. The NPC plays the Fall animation,
+## stays down for the stun duration, then plays idle for _RECOVER_DURATION
+## seconds before resuming their walk.
 func stun(duration: float) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
@@ -282,30 +276,21 @@ func stun(duration: float) -> void:
 	_recover_timer = 0.0
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
-		var fall_dir := 1.0 if randf() > 0.5 else -1.0
-		_ragdoll_rot = Vector3(
-			fall_dir * deg_to_rad(85.0 + randf() * 10.0),
-			deg_to_rad(randf_range(-20.0, 20.0)),
-			deg_to_rad(randf_range(-15.0, 15.0)),
-		)
-		_npc.rotation = _ragdoll_rot
-		_npc.pause_anim()
-	# Sync to clients so they see the ragdoll effect.
-	_sync_stun.rpc(duration, _ragdoll_rot)
+		_npc.play_anim("Fall")
+	# Sync to clients so they see the fall.
+	_sync_stun.rpc(duration)
 
 
-## Client-side: apply the ragdoll fall from host sync.
+## Client-side: apply the fall from host sync.
 @rpc("authority", "call_local", "reliable")
-func _sync_stun(duration: float, ragdoll_rot: Vector3) -> void:
+func _sync_stun(duration: float) -> void:
 	if multiplayer.is_server():
 		return # Host already applied it
 	_stun_timer = duration
 	_recover_timer = 0.0
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
-		_ragdoll_rot = ragdoll_rot
-		_npc.rotation = ragdoll_rot
-		_npc.pause_anim()
+		_npc.play_anim("Fall")
 
 
 func _walk_toward(target: Vector3, delta: float) -> void:

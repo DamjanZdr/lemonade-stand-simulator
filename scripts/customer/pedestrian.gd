@@ -41,14 +41,12 @@ var _state: PedestrianState = PedestrianState.WALKING
 ## Stun timer: when > 0, the pedestrian stops walking (hit by trash).
 var _stun_timer: float = 0.0
 
-## Recovery timer: when > 0, the pedestrian is recovering from ragdoll
-## (tweening back to upright). During this time they play idle.
+## Recovery timer: when > 0, the pedestrian is recovering from Fall
+## (playing idle before resuming walk).
 var _recover_timer: float = 0.0
 const _RECOVER_DURATION: float = 3.0
 
-## Ragdoll fall rotation (randomized on stun).
-var _ragdoll_rot: Vector3 = Vector3.ZERO
-## Upright rotation of NPCBody (saved before ragdoll).
+## Upright rotation of NPCBody (saved before Fall animation).
 var _npc_base_rot: Vector3 = Vector3.ZERO
 
 var _offered_by_player: Node3D = null
@@ -191,32 +189,27 @@ func _physics_process(delta: float) -> void:
 			basis = _facing_target
 			_is_rotating_to_face = false
 
-	# Tick stun timer — stunned pedestrians can't walk (ragdoll state).
+	# Tick stun timer — stunned pedestrians can't walk (ragdoll/Fall animation).
 	if _stun_timer > 0.0:
 		_stun_timer = maxf(_stun_timer - delta, 0.0)
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		# When stun ends, start recovery (tween back to upright + idle).
+		# When stun ends, start recovery (idle for 3s before walking).
 		if _stun_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
 			_recover_timer = _RECOVER_DURATION
+			_npc.rotation = _npc_base_rot
 			_npc.play_anim("Idle")
 		return
 
-	# Recovery phase: tween NPCBody back to upright over _RECOVER_DURATION.
+	# Recovery phase: play idle, then resume walking after _RECOVER_DURATION.
 	if _recover_timer > 0.0:
 		_recover_timer = maxf(_recover_timer - delta, 0.0)
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		if _npc != null and is_instance_valid(_npc):
-			var t := 1.0 - (_recover_timer / _RECOVER_DURATION)
-			# Ease the rotation back to upright.
-			var eased := t * t * (3.0 - 2.0 * t) # smoothstep
-			_npc.rotation = _ragdoll_rot.lerp(_npc_base_rot, eased)
 		# When recovery ends, resume walking.
-		if _recover_timer <= 0.0:
-			_npc.rotation = _npc_base_rot
+		if _recover_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
 			_npc.play_anim("Walk")
 		return
 
@@ -467,34 +460,24 @@ func stun(duration: float) -> void:
 		return
 	_stun_timer = maxf(_stun_timer, duration)
 	_recover_timer = 0.0
-	# Save the NPCBody's upright rotation and apply a random fall pose.
+	# Play the Fall animation (ragdoll-like fall).
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
-		# Fall forward or backward, with slight sideways tilt.
-		var fall_dir := 1.0 if randf() > 0.5 else -1.0
-		_ragdoll_rot = Vector3(
-			fall_dir * deg_to_rad(85.0 + randf() * 10.0),
-			deg_to_rad(randf_range(-20.0, 20.0)),
-			deg_to_rad(randf_range(-15.0, 15.0)),
-		)
-		_npc.rotation = _ragdoll_rot
-		_npc.pause_anim()
-	# Sync to clients so they see the ragdoll effect.
-	_sync_stun.rpc(duration, _ragdoll_rot)
+		_npc.play_anim("Fall")
+	# Sync to clients so they see the fall.
+	_sync_stun.rpc(duration)
 
 
-## Client-side: apply the ragdoll fall from host sync.
+## Client-side: apply the fall from host sync.
 @rpc("authority", "call_local", "reliable")
-func _sync_stun(duration: float, ragdoll_rot: Vector3) -> void:
+func _sync_stun(duration: float) -> void:
 	if multiplayer.is_server():
 		return # Host already applied it
 	_stun_timer = duration
 	_recover_timer = 0.0
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
-		_ragdoll_rot = ragdoll_rot
-		_npc.rotation = ragdoll_rot
-		_npc.pause_anim()
+		_npc.play_anim("Fall")
 
 
 ## Client → host: request to offer free lemonade to this pedestrian.

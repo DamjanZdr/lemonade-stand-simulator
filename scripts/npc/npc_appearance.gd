@@ -74,12 +74,14 @@ const CLOTHING_SURFACES: Array[String] = [
 
 @onready var _man: Node3D = $man
 @onready var _woman: Node3D = $woman
+@onready var _newman: Node3D = $newman
 @onready var _man_mesh: MeshInstance3D = $man/Armature/Skeleton3D/MaleMesh
 @onready var _woman_mesh: MeshInstance3D = $woman/Armature/Skeleton3D/FemaleMesh
 @onready var _man_hairs: Node3D = $man/Armature/Skeleton3D/Head/Hairstyles
 @onready var _woman_hairs: Node3D = $woman/Armature/Skeleton3D/Head/Hairstyles
 @onready var _man_anim: AnimationPlayer = $man/AnimationPlayer
 @onready var _woman_anim: AnimationPlayer = $woman/AnimationPlayer
+@onready var _newman_anim: AnimationPlayer = $newman/AnimationPlayer
 @onready var _man_left_eye: MeshInstance3D = $man/Armature/Skeleton3D/Head/LeftEyeMale
 @onready var _man_right_eye: MeshInstance3D = $man/Armature/Skeleton3D/Head/RightEyeMale
 @onready var _man_head: Node3D = $man/Armature/Skeleton3D/Head
@@ -94,7 +96,10 @@ const CLOTHING_SURFACES: Array[String] = [
 
 func _ready() -> void:
 	_disable_cast_shadows()
-	_load_extra_animations()
+	_copy_extra_animations()
+	# Hide the newman node — it's only used as an animation source.
+	if _newman:
+		_newman.visible = false
 
 
 func _disable_cast_shadows() -> void:
@@ -105,46 +110,15 @@ func _disable_cast_shadows() -> void:
 			gi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-## Load extra animations (Crouch, Fall, etc.) from newman.glb by parsing
-## the GLB directly with GLTFDocument (bypasses Godot's buggy import that
-## drops animations). Extracted animations are merged into both man and
-## woman AnimationPlayers. Done once per session.
-const _EXTRA_ANIM_PATH := "res://assets/models/characters/newman.glb"
-static var _extra_anim_loaded: bool = false
-static var _extra_anim_lock: Mutex = null
-
-
-func _load_extra_animations() -> void:
-	if _extra_anim_loaded:
+## Copy animations (Crouch, Fall, etc.) from the newman AnimationPlayer
+## into both man and woman AnimationPlayers. The newman node is added to
+## the scene as a local copy of newman.glb (which has all animations).
+## Existing animations are not overwritten.
+func _copy_extra_animations() -> void:
+	if _newman_anim == null:
 		return
-	if _extra_anim_lock == null:
-		_extra_anim_lock = Mutex.new()
-	_extra_anim_lock.lock()
-	if _extra_anim_loaded:
-		_extra_anim_lock.unlock()
-		return
-	_extra_anim_loaded = true
-	_extra_anim_lock.unlock()
-
-	var doc := GLTFDocument.new()
-	var state := GLTFState.new()
-	var err := doc.append_from_file(_EXTRA_ANIM_PATH, state)
-	if err != OK:
-		push_warning(
-			"Failed to load extra animations from %s: %s" % [_EXTRA_ANIM_PATH, error_string(err)]
-		)
-		return
-	var scene := doc.generate_scene(state)
-	if scene == null:
-		push_warning("Failed to generate scene from extra anim GLB")
-		return
-	var extra_anim := scene.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	if extra_anim == null:
-		scene.queue_free()
-		return
-	# Copy each animation into our man/woman players (don't overwrite existing).
-	for lib_name in extra_anim.get_animation_library_list():
-		var src_lib := extra_anim.get_animation_library(lib_name)
+	for lib_name in _newman_anim.get_animation_library_list():
+		var src_lib := _newman_anim.get_animation_library(lib_name)
 		for anim_name in src_lib.get_animation_list():
 			if anim_name == &"RESET":
 				continue
@@ -153,7 +127,6 @@ func _load_extra_animations() -> void:
 				continue
 			_merge_anim(_man_anim, anim_name, anim)
 			_merge_anim(_woman_anim, anim_name, anim)
-	scene.queue_free()
 
 
 func _merge_anim(player: AnimationPlayer, anim_name: String, anim: Animation) -> void:
