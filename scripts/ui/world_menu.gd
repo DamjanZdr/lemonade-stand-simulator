@@ -183,7 +183,7 @@ func _ready() -> void:
 		# VBoxContainer from expanding this beyond its minimum size.
 		save_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		save_scroll.custom_minimum_size = Vector2(0, 280)
-		save_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+		save_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 		_style_scroll_container(save_scroll)
 	_master_slider.value_changed.connect(
 		func(v: float):
@@ -467,33 +467,41 @@ func _style_scroll_container(scroll: ScrollContainer) -> void:
 	var bar := scroll.get_v_scroll_bar() as VScrollBar
 	if bar == null:
 		return
-	# Track: transparent so the panel background shows through.
+	# Make the scrollbar wider so it's clearly visible.
+	bar.add_theme_constant_override("minimum_grab_thickness", 14)
+	# Track: subtle warm brown background.
 	var track := StyleBoxFlat.new()
-	track.bg_color = Color(0.62, 0.49, 0.12, 0.15)
+	track.bg_color = Color(0.62, 0.49, 0.12, 0.2)
 	track.set_corner_radius_all(4)
 	bar.add_theme_stylebox_override("scroll", track)
 	var track_hl := StyleBoxFlat.new()
-	track_hl.bg_color = Color(0.62, 0.49, 0.12, 0.25)
+	track_hl.bg_color = Color(0.62, 0.49, 0.12, 0.3)
 	track_hl.set_corner_radius_all(4)
 	bar.add_theme_stylebox_override("scroll_focus", track_hl)
-	# Grabber: lemon yellow, rounded.
+	# Grabber: lemon yellow, rounded, with padding so it's narrower than the track.
 	var grabber := StyleBoxFlat.new()
-	grabber.bg_color = Color(1, 0.85, 0.2, 0.6)
+	grabber.bg_color = Color(1, 0.85, 0.2, 0.7)
 	grabber.set_corner_radius_all(4)
-	grabber.content_margin_left = 2.0
-	grabber.content_margin_right = 2.0
+	grabber.content_margin_left = 3.0
+	grabber.content_margin_right = 3.0
+	grabber.content_margin_top = 4.0
+	grabber.content_margin_bottom = 4.0
 	bar.add_theme_stylebox_override("grabber", grabber)
 	var grabber_hl := StyleBoxFlat.new()
-	grabber_hl.bg_color = Color(1, 0.85, 0.2, 0.9)
+	grabber_hl.bg_color = Color(1, 0.85, 0.2, 1.0)
 	grabber_hl.set_corner_radius_all(4)
-	grabber_hl.content_margin_left = 2.0
-	grabber_hl.content_margin_right = 2.0
+	grabber_hl.content_margin_left = 3.0
+	grabber_hl.content_margin_right = 3.0
+	grabber_hl.content_margin_top = 4.0
+	grabber_hl.content_margin_bottom = 4.0
 	bar.add_theme_stylebox_override("grabber_highlight", grabber_hl)
 	var grabber_pressed := StyleBoxFlat.new()
 	grabber_pressed.bg_color = Color(1, 0.85, 0.2, 1.0)
 	grabber_pressed.set_corner_radius_all(4)
-	grabber_pressed.content_margin_left = 2.0
-	grabber_pressed.content_margin_right = 2.0
+	grabber_pressed.content_margin_left = 3.0
+	grabber_pressed.content_margin_right = 3.0
+	grabber_pressed.content_margin_top = 4.0
+	grabber_pressed.content_margin_bottom = 4.0
 	bar.add_theme_stylebox_override("grabber_pressed", grabber_pressed)
 
 
