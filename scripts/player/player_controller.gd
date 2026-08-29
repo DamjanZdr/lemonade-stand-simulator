@@ -80,7 +80,7 @@ func _update_anim() -> void:
 			# Falling or at peak: transition to Idle/Walk/Run
 			if moving:
 				target_anim = "Run" if _is_sprinting else "Walk"
-				target_speed = 2.0 if _is_sprinting else 1.7
+				target_speed = 3.0 if _is_sprinting else 1.7
 			else:
 				target_anim = "Idle"
 				target_speed = 1.0
@@ -94,7 +94,7 @@ func _update_anim() -> void:
 			target_speed = 0.0
 	elif moving:
 		target_anim = "Run" if _is_sprinting else "Walk"
-		target_speed = 2.0 if _is_sprinting else 1.7
+		target_speed = 3.0 if _is_sprinting else 1.7
 	else:
 		target_anim = "Idle"
 		target_speed = 1.0
