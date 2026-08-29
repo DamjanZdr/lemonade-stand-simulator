@@ -176,6 +176,10 @@ var _active_anim: AnimationPlayer = null
 var _look_camera_yaw: float = 0.0
 var _look_camera_pitch: float = 0.0
 var _look_body_yaw: float = 0.0
+# Smoothed applied values (lerped toward targets for non-choppy head movement)
+var _applied_neck_yaw: float = 0.0
+var _applied_neck_pitch: float = 0.0
+const NECK_SMOOTH_SPEED: float = 15.0
 
 var anim_player: AnimationPlayer:
 	get:
@@ -752,15 +756,18 @@ func update_look_bones(camera_yaw: float, camera_pitch: float, body_yaw: float) 
 	var skel := get_active_skeleton()
 	if skel == null:
 		return
-	# All procedural look movement goes on the Neck bone.
-	# Yaw (Y) is left/right; pitch (X) is up/down. Both clamped to ±0.5 rad.
+	# Target neck yaw/pitch from camera look direction
 	var yaw_diff := wrap_angle(camera_yaw - body_yaw)
-	var neck_yaw := clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
-	var neck_pitch := clampf(-camera_pitch, -NECK_PITCH_MAX, NECK_PITCH_MAX)
+	var target_yaw := clampf(yaw_diff, -NECK_YAW_MAX, NECK_YAW_MAX)
+	var target_pitch := clampf(-camera_pitch, -NECK_PITCH_MAX, NECK_PITCH_MAX)
+	# Smooth toward target for non-choppy head movement
+	var t := clampf(NECK_SMOOTH_SPEED * get_process_delta_time(), 0.0, 1.0)
+	_applied_neck_yaw = lerp_angle(_applied_neck_yaw, target_yaw, t)
+	_applied_neck_pitch = lerp_angle(_applied_neck_pitch, target_pitch, t)
 	var neck_idx := skel.find_bone("Neck")
 	if neck_idx >= 0:
 		var rest := skel.get_bone_rest(neck_idx)
-		var local_rot := Quaternion.from_euler(Vector3(neck_pitch, neck_yaw, 0))
+		var local_rot := Quaternion.from_euler(Vector3(_applied_neck_pitch, _applied_neck_yaw, 0))
 		var neck_rot := rest.basis.get_rotation_quaternion() * local_rot
 		skel.set_bone_pose_rotation(neck_idx, neck_rot)
 

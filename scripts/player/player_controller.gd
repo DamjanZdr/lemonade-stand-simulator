@@ -349,7 +349,7 @@ func _physics_process(delta: float) -> void:
 		else move_toward(_player.velocity.z, 0, speed)
 	)
 	_player.move_and_slide()
-	_update_body_yaw(delta)
+	_update_body_yaw(delta, direction)
 	_try_sync_position(delta)
 	if _player.interaction != null:
 		_player.interaction.update_frame_lookups()
@@ -393,17 +393,30 @@ func _try_sync_position(delta: float) -> void:
 	)
 
 
-## After the _player.head turns past the neck limit, rotate the body to catch up.
-## The _player.camera stays steady because the body turn is subtracted from _look_yaw
-## and the _player.head is re-set as a clean Euler vector.
-func _update_body_yaw(delta: float) -> void:
-	if absf(_look_yaw) <= NECK_YAW_MAX:
-		return
-	var excess: float = _look_yaw - sign(_look_yaw) * NECK_YAW_MAX
-	var max_turn: float = NECK_YAW_CATCHUP_SPEED * delta
-	var turn: float = clampf(excess, -max_turn, max_turn)
-	_player.rotation.y = wrap_angle(_player.rotation.y + turn)
-	_look_yaw = wrap_angle(_look_yaw - turn)
+## Rotate the body to face movement direction when moving, and catch up
+## when the head turns past the neck limit.
+## The _player.camera stays steady because the body turn is subtracted
+## from _look_yaw and the _player.head is re-set as a clean Euler vector.
+const BODY_TURN_SPEED: float = 6.0
+
+
+func _update_body_yaw(delta: float, move_dir: Vector3 = Vector3.ZERO) -> void:
+	# 1. If moving, smoothly rotate body toward movement direction
+	if move_dir != Vector3.ZERO:
+		var move_yaw := atan2(-move_dir.x, -move_dir.z)
+		var body_yaw := _player.rotation.y
+		var diff := wrap_angle(move_yaw - body_yaw)
+		var max_turn := BODY_TURN_SPEED * delta
+		var turn := clampf(diff, -max_turn, max_turn)
+		_player.rotation.y = wrap_angle(body_yaw + turn)
+		_look_yaw = wrap_angle(_look_yaw - turn)
+	# 2. If head exceeds neck limit, rotate body to catch up
+	if absf(_look_yaw) > NECK_YAW_MAX:
+		var excess: float = _look_yaw - sign(_look_yaw) * NECK_YAW_MAX
+		var max_turn2: float = NECK_YAW_CATCHUP_SPEED * delta
+		var turn2: float = clampf(excess, -max_turn2, max_turn2)
+		_player.rotation.y = wrap_angle(_player.rotation.y + turn2)
+		_look_yaw = wrap_angle(_look_yaw - turn2)
 	_player.head.rotation = Vector3(_look_pitch, _look_yaw, 0)
 
 
