@@ -256,7 +256,7 @@ func _ready() -> void:
 	# have something to read. Once a second stand exists and purchases
 	# genuinely need to diverge per stand, UpgradeManager's purchase logic
 	# itself should be parameterized by stand instead of this mirror.
-	purchased_upgrade_nodes = UpgradeManager.purchased_nodes.duplicate()
+	purchased_upgrade_nodes = UpgradeManager.get_purchased_for_stand(name).duplicate()
 	EventBus.upgrade_purchased.connect(_on_global_upgrade_purchased_bridge)
 
 
@@ -287,7 +287,7 @@ func _on_global_popularity_changed_bridge(new_rating: float) -> void:
 
 
 func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void:
-	purchased_upgrade_nodes = UpgradeManager.purchased_nodes.duplicate()
+	purchased_upgrade_nodes = UpgradeManager.get_purchased_for_stand(name).duplicate()
 
 
 func _init_default_prices() -> void:

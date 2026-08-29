@@ -22,6 +22,11 @@ func _input(event: InputEvent) -> void:
 			return
 		_visible_panel = !_visible_panel
 		panel.visible = _visible_panel
+		# Set the active stand for research so upgrades are per-stand.
+		if _visible_panel:
+			var sn := WorldSync.get_local_stand_name()
+			if sn != "":
+				UpgradeManager.set_active_stand(sn)
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		if _visible_panel \
 				else Input.MOUSE_MODE_CAPTURED

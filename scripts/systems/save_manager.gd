@@ -211,6 +211,7 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	GameState.highest_purchase = 0.0
 	DayManager.day_number = 1
 	UpgradeManager.reset()
+	UpgradeManager.set_active_stand(stand_name)
 	# Save immediately to create the slot (force: not a host yet)
 	save_game(true)
 
@@ -294,9 +295,14 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	DayManager.day_number = data.get("day_number", 1)
 
 	UpgradeManager.reset()
+	var stand_name_for_research: String = data.get("stand_name", GameState.stand_name)
 	var purchased_nodes_data = data.get("purchased_nodes", [])
 	if purchased_nodes_data is Array and not purchased_nodes_data.is_empty():
-		UpgradeManager.load_purchased_nodes(purchased_nodes_data)
+		if stand_name_for_research != "":
+			UpgradeManager.set_purchased_for_stand(stand_name_for_research, purchased_nodes_data)
+			UpgradeManager.set_active_stand(stand_name_for_research)
+		else:
+			UpgradeManager.load_purchased_nodes(purchased_nodes_data)
 	else:
 		# Legacy level-based format
 		var upgrade_data = data.get("upgrade_levels", { })
@@ -342,7 +348,7 @@ func _build_save_dict() -> Dictionary:
 		"highest_purchase": GameState.highest_purchase,
 		"highest_money": GameState.highest_money,
 		"day_number": DayManager.day_number,
-		"purchased_nodes": UpgradeManager.get_save_data(),
+		"purchased_nodes": UpgradeManager.get_save_data_for_stand(GameState.stand_name),
 		"unlocked_fruits": ["lemon"], # TODO: dynamic
 		"placed_containers": _scan_placed_containers(),
 		"supply_boxes": _scan_supply_boxes(),

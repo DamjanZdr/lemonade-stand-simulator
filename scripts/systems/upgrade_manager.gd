@@ -14,8 +14,13 @@ var tree_connections: Dictionary = { }
 var tree_positions: Dictionary = { }
 ## upgrade_id -> UpgradeDefinition resource
 var definitions: Dictionary = { }
-## Set of purchased node names
+## Set of purchased node names for the currently active stand.
+## Use set_active_stand() to switch between stands' research trees.
 var purchased_nodes: Dictionary = { } # node_name -> true
+## Per-stand research: stand_name -> Dictionary (node_name -> true)
+var stand_purchased_nodes: Dictionary = { }
+## Which stand's research is currently active (loaded into purchased_nodes).
+var _active_stand: String = ""
 ## Root node name
 var root_node_name: String = ""
 
@@ -39,6 +44,75 @@ func _ready() -> void:
 				definitions[str(def.id)] = def
 	_apply_definition_values()
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+
+
+## Set the active stand for research operations. Loads that stand's
+## purchased nodes into purchased_nodes. Call this before showing the
+## upgrade UI or purchasing nodes for a specific stand.
+func set_active_stand(stand_name: String) -> void:
+	# Save the current stand's research first.
+	if _active_stand != "" and stand_purchased_nodes.has(_active_stand):
+		stand_purchased_nodes[_active_stand] = purchased_nodes.duplicate()
+	_active_stand = stand_name
+	purchased_nodes = stand_purchased_nodes.get(stand_name, { }).duplicate()
+	# Re-apply the lemon unlock default if this is a fresh stand.
+	if purchased_nodes.is_empty():
+		for node_name in tree_nodes:
+			var data: Dictionary = tree_nodes[node_name]
+			if data.get("upgrade_id", "") == "lemon_unlock":
+				purchased_nodes[node_name] = true
+				break
+	apply_all_effects()
+
+
+## Get the active stand name.
+func get_active_stand() -> String:
+	return _active_stand
+
+
+## Save the current purchased_nodes back to the per-stand storage.
+func flush_active_stand() -> void:
+	if _active_stand != "":
+		stand_purchased_nodes[_active_stand] = purchased_nodes.duplicate()
+
+
+## Get purchased nodes for a specific stand (without switching active).
+func get_purchased_for_stand(stand_name: String) -> Dictionary:
+	return stand_purchased_nodes.get(stand_name, { })
+
+
+## Set purchased nodes for a specific stand (used during save load).
+func set_purchased_for_stand(stand_name: String, node_names: Array) -> void:
+	var d: Dictionary = { }
+	for n in node_names:
+		var ns: String = str(n)
+		if tree_nodes.has(ns):
+			d[ns] = true
+	stand_purchased_nodes[stand_name] = d
+	if stand_name == _active_stand:
+		purchased_nodes = d.duplicate()
+		apply_all_effects()
+
+
+## Get save data for the active stand.
+func get_save_data_for_stand(stand_name: String) -> Array:
+	var d: Dictionary = stand_purchased_nodes.get(stand_name, purchased_nodes)
+	return d.keys()
+
+
+## Get effect total for a specific stand (without switching active).
+func get_effect_total_for_stand(upgrade_id: String, stand_name: String) -> float:
+	var def: UpgradeDefinition = definitions.get(upgrade_id)
+	if def == null:
+		return 0.0
+	var nodes: Dictionary = stand_purchased_nodes.get(stand_name, purchased_nodes)
+	var total := 0.0
+	for node_name in nodes:
+		var data: Dictionary = tree_nodes.get(node_name, { })
+		if data.get("upgrade_id", "") == upgrade_id:
+			var effect: float = data.get("effect", def.effect_per_node)
+			total += effect
+	return total
 
 
 const RECIPE_ORDER: Array[String] = ["lemon", "strawberry", "blueberry", "peach", "watermelon"]
@@ -259,6 +333,9 @@ func purchase_node(node_name: String) -> bool:
 	if not GameState.spend_money(cost):
 		return false
 	purchased_nodes[node_name] = true
+	# Flush to per-stand storage so research persists per stand.
+	if _active_stand != "":
+		stand_purchased_nodes[_active_stand] = purchased_nodes.duplicate()
 	var upgrade_id: String = data.get("upgrade_id", "")
 	_apply_effect(upgrade_id)
 	EventBus.upgrade_purchased.emit(data.get("id", 0), cost)
@@ -459,11 +536,23 @@ func load_purchased_nodes(node_names: Array) -> void:
 
 
 func get_save_data() -> Array:
+	# Return the active stand's purchased nodes, or the global set if no
+	# active stand is set (backward compat for solo mode).
+	if _active_stand != "" and stand_purchased_nodes.has(_active_stand):
+		return stand_purchased_nodes[_active_stand].keys()
 	return purchased_nodes.keys()
 
 
 func reset() -> void:
 	purchased_nodes.clear()
+	stand_purchased_nodes.clear()
+	_active_stand = ""
+	# Re-apply the lemon unlock default.
+	for node_name in tree_nodes:
+		var data: Dictionary = tree_nodes[node_name]
+		if data.get("upgrade_id", "") == "lemon_unlock":
+			purchased_nodes[node_name] = true
+			break
 
 
 func _negotiation_discount() -> float:

@@ -1779,6 +1779,10 @@ func _update_morning_data(day: int) -> void:
 
 func _show_morning_hub() -> void:
 	_update_morning_data(DayManager.day_number)
+	# Set the active stand for research so upgrades are per-stand.
+	var stand := _get_local_stand()
+	if stand:
+		UpgradeManager.set_active_stand(stand.name)
 	panel.visible = true
 	backdrop.visible = true
 	if _right_panel:
