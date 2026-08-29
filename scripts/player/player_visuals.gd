@@ -613,7 +613,10 @@ func play_anim(anim_name: String) -> void:
 ## Play an animation with a custom speed multiplier and smooth blend.
 ## Uses custom_speed=1.0 in play() and sets speed_scale separately so
 ## that set_anim_speed() can change speed without restarting the anim.
+## If speed is 0.0, plays at normal speed during the blend, then freezes
+## after the blend completes (speed_scale=0.0 would freeze the blend itself).
 const ANIM_BLEND_TIME: float = 0.25
+var _freeze_timer: SceneTreeTimer = null
 
 
 func play_anim_speed(anim_name: String, speed: float) -> void:
@@ -627,17 +630,40 @@ func play_anim_speed(anim_name: String, speed: float) -> void:
 			anim.loop_mode = Animation.LOOP_NONE
 		else:
 			anim.loop_mode = Animation.LOOP_LINEAR
+	# Cancel any pending freeze timer
+	_freeze_timer = null
 	# Use blend for smooth transitions; custom_speed=1.0 so speed_scale
 	# is the sole speed controller (avoids custom_speed * speed_scale bug)
-	_active_anim.play(anim_name, ANIM_BLEND_TIME, 1.0)
-	_active_anim.speed_scale = speed
+	if is_zero_approx(speed):
+		# Play at normal speed during blend, then freeze after blend completes.
+		# speed_scale=0.0 immediately would freeze the blend itself.
+		_active_anim.play(anim_name, ANIM_BLEND_TIME, 1.0)
+		_active_anim.speed_scale = 1.0
+		_freeze_timer = get_tree().create_timer(ANIM_BLEND_TIME)
+		_freeze_timer.timeout.connect(_on_freeze_blend_done.bind(anim_name))
+	else:
+		_active_anim.play(anim_name, ANIM_BLEND_TIME, 1.0)
+		_active_anim.speed_scale = speed
+
+
+func _on_freeze_blend_done(anim_name: String) -> void:
+	# Only freeze if we're still on the same animation
+	if _active_anim != null and _active_anim.assigned_animation == anim_name:
+		_active_anim.speed_scale = 0.0
 
 
 ## Update the speed of the currently playing animation without restarting it.
 func set_anim_speed(speed: float) -> void:
 	if _active_anim == null:
 		return
-	_active_anim.speed_scale = speed
+	if is_zero_approx(speed):
+		# Don't immediately set 0.0 if a blend is in progress — that would
+		# freeze the blend. Only freeze if already past the blend.
+		if _freeze_timer == null:
+			_active_anim.speed_scale = 0.0
+	else:
+		_freeze_timer = null
+		_active_anim.speed_scale = speed
 
 
 func pause_anim() -> void:
