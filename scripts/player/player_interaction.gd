@@ -42,6 +42,15 @@ func _ready() -> void:
 		push_warning("PlayerInteraction: parent is not a Player")
 
 
+## Clear the current hover state so the next poll_hint() re-applies
+## highlights from scratch. Used after workstation moves where the
+## hovered object's outline was removed but the reference is stale.
+func clear_hover() -> void:
+	if hovered and is_instance_valid(hovered):
+		hovered.set_highlight(false)
+	hovered = null
+
+
 ## Tells the interaction module whether the player is in money mode so it can
 ## clear highlights and hints.
 func set_money_mode(active: bool) -> void:
@@ -264,11 +273,16 @@ func primary_interact() -> void:
 
 	# Unified pickup path: if the interactable has a Pickupable component and
 	# we can pick it up, let it handle pickup/held-item setup.
+	# Skip this for bins (FruitBin, IngredientBin) — their interact() method
+	# handles LMB (take fruit / pick up if empty) with richer logic than the
+	# generic Pickupable path, which would always pick up the container.
 	if _player.inventory.held_item == HeldItem.NONE and interactable != null:
-		var pickupable := interactable.find_child("Pickupable", false, false)
-		if pickupable != null and pickupable.can_pick_up(_player):
-			pickupable.pick_up(_player)
-			return
+		var is_bin := interactable.is_in_group("bin")
+		if not is_bin:
+			var pickupable := interactable.find_child("Pickupable", false, false)
+			if pickupable != null and pickupable.can_pick_up(_player):
+				pickupable.pick_up(_player)
+				return
 
 	# Pick up thrown trash (RigidBody3D, mid-air or landed) with empty hands.
 	# Uses WorldSync so the pickup is networked — any player can catch it.

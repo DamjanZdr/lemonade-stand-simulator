@@ -120,7 +120,7 @@ func _preload_music() -> void:
 			var path := MUSIC_DIR + file_name
 			var stream := load(path) as AudioStreamMP3
 			if stream:
-				stream.loop = true
+				stream.loop = false
 				_streams["music_" + key] = stream
 				_music_tracks.append(key)
 		file_name = dir.get_next()
@@ -128,7 +128,9 @@ func _preload_music() -> void:
 	_music_tracks.sort()
 
 
-## Play a music track on the Music bus. Loops indefinitely.
+## Play a music track on the Music bus.
+## When the track finishes, automatically advances to the next track,
+## looping back to the first when all tracks have played.
 ## Since AudioManager is an autoload, this persists across scene changes.
 func _play_music(track_name: String) -> void:
 	var key := "music_" + track_name
@@ -144,12 +146,28 @@ func _play_music(track_name: String) -> void:
 		_music_player = AudioStreamPlayer.new()
 		_music_player.bus = "Music"
 		add_child(_music_player)
+	# Disconnect any previous finished connection to avoid duplicates.
+	if _music_player.finished.is_connected(_on_music_finished):
+		_music_player.finished.disconnect(_on_music_finished)
 	_music_player.stream = stream
 	_music_player.play()
+	# Auto-advance to the next track when this one finishes.
+	if not _music_player.finished.is_connected(_on_music_finished):
+		_music_player.finished.connect(_on_music_finished)
 	var idx := _music_tracks.find(track_name)
 	if idx >= 0:
 		_music_index = idx
 	music_track_changed.emit(track_name)
+
+
+## Called when the current music track finishes playing.
+## Advances to the next track, looping back to the first after the last.
+func _on_music_finished() -> void:
+	if _music_tracks.is_empty():
+		return
+	_music_index = (_music_index + 1) % _music_tracks.size()
+	var track := _music_tracks[_music_index]
+	_play_music(track)
 
 
 ## Get the current track name.

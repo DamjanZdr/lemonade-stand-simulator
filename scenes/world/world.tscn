@@ -194,7 +194,7 @@ transform = Transform3D(-0.18977769, 0, -0.1627404, 0, 0.25, 0, 0.1627404, 0, -0
 [node name="Ground" type="Node3D" parent="." unique_id=195151227]
 
 [node name="DefaultGround" type="StaticBody3D" parent="Ground" unique_id=622270793]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.202194, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.143356, 0)
 
 [node name="Mesh" type="MeshInstance3D" parent="Ground/DefaultGround" unique_id=1497984592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.011994839, -9.364746, -0.020724297)

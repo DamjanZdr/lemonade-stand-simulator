@@ -1378,6 +1378,14 @@ func _try_place_container() -> Node3D:
 			source_node.global_transform = _ghost.global_transform
 			_enable_physics(source_node)
 			source_node.visible = true
+			# Clear the interaction hover state so poll_hint() re-applies
+			# highlights on the next frame. After moving the workstation,
+			# the bin on it may still be referenced by `hovered` but its
+			# outline meshes were removed when the workstation was hidden.
+			# Without this, poll_hint() sees interactable == hovered and
+			# skips set_highlight(true), leaving the bin without an outline.
+			if _player.interaction != null:
+				_player.interaction.clear_hover()
 			# Update stand ownership to the placing player's stand.
 			if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
 				source_node.set("stand_owner", _player.assigned_stand.name)
