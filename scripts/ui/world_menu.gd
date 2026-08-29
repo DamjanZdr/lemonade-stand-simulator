@@ -487,7 +487,7 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	var vp := SubViewport.new()
 	vp.size = Vector2(sz, sz)
 	vp.transparent_bg = true
-	vp.render_target_clear_mode = SubViewport.CLEAR_MODE_NEVER
+	vp.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	var lbl := Label.new()
 	lbl.text = emoji
