@@ -175,6 +175,10 @@ func _ready() -> void:
 	_style_slider(_master_slider)
 	_style_slider(_sfx_slider)
 	_style_slider(_music_slider)
+	# Style the saves list scroll container to match the game's palette.
+	var save_scroll := _saves_list.get_node_or_null("SaveScroll") as ScrollContainer
+	if save_scroll:
+		_style_scroll_container(save_scroll)
 	_master_slider.value_changed.connect(
 		func(v: float):
 			AudioServer.set_bus_volume_db(0, linear_to_db(v))
@@ -449,6 +453,42 @@ func _add_drop_shadow(btn: Button) -> void:
 	btn.add_theme_constant_override("shadow_offset_x", 2)
 	btn.add_theme_constant_override("shadow_offset_y", 2)
 	btn.add_theme_constant_override("shadow_outline_size", 4)
+
+
+## Style a ScrollContainer's scrollbar to match the game's lemonade palette:
+## semi-transparent rounded track, lemon-yellow grabber with hover highlight.
+func _style_scroll_container(scroll: ScrollContainer) -> void:
+	var bar := scroll.get_v_scroll_bar() as VScrollBar
+	if bar == null:
+		return
+	# Track: transparent so the panel background shows through.
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(0.62, 0.49, 0.12, 0.15)
+	track.set_corner_radius_all(4)
+	bar.add_theme_stylebox_override("scroll", track)
+	var track_hl := StyleBoxFlat.new()
+	track_hl.bg_color = Color(0.62, 0.49, 0.12, 0.25)
+	track_hl.set_corner_radius_all(4)
+	bar.add_theme_stylebox_override("scroll_focus", track_hl)
+	# Grabber: lemon yellow, rounded.
+	var grabber := StyleBoxFlat.new()
+	grabber.bg_color = Color(1, 0.85, 0.2, 0.6)
+	grabber.set_corner_radius_all(4)
+	grabber.content_margin_left = 2.0
+	grabber.content_margin_right = 2.0
+	bar.add_theme_stylebox_override("grabber", grabber)
+	var grabber_hl := StyleBoxFlat.new()
+	grabber_hl.bg_color = Color(1, 0.85, 0.2, 0.9)
+	grabber_hl.set_corner_radius_all(4)
+	grabber_hl.content_margin_left = 2.0
+	grabber_hl.content_margin_right = 2.0
+	bar.add_theme_stylebox_override("grabber_highlight", grabber_hl)
+	var grabber_pressed := StyleBoxFlat.new()
+	grabber_pressed.bg_color = Color(1, 0.85, 0.2, 1.0)
+	grabber_pressed.set_corner_radius_all(4)
+	grabber_pressed.content_margin_left = 2.0
+	grabber_pressed.content_margin_right = 2.0
+	bar.add_theme_stylebox_override("grabber_pressed", grabber_pressed)
 
 
 ## Style an HSlider with a custom flat look: thin track + lemon grabber.
