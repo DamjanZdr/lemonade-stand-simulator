@@ -198,7 +198,6 @@ layout_mode = 2
 layout_mode = 2
 custom_minimum_size = Vector2(0, 280)
 theme_override_constants/separation = 0
-vertical_scroll_mode = 1
 
 [node name="SlotsContainer" type="VBoxContainer" parent="SavesPanel/SavesList/SaveScroll"]
 layout_mode = 2

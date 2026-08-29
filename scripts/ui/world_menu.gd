@@ -178,6 +178,12 @@ func _ready() -> void:
 	# Style the saves list scroll container to match the game's palette.
 	var save_scroll := _saves_list.get_node_or_null("SaveScroll") as ScrollContainer
 	if save_scroll:
+		# Clamp the scroll container height so the scrollbar appears
+		# when there are more saves than fit. SHRINK_BEGIN prevents the
+		# VBoxContainer from expanding this beyond its minimum size.
+		save_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		save_scroll.custom_minimum_size = Vector2(0, 280)
+		save_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
 		_style_scroll_container(save_scroll)
 	_master_slider.value_changed.connect(
 		func(v: float):
