@@ -184,7 +184,8 @@ func _ready() -> void:
 		save_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		save_scroll.custom_minimum_size = Vector2(0, 280)
 		save_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-		_style_scroll_container(save_scroll)
+		# Defer styling — the scrollbar child may not exist yet at _ready.
+		call_deferred("_style_scroll_container", save_scroll)
 	_master_slider.value_changed.connect(
 		func(v: float):
 			AudioServer.set_bus_volume_db(0, linear_to_db(v))
@@ -466,7 +467,9 @@ func _add_drop_shadow(btn: Button) -> void:
 func _style_scroll_container(scroll: ScrollContainer) -> void:
 	var bar := scroll.get_v_scroll_bar() as VScrollBar
 	if bar == null:
+		print("[WorldMenu] No VScrollBar found on SaveScroll")
 		return
+	print("[WorldMenu] Styling scrollbar: size=%s visible=%s" % [str(bar.size), bar.visible])
 	# Make the scrollbar wider so it's clearly visible.
 	bar.add_theme_constant_override("minimum_grab_thickness", 14)
 	# Track: subtle warm brown background.
@@ -803,6 +806,11 @@ func _on_saves_pressed() -> void:
 	_saves_panel.visible = true
 	# Hide the main menu buttons while browsing saves.
 	$MenuBox.visible = false
+	# Re-style the scrollbar after saves are populated — the scrollbar
+	# child may not exist until the ScrollContainer has content.
+	var save_scroll := _saves_list.get_node_or_null("SaveScroll") as ScrollContainer
+	if save_scroll:
+		call_deferred("_style_scroll_container", save_scroll)
 
 
 func _on_saves_back() -> void:
