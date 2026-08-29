@@ -54,7 +54,7 @@ shadow_mesh = SubResource("ArrayMesh_ooben")
 size = Vector3(0.42, 0.15, 0.38)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_001"]
-size = Vector3(10.198242, 4.206238, 6.2036133)
+size = Vector3(10.198242, 3.1099548, 6.2036133)
 
 [node name="FruitBin" type="Node3D" unique_id=1507066681]
 script = ExtResource("1_script")
@@ -78,7 +78,7 @@ mesh = SubResource("BoxMesh_001")
 [node name="Physics" type="StaticBody3D" parent="." unique_id=367484378]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=536302313]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11681414, 1.8791382, -0.16017759)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11681414, 1.3309968, -0.16017759)
 shape = SubResource("BoxShape3D_001")
 
 [node name="ItemGrid_Lemon" type="Node3D" parent="." unique_id=582310434]

@@ -707,11 +707,56 @@ func get_looked_at_interactable() -> Interactable:
 	var node: Node = _player.ray.get_collider()
 	if node == null:
 		return null
+	# Walk up the parent chain to find the first Interactable.
 	var chain := node
+	var result: Interactable = null
 	while chain != null:
 		if chain is Interactable:
-			return chain as Interactable
+			result = chain as Interactable
+			break
 		chain = chain.get_parent()
+	# If the ray hit a Workstation (table), the ray might have passed
+	# through a container sitting on top (e.g. a fruit bin) before
+	# hitting the table surface. RayCast3D only returns the closest
+	# collision, so if the table's collision is closer than the bin's
+	# (e.g. the bin's collision shape is offset), we get the table
+	# instead of the bin. Do a full ray intersection to find all
+	# Interactables along the ray and prefer non-workstation ones.
+	if result is Workstation:
+		var alt := _find_closer_interactable_along_ray(result)
+		if alt != null:
+			return alt
+	return result
+
+
+## Do a manual ray intersection to find Interactables along the ray
+## that are closer than (or at) the Workstation. Prefers non-Workstation
+## Interactables (e.g. fruit bins on top of the table).
+func _find_closer_interactable_along_ray(workstation: Workstation) -> Interactable:
+	var from := _player.ray.global_position
+	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
+	var space := _player.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to, _player.ray.collision_mask)
+	query.exclude = [_player.rid]
+	var hits := space.intersect_ray(query)
+	if hits.is_empty():
+		return null
+	# intersect_ray only returns the closest hit. But we can check if
+	# the Workstation has child Interactables whose AABB contains the
+	# hit point. If the player is looking at a bin on the table, the
+	# hit point should be within the bin's bounds.
+	var hit_point: Vector3 = hits.get("position", Vector3.ZERO)
+	for child in workstation.get_children():
+		if child is Interactable and child != workstation:
+			var child3d := child as Node3D
+			if child3d == null or not child3d.visible:
+				continue
+			# Check if the hit point is within the child's AABB.
+			var aabb := child3d.get_aabb()
+			# get_aabb() returns local-space AABB; transform to world.
+			aabb = AABB(child3d.global_transform * aabb.position, aabb.size)
+			if aabb.has_point(hit_point):
+				return child as Interactable
 	return null
 
 
