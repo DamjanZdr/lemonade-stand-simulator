@@ -812,6 +812,9 @@ func _on_join_submit() -> void:
 
 func _on_saves_pressed() -> void:
 	_refresh_saves()
+	# Restore all saves list elements that may have been hidden by
+	# _on_new_stand_pressed() during stand creation from the Play button.
+	_restore_saves_list()
 	_saves_panel.visible = true
 	# Hide the main menu buttons while browsing saves.
 	$MenuBox.visible = false
@@ -850,30 +853,9 @@ func _on_new_stand_pressed() -> void:
 	_show_mode_select()
 
 
-## Restore the saves list visibility after cancelling/confirming creation.
-## If there are no saves (entered from Play button), go back to the
-## main menu instead of showing an empty saves list.
+## Restore the saves list visibility after cancelling/confirming creation
+## or when opening the saves panel from the Stands button.
 func _restore_saves_list() -> void:
-	# If there are no saves, we came from the Play button — go back
-	# to the main menu instead of showing an empty saves panel.
-	if _saves_data.is_empty():
-		_saves_panel.visible = false
-		$MenuBox.visible = true
-		# Re-show everything in case it was hidden.
-		_slots_container.visible = true
-		_save_scroll.visible = true
-		_new_stand_button.visible = true
-		_saves_back.visible = true
-		var saves_title := _saves_list.get_node_or_null("SavesTitle")
-		if saves_title:
-			saves_title.visible = true
-		var spacer1 := _saves_list.get_node_or_null("Spacer")
-		if spacer1:
-			spacer1.visible = true
-		var spacer2 := _saves_list.get_node_or_null("Spacer2")
-		if spacer2:
-			spacer2.visible = true
-		return
 	_slots_container.visible = true
 	_save_scroll.visible = true
 	_new_stand_button.visible = true
@@ -1095,7 +1077,13 @@ func _show_mode_select() -> void:
 	back_btn.pressed.connect(
 		func():
 			vbox.queue_free()
-			_restore_saves_list(),
+			# If there are no saves, we came from the Play button —
+			# go back to the main menu instead of the saves list.
+			if _saves_data.is_empty():
+				_saves_panel.visible = false
+				$MenuBox.visible = true
+			else:
+				_restore_saves_list(),
 	)
 	# Spacer pushes Create to the right edge.
 	var btn_spacer := Control.new()
