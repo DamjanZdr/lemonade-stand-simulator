@@ -90,6 +90,10 @@ func _physics_process(delta: float) -> void:
 		if _landed or not is_instance_valid(self):
 			return
 		_spawn_time += delta
+		# Manual NPC hit detection — body_entered is unreliable for fast
+		# objects (tunneling). Check overlap each frame after grace period.
+		if _spawn_time >= _SPAWN_GRACE and not _hit_someone:
+			_check_npc_overlap()
 		# Sync transform to clients periodically (every ~50ms).
 		_sync_timer += delta
 		if _sync_timer >= 0.05:
@@ -156,39 +160,60 @@ static func _get_no_bounce_material() -> PhysicsMaterial:
 ## Only applies once per trash, and only after the spawn grace period.
 ## The source node (thrower/dropper) is ignored.
 func _on_body_entered(body: Node) -> void:
+	_try_stun(body)
+
+
+## Host: manual overlap check each physics frame. More reliable than
+## body_entered for fast-moving objects that can tunnel through NPCs.
+func _check_npc_overlap() -> void:
+	var space := get_world_3d().direct_space_state
+	var shape := SphereShape3D.new()
+	shape.radius = 0.35
+	var params := PhysicsShapeQueryParameters3D.new()
+	params.shape = shape
+	params.transform = global_transform
+	params.collide_with_bodies = true
+	params.collide_with_areas = false
+	var results := space.intersect_shape(params, 32)
+	for result in results:
+		var collider = result.collider
+		if _try_stun(collider):
+			return
+
+
+## Try to stun a body. Returns true if a stun was applied.
+## Walks up the tree to find Player/Pedestrian/Customer, skipping source.
+func _try_stun(body: Node) -> bool:
 	if _landed or _hit_someone or not is_instance_valid(self):
-		return
+		return false
 	# Ignore collisions during spawn grace period (prevents self-stun).
 	if _spawn_time < _SPAWN_GRACE:
-		return
-	# Walk up the tree to find the Player or Pedestrian/Customer node
-	# (the collider may be a child mesh/collision shape).
+		return false
 	var node: Node = body
 	while node != null:
 		# Skip the source node (thrower/dropper).
 		if source_node != null and is_instance_valid(source_node) and node == source_node:
-			return
+			return false
 		if node is Player:
 			var p := node as Player
 			_hit_someone = true
 			p.stun(3.0)
 			GameLog.log("[ThrownTrash] Stunned player %s for 3s" % p.name)
-			# Don't finalize on player hit — let the trash bounce off.
-			return
+			return true
 		if node is Pedestrian:
 			var ped := node as Pedestrian
 			_hit_someone = true
 			ped.stun(3.0)
 			GameLog.log("[ThrownTrash] Stunned pedestrian for 3s")
-			return
+			return true
 		if node is Customer:
 			var cust := node as Customer
 			_hit_someone = true
 			cust.stun(3.0)
 			GameLog.log("[ThrownTrash] Stunned customer for 3s")
-			return
+			return true
 		node = node.get_parent()
-	# Not a player or NPC — let physics continue (will finalize on landing).
+	return false
 
 
 func _on_sleeping() -> void:
@@ -205,9 +230,9 @@ func _on_fallback() -> void:
 
 ## Host: freeze, spawn the real TrashItem via WorldSync, then despawn self.
 func _finalize() -> void:
-	_landed = true
-	if not is_instance_valid(self):
+	if _landed or not is_instance_valid(self):
 		return
+	_landed = true
 	freeze = true
 	var land_pos := global_position
 	# Spawn the real trash item at this position via WorldSync.
@@ -247,6 +272,7 @@ func pickup_by(player: Node) -> void:
 		return
 	if _landed or not is_instance_valid(self):
 		return
+	# Set _landed first to prevent _finalize from racing with us.
 	_landed = true
 	# Get the visual for the hand mesh.
 	var visual: Node3D = null

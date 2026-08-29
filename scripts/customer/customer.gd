@@ -181,13 +181,13 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		# When stun ends, crossfade to idle for recovery.
+		# When stun ends, play Fall in reverse to get back up.
 		if _stun_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
 			_recover_timer = _RECOVER_DURATION
-			_npc.play_anim_blend("Idle", 0.5)
+			_npc.play_anim_reverse("Fall", 0.3)
 		return
 
-	# Recovery phase: play idle, then resume walking after _RECOVER_DURATION.
+	# Recovery phase: Fall plays in reverse, then resume walking.
 	if _recover_timer > 0.0:
 		_recover_timer = maxf(_recover_timer - delta, 0.0)
 		velocity.x = 0.0
@@ -195,7 +195,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		# When recovery ends, resume walking.
 		if _recover_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
-			_npc.play_anim_blend("Walk", 0.5)
+			_npc.play_anim_blend("Walk", 0.3)
 		return
 
 	match state:
