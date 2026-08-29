@@ -701,15 +701,9 @@ func seek_anim(anim_name: String, time: float) -> void:
 	var anim := _active_anim.get_animation(anim_name)
 	if anim:
 		anim.loop_mode = Animation.LOOP_NONE
-	# Use play with blend, then immediately seek and pause.
-	# The deferred call ensures the animation has processed the play first.
-	_active_anim.play(anim_name, 0.1, 1.0)
-	call_deferred("_deferred_seek", anim_name, time)
-
-
-func _deferred_seek(_anim_name: String, time: float) -> void:
-	if _active_anim == null:
-		return
+	# Instant switch (0 blend) — a non-zero blend + speed_scale=0 freezes
+	# the blend mid-transition, leaving the pose stuck on the old animation.
+	_active_anim.play(anim_name, 0.0, 1.0)
 	_active_anim.seek(time, true)
 	_active_anim.speed_scale = 0.0
 
