@@ -482,8 +482,10 @@ func _set_slider_emoji_icons(slider: HSlider) -> void:
 
 
 ## Render an emoji to a texture via a SubViewport Label (supports emoji fallback).
+## Renders at 3x resolution then downscales for crisp quality.
 func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
-	var sz := font_size + 8
+	var scale := 3
+	var sz := (font_size + 8) * scale
 	var vp := SubViewport.new()
 	vp.size = Vector2(sz, sz)
 	vp.transparent_bg = true
@@ -491,7 +493,7 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	var lbl := Label.new()
 	lbl.text = emoji
-	lbl.add_theme_font_size_override("font_size", font_size)
+	lbl.add_theme_font_size_override("font_size", font_size * scale)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.size = Vector2(sz, sz)
@@ -501,6 +503,8 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	await get_tree().process_frame
 	var img := vp.get_texture().get_image()
 	vp.queue_free()
+	var target_sz := font_size + 8
+	img.resize(target_sz, target_sz, Image.INTERPOLATE_LANCZOS)
 	return ImageTexture.create_from_image(img)
 
 
