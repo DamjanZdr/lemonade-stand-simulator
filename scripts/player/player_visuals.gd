@@ -105,50 +105,6 @@ func _ready() -> void:
 		_strip_neck_head_rotation_tracks(_man_anim)
 	if _woman_anim != null:
 		_strip_neck_head_rotation_tracks(_woman_anim)
-	_load_extra_animations()
-
-
-## Load extra animations (Crouch, Fall, etc.) from newman.glb at runtime
-## using GLTFDocument (bypasses Godot's buggy import). Copies into both
-## man and woman AnimationPlayers. Loaded per-instance so remote players
-## in multiplayer also get the animations.
-const _EXTRA_ANIM_PATH := "res://assets/models/characters/newman.glb"
-
-
-func _load_extra_animations() -> void:
-	var doc := GLTFDocument.new()
-	var state := GLTFState.new()
-	var err := doc.append_from_file(_EXTRA_ANIM_PATH, state)
-	if err != OK:
-		push_warning("Failed to load extra animations: %s" % error_string(err))
-		return
-	var scene := doc.generate_scene(state)
-	if scene == null:
-		return
-	var extra_anim := scene.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	if extra_anim == null:
-		scene.queue_free()
-		return
-	for lib_name in extra_anim.get_animation_library_list():
-		var src_lib := extra_anim.get_animation_library(lib_name)
-		for anim_name in src_lib.get_animation_list():
-			if anim_name == &"RESET":
-				continue
-			var anim := src_lib.get_animation(anim_name)
-			if anim == null:
-				continue
-			_merge_anim(_man_anim, anim_name, anim)
-			_merge_anim(_woman_anim, anim_name, anim)
-	scene.queue_free()
-
-
-func _merge_anim(player: AnimationPlayer, anim_name: String, anim: Animation) -> void:
-	if player == null:
-		return
-	if player.has_animation(anim_name):
-		return
-	var lib := player.get_animation_library("")
-	lib.add_animation(anim_name, anim.duplicate())
 
 
 ## Remove rotation tracks for the Neck and Head bones from every animation in
