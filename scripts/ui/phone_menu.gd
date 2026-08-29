@@ -148,23 +148,25 @@ func _order(itype: String) -> void:
 	# Route purchases through the host. The host spends the money and
 	# emits the supply_order_placed signal locally, which triggers the
 	# delivery system. Clients send an RPC to the host instead.
+	var sn := WorldSync.get_local_stand_name()
 	if WorldSync.is_host():
 		if not GameState.spend_money(cost):
 			EventBus.interaction_hint_changed.emit("Not enough money!")
 			return
-		EventBus.supply_order_placed.emit(itype, qty, cost)
+		EventBus.supply_order_placed.emit(itype, qty, cost, sn)
 	else:
-		_request_purchase.rpc_id(1, "supply", itype, qty, cost)
+		_request_purchase.rpc_id(1, "supply", itype, qty, cost, sn)
 
 
 func _buy_container(container_type: String, cost: float) -> void:
+	var sn := WorldSync.get_local_stand_name()
 	if WorldSync.is_host():
 		if not GameState.spend_money(cost):
 			EventBus.interaction_hint_changed.emit("Not enough money!")
 			return
-		EventBus.equipment_order_placed.emit(container_type)
+		EventBus.equipment_order_placed.emit(container_type, sn)
 	else:
-		_request_purchase.rpc_id(1, "equipment", container_type, 0.0, cost)
+		_request_purchase.rpc_id(1, "equipment", container_type, 0.0, cost, sn)
 
 
 func _buy_upgrade(id: String, btn: Button, name_lbl: Label) -> void:
@@ -192,22 +194,29 @@ func _buy_upgrade(id: String, btn: Button, name_lbl: Label) -> void:
 ## RPC sent by clients to the host to request a purchase.
 ## The host validates money and emits the appropriate EventBus signal.
 @rpc("any_peer", "reliable")
-func _request_purchase(category: String, item_id: String, qty: float, cost: float) -> void:
+func _request_purchase(
+	category: String,
+	item_id: String,
+	qty: float,
+	cost: float,
+	stand_name: String = "",
+) -> void:
 	if not WorldSync.is_host():
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	GameLog.log(
-		"[PhoneMenu] Host received purchase request from %d: %s/%s" % [sender_id, category, item_id]
+		"[PhoneMenu] Host received purchase request from %d: %s/%s (stand=%s)"
+		% [sender_id, category, item_id, stand_name]
 	)
 	match category:
 		"supply":
 			if not GameState.spend_money(cost):
 				return
-			EventBus.supply_order_placed.emit(item_id, qty, cost)
+			EventBus.supply_order_placed.emit(item_id, qty, cost, stand_name)
 		"equipment":
 			if not GameState.spend_money(cost):
 				return
-			EventBus.equipment_order_placed.emit(item_id)
+			EventBus.equipment_order_placed.emit(item_id, stand_name)
 		"upgrade":
 			if UpgradeManager.purchase(item_id):
 				GameLog.log(

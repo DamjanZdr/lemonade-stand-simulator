@@ -1592,21 +1592,22 @@ func _checkout_cart() -> void:
 	# Only the host should emit checkout_completed (triggers truck delivery).
 	# Clients' purchases are routed to the host via _request_purchase RPC,
 	# and the host's delivery system handles the actual delivery.
+	var stand_name := WorldSync.get_local_stand_name()
 	if WorldSync.is_host():
-		EventBus.checkout_completed.emit()
+		EventBus.checkout_completed.emit(stand_name)
 	else:
-		_request_checkout.rpc_id(1)
+		_request_checkout.rpc_id(1, stand_name)
 
 
 ## RPC sent by clients to tell the host that checkout is complete and
 ## the truck should drive in to deliver the ordered supplies.
 @rpc("any_peer", "reliable")
-func _request_checkout() -> void:
+func _request_checkout(stand_name: String) -> void:
 	if not WorldSync.is_host():
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
-	GameLog.log("[MorningHub] Host received checkout from %d" % sender_id)
-	EventBus.checkout_completed.emit()
+	GameLog.log("[MorningHub] Host received checkout from %d (stand=%s)" % [sender_id, stand_name])
+	EventBus.checkout_completed.emit(stand_name)
 
 
 func _is_ingredient(item: Dictionary) -> bool:
@@ -1629,10 +1630,18 @@ func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
 	if WorldSync.is_host():
 		if not GameState.spend_money(total):
 			return
+		var sn := WorldSync.get_local_stand_name()
 		for i in range(qty):
-			EventBus.supply_order_placed.emit(item["id"], item["qty"], item["cost"])
+			EventBus.supply_order_placed.emit(item["id"], item["qty"], item["cost"], sn)
 	else:
-		_request_purchase.rpc_id(1, "supply", item["id"], float(qty), total)
+		_request_purchase.rpc_id(
+			1,
+			"supply",
+			item["id"],
+			float(qty),
+			total,
+			WorldSync.get_local_stand_name(),
+		)
 	_status_lbl.text = "Bought %d %s crate(s)!" % [qty, item["name"]]
 	_animate_status()
 
@@ -1643,23 +1652,38 @@ func _buy_container(container_type: String, cost: float) -> void:
 			_status_lbl.text = "Not enough money!"
 			_animate_status()
 			return
-		EventBus.equipment_order_placed.emit(container_type)
+		EventBus.equipment_order_placed.emit(container_type, WorldSync.get_local_stand_name())
 	else:
-		_request_purchase.rpc_id(1, "equipment", container_type, 0.0, cost)
+		_request_purchase.rpc_id(
+			1,
+			"equipment",
+			container_type,
+			0.0,
+			cost,
+			WorldSync.get_local_stand_name(),
+		)
 	_status_lbl.text = "%s ordered!" % container_type.capitalize().replace("_", " ")
 	_animate_status()
 
 
 ## RPC sent by clients to the host to request a purchase from the
 ## morning hub (computer screen). The host validates money and emits
-## the appropriate EventBus signal.
+## the appropriate EventBus signal. stand_name identifies which stand's
+## delivery system should handle the order.
 @rpc("any_peer", "reliable")
-func _request_purchase(category: String, item_id: String, qty: float, cost: float) -> void:
+func _request_purchase(
+	category: String,
+	item_id: String,
+	qty: float,
+	cost: float,
+	stand_name: String = "",
+) -> void:
 	if not WorldSync.is_host():
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	GameLog.log(
-		"[MorningHub] Host received purchase from %d: %s/%s" % [sender_id, category, item_id]
+		"[MorningHub] Host received purchase from %d: %s/%s (stand=%s)"
+		% [sender_id, category, item_id, stand_name]
 	)
 	match category:
 		"supply":
@@ -1672,11 +1696,11 @@ func _request_purchase(category: String, item_id: String, qty: float, cost: floa
 					per_box = item.get("qty", qty)
 					break
 			for i in range(int(qty)):
-				EventBus.supply_order_placed.emit(item_id, per_box, cost / qty)
+				EventBus.supply_order_placed.emit(item_id, per_box, cost / qty, stand_name)
 		"equipment":
 			if not GameState.spend_money(cost):
 				return
-			EventBus.equipment_order_placed.emit(item_id)
+			EventBus.equipment_order_placed.emit(item_id, stand_name)
 		"upgrade_node":
 			UpgradeManager.purchase_node(item_id)
 			GameLog.log(

@@ -25,11 +25,16 @@ signal pitcher_cleared()
 signal pitcher_cup_filled(recipe: Dictionary)
 
 # --- Delivery ---
-signal supply_order_placed(ingredient_type: String, quantity: float, cost: float)
+signal supply_order_placed(
+	ingredient_type: String,
+	quantity: float,
+	cost: float,
+	stand_name: String,
+)
 signal trash_disposed(item_type: String, refund: float)
-signal equipment_order_placed(container_type: String)
+signal equipment_order_placed(container_type: String, stand_name: String)
 signal supply_box_spawned(box: Node)
-signal checkout_completed()
+signal checkout_completed(stand_name: String)
 
 # --- Customer ---
 signal pedestrian_spawned(pedestrian: Node)

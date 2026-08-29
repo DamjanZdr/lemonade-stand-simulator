@@ -74,6 +74,19 @@ static func get_local_player() -> Node:
 	return null
 
 
+## Returns the StandUnit node name the local player is assigned to,
+## or "" if no stand is assigned. Used by delivery signals to route
+## orders to the correct stand's DeliverySystem.
+static func get_local_stand_name() -> String:
+	var p := get_local_player()
+	if p == null:
+		return ""
+	var stand: Node = p.get("assigned_stand")
+	if stand != null and is_instance_valid(stand):
+		return stand.name
+	return ""
+
+
 ## Assign a stable network ID to a node. Returns the ID. If the node is
 ## freed, the ID is automatically unregistered.
 func _assign_net_id(obj: Node) -> int:

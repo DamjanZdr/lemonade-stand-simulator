@@ -106,7 +106,10 @@ func _spawn_box_on_truck(box: SupplyBox) -> void:
 		_batched_boxes.append(box)
 
 
-func _on_checkout_completed() -> void:
+func _on_checkout_completed(stand_name: String) -> void:
+	# Only process checkout for our own stand.
+	if stand_name != "" and _stand_name != "" and stand_name != _stand_name:
+		return
 	if _batched_boxes.is_empty():
 		return
 	if _truck == null or not is_instance_valid(_truck):
@@ -121,8 +124,16 @@ func _on_checkout_completed() -> void:
 	_truck.start_delivery()
 
 
-func _on_supply_order_placed(ingredient_type: String, quantity: float, _cost: float) -> void:
+func _on_supply_order_placed(
+	ingredient_type: String,
+	quantity: float,
+	_cost: float,
+	stand_name: String,
+) -> void:
 	if not WorldSync.is_host():
+		return
+	# Only process orders for our own stand.
+	if stand_name != "" and _stand_name != "" and stand_name != _stand_name:
 		return
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	box.ingredient_type = ingredient_type
@@ -130,8 +141,11 @@ func _on_supply_order_placed(ingredient_type: String, quantity: float, _cost: fl
 	_spawn_box_on_truck(box)
 
 
-func _on_equipment_order_placed(container_type: String) -> void:
+func _on_equipment_order_placed(container_type: String, stand_name: String) -> void:
 	if not WorldSync.is_host():
+		return
+	# Only process orders for our own stand.
+	if stand_name != "" and _stand_name != "" and stand_name != _stand_name:
 		return
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	box.is_equipment = true

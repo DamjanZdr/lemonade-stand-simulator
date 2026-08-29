@@ -170,7 +170,12 @@ func _buy_item(id: String) -> void:
 			# Deliver supply boxes
 			var amount_per_box: float = item["qty"]
 			for i in range(qty):
-				EventBus.supply_order_placed.emit(id, amount_per_box, item["cost"])
+				EventBus.supply_order_placed.emit(
+					id,
+					amount_per_box,
+					item["cost"],
+					WorldSync.get_local_stand_name(),
+				)
 			# Show confirmation
 			if status_label:
 				status_label.text = "Bought %d %s crate(s)!" % [qty, item["name"]]
