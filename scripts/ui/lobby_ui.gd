@@ -343,15 +343,15 @@ func _style_slider(slider: HSlider) -> void:
 	track.content_margin_top = 6.0
 	track.content_margin_bottom = 6.0
 	slider.add_theme_stylebox_override("slider", track)
-	# Grabber area (filled portion to the left of grabber): yellowish.
+	# Grabber area (filled portion to the left of grabber): lemon yellow.
 	var grab_area := StyleBoxFlat.new()
-	grab_area.bg_color = Color(1, 0.9, 0.3, 0.4)
+	grab_area.bg_color = Color(1, 0.85, 0.2, 0.7)
 	grab_area.set_corner_radius_all(3)
 	grab_area.content_margin_top = 6.0
 	grab_area.content_margin_bottom = 6.0
 	slider.add_theme_stylebox_override("grabber_area", grab_area)
 	var grab_area_hl := StyleBoxFlat.new()
-	grab_area_hl.bg_color = Color(1, 0.9, 0.3, 0.6)
+	grab_area_hl.bg_color = Color(1, 0.85, 0.2, 0.9)
 	grab_area_hl.set_corner_radius_all(3)
 	grab_area_hl.content_margin_top = 6.0
 	grab_area_hl.content_margin_bottom = 6.0
@@ -387,7 +387,7 @@ func _set_slider_emoji_icons(slider: HSlider) -> void:
 	slider.add_theme_icon_override("grabber_highlight", grabber_hl)
 	slider.add_theme_icon_override(
 		"grabber_disabled",
-		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5, 0.5), 1),
+		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0, 0, 0, 0), 0),
 	)
 
 
