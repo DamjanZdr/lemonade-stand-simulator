@@ -38,13 +38,17 @@ enum PedestrianState {
 }
 var _state: PedestrianState = PedestrianState.WALKING
 
-## Stun timer: when > 0, the pedestrian stops walking (hit by trash).
+## Stun timer: when > 0, the pedestrian is down (Fall animation, holding last frame).
 var _stun_timer: float = 0.0
+const _STUN_DOWN_DURATION: float = 2.0
 
-## Recovery timer: when > 0, the pedestrian is recovering from Fall
-## (playing idle before resuming walk).
+## Recovery: playing Fall in reverse to get back up.
+var _recovering: bool = false
 var _recover_timer: float = 0.0
-const _RECOVER_DURATION: float = 3.0
+
+## State saved before stun to restore after recovery.
+var _pre_stun_state: PedestrianState = PedestrianState.WALKING
+var _pre_stun_anim: String = "Walk"
 
 ## Upright rotation of NPCBody (saved before Fall animation).
 var _npc_base_rot: Vector3 = Vector3.ZERO
@@ -197,19 +201,22 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		# When stun ends, play Fall in reverse to get back up.
 		if _stun_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
-			_recover_timer = _RECOVER_DURATION
+			_recovering = true
+			_recover_timer = _npc.get_anim_length("Fall")
 			_npc.play_anim_reverse("Fall", 0.3)
 		return
 
-	# Recovery phase: Fall plays in reverse, then resume walking.
-	if _recover_timer > 0.0:
+	# Recovery: wait for Fall reverse to finish, then resume previous state.
+	if _recovering:
 		_recover_timer = maxf(_recover_timer - delta, 0.0)
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		# When recovery ends, resume walking.
-		if _recover_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
-			_npc.play_anim_blend("Walk", 0.3)
+		if _recover_timer <= 0.0:
+			_recovering = false
+			if _npc != null and is_instance_valid(_npc):
+				_npc.play_anim_blend(_pre_stun_anim, 0.3)
+			_state = _pre_stun_state
 		return
 
 	match _state:
@@ -450,21 +457,23 @@ func can_interact() -> bool:
 	return _state == PedestrianState.WALKING
 
 
-## Stun the pedestrian for duration seconds (host-authoritative).
-## Called when hit by thrown trash. The NPC falls over (fake ragdoll),
-## stays down for the stun duration, then smoothly recovers to upright
-## over _RECOVER_DURATION seconds before resuming their walk.
+## Stun the pedestrian (host-authoritative). Called when hit by thrown trash.
+## The NPC plays Fall, holds the last frame for _STUN_DOWN_DURATION seconds,
+## then plays Fall in reverse to get back up and resumes their previous state.
 func stun(duration: float) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	_stun_timer = maxf(_stun_timer, duration)
-	_recover_timer = 0.0
+	# Save state to restore after recovery.
+	_pre_stun_state = _state
+	_pre_stun_anim = "Walk" if _state == PedestrianState.WALKING else "Idle"
+	_stun_timer = _STUN_DOWN_DURATION
+	_recovering = false
 	# Play the Fall animation once (plays, then holds last frame).
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
 		_npc.play_anim_once("Fall", 0.2)
 	# Sync to clients so they see the fall.
-	_sync_stun.rpc(duration)
+	_sync_stun.rpc(_STUN_DOWN_DURATION)
 
 
 ## Client-side: apply the fall from host sync.
@@ -472,8 +481,10 @@ func stun(duration: float) -> void:
 func _sync_stun(duration: float) -> void:
 	if multiplayer.is_server():
 		return # Host already applied it
+	_pre_stun_state = _state
+	_pre_stun_anim = "Walk" if _state == PedestrianState.WALKING else "Idle"
 	_stun_timer = duration
-	_recover_timer = 0.0
+	_recovering = false
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
 		_npc.play_anim_once("Fall", 0.2)

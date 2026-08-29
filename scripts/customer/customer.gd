@@ -21,12 +21,17 @@ var patience: float = 0.0
 var _order_taken: bool = false
 var serve_patience_max: float = Balancing.PATIENCE_BASE
 var state: CustomerState = CustomerState.WALKING
-## Stun timer: when > 0, the customer stops moving (hit by trash).
+## Stun timer: when > 0, the customer is down (Fall animation, holding last frame).
 var _stun_timer: float = 0.0
+const _STUN_DOWN_DURATION: float = 2.0
 
-## Recovery timer: when > 0, the customer is recovering from Fall.
+## Recovery: playing Fall in reverse to get back up.
+var _recovering: bool = false
 var _recover_timer: float = 0.0
-const _RECOVER_DURATION: float = 3.0
+
+## State saved before stun to restore after recovery.
+var _pre_stun_state: CustomerState = CustomerState.WALKING
+var _pre_stun_anim: String = "Walk"
 
 ## Upright rotation of NPCBody (saved before Fall animation).
 var _npc_base_rot: Vector3 = Vector3.ZERO
@@ -183,19 +188,22 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		# When stun ends, play Fall in reverse to get back up.
 		if _stun_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
-			_recover_timer = _RECOVER_DURATION
+			_recovering = true
+			_recover_timer = _npc.get_anim_length("Fall")
 			_npc.play_anim_reverse("Fall", 0.3)
 		return
 
-	# Recovery phase: Fall plays in reverse, then resume walking.
-	if _recover_timer > 0.0:
+	# Recovery: wait for Fall reverse to finish, then resume previous state.
+	if _recovering:
 		_recover_timer = maxf(_recover_timer - delta, 0.0)
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		# When recovery ends, resume walking.
-		if _recover_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
-			_npc.play_anim_blend("Walk", 0.3)
+		if _recover_timer <= 0.0:
+			_recovering = false
+			if _npc != null and is_instance_valid(_npc):
+				_npc.play_anim_blend(_pre_stun_anim, 0.3)
+			state = _pre_stun_state
 		return
 
 	match state:
@@ -264,20 +272,28 @@ func _apply_motion(delta: float) -> void:
 			move_and_slide()
 
 
-## Stun the customer for duration seconds (host-authoritative).
-## Called when hit by thrown trash. The NPC plays the Fall animation,
-## stays down for the stun duration, then plays idle for _RECOVER_DURATION
-## seconds before resuming their walk.
+## Stun the customer (host-authoritative). Called when hit by thrown trash.
+## The NPC plays Fall, holds the last frame for _STUN_DOWN_DURATION seconds,
+## then plays Fall in reverse to get back up and resumes their previous state.
 func stun(duration: float) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	_stun_timer = maxf(_stun_timer, duration)
-	_recover_timer = 0.0
+	# Save state to restore after recovery.
+	_pre_stun_state = state
+	match state:
+		CustomerState.WALKING, CustomerState.LEAVING:
+			_pre_stun_anim = "Walk"
+		CustomerState.WAITING:
+			_pre_stun_anim = "Idle"
+		_:
+			_pre_stun_anim = "Talk"
+	_stun_timer = _STUN_DOWN_DURATION
+	_recovering = false
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
 		_npc.play_anim_once("Fall", 0.2)
 	# Sync to clients so they see the fall.
-	_sync_stun.rpc(duration)
+	_sync_stun.rpc(_STUN_DOWN_DURATION)
 
 
 ## Client-side: apply the fall from host sync.
@@ -285,8 +301,16 @@ func stun(duration: float) -> void:
 func _sync_stun(duration: float) -> void:
 	if multiplayer.is_server():
 		return # Host already applied it
+	_pre_stun_state = state
+	match state:
+		CustomerState.WALKING, CustomerState.LEAVING:
+			_pre_stun_anim = "Walk"
+		CustomerState.WAITING:
+			_pre_stun_anim = "Idle"
+		_:
+			_pre_stun_anim = "Talk"
 	_stun_timer = duration
-	_recover_timer = 0.0
+	_recovering = false
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
 		_npc.play_anim_once("Fall", 0.2)

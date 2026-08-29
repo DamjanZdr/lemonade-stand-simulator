@@ -197,20 +197,20 @@ func _try_stun(body: Node) -> bool:
 		if node is Player:
 			var p := node as Player
 			_hit_someone = true
-			p.stun(3.0)
-			GameLog.log("[ThrownTrash] Stunned player %s for 3s" % p.name)
+			p.stun(2.0)
+			GameLog.log("[ThrownTrash] Stunned player %s for 2s" % p.name)
 			return true
 		if node is Pedestrian:
 			var ped := node as Pedestrian
 			_hit_someone = true
-			ped.stun(3.0)
-			GameLog.log("[ThrownTrash] Stunned pedestrian for 3s")
+			ped.stun(2.0)
+			GameLog.log("[ThrownTrash] Stunned pedestrian for 2s")
 			return true
 		if node is Customer:
 			var cust := node as Customer
 			_hit_someone = true
-			cust.stun(3.0)
-			GameLog.log("[ThrownTrash] Stunned customer for 3s")
+			cust.stun(2.0)
+			GameLog.log("[ThrownTrash] Stunned customer for 2s")
 			return true
 		node = node.get_parent()
 	return false

@@ -279,11 +279,15 @@ func play_anim_reverse(anim_name: String, blend: float = 0.3) -> void:
 	var anim := _active_anim.get_animation(anim_name)
 	if anim:
 		anim.loop_mode = Animation.LOOP_NONE
-	# Play in reverse: set speed to -1 and start from the end.
 	_active_anim.speed_scale = 1.0
-	_active_anim.play(anim_name, blend)
-	_active_anim.seek(anim.length, true)
-	_active_anim.speed_scale = -1.0
+	_active_anim.play_backwards(anim_name, blend)
+
+
+## Get the length of an animation, or 0 if it doesn't exist.
+func get_anim_length(anim_name: String) -> float:
+	if _active_anim == null or not _active_anim.has_animation(anim_name):
+		return 0.0
+	return _active_anim.get_animation(anim_name).length
 
 
 ## Crossfade from the current animation to a new one with blending.
