@@ -1398,6 +1398,19 @@ func _on_local_player_ready(p: Player) -> void:
 		GameLog.log("[Main] _on_local_player_ready already called, skipping")
 		return
 	_local_player = p
+	# Ensure the player's camera is current. There's a race condition
+	# during game start: _configure_local_player() may have been called
+	# while defer_camera_claim was true (camera not made current), and
+	# _snap_to_player_camera() may have run before _local_player was set
+	# (so it couldn't switch the camera either). This ensures the camera
+	# is always claimed when the local player becomes ready.
+	var player_cam := p.get_node_or_null("Head/Camera3D") as Camera3D
+	if player_cam and not player_cam.is_current():
+		lobby_camera.current = false
+		player_cam.make_current()
+		GameLog.log("[Main] _on_local_player_ready: camera claimed for %s" % p.name)
+	# Ensure mouse is captured for gameplay.
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Spawn the screen-space outline overlay and hand it the local
 	# player's camera so it can mirror the transform every frame.
 	var outline_sys: Node = OUTLINE_SCENE.instantiate()

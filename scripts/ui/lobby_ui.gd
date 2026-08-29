@@ -383,8 +383,10 @@ func _set_slider_emoji_icons(slider: HSlider) -> void:
 	var grabber_hl := await _render_emoji_texture("🍋", 20)
 	if not is_instance_valid(slider):
 		return
-	slider.add_theme_icon_override("grabber", grabber)
-	slider.add_theme_icon_override("grabber_highlight", grabber_hl)
+	if grabber != null:
+		slider.add_theme_icon_override("grabber", grabber)
+	if grabber_hl != null:
+		slider.add_theme_icon_override("grabber_highlight", grabber_hl)
 	slider.add_theme_icon_override(
 		"grabber_disabled",
 		_make_circle_icon(12, Color(0.5, 0.5, 0.5, 0.5), Color(0, 0, 0, 0), 0),
@@ -412,6 +414,9 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	await get_tree().process_frame
 	var img := vp.get_texture().get_image()
 	vp.queue_free()
+	if img == null:
+		# Headless/no-GPU environments can't render SubViewports.
+		return null
 	# Remove dark outline pixels: make near-black pixels transparent.
 	_remove_dark_outline(img)
 	var tex := ImageTexture.create_from_image(img)
@@ -421,6 +426,8 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 
 ## Remove dark outline pixels from an emoji render by making them transparent.
 func _remove_dark_outline(img: Image) -> void:
+	if img == null:
+		return
 	var w := img.get_width()
 	var h := img.get_height()
 	for y in h:
