@@ -22,6 +22,8 @@ var _last_synced_pos: Vector3 = Vector3.ZERO
 var _last_synced_rot: Vector3 = Vector3.ZERO
 var _last_synced_pitch: float = 0.0
 var _last_synced_yaw: float = 0.0
+var _last_synced_crouch: bool = false
+var _last_synced_sprint: bool = false
 const SYNC_MIN_INTERVAL: float = 0.05 # Max 20 updates/sec while moving
 const SYNC_POS_THRESHOLD: float = 0.1 # Min movement (meters) to trigger sync
 # Remote player interpolation target (set by RPC, lerped toward in _process)
@@ -40,6 +42,8 @@ const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 var _current_anim: String = "Idle"
 var _crouch_frozen: bool = false
 var _is_airborne: bool = false
+var _air_time: float = 0.0
+const MIN_AIR_TIME: float = 0.3 # Min seconds airborne before landing check
 var _was_moving: bool = false
 var _prev_sync_pos: Vector3 = Vector3.ZERO
 var _is_sprinting: bool = false
@@ -56,33 +60,12 @@ var _priceboard_camera_original_top_level := false
 func _update_anim() -> void:
 	if _player.visuals == null:
 		return
-	# DEBUG: unconditional log to see if this runs at all
-	if Engine.get_process_frames() % 30 == 0:
-		var has_crouch: bool = (
-			_player.visuals._active_anim != null and _player.visuals._active_anim.has_animation(
-				"Crouch"
-			)
-		)
-		var has_jump: bool = (
-			_player.visuals._active_anim != null and _player.visuals._active_anim.has_animation(
-				"Jump"
-			)
-		)
-		GameLog.log(
-			"[ANIM] player=%s auth=%s vis=%s crouching=%s cur=%s hasCrouch=%s hasJump=%s active=%s"
-			% [
-				_player.name,
-				_player.is_multiplayer_authority(),
-				_player.visuals.visible,
-				_player.is_crouching,
-				_current_anim,
-				has_crouch,
-				has_jump,
-				_player.visuals._active_anim,
-			]
-		)
 
-	# Determine state with hysteresis to prevent flicker.
+	# Determine state with hysteresis to prevent jump flicker.
+	# Once airborne, require a minimum air time before allowing landing,
+	# then require strong evidence of being on floor. This prevents the
+	# Jump animation from flickering back to Idle/Walk at the jump peak
+	# (where velocity.y ≈ 0 momentarily).
 	var raw_on_floor: bool
 	if _player.is_multiplayer_authority():
 		raw_on_floor = _player.is_on_floor()
@@ -90,8 +73,19 @@ func _update_anim() -> void:
 		raw_on_floor = absf(_player.velocity.y) < 1.0
 	var on_floor: bool = raw_on_floor
 	if _is_airborne:
-		on_floor = raw_on_floor and _player.velocity.y <= 0.1
-	_is_airborne = not on_floor
+		_air_time += get_process_delta_time()
+		# Only allow landing after minimum air time AND clearly on floor
+		if _air_time < MIN_AIR_TIME:
+			on_floor = false
+		else:
+			on_floor = raw_on_floor and _player.velocity.y >= -0.5
+	else:
+		_air_time = 0.0
+	if on_floor:
+		_is_airborne = false
+		_air_time = 0.0
+	else:
+		_is_airborne = true
 
 	var horizontal_vel := Vector3(_player.velocity.x, 0, _player.velocity.z).length()
 	var moving := horizontal_vel > 0.5 and on_floor
@@ -405,14 +399,17 @@ func _try_sync_position(delta: float) -> void:
 	if (
 		pos_delta < SYNC_POS_THRESHOLD and rot_delta < SYNC_ROT_THRESHOLD \
 				and pitch_delta < 0.05
-		and yaw_delta < 0.05
+		and yaw_delta < 0.05 and _player.is_crouching == _last_synced_crouch
+		and _is_sprinting == _last_synced_sprint
 	):
-		return # Haven't moved/looked enough, skip
+		return # Haven't moved/looked/changed state enough, skip
 	_sync_pos_timer = 0.0
 	_last_synced_pos = _player.global_position
 	_last_synced_rot = _player.global_rotation
 	_last_synced_pitch = _player.head.rotation.x
 	_last_synced_yaw = _player.head.rotation.y
+	_last_synced_crouch = _player.is_crouching
+	_last_synced_sprint = _is_sprinting
 	_sync_position.rpc(
 		_player.global_position,
 		_player.global_rotation,
