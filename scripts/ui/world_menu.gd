@@ -467,9 +467,9 @@ func _add_drop_shadow(btn: Button) -> void:
 func _style_scroll_container(scroll: ScrollContainer) -> void:
 	var bar := scroll.get_v_scroll_bar() as VScrollBar
 	if bar == null:
-		print("[WorldMenu] No VScrollBar found on SaveScroll")
 		return
-	print("[WorldMenu] Styling scrollbar: size=%s visible=%s" % [str(bar.size), bar.visible])
+	# Make the scrollbar itself wider (default is ~8px, way too thin).
+	bar.custom_minimum_size = Vector2(14, 0)
 	# Make the scrollbar wider so it's clearly visible.
 	bar.add_theme_constant_override("minimum_grab_thickness", 14)
 	# Track: subtle warm brown background.
