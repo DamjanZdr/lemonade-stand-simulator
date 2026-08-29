@@ -90,7 +90,7 @@ func add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO
 		_rpc_request_add_amount.rpc_id(1, fruit_type, qty, from_pos)
 		return
 	_apply_add_amount(fruit_type, qty, from_pos)
-	_sync_state_to_peers()
+	_sync_state_to_peers(fruit_type, from_pos)
 
 
 func _apply_add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
@@ -120,9 +120,31 @@ func _rpc_request_add_amount(fruit_type: String, qty: float, from_pos: Vector3) 
 	add_amount(fruit_type, qty, from_pos)
 
 
-func _sync_state_to_peers() -> void:
+func _sync_state_to_peers(fruit_type: String = "", from_pos: Vector3 = Vector3.ZERO) -> void:
 	WorldSync.sync_property(self, "fruit_amounts", fruit_amounts.duplicate(true))
-	WorldSync.sync_call(self, "update_display")
+	if fruit_type != "" and from_pos != Vector3.ZERO:
+		WorldSync.sync_call(self, "_play_fruit_fly_in", [fruit_type, from_pos])
+	else:
+		WorldSync.sync_call(self, "update_display")
+
+
+## Client-side: play the fly-in animation for newly visible fruits.
+## Called via sync_call from the host after fruit_amounts changes.
+func _play_fruit_fly_in(fruit_type: String, from_pos: Vector3) -> void:
+	if WorldSync.is_host():
+		return
+	if not fruit_grids.has(fruit_type):
+		update_display()
+		return
+	var data: Dictionary = fruit_grids[fruit_type]
+	var nodes: Array[Node3D] = data["nodes"]
+	var cap: int = data["capacity"]
+	var origins: Array[Vector3] = data["origins"]
+	var grid_drop: float = data["drop_height"]
+	var count := mini(roundi(fruit_amounts.get(fruit_type, 0.0)), cap)
+	for i in range(count):
+		if i < nodes.size() and is_instance_valid(nodes[i]):
+			_drop_item(nodes[i], origins[i], grid_drop, from_pos)
 
 
 func _drop_item(

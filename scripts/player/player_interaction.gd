@@ -316,9 +316,18 @@ func primary_interact() -> void:
 					_player.placement._destroy_ghost()
 					return
 				node = node.get_parent()
-		# Empty boxes can be placed on the ground (ghost is shown by
-		# update_ghost). Drop at the ghost position.
+		# Empty boxes can be placed on the ground or stacked on other
+		# boxes (ghost is shown by update_ghost). If looking at a supply
+		# box, stack on top of it; otherwise drop on the ground.
 		if _player.held_item_data.get("trash_type", "") == "empty_box":
+			# Check if looking at a supply box to stack on.
+			if _player.ray.is_colliding():
+				var node: Node = _player.ray.get_collider()
+				while node != null:
+					if node is SupplyBox:
+						_player.placement._place_held_trash_box_on_stack(node as SupplyBox)
+						return
+					node = node.get_parent()
 			_player.placement._drop_trash()
 			return
 		# Other trash types — throw charge system handles release.

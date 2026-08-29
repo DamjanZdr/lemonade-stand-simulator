@@ -42,42 +42,64 @@ func interact(player: Node) -> void:
 	if p.held_item_data.get("is_trash", false):
 		var refund := _get_refund(player)
 		var trash_type := _get_trash_type(player)
+		var stand_name := _get_player_stand_name(p)
 		# Route through host so money and trash disposal sync correctly
 		if WorldSync.is_host():
-			_apply_trash_disposal(trash_type, refund)
+			_apply_trash_disposal(trash_type, refund, stand_name)
 		else:
-			_request_trash_disposal.rpc_id(1, trash_type, refund)
+			_request_trash_disposal.rpc_id(1, trash_type, refund, stand_name)
 		AudioManager.play_sfx("trash", global_position)
 		player.inventory.clear_held()
 		return
 	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		var refund := _get_container_cost_for_trash(ctype)
+		var stand_name := _get_player_stand_name(p)
 		if WorldSync.is_host():
-			_apply_trash_disposal(ctype, refund)
+			_apply_trash_disposal(ctype, refund, stand_name)
 		else:
-			_request_trash_disposal.rpc_id(1, ctype, refund)
+			_request_trash_disposal.rpc_id(1, ctype, refund, stand_name)
 		AudioManager.play_sfx("trash", global_position)
 		player.inventory.clear_held()
 		return
 
 
 ## Host-side: apply money refund and spawn trash visual.
-func _apply_trash_disposal(trash_type: String, refund: float) -> void:
+func _apply_trash_disposal(trash_type: String, refund: float, stand_name: String = "") -> void:
 	if not WorldSync.is_host():
 		return
 	if refund > 0.0:
-		GameState.add_money(refund)
+		_add_money_to_stand(refund, stand_name)
 	EventBus.trash_disposed.emit(trash_type, refund)
 	_spawn_disposed_trash(trash_type)
 
 
 ## Client -> Host RPC to request trash disposal.
 @rpc("any_peer", "reliable")
-func _request_trash_disposal(trash_type: String, refund: float) -> void:
+func _request_trash_disposal(trash_type: String, refund: float, stand_name: String = "") -> void:
 	if not WorldSync.is_host():
 		return
-	_apply_trash_disposal(trash_type, refund)
+	_apply_trash_disposal(trash_type, refund, stand_name)
+
+
+## Credit the refund to the correct stand. Falls back to GameState
+## (legacy primary stand) if no stand is specified.
+func _add_money_to_stand(refund: float, stand_name: String) -> void:
+	if stand_name != "":
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree != null and tree.current_scene != null:
+			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
+				if s.name == stand_name and s.has_method("add_money"):
+					s.add_money(refund)
+					return
+	GameState.add_money(refund)
+
+
+## Get the player's assigned stand name for per-stand money routing.
+func _get_player_stand_name(p: Player) -> String:
+	if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
+		return p.assigned_stand.name
+	return ""
 
 
 func _spawn_disposed_trash(trash_type: String = "") -> void:

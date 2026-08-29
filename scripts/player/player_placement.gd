@@ -628,6 +628,48 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	_player.inventory.clear_held()
 
 
+## Place a held trash box (empty_box) on top of an existing supply box stack.
+## Behaves like _place_held_supply_box_on_stack but spawns a trash box.
+func _place_held_trash_box_on_stack(root: SupplyBox) -> void:
+	root.update_metrics()
+	var top := _get_topmost_box_in_stack(root)
+	top.update_metrics()
+	if top.get_instance_id() != _stack_target_id:
+		_stack_target_id = top.get_instance_id()
+		_regenerate_stack_offset()
+	var top_y := _get_box_stack_y(top)
+	var place_pos := Vector3(top.global_position.x, top_y, top.global_position.z) + Vector3(
+		0,
+		top.stack_height,
+		0,
+	) + _stack_offset
+	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
+	var state: Dictionary = {
+		"is_trash_box": true,
+		"ingredient_type": "trash",
+		"quantity": 0.0,
+		"trash_value": _player.held_item_data.get("trash_value", 0.0),
+		"trash_type": _player.held_item_data.get("trash_type", "empty_box"),
+		"stack_base_id": top.get_instance_id(),
+	}
+	# Inherit delivery grid metas from the box we're stacking on.
+	if top.has_meta("delivery_grid_path"):
+		state["delivery_grid_path"] = top.get_meta("delivery_grid_path")
+	if top.has_meta("delivery_cell_idx"):
+		state["delivery_cell_idx"] = top.get_meta("delivery_cell_idx")
+	var box := WorldSync.request_spawn(
+		"res://scenes/objects/supply_box.tscn",
+		place_pos,
+		place_rot,
+		state,
+	) as SupplyBox
+	if box:
+		box.update_metrics()
+	AudioManager.play_sfx("box_drop", place_pos)
+	_destroy_ghost()
+	_player.inventory.clear_held()
+
+
 func _get_place_sfx_key(container_type: String) -> String:
 	match container_type:
 		"pitcher", "press", "fruit_bin":
@@ -1663,23 +1705,61 @@ func _is_placement_surface(collider: Object) -> bool:
 		return false
 	if not _player.ray.is_colliding():
 		return false
-	var normal := _player.ray.get_collision_normal()
-	if normal.y <= 0.7:
-		return false
 	var node := collider as Node
 	if node == null:
 		return false
 	# Check the collider itself and up to 2 parents for placement_surface group
+	var is_placement_node := false
 	for i in range(3):
 		if node.is_in_group("placement_surface"):
-			return true
+			is_placement_node = true
+			break
 		node = node.get_parent()
 		if node == null:
 			break
+	# If the collider is a placement_surface but the ray hit a side
+	# (normal too horizontal), do a downward probe from the hit point
+	# to check if there's a valid top surface below. This allows
+	# placing on tables from any angle, not just from above.
+	var normal := _player.ray.get_collision_normal()
+	if normal.y <= 0.7:
+		if is_placement_node:
+			return _probe_tabletop_below()
+		return false
+	if is_placement_node:
+		return true
 	# Fallback: the main ray might have hit a sidewalk/ground (layer 1)
 	# that's above the PlacableFloor (layer 4). Do a separate raycast
 	# on layer 4 only to check for a PlacableFloor underneath.
 	return _check_layer4_placement_surface()
+
+
+## Probe downward from the ray hit point to find a valid tabletop
+## surface. This allows placement on tables even when the player's
+## forward ray hits the side of the table.
+func _probe_tabletop_below() -> bool:
+	var hit_point := _player.ray.get_collision_point()
+	var from := hit_point + Vector3.UP * 0.5
+	var to := hit_point + Vector3.DOWN * 2.0
+	var space := _player.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.exclude = [_player.get_rid()]
+	var hits := space.intersect_ray(query)
+	if hits.is_empty():
+		return false
+	var n: Node = hits.get("collider", null)
+	if n == null:
+		return false
+	var normal: Vector3 = hits.get("normal", Vector3.ZERO)
+	if normal.y <= 0.7:
+		return false
+	for i in range(3):
+		if n.is_in_group("placement_surface"):
+			return true
+		n = n.get_parent()
+		if n == null:
+			break
+	return false
 
 
 ## Do a raycast on collision layer 4 only (where PlacableFloor lives).
