@@ -110,15 +110,12 @@ func _ready() -> void:
 
 ## Load extra animations (Crouch, Fall, etc.) from newman.glb at runtime
 ## using GLTFDocument (bypasses Godot's buggy import). Copies into both
-## man and woman AnimationPlayers. Done once per session.
+## man and woman AnimationPlayers. Loaded per-instance so remote players
+## in multiplayer also get the animations.
 const _EXTRA_ANIM_PATH := "res://assets/models/characters/newman.glb"
-static var _extra_anim_loaded: bool = false
 
 
 func _load_extra_animations() -> void:
-	if _extra_anim_loaded:
-		return
-	_extra_anim_loaded = true
 	var doc := GLTFDocument.new()
 	var state := GLTFState.new()
 	var err := doc.append_from_file(_EXTRA_ANIM_PATH, state)
@@ -701,15 +698,15 @@ func seek_anim(anim_name: String, time: float) -> void:
 		return
 	if not _active_anim.has_animation(anim_name):
 		return
-	if _active_anim.assigned_animation != anim_name or not _active_anim.is_playing():
-		var anim := _active_anim.get_animation(anim_name)
-		if anim:
-			anim.loop_mode = Animation.LOOP_NONE
-		_active_anim.speed_scale = 1.0
-		_active_anim.play(anim_name)
+	var anim := _active_anim.get_animation(anim_name)
+	if anim:
+		anim.loop_mode = Animation.LOOP_NONE
+	# Play the animation (starts from beginning), then seek and pause.
+	_active_anim.speed_scale = 1.0
+	_active_anim.play(anim_name, 0.0)
 	_active_anim.seek(time, true)
-	_active_anim.stop()
-	_active_anim.playback_active = true
+	# Pause instead of stop — stop() resets the pose to the rest pose.
+	_active_anim.playback_active = false
 
 
 func get_active_skeleton() -> Skeleton3D:

@@ -38,6 +38,7 @@ var _look_pitch: float = 0.0
 const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 # Animation state
 var _current_anim: String = "Idle"
+var _crouch_frozen: bool = false
 var _was_moving: bool = false
 var _prev_sync_pos: Vector3 = Vector3.ZERO
 var _is_sprinting: bool = false
@@ -95,19 +96,19 @@ func _update_anim() -> void:
 		target_speed = 1.0
 
 	# Apply animation
-	if _current_anim != target_anim:
-		if _player.is_crouching and not moving:
+	var crouch_freeze := _player.is_crouching and not moving and on_floor
+	if _current_anim != target_anim or _crouch_frozen != crouch_freeze:
+		if crouch_freeze:
 			# Standing crouched: play Crouch then freeze on first frame
 			_player.visuals.seek_anim("Crouch", 0.0)
+			_crouch_frozen = true
 		else:
 			_player.visuals.play_anim_speed(target_anim, target_speed)
+			_crouch_frozen = false
 		_current_anim = target_anim
 	elif target_anim == "Walk" or (target_anim == "Crouch" and moving):
 		# Same anim but speed might have changed
 		_player.visuals.set_anim_speed(target_speed)
-	elif target_anim == "Crouch" and not moving:
-		# Transition from crouch-walk to crouch-stand: freeze on first frame
-		_player.visuals.seek_anim("Crouch", 0.0)
 
 
 ## Apply crouch visual: lower the head/camera and update animation.
