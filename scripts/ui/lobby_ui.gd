@@ -246,6 +246,9 @@ func _apply_mode_layout() -> void:
 	var mode: int = LobbyManager.game_mode
 	var is_versus := mode == GameState.GameMode.VERSUS
 	var is_solo := mode == GameState.GameMode.SOLO
+	GameLog.log(
+		"[LobbyUI] _apply_mode_layout: mode=%d is_versus=%s is_solo=%s" % [mode, is_versus, is_solo]
+	)
 	# Stand 2 column + header + separator.
 	var stand2_col: VBoxContainer = $LeftContainer/LobbyPanel/VBox/PlayersRow/Stand2Col
 	var stand2_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand2Header

@@ -263,7 +263,13 @@ func _setup_lobby() -> void:
 	# Re-apply the mode layout so the lobby UI reflects the current
 	# game mode (it was read in _ready() before the mode was set).
 	if lobby_ui.has_method("_apply_mode_layout"):
+		GameLog.log(
+			"[Main] _setup_lobby: LobbyManager.game_mode=%d GameState.game_mode=%d"
+			% [LobbyManager.game_mode, GameState.game_mode]
+		)
 		lobby_ui._apply_mode_layout()
+	else:
+		GameLog.log("[Main] _setup_lobby: lobby_ui has no _apply_mode_layout method!")
 
 ## --- In-world main menu ---
 
@@ -375,8 +381,10 @@ func _on_menu_play() -> void:
 
 ## New stand created from the saves panel name dialog.
 func _on_menu_new_stand(stand_name: String, game_mode: int) -> void:
+	GameLog.log("[Main] _on_menu_new_stand: name=%s mode=%d" % [stand_name, game_mode])
 	SaveManager.start_new_game(stand_name, game_mode)
 	LobbyManager.game_mode = game_mode
+	GameLog.log("[Main] After set: LobbyManager.game_mode=%d" % [LobbyManager.game_mode])
 	# Go to the lobby (same flow as Play with an existing save) so the
 	# player can invite friends, pick teams, etc. before starting.
 	NetworkManager.host_game()
