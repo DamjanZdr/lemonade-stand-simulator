@@ -731,8 +731,21 @@ func get_looked_at_interactable() -> Interactable:
 	if result is Workstation:
 		var alt := _find_closer_interactable_along_ray(result)
 		if alt != null:
-			return alt
+			result = alt
+	# Filter by stand ownership: only allow interaction with objects
+	# the player owns, UNLESS it's a SupplyBox (cross-stand pickup allowed).
+	if result != null and not _can_interact(result):
+		return null
 	return result
+
+
+## Check if the local player can interact with this object.
+## SupplyBox is always allowed (cross-stand pickup). Other objects
+## require can_player_use() to return true.
+func _can_interact(interactable: Interactable) -> bool:
+	if interactable.is_in_group("supply_box"):
+		return true
+	return interactable.can_player_use(_player)
 
 
 ## Do a manual ray intersection to find Interactables along the ray

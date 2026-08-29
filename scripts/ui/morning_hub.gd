@@ -1628,7 +1628,7 @@ func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
 	# Route purchases through the host. Clients send an RPC; the host
 	# validates money and emits the signal that triggers delivery.
 	if WorldSync.is_host():
-		if not GameState.spend_money(total):
+		if not WorldSync.spend_local_money(total):
 			return
 		var sn := WorldSync.get_local_stand_name()
 		for i in range(qty):
@@ -1648,7 +1648,7 @@ func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
 
 func _buy_container(container_type: String, cost: float) -> void:
 	if WorldSync.is_host():
-		if not GameState.spend_money(cost):
+		if not WorldSync.spend_local_money(cost):
 			_status_lbl.text = "Not enough money!"
 			_animate_status()
 			return
@@ -1685,9 +1685,11 @@ func _request_purchase(
 		"[MorningHub] Host received purchase from %d: %s/%s (stand=%s)"
 		% [sender_id, category, item_id, stand_name]
 	)
+	# Find the requesting player's stand by name and spend from it
+	var stand := _find_stand_by_name(stand_name)
 	match category:
 		"supply":
-			if not GameState.spend_money(cost):
+			if not _spend_from_stand(stand, cost):
 				return
 			# Find the item to get its per-box quantity
 			var per_box: float = qty
@@ -1698,7 +1700,7 @@ func _request_purchase(
 			for i in range(int(qty)):
 				EventBus.supply_order_placed.emit(item_id, per_box, cost / qty, stand_name)
 		"equipment":
-			if not GameState.spend_money(cost):
+			if not _spend_from_stand(stand, cost):
 				return
 			EventBus.equipment_order_placed.emit(item_id, stand_name)
 		"upgrade_node":
@@ -1706,6 +1708,24 @@ func _request_purchase(
 			GameLog.log(
 				"[MorningHub] Host purchased upgrade node %s for peer %d" % [item_id, sender_id]
 			)
+
+
+func _find_stand_by_name(stand_name: String) -> Node:
+	if stand_name == "":
+		return WorldSync.get_local_stand()
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.current_scene == null:
+		return null
+	for s in tree.current_scene.find_children("*", "StandUnit", true, false):
+		if s.name == stand_name:
+			return s
+	return null
+
+
+func _spend_from_stand(stand: Node, amount: float) -> bool:
+	if stand != null and stand.has_method("spend_money"):
+		return stand.spend_money(amount)
+	return GameState.spend_money(amount)
 
 
 func _animate_status() -> void:

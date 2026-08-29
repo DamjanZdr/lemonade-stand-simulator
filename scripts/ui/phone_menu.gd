@@ -1,4 +1,4 @@
-﻿extends CanvasLayer
+extends CanvasLayer
 ## Phone menu: supply ordering. Toggle with Tab.
 
 var _visible_panel: bool = false
@@ -13,10 +13,10 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_focus_next"): # Tab key â€” toggle before UI focus moves
+	if event.is_action_pressed("ui_focus_next"): # Tab key — toggle before UI focus moves
 		if DayManager.current_phase != DayManager.Phase.DAY:
 			EventBus.interaction_hint_changed.emit(
-				"Shop closed â€” use the morning supply menu before the day starts",
+				"Shop closed — use the morning supply menu before the day starts",
 			)
 			get_viewport().set_input_as_handled()
 			return
@@ -39,7 +39,7 @@ func _input(event: InputEvent) -> void:
 func _build_order_buttons() -> void:
 	# --- Supplies ---
 	var supply_header := Label.new()
-	supply_header.text = "â”€â”€ Supplies â”€â”€"
+	supply_header.text = "── Supplies ──"
 	supply_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	order_buttons.add_child(supply_header)
 	var types := ["lemon", "water", "sugar", "ice", "cups"]
@@ -58,7 +58,7 @@ func _build_order_buttons() -> void:
 	var sep1 := HSeparator.new()
 	order_buttons.add_child(sep1)
 	var container_header := Label.new()
-	container_header.text = "â”€â”€ Equipment â”€â”€"
+	container_header.text = "── Equipment ──"
 	container_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	order_buttons.add_child(container_header)
 	var containers := [
@@ -86,7 +86,7 @@ func _build_order_buttons() -> void:
 	var sep2 := HSeparator.new()
 	order_buttons.add_child(sep2)
 	var upgrade_header := Label.new()
-	upgrade_header.text = "â”€â”€ Upgrades â”€â”€"
+	upgrade_header.text = "── Upgrades ──"
 	upgrade_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	order_buttons.add_child(upgrade_header)
 	for cat in UpgradeManager.get_categories():
@@ -155,7 +155,7 @@ func _order(itype: String) -> void:
 	# delivery system. Clients send an RPC to the host instead.
 	var sn := WorldSync.get_local_stand_name()
 	if WorldSync.is_host():
-		if not GameState.spend_money(cost):
+		if not WorldSync.spend_local_money(cost):
 			EventBus.interaction_hint_changed.emit("Not enough money!")
 			return
 		EventBus.supply_order_placed.emit(itype, qty, cost, sn)
@@ -166,7 +166,7 @@ func _order(itype: String) -> void:
 func _buy_container(container_type: String, cost: float) -> void:
 	var sn := WorldSync.get_local_stand_name()
 	if WorldSync.is_host():
-		if not GameState.spend_money(cost):
+		if not WorldSync.spend_local_money(cost):
 			EventBus.interaction_hint_changed.emit("Not enough money!")
 			return
 		EventBus.equipment_order_placed.emit(container_type, sn)
@@ -213,13 +213,15 @@ func _request_purchase(
 		"[PhoneMenu] Host received purchase request from %d: %s/%s (stand=%s)"
 		% [sender_id, category, item_id, stand_name]
 	)
+	# Find the requesting player's stand by name and spend from it
+	var stand := _find_stand_by_name(stand_name)
 	match category:
 		"supply":
-			if not GameState.spend_money(cost):
+			if not _spend_from_stand(stand, cost):
 				return
 			EventBus.supply_order_placed.emit(item_id, qty, cost, stand_name)
 		"equipment":
-			if not GameState.spend_money(cost):
+			if not _spend_from_stand(stand, cost):
 				return
 			EventBus.equipment_order_placed.emit(item_id, stand_name)
 		"upgrade":
@@ -227,3 +229,21 @@ func _request_purchase(
 				GameLog.log(
 					"[PhoneMenu] Host purchased upgrade %s for peer %d" % [item_id, sender_id]
 				)
+
+
+func _find_stand_by_name(stand_name: String) -> Node:
+	if stand_name == "":
+		return WorldSync.get_local_stand()
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.current_scene == null:
+		return null
+	for s in tree.current_scene.find_children("*", "StandUnit", true, false):
+		if s.name == stand_name:
+			return s
+	return null
+
+
+func _spend_from_stand(stand: Node, amount: float) -> bool:
+	if stand != null and stand.has_method("spend_money"):
+		return stand.spend_money(amount)
+	return GameState.spend_money(amount)

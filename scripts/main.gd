@@ -903,8 +903,10 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: C
 	if hud:
 		hud.visible = true
 	# Start the day cycle (sun transitions smoothly).
-	DayManager.start_morning()
-	DayManager.start_day()
+	# Only the host drives the day cycle; clients receive it via RPC.
+	if multiplayer.is_server():
+		DayManager.start_morning()
+		DayManager.start_day()
 	# Sequential timeline:
 	# 1. Fade in from black (eyes opening) — 0.5s (Day X already visible)
 	# 2. Hold for 5 seconds (Day X stays on screen)
@@ -1225,6 +1227,9 @@ func _push_world_state_to_clients() -> void:
 ## Same as above but only to a specific peer (for late joiners).
 func _push_world_state_to_client(peer_id: int) -> void:
 	WorldSync.sync_world_state_to_peer(peer_id)
+	# Sync the current day/phase to the late joiner
+	if multiplayer.is_server():
+		DayManager.sync_day_state_to_peer(peer_id)
 
 
 func _on_spawner_spawned(node: Node) -> void:

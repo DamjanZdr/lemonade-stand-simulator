@@ -82,6 +82,15 @@ func _sync_phase_to_clients() -> void:
 		_sync_day_phase.rpc(current_phase, day_number)
 
 
+## Sync the current day/phase to a specific peer (for late joiners).
+func sync_day_state_to_peer(peer_id: int) -> void:
+	if not multiplayer.multiplayer_peer:
+		return
+	if not multiplayer.is_server():
+		return
+	_sync_day_phase.rpc_id(peer_id, current_phase, day_number)
+
+
 @rpc("authority", "call_local", "reliable")
 func _sync_day_phase(phase: int, day: int) -> void:
 	if multiplayer.is_server():

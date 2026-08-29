@@ -87,6 +87,27 @@ static func get_local_stand_name() -> String:
 	return ""
 
 
+## Returns the StandUnit node the local player is assigned to, or null.
+static func get_local_stand() -> Node:
+	var p := get_local_player()
+	if p == null:
+		return null
+	var stand: Node = p.get("assigned_stand")
+	if stand != null and is_instance_valid(stand):
+		return stand
+	return null
+
+
+## Spend money from the local player's assigned stand.
+## Falls back to GameState for single-player / legacy primary stand.
+## Returns true if the money was spent successfully.
+static func spend_local_money(amount: float) -> bool:
+	var stand := get_local_stand()
+	if stand != null and stand.has_method("spend_money"):
+		return stand.spend_money(amount)
+	return GameState.spend_money(amount)
+
+
 ## Assign a stable network ID to a node. Returns the ID. If the node is
 ## freed, the ID is automatically unregistered.
 func _assign_net_id(obj: Node) -> int:

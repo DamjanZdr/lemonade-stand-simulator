@@ -165,7 +165,7 @@ func _buy_item(id: String) -> void:
 	for item in _items:
 		if item["id"] == id:
 			var total: float = qty * item["cost"]
-			if not GameState.spend_money(total):
+			if not WorldSync.spend_local_money(total):
 				return
 			# Deliver supply boxes
 			var amount_per_box: float = item["qty"]
@@ -192,3 +192,4 @@ func _on_start_day() -> void:
 	panel.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	DayManager.start_day()
+

@@ -330,7 +330,7 @@ func purchase_node(node_name: String) -> bool:
 		return false
 	var data: Dictionary = tree_nodes.get(node_name, { })
 	var cost: float = data.get("cost", 0.0) * (1.0 - _negotiation_discount())
-	if not GameState.spend_money(cost):
+	if not WorldSync.spend_local_money(cost):
 		return false
 	purchased_nodes[node_name] = true
 	# Flush to per-stand storage so research persists per stand.
@@ -557,3 +557,4 @@ func reset() -> void:
 
 func _negotiation_discount() -> float:
 	return clampf(get_effect_total("negotiation"), 0.0, 0.9)
+
