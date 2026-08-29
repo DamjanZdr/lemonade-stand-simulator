@@ -748,7 +748,7 @@ func _find_closer_interactable_along_ray(workstation: Workstation) -> Interactab
 	if hits.is_empty():
 		return null
 	# intersect_ray only returns the closest hit. But we can check if
-	# the Workstation has child Interactables whose AABB contains the
+	# the Workstation has child Interactables whose bounds contain the
 	# hit point. If the player is looking at a bin on the table, the
 	# hit point should be within the bin's bounds.
 	var hit_point: Vector3 = hits.get("position", Vector3.ZERO)
@@ -757,11 +757,21 @@ func _find_closer_interactable_along_ray(workstation: Workstation) -> Interactab
 			var child3d := child as Node3D
 			if child3d == null or not child3d.visible:
 				continue
-			# Check if the hit point is within the child's AABB.
-			var aabb: AABB = child3d.get_aabb()
-			# get_aabb() returns local-space AABB; transform to world.
-			var world_aabb := AABB(child3d.global_transform * aabb.position, aabb.size)
-			if world_aabb.has_point(hit_point):
+			# Check if the hit point is within the child's bounds.
+			# Node3D doesn't have get_aabb(), so check VisualInstance3D
+			# children (MeshInstance3D, etc.) for their AABB.
+			var matched := false
+			for sub in child3d.find_children("*", "VisualInstance3D", true, false):
+				var vi := sub as VisualInstance3D
+				if vi == null or not vi.visible:
+					continue
+				var aabb: AABB = vi.get_aabb()
+				# get_aabb() returns local-space AABB; transform to world.
+				var world_aabb := AABB(vi.global_transform * aabb.position, aabb.size)
+				if world_aabb.has_point(hit_point):
+					matched = true
+					break
+			if matched:
 				return child as Interactable
 	return null
 
