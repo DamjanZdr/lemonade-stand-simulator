@@ -38,6 +38,9 @@ enum PedestrianState {
 }
 var _state: PedestrianState = PedestrianState.WALKING
 
+## Stun timer: when > 0, the pedestrian stops walking (hit by trash).
+var _stun_timer: float = 0.0
+
 var _offered_by_player: Node3D = null
 var _offer_patience_max: float = 30.0
 var _offer_patience: float = 0.0
@@ -177,6 +180,14 @@ func _physics_process(delta: float) -> void:
 		if q.dot(_facing_target.get_rotation_quaternion()) > 0.999:
 			basis = _facing_target
 			_is_rotating_to_face = false
+
+	# Tick stun timer — stunned pedestrians can't walk.
+	if _stun_timer > 0.0:
+		_stun_timer = maxf(_stun_timer - delta, 0.0)
+		velocity.x = 0.0
+		velocity.z = 0.0
+		move_and_slide()
+		return
 
 	match _state:
 		PedestrianState.WALKING:
@@ -414,6 +425,14 @@ func _walk_toward(target: Vector3, delta: float) -> void:
 
 func can_interact() -> bool:
 	return _state == PedestrianState.WALKING
+
+
+## Stun the pedestrian for duration seconds (host-authoritative).
+## Called when hit by thrown trash.
+func stun(duration: float) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	_stun_timer = maxf(_stun_timer, duration)
 
 
 ## Client → host: request to offer free lemonade to this pedestrian.

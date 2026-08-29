@@ -93,6 +93,15 @@ func _update_anim() -> void:
 		_player.visuals.set_anim_speed(target_speed)
 
 
+## Apply crouch visual: lower the head/camera and scale the body.
+## This is a simple visual effect for now; later we can add a crouch animation.
+func _apply_crouch_visual() -> void:
+	var target_y: float = -0.6 if _player.is_crouching else 0.0
+	var tween := _player.create_tween()
+	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(_player.head, "position:y", _player.head.position.y + target_y, 0.15)
+
+
 func enter_priceboard_focus(focus_transform: Transform3D) -> void:
 	_in_priceboard_mode = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -244,11 +253,28 @@ func _physics_process(delta: float) -> void:
 		_update_anim()
 		return
 
+	# Tick stun timer.
+	if _player._stun_timer > 0.0:
+		_player._stun_timer = maxf(_player._stun_timer - delta, 0.0)
+
+	# Crouch toggle (CTRL or C).
+	if Input.is_action_just_pressed("crouch"):
+		_player.is_crouching = not _player.is_crouching
+		_apply_crouch_visual()
+
 	if not _player.is_on_floor():
 		_player.velocity.y -= _player.gravity * delta
 	else:
-		if Input.is_action_just_pressed("jump"):
+		if Input.is_action_just_pressed("jump") and not _player.is_crouching:
 			_player.velocity.y = _player.jump_velocity
+
+	# Stunned: can't move, just apply gravity and slide.
+	if _player.is_stunned():
+		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
+		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
+		_player.move_and_slide()
+		_update_anim()
+		return
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	# Movement follows the head's yaw only — zero out Y so pitch
@@ -256,10 +282,15 @@ func _physics_process(delta: float) -> void:
 	var direction := (_player.head.global_transform.basis * Vector3(input_dir.x, 0, input_dir.y))
 	direction.y = 0
 	direction = direction.normalized()
-	_is_sprinting = Input.is_action_pressed("sprint") and direction != Vector3.ZERO
+	_is_sprinting = (
+		Input.is_action_pressed("sprint") and direction != Vector3.ZERO and not _player.is_crouching
+	)
 	var speed_bonus := UpgradeManager.get_effect_total("movement_speed")
-	var speed := (_player.move_speed + speed_bonus) * (
-		_player.sprint_multiplier if _is_sprinting else 1.0
+	var base_speed := _player.move_speed + speed_bonus
+	# Crouch halves speed; sprint uses the multiplier (now faster).
+	var speed := base_speed * (
+		(0.5 if _player.is_crouching else 1.0)
+		* (_player.sprint_multiplier if _is_sprinting else 1.0)
 	)
 	_player.velocity.x = (
 		direction.x * speed
@@ -309,6 +340,7 @@ func _try_sync_position(delta: float) -> void:
 		_is_sprinting,
 		_player.head.rotation.x,
 		_player.head.rotation.y,
+		_player.is_crouching,
 	)
 
 
@@ -344,6 +376,7 @@ func _sync_position(
 	sprinting: bool = false,
 	head_pitch: float = 0.0,
 	head_yaw: float = 0.0,
+	crouching: bool = false,
 ) -> void:
 	if _player.is_multiplayer_authority():
 		return # We're the authority, we already have the right position
@@ -354,6 +387,7 @@ func _sync_position(
 	)
 	_prev_sync_pos = pos
 	_is_sprinting = sprinting
+	_player.is_crouching = crouching
 	_time_since_sync = 0.0
 	# Set interpolation target instead of snapping directly
 	_net_target_pos = pos

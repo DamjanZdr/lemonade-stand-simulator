@@ -24,9 +24,17 @@ var held_item_data: Dictionary = { }
 var _held_mesh: Node3D = null
 
 @export var gravity: float = 9.8
-@export var sprint_multiplier: float = 3.5
+@export var sprint_multiplier: float = 5.0
 @export var jump_velocity: float = 5.0
 @export var rapid_fire_interval: float = 0.35
+
+## When > 0, the player is stunned (hit by trash) and can't move.
+## Decremented by the controller each physics frame. Set by the host
+## via stun() and synced to clients via RPC.
+var _stun_timer: float = 0.0
+
+## Crouch state (0 = standing, 1 = crouching). Toggled by CTRL/C.
+var is_crouching: bool = false
 
 # Last node hit by a raycast during an interact call; used by interactable
 # scripts to know which collider the player actually clicked.
@@ -66,6 +74,26 @@ func enter_priceboard_focus(focus_transform: Transform3D) -> void:
 
 func exit_priceboard_focus() -> void:
 	controller.exit_priceboard_focus()
+
+
+## Stun the player for duration seconds (host-authoritative).
+## Called when hit by thrown trash. Synced to clients via RPC.
+func stun(duration: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	_stun_timer = maxf(_stun_timer, duration)
+	_sync_stun.rpc(_stun_timer)
+
+
+## Check if the player is currently stunned.
+func is_stunned() -> bool:
+	return _stun_timer > 0.0
+
+
+## Host-side RPC to sync stun timer to clients (for animation/visuals).
+@rpc("authority", "call_local", "reliable")
+func _sync_stun(timer: float) -> void:
+	_stun_timer = timer
 
 
 func _enter_tree() -> void:

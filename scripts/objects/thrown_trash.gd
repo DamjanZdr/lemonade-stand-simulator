@@ -57,6 +57,10 @@ func _ready() -> void:
 		freeze = false
 		if _initial_velocity != Vector3.ZERO:
 			linear_velocity = _initial_velocity
+		# Enable contact monitoring so we can detect hits on players/NPCs.
+		contact_monitor = true
+		max_contacts_reported = 4
+		body_entered.connect(_on_body_entered)
 		# When the body sleeps (lands), finalize.
 		sleeping_state_changed.connect(_on_sleeping)
 		# Fallback: finalize after 5 seconds.
@@ -132,6 +136,35 @@ static func _get_no_bounce_material() -> PhysicsMaterial:
 		_no_bounce_mat.bounce = 0.0
 		_no_bounce_mat.friction = 1.0
 	return _no_bounce_mat
+
+
+## Host: called when the thrown trash collides with another body.
+## If it hits a player or pedestrian/customer, stun them for 3 seconds.
+func _on_body_entered(body: Node) -> void:
+	if _landed or not is_instance_valid(self):
+		return
+	# Walk up the tree to find the Player or Pedestrian/Customer node
+	# (the collider may be a child mesh/collision shape).
+	var node: Node = body
+	while node != null:
+		if node is Player:
+			var p := node as Player
+			p.stun(3.0)
+			GameLog.log("[ThrownTrash] Stunned player %s for 3s" % p.name)
+			# Don't finalize on player hit — let the trash bounce off.
+			return
+		if node is Pedestrian:
+			var ped := node as Pedestrian
+			ped.stun(3.0)
+			GameLog.log("[ThrownTrash] Stunned pedestrian for 3s")
+			return
+		if node is Customer:
+			var cust := node as Customer
+			cust.stun(3.0)
+			GameLog.log("[ThrownTrash] Stunned customer for 3s")
+			return
+		node = node.get_parent()
+	# Not a player or NPC — let physics continue (will finalize on landing).
 
 
 func _on_sleeping() -> void:

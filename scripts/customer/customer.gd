@@ -21,6 +21,8 @@ var patience: float = 0.0
 var _order_taken: bool = false
 var serve_patience_max: float = Balancing.PATIENCE_BASE
 var state: CustomerState = CustomerState.WALKING
+## Stun timer: when > 0, the customer stops moving (hit by trash).
+var _stun_timer: float = 0.0
 ## Remaining order: fruit_type -> cups still needed. Set by the spawner
 ## before the customer engages; mutated as the price-check removes items
 ## and as cups are correctly served.
@@ -166,6 +168,14 @@ func _physics_process(delta: float) -> void:
 			basis = _facing_target
 			_is_rotating_to_face = false
 
+	# Tick stun timer — stunned customers can't walk.
+	if _stun_timer > 0.0:
+		_stun_timer = maxf(_stun_timer - delta, 0.0)
+		velocity.x = 0.0
+		velocity.z = 0.0
+		move_and_slide()
+		return
+
 	match state:
 		CustomerState.WALKING:
 			_walk_toward(queue_position, delta)
@@ -230,6 +240,14 @@ func _apply_motion(delta: float) -> void:
 			global_position += velocity * delta
 		_:
 			move_and_slide()
+
+
+## Stun the customer for duration seconds (host-authoritative).
+## Called when hit by thrown trash.
+func stun(duration: float) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	_stun_timer = maxf(_stun_timer, duration)
 
 
 func _walk_toward(target: Vector3, delta: float) -> void:
