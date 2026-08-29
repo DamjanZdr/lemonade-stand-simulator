@@ -61,9 +61,9 @@ var _music_time_total: Label = null
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
 @onready var _saves_list: VBoxContainer = $SavesPanel/SavesList
-@onready var _slots_container: VBoxContainer = $SavesPanel/SavesList/SlotsContainer
+@onready var _slots_container: VBoxContainer = $SavesPanel/SavesList/SaveScroll/SlotsContainer
 @onready var _new_stand_button: Button = $SavesPanel/SavesList/NewStandButton
-@onready var _saves_back: Button = $SavesPanel/BackButton
+@onready var _saves_back: Button = $SavesPanel/SavesList/BackButton
 
 var _saves_data: Array = []
 var _menu_buttons: Array[Button] = []
@@ -760,6 +760,9 @@ func _on_new_stand_pressed() -> void:
 	# Hide the save list, new stand button, and back button — creation
 	# is a separate overlay view.
 	_slots_container.visible = false
+	var save_scroll := _saves_list.get_node_or_null("SaveScroll")
+	if save_scroll:
+		save_scroll.visible = false
 	_new_stand_button.visible = false
 	_saves_back.visible = false
 	# Also hide the saves title + spacers.
@@ -778,6 +781,9 @@ func _on_new_stand_pressed() -> void:
 ## Restore the saves list visibility after cancelling/confirming creation.
 func _restore_saves_list() -> void:
 	_slots_container.visible = true
+	var save_scroll := _saves_list.get_node_or_null("SaveScroll")
+	if save_scroll:
+		save_scroll.visible = true
 	_new_stand_button.visible = true
 	_saves_back.visible = true
 	var saves_title := _saves_list.get_node_or_null("SavesTitle")

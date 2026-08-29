@@ -194,8 +194,14 @@ text = "Your Stands"
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
-[node name="SlotsContainer" type="VBoxContainer" parent="SavesPanel/SavesList"]
+[node name="SaveScroll" type="ScrollContainer" parent="SavesPanel/SavesList"]
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="SlotsContainer" type="VBoxContainer" parent="SavesPanel/SavesList/SaveScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
 [node name="NewStandButton" type="Button" parent="SavesPanel/SavesList"]
@@ -211,19 +217,8 @@ text = "+ New Stand"
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
-[node name="BackButton" type="Button" parent="SavesPanel"]
+[node name="BackButton" type="Button" parent="SavesPanel/SavesList"]
 layout_mode = 2
-theme = ExtResource("2_theme")
-anchors_preset = 5
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 60.0
-offset_top = 460.0
-offset_right = 500.0
-offset_bottom = 508.0
-grow_vertical = 0
 custom_minimum_size = Vector2(0, 48)
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
