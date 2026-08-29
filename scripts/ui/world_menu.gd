@@ -100,6 +100,18 @@ func _ready() -> void:
 		func(_text):
 			_on_join_submit(),
 	)
+	# Eye toggle button to show/hide lobby ID
+	var _eye_btn := Button.new()
+	_eye_btn.text = "👁"
+	_eye_btn.flat = true
+	_eye_btn.custom_minimum_size = Vector2(36, 36)
+	_eye_btn.add_theme_font_size_override("font_size", 18)
+	_eye_btn.pressed.connect(
+		func():
+			_join_field.secret = not _join_field.secret
+			_eye_btn.text = "👁" if _join_field.secret else "🙈",
+	)
+	_join_field.add_sibling(_eye_btn)
 	# Inline Paste/Clear button inside the field, at the right edge.
 	# Paste shows when empty, Clear shows when not empty.
 	_join_paste_btn = Button.new()

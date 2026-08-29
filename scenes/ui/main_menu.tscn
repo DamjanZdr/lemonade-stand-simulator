@@ -103,6 +103,7 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 40)
 theme_override_font_sizes/font_size = 20
 placeholder_text = "Lobby ID..."
+secret = true
 
 [node name="JoinButton" type="Button" parent="CenterBox/JoinRow"]
 layout_mode = 2

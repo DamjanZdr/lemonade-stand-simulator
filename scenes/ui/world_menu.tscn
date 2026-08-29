@@ -265,6 +265,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 1.0)
 theme_override_colors/font_placeholder_color = Color(1, 1, 1, 0.7)
 theme_override_colors/caret_color = Color(1, 1, 1, 1.0)
 placeholder_text = "Lobby ID..."
+secret = true
 
 [node name="JoinSubmit" type="Button" parent="JoinPanel/JoinList"]
 layout_mode = 2

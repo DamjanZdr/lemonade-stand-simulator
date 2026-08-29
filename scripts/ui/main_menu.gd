@@ -13,11 +13,21 @@ extends Control
 @onready var _lobby_list: VBoxContainer = $LobbyScroll/LobbyList
 @onready var _refresh_button: Button = $LobbyScroll/RefreshButton
 @onready var _version_label: Label = $VersionLabel
+var _eye_button: Button = null
 
 
 func _ready() -> void:
 	_host_button.pressed.connect(_on_host_pressed)
 	_join_button.pressed.connect(_on_join_pressed)
+	# Add eye toggle button to show/hide lobby ID
+	_eye_button = Button.new()
+	_eye_button.text = "👁"
+	_eye_button.flat = true
+	_eye_button.custom_minimum_size = Vector2(36, 36)
+	_eye_button.add_theme_font_size_override("font_size", 18)
+	_eye_button.pressed.connect(_toggle_join_visibility)
+	$CenterBox/JoinRow.add_child(_eye_button)
+	$CenterBox/JoinRow.move_child(_eye_button, 1)
 	_quit_button.pressed.connect(
 		func():
 			get_tree().quit(),
@@ -36,6 +46,11 @@ func _ready() -> void:
 func _on_host_pressed() -> void:
 	# Go to the Host menu where the player picks New Game or Load Game
 	get_tree().change_scene_to_file("res://scenes/ui/host_menu.tscn")
+
+
+func _toggle_join_visibility() -> void:
+	_join_field.secret = not _join_field.secret
+	_eye_button.text = "👁" if _join_field.secret else "🙈"
 
 
 func _on_join_pressed() -> void:
