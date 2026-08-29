@@ -73,6 +73,21 @@ emission = Color(0.85974914, 0.8806802, 0.8578844, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
 size = Vector3(2.7165565, 1.725708, 1.3293457)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_82f87"]
+size = Vector3(7.683838, 0.5391846, 9.968597)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wbwoo"]
+size = Vector3(13.727234, 0.39840698, 6.9540253)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_t634p"]
+size = Vector3(7.420061, 0.3982849, 8.016338)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6hctx"]
+size = Vector3(1.2252893, 0.3982849, 2.9915676)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tytul"]
+size = Vector3(5.2276, 0.38983154, 9.767376)
+
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
 albedo_color = Color(0.42331815, 0.62640846, 3.85046e-07, 1)
 
@@ -175,6 +190,28 @@ transform = Transform3D(0.48795187, 0, 5.3290705e-15, 0, 0.48795187, 0, -5.32907
 [node name="Stand1Blackboard" parent="Stands/StandUnit" unique_id=2117954484 instance=ExtResource("45_kx0xk")]
 transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3, 1.8940175, 16.6)
 
+[node name="PlacableFloor" type="StaticBody3D" parent="Stands/StandUnit" unique_id=494711542 groups=["placement_surface"]]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=61180459]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9992676, -0.23040771, 3.0013885)
+shape = SubResource("BoxShape3D_82f87")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=457180925]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.980324, -0.3007965, 1.4941025)
+shape = SubResource("BoxShape3D_wbwoo")
+
+[node name="CollisionShape3D6" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=346573680]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.244374, -0.30085754, 8.989265)
+shape = SubResource("BoxShape3D_t634p")
+
+[node name="CollisionShape3D5" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=1362229542]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.9156823, -0.30085754, 6.47688)
+shape = SubResource("BoxShape3D_6hctx")
+
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=1002167862]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.617897, -0.30508423, 2.9007778)
+shape = SubResource("BoxShape3D_tytul")
+
 [node name="StandUnit2" type="Node3D" parent="Stands" unique_id=2000000000]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -8.1, 0, -24)
 script = ExtResource("72_standunit")
@@ -220,6 +257,29 @@ transform = Transform3D(0.48795187, 0, 5.3290705e-15, 0, 0.48795187, 0, -5.32907
 
 [node name="Stand2Blackboard" parent="Stands/StandUnit2" unique_id=649107669 instance=ExtResource("45_kx0xk")]
 transform = Transform3D(-1, 0, 2.6226832e-07, 0, 1, 0, -2.6226832e-07, 0, -1, 0.75783443, 1.8940175, 16.498135)
+
+[node name="PlacableFloor" type="StaticBody3D" parent="Stands/StandUnit2" unique_id=794825641 groups=["placement_surface"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.20456696, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stands/StandUnit2/PlacableFloor" unique_id=1349067817]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8590088, -0.23040771, 3.0013885)
+shape = SubResource("BoxShape3D_82f87")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Stands/StandUnit2/PlacableFloor" unique_id=126501998]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.115303, -0.3007965, 1.4941025)
+shape = SubResource("BoxShape3D_wbwoo")
+
+[node name="CollisionShape3D6" type="CollisionShape3D" parent="Stands/StandUnit2/PlacableFloor" unique_id=1706803530]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.244374, -0.30085754, 8.989265)
+shape = SubResource("BoxShape3D_t634p")
+
+[node name="CollisionShape3D5" type="CollisionShape3D" parent="Stands/StandUnit2/PlacableFloor" unique_id=878666112]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.9156823, -0.30085754, 6.47688)
+shape = SubResource("BoxShape3D_6hctx")
+
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="Stands/StandUnit2/PlacableFloor" unique_id=1821337229]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.319618, -0.30447388, 2.9007835)
+shape = SubResource("BoxShape3D_tytul")
 
 [node name="Ground" type="Node3D" parent="." unique_id=195151227]
 
