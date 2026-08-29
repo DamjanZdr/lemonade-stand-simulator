@@ -423,7 +423,12 @@ func set_enabled(enabled: bool) -> void:
 
 
 ## Show the inline name entry (used by Play button when no saves exist).
+## Opens the saves panel and triggers the new-stand creation flow,
+## since the creation UI lives inside the saves list.
 func show_name_entry() -> void:
+	# Show the saves panel so the creation UI is visible.
+	_saves_panel.visible = true
+	$MenuBox.visible = false
 	_on_new_stand_pressed()
 
 
@@ -817,6 +822,11 @@ func _on_saves_back() -> void:
 
 
 func _on_new_stand_pressed() -> void:
+	# Remove any existing creation panel (prevent stacking from
+	# repeated Play clicks).
+	var existing := _saves_list.get_node_or_null("InlineModeSelect")
+	if existing:
+		existing.queue_free()
 	# Hide the save list, new stand button, and back button — creation
 	# is a separate overlay view.
 	_slots_container.visible = false
@@ -837,7 +847,29 @@ func _on_new_stand_pressed() -> void:
 
 
 ## Restore the saves list visibility after cancelling/confirming creation.
+## If there are no saves (entered from Play button), go back to the
+## main menu instead of showing an empty saves list.
 func _restore_saves_list() -> void:
+	# If there are no saves, we came from the Play button — go back
+	# to the main menu instead of showing an empty saves panel.
+	if _saves_data.is_empty():
+		_saves_panel.visible = false
+		$MenuBox.visible = true
+		# Re-show everything in case it was hidden.
+		_slots_container.visible = true
+		_save_scroll.visible = true
+		_new_stand_button.visible = true
+		_saves_back.visible = true
+		var saves_title := _saves_list.get_node_or_null("SavesTitle")
+		if saves_title:
+			saves_title.visible = true
+		var spacer1 := _saves_list.get_node_or_null("Spacer")
+		if spacer1:
+			spacer1.visible = true
+		var spacer2 := _saves_list.get_node_or_null("Spacer2")
+		if spacer2:
+			spacer2.visible = true
+		return
 	_slots_container.visible = true
 	_save_scroll.visible = true
 	_new_stand_button.visible = true

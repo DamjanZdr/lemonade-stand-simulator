@@ -1968,7 +1968,7 @@ shape = SubResource("BoxShape3D_yf5fn")
 visible = false
 
 [node name="player_house2" parent="Houses" unique_id=942529271 instance=ExtResource("2_wlhmk")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 29.662632, 3.1774137, -4.620962)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 29.953249, 3.1774137, -4.620962)
 metadata/house_color_index = 2
 
 [node name="door" parent="Houses/player_house2" unique_id=1855545977 instance=ExtResource("3_wlhmk")]
