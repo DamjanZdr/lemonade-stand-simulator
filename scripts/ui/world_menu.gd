@@ -29,6 +29,7 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 @onready var _join_back: Button = $JoinPanel/JoinBack
 var _join_paste_btn: Button = null
 var _join_clear_btn: Button = null
+var _eye_btn: Button = null
 var _join_error_label: Label = null
 @onready var _quit_button: Button = $MenuBox/QuitButton
 @onready var _settings_button: Button = $MenuBox/SettingsButton
@@ -100,18 +101,21 @@ func _ready() -> void:
 		func(_text):
 			_on_join_submit(),
 	)
-	# Eye toggle button to show/hide lobby ID
-	var _eye_btn := Button.new()
+	# Eye toggle button inside the field at the left edge.
+	_eye_btn = Button.new()
 	_eye_btn.text = "👁"
 	_eye_btn.flat = true
-	_eye_btn.custom_minimum_size = Vector2(36, 36)
-	_eye_btn.add_theme_font_size_override("font_size", 18)
+	_eye_btn.custom_minimum_size = Vector2(28, 28)
+	_eye_btn.add_theme_font_size_override("font_size", 16)
+	_eye_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	_eye_btn.pressed.connect(
 		func():
 			_join_field.secret = not _join_field.secret
 			_eye_btn.text = "👁" if _join_field.secret else "🙈",
 	)
-	_join_field.add_sibling(_eye_btn)
+	_join_field.add_child(_eye_btn)
+	# Make room for the eye icon so text doesn't overlap it.
+	_join_field.add_theme_constant_override("inner_margin_left", 32)
 	# Inline Paste/Clear button inside the field, at the right edge.
 	# Paste shows when empty, Clear shows when not empty.
 	_join_paste_btn = Button.new()
@@ -751,6 +755,9 @@ func _animate_buttons_in() -> void:
 
 ## Position the inline Paste/Clear buttons at the right edge inside the field.
 func _position_join_inline_btns() -> void:
+	# Position eye button at the left edge inside the field.
+	if _eye_btn and is_instance_valid(_eye_btn):
+		_eye_btn.position = Vector2(4, (_join_field.size.y - _eye_btn.size.y) / 2.0)
 	for btn: Button in [_join_paste_btn, _join_clear_btn]:
 		if btn and is_instance_valid(btn) and btn.visible:
 			btn.position = Vector2(
@@ -763,6 +770,9 @@ func _toggle_join_row() -> void:
 	_join_panel.visible = true
 	$MenuBox.visible = false
 	_join_field.text = ""
+	_join_field.secret = true
+	if _eye_btn:
+		_eye_btn.text = "👁"
 	_join_error_label.visible = false
 	_join_paste_btn.visible = true
 	_join_clear_btn.visible = false

@@ -19,15 +19,18 @@ var _eye_button: Button = null
 func _ready() -> void:
 	_host_button.pressed.connect(_on_host_pressed)
 	_join_button.pressed.connect(_on_join_pressed)
-	# Add eye toggle button to show/hide lobby ID
+	# Eye toggle button inside the field at the left edge.
 	_eye_button = Button.new()
 	_eye_button.text = "👁"
 	_eye_button.flat = true
-	_eye_button.custom_minimum_size = Vector2(36, 36)
-	_eye_button.add_theme_font_size_override("font_size", 18)
+	_eye_button.custom_minimum_size = Vector2(28, 28)
+	_eye_button.add_theme_font_size_override("font_size", 16)
 	_eye_button.pressed.connect(_toggle_join_visibility)
-	$CenterBox/JoinRow.add_child(_eye_button)
-	$CenterBox/JoinRow.move_child(_eye_button, 1)
+	_join_field.add_child(_eye_button)
+	_join_field.add_theme_constant_override("inner_margin_left", 32)
+	# Position the eye button after the field gets its size.
+	await get_tree().process_frame
+	_position_eye_button()
 	_quit_button.pressed.connect(
 		func():
 			get_tree().quit(),
@@ -51,6 +54,11 @@ func _on_host_pressed() -> void:
 func _toggle_join_visibility() -> void:
 	_join_field.secret = not _join_field.secret
 	_eye_button.text = "👁" if _join_field.secret else "🙈"
+
+
+func _position_eye_button() -> void:
+	if _eye_button and is_instance_valid(_eye_button):
+		_eye_button.position = Vector2(4, (_join_field.size.y - _eye_button.size.y) / 2.0)
 
 
 func _on_join_pressed() -> void:
