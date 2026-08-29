@@ -299,7 +299,8 @@ func primary_interact() -> void:
 			WorldSync.request_thrown_trash_pickup(thrown_body, _player.get_path())
 			return
 
-	# Trash items can be disposed of at a trashcan or thrown.
+	# Trash items can be disposed of at a trashcan, thrown, or placed
+	# (empty boxes can be dropped on the ground).
 	if _player.inventory.held_item_data.get("is_trash", false):
 		# If looking at a trashcan, dispose immediately.
 		if interactable != null and interactable.is_in_group("trashcan"):
@@ -315,9 +316,14 @@ func primary_interact() -> void:
 					_player.placement._destroy_ghost()
 					return
 				node = node.get_parent()
-		# Not looking at a trashcan — the throw charge system handles
-		# release. Don't place immediately; set_primary_held started
-		# charging and set_primary_held(false) will throw on release.
+		# Empty boxes can be placed on the ground (ghost is shown by
+		# update_ghost). Drop at the ghost position.
+		if _player.held_item_data.get("trash_type", "") == "empty_box":
+			_player.placement._drop_trash()
+			return
+		# Other trash types — throw charge system handles release.
+		# set_primary_held started charging and set_primary_held(false)
+		# will throw on release.
 		return
 
 	# Containers can be recycled at a trashcan for 70% refund.
