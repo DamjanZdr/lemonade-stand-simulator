@@ -1215,42 +1215,36 @@ func _on_spawner_spawned(node: Node) -> void:
 	# Cache the player node in WorldSync so transform RPCs can find it
 	# quickly without doing a full scene tree search every frame.
 	WorldSync._node_cache[p.name] = p
-	# Only set up local-player stuff for OUR own player (the one we have
-	# authority over). Remote players are just visual representations.
-	# For late joiners the authority may not be claimed yet, so force it
-	# when the node name matches the local peer ID.
+	# Determine if this is the local player (the one we have authority over).
+	var name_peer: int = int(p.name) if p.name.is_valid_int() else 0
+	var is_local := name_peer == multiplayer.get_unique_id()
+	# Only set up local-player stuff for OUR own player. Remote players
+	# are just visual representations — skip the rest.
+	if not is_local:
+		return
+	# Claim authority if not already set (Player._enter_tree may have
+	# already done this when the name matched the peer ID).
 	if not p.is_multiplayer_authority():
-		var name_peer: int = int(p.name) if p.name.is_valid_int() else 0
-		if name_peer != multiplayer.get_unique_id():
-			return
-		# Claim authority for our own player and run the local-only setup
-		# that was skipped in _ready because the authority wasn't set yet.
 		p.set_multiplayer_authority(name_peer)
 		var sync := p.get_node_or_null("PositionSync") as MultiplayerSynchronizer
 		if sync:
 			sync.set_multiplayer_authority(name_peer)
-		# Set spawn position from the assigned stand's start marker.
-		# The spawner creates the node at (0,0,0) and the host sets the
-		# correct position AFTER spawn — but since we're claiming authority,
-		# the host's position won't sync to us. We must set it ourselves.
-		var my_stand := _stand_for_peer(name_peer)
-		if my_stand:
-			p.assigned_stand = my_stand
-			var marker := _get_stand_start_marker(my_stand)
-			if marker:
-				p.global_position = marker.global_position
-				p.global_rotation = Vector3(0, marker.global_rotation.y, 0)
-			else:
-				p.global_position = my_stand.global_position + Vector3(0, 0, 2)
 		p._configure_local_player()
 		p.visuals.visible = false
-	# assigned_stand isn't replicated (only position/rotation are), so
-	# set it locally from the lobby roster.
-	var peer_id := multiplayer.get_unique_id()
-	var stand := _stand_for_peer(peer_id)
-	if stand:
-		p.assigned_stand = stand
-	_assigned_stands[peer_id] = stand
+	# Set spawn position from the assigned stand's start marker.
+	# The spawner creates the node at (0,0,0) and the host sets the
+	# correct position AFTER spawn — but since we're the authority,
+	# the host's position won't sync to us. We must set it ourselves.
+	var my_stand := _stand_for_peer(name_peer)
+	if my_stand:
+		p.assigned_stand = my_stand
+		var marker := _get_stand_start_marker(my_stand)
+		if marker:
+			p.global_position = marker.global_position
+			p.global_rotation = Vector3(0, marker.global_rotation.y, 0)
+		else:
+			p.global_position = my_stand.global_position + Vector3(0, 0, 2)
+	_assigned_stands[name_peer] = my_stand
 	_on_local_player_ready(p)
 
 
