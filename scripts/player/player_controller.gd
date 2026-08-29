@@ -56,11 +56,33 @@ var _priceboard_camera_original_top_level := false
 func _update_anim() -> void:
 	if _player.visuals == null:
 		return
+	# DEBUG: unconditional log to see if this runs at all
+	if Engine.get_process_frames() % 30 == 0:
+		var has_crouch: bool = (
+			_player.visuals._active_anim != null and _player.visuals._active_anim.has_animation(
+				"Crouch"
+			)
+		)
+		var has_jump: bool = (
+			_player.visuals._active_anim != null and _player.visuals._active_anim.has_animation(
+				"Jump"
+			)
+		)
+		GameLog.log(
+			"[ANIM] player=%s auth=%s vis=%s crouching=%s cur=%s hasCrouch=%s hasJump=%s active=%s"
+			% [
+				_player.name,
+				_player.is_multiplayer_authority(),
+				_player.visuals.visible,
+				_player.is_crouching,
+				_current_anim,
+				has_crouch,
+				has_jump,
+				_player.visuals._active_anim,
+			]
+		)
 
 	# Determine state with hysteresis to prevent flicker.
-	# Once airborne, stay "airborne" until we're clearly on the floor
-	# (velocity.y near zero AND is_on_floor). This prevents the Jump
-	# animation from flickering back to Idle/Walk for a frame mid-jump.
 	var raw_on_floor: bool
 	if _player.is_multiplayer_authority():
 		raw_on_floor = _player.is_on_floor()
@@ -68,7 +90,6 @@ func _update_anim() -> void:
 		raw_on_floor = absf(_player.velocity.y) < 1.0
 	var on_floor: bool = raw_on_floor
 	if _is_airborne:
-		# Require strong evidence we've landed before leaving airborne state
 		on_floor = raw_on_floor and _player.velocity.y <= 0.1
 	_is_airborne = not on_floor
 
@@ -80,7 +101,6 @@ func _update_anim() -> void:
 	var target_speed: float = 1.0
 
 	if not on_floor:
-		# Jumping/falling — play Jump animation
 		target_anim = "Jump"
 		target_speed = 1.0
 	elif _player.is_crouching:

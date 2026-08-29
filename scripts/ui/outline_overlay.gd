@@ -161,7 +161,7 @@ func _sync_outline_camera() -> void:
 	_cam.h_offset = _main_cam.h_offset
 	_cam.v_offset = _main_cam.v_offset
 	# Debug: log sizes once per second to diagnose outline scale mismatch
-	if Engine.get_process_frames() % 60 == 0:
+	if false and Engine.get_process_frames() % 60 == 0:
 		var win := get_window()
 		var win_size := win.size if win != null else Vector2i.ZERO
 		var main_vp_size := _main_cam.get_viewport().get_visible_rect().size
