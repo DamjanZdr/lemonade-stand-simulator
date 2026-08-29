@@ -373,6 +373,9 @@ bind/25/name = &"UpperArmPT.R"
 bind/25/bone = -1
 bind/25/pose = Transform3D(-0.16990675, 0.98546016, 0, 0, 0, -1, -0.98546016, -0.16990675, 0, -3.9860156, -11.115589, -4.2850533)
 
+[sub_resource type="Animation" id="Animation_ntv01"]
+resource_name = "Crouch"
+
 [sub_resource type="Animation" id="Animation_pkgno"]
 resource_name = "Idle"
 length = 1.25
@@ -1690,6 +1693,7 @@ tracks/36/keys = PackedFloat32Array(0, 1, -0.45554727, -0.5408111, 0.5408111, 0.
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_ah1al"]
 _data = {
+&"Crouch": SubResource("Animation_ntv01"),
 &"Idle": SubResource("Animation_pkgno"),
 &"Idle_001": SubResource("Animation_1ya7d"),
 &"LookAround": SubResource("Animation_2d37m"),
@@ -3381,7 +3385,7 @@ bones/1/name = "LowerBack"
 bones/1/parent = 0
 bones/1/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 bones/1/enabled = true
-bones/1/position = Vector3(0, 2, 0)
+bones/1/position = Vector3(0, 0.47, 0)
 bones/1/rotation = Quaternion(0, 0, 0, 1)
 bones/1/scale = Vector3(1, 1, 1)
 bones/2/name = "UpperBack"
@@ -3410,14 +3414,14 @@ bones/5/parent = 2
 bones/5/rest = Transform3D(-0.16990685, 0.98470086, 0.038677797, -0.9854601, -0.16977595, -0.00666844, 1.4156103e-07, -0.039248444, 0.9992295, 2, 1.6999998, 0)
 bones/5/enabled = true
 bones/5/position = Vector3(2, 1.6999998, 0)
-bones/5/rotation = Quaternion(0, 0, 0, 1)
+bones/5/rotation = Quaternion(0.07950494, 0.13411888, -0.97183484, 0.17671467)
 bones/5/scale = Vector3(0.99999994, 1, 1)
 bones/6/name = "Forearm.L"
 bones/6/parent = 5
 bones/6/rest = Transform3D(0.9988514, 0.047821537, -0.0029970068, -0.04787841, 0.99367094, -0.10161564, -0.001881378, 0.101642415, 0.99481916, -1.5986105e-08, 2.9450574, -1.8626451e-08)
 bones/6/enabled = true
 bones/6/position = Vector3(-1.5986105e-08, 2.9450574, -1.8626451e-08)
-bones/6/rotation = Quaternion(0, 0, 0, 1)
+bones/6/rotation = Quaternion(0.26825896, -0.0002672137, -0.12630436, 0.9550311)
 bones/6/scale = Vector3(1, 1, 0.99999994)
 bones/7/name = "Hand.L"
 bones/7/parent = 6
@@ -3431,14 +3435,14 @@ bones/8/parent = 2
 bones/8/rest = Transform3D(-0.16990685, -0.98470086, -0.038677797, 0.9854601, -0.16977595, -0.00666844, -1.4156103e-07, -0.039248444, 0.9992295, -2, 1.6999998, 0)
 bones/8/enabled = true
 bones/8/position = Vector3(-2, 1.6999998, 0)
-bones/8/rotation = Quaternion(0, 0, 0, 1)
+bones/8/rotation = Quaternion(0.079504944, -0.13411896, 0.97183484, 0.17671476)
 bones/8/scale = Vector3(0.99999994, 1, 1)
 bones/9/name = "Forearm.R"
 bones/9/parent = 8
 bones/9/rest = Transform3D(0.9988514, -0.047821537, 0.0029970068, 0.04787841, 0.99367094, -0.10161564, 0.001881378, 0.101642415, 0.99481916, 1.5986105e-08, 2.9450574, -1.8626451e-08)
 bones/9/enabled = true
 bones/9/position = Vector3(1.5986105e-08, 2.9450574, -1.8626451e-08)
-bones/9/rotation = Quaternion(0, 0, 0, 1)
+bones/9/rotation = Quaternion(0.26825905, 0.00026721042, 0.1263044, 0.95503104)
 bones/9/scale = Vector3(1, 1, 0.99999994)
 bones/10/name = "Hand.R"
 bones/10/parent = 9
@@ -3554,7 +3558,7 @@ bones/25/rotation = Quaternion(0.45554727, 0.5408111, -0.5408111, -0.45554727)
 bones/25/scale = Vector3(0.99999994, 1, 0.99999994)
 
 [node name="Head" type="BoneAttachment3D" parent="man/Armature/Skeleton3D" unique_id=2048607257]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.367528, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.837528, 0)
 bone_name = "Head"
 bone_idx = 4
 
@@ -3631,7 +3635,6 @@ visible = false
 visible = false
 
 [node name="MaleMesh" type="MeshInstance3D" parent="man/Armature/Skeleton3D" unique_id=1909113374]
-cast_shadow = 1
 mesh = SubResource("ArrayMesh_sva0g")
 skin = SubResource("Skin_27xht")
 skeleton = NodePath("..")
@@ -3640,6 +3643,7 @@ skeleton = NodePath("..")
 libraries/ = SubResource("AnimationLibrary_ah1al")
 
 [node name="woman" type="Node3D" parent="." unique_id=1132006519]
+visible = false
 
 [node name="Armature" type="Node3D" parent="woman" unique_id=1513745039]
 
@@ -3905,7 +3909,6 @@ visible = false
 visible = false
 
 [node name="FemaleMesh" type="MeshInstance3D" parent="woman/Armature/Skeleton3D" unique_id=956771414]
-cast_shadow = 1
 mesh = SubResource("ArrayMesh_7h28d")
 skin = SubResource("Skin_4leiq")
 skeleton = NodePath("..")
