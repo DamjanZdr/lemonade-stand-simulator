@@ -98,15 +98,14 @@ func _update_anim() -> void:
 		target_anim = "Jump"
 		target_speed = 1.0
 	elif _player.is_crouching:
+		# Crouch animation for both moving and standing — it's a crouch-walk
+		# cycle. When standing still, play at very low speed to freeze near
+		# frame 0 (the crouched pose). When moving, play at walk speed.
+		target_anim = "Crouch"
 		if moving:
-			# Walking while crouched: play Crouch animation looped
-			target_anim = "Crouch"
-			# Same reversed speed as Walk (model is rotated 180°)
 			target_speed = -1.7
 		else:
-			# Standing crouched: freeze on first frame of Crouch
-			target_anim = "Crouch"
-			target_speed = 1.0
+			target_speed = 0.01
 	elif moving:
 		target_anim = "Walk"
 		# Walk animation is designed for the model's default facing.
@@ -118,18 +117,10 @@ func _update_anim() -> void:
 		target_speed = 1.0
 
 	# Apply animation
-	var crouch_freeze := _player.is_crouching and not moving and on_floor
-	if _current_anim != target_anim or _crouch_frozen != crouch_freeze:
-		if crouch_freeze:
-			# Standing crouched: freeze on first frame of Crouch (it's a
-			# crouch-walk cycle, so frame 0 is already the crouched pose).
-			_player.visuals.seek_anim("Crouch", 0.0)
-			_crouch_frozen = true
-		else:
-			_player.visuals.play_anim_speed(target_anim, target_speed)
-			_crouch_frozen = false
+	if _current_anim != target_anim:
+		_player.visuals.play_anim_speed(target_anim, target_speed)
 		_current_anim = target_anim
-	elif target_anim == "Walk" or (target_anim == "Crouch" and moving):
+	elif target_anim == "Walk" or target_anim == "Crouch":
 		# Same anim but speed might have changed
 		_player.visuals.set_anim_speed(target_speed)
 
