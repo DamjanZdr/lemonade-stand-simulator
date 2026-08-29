@@ -1667,11 +1667,61 @@ func _is_placement_surface(collider: Object) -> bool:
 		node = node.get_parent()
 		if node == null:
 			break
+	# Fallback: the main ray might have hit a sidewalk/ground (layer 1)
+	# that's above the PlacableFloor (layer 4). Do a separate raycast
+	# on layer 4 only to check for a PlacableFloor underneath.
+	return _check_layer4_placement_surface()
+
+
+## Do a raycast on collision layer 4 only (where PlacableFloor lives).
+## Returns true if it hits a placement_surface node. This bypasses
+## sidewalks/ground on layer 1 that may block the main raycast.
+func _check_layer4_placement_surface() -> bool:
+	var from := _player.ray.global_position
+	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
+	var space := _player.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to, 4)
+	query.exclude = [_player.get_rid()]
+	var hits := space.intersect_ray(query)
+	if hits.is_empty():
+		return false
+	var node: Node = hits.get("collider", null)
+	if node == null:
+		return false
+	for i in range(3):
+		if node.is_in_group("placement_surface"):
+			return true
+		node = node.get_parent()
+		if node == null:
+			break
 	return false
 
 
 func _is_ground_surface(collider: Object) -> bool:
 	var node := collider as Node
+	if node == null:
+		return false
+	for i in range(3):
+		if node.name == "PlacableFloor":
+			return true
+		node = node.get_parent()
+		if node == null:
+			break
+	# Fallback: check layer 4 for PlacableFloor (same as _is_placement_surface)
+	return _check_layer4_ground_surface()
+
+
+## Raycast on layer 4 only to check for PlacableFloor.
+func _check_layer4_ground_surface() -> bool:
+	var from := _player.ray.global_position
+	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
+	var space := _player.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to, 4)
+	query.exclude = [_player.get_rid()]
+	var hits := space.intersect_ray(query)
+	if hits.is_empty():
+		return false
+	var node: Node = hits.get("collider", null)
 	if node == null:
 		return false
 	for i in range(3):
