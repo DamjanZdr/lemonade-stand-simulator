@@ -106,6 +106,11 @@ var _late_join_camera_pending: bool = false
 ## Prevents duplicate notify_clients_start() calls.
 var _host_ready_notified: bool = false
 
+## Pending transition params for when the local player becomes ready.
+## Stores {fade_rect, day_label, dim_panel} so _on_local_player_ready
+## can run the full fade-to-black + Day X sequence once the player exists.
+var _pending_transition: Dictionary = { }
+
 ## Camera tween time for stand switching and game-start transition.
 const CAMERA_TWEEN_TIME: float = 1.0
 
@@ -882,7 +887,7 @@ func _on_game_starting() -> void:
 	# Day X label stays visible during the snap.
 	tw.chain().tween_callback(
 		func():
-			print("[Main] _on_game_starting: fade complete, snapping camera")
+			print("[Main] _on_game_starting: fade complete, storing transition")
 			# Hide lobby UI and player models.
 			if lobby_ui:
 				lobby_ui.modulate = Color(1, 1, 1, 0)
@@ -892,7 +897,16 @@ func _on_game_starting() -> void:
 			# Spawn the player (deferred on host, so camera snap is also deferred).
 			Player.defer_camera_claim = true
 			_start_game_phase()
-			call_deferred("_snap_to_player_camera", fade_rect, day_label, dim_panel),
+			# Store transition params — _on_local_player_ready() will run
+			# the camera snap + fade-in once the player actually exists.
+			_pending_transition = {
+				"fade_rect": fade_rect,
+				"day_label": day_label,
+				"dim_panel": dim_panel,
+			}
+			# If the local player is already ready (host path), snap now.
+			if _local_player != null and is_instance_valid(_local_player):
+				_run_pending_transition(),
 	)
 
 
@@ -1451,6 +1465,14 @@ func _on_local_player_ready(p: Player) -> void:
 		GameLog.log("[Main] _on_local_player_ready: camera claimed for %s" % p.name)
 	# Ensure mouse is captured for gameplay.
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	# Hide lobby UI and player models — this is the single point where
+	# the player takes control, so lobby must be hidden here to avoid
+	# it being visible while the player is already moving.
+	if lobby_ui:
+		lobby_ui.modulate = Color(1, 1, 1, 0)
+		lobby_ui.visible = false
+	if lobby_player_models:
+		lobby_player_models.visible = false
 	# Spawn the screen-space outline overlay and hand it the local
 	# player's camera so it can mirror the transform every frame.
 	var outline_sys: Node = OUTLINE_SCENE.instantiate()
@@ -1458,17 +1480,14 @@ func _on_local_player_ready(p: Player) -> void:
 	outline_sys.setup(p.get_node("Head/Camera3D") as Camera3D)
 	if hud and hud.has_method("set_stand") and p.assigned_stand:
 		hud.set_stand(p.assigned_stand)
-	# If this is a late joiner, the fade transition was waiting for the player to exist.
-	if _late_join_camera_pending:
+	# Run the pending fade-to-black + Day X transition if one was stored
+	# by _on_game_starting() or _do_late_join_transition().
+	if not _pending_transition.is_empty():
+		_run_pending_transition()
+	elif _late_join_camera_pending:
 		_late_join_camera_pending = false
-		# Create a quick fade for late joiners.
-		var fade_rect := ColorRect.new()
-		fade_rect.color = Color(0, 0, 0, 1)
-		fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-		fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_transition_overlay.add_child(fade_rect)
-		_transition_overlay.visible = true
-		call_deferred("_snap_to_player_camera", fade_rect, null, null)
+		# Late joiner with no stored transition — create a full Day X fade.
+		_start_late_join_day_transition()
 	# Host-first readiness: after the host's local player is ready and
 	# world state has been pushed (both deferred), notify clients that
 	# they can safely start their game transition. This prevents joiners
@@ -1476,6 +1495,62 @@ func _on_local_player_ready(p: Player) -> void:
 	if multiplayer.is_server() and not _host_ready_notified and not _late_join_camera_pending:
 		_host_ready_notified = true
 		call_deferred("_notify_clients_ready")
+
+
+## Run the stored pending transition (fade-in + Day X overlay).
+func _run_pending_transition() -> void:
+	if _pending_transition.is_empty():
+		return
+	var fade_rect: ColorRect = _pending_transition.get("fade_rect")
+	var day_label: Label = _pending_transition.get("day_label")
+	var dim_panel: ColorRect = _pending_transition.get("dim_panel")
+	_pending_transition = { }
+	call_deferred("_snap_to_player_camera", fade_rect, day_label, dim_panel)
+
+
+## Create a full Day X fade transition for late joiners who don't have
+## a stored transition from _on_game_starting().
+func _start_late_join_day_transition() -> void:
+	var fade_rect := ColorRect.new()
+	fade_rect.color = Color(0, 0, 0, 1)
+	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_transition_overlay.add_child(fade_rect)
+	_transition_overlay.visible = true
+	# Create dim panel
+	var dim_shader := load("res://shaders/radial_dim_fade.gdshader") as Shader
+	var dim_panel := ColorRect.new()
+	dim_panel.color = Color(1, 1, 1, 1)
+	dim_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim_panel.modulate = Color(1, 1, 1, 0)
+	if dim_shader:
+		var dim_mat := ShaderMaterial.new()
+		dim_mat.shader = dim_shader
+		dim_panel.material = dim_mat
+	_transition_overlay.add_child(dim_panel)
+	# Create Day X label
+	var day_label := Label.new()
+	day_label.text = "Day %d" % DayManager.day_number
+	day_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	day_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	day_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	day_label.modulate = Color(1, 1, 1, 0)
+	var menu_font := load("res://assets/fonts/AmaticSC-Bold.ttf") as FontFile
+	if menu_font:
+		day_label.add_theme_font_override("font", menu_font)
+	day_label.add_theme_font_size_override("font_size", 120)
+	day_label.add_theme_color_override("font_color", Color(1, 0.98, 0.88, 1))
+	day_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_transition_overlay.add_child(day_label)
+	# Fade in Day X label and dim panel
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(day_label, "modulate:a", 1.0, 1.0) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(dim_panel, "modulate:a", 1.0, 1.0) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	call_deferred("_snap_to_player_camera", fade_rect, day_label, dim_panel)
 
 
 ## Host-first readiness: called after the host's local player is ready

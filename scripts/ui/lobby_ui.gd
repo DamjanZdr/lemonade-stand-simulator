@@ -824,6 +824,10 @@ func _setup_customization() -> void:
 	_apply_customization_to_all()
 	_update_all_names()
 	_update_gender_buttons()
+	# Push the default preset to LobbyManager so in-game player visuals
+	# use the lobby defaults instead of randomizing when the player
+	# never changed anything.
+	_broadcast_customization()
 	# Default to Lobby tab — must be called after AvatarOptionsRow is built.
 	_on_lobby_tab()
 
