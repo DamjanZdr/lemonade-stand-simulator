@@ -71,32 +71,48 @@ func _update_anim() -> void:
 	var target_speed: float = 1.0
 
 	if not on_floor:
-		# Jumping/falling ΓÇö play idle for now
+		# Jumping/falling — play idle for now
 		target_anim = "Idle"
 		target_speed = 1.0
+	elif _player.is_crouching:
+		if moving:
+			# Walking while crouched: play Crouch animation looped
+			target_anim = "Crouch"
+			# Same reversed speed as Walk (model is rotated 180°)
+			target_speed = -1.7
+		else:
+			# Standing crouched: freeze on first frame of Crouch
+			target_anim = "Crouch"
+			target_speed = 1.0
 	elif moving:
 		target_anim = "Walk"
 		# Walk animation is designed for the model's default facing.
-		# The player model is rotated 180┬░, so negate speed to match.
+		# The player model is rotated 180°, so negate speed to match.
 		# Walk = -1.7x (reversed), Sprint = -2.0x
 		target_speed = -(2.0 if _is_sprinting else 1.7)
 	else:
 		target_anim = "Idle"
 		target_speed = 1.0
 
-	# Always apply ΓÇö even if same anim, speed may have changed (walk<->sprint)
+	# Apply animation
 	if _current_anim != target_anim:
-		_player.visuals.play_anim_speed(target_anim, target_speed)
+		if _player.is_crouching and not moving:
+			# Standing crouched: play Crouch then freeze on first frame
+			_player.visuals.seek_anim("Crouch", 0.0)
+		else:
+			_player.visuals.play_anim_speed(target_anim, target_speed)
 		_current_anim = target_anim
-	elif target_anim == "Walk":
-		# Same anim but speed might have changed (started/stopped sprinting)
+	elif target_anim == "Walk" or (target_anim == "Crouch" and moving):
+		# Same anim but speed might have changed
 		_player.visuals.set_anim_speed(target_speed)
+	elif target_anim == "Crouch" and not moving:
+		# Transition from crouch-walk to crouch-stand: freeze on first frame
+		_player.visuals.seek_anim("Crouch", 0.0)
 
 
-## Apply crouch visual: lower the head/camera.
-## This is a simple visual effect for now; later we can add a crouch animation.
-## Stores the original head Y on first call and tweens to an absolute
-## offset from it, so toggling crouch repeatedly doesn't accumulate.
+## Apply crouch visual: lower the head/camera and update animation.
+## The Crouch animation handles the body pose; this just lowers the
+## camera for the first-person view.
 var _head_base_y: float = 0.0
 var _head_base_set: bool = false
 const CROUCH_DROP: float = 0.6
@@ -266,11 +282,29 @@ func _physics_process(delta: float) -> void:
 	# Tick stun timer.
 	if _player._stun_timer > 0.0:
 		_player._stun_timer = maxf(_player._stun_timer - delta, 0.0)
+		# When stun ends, play Fall in reverse to get back up.
+		if _player._stun_timer <= 0.0 and _player._stun_recovering:
+			_player._stun_recovering = false
+			_player._stun_recover_timer = 0.0
+			if _player.visuals:
+				_player.visuals.play_anim_reverse("Fall", 0.3)
+				_player._stun_recover_timer = _player.visuals.get_anim_length("Fall")
+
+	# Tick recovery timer (Fall playing in reverse).
+	if _player._stun_recover_timer > 0.0:
+		_player._stun_recover_timer = maxf(_player._stun_recover_timer - delta, 0.0)
+		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
+		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
+		_player.move_and_slide()
+		if _player._stun_recover_timer <= 0.0:
+			_update_anim()
+		return
 
 	# Crouch toggle (CTRL or C).
 	if Input.is_action_just_pressed("crouch"):
 		_player.is_crouching = not _player.is_crouching
 		_apply_crouch_visual()
+		_update_anim()
 
 	if not _player.is_on_floor():
 		_player.velocity.y -= _player.gravity * delta
@@ -278,12 +312,17 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("jump") and not _player.is_crouching:
 			_player.velocity.y = _player.jump_velocity
 
-	# Stunned: can't move, just apply gravity and slide.
+	# Stunned: can't move, play Fall, hold last frame.
 	if _player.is_stunned():
 		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
 		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
 		_player.move_and_slide()
-		_update_anim()
+		# Play Fall once when stun starts.
+		if not _player._stun_fall_played:
+			_player._stun_fall_played = true
+			_player._stun_recovering = true
+			if _player.visuals:
+				_player.visuals.play_anim_once("Fall", 0.05)
 		return
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")

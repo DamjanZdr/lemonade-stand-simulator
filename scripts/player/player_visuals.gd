@@ -105,6 +105,53 @@ func _ready() -> void:
 		_strip_neck_head_rotation_tracks(_man_anim)
 	if _woman_anim != null:
 		_strip_neck_head_rotation_tracks(_woman_anim)
+	_load_extra_animations()
+
+
+## Load extra animations (Crouch, Fall, etc.) from newman.glb at runtime
+## using GLTFDocument (bypasses Godot's buggy import). Copies into both
+## man and woman AnimationPlayers. Done once per session.
+const _EXTRA_ANIM_PATH := "res://assets/models/characters/newman.glb"
+static var _extra_anim_loaded: bool = false
+
+
+func _load_extra_animations() -> void:
+	if _extra_anim_loaded:
+		return
+	_extra_anim_loaded = true
+	var doc := GLTFDocument.new()
+	var state := GLTFState.new()
+	var err := doc.append_from_file(_EXTRA_ANIM_PATH, state)
+	if err != OK:
+		push_warning("Failed to load extra animations: %s" % error_string(err))
+		return
+	var scene := doc.generate_scene(state)
+	if scene == null:
+		return
+	var extra_anim := scene.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if extra_anim == null:
+		scene.queue_free()
+		return
+	for lib_name in extra_anim.get_animation_library_list():
+		var src_lib := extra_anim.get_animation_library(lib_name)
+		for anim_name in src_lib.get_animation_list():
+			if anim_name == &"RESET":
+				continue
+			var anim := src_lib.get_animation(anim_name)
+			if anim == null:
+				continue
+			_merge_anim(_man_anim, anim_name, anim)
+			_merge_anim(_woman_anim, anim_name, anim)
+	scene.queue_free()
+
+
+func _merge_anim(player: AnimationPlayer, anim_name: String, anim: Animation) -> void:
+	if player == null:
+		return
+	if player.has_animation(anim_name):
+		return
+	var lib := player.get_animation_library("")
+	lib.add_animation(anim_name, anim.duplicate())
 
 
 ## Remove rotation tracks for the Neck and Head bones from every animation in
@@ -613,6 +660,55 @@ func resume_anim(anim_name: String = "Walk") -> void:
 		return
 	if _active_anim.assigned_animation != anim_name:
 		_active_anim.play(anim_name)
+
+
+## Play an animation once at 2x speed with minimal blend. Holds last frame.
+func play_anim_once(anim_name: String, blend: float = 0.05) -> void:
+	if _active_anim == null:
+		return
+	if not _active_anim.has_animation(anim_name):
+		return
+	var anim := _active_anim.get_animation(anim_name)
+	if anim:
+		anim.loop_mode = Animation.LOOP_NONE
+	_active_anim.speed_scale = 2.0
+	_active_anim.play(anim_name, blend)
+
+
+## Play an animation in reverse (for getting back up from Fall).
+func play_anim_reverse(anim_name: String, blend: float = 0.3) -> void:
+	if _active_anim == null:
+		return
+	if not _active_anim.has_animation(anim_name):
+		return
+	var anim := _active_anim.get_animation(anim_name)
+	if anim:
+		anim.loop_mode = Animation.LOOP_NONE
+	_active_anim.speed_scale = 1.0
+	_active_anim.play_backwards(anim_name, blend)
+
+
+## Get the length of an animation, or 0 if it doesn't exist.
+func get_anim_length(anim_name: String) -> float:
+	if _active_anim == null or not _active_anim.has_animation(anim_name):
+		return 0.0
+	return _active_anim.get_animation(anim_name).length
+
+
+## Seek to a specific time in the current animation (freeze on a frame).
+func seek_anim(anim_name: String, time: float) -> void:
+	if _active_anim == null:
+		return
+	if not _active_anim.has_animation(anim_name):
+		return
+	if _active_anim.assigned_animation != anim_name or not _active_anim.is_playing():
+		var anim := _active_anim.get_animation(anim_name)
+		if anim:
+			anim.loop_mode = Animation.LOOP_NONE
+		_active_anim.speed_scale = 1.0
+		_active_anim.play(anim_name)
+	_active_anim.seek(time, true)
+	_active_anim.stop()
 	_active_anim.playback_active = true
 
 

@@ -32,6 +32,10 @@ var _held_mesh: Node3D = null
 ## Decremented by the controller each physics frame. Set by the host
 ## via stun() and synced to clients via RPC.
 var _stun_timer: float = 0.0
+const STUN_DOWN_DURATION: float = 2.0
+var _stun_fall_played: bool = false
+var _stun_recovering: bool = false
+var _stun_recover_timer: float = 0.0
 
 ## Crouch state (0 = standing, 1 = crouching). Toggled by CTRL/C.
 var is_crouching: bool = false
@@ -81,7 +85,10 @@ func exit_priceboard_focus() -> void:
 func stun(duration: float) -> void:
 	if not is_multiplayer_authority():
 		return
-	_stun_timer = maxf(_stun_timer, duration)
+	_stun_timer = maxf(_stun_timer, STUN_DOWN_DURATION)
+	_stun_fall_played = false
+	_stun_recovering = false
+	_stun_recover_timer = 0.0
 	_sync_stun.rpc(_stun_timer)
 
 
@@ -94,6 +101,9 @@ func is_stunned() -> bool:
 @rpc("authority", "call_local", "reliable")
 func _sync_stun(timer: float) -> void:
 	_stun_timer = timer
+	_stun_fall_played = false
+	_stun_recovering = false
+	_stun_recover_timer = 0.0
 
 
 func _enter_tree() -> void:

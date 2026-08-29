@@ -250,9 +250,9 @@ func play_anim(anim_name: String) -> void:
 
 
 ## Play an animation once with a crossfade blend, then it stops on the
-## last frame. Used for Fall (ragdoll) — plays once, holds last frame.
-## The first half plays at 2x speed for a snappy fall, then eases to 1x.
-func play_anim_once(anim_name: String, blend: float = 0.2) -> void:
+## last frame. Used for Fall (ragdoll) — plays once at 2x speed, holds
+## last frame. Minimal blend for snappy start.
+func play_anim_once(anim_name: String, blend: float = 0.05) -> void:
 	if _active_anim == null:
 		return
 	if not _active_anim.has_animation(anim_name):
@@ -260,13 +260,8 @@ func play_anim_once(anim_name: String, blend: float = 0.2) -> void:
 	var anim := _active_anim.get_animation(anim_name)
 	if anim:
 		anim.loop_mode = Animation.LOOP_NONE
-	# Start at 2x speed for a fast fall start.
 	_active_anim.speed_scale = 2.0
 	_active_anim.play(anim_name, blend)
-	# Ease speed from 2x to 1x over the first half of the animation.
-	var half_dur := anim.length * 0.5
-	var tween := create_tween()
-	tween.tween_property(_active_anim, "speed_scale", 1.0, half_dur)
 
 
 ## Play an animation in reverse with a crossfade blend. Used to recover
