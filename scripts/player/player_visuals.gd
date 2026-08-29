@@ -623,7 +623,7 @@ const ANIM_BLEND_TIME: float = 0.25
 var _freeze_timer: SceneTreeTimer = null
 
 
-func play_anim_speed(anim_name: String, speed: float) -> void:
+func play_anim_speed(anim_name: String, speed: float, blend_time: float = ANIM_BLEND_TIME) -> void:
 	if _active_anim == null:
 		return
 	if not _active_anim.has_animation(anim_name):
@@ -641,12 +641,12 @@ func play_anim_speed(anim_name: String, speed: float) -> void:
 	if is_zero_approx(speed):
 		# Play at normal speed during blend, then freeze after blend completes.
 		# speed_scale=0.0 immediately would freeze the blend itself.
-		_active_anim.play(anim_name, ANIM_BLEND_TIME, 1.0)
+		_active_anim.play(anim_name, blend_time, 1.0)
 		_active_anim.speed_scale = 1.0
-		_freeze_timer = get_tree().create_timer(ANIM_BLEND_TIME)
+		_freeze_timer = get_tree().create_timer(blend_time)
 		_freeze_timer.timeout.connect(_on_freeze_blend_done.bind(anim_name))
 	else:
-		_active_anim.play(anim_name, ANIM_BLEND_TIME, 1.0)
+		_active_anim.play(anim_name, blend_time, 1.0)
 		_active_anim.speed_scale = speed
 
 
