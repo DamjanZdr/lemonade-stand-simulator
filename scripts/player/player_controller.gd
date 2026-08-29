@@ -39,6 +39,7 @@ const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 # Animation state
 var _current_anim: String = "Idle"
 var _crouch_frozen: bool = false
+var _is_airborne: bool = false
 var _was_moving: bool = false
 var _prev_sync_pos: Vector3 = Vector3.ZERO
 var _is_sprinting: bool = false
@@ -53,16 +54,23 @@ var _priceboard_camera_original_top_level := false
 ## Walk = 1.7x speed, Sprint = 2.0x speed, Jump = idle for now.
 ## Animations switch immediately (no waiting for current loop to finish).
 func _update_anim() -> void:
-	if _player.visuals == null or not _player.visuals.visible:
+	if _player.visuals == null:
 		return
 
-	# Determine state
-	var on_floor: bool
+	# Determine state with hysteresis to prevent flicker.
+	# Once airborne, stay "airborne" until we're clearly on the floor
+	# (velocity.y near zero AND is_on_floor). This prevents the Jump
+	# animation from flickering back to Idle/Walk for a frame mid-jump.
+	var raw_on_floor: bool
 	if _player.is_multiplayer_authority():
-		on_floor = _player.is_on_floor()
+		raw_on_floor = _player.is_on_floor()
 	else:
-		# Remote players don't run _player.move_and_slide, so estimate from _player.velocity.y
-		on_floor = absf(_player.velocity.y) < 1.0
+		raw_on_floor = absf(_player.velocity.y) < 1.0
+	var on_floor: bool = raw_on_floor
+	if _is_airborne:
+		# Require strong evidence we've landed before leaving airborne state
+		on_floor = raw_on_floor and _player.velocity.y <= 0.1
+	_is_airborne = not on_floor
 
 	var horizontal_vel := Vector3(_player.velocity.x, 0, _player.velocity.z).length()
 	var moving := horizontal_vel > 0.5 and on_floor
@@ -98,24 +106,6 @@ func _update_anim() -> void:
 	# Apply animation
 	var crouch_freeze := _player.is_crouching and not moving and on_floor
 	if _current_anim != target_anim or _crouch_frozen != crouch_freeze:
-		print(
-			"[ANIM] ",
-			_player.name,
-			" cur=",
-			_current_anim,
-			" target=",
-			target_anim,
-			" crouch_freeze=",
-			crouch_freeze,
-			" frozen=",
-			_crouch_frozen,
-			" crouching=",
-			_player.is_crouching,
-			" moving=",
-			moving,
-			" on_floor=",
-			on_floor,
-		)
 		if crouch_freeze:
 			# Standing crouched: freeze on first frame of Crouch (it's a
 			# crouch-walk cycle, so frame 0 is already the crouched pose).

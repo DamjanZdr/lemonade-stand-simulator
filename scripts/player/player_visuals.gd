@@ -695,10 +695,8 @@ func get_anim_length(anim_name: String) -> float:
 ## Seek to a specific time in the current animation (freeze on a frame).
 func seek_anim(anim_name: String, time: float) -> void:
 	if _active_anim == null:
-		print("[SEEK] _active_anim is NULL")
 		return
 	if not _active_anim.has_animation(anim_name):
-		print("[SEEK] no '", anim_name, "' in: ", _active_anim.get_animation_list())
 		return
 	var anim := _active_anim.get_animation(anim_name)
 	if anim:
@@ -706,18 +704,6 @@ func seek_anim(anim_name: String, time: float) -> void:
 	_active_anim.play(anim_name, 0.0, 1.0)
 	_active_anim.seek(time, true)
 	_active_anim.speed_scale = 0.0
-	print(
-		"[SEEK] OK: ",
-		anim_name,
-		" time=",
-		time,
-		" playing=",
-		_active_anim.is_playing(),
-		" speed=",
-		_active_anim.speed_scale,
-		" assigned=",
-		_active_anim.assigned_animation,
-	)
 
 
 func get_active_skeleton() -> Skeleton3D:
