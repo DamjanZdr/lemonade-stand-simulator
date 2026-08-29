@@ -77,10 +77,10 @@ func _update_anim() -> void:
 			target_anim = "Jump"
 			target_speed = 1.0
 		else:
-			# Falling or at peak: transition to Idle/Walk
+			# Falling or at peak: transition to Idle/Walk/Run
 			if moving:
-				target_anim = "Walk"
-				target_speed = (2.0 if _is_sprinting else 1.7)
+				target_anim = "Run" if _is_sprinting else "Walk"
+				target_speed = 2.0 if _is_sprinting else 1.7
 			else:
 				target_anim = "Idle"
 				target_speed = 1.0
@@ -93,8 +93,8 @@ func _update_anim() -> void:
 			# Stationary crouch: freeze at frame 0 (the crouched pose)
 			target_speed = 0.0
 	elif moving:
-		target_anim = "Walk"
-		target_speed = (2.0 if _is_sprinting else 1.7)
+		target_anim = "Run" if _is_sprinting else "Walk"
+		target_speed = 2.0 if _is_sprinting else 1.7
 	else:
 		target_anim = "Idle"
 		target_speed = 1.0
@@ -105,7 +105,7 @@ func _update_anim() -> void:
 		var blend: float = 0.6 if _current_anim == "Jump" else 0.25
 		_player.visuals.play_anim_speed(target_anim, target_speed, blend)
 		_current_anim = target_anim
-	elif target_anim == "Walk" or target_anim == "Crouch":
+	elif target_anim == "Walk" or target_anim == "Crouch" or target_anim == "Run":
 		_player.visuals.set_anim_speed(target_speed)
 
 
