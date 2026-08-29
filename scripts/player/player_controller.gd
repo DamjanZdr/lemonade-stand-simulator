@@ -43,7 +43,9 @@ var _current_anim: String = "Idle"
 var _crouch_frozen: bool = false
 var _is_airborne: bool = false
 var _air_time: float = 0.0
+var _floor_confirm_time: float = 0.0 # How long raw_on_floor has been true
 const MIN_AIR_TIME: float = 0.3 # Min seconds airborne before landing check
+const FLOOR_CONFIRM_TIME: float = 0.1 # Min seconds on floor before landing
 var _was_moving: bool = false
 var _prev_sync_pos: Vector3 = Vector3.ZERO
 var _is_sprinting: bool = false
@@ -62,28 +64,35 @@ func _update_anim() -> void:
 		return
 
 	# Determine state with hysteresis to prevent jump flicker.
-	# Once airborne, require a minimum air time before allowing landing,
-	# then require strong evidence of being on floor. This prevents the
-	# Jump animation from flickering back to Idle/Walk at the jump peak
-	# (where velocity.y ≈ 0 momentarily).
+	# Once airborne, require:
+	# 1. Minimum air time (prevents instant land at jump start)
+	# 2. raw_on_floor true for at least FLOOR_CONFIRM_TIME seconds
+	#    (prevents false landing at jump peak where velocity.y ≈ 0)
 	var raw_on_floor: bool
 	if _player.is_multiplayer_authority():
 		raw_on_floor = _player.is_on_floor()
 	else:
-		raw_on_floor = absf(_player.velocity.y) < 1.0
+		raw_on_floor = absf(_player.velocity.y) < 0.5
 	var on_floor: bool = raw_on_floor
 	if _is_airborne:
 		_air_time += get_process_delta_time()
-		# Only allow landing after minimum air time AND clearly on floor
 		if _air_time < MIN_AIR_TIME:
 			on_floor = false
+			_floor_confirm_time = 0.0
 		else:
-			on_floor = raw_on_floor and _player.velocity.y >= -0.5
+			# Require sustained on-floor evidence before landing
+			if raw_on_floor:
+				_floor_confirm_time += get_process_delta_time()
+			else:
+				_floor_confirm_time = 0.0
+			on_floor = _floor_confirm_time >= FLOOR_CONFIRM_TIME
 	else:
 		_air_time = 0.0
+		_floor_confirm_time = 0.0
 	if on_floor:
 		_is_airborne = false
 		_air_time = 0.0
+		_floor_confirm_time = 0.0
 	else:
 		_is_airborne = true
 
@@ -318,7 +327,6 @@ func _physics_process(delta: float) -> void:
 	# Crouch toggle (CTRL or C).
 	if Input.is_action_just_pressed("crouch"):
 		_player.is_crouching = not _player.is_crouching
-		GameLog.log("[CROUCH] player=%s toggled to %s" % [_player.name, _player.is_crouching])
 		_apply_crouch_visual()
 		_update_anim()
 
@@ -327,6 +335,10 @@ func _physics_process(delta: float) -> void:
 	else:
 		if Input.is_action_just_pressed("jump") and not _player.is_crouching:
 			_player.velocity.y = _player.jump_velocity
+			# Immediately mark as airborne so _update_anim doesn't
+			# see is_on_floor()=true for one frame and play Idle/Walk.
+			_is_airborne = true
+			_air_time = 0.0
 
 	# Stunned: can't move, play Fall, hold last frame.
 	if _player.is_stunned():
@@ -402,10 +414,6 @@ func _try_sync_position(delta: float) -> void:
 	_last_synced_yaw = _player.head.rotation.y
 	_last_synced_crouch = _player.is_crouching
 	_last_synced_sprint = _is_sprinting
-	GameLog.log(
-		"[SYNC] sending player=%s crouch=%s sprint=%s"
-		% [_player.name, _player.is_crouching, _is_sprinting]
-	)
 	_sync_position.rpc(
 		_player.global_position,
 		_player.global_rotation,
@@ -459,11 +467,8 @@ func _sync_position(
 	)
 	_prev_sync_pos = pos
 	_is_sprinting = sprinting
-	var crouch_changed: bool = _player.is_crouching != crouching
 	_player.is_crouching = crouching
 	_time_since_sync = 0.0
-	if crouch_changed:
-		GameLog.log("[SYNC] player=%s crouch changed to %s" % [_player.name, crouching])
 	# Set interpolation target instead of snapping directly
 	_net_target_pos = pos
 	_net_target_rot = rot

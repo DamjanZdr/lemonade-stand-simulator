@@ -606,13 +606,16 @@ func play_anim(anim_name: String) -> void:
 		"Talk": talk_speed,
 	}
 	var s: float = speed_map.get(anim_name, 1.0)
-	# custom_blend=0.0 = instant switch (no blending), custom_speed=s
-	_active_anim.play(anim_name, 0.0, s)
+	# custom_blend for smooth transitions, custom_speed=s
+	_active_anim.play(anim_name, ANIM_BLEND_TIME, s)
 
 
-## Play an animation with a custom speed multiplier (overrides the default).
-## Passes speed as custom_speed to play() so it actually takes effect
-## (play()'s custom_speed defaults to 1.0 and overrides speed_scale).
+## Play an animation with a custom speed multiplier and smooth blend.
+## Uses custom_speed=1.0 in play() and sets speed_scale separately so
+## that set_anim_speed() can change speed without restarting the anim.
+const ANIM_BLEND_TIME: float = 0.25
+
+
 func play_anim_speed(anim_name: String, speed: float) -> void:
 	if _active_anim == null:
 		return
@@ -624,8 +627,10 @@ func play_anim_speed(anim_name: String, speed: float) -> void:
 			anim.loop_mode = Animation.LOOP_NONE
 		else:
 			anim.loop_mode = Animation.LOOP_LINEAR
-	# custom_blend=0.0 = instant switch (no blending), custom_speed=speed
-	_active_anim.play(anim_name, 0.0, speed)
+	# Use blend for smooth transitions; custom_speed=1.0 so speed_scale
+	# is the sole speed controller (avoids custom_speed * speed_scale bug)
+	_active_anim.play(anim_name, ANIM_BLEND_TIME, 1.0)
+	_active_anim.speed_scale = speed
 
 
 ## Update the speed of the currently playing animation without restarting it.
