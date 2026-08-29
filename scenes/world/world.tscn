@@ -191,7 +191,7 @@ transform = Transform3D(0.48795187, 0, 5.3290705e-15, 0, 0.48795187, 0, -5.32907
 transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3, 1.8940175, 16.6)
 
 [node name="PlacableFloor" type="StaticBody3D" parent="Stands/StandUnit" unique_id=494711542 groups=["placement_surface"]]
-collision_layer = 4
+collision_layer = 8
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=61180459]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9992676, -0.23040771, 3.0013885)
@@ -260,7 +260,7 @@ transform = Transform3D(0.48795187, 0, 5.3290705e-15, 0, 0.48795187, 0, -5.32907
 transform = Transform3D(-1, 0, 2.6226832e-07, 0, 1, 0, -2.6226832e-07, 0, -1, 0.75783443, 1.8940175, 16.498135)
 
 [node name="PlacableFloor" type="StaticBody3D" parent="Stands/StandUnit2" unique_id=794825641 groups=["placement_surface"]]
-collision_layer = 4
+collision_layer = 8
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.20456696, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stands/StandUnit2/PlacableFloor" unique_id=1349067817]

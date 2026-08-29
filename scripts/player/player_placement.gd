@@ -1680,7 +1680,7 @@ func _check_layer4_placement_surface() -> bool:
 	var from := _player.ray.global_position
 	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
 	var space := _player.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, 4)
+	var query := PhysicsRayQueryParameters3D.create(from, to, 8)
 	query.exclude = [_player.get_rid()]
 	var hits := space.intersect_ray(query)
 	if hits.is_empty():
@@ -1716,7 +1716,7 @@ func _check_layer4_ground_surface() -> bool:
 	var from := _player.ray.global_position
 	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
 	var space := _player.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, 4)
+	var query := PhysicsRayQueryParameters3D.create(from, to, 8)
 	query.exclude = [_player.get_rid()]
 	var hits := space.intersect_ray(query)
 	if hits.is_empty():
