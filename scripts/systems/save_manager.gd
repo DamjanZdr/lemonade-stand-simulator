@@ -169,8 +169,12 @@ func list_saves() -> Array:
 				# host's saves. Only filter when we have a valid Steam ID
 				# AND the save has a valid creator ID. This prevents
 				# hiding all saves when Steam isn't initialized yet.
-				var creator_id: int = int(data.get("creator_steam_id", 0))
-				if my_steam_id != 0 and creator_id != 0 and creator_id != my_steam_id:
+				# Compare as strings — Steam IDs are 64-bit integers
+				# which lose precision when stored as JSON numbers.
+				var creator_raw: Variant = data.get("creator_steam_id", "")
+				var creator_str: String = str(creator_raw) if str(creator_raw) != "0" else ""
+				var my_str: String = str(my_steam_id) if my_steam_id != 0 else ""
+				if my_str != "" and creator_str != "" and creator_str != my_str:
 					file_name = dir.get_next()
 					continue
 				saves.append(
@@ -344,7 +348,7 @@ func _build_save_dict() -> Dictionary:
 	return {
 		"stand_name": GameState.stand_name,
 		"game_mode": GameState.game_mode,
-		"creator_steam_id": NetworkManager.steam_id,
+		"creator_steam_id": str(NetworkManager.steam_id),
 		"money": GameState.money,
 		"popularity": GameState.popularity,
 		"temperature": GameState.temperature,
