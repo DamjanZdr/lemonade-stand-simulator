@@ -93,13 +93,23 @@ func _update_anim() -> void:
 		_player.visuals.set_anim_speed(target_speed)
 
 
-## Apply crouch visual: lower the head/camera and scale the body.
+## Apply crouch visual: lower the head/camera.
 ## This is a simple visual effect for now; later we can add a crouch animation.
+## Stores the original head Y on first call and tweens to an absolute
+## offset from it, so toggling crouch repeatedly doesn't accumulate.
+var _head_base_y: float = 0.0
+var _head_base_set: bool = false
+const CROUCH_DROP: float = 0.6
+
+
 func _apply_crouch_visual() -> void:
-	var target_y: float = -0.6 if _player.is_crouching else 0.0
+	if not _head_base_set:
+		_head_base_y = _player.head.position.y
+		_head_base_set = true
+	var target_y: float = _head_base_y - CROUCH_DROP if _player.is_crouching else _head_base_y
 	var tween := _player.create_tween()
 	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_player.head, "position:y", _player.head.position.y + target_y, 0.15)
+	tween.tween_property(_player.head, "position:y", target_y, 0.15)
 
 
 func enter_priceboard_focus(focus_transform: Transform3D) -> void:
