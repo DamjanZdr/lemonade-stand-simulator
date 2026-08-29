@@ -29,10 +29,17 @@ const _FACE_NORMALS: Array[Vector3] = [
 	Vector3(0, 1, 0),
 ]
 
-static var stack_height: float = 0.324663
-static var bottom_offset: float = 0.16
-static var stack_radius: float = 0.15
-static var box_aabb: AABB = AABB(Vector3(-0.252, -0.16, -0.2), Vector3(0.504, 0.324663, 0.4))
+# Per-instance metrics (updated by update_metrics()). Defaults match
+# the original static values so things work before update_metrics() runs.
+var stack_height: float = 0.324663
+var bottom_offset: float = 0.16
+var stack_radius: float = 0.15
+var box_aabb: AABB = AABB(Vector3(-0.252, -0.16, -0.2), Vector3(0.504, 0.324663, 0.4))
+
+# Static defaults for ground placement when no specific box instance is
+# available (e.g. placing a held box on the floor).
+const DEFAULT_BOTTOM_OFFSET: float = 0.16
+const DEFAULT_STACK_HEIGHT: float = 0.324663
 
 # --- Icon system ---
 const INGREDIENT_ICONS: Dictionary = {
@@ -303,7 +310,7 @@ static func make_boxes_above_pos_fall(box_pos: Vector3) -> void:
 			continue
 		var dx := absf(box.global_position.x - box_pos.x)
 		var dz := absf(box.global_position.z - box_pos.z)
-		if dx < stack_radius and dz < stack_radius and box.global_position.y > box_pos.y:
+		if dx < box.stack_radius and dz < box.stack_radius and box.global_position.y > box_pos.y:
 			above.append(box)
 	if above.is_empty():
 		return
@@ -313,7 +320,7 @@ static func make_boxes_above_pos_fall(box_pos: Vector3) -> void:
 			return a.global_position.y < b.global_position.y,
 	)
 	for box in above:
-		var target_y := box.global_position.y - stack_height
+		var target_y := box.global_position.y - box.stack_height
 		box.set_meta("fall_target_y", target_y)
 		var tween := box.create_tween()
 		tween.tween_property(box, "global_position:y", target_y, 0.25) \

@@ -456,7 +456,7 @@ func _get_topmost_box_in_stack(base: SupplyBox) -> SupplyBox:
 			continue
 		var dx := absf(box.global_position.x - base_pos.x)
 		var dz := absf(box.global_position.z - base_pos.z)
-		if dx < SupplyBox.stack_radius and dz < SupplyBox.stack_radius:
+		if dx < base.stack_radius and dz < base.stack_radius:
 			var box_y := _get_box_stack_y(box)
 			if box_y > top_y:
 				top = box
@@ -523,13 +523,14 @@ func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> v
 func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 	root.update_metrics()
 	var top := _get_topmost_box_in_stack(root)
+	top.update_metrics()
 	if top.get_instance_id() != _stack_target_id:
 		_stack_target_id = top.get_instance_id()
 		_regenerate_stack_offset()
 	var top_y := _get_box_stack_y(top)
 	var place_pos := Vector3(top.global_position.x, top_y, top.global_position.z) + Vector3(
 		0,
-		SupplyBox.stack_height,
+		top.stack_height,
 		0,
 	) + _stack_offset
 	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
@@ -567,7 +568,11 @@ func _drop_held_box() -> void:
 	# Drop exactly where the raycast hits, or 0.8 m ahead if not hitting anything.
 	var drop_pos: Vector3
 	if _player.ray.is_colliding():
-		drop_pos = _player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
+		drop_pos = _player.ray.get_collision_point() + Vector3(
+			0,
+			SupplyBox.DEFAULT_BOTTOM_OFFSET,
+			0,
+		)
 	else:
 		drop_pos = _player.global_position + (-_player.transform.basis.z * 0.8) + Vector3(
 			0,
@@ -599,7 +604,11 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	if place_pos != Vector3.ZERO:
 		drop_pos = place_pos
 	elif _player.ray.is_colliding() and _is_placement_surface(_player.ray.get_collider()):
-		drop_pos = _player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0)
+		drop_pos = _player.ray.get_collision_point() + Vector3(
+			0,
+			SupplyBox.DEFAULT_BOTTOM_OFFSET,
+			0,
+		)
 	else:
 		drop_pos = _player.global_position + (-_player.transform.basis.z * 0.8) + Vector3(
 			0,
@@ -949,7 +958,7 @@ func _update_cup_box_ghost() -> void:
 	if is_ground:
 		# Floor ΓÇö show box ghost but invalid (cup boxes can't go on floor)
 		_ensure_box_ghost()
-		_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
 		_ghost_valid = false
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
@@ -1042,7 +1051,7 @@ func _update_supply_box_ghost() -> void:
 			target_box.global_position.x,
 			ghost_y,
 			target_box.global_position.z,
-		) + Vector3(0, SupplyBox.stack_height, 0)
+		) + Vector3(0, target_box.stack_height, 0)
 		_ghost.global_position = stack_base + _stack_offset
 		_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
 		_ghost.visible = true
@@ -1067,7 +1076,7 @@ func _update_supply_box_ghost() -> void:
 		return
 
 	_stack_target_id = -1
-	_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
+	_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 	_ghost.visible = true
 	_ghost_valid = true
 	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -1104,7 +1113,7 @@ func _update_equipment_box_ghost() -> void:
 				_stack_target_id = target_id
 				_regenerate_stack_offset()
 			_ensure_box_ghost()
-			var stack_base := target_box.global_position + Vector3(0, SupplyBox.stack_height, 0)
+			var stack_base := target_box.global_position + Vector3(0, target_box.stack_height, 0)
 			_ghost.global_position = stack_base + _stack_offset
 			_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
 			_ghost.visible = true
@@ -1157,7 +1166,7 @@ func _update_equipment_box_ghost() -> void:
 	if is_ground:
 		# Floor placement for other equipment ΓÇö just drop the box
 		_ensure_box_ghost()
-		_ghost.global_position = hit_point + Vector3(0, SupplyBox.bottom_offset, 0)
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
 		_ghost_valid = true
 		_stack_target_id = -1

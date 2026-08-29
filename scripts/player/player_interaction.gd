@@ -493,7 +493,8 @@ func primary_interact() -> void:
 				if _player._is_ground_surface(collider):
 					# Floor — drop the box
 					_player.placement._place_held_supply_box_on(
-						_player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0),
+						_player.ray.get_collision_point()
+						+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
 					)
 					return
 				# Workstation/stand — place cup stack
@@ -566,7 +567,8 @@ func primary_interact() -> void:
 			if on_surface and not is_equipment:
 				# Place ingredient box on a surface
 				_player.placement._place_held_supply_box_on(
-					_player.ray.get_collision_point() + Vector3(0, SupplyBox.bottom_offset, 0),
+					_player.ray.get_collision_point()
+					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
 				)
 				return
 		_player.placement._drop_held_box()

@@ -103,8 +103,8 @@ func get_slot_position(cell_index: int) -> Vector3:
 	var marker := _cells[cell_index]
 	var base := marker.global_position if marker != null else global_position
 	var grid_scale_y: float = absf(global_transform.basis.y.y)
-	var sh: float = SupplyBox.stack_height * grid_scale_y
-	var bo: float = SupplyBox.bottom_offset * grid_scale_y
+	var sh: float = SupplyBox.DEFAULT_STACK_HEIGHT * grid_scale_y
+	var bo: float = SupplyBox.DEFAULT_BOTTOM_OFFSET * grid_scale_y
 	var height: float = _stacks[cell_index] * sh + bo
 	return base + Vector3(0, height, 0) + _get_cell_offset(cell_index, _stacks[cell_index])
 
