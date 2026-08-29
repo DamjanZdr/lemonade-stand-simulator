@@ -94,6 +94,7 @@ const CLOTHING_SURFACES: Array[String] = [
 
 func _ready() -> void:
 	_disable_cast_shadows()
+	_load_extra_animations()
 
 
 func _disable_cast_shadows() -> void:
@@ -102,6 +103,66 @@ func _disable_cast_shadows() -> void:
 		var gi := node as GeometryInstance3D
 		if gi:
 			gi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## Load extra animations (Crouch, Fall, etc.) from newman.glb by parsing
+## the GLB directly with GLTFDocument (bypasses Godot's buggy import that
+## drops animations). Extracted animations are merged into both man and
+## woman AnimationPlayers. Done once per session.
+const _EXTRA_ANIM_PATH := "res://assets/models/characters/newman.glb"
+static var _extra_anim_loaded: bool = false
+static var _extra_anim_lock: Mutex = null
+
+
+func _load_extra_animations() -> void:
+	if _extra_anim_loaded:
+		return
+	if _extra_anim_lock == null:
+		_extra_anim_lock = Mutex.new()
+	_extra_anim_lock.lock()
+	if _extra_anim_loaded:
+		_extra_anim_lock.unlock()
+		return
+	_extra_anim_loaded = true
+	_extra_anim_lock.unlock()
+
+	var doc := GLTFDocument.new()
+	var state := GLTFState.new()
+	var err := doc.append_from_file(_EXTRA_ANIM_PATH, state)
+	if err != OK:
+		push_warning(
+			"Failed to load extra animations from %s: %s" % [_EXTRA_ANIM_PATH, error_string(err)]
+		)
+		return
+	var scene := doc.generate_scene(state)
+	if scene == null:
+		push_warning("Failed to generate scene from extra anim GLB")
+		return
+	var extra_anim := scene.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if extra_anim == null:
+		scene.queue_free()
+		return
+	# Copy each animation into our man/woman players (don't overwrite existing).
+	for lib_name in extra_anim.get_animation_library_list():
+		var src_lib := extra_anim.get_animation_library(lib_name)
+		for anim_name in src_lib.get_animation_list():
+			if anim_name == &"RESET":
+				continue
+			var anim := src_lib.get_animation(anim_name)
+			if anim == null:
+				continue
+			_merge_anim(_man_anim, anim_name, anim)
+			_merge_anim(_woman_anim, anim_name, anim)
+	scene.queue_free()
+
+
+func _merge_anim(player: AnimationPlayer, anim_name: String, anim: Animation) -> void:
+	if player == null:
+		return
+	if player.has_animation(anim_name):
+		return # Don't overwrite existing (Walk, Idle, Talk already work)
+	var lib := player.get_animation_library("")
+	lib.add_animation(anim_name, anim.duplicate())
 
 
 const _EYE_SCALE := 0.30564013
