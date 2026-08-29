@@ -752,10 +752,10 @@ func _find_closer_interactable_along_ray(workstation: Workstation) -> Interactab
 			if child3d == null or not child3d.visible:
 				continue
 			# Check if the hit point is within the child's AABB.
-			var aabb := child3d.get_aabb()
+			var aabb: AABB = child3d.get_aabb()
 			# get_aabb() returns local-space AABB; transform to world.
-			aabb = AABB(child3d.global_transform * aabb.position, aabb.size)
-			if aabb.has_point(hit_point):
+			var world_aabb := AABB(child3d.global_transform * aabb.position, aabb.size)
+			if world_aabb.has_point(hit_point):
 				return child as Interactable
 	return null
 
