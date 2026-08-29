@@ -41,11 +41,6 @@ const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 # Animation state
 var _current_anim: String = "Idle"
 var _crouch_frozen: bool = false
-var _is_airborne: bool = false
-var _air_time: float = 0.0
-var _floor_confirm_time: float = 0.0 # How long raw_on_floor has been true
-const MIN_AIR_TIME: float = 0.3 # Min seconds airborne before landing check
-const FLOOR_CONFIRM_TIME: float = 0.1 # Min seconds on floor before landing
 var _was_moving: bool = false
 var _prev_sync_pos: Vector3 = Vector3.ZERO
 var _is_sprinting: bool = false
@@ -57,69 +52,48 @@ var _priceboard_camera_original_top_level := false
 
 
 ## Update the player's animation based on movement state.
-## Walk = 1.7x speed, Sprint = 2.0x speed, Jump = idle for now.
-## Animations switch immediately (no waiting for current loop to finish).
+## Jump plays only while ascending; transitions to Idle/Walk when falling.
+## Crouch freezes at frame 0 when standing, plays forward when crouch-walking.
 func _update_anim() -> void:
 	if _player.visuals == null:
 		return
 
-	# Determine state with hysteresis to prevent jump flicker.
-	# Once airborne, require:
-	# 1. Minimum air time (prevents instant land at jump start)
-	# 2. raw_on_floor true for at least FLOOR_CONFIRM_TIME seconds
-	#    (prevents false landing at jump peak where velocity.y ≈ 0)
-	var raw_on_floor: bool
+	var on_floor: bool
 	if _player.is_multiplayer_authority():
-		raw_on_floor = _player.is_on_floor()
+		on_floor = _player.is_on_floor()
 	else:
-		raw_on_floor = absf(_player.velocity.y) < 0.5
-	var on_floor: bool = raw_on_floor
-	if _is_airborne:
-		_air_time += get_process_delta_time()
-		if _air_time < MIN_AIR_TIME:
-			on_floor = false
-			_floor_confirm_time = 0.0
-		else:
-			# Require sustained on-floor evidence before landing
-			if raw_on_floor:
-				_floor_confirm_time += get_process_delta_time()
-			else:
-				_floor_confirm_time = 0.0
-			on_floor = _floor_confirm_time >= FLOOR_CONFIRM_TIME
-	else:
-		_air_time = 0.0
-		_floor_confirm_time = 0.0
-	if on_floor:
-		_is_airborne = false
-		_air_time = 0.0
-		_floor_confirm_time = 0.0
-	else:
-		_is_airborne = true
+		on_floor = absf(_player.velocity.y) < 0.5
 
 	var horizontal_vel := Vector3(_player.velocity.x, 0, _player.velocity.z).length()
-	var moving := horizontal_vel > 0.5 and on_floor
+	var moving := horizontal_vel > 0.5
 
 	# Determine target animation and speed
 	var target_anim: String
 	var target_speed: float = 1.0
 
 	if not on_floor:
-		target_anim = "Jump"
-		target_speed = 1.0
+		if _player.velocity.y > 0.5:
+			# Ascending: play Jump animation
+			target_anim = "Jump"
+			target_speed = 1.0
+		else:
+			# Falling or at peak: transition to Idle/Walk
+			if moving:
+				target_anim = "Walk"
+				target_speed = -(2.0 if _is_sprinting else 1.7)
+			else:
+				target_anim = "Idle"
+				target_speed = 1.0
 	elif _player.is_crouching:
-		# Crouch animation for both moving and standing — it's a crouch-walk
-		# cycle. When standing still, play at very low speed to freeze near
-		# frame 0 (the crouched pose). When moving, play at walk speed.
 		target_anim = "Crouch"
 		if moving:
-			target_speed = -1.7
+			# Crouch-walking: play forward at walk speed
+			target_speed = 1.7
 		else:
-			target_speed = 0.01
+			# Stationary crouch: freeze at frame 0 (the crouched pose)
+			target_speed = 0.0
 	elif moving:
 		target_anim = "Walk"
-		# Walk animation is designed for the model's default facing.
-		# The player model is rotated 180°, so negate speed to match.
-		# Walk = -1.7x (reversed), Sprint = -2.0x
 		target_speed = -(2.0 if _is_sprinting else 1.7)
 	else:
 		target_anim = "Idle"
@@ -130,7 +104,6 @@ func _update_anim() -> void:
 		_player.visuals.play_anim_speed(target_anim, target_speed)
 		_current_anim = target_anim
 	elif target_anim == "Walk" or target_anim == "Crouch":
-		# Same anim but speed might have changed
 		_player.visuals.set_anim_speed(target_speed)
 
 
@@ -335,10 +308,6 @@ func _physics_process(delta: float) -> void:
 	else:
 		if Input.is_action_just_pressed("jump") and not _player.is_crouching:
 			_player.velocity.y = _player.jump_velocity
-			# Immediately mark as airborne so _update_anim doesn't
-			# see is_on_floor()=true for one frame and play Idle/Walk.
-			_is_airborne = true
-			_air_time = 0.0
 
 	# Stunned: can't move, play Fall, hold last frame.
 	if _player.is_stunned():
