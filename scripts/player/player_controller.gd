@@ -99,8 +99,11 @@ func _update_anim() -> void:
 	var crouch_freeze := _player.is_crouching and not moving and on_floor
 	if _current_anim != target_anim or _crouch_frozen != crouch_freeze:
 		if crouch_freeze:
-			# Standing crouched: play Crouch then freeze on first frame
-			_player.visuals.seek_anim("Crouch", 0.0)
+			# Standing crouched: seek to the deepest crouch pose (~75% through
+			# the animation — Crouch goes stand→crouch→stand, so frame 0 is
+			# standing, not crouched).
+			var clen: float = _player.visuals.get_anim_length("Crouch")
+			_player.visuals.seek_anim("Crouch", clen * 0.74)
 			_crouch_frozen = true
 		else:
 			_player.visuals.play_anim_speed(target_anim, target_speed)
