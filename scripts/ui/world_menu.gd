@@ -343,6 +343,9 @@ func show_menu() -> void:
 	_join_panel.visible = false
 	_settings_panel.visible = false
 	_status_label.text = ""
+	_status_label.visible = false
+	# Refresh the saves list so newly created stands appear.
+	_refresh_saves()
 	$MenuBox.visible = true
 	$MenuBox.modulate = Color(1, 1, 1, 1)
 	print("[ShowMenu] MenuBox.visible=%s modulate=%s" % [$MenuBox.visible, $MenuBox.modulate])
@@ -378,6 +381,7 @@ func show_menu_immediate(duration: float = 0.4) -> void:
 	_join_panel.visible = false
 	_settings_panel.visible = false
 	_status_label.text = ""
+	_status_label.visible = false
 	# MenuBox may have been hidden by _on_saves_pressed().
 	$MenuBox.visible = true
 	# Make sure all buttons are fully visible immediately.
@@ -1143,7 +1147,11 @@ func _confirm_inline_name(panel: VBoxContainer, field: LineEdit, mode: int) -> v
 	if name == "":
 		return
 	panel.queue_free()
-	_restore_saves_list()
+	# Only restore the saves list if we have saves (came from the
+	# saves browser). If there are no saves (came from Play), keep
+	# everything hidden — main.gd will hide the menu and go to lobby.
+	if not _saves_data.is_empty():
+		_restore_saves_list()
 	set_busy("Creating '%s'..." % name)
 	new_stand_requested.emit(name, mode)
 
