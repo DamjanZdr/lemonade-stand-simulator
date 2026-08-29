@@ -175,17 +175,16 @@ func _physics_process(delta: float) -> void:
 			basis = _facing_target
 			_is_rotating_to_face = false
 
-	# Tick stun timer — stunned customers can't walk (Fall animation).
+	# Tick stun timer — Fall animation plays once, then holds last frame.
 	if _stun_timer > 0.0:
 		_stun_timer = maxf(_stun_timer - delta, 0.0)
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		# When stun ends, start recovery (idle for 3s before walking).
+		# When stun ends, crossfade to idle for recovery.
 		if _stun_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
 			_recover_timer = _RECOVER_DURATION
-			_npc.rotation = _npc_base_rot
-			_npc.play_anim("Idle")
+			_npc.play_anim_blend("Idle", 0.5)
 		return
 
 	# Recovery phase: play idle, then resume walking after _RECOVER_DURATION.
@@ -196,7 +195,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		# When recovery ends, resume walking.
 		if _recover_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
-			_npc.play_anim("Walk")
+			_npc.play_anim_blend("Walk", 0.5)
 		return
 
 	match state:
@@ -276,7 +275,7 @@ func stun(duration: float) -> void:
 	_recover_timer = 0.0
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
-		_npc.play_anim("Fall")
+		_npc.play_anim_once("Fall", 0.2)
 	# Sync to clients so they see the fall.
 	_sync_stun.rpc(duration)
 
@@ -290,7 +289,7 @@ func _sync_stun(duration: float) -> void:
 	_recover_timer = 0.0
 	if _npc != null and is_instance_valid(_npc):
 		_npc_base_rot = _npc.rotation
-		_npc.play_anim("Fall")
+		_npc.play_anim_once("Fall", 0.2)
 
 
 func _walk_toward(target: Vector3, delta: float) -> void:

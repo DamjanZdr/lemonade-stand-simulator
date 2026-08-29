@@ -232,8 +232,8 @@ func play_anim(anim_name: String) -> void:
 		return
 	var anim := _active_anim.get_animation(anim_name)
 	if anim:
-		# Talk plays once, everything else loops
-		if anim_name == "Talk":
+		# Talk and Fall play once, everything else loops
+		if anim_name == "Talk" or anim_name == "Fall":
 			anim.loop_mode = Animation.LOOP_NONE
 		else:
 			anim.loop_mode = Animation.LOOP_LINEAR
@@ -247,6 +247,43 @@ func play_anim(anim_name: String) -> void:
 	}
 	_active_anim.speed_scale = speed_map.get(anim_name, 1.0)
 	_active_anim.play(anim_name)
+
+
+## Play an animation once with a crossfade blend, then it stops on the
+## last frame. Used for Fall (ragdoll) — plays once, holds last frame.
+func play_anim_once(anim_name: String, blend: float = 0.2) -> void:
+	if _active_anim == null:
+		return
+	if not _active_anim.has_animation(anim_name):
+		return
+	var anim := _active_anim.get_animation(anim_name)
+	if anim:
+		anim.loop_mode = Animation.LOOP_NONE
+	_active_anim.speed_scale = 1.0
+	_active_anim.play(anim_name, blend)
+
+
+## Crossfade from the current animation to a new one with blending.
+func play_anim_blend(anim_name: String, blend: float = 0.3) -> void:
+	if _active_anim == null:
+		return
+	if not _active_anim.has_animation(anim_name):
+		return
+	var anim := _active_anim.get_animation(anim_name)
+	if anim:
+		if anim_name == "Talk" or anim_name == "Fall":
+			anim.loop_mode = Animation.LOOP_NONE
+		else:
+			anim.loop_mode = Animation.LOOP_LINEAR
+	var speed_map := {
+		"Walk": walk_speed,
+		"Idle": idle_speed,
+		"Idle_001": idle_alt_speed,
+		"LookAround": look_around_speed,
+		"Talk": talk_speed,
+	}
+	_active_anim.speed_scale = speed_map.get(anim_name, 1.0)
+	_active_anim.play(anim_name, blend)
 
 
 func pause_anim() -> void:
