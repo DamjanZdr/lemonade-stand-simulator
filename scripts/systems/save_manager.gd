@@ -147,9 +147,12 @@ func delete_slot(slot_name: String) -> void:
 ## Returns info about all save slots for the Load Game UI.
 ## Each entry: { "slot": String, "stand_name": String, "day": int,
 ##               "money": float, "saved_at": float (unix timestamp) }
+## Only shows saves created by the local Steam user (so joiners don't
+## see the host's stands in their saves list).
 func list_saves() -> Array:
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		return []
+	var my_steam_id: int = NetworkManager.steam_id
 	var saves: Array = []
 	var dir := DirAccess.open(SAVE_DIR)
 	if dir == null:
@@ -161,6 +164,13 @@ func list_saves() -> Array:
 			var slot_name := file_name.get_basename()
 			var data := load_slot(slot_name)
 			if not data.is_empty():
+				# Filter by creator Steam ID so joiners don't see the
+				# host's saves (important when testing two sessions on
+				# the same machine, which shares user://saves/).
+				var creator_id: int = int(data.get("creator_steam_id", 0))
+				if creator_id != 0 and creator_id != my_steam_id:
+					file_name = dir.get_next()
+					continue
 				saves.append(
 					{
 						"slot": slot_name,
@@ -332,6 +342,7 @@ func _build_save_dict() -> Dictionary:
 	return {
 		"stand_name": GameState.stand_name,
 		"game_mode": GameState.game_mode,
+		"creator_steam_id": NetworkManager.steam_id,
 		"money": GameState.money,
 		"popularity": GameState.popularity,
 		"temperature": GameState.temperature,
