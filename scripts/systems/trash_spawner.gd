@@ -70,21 +70,23 @@ func _spawn_trash() -> void:
 	# Spawn a networked ThrownTrash body that falls from above, then
 	# spawns the real TrashItem when it hits the ground.
 	var drop_pos := Vector3(spawn_x, feet_y + 1.5, spawn_z)
-	_drop_trash_with_physics(variant, drop_pos)
+	_drop_trash_with_physics(variant, drop_pos, npc)
 
 
 ## Drop trash from a position using the networked ThrownTrash scene.
 ## The host runs physics and syncs to clients. When it lands, the
 ## ThrownTrash script spawns the real TrashItem via WorldSync.
-func _drop_trash_with_physics(variant: String, drop_pos: Vector3) -> void:
+func _drop_trash_with_physics(variant: String, drop_pos: Vector3, source_npc: Node = null) -> void:
 	var state: Dictionary = { "trash_type": variant, "trash_value": 1.0, "is_npc_drop": true }
-	WorldSync.spawn_networked(
+	var body := WorldSync.spawn_networked(
 		"res://scenes/objects/thrown_trash.tscn",
 		WorldSync.get_world_objects(),
 		drop_pos,
 		Vector3.ZERO,
 		state,
-	)
+	) as ThrownTrash
+	if body and source_npc:
+		body.source_node = source_npc
 
 
 func _get_feet_y(npc: Node3D) -> float:

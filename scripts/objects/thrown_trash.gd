@@ -14,6 +14,18 @@ var _initial_velocity: Vector3 = Vector3.ZERO
 ## Whether this is an NPC drop (vs player throw). Determines spawn behavior.
 var is_npc_drop: bool = false
 
+## The node that threw/dropped this trash. Ignored by collision detection
+## so the thrower/dropper doesn't stun themselves.
+var source_node: Node = null
+
+## Grace period after spawn during which collisions are ignored (seconds).
+## Prevents the trash from stunning the thrower/dropper on spawn overlap.
+const _SPAWN_GRACE: float = 0.3
+var _spawn_time: float = 0.0
+
+## Whether this trash has already hit someone (stun only applies once).
+var _hit_someone: bool = false
+
 const _VARIANT_SCENES: Dictionary = {
 	"apple": "res://scenes/objects/trash_apple.tscn",
 	"banana": "res://scenes/objects/trash_banana.tscn",
@@ -77,6 +89,7 @@ func _physics_process(delta: float) -> void:
 	if WorldSync.is_host():
 		if _landed or not is_instance_valid(self):
 			return
+		_spawn_time += delta
 		# Sync transform to clients periodically (every ~50ms).
 		_sync_timer += delta
 		if _sync_timer >= 0.05:
@@ -140,26 +153,37 @@ static func _get_no_bounce_material() -> PhysicsMaterial:
 
 ## Host: called when the thrown trash collides with another body.
 ## If it hits a player or pedestrian/customer, stun them for 3 seconds.
+## Only applies once per trash, and only after the spawn grace period.
+## The source node (thrower/dropper) is ignored.
 func _on_body_entered(body: Node) -> void:
-	if _landed or not is_instance_valid(self):
+	if _landed or _hit_someone or not is_instance_valid(self):
+		return
+	# Ignore collisions during spawn grace period (prevents self-stun).
+	if _spawn_time < _SPAWN_GRACE:
 		return
 	# Walk up the tree to find the Player or Pedestrian/Customer node
 	# (the collider may be a child mesh/collision shape).
 	var node: Node = body
 	while node != null:
+		# Skip the source node (thrower/dropper).
+		if source_node != null and is_instance_valid(source_node) and node == source_node:
+			return
 		if node is Player:
 			var p := node as Player
+			_hit_someone = true
 			p.stun(3.0)
 			GameLog.log("[ThrownTrash] Stunned player %s for 3s" % p.name)
 			# Don't finalize on player hit — let the trash bounce off.
 			return
 		if node is Pedestrian:
 			var ped := node as Pedestrian
+			_hit_someone = true
 			ped.stun(3.0)
 			GameLog.log("[ThrownTrash] Stunned pedestrian for 3s")
 			return
 		if node is Customer:
 			var cust := node as Customer
+			_hit_someone = true
 			cust.stun(3.0)
 			GameLog.log("[ThrownTrash] Stunned customer for 3s")
 			return
