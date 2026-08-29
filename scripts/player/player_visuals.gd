@@ -99,12 +99,44 @@ const CLOTHING_SURFACES: Array[String] = [
 
 func _ready() -> void:
 	_disable_cast_shadows()
+	# The tscn has stale AnimationLibrary sub-resources that are missing
+	# Crouch/Fall/Jump (or have empty tracks). Replace them with the
+	# correct libraries from the GLB files, which now contain all
+	# animations with correct track paths matching the skeleton.
+	_replace_anim_library(_man_anim, "res://assets/models/characters/man.glb")
+	_replace_anim_library(_woman_anim, "res://assets/models/characters/woman.glb")
 	# Strip the rotation tracks for the Neck and Head bones so the animation
 	# player never overwrites the procedural look rotation we apply in code.
 	if _man_anim != null:
 		_strip_neck_head_rotation_tracks(_man_anim)
 	if _woman_anim != null:
 		_strip_neck_head_rotation_tracks(_woman_anim)
+
+
+## Replace the stale AnimationLibrary in the given player with the one
+## from the GLB scene. The GLB now has all animations (Crouch, Fall, Jump,
+## etc.) with correct track paths that match the skeleton.
+func _replace_anim_library(anim_player: AnimationPlayer, glb_path: String) -> void:
+	if anim_player == null:
+		return
+	var glb_scene: PackedScene = load(glb_path)
+	if glb_scene == null:
+		push_warning("Failed to load GLB: %s" % glb_path)
+		return
+	var instance := glb_scene.instantiate()
+	var src_ap := instance.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if src_ap == null:
+		instance.queue_free()
+		push_warning("No AnimationPlayer in %s" % glb_path)
+		return
+	# Copy each animation library from the GLB's AnimationPlayer
+	for lib_name in src_ap.get_animation_library_list():
+		var src_lib := src_ap.get_animation_library(lib_name)
+		# Remove existing library with the same name (the stale one)
+		if anim_player.has_animation_library(lib_name):
+			anim_player.remove_animation_library(lib_name)
+		anim_player.add_animation_library(lib_name, src_lib.duplicate(true))
+	instance.queue_free()
 
 
 ## Remove rotation tracks for the Neck and Head bones from every animation in
