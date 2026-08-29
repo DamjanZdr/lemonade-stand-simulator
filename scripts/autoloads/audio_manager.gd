@@ -32,7 +32,7 @@ func _ready() -> void:
 	EventBus.change_finalized.connect(_on_change_finalized)
 	# Start menu music immediately — it loops and persists across
 	# scene transitions since AudioManager is an autoload.
-	_play_music("Crinoline Dreams")
+	_play_music("Easy Lemon")
 
 
 func _process(_delta: float) -> void:
