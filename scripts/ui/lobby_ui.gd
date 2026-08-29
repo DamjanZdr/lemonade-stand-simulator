@@ -392,10 +392,9 @@ func _set_slider_emoji_icons(slider: HSlider) -> void:
 
 
 ## Render an emoji to a texture via a SubViewport Label (supports emoji fallback).
-## Renders at 3x resolution then downscales for crisp quality.
+## Renders at high resolution for crisp quality when displayed as a small icon.
 func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
-	var scale := 3
-	var sz := (font_size + 8) * scale
+	var sz := 128
 	var vp := SubViewport.new()
 	vp.size = Vector2(sz, sz)
 	vp.transparent_bg = true
@@ -403,7 +402,7 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	var lbl := Label.new()
 	lbl.text = emoji
-	lbl.add_theme_font_size_override("font_size", font_size * scale)
+	lbl.add_theme_font_size_override("font_size", 96)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.size = Vector2(sz, sz)
@@ -413,9 +412,9 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	await get_tree().process_frame
 	var img := vp.get_texture().get_image()
 	vp.queue_free()
-	var target_sz := font_size + 8
-	img.resize(target_sz, target_sz, Image.INTERPOLATE_LANCZOS)
-	return ImageTexture.create_from_image(img)
+	var tex := ImageTexture.create_from_image(img)
+	tex.set_size_override(Vector2(font_size + 8, font_size + 8))
+	return tex
 
 
 ## Remove all stylebox backgrounds so the button looks like plain text.
