@@ -178,7 +178,7 @@ anchor_bottom = 1.0
 offset_left = 60.0
 offset_top = 80.0
 offset_right = 500.0
-offset_bottom = -70.0
+offset_bottom = -20.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
 theme_override_constants/separation = 6
@@ -197,6 +197,7 @@ layout_mode = 2
 [node name="SaveScroll" type="ScrollContainer" parent="SavesPanel/SavesList"]
 layout_mode = 2
 size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 200)
 theme_override_constants/separation = 0
 
 [node name="SlotsContainer" type="VBoxContainer" parent="SavesPanel/SavesList/SaveScroll"]
