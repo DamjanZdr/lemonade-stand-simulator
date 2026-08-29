@@ -482,7 +482,7 @@ func _set_slider_emoji_icons(slider: HSlider) -> void:
 
 
 ## Render an emoji to a texture via a SubViewport Label (supports emoji fallback).
-## Renders at high resolution for crisp quality when displayed as a small icon.
+## Renders at high resolution, removes dark outline pixels, then uses GPU scaling.
 func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	var sz := 128
 	var vp := SubViewport.new()
@@ -502,9 +502,22 @@ func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
 	await get_tree().process_frame
 	var img := vp.get_texture().get_image()
 	vp.queue_free()
+	_remove_dark_outline(img)
 	var tex := ImageTexture.create_from_image(img)
 	tex.set_size_override(Vector2(font_size + 8, font_size + 8))
 	return tex
+
+
+## Remove dark outline pixels from an emoji render by making them transparent.
+func _remove_dark_outline(img: Image) -> void:
+	var w := img.get_width()
+	var h := img.get_height()
+	for y in h:
+		for x in w:
+			var c := img.get_pixel(x, y)
+			var brightness := (c.r + c.g + c.b) / 3.0
+			if brightness < 0.25 and c.a > 0.0:
+				img.set_pixel(x, y, Color(c.r, c.g, c.b, brightness * c.a * 2.0))
 
 
 ## Create a circular icon texture at runtime.
