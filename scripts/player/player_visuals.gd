@@ -701,12 +701,17 @@ func seek_anim(anim_name: String, time: float) -> void:
 	var anim := _active_anim.get_animation(anim_name)
 	if anim:
 		anim.loop_mode = Animation.LOOP_NONE
-	# Play the animation (starts from beginning), then seek and pause.
-	_active_anim.speed_scale = 1.0
-	_active_anim.play(anim_name, 0.0)
+	# Use play with blend, then immediately seek and pause.
+	# The deferred call ensures the animation has processed the play first.
+	_active_anim.play(anim_name, 0.1, 1.0)
+	call_deferred("_deferred_seek", anim_name, time)
+
+
+func _deferred_seek(_anim_name: String, time: float) -> void:
+	if _active_anim == null:
+		return
 	_active_anim.seek(time, true)
-	# Pause instead of stop — stop() resets the pose to the rest pose.
-	_active_anim.playback_active = false
+	_active_anim.speed_scale = 0.0
 
 
 func get_active_skeleton() -> Skeleton3D:
