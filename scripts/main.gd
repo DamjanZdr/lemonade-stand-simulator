@@ -1229,6 +1229,19 @@ func _on_spawner_spawned(node: Node) -> void:
 		var sync := p.get_node_or_null("PositionSync") as MultiplayerSynchronizer
 		if sync:
 			sync.set_multiplayer_authority(name_peer)
+		# Set spawn position from the assigned stand's start marker.
+		# The spawner creates the node at (0,0,0) and the host sets the
+		# correct position AFTER spawn — but since we're claiming authority,
+		# the host's position won't sync to us. We must set it ourselves.
+		var my_stand := _stand_for_peer(name_peer)
+		if my_stand:
+			p.assigned_stand = my_stand
+			var marker := _get_stand_start_marker(my_stand)
+			if marker:
+				p.global_position = marker.global_position
+				p.global_rotation = Vector3(0, marker.global_rotation.y, 0)
+			else:
+				p.global_position = my_stand.global_position + Vector3(0, 0, 2)
 		p._configure_local_player()
 		p.visuals.visible = false
 	# assigned_stand isn't replicated (only position/rotation are), so
