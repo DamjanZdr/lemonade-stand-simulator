@@ -33,6 +33,7 @@ LabelStyle="*res://scripts/core/label_style.gd"
 Inventory="*res://scripts/autoloads/inventory.gd"
 AudioManager="*res://scripts/autoloads/audio_manager.gd"
 HeldItem="*res://scripts/autoloads/held_item.gd"
+SettingsManager="*res://scripts/autoloads/settings_manager.gd"
 
 [debug]
 

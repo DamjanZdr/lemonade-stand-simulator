@@ -163,8 +163,12 @@ func _ready() -> void:
 
 	# Mark static meshes for LightmapGI baking
 	_mark_static_gi(world)
-	# Enhanced lighting is on by default; F2 toggles it off
-	_enable_enhanced_lighting()
+	# Load enhanced_lighting / fps_counter from saved settings.
+	_enhanced_lighting = SettingsManager.get_graphics_bool("enhanced_lighting", true)
+	if _enhanced_lighting:
+		_enable_enhanced_lighting()
+	else:
+		_disable_enhanced_lighting()
 
 	# Create FPS counter label (toggled with F key)
 	_fps_label = Label.new()
@@ -178,7 +182,8 @@ func _ready() -> void:
 	_fps_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_fps_label.add_theme_constant_override("outline_size", 3)
 	_fps_label.text = "FPS: --"
-	_fps_label.visible = false
+	_fps_shown = SettingsManager.get_graphics_bool("fps_counter", false)
+	_fps_label.visible = _fps_shown
 	hud.add_child(_fps_label)
 
 	# Connect to game_starting signal — when the host starts the game,

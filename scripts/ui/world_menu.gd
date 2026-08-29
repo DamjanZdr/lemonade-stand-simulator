@@ -182,7 +182,8 @@ func _ready() -> void:
 	)
 	_master_slider.drag_ended.connect(
 		func(_changed: bool):
-			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03),
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			SettingsManager.save_settings(),
 	)
 	_sfx_slider.value_changed.connect(
 		func(v: float):
@@ -192,7 +193,8 @@ func _ready() -> void:
 	)
 	_sfx_slider.drag_ended.connect(
 		func(_changed: bool):
-			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03),
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			SettingsManager.save_settings(),
 	)
 	_music_slider.value_changed.connect(
 		func(v: float):
@@ -202,24 +204,29 @@ func _ready() -> void:
 	)
 	_music_slider.drag_ended.connect(
 		func(_changed: bool):
-			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0),
+			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
+			SettingsManager.save_settings(),
 	)
 	# Graphics toggles.
 	_fullscreen_check.toggled.connect(
 		func(on: bool):
-			fullscreen_toggled.emit(on),
+			fullscreen_toggled.emit(on)
+			SettingsManager.save_settings(),
 	)
 	_vsync_check.toggled.connect(
 		func(on: bool):
-			vsync_toggled.emit(on),
+			vsync_toggled.emit(on)
+			SettingsManager.save_settings(),
 	)
 	_lighting_check.toggled.connect(
 		func(on: bool):
-			enhanced_lighting_toggled.emit(on),
+			enhanced_lighting_toggled.emit(on)
+			SettingsManager.save_graphics_bool("enhanced_lighting", on),
 	)
 	_fps_check.toggled.connect(
 		func(on: bool):
-			fps_toggled.emit(on),
+			fps_toggled.emit(on)
+			SettingsManager.save_graphics_bool("fps_counter", on),
 	)
 	_saves_back.pressed.connect(
 		func():
