@@ -327,6 +327,7 @@ func _physics_process(delta: float) -> void:
 	# Crouch toggle (CTRL or C).
 	if Input.is_action_just_pressed("crouch"):
 		_player.is_crouching = not _player.is_crouching
+		GameLog.log("[CROUCH] player=%s toggled to %s" % [_player.name, _player.is_crouching])
 		_apply_crouch_visual()
 		_update_anim()
 
@@ -410,6 +411,10 @@ func _try_sync_position(delta: float) -> void:
 	_last_synced_yaw = _player.head.rotation.y
 	_last_synced_crouch = _player.is_crouching
 	_last_synced_sprint = _is_sprinting
+	GameLog.log(
+		"[SYNC] sending player=%s crouch=%s sprint=%s"
+		% [_player.name, _player.is_crouching, _is_sprinting]
+	)
 	_sync_position.rpc(
 		_player.global_position,
 		_player.global_rotation,
@@ -463,8 +468,11 @@ func _sync_position(
 	)
 	_prev_sync_pos = pos
 	_is_sprinting = sprinting
+	var crouch_changed: bool = _player.is_crouching != crouching
 	_player.is_crouching = crouching
 	_time_since_sync = 0.0
+	if crouch_changed:
+		GameLog.log("[SYNC] player=%s crouch changed to %s" % [_player.name, crouching])
 	# Set interpolation target instead of snapping directly
 	_net_target_pos = pos
 	_net_target_rot = rot
