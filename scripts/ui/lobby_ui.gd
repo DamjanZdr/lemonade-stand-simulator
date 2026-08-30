@@ -812,6 +812,9 @@ func _setup_customization() -> void:
 		push_warning("LobbyUI: no PlayerVisuals found, customization will not be visible")
 		return
 
+	# Restore saved customization if available (from a previous session).
+	_load_saved_customization()
+
 	# Hide the old two-column layout — we build a single-line row instead.
 	_columns_row.visible = false
 
@@ -830,6 +833,26 @@ func _setup_customization() -> void:
 	_broadcast_customization()
 	# Default to Lobby tab — must be called after AvatarOptionsRow is built.
 	_on_lobby_tab()
+
+
+## Restore customization from SaveManager if a previous session saved it.
+func _load_saved_customization() -> void:
+	var saved: Dictionary = SaveManager.get_last_local_customization()
+	if saved.is_empty():
+		return
+	_is_male = saved.get("male", true)
+	_hair_index = int(saved.get("hair_index", 0))
+	_hair_color = saved.get("hair_color", _hair_color)
+	_eyebrow_index = int(saved.get("eyebrow_index", 0))
+	_eyebrow_color = saved.get("eyebrow_color", _eyebrow_color)
+	_skin_color = saved.get("skin_color", _skin_color)
+	var clothing: Dictionary = saved.get("clothing_colors", { })
+	_shirt_color = clothing.get("shirt", _shirt_color)
+	_pants_color = clothing.get("pants", _pants_color)
+	_shoes_color = clothing.get("shoes", _shoes_color)
+	var head_size: float = saved.get("head_size", 1.3)
+	# head_size is derived from _head_size_index; reverse the mapping.
+	_head_size_index = _head_size_to_index(head_size)
 
 
 ## Build a vertical stack of avatar customization rows, one option per row:
@@ -1195,6 +1218,15 @@ func _head_size_to_scale() -> float:
 	return HEAD_SIZE_MIN + step * _head_size_index
 
 
+## Reverse mapping: convert a head_size scale value back to the index.
+func _head_size_to_index(scale_val: float) -> int:
+	var step: float = (HEAD_SIZE_MAX - HEAD_SIZE_MIN) / float(HEAD_SIZE_STEPS - 1)
+	if step <= 0.0:
+		return 4
+	var idx := roundi((scale_val - HEAD_SIZE_MIN) / step)
+	return clampi(idx, 0, HEAD_SIZE_STEPS - 1)
+
+
 func _update_gender_buttons() -> void:
 	# Gender is now an Appearance option in the list, not toggle buttons.
 	# Just update the appearance name label.
@@ -1260,6 +1292,8 @@ func _sync_color_picker_buttons() -> void:
 func _broadcast_customization() -> void:
 	var data := _get_customization_data()
 	LobbyManager.set_my_customization(data)
+	# Also cache in SaveManager so it persists across scene transitions.
+	SaveManager.set_last_local_customization(data)
 
 
 func _get_customization_data() -> Dictionary:

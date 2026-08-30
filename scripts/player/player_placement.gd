@@ -39,6 +39,14 @@ var _stack_target_id: int = -1
 var _stack_offset: Vector3 = Vector3.ZERO
 var _stack_yaw: float = 0.0
 
+# --- Cached probe results ---
+# When _probe_tabletop_below() finds a valid surface, these store the
+# corrected hit point and normal so _update_ghost() can position the
+# ghost on the tabletop instead of the side hit point.
+var _probe_hit_point: Vector3 = Vector3.ZERO
+var _probe_hit_normal: Vector3 = Vector3.UP
+var _has_probe_hit: bool = false
+
 const CUP_STACK_SCENE: PackedScene = preload("res://scenes/objects/cup_stack.tscn")
 
 const CONTAINER_SCENES: Dictionary = {
@@ -1151,6 +1159,8 @@ func _update_equipment_box_ghost() -> void:
 
 	var collider := _player.ray.get_collider()
 	var hit_point := _player.ray.get_collision_point()
+	# Reset probe cache; _is_placement_surface may populate it.
+	_has_probe_hit = false
 
 	# Cross-stand placement restriction: don't allow placing equipment on
 	# another stand's workstation/surface. Walk up the collider chain to
@@ -1206,6 +1216,10 @@ func _update_equipment_box_ghost() -> void:
 
 	var on_surface := _is_placement_surface(collider)
 	var is_ground := _is_ground_surface(collider)
+	# If the probe found a corrected tabletop hit point, use it instead
+	# of the original side-hit point for ghost positioning.
+	if _has_probe_hit:
+		hit_point = _probe_hit_point
 
 	# Workstations are tables ΓÇö they can only be placed on the floor.
 	if equipment_type == "workstation":
@@ -1378,6 +1392,9 @@ func _update_ghost() -> void:
 	var hit_point := _player.ray.get_collision_point()
 	var _hit_normal := _player.ray.get_collision_normal()
 	var from_box: bool = _player.held_item_data.get("from_delivery_box", false)
+	# Reset probe cache; _is_placement_surface may populate it if the
+	# ray hit a side and a tabletop probe was needed.
+	_has_probe_hit = false
 
 	# When holding an equipment box, allow stacking on other boxes
 	if from_box:
@@ -1404,6 +1421,11 @@ func _update_ghost() -> void:
 
 	var on_surface := _is_placement_surface(collider)
 	var is_ground := _is_ground_surface(collider)
+	# If the probe found a corrected tabletop hit point, use it instead
+	# of the original side-hit point for ghost positioning.
+	if _has_probe_hit:
+		hit_point = _probe_hit_point
+		_hit_normal = _probe_hit_normal
 
 	# Workstations and water dispensers are floor-standing equipment and can only
 	# be placed on the ground. Other containers need an existing stand or
@@ -1785,12 +1807,19 @@ func _is_placement_surface(collider: Object) -> bool:
 ## Probe downward from the ray hit point to find a valid tabletop
 ## surface. This allows placement on tables even when the player's
 ## forward ray hits the side of the table.
+## Returns true and caches the corrected hit point/normal if a valid
+## tabletop is found. Uses the same collision mask as the player's
+## RayCast3D so the probe sees what the visual ray sees.
 func _probe_tabletop_below() -> bool:
+	_has_probe_hit = false
 	var hit_point := _player.ray.get_collision_point()
 	var from := hit_point + Vector3.UP * 0.5
 	var to := hit_point + Vector3.DOWN * 2.0
 	var space := _player.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to)
+	# Use the same collision mask as the player's RayCast3D (mask 9 =
+	# layers 1 and 4) so the probe agrees with the visual ray.
+	var mask := _player.ray.collision_mask
+	var query := PhysicsRayQueryParameters3D.create(from, to, mask)
 	query.exclude = [_player.get_rid()]
 	var hits := space.intersect_ray(query)
 	if hits.is_empty():
@@ -1801,8 +1830,12 @@ func _probe_tabletop_below() -> bool:
 	var normal: Vector3 = hits.get("normal", Vector3.ZERO)
 	if normal.y <= 0.7:
 		return false
+	var pos: Vector3 = hits.get("position", hit_point)
 	for i in range(3):
 		if n.is_in_group("placement_surface"):
+			_probe_hit_point = pos
+			_probe_hit_normal = normal
+			_has_probe_hit = true
 			return true
 		n = n.get_parent()
 		if n == null:

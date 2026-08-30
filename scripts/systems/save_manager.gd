@@ -35,6 +35,10 @@ var current_slot: String = ""
 ## should auto-save.
 var auto_save_enabled: bool = false
 
+## Last saved customization for the local player. Used to restore
+## appearance in the lobby UI after a save/load or scene transition.
+var _last_local_customization: Dictionary = { }
+
 
 func _ready() -> void:
 	EventBus.game_saved.connect(_on_game_saved)
@@ -335,6 +339,13 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 
 	var _unlocked: Array = data.get("unlocked_fruits", ["lemon"])
 	# TODO: wire to fruit unlock system when implemented
+
+	# Restore customization data into the lobby roster so players
+	# keep their appearance across save/load cycles.
+	var saved_customization = data.get("customization", { })
+	if saved_customization is Dictionary and not saved_customization.is_empty():
+		_apply_saved_customization(saved_customization)
+
 	EventBus.money_changed.emit(GameState.money)
 	EventBus.popularity_changed.emit(GameState.popularity)
 	EventBus.weather_changed.emit(GameState.temperature)
@@ -369,8 +380,57 @@ func _build_save_dict() -> Dictionary:
 		"unlocked_fruits": ["lemon"], # TODO: dynamic
 		"placed_containers": _scan_placed_containers(),
 		"supply_boxes": _scan_supply_boxes(),
+		"customization": _collect_customization(),
 		"version": 1,
 	}
+
+
+## Collect customization data from the lobby roster for all peers.
+func _collect_customization() -> Dictionary:
+	var result := { }
+	for peer_id in LobbyManager.roster:
+		var entry: Dictionary = LobbyManager.roster[peer_id]
+		var custom: Dictionary = entry.get("customization", { })
+		if not custom.is_empty():
+			result[str(peer_id)] = custom.duplicate(true)
+	return result
+
+
+## Apply saved customization back into the lobby roster.
+## Keys are string peer IDs (JSON doesn't support int keys).
+func _apply_saved_customization(saved: Dictionary) -> void:
+	for peer_key in saved:
+		var peer_id := int(peer_key)
+		var custom: Dictionary = saved[peer_key]
+		if custom.is_empty():
+			continue
+		# Ensure the roster has an entry for this peer.
+		if not LobbyManager.roster.has(peer_id):
+			LobbyManager.roster[peer_id] = {
+				"name": "Player %d" % peer_id,
+				"stand_index": -1,
+				"ready": false,
+				"customization": custom.duplicate(true),
+			}
+		else:
+			LobbyManager.roster[peer_id]["customization"] = custom.duplicate(true)
+	# Store the last-known customization for the local peer so the
+	# lobby UI can restore it even after LobbyManager.reset().
+	var local_id := multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
+	if saved.has(str(local_id)):
+		_last_local_customization = saved[str(local_id)].duplicate(true)
+
+
+## Get the last saved customization for the local player.
+## Used by the lobby UI to restore appearance after a save/load cycle.
+func get_last_local_customization() -> Dictionary:
+	return _last_local_customization
+
+
+## Set the last saved customization for the local player.
+## Called by the lobby UI when the player changes their appearance.
+func set_last_local_customization(data: Dictionary) -> void:
+	_last_local_customization = data.duplicate(true)
 
 
 func _scan_placed_containers() -> Array:
