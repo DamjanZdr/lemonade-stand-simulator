@@ -275,8 +275,8 @@ func _setup_lobby() -> void:
 	lobby_ui.visible = true
 	# Reset to the Lobby tab every time we enter the lobby so the
 	# previous session's tab (e.g. Customize) is not preserved.
-	if lobby_ui.has_method("_on_lobby_tab"):
-		lobby_ui._on_lobby_tab()
+	if lobby_ui.has_method("show_lobby_tab"):
+		lobby_ui.show_lobby_tab()
 	# Re-apply the mode layout so the lobby UI reflects the current
 	# game mode (it was read in _ready() before the mode was set).
 	if lobby_ui.has_method("_apply_mode_layout"):

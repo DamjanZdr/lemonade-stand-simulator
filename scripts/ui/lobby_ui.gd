@@ -654,6 +654,11 @@ func _on_leave_pressed() -> void:
 
 
 ## Switch to the Lobby tab — show room/players, hide customization.
+## Public method to switch to the Lobby tab. Called externally by main.gd.
+func show_lobby_tab() -> void:
+	_on_lobby_tab()
+
+
 func _on_lobby_tab() -> void:
 	_lobby_tab.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 	_customize_tab.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
