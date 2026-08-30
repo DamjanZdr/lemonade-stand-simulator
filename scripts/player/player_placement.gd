@@ -230,9 +230,15 @@ func _place_cup_stack_from_box() -> void:
 	# Remember this brand-new stack as the rapid-fire target so holding the
 	# mouse down keeps depositing into it, even before the raycast has had a
 	# chance to register its freshly-added (and quite small) collider.
-	_player.interaction.set_rapid_fire_cup_target(stack as CupStack)
-
-	AudioManager.play_sfx(_get_place_sfx_key("cup_stack"), stack.global_position, -1.0, 0.05, 0.85)
+	if stack:
+		_player.interaction.set_rapid_fire_cup_target(stack)
+		AudioManager.play_sfx(
+			_get_place_sfx_key("cup_stack"),
+			stack.global_position,
+			-1.0,
+			0.05,
+			0.85,
+		)
 	EventBus.container_placed.emit("cup_stack", stack)
 
 

@@ -404,8 +404,8 @@ const BODY_TURN_SPEED: float = 6.0
 
 func _update_body_yaw(delta: float, move_dir: Vector3 = Vector3.ZERO) -> void:
 	# 1. If moving, smoothly rotate body toward movement direction.
-	# This takes priority over the neck catch-up so the body can fully
-	# turn to face backwards (180°) when walking/running backwards.
+	# The neck catch-up below keeps the body from turning fully backwards
+	# — the body follows the camera/head direction, not the movement dir.
 	if move_dir != Vector3.ZERO:
 		var move_yaw := atan2(-move_dir.x, -move_dir.z)
 		var body_yaw := _player.rotation.y
@@ -415,9 +415,9 @@ func _update_body_yaw(delta: float, move_dir: Vector3 = Vector3.ZERO) -> void:
 		_player.rotation.y = wrap_angle(body_yaw + turn)
 		_look_yaw = wrap_angle(_look_yaw - turn)
 	# 2. If head exceeds neck limit, rotate body to catch up.
-	# Only apply when NOT moving so it doesn't fight the movement
-	# rotation (which needs to reach up to 180° for backwards walking).
-	elif absf(_look_yaw) > NECK_YAW_MAX:
+	# This keeps the body aligned with the camera/head direction,
+	# preventing the body from facing backwards when walking backwards.
+	if absf(_look_yaw) > NECK_YAW_MAX:
 		var excess: float = _look_yaw - sign(_look_yaw) * NECK_YAW_MAX
 		var max_turn2: float = NECK_YAW_CATCHUP_SPEED * delta
 		var turn2: float = clampf(excess, -max_turn2, max_turn2)
