@@ -81,14 +81,22 @@ func exit_priceboard_focus() -> void:
 
 
 ## Stun the player for duration seconds (host-authoritative).
-## Called when hit by thrown trash. Synced to clients via RPC.
+## Called when hit by thrown trash. The host can stun any player,
+## including joiners. Synced to all clients via RPC.
 func stun(duration: float) -> void:
-	if not is_multiplayer_authority():
+	# Only the host should trigger stuns (trash physics run on host).
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	_stun_timer = maxf(_stun_timer, STUN_DOWN_DURATION)
+	_stun_timer = maxf(_stun_timer, duration)
 	_stun_fall_played = false
 	_stun_recovering = false
 	_stun_recover_timer = 0.0
+	# Sync to all clients (including the owning peer). The RPC is
+	# authority-to-all, but we use rpc_id to reach the owning peer
+	# even though the host doesn't have authority over that node.
+	var owner_id := get_multiplayer_authority()
+	if owner_id != 1:
+		_sync_stun.rpc_id(owner_id, _stun_timer)
 	_sync_stun.rpc(_stun_timer)
 
 
@@ -97,9 +105,15 @@ func is_stunned() -> bool:
 	return _stun_timer > 0.0
 
 
-## Host-side RPC to sync stun timer to clients (for animation/visuals).
-@rpc("authority", "call_local", "reliable")
+## Sync stun timer to clients (for animation/visuals).
+## Called by the host on any player, including joiners.
+@rpc("any_peer", "call_local", "reliable")
 func _sync_stun(timer: float) -> void:
+	# Only apply if we are the authority of this player, or if the
+	# sender is the host (peer 1).
+	var sender := multiplayer.get_remote_sender_id()
+	if sender != 1 and not is_multiplayer_authority():
+		return
 	_stun_timer = timer
 	_stun_fall_played = false
 	_stun_recovering = false

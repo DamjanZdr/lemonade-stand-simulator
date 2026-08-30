@@ -593,6 +593,10 @@ func _drop_held_box() -> void:
 	) as SupplyBox
 	if box:
 		box.update_metrics()
+		# Adjust Y so the visual bottom sits on the surface, not the
+		# root origin which may be above the visual bottom.
+		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
+		box.global_position.y += y_diff
 	AudioManager.play_sfx("box_drop", drop_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()
@@ -629,6 +633,10 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	) as SupplyBox
 	if box:
 		box.update_metrics()
+		# Adjust Y so the visual bottom sits on the surface, not the
+		# root origin which may be above the visual bottom.
+		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
+		box.global_position.y += y_diff
 	AudioManager.play_sfx("box_drop", drop_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()
@@ -1144,6 +1152,24 @@ func _update_equipment_box_ghost() -> void:
 	var collider := _player.ray.get_collider()
 	var hit_point := _player.ray.get_collision_point()
 
+	# Cross-stand placement restriction: don't allow placing equipment on
+	# another stand's workstation/surface. Walk up the collider chain to
+	# find an Interactable with stand_owner and check it matches the
+	# player's assigned stand. Supply boxes and delivery grids are exempted.
+	var _check_node: Node = collider
+	while _check_node != null:
+		if _check_node is Interactable:
+			var inter := _check_node as Interactable
+			if inter.stand_owner != "" and not inter.can_player_use(_player):
+				_destroy_ghost()
+				_ghost_valid = false
+				_stack_target_id = -1
+				return
+			break
+		if _check_node is DeliveryGrid:
+			break
+		_check_node = _check_node.get_parent()
+
 	# Check if looking at another SupplyBox ΓÇö stack on top (box ghost)
 	var node: Node = collider
 	while node != null:
@@ -1391,6 +1417,22 @@ func _update_ghost() -> void:
 		_ghost.visible = false
 		_ghost_valid = false
 		return
+
+	# Cross-stand placement restriction: don't allow placing containers on
+	# another stand's workstation/surface. Walk up the collider chain to
+	# find an Interactable with stand_owner and check it matches the
+	# player's assigned stand. Supply boxes are exempted (cross-stand).
+	if not is_ground:
+		var surface_node: Node = collider
+		while surface_node != null:
+			if surface_node is Interactable:
+				var inter := surface_node as Interactable
+				if inter.stand_owner != "" and not inter.can_player_use(_player):
+					_ghost.visible = false
+					_ghost_valid = false
+					return
+				break
+			surface_node = surface_node.get_parent()
 
 	_ghost.visible = true
 	# Apply collision-based offset so ghost sits on surface

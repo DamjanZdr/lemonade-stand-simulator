@@ -96,15 +96,23 @@ func reserve_slot(cell_index: int) -> Dictionary:
 
 
 ## Returns the position for the next box in a cell without reserving it.
-func get_slot_position(cell_index: int) -> Vector3:
+## If a box instance is provided, uses its actual metrics; otherwise falls
+## back to the default constants.
+func get_slot_position(cell_index: int, box: SupplyBox = null) -> Vector3:
 	if cell_index < 0 or cell_index >= _cells.size():
 		push_warning("DeliveryGrid.get_slot_position: invalid cell index %d" % cell_index)
 		return global_position
 	var marker := _cells[cell_index]
 	var base := marker.global_position if marker != null else global_position
 	var grid_scale_y: float = absf(global_transform.basis.y.y)
-	var sh: float = SupplyBox.DEFAULT_STACK_HEIGHT * grid_scale_y
-	var bo: float = SupplyBox.DEFAULT_BOTTOM_OFFSET * grid_scale_y
+	var sh: float
+	var bo: float
+	if box != null and is_instance_valid(box):
+		sh = box.stack_height * grid_scale_y
+		bo = box.bottom_offset * grid_scale_y
+	else:
+		sh = SupplyBox.DEFAULT_STACK_HEIGHT * grid_scale_y
+		bo = SupplyBox.DEFAULT_BOTTOM_OFFSET * grid_scale_y
 	var height: float = _stacks[cell_index] * sh + bo
 	return base + Vector3(0, height, 0) + _get_cell_offset(cell_index, _stacks[cell_index])
 

@@ -1363,7 +1363,7 @@ func _refresh_analytics() -> void:
 	if today:
 		today.text = "Day %d  |  $%.2f  |  %.0f%% pop  |  %.0fC" % [
 			DayManager.day_number,
-			GameState.money,
+			_get_local_money(),
 			GameState.popularity * 100.0,
 			GameState.temperature,
 		]
@@ -1561,7 +1561,7 @@ func _update_cart_ui() -> void:
 		row.add_child(rem_btn)
 		_cart_list.add_child(row)
 	_cart_total_lbl.text = "Total: $%.2f" % total
-	_checkout_btn.disabled = not has_items or GameState.money < total
+	_checkout_btn.disabled = not has_items or _get_local_money() < total
 	if not has_items:
 		var empty := Label.new()
 		empty.text = "Cart is empty"
@@ -1769,6 +1769,14 @@ func _get_local_stand() -> Node:
 	return null
 
 
+## Get the local player's stand money, falling back to GameState.money.
+func _get_local_money() -> float:
+	var stand := _get_local_stand()
+	if stand != null and is_instance_valid(stand) and "money" in stand:
+		return stand.money
+	return GameState.money
+
+
 func _on_day_phase_changed(phase: int, day: int) -> void:
 	if phase == DayManager.Phase.MORNING:
 		_update_morning_data(day)
@@ -1790,7 +1798,7 @@ func _update_morning_data(day: int) -> void:
 		temp_lbl.text = "%.0fC" % GameState.temperature
 	var money_lbl := $MainHBox/Panel/VBox/Header/MoneyLabel as Label
 	if money_lbl:
-		money_lbl.text = "Money: $%.2f" % GameState.money
+		money_lbl.text = "Money: $%.2f" % _get_local_money()
 	var price_slider := ($MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
 	if price_slider:
 		pass
@@ -1843,7 +1851,7 @@ func _on_money_changed(_amount: float) -> void:
 		return
 	var money_lbl := $MainHBox/Panel/VBox/Header/MoneyLabel as Label
 	if money_lbl:
-		money_lbl.text = "Money: $%.2f" % GameState.money
+		money_lbl.text = "Money: $%.2f" % _get_local_money()
 	if _active_tab == "shop":
 		_update_cart_ui()
 	elif _active_tab == "upgrades":
@@ -1952,7 +1960,7 @@ func _refresh_stats() -> void:
 		_stats_vbox.remove_child(c)
 		c.queue_free()
 	var money_lbl := Label.new()
-	money_lbl.text = "Money: $%.2f" % GameState.money
+	money_lbl.text = "Money: $%.2f" % _get_local_money()
 	money_lbl.add_theme_font_size_override("font_size", 16)
 	money_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	_stats_vbox.add_child(money_lbl)

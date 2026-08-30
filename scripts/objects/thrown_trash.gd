@@ -194,6 +194,16 @@ func _try_stun(body: Node) -> bool:
 		# Skip the source node (thrower/dropper).
 		if source_node != null and is_instance_valid(source_node) and node == source_node:
 			return false
+		# Check for trashcan collision — dispose the trash and give refund.
+		if node is Trashcan:
+			_hit_someone = true
+			_dispose_in_trashcan(node as Trashcan)
+			return true
+		if node.is_in_group("trashcan"):
+			_hit_someone = true
+			if node.has_method("_apply_trash_disposal"):
+				_dispose_in_trashcan(node)
+			return true
 		if node is Player:
 			var p := node as Player
 			_hit_someone = true
@@ -216,6 +226,22 @@ func _try_stun(body: Node) -> bool:
 	return false
 
 
+## Dispose the thrown trash in a trashcan. Gives refund to the thrower's stand.
+func _dispose_in_trashcan(trashcan: Node) -> void:
+	_landed = true
+	freeze = true
+	var refund: float = trash_value
+	var stand_name := ""
+	if source_node != null and is_instance_valid(source_node) and source_node is Player:
+		var p := source_node as Player
+		if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
+			stand_name = p.assigned_stand.name
+	if trashcan.has_method("_apply_trash_disposal"):
+		trashcan._apply_trash_disposal(trash_type, refund, stand_name)
+	AudioManager.play_sfx("trash", global_position)
+	WorldSync.despawn_networked(self)
+
+
 func _on_sleeping() -> void:
 	if _landed or not is_instance_valid(self) or not sleeping:
 		return
@@ -235,6 +261,10 @@ func _finalize() -> void:
 	_landed = true
 	freeze = true
 	var land_pos := global_position
+	# Adjust Y down by the collision shape offset so the trash item
+	# sits on the ground instead of floating. The RigidBody center is
+	# above the ground by the collision shape's bottom offset.
+	land_pos.y -= 0.185
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
@@ -281,8 +311,10 @@ func pickup_by(player: Node) -> void:
 			visual = (child as Node3D).duplicate()
 			break
 	# Give trash to the player.
-	var inv := player.get_node_or_null("Inventory") as PlayerInventory
+	var inv := player.get_node_or_null("PlayerInventory") as PlayerInventory
 	if inv:
 		inv.make_held_trash(trash_value, trash_type, visual)
-	# Despawn via WorldSync so all clients remove it.
-	WorldSync.despawn_networked(self)
+		# Despawn via WorldSync so all clients remove it.
+		WorldSync.despawn_networked(self)
+	else:
+		push_warning("[ThrownTrash] Could not find PlayerInventory on %s" % player.name)

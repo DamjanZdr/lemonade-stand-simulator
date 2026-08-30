@@ -305,8 +305,10 @@ func _physics_client_interpolate(delta: float) -> void:
 		var target_q := Quaternion.from_euler(_net_target_rot)
 		basis = Basis(curr_q.slerp(target_q, t))
 
-	# When walking, keep the walk animation playing; when stopped, idle
-	if _state == PedestrianState.WALKING:
+	# When walking, keep the walk animation playing; when stopped, idle.
+	# Skip if stunned or recovering — the Fall animation is playing via
+	# _sync_stun and should not be overridden by Walk/Idle.
+	if _state == PedestrianState.WALKING and _stun_timer <= 0.0 and not _recovering:
 		var dist_to_target := global_position.distance_to(_net_target_pos)
 		if dist_to_target > 0.05:
 			_npc.play_anim("Walk")

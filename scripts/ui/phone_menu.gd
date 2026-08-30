@@ -159,6 +159,7 @@ func _order(itype: String) -> void:
 			EventBus.interaction_hint_changed.emit("Not enough money!")
 			return
 		EventBus.supply_order_placed.emit(itype, qty, cost, sn)
+		EventBus.checkout_completed.emit(sn)
 	else:
 		_request_purchase.rpc_id(1, "supply", itype, qty, cost, sn)
 
@@ -176,6 +177,10 @@ func _buy_container(container_type: String, cost: float) -> void:
 
 func _buy_upgrade(id: String, btn: Button, name_lbl: Label) -> void:
 	if WorldSync.is_host():
+		# Ensure the host's own stand is active before purchasing.
+		var sn := WorldSync.get_local_stand_name()
+		if sn != "":
+			UpgradeManager.set_active_stand(sn)
 		if UpgradeManager.purchase(id):
 			EventBus.interaction_hint_changed.emit("Upgrade purchased!")
 			var data := UpgradeManager.get_upgrade_data(id)
@@ -190,10 +195,13 @@ func _buy_upgrade(id: String, btn: Button, name_lbl: Label) -> void:
 			else:
 				btn.text = "$%.0f" % data.get("cost", 0.0)
 				btn.disabled = not UpgradeManager.can_afford(id)
+			# Notify all clients so joiners update their upgrade UI.
+			_sync_upgrade_purchased.rpc(id, sn)
 		else:
 			EventBus.interaction_hint_changed.emit("Not enough money!")
 	else:
-		_request_purchase.rpc_id(1, "upgrade", id, 0.0, 0.0)
+		var sn2 := WorldSync.get_local_stand_name()
+		_request_purchase.rpc_id(1, "upgrade", id, 0.0, 0.0, sn2)
 
 
 ## RPC sent by clients to the host to request a purchase.
@@ -220,15 +228,23 @@ func _request_purchase(
 			if not _spend_from_stand(stand, cost):
 				return
 			EventBus.supply_order_placed.emit(item_id, qty, cost, stand_name)
+			EventBus.checkout_completed.emit(stand_name)
 		"equipment":
 			if not _spend_from_stand(stand, cost):
 				return
 			EventBus.equipment_order_placed.emit(item_id, stand_name)
 		"upgrade":
+			# Set the buyer's stand active so the purchase is recorded
+			# against their stand and money is spent from their stand.
+			if stand_name != "":
+				UpgradeManager.set_active_stand(stand_name)
 			if UpgradeManager.purchase(item_id):
 				GameLog.log(
-					"[PhoneMenu] Host purchased upgrade %s for peer %d" % [item_id, sender_id]
+					"[PhoneMenu] Host purchased upgrade %s for peer %d (stand=%s)"
+					% [item_id, sender_id, stand_name]
 				)
+				# Notify all clients so joiners update their upgrade UI.
+				_sync_upgrade_purchased.rpc(item_id, stand_name)
 
 
 func _find_stand_by_name(stand_name: String) -> Node:
@@ -247,3 +263,19 @@ func _spend_from_stand(stand: Node, amount: float) -> bool:
 	if stand != null and stand.has_method("spend_money"):
 		return stand.spend_money(amount)
 	return GameState.spend_money(amount)
+
+
+## Sync upgrade purchases to all clients so joiners update their UI.
+## The host calls this after a successful upgrade purchase.
+@rpc("authority", "call_local", "reliable")
+func _sync_upgrade_purchased(upgrade_id: String, stand_name: String) -> void:
+	# Only apply to clients whose stand matches (or all if stand_name is empty).
+	var local_sn := WorldSync.get_local_stand_name()
+	if stand_name != "" and local_sn != stand_name:
+		return
+	# Set the active stand and apply the purchase locally on clients.
+	UpgradeManager.set_active_stand(stand_name)
+	# Re-apply effects so fruit unlocks and other effects take effect.
+	UpgradeManager.apply_all_effects()
+	# Refresh the upgrade UI if it's open.
+	EventBus.upgrade_purchased.emit(0, 0.0)

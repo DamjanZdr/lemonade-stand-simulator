@@ -246,6 +246,10 @@ func _setup_lobby() -> void:
 	# Hide the HUD during lobby — it'll be shown when the game starts
 	if hud:
 		hud.visible = false
+	# Make lobby player models visible again (they were hidden when a
+	# game started; re-show them on return to lobby).
+	if lobby_player_models:
+		lobby_player_models.visible = true
 	# Wire the lobby UI to all player models so customization applies
 	# to both (player sees their character regardless of which stand
 	# the camera is looking at).
@@ -269,6 +273,10 @@ func _setup_lobby() -> void:
 			lobby_ui.return_to_menu_requested.connect(_on_return_to_menu)
 	# Lobby UI is visible during the lobby phase.
 	lobby_ui.visible = true
+	# Reset to the Lobby tab every time we enter the lobby so the
+	# previous session's tab (e.g. Customize) is not preserved.
+	if lobby_ui.has_method("_on_lobby_tab"):
+		lobby_ui._on_lobby_tab()
 	# Re-apply the mode layout so the lobby UI reflects the current
 	# game mode (it was read in _ready() before the mode was set).
 	if lobby_ui.has_method("_apply_mode_layout"):

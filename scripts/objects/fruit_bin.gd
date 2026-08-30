@@ -89,8 +89,10 @@ func add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO
 	if not WorldSync.is_host():
 		_rpc_request_add_amount.rpc_id(1, fruit_type, qty, from_pos)
 		return
+	var old_count := mini(roundi(fruit_amounts.get(fruit_type, 0.0)), _get_capacity(fruit_type))
 	_apply_add_amount(fruit_type, qty, from_pos)
-	_sync_state_to_peers(fruit_type, from_pos)
+	var new_count := mini(roundi(fruit_amounts.get(fruit_type, 0.0)), _get_capacity(fruit_type))
+	_sync_state_to_peers(fruit_type, from_pos, old_count, new_count)
 
 
 func _apply_add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
@@ -120,31 +122,55 @@ func _rpc_request_add_amount(fruit_type: String, qty: float, from_pos: Vector3) 
 	add_amount(fruit_type, qty, from_pos)
 
 
-func _sync_state_to_peers(fruit_type: String = "", from_pos: Vector3 = Vector3.ZERO) -> void:
+func _sync_state_to_peers(
+	fruit_type: String = "",
+	from_pos: Vector3 = Vector3.ZERO,
+	old_count: int = -1,
+	new_count: int = -1,
+) -> void:
 	WorldSync.sync_property(self, "fruit_amounts", fruit_amounts.duplicate(true))
 	if fruit_type != "" and from_pos != Vector3.ZERO:
-		WorldSync.sync_call(self, "_play_fruit_fly_in", [fruit_type, from_pos])
+		WorldSync.sync_call(
+			self,
+			"_play_fruit_fly_in",
+			[fruit_type, from_pos, old_count, new_count],
+		)
 	else:
 		WorldSync.sync_call(self, "update_display")
 
 
 ## Client-side: play the fly-in animation for newly visible fruits.
 ## Called via sync_call from the host after fruit_amounts changes.
-func _play_fruit_fly_in(fruit_type: String, from_pos: Vector3) -> void:
+## Only animates fruits from old_count to new_count-1.
+func _play_fruit_fly_in(
+	fruit_type: String,
+	from_pos: Vector3,
+	old_count: int,
+	new_count: int,
+) -> void:
 	if WorldSync.is_host():
 		return
+	# Always update display first so fruit nodes are visible.
+	update_display()
 	if not fruit_grids.has(fruit_type):
-		update_display()
 		return
 	var data: Dictionary = fruit_grids[fruit_type]
 	var nodes: Array[Node3D] = data["nodes"]
 	var cap: int = data["capacity"]
 	var origins: Array[Vector3] = data["origins"]
 	var grid_drop: float = data["drop_height"]
-	var count := mini(roundi(fruit_amounts.get(fruit_type, 0.0)), cap)
-	for i in range(count):
+	var start_idx := maxi(0, old_count)
+	var end_idx := mini(new_count, cap)
+	for i in range(start_idx, end_idx):
 		if i < nodes.size() and is_instance_valid(nodes[i]):
 			_drop_item(nodes[i], origins[i], grid_drop, from_pos)
+
+
+## Get the capacity for a fruit type.
+func _get_capacity(fruit_type: String) -> int:
+	if not fruit_grids.has(fruit_type):
+		return 0
+	return fruit_grids[fruit_type]["capacity"]
 
 
 func _drop_item(

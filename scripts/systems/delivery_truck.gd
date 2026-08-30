@@ -439,7 +439,7 @@ func _transfer_next_box(index: int) -> void:
 	var target_pos := _target_grid.global_position
 	var target_rot := Vector3.ZERO
 	if truck_cell_idx >= 0:
-		target_pos = _target_grid.get_slot_position(truck_cell_idx)
+		target_pos = _target_grid.get_slot_position(truck_cell_idx, box)
 		target_rot = _target_grid.get_slot_rotation(truck_cell_idx)
 		_target_grid.reserve_slot(truck_cell_idx)
 		box.set_meta("delivery_cell_idx", truck_cell_idx)

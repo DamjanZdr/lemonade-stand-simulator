@@ -67,7 +67,15 @@ func _on_money_changed(_amount: float) -> void:
 
 
 func _update_money_label() -> void:
-	money_label.text = "Money: $%.2f" % GameState.money
+	money_label.text = "Money: $%.2f" % _get_local_money()
+
+
+## Get the local player's stand money, falling back to GameState.money.
+func _get_local_money() -> float:
+	var stand := WorldSync.get_local_stand()
+	if stand != null and is_instance_valid(stand) and "money" in stand:
+		return stand.money
+	return GameState.money
 
 
 func _build_grid() -> void:
@@ -151,7 +159,7 @@ func _update_buttons() -> void:
 		var total: float = qty * item["cost"]
 		var btn := grid.get_node_or_null("Btn_" + id) as Button
 		if btn:
-			btn.disabled = is_locked_fruit or qty <= 0 or GameState.money < total
+			btn.disabled = is_locked_fruit or qty <= 0 or _get_local_money() < total
 
 
 func update_buttons() -> void:
@@ -169,13 +177,11 @@ func _buy_item(id: String) -> void:
 				return
 			# Deliver supply boxes
 			var amount_per_box: float = item["qty"]
+			var sn := WorldSync.get_local_stand_name()
 			for i in range(qty):
-				EventBus.supply_order_placed.emit(
-					id,
-					amount_per_box,
-					item["cost"],
-					WorldSync.get_local_stand_name(),
-				)
+				EventBus.supply_order_placed.emit(id, amount_per_box, item["cost"], sn)
+			# Trigger the delivery truck to bring the boxes
+			EventBus.checkout_completed.emit(sn)
 			# Show confirmation
 			if status_label:
 				status_label.text = "Bought %d %s crate(s)!" % [qty, item["name"]]
@@ -192,4 +198,3 @@ func _on_start_day() -> void:
 	panel.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	DayManager.start_day()
-
