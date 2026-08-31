@@ -708,6 +708,11 @@ func _go_to_main_menu() -> void:
 func _refresh() -> void:
 	# Re-apply mode layout in case the mode was synced from the host.
 	_apply_mode_layout()
+	# Update stand 1 header with the host's stand name (synced via
+	# LobbyManager._sync_stand_name when joining).
+	var stand1_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
+	if stand1_header:
+		stand1_header.text = GameState.stand_name
 	for child in _stand1_list.get_children():
 		child.queue_free()
 	for child in _stand2_list.get_children():
@@ -1272,20 +1277,15 @@ func _on_randomize() -> void:
 
 
 ## Sync all color picker swatches to the current state (used by randomize).
-## The color pickers are plain Buttons with _ColorSwatch children, so we
-## need to find the swatches and update their color property.
+## The color pickers are plain Buttons with _ColorSwatch children, nested
+## inside HBoxContainers. We recursively search for _ColorSwatch instances.
 func _sync_color_picker_buttons() -> void:
 	var row := get_node_or_null("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow")
 	if row == null:
 		return
-	# Collect all _ColorSwatch children in order.
+	# Recursively find all _ColorSwatch children in tree order.
 	var swatches: Array = []
-	for child in row.get_children():
-		if child is Button:
-			for sub in child.get_children():
-				if sub is _ColorSwatch:
-					swatches.append(sub)
-					break
+	_collect_swatches(row, swatches)
 	var colors := [
 		_hair_color,
 		_eyebrow_color,
@@ -1296,7 +1296,15 @@ func _sync_color_picker_buttons() -> void:
 	]
 	for i in mini(swatches.size(), colors.size()):
 		swatches[i].color = colors[i]
-		swatches[i].queue_redraw()
+
+
+## Recursively collect _ColorSwatch instances in tree order.
+func _collect_swatches(node: Node, out: Array) -> void:
+	for child in node.get_children():
+		if child is _ColorSwatch:
+			out.append(child)
+		else:
+			_collect_swatches(child, out)
 
 
 func _broadcast_customization() -> void:

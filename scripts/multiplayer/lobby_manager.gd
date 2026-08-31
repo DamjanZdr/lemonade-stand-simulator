@@ -136,6 +136,9 @@ func _register(peer_id: int, player_name: String) -> void:
 		_sync_game_started.rpc_id(peer_id, game_started)
 	# Sync the game mode so the client's lobby UI renders correctly.
 	_sync_game_mode.rpc_id(peer_id, game_mode)
+	# Sync the host's stand name so the joiner sees the correct stand
+	# name in the lobby UI instead of their own save's stand name.
+	_sync_stand_name.rpc_id(peer_id, GameState.stand_name)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -192,6 +195,15 @@ func _sync_game_started(is_started: bool) -> void:
 func _sync_game_mode(mode: int) -> void:
 	game_mode = mode
 	roster_changed.emit() # trigger lobby UI to re-apply mode layout
+
+
+## Sync the host's stand name to clients so the lobby UI shows the
+## correct stand name for joiners (not their own save's name).
+@rpc("authority", "call_local", "reliable")
+func _sync_stand_name(stand_name: String) -> void:
+	GameState.stand_name = stand_name
+	# Refresh the lobby UI if it's visible so the stand header updates.
+	roster_changed.emit()
 
 
 @rpc("authority", "call_local", "reliable")
