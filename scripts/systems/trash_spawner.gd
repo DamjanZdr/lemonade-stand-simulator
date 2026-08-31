@@ -39,8 +39,8 @@ func _schedule_next() -> void:
 
 
 func _on_timer_timeout() -> void:
-	# Wrap in safety so the timer always restarts even if spawn fails.
 	_spawn_trash()
+	# Always reschedule, even if spawn failed, so the timer never stops.
 	_schedule_next()
 
 
@@ -80,10 +80,13 @@ func _spawn_trash() -> void:
 ## The host runs physics and syncs to clients. When it lands, the
 ## ThrownTrash script spawns the real TrashItem via WorldSync.
 func _drop_trash_with_physics(variant: String, drop_pos: Vector3, source_npc: Node = null) -> void:
+	var parent := WorldSync.get_world_objects()
+	if parent == null:
+		return
 	var state: Dictionary = { "trash_type": variant, "trash_value": 1.0, "is_npc_drop": true }
 	var body := WorldSync.spawn_networked(
 		"res://scenes/objects/thrown_trash.tscn",
-		WorldSync.get_world_objects(),
+		parent,
 		drop_pos,
 		Vector3.ZERO,
 		state,

@@ -129,15 +129,25 @@ func _build_visuals() -> void:
 	if scene == null:
 		return
 	var instance := scene.instantiate()
+	# Only copy the visual model (Node3D children that aren't collision shapes).
+	# The collision shapes in the variant scenes are designed for Area3D
+	# raycast pickup and are way too large for physics (e.g. the "can"
+	# variant has a cylinder shape 3+ units tall). Use a small uniform
+	# box shape instead so the RigidBody rests properly on the ground.
 	for child in instance.get_children():
-		if child is CollisionShape3D:
-			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
-			add_child(dup)
-		elif child is Node3D:
+		if child is Node3D and not child is CollisionShape3D:
 			var dup := (child as Node3D).duplicate() as Node3D
 			dup.visible = true
 			add_child(dup)
 	instance.queue_free()
+	# Add a small collision shape centered slightly below origin to
+	# match where the visual models sit (around Y=-0.125).
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(0.15, 0.15, 0.15)
+	col.shape = shape
+	col.position.y = -0.1
+	add_child(col)
 
 
 ## Remove collision shapes on clients (no physics needed).
@@ -261,12 +271,10 @@ func _finalize() -> void:
 	_landed = true
 	freeze = true
 	var land_pos := global_position
-	# The RigidBody origin is above the ground by the collision shape's
-	# bottom offset. Move the origin down so the TrashItem's visual sits
-	# on the ground. The exact offset varies per variant but ~0.185 is a
-	# reasonable average that keeps trash visible (slightly above ground
-	# is better than sunk below it).
-	land_pos.y -= 0.185
+	# The RigidBody has a small collision shape at Y=-0.1 with height 0.15,
+	# so the origin is ~0.175 above ground when resting. The TrashItem's
+	# visual is at Y=-0.125. Spawning at the same position keeps the
+	# visual at approximately ground level (slightly above, which is fine).
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
