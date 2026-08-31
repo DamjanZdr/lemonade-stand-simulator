@@ -44,6 +44,10 @@ const _NET_LERP_SPEED: float = 15.0
 
 var _landed: bool = false
 var _sync_timer: float = 0.0
+## Y offset of the visual model from the RigidBody origin.
+## Used in _finalize() to place the TrashItem so its visual sits on
+## the ground. Read from the variant scene's model child position.
+var _visual_y_offset: float = -0.12
 
 
 func _ready() -> void:
@@ -137,6 +141,8 @@ func _build_visuals() -> void:
 			var dup := (child as Node3D).duplicate() as Node3D
 			dup.visible = true
 			add_child(dup)
+			# Record the visual model's Y offset for ground placement.
+			_visual_y_offset = dup.position.y
 	instance.queue_free()
 
 
@@ -246,12 +252,13 @@ func _finalize() -> void:
 	# stand desk or similar), raycast to find the actual ground surface.
 	# Raycast from Y=0.4 (below stand desk level ~1.23, above ground
 	# surfaces ~0.06) downward to find the highest ground-level surface.
-	# Place the TrashItem at ground_y + 0.15 (average resting offset
-	# observed from properly sleeping trash).
+	# Place the TrashItem so the visual model sits on the ground:
+	# ground_y - visual_y_offset (since visual_y_offset is negative,
+	# this raises the origin so the visual bottom touches the ground).
 	if land_pos.y < 0.0 or land_pos.y > 0.5:
 		var ground_y := _find_ground_surface(land_pos)
 		if ground_y > -1.0:
-			land_pos.y = ground_y + 0.15
+			land_pos.y = ground_y - _visual_y_offset
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
