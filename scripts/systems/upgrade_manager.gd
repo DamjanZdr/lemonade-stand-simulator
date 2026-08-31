@@ -327,16 +327,29 @@ func get_node_data(node_name: String) -> Dictionary:
 
 func purchase_node(node_name: String) -> bool:
 	if not can_unlock(node_name):
+		print("[UpgradeManager] purchase_node FAILED: can_unlock false for %s" % node_name)
 		return false
 	var data: Dictionary = tree_nodes.get(node_name, { })
 	var cost: float = data.get("cost", 0.0) * (1.0 - _negotiation_discount())
+	print(
+		"[UpgradeManager] purchase_node: node=%s cost=%.2f active_stand=%s"
+		% [node_name, cost, _active_stand]
+	)
 	# Spend from the active stand if set, otherwise from local stand.
 	if not _spend_from_active_stand(cost):
+		print(
+			"[UpgradeManager] purchase_node FAILED: could not spend %.2f from stand %s"
+			% [cost, _active_stand]
+		)
 		return false
 	purchased_nodes[node_name] = true
 	# Flush to per-stand storage so research persists per stand.
 	if _active_stand != "":
 		stand_purchased_nodes[_active_stand] = purchased_nodes.duplicate()
+	print(
+		"[UpgradeManager] purchase_node OK: node=%s purchased_nodes=%s"
+		% [node_name, str(purchased_nodes.keys())]
+	)
 	var upgrade_id: String = data.get("upgrade_id", "")
 	_apply_effect(upgrade_id)
 	EventBus.upgrade_purchased.emit(data.get("id", 0), cost)
@@ -353,7 +366,21 @@ func _spend_from_active_stand(amount: float) -> bool:
 		if tree != null and tree.current_scene != null:
 			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
 				if s.name == _active_stand and s.has_method("spend_money"):
-					return s.spend_money(amount)
+					var stand_money: float = s.money
+					print(
+						"[UpgradeManager] _spend_from_active_stand: stand=%s money=%.2f amount=%.2f"
+						% [_active_stand, stand_money, amount]
+					)
+					var result: bool = s.spend_money(amount)
+					print(
+						"[UpgradeManager] _spend_from_active_stand: result=%s money_after=%.2f"
+						% [result, s.money]
+					)
+					return result
+		print(
+			"[UpgradeManager] _spend_from_active_stand: stand %s not found, falling back"
+			% _active_stand
+		)
 	# Fallback: spend from local player's stand or GameState.
 	return WorldSync.spend_local_money(amount)
 

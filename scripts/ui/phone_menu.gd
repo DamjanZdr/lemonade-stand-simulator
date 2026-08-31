@@ -179,6 +179,7 @@ func _buy_upgrade(id: String, btn: Button, name_lbl: Label) -> void:
 	if WorldSync.is_host():
 		# Ensure the host's own stand is active before purchasing.
 		var sn := WorldSync.get_local_stand_name()
+		print("[PhoneMenu] _buy_upgrade: id=%s stand_name=%s" % [id, sn])
 		if sn != "":
 			UpgradeManager.set_active_stand(sn)
 		if UpgradeManager.purchase(id):
