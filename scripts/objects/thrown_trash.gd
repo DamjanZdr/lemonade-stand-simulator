@@ -44,9 +44,6 @@ const _NET_LERP_SPEED: float = 15.0
 
 var _landed: bool = false
 var _sync_timer: float = 0.0
-## Bottom Y offset of the visual model (relative to origin). Used in
-## _finalize() to place the TrashItem so its visual sits on the ground.
-var _visual_bottom_y: float = 0.0
 
 
 func _ready() -> void:
@@ -124,7 +121,6 @@ func _build_visuals() -> void:
 		shape.size = Vector3(0.2, 0.2, 0.2)
 		col.shape = shape
 		add_child(col)
-		_visual_bottom_y = -0.1
 		return
 	var scene_path: String = _VARIANT_SCENES.get(trash_type, "")
 	if scene_path == "":
@@ -133,80 +129,15 @@ func _build_visuals() -> void:
 	if scene == null:
 		return
 	var instance := scene.instantiate()
-	# Copy only the visual model (Node3D children that aren't collision shapes).
-	# The collision shapes in the variant scenes are designed for Area3D
-	# raycast pickup, not physics — some are huge (e.g. "can" has a cylinder
-	# 3+ units tall). We compute a proper physics shape from the visual AABB.
-	var visual_node: Node3D = null
 	for child in instance.get_children():
-		if child is Node3D and not child is CollisionShape3D:
-			visual_node = (child as Node3D).duplicate() as Node3D
-			visual_node.visible = true
-			add_child(visual_node)
-			break
+		if child is CollisionShape3D:
+			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
+			add_child(dup)
+		elif child is Node3D:
+			var dup := (child as Node3D).duplicate() as Node3D
+			dup.visible = true
+			add_child(dup)
 	instance.queue_free()
-	if visual_node == null:
-		return
-	# Compute the combined AABB of all MeshInstance3D descendants in
-	# ThrownTrash local space. This gives us the actual visual bounds
-	# for each variant, so the physics shape matches the visual.
-	var aabb := _compute_visual_aabb(visual_node)
-	if aabb.size != Vector3.ZERO:
-		_visual_bottom_y = aabb.position.y
-		# Create a physics collision shape from the visual AABB.
-		var col := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = aabb.size
-		col.shape = shape
-		col.position = aabb.position + aabb.size * 0.5
-		add_child(col)
-	else:
-		# Fallback: small box at typical offset.
-		_visual_bottom_y = -0.125
-		var col2 := CollisionShape3D.new()
-		var shape2 := BoxShape3D.new()
-		shape2.size = Vector3(0.15, 0.15, 0.15)
-		col2.shape = shape2
-		col2.position.y = -0.1
-		add_child(col2)
-
-
-## Compute the combined AABB of all MeshInstance3D descendants of node,
-## in the local space of this ThrownTrash (the parent of the visual).
-func _compute_visual_aabb(visual_node: Node3D) -> AABB:
-	var combined := AABB()
-	var first := true
-	var stack: Array = [{ node = visual_node, xform = visual_node.transform }]
-	while not stack.is_empty():
-		var entry: Dictionary = stack.pop_back()
-		var n: Node = entry.node
-		var xform: Transform3D = entry.xform
-		if n is MeshInstance3D:
-			var mi := n as MeshInstance3D
-			var local_aabb := mi.get_aabb()
-			# Transform all 8 AABB corners to ThrownTrash local space.
-			var corners := [
-				local_aabb.position,
-				local_aabb.position + Vector3(local_aabb.size.x, 0, 0),
-				local_aabb.position + Vector3(0, local_aabb.size.y, 0),
-				local_aabb.position + Vector3(0, 0, local_aabb.size.z),
-				local_aabb.position + local_aabb.size,
-				local_aabb.position + Vector3(local_aabb.size.x, local_aabb.size.y, 0),
-				local_aabb.position + Vector3(local_aabb.size.x, 0, local_aabb.size.z),
-				local_aabb.position + Vector3(0, local_aabb.size.y, local_aabb.size.z),
-			]
-			for corner in corners:
-				var world_pos: Vector3 = xform * (corner as Vector3)
-				if first:
-					combined = AABB(world_pos, Vector3.ZERO)
-					first = false
-				else:
-					combined = combined.expand(world_pos)
-		elif n is Node3D:
-			for child in n.get_children():
-				if child is Node3D:
-					stack.append({ node = child, xform = xform * (child as Node3D).transform })
-	return combined
 
 
 ## Remove collision shapes on clients (no physics needed).
@@ -330,10 +261,6 @@ func _finalize() -> void:
 	_landed = true
 	freeze = true
 	var land_pos := global_position
-	# The RigidBody's collision shape was computed from the visual AABB,
-	# so the origin is above the ground by |_visual_bottom_y|. Subtract
-	# that offset so the TrashItem's visual bottom sits on the ground.
-	land_pos.y -= absf(_visual_bottom_y)
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
