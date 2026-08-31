@@ -201,7 +201,7 @@ func _try_stun(body: Node) -> bool:
 			return true
 		if node.is_in_group("trashcan"):
 			_hit_someone = true
-			if node.has_method("_apply_trash_disposal"):
+			if node.has_method("apply_trash_disposal"):
 				_dispose_in_trashcan(node)
 			return true
 		if node is Player:
@@ -236,8 +236,8 @@ func _dispose_in_trashcan(trashcan: Node) -> void:
 		var p := source_node as Player
 		if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
 			stand_name = p.assigned_stand.name
-	if trashcan.has_method("_apply_trash_disposal"):
-		trashcan._apply_trash_disposal(trash_type, refund, stand_name)
+	if trashcan.has_method("apply_trash_disposal"):
+		trashcan.apply_trash_disposal(trash_type, refund, stand_name)
 	AudioManager.play_sfx("trash", global_position)
 	WorldSync.despawn_networked(self)
 

@@ -45,7 +45,7 @@ func interact(player: Node) -> void:
 		var stand_name := _get_player_stand_name(p)
 		# Route through host so money and trash disposal sync correctly
 		if WorldSync.is_host():
-			_apply_trash_disposal(trash_type, refund, stand_name)
+			apply_trash_disposal(trash_type, refund, stand_name)
 		else:
 			_request_trash_disposal.rpc_id(1, trash_type, refund, stand_name)
 		AudioManager.play_sfx("trash", global_position)
@@ -56,7 +56,7 @@ func interact(player: Node) -> void:
 		var refund := _get_container_cost_for_trash(ctype)
 		var stand_name := _get_player_stand_name(p)
 		if WorldSync.is_host():
-			_apply_trash_disposal(ctype, refund, stand_name)
+			apply_trash_disposal(ctype, refund, stand_name)
 		else:
 			_request_trash_disposal.rpc_id(1, ctype, refund, stand_name)
 		AudioManager.play_sfx("trash", global_position)
@@ -65,7 +65,8 @@ func interact(player: Node) -> void:
 
 
 ## Host-side: apply money refund and spawn trash visual.
-func _apply_trash_disposal(trash_type: String, refund: float, stand_name: String = "") -> void:
+## Public so ThrownTrash can call it when trash lands in the can.
+func apply_trash_disposal(trash_type: String, refund: float, stand_name: String = "") -> void:
 	if not WorldSync.is_host():
 		return
 	if refund > 0.0:
@@ -79,7 +80,7 @@ func _apply_trash_disposal(trash_type: String, refund: float, stand_name: String
 func _request_trash_disposal(trash_type: String, refund: float, stand_name: String = "") -> void:
 	if not WorldSync.is_host():
 		return
-	_apply_trash_disposal(trash_type, refund, stand_name)
+	apply_trash_disposal(trash_type, refund, stand_name)
 
 
 ## Credit the refund to the correct stand. Falls back to GameState
