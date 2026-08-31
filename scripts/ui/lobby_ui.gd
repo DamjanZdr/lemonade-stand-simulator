@@ -1271,27 +1271,32 @@ func _on_randomize() -> void:
 	_on_customization_changed()
 
 
-## Sync all ColorPickerButton values to the current state (used by randomize).
+## Sync all color picker swatches to the current state (used by randomize).
+## The color pickers are plain Buttons with _ColorSwatch children, so we
+## need to find the swatches and update their color property.
 func _sync_color_picker_buttons() -> void:
 	var row := get_node_or_null("LeftContainer/CustomizePanel/OptionsCol/AvatarOptionsRow")
 	if row == null:
 		return
-	var cpbs := row.find_children("*", "ColorPickerButton", true, false)
-	for i in cpbs.size():
-		var cpb := cpbs[i] as ColorPickerButton
-		match i:
-			0:
-				cpb.color = _hair_color
-			1:
-				cpb.color = _eyebrow_color
-			2:
-				cpb.color = _shirt_color
-			3:
-				cpb.color = _pants_color
-			4:
-				cpb.color = _shoes_color
-			5:
-				cpb.color = _skin_color
+	# Collect all _ColorSwatch children in order.
+	var swatches: Array = []
+	for child in row.get_children():
+		if child is Button:
+			for sub in child.get_children():
+				if sub is _ColorSwatch:
+					swatches.append(sub)
+					break
+	var colors := [
+		_hair_color,
+		_eyebrow_color,
+		_shirt_color,
+		_pants_color,
+		_shoes_color,
+		_skin_color,
+	]
+	for i in mini(swatches.size(), colors.size()):
+		swatches[i].color = colors[i]
+		swatches[i].queue_redraw()
 
 
 func _broadcast_customization() -> void:

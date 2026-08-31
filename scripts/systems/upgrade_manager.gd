@@ -330,7 +330,8 @@ func purchase_node(node_name: String) -> bool:
 		return false
 	var data: Dictionary = tree_nodes.get(node_name, { })
 	var cost: float = data.get("cost", 0.0) * (1.0 - _negotiation_discount())
-	if not WorldSync.spend_local_money(cost):
+	# Spend from the active stand if set, otherwise from local stand.
+	if not _spend_from_active_stand(cost):
 		return false
 	purchased_nodes[node_name] = true
 	# Flush to per-stand storage so research persists per stand.
@@ -341,6 +342,20 @@ func purchase_node(node_name: String) -> bool:
 	EventBus.upgrade_purchased.emit(data.get("id", 0), cost)
 	EventBus.game_saved.emit()
 	return true
+
+
+## Spend money from the active stand (if set) or fall back to local stand.
+## This ensures the host spends from the correct joiner's stand when
+## processing an upgrade purchase request from a joiner.
+func _spend_from_active_stand(amount: float) -> bool:
+	if _active_stand != "":
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree != null and tree.current_scene != null:
+			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
+				if s.name == _active_stand and s.has_method("spend_money"):
+					return s.spend_money(amount)
+	# Fallback: spend from local player's stand or GameState.
+	return WorldSync.spend_local_money(amount)
 
 
 ## Get the total stacked effect for an upgrade type (sum across all purchased nodes of that type).
@@ -557,4 +572,3 @@ func reset() -> void:
 
 func _negotiation_discount() -> float:
 	return clampf(get_effect_total("negotiation"), 0.0, 0.9)
-

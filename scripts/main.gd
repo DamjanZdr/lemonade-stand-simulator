@@ -1360,7 +1360,12 @@ func _sync_stand_name(name: String) -> void:
 	if stand_unit:
 		stand_unit.set_stand_name(name)
 	if stand_unit2:
-		stand_unit2.set_stand_name(name)
+		# In versus mode, stand 2 is the rival stand. In cooperative,
+		# both stands share the same name.
+		if LobbyManager.game_mode == GameState.GameMode.VERSUS:
+			stand_unit2.set_stand_name("Rival Stand")
+		else:
+			stand_unit2.set_stand_name(name)
 
 
 func _spawn_player_for_peer(peer_id: int) -> void:

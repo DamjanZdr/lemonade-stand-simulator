@@ -320,6 +320,7 @@ func add_money(amount: float) -> void:
 	if money > highest_money:
 		highest_money = money
 	money_changed.emit(money)
+	_push_state()
 
 
 func spend_money(amount: float) -> bool:
@@ -330,6 +331,7 @@ func spend_money(amount: float) -> bool:
 	if amount > highest_purchase:
 		highest_purchase = amount
 	money_changed.emit(money)
+	_push_state()
 	return true
 
 
