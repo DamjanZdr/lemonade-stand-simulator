@@ -8828,7 +8828,7 @@ bones/2/name = "UpperBack"
 bones/2/parent = 1
 bones/2/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 bones/2/enabled = true
-bones/2/position = Vector3(0, 3, 0)
+bones/2/position = Vector3(0, 3.5, 0)
 bones/2/rotation = Quaternion(0, 0, 0, 1)
 bones/2/scale = Vector3(1, 1, 1)
 bones/3/name = "Neck"
@@ -8994,7 +8994,7 @@ bones/25/rotation = Quaternion(0.45554727, 0.5408111, -0.5408111, -0.45554727)
 bones/25/scale = Vector3(0.99999994, 1, 0.99999994)
 
 [node name="Head" type="BoneAttachment3D" parent="man/Armature/Skeleton3D" unique_id=2048607257]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.367528, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.867528, 0)
 bone_name = "Head"
 bone_idx = 4
 
@@ -9080,6 +9080,7 @@ libraries/ = SubResource("AnimationLibrary_ah1al")
 
 [node name="woman" type="Node3D" parent="." unique_id=1132006519]
 transform = Transform3D(1, 0, 0, 0, 0.95, 0, 0, 0, 1, 0, -0.18624401, 0)
+visible = false
 
 [node name="Armature" type="Node3D" parent="woman" unique_id=1513745039]
 

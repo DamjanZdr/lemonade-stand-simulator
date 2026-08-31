@@ -24,6 +24,8 @@ var lobby_id: int = 0
 var is_host: bool = false
 var connected: bool = false
 
+var _steam_initialized: bool = false
+
 
 func _ready() -> void:
 	_initialize_steam()
@@ -33,9 +35,38 @@ func _ready() -> void:
 func _initialize_steam() -> void:
 	var response: Dictionary = Steam.steamInitEx(STEAM_APP_ID, true)
 	print("[NetworkManager] Steam init response: ", response)
+	var status: int = response.get("status", 1)
+	if status != 0:
+		push_warning(
+			"[NetworkManager] Steam init failed (status=%d): %s"
+			% [status, response.get("verbal", "")]
+		)
+		# Retry on next frame — Steam client may not be fully ready.
+		call_deferred("_retry_steam_init")
+		return
+	_steam_initialized = true
 	steam_id = Steam.getSteamID()
 	print("[NetworkManager] Steam ID: ", steam_id)
 	print("[NetworkManager] Persona: ", Steam.getPersonaName())
+
+
+## Retry Steam initialization after a short delay. The Steam client
+## may not be fully ready when the game first starts.
+func _retry_steam_init() -> void:
+	if _steam_initialized:
+		return
+	# Wait a bit before retrying to give Steam time to initialize.
+	await get_tree().create_timer(1.0).timeout
+	var response: Dictionary = Steam.steamInitEx(STEAM_APP_ID, true)
+	print("[NetworkManager] Steam retry init response: ", response)
+	var status: int = response.get("status", 1)
+	if status == 0:
+		_steam_initialized = true
+		steam_id = Steam.getSteamID()
+		print("[NetworkManager] Steam ID: ", steam_id)
+		print("[NetworkManager] Persona: ", Steam.getPersonaName())
+	else:
+		push_warning("[NetworkManager] Steam retry failed (status=%d)" % status)
 
 
 func _connect_signals() -> void:
@@ -56,6 +87,12 @@ func _connect_signals() -> void:
 
 ## Create a lobby and start hosting.
 func host_game() -> void:
+	if not _steam_initialized:
+		push_warning("[NetworkManager] Cannot host: Steam not initialized")
+		connection_failed.emit(
+			"Steam is not initialized. Please restart the game with Steam running."
+		)
+		return
 	is_host = true
 	print("[NetworkManager] Creating lobby...")
 	Steam.createLobby(Steam.LOBBY_TYPE_PUBLIC, 4)
@@ -63,6 +100,12 @@ func host_game() -> void:
 
 ## Join a lobby by its ID.
 func join_game(target_lobby_id: int) -> void:
+	if not _steam_initialized:
+		push_warning("[NetworkManager] Cannot join: Steam not initialized")
+		connection_failed.emit(
+			"Steam is not initialized. Please restart the game with Steam running."
+		)
+		return
 	if connected:
 		print("[NetworkManager] Already connected, ignoring join request")
 		return
