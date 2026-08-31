@@ -239,19 +239,19 @@ func _finalize() -> void:
 	# spawning the TrashItem — it would appear underground and be
 	# unreachable. Just despawn the ThrownTrash body.
 	if land_pos.y < -1.0:
-		print(
-			"[ThrownTrash] Skipping spawn — fell through world: type=%s y=%.2f"
-			% [trash_type, land_pos.y]
-		)
 		WorldSync.despawn_networked(self)
 		return
-	# If the trash is floating above the ground (never slept, hit the
-	# fallback timer), raycast down to find the actual ground and place
-	# the TrashItem there so it doesn't float.
-	if land_pos.y > 0.5:
-		var ground_y := _raycast_ground_y(land_pos)
-		if ground_y < land_pos.y:
-			land_pos.y = ground_y
+	# If the trash is clipping through the ground (Y < 0, body penetrated
+	# the surface) or floating above ground level (Y > 0.5, landed on a
+	# stand desk or similar), raycast to find the actual ground surface.
+	# Raycast from Y=0.4 (below stand desk level ~1.23, above ground
+	# surfaces ~0.06) downward to find the highest ground-level surface.
+	# Place the TrashItem at ground_y + 0.15 (average resting offset
+	# observed from properly sleeping trash).
+	if land_pos.y < 0.0 or land_pos.y > 0.5:
+		var ground_y := _find_ground_surface(land_pos)
+		if ground_y > -1.0:
+			land_pos.y = ground_y + 0.15
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
@@ -282,13 +282,14 @@ func _finalize() -> void:
 	WorldSync.despawn_networked(self)
 
 
-## Raycast straight down from pos to find the ground Y coordinate.
-## Used when trash is floating (hit the fallback timer without sleeping).
+## Raycast from Y=0.4 downward to find the ground-level surface.
+## This avoids hitting stand desks (top at Y≈1.23) while finding
+## PlacableFloor (Y≈0.06), sidewalks (Y≈-0.05), and streets (Y≈-0.09).
 ## Falls back to pos.y if no ground is found.
-func _raycast_ground_y(pos: Vector3) -> float:
+func _find_ground_surface(pos: Vector3) -> float:
 	var space := get_world_3d().direct_space_state
-	var from := pos + Vector3.UP * 0.5
-	var to := pos + Vector3.DOWN * 3.0
+	var from := Vector3(pos.x, 0.4, pos.z)
+	var to := Vector3(pos.x, -1.0, pos.z)
 	var query := PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [get_rid()]
 	var result := space.intersect_ray(query)
