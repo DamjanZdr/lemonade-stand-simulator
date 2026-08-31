@@ -133,6 +133,16 @@ func _build_visuals() -> void:
 		if child is CollisionShape3D:
 			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
 			add_child(dup)
+			# DEBUG: log what collision shapes we're adding
+			var sinfo := "pos=%s" % str(dup.position)
+			if dup.shape is BoxShape3D:
+				sinfo += " Box size=%s" % str((dup.shape as BoxShape3D).size)
+			elif dup.shape is CylinderShape3D:
+				sinfo += " Cyl h=%.3f r=%.3f" % [
+					(dup.shape as CylinderShape3D).height,
+					(dup.shape as CylinderShape3D).radius,
+				]
+			print("[ThrownTrash] BUILD: type=%s added collision: %s" % [trash_type, sinfo])
 		elif child is Node3D:
 			var dup := (child as Node3D).duplicate() as Node3D
 			dup.visible = true
@@ -219,12 +229,17 @@ func _try_stun(body: Node) -> bool:
 func _on_sleeping() -> void:
 	if _landed or not is_instance_valid(self) or not sleeping:
 		return
+	print("[ThrownTrash] SLEEPING finalize: type=%s pos=%s" % [trash_type, str(global_position)])
 	_finalize()
 
 
 func _on_fallback() -> void:
 	if _landed or not is_instance_valid(self):
 		return
+	print(
+		"[ThrownTrash] FALLBACK finalize (5s timer): type=%s pos=%s"
+		% [trash_type, str(global_position)]
+	)
 	_finalize()
 
 
@@ -235,6 +250,26 @@ func _finalize() -> void:
 	_landed = true
 	freeze = true
 	var land_pos := global_position
+	# DEBUG: Log collision shape info to understand floating/sinking.
+	var col_shapes: Array = []
+	for child in get_children():
+		if child is CollisionShape3D:
+			var cs := child as CollisionShape3D
+			var shape_info := "pos=%s " % str(cs.position)
+			if cs.shape is BoxShape3D:
+				shape_info += "Box size=%s" % str((cs.shape as BoxShape3D).size)
+			elif cs.shape is CylinderShape3D:
+				shape_info += "Cyl h=%.3f r=%.3f" % [
+					(cs.shape as CylinderShape3D).height,
+					(cs.shape as CylinderShape3D).radius,
+				]
+			elif cs.shape is SphereShape3D:
+				shape_info += "Sph r=%.3f" % (cs.shape as SphereShape3D).radius
+			col_shapes.append(shape_info)
+	print(
+		"[ThrownTrash] FINALIZE: type=%s pos=%s shapes=[%s]"
+		% [trash_type, str(land_pos), ", ".join(col_shapes)]
+	)
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
