@@ -261,12 +261,12 @@ func _finalize() -> void:
 	_landed = true
 	freeze = true
 	var land_pos := global_position
-	# Raycast down from the body center to find the actual ground Y.
-	# The RigidBody origin is above the ground by the collision shape
-	# offset, so we need to find the real ground and place the trash
-	# item's origin so its visual sits on the ground.
-	var ground_y := _find_ground_y(land_pos)
-	land_pos.y = ground_y
+	# The RigidBody origin is above the ground by the collision shape's
+	# bottom offset. Move the origin down so the TrashItem's visual sits
+	# on the ground. The exact offset varies per variant but ~0.185 is a
+	# reasonable average that keeps trash visible (slightly above ground
+	# is better than sunk below it).
+	land_pos.y -= 0.185
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
@@ -295,20 +295,6 @@ func _finalize() -> void:
 			WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
 	# Despawn self via WorldSync so clients remove it too.
 	WorldSync.despawn_networked(self)
-
-
-## Raycast straight down from pos to find the ground Y coordinate.
-## Falls back to pos.y if no ground is found.
-func _find_ground_y(pos: Vector3) -> float:
-	var space := get_world_3d().direct_space_state
-	var from := pos + Vector3.UP * 0.5
-	var to := pos + Vector3.DOWN * 2.0
-	var query := PhysicsRayQueryParameters3D.create(from, to)
-	query.exclude = [get_rid()]
-	var result := space.intersect_ray(query)
-	if result and result.has("position"):
-		return result.position.y
-	return pos.y
 
 
 ## Called by the host when a player picks up this trash mid-air.

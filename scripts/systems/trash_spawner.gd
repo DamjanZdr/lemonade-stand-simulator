@@ -39,11 +39,16 @@ func _schedule_next() -> void:
 
 
 func _on_timer_timeout() -> void:
+	# Wrap in safety so the timer always restarts even if spawn fails.
 	_spawn_trash()
 	_schedule_next()
 
 
 func _spawn_trash() -> void:
+	# Only the host spawns trash. Check early so non-host peers don't
+	# waste time on candidate lookups or risk crashes from missing NPCs.
+	if not WorldSync.is_host():
+		return
 	var candidates := get_tree().get_nodes_in_group("trash_spawn_candidates")
 	candidates = candidates.filter(
 		func(n):
@@ -62,8 +67,6 @@ func _spawn_trash() -> void:
 	var radius := randf() * horizontal_spread
 	var spawn_x := base_pos.x + cos(angle) * radius
 	var spawn_z := base_pos.z + sin(angle) * radius
-	if not WorldSync.is_host():
-		return
 	# Pick a variant deterministically so all clients see the same trash type
 	var variants: Array[String] = ["apple", "banana", "can", "cigarettes", "cup"]
 	var variant := variants[randi() % variants.size()]
