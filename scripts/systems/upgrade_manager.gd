@@ -94,6 +94,20 @@ func set_purchased_for_stand(stand_name: String, node_names: Array) -> void:
 		apply_all_effects()
 
 
+## Mark a single node as purchased for a stand (used by client-side
+## sync after the host processes a remote purchase). Does NOT spend
+## money — the host already did that.
+func mark_node_purchased_for_stand(stand_name: String, node_name: String) -> void:
+	if not tree_nodes.has(node_name):
+		return
+	if not stand_purchased_nodes.has(stand_name):
+		stand_purchased_nodes[stand_name] = { }
+	stand_purchased_nodes[stand_name][node_name] = true
+	if stand_name == _active_stand:
+		purchased_nodes[node_name] = true
+	apply_all_effects()
+
+
 ## Get save data for the active stand.
 func get_save_data_for_stand(stand_name: String) -> Array:
 	var d: Dictionary = stand_purchased_nodes.get(stand_name, purchased_nodes)

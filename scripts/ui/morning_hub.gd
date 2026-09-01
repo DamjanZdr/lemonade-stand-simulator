@@ -1713,6 +1713,53 @@ func _request_purchase(
 					"[MorningHub] Host purchased upgrade node %s for peer %d (stand=%s)"
 					% [item_id, sender_id, stand_name]
 				)
+				# Sync the purchase back to the buyer so their UI updates.
+				_sync_upgrade_node_purchased.rpc_id(sender_id, item_id, stand_name)
+
+
+## Host → buyer: sync that an upgrade node was purchased so the
+## joiner's upgrade tree UI updates (shows next node, animates, etc.).
+@rpc("authority", "reliable")
+func _sync_upgrade_node_purchased(node_id: String, stand_name: String) -> void:
+	# Only apply to the client whose stand matches.
+	var local_sn := WorldSync.get_local_stand_name()
+	if stand_name != "" and local_sn != stand_name:
+		return
+	# Set the active stand and mark the node as purchased locally.
+	UpgradeManager.set_active_stand(stand_name)
+	UpgradeManager.mark_node_purchased_for_stand(stand_name, node_id)
+	# Re-apply effects so fruit unlocks and other effects take effect.
+	UpgradeManager.apply_all_effects()
+	# Refresh the upgrade tree UI if it's open.
+	_refresh_upgrades()
+	# Play the purchase sound and animate the node.
+	AudioManager.play_sfx_ui("upgrade_bought")
+	_status_lbl.text = "Upgrade purchased!"
+	_animate_status()
+	# Animate the purchased node and reveal newly visible children.
+	var node := _tree_content.get_node_or_null("TreeNode_" + node_id) as CircleNode
+	if node != null:
+		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(node_id, { })
+		var uid: String = purchased_data.get("upgrade_id", "")
+		if uid.ends_with("_unlock"):
+			var fruit := uid.substr(0, uid.length() - 7)
+			if fruit in GameState.FRUIT_TYPES:
+				_build_shop()
+		var newly_visible: Array[String] = []
+		for child_id in UpgradeManager.tree_connections.get(node_id, []):
+			var child_node := _tree_content.get_node_or_null("TreeNode_" + child_id) as CircleNode
+			if child_node != null and not child_node.visible:
+				newly_visible.append(child_id)
+				_animating_lines[node_id + "|" + child_id] = 0.0
+				_animating_children[child_id] = true
+		node.pivot_offset = node.size / 2.0
+		var tween := create_tween()
+		tween.tween_property(node, "scale", Vector2(1.3, 1.3), 0.1)
+		tween.tween_property(node, "scale", Vector2(1.0, 1.0), 0.3).set_ease(Tween.EASE_OUT).set_trans(
+			Tween.TRANS_ELASTIC
+		)
+		_animate_next_node_unlock(node_id, newly_visible)
+	EventBus.upgrade_purchased.emit(0, 0.0)
 
 
 func _find_stand_by_name(stand_name: String) -> Node:
