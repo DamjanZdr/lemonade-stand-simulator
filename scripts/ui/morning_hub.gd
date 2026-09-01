@@ -935,7 +935,7 @@ func _buy_tree_upgrade(
 		return
 	# Route upgrade purchases through the host.
 	if not WorldSync.is_host():
-		_request_purchase.rpc_id(1, "upgrade_node", id, 0.0, 0.0)
+		_request_purchase.rpc_id(1, "upgrade_node", id, 0.0, 0.0, WorldSync.get_local_stand_name())
 		_status_lbl.text = "Upgrade purchased!"
 		_animate_status()
 		return
@@ -1704,10 +1704,15 @@ func _request_purchase(
 				return
 			EventBus.equipment_order_placed.emit(item_id, stand_name)
 		"upgrade_node":
-			UpgradeManager.purchase_node(item_id)
-			GameLog.log(
-				"[MorningHub] Host purchased upgrade node %s for peer %d" % [item_id, sender_id]
-			)
+			# Set the buyer's stand active so the purchase is recorded
+			# against their stand and money is spent from their stand.
+			if stand_name != "":
+				UpgradeManager.set_active_stand(stand_name)
+			if UpgradeManager.purchase_node(item_id):
+				GameLog.log(
+					"[MorningHub] Host purchased upgrade node %s for peer %d (stand=%s)"
+					% [item_id, sender_id, stand_name]
+				)
 
 
 func _find_stand_by_name(stand_name: String) -> Node:
