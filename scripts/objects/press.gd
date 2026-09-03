@@ -45,7 +45,17 @@ var _last_juice_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 func _ready() -> void:
 	add_to_group("press")
 	add_to_group("container")
-	Pickupable.setup_for_container(self, "press")
+	var p := Pickupable.setup_for_container(self, "press")
+	# Override can_pick_up: only allow pickup when the press is empty
+	# (no fruits, no snapped pitcher, not pressing). Otherwise the
+	# player's primary interact should call press.interact() to squeeze
+	# fruits or pick up the pitcher.
+	p.can_pickup_callback = func(player: Node) -> bool:
+		if player == null or player.get("held_item") != HeldItem.NONE:
+			return false
+		if not can_player_use(player):
+			return false
+		return fruit_count <= 0.0 and not _pressing and not has_snapped_pitcher()
 	_build_merged_animation()
 
 
