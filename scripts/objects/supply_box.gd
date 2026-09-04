@@ -30,16 +30,17 @@ const _FACE_NORMALS: Array[Vector3] = [
 ]
 
 # Per-instance metrics (updated by update_metrics()). Defaults match
-# the original static values so things work before update_metrics() runs.
-var stack_height: float = 0.324663
-var bottom_offset: float = 0.16
+# the actual computed values from the box mesh AABB (box child at scale
+# 0.3, mesh AABB -1.26..0.823 in Y → -0.378..0.247 in root space).
+var stack_height: float = 0.487
+var bottom_offset: float = 0.24
 var stack_radius: float = 0.15
-var box_aabb: AABB = AABB(Vector3(-0.252, -0.16, -0.2), Vector3(0.504, 0.324663, 0.4))
+var box_aabb: AABB = AABB(Vector3(-0.378, -0.24, -0.3), Vector3(0.756, 0.487, 0.6))
 
 # Static defaults for ground placement when no specific box instance is
 # available (e.g. placing a held box on the floor).
-const DEFAULT_BOTTOM_OFFSET: float = 0.16
-const DEFAULT_STACK_HEIGHT: float = 0.324663
+const DEFAULT_BOTTOM_OFFSET: float = 0.24
+const DEFAULT_STACK_HEIGHT: float = 0.487
 
 # --- Icon system ---
 const INGREDIENT_ICONS: Dictionary = {

@@ -443,6 +443,10 @@ func _place_held_supply_box_on(
 	) as SupplyBox
 	if box:
 		box.update_metrics()
+		# Adjust Y so the visual bottom sits on the surface, not the
+		# root origin which may be above the visual bottom.
+		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
+		box.global_position.y += y_diff
 	AudioManager.play_sfx("box_drop", place_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()

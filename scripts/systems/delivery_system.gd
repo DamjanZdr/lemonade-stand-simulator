@@ -100,9 +100,22 @@ func _spawn_box_on_truck(box: SupplyBox) -> void:
 	if spawned:
 		box = spawned as SupplyBox
 		box.update_metrics()
-		EventBus.supply_box_spawned.emit(box)
+		# Recalculate position with actual box metrics now that
+		# update_metrics() has run. The slot was reserved with default
+		# metrics, but the actual bottom_offset may differ (e.g. 0.24
+		# vs default 0.16), causing the box to sink into the palette.
 		if cell_idx >= 0:
+			var marker := _truck_grid._cells[cell_idx]
+			if marker != null:
+				var sh: float = box.stack_height
+				var bo: float = box.bottom_offset
+				# _stacks was already incremented by reserve_next_slot,
+				# so the current box level is _stacks - 1.
+				var level: int = _truck_grid._stacks[cell_idx] - 1
+				box.global_position = marker.global_position + \
+						Vector3(0, level * sh + bo, 0)
 			box.set_meta("truck_cell_idx", cell_idx)
+		EventBus.supply_box_spawned.emit(box)
 		_batched_boxes.append(box)
 
 
