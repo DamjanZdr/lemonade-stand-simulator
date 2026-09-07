@@ -310,6 +310,14 @@ func _update_single_cup_ghost() -> void:
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
 		return
 
+	# Cross-stand placement restriction: cups can only be placed on surfaces
+	# owned by the player's assigned stand.
+	if not _is_placement_allowed_on(collider):
+		_ghost.visible = false
+		_ghost_valid = false
+		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
+		return
+
 	# Filled cups can't go on ground
 	var is_ground := _is_ground_surface(collider)
 	if _player.held_item == HeldItem.CUP_FILLED and is_ground:
@@ -343,8 +351,10 @@ func _place_single_cup(_filled: bool) -> void:
 
 	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack")
 	var hit_point := _player.ray.get_collision_point()
-	var bottom_offset_estimate := 0.5
-	var stack_pos := hit_point + Vector3(0, -bottom_offset_estimate * placement_scale.y, 0)
+	# Use the actual bottom offset computed for the ghost so the stack sits
+	# exactly on the surface instead of sinking or floating.
+	var bottom_offset: float = _ghost.get_meta("bottom_offset", 0.0)
+	var stack_pos := hit_point + Vector3(0, -bottom_offset, 0)
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
 	var stack_rot := Vector3.ZERO
@@ -386,9 +396,10 @@ func _place_filled_cup() -> void:
 	var placement_scale := Vector3.ONE * 0.03
 	# Calculate position before spawning
 	var hit_point := _player.ray.get_collision_point()
-	# Estimate bottom offset (cup physics shape) for placement
-	var bottom_offset_estimate := 0.5
-	var cup_pos := hit_point + Vector3(0, -bottom_offset_estimate * placement_scale.y, 0)
+	# Use the actual bottom offset computed for the ghost so the cup sits
+	# exactly on the surface instead of sinking or floating.
+	var bottom_offset: float = _ghost.get_meta("bottom_offset", 0.0)
+	var cup_pos := hit_point + Vector3(0, -bottom_offset, 0)
 	# Face the player
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
@@ -1022,6 +1033,13 @@ func _update_cup_box_ghost() -> void:
 		_ghost_valid = false
 		return
 
+	# Cross-stand placement restriction: cup boxes can only be placed on
+	# surfaces/ground owned by the player's assigned stand.
+	if not _is_placement_allowed_on(collider):
+		_destroy_ghost()
+		_ghost_valid = false
+		return
+
 	var is_ground := _is_ground_surface(collider)
 	if is_ground:
 		# Floor ΓÇö show box ghost but invalid (cup boxes can't go on floor)
@@ -1143,6 +1161,14 @@ func _update_supply_box_ghost() -> void:
 		_stack_target_id = -1
 		return
 
+	# Cross-stand placement restriction: supply boxes can only be placed on
+	# surfaces/ground owned by the player's assigned stand.
+	if not _is_placement_allowed_on(collider):
+		_ghost.visible = false
+		_ghost_valid = false
+		_stack_target_id = -1
+		return
+
 	_stack_target_id = -1
 	_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 	_ghost.visible = true
@@ -1165,24 +1191,6 @@ func _update_equipment_box_ghost() -> void:
 	var hit_point := _player.ray.get_collision_point()
 	# Reset probe cache; _is_placement_surface may populate it.
 	_has_probe_hit = false
-
-	# Cross-stand placement restriction: don't allow placing equipment on
-	# another stand's workstation/surface. Walk up the collider chain to
-	# find an Interactable with stand_owner and check it matches the
-	# player's assigned stand. Supply boxes and delivery grids are exempted.
-	var _check_node: Node = collider
-	while _check_node != null:
-		if _check_node is Interactable:
-			var inter := _check_node as Interactable
-			if inter.stand_owner != "" and not inter.can_player_use(_player):
-				_destroy_ghost()
-				_ghost_valid = false
-				_stack_target_id = -1
-				return
-			break
-		if _check_node is DeliveryGrid:
-			break
-		_check_node = _check_node.get_parent()
 
 	# Check if looking at another SupplyBox ΓÇö stack on top (box ghost)
 	var node: Node = collider
@@ -1224,6 +1232,15 @@ func _update_equipment_box_ghost() -> void:
 	# of the original side-hit point for ghost positioning.
 	if _has_probe_hit:
 		hit_point = _probe_hit_point
+
+	# Cross-stand placement restriction: equipment (and its box) can only be
+	# placed on surfaces/ground owned by the player's assigned stand. Delivery
+	# grids and supply box stacks are handled above and return early.
+	if not _is_placement_allowed_on(collider):
+		_destroy_ghost()
+		_ghost_valid = false
+		_stack_target_id = -1
+		return
 
 	# Workstations are tables ΓÇö they can only be placed on the floor.
 	if equipment_type == "workstation":
@@ -1445,20 +1462,13 @@ func _update_ghost() -> void:
 		return
 
 	# Cross-stand placement restriction: don't allow placing containers on
-	# another stand's workstation/surface. Walk up the collider chain to
-	# find an Interactable with stand_owner and check it matches the
-	# player's assigned stand. Supply boxes are exempted (cross-stand).
-	if not is_ground:
-		var surface_node: Node = collider
-		while surface_node != null:
-			if surface_node is Interactable:
-				var inter := surface_node as Interactable
-				if inter.stand_owner != "" and not inter.can_player_use(_player):
-					_ghost.visible = false
-					_ghost_valid = false
-					return
-				break
-			surface_node = surface_node.get_parent()
+	# another stand's workstation/surface. Applies to ground too (each stand
+	# has its own PlacableFloor area). Use the shared helper so PlacableFloor
+	# under a StandUnit is also checked, not just Interactables with stand_owner.
+	if not _is_placement_allowed_on(collider):
+		_ghost.visible = false
+		_ghost_valid = false
+		return
 
 	_ghost.visible = true
 	# Apply collision-based offset so ghost sits on surface
@@ -1774,6 +1784,45 @@ func _get_container_type_for_node(node: Node) -> String:
 	return ""
 
 
+func _get_placement_owner_stand(collider: Node) -> String:
+	# Walk up the collider hierarchy to find the StandUnit or Interactable
+	# that owns this surface. Returns "" if unowned/standalone.
+	if collider == null:
+		return ""
+	var node := collider
+	for i in range(5):
+		if node == null:
+			break
+		if node is StandUnit:
+			return node.name
+		if "stand_owner" in node and node.stand_owner is String and node.stand_owner != "":
+			return node.stand_owner
+		# The floor under a stand is named PlacableFloor and is a child of the StandUnit.
+		if node.name == "PlacableFloor" and node.get_parent() is StandUnit:
+			return node.get_parent().name
+		node = node.get_parent()
+	return ""
+
+
+func _is_placement_allowed_on(collider: Node) -> bool:
+	# Ownership check: is the local player allowed to place on this surface?
+	# This only checks stand ownership, not whether the collider is a valid
+	# placement surface. In solo/offline (no peers) allow all valid surfaces.
+	# In multiplayer, a surface with an owner requires the player to be assigned
+	# to that same stand. Use together with _is_placement_surface().
+	if collider == null:
+		return false
+	var mp := _player.get("multiplayer") as MultiplayerAPI
+	if mp == null or mp.multiplayer_peer == null or mp.get_peers().is_empty():
+		return true
+	var surface_owner := _get_placement_owner_stand(collider)
+	if surface_owner == "":
+		return true
+	if _player.assigned_stand == null or not is_instance_valid(_player.assigned_stand):
+		return false
+	return surface_owner == _player.assigned_stand.name
+
+
 func _is_placement_surface(collider: Object) -> bool:
 	if collider == null:
 		return false
@@ -1798,7 +1847,7 @@ func _is_placement_surface(collider: Object) -> bool:
 	var normal := _player.ray.get_collision_normal()
 	if normal.y <= 0.7:
 		if is_placement_node:
-			return _probe_tabletop_below()
+			return _probe_tabletop_below(collider as Node)
 		return false
 	if is_placement_node:
 		return true
@@ -1814,7 +1863,7 @@ func _is_placement_surface(collider: Object) -> bool:
 ## Returns true and caches the corrected hit point/normal if a valid
 ## tabletop is found. Uses the same collision mask as the player's
 ## RayCast3D so the probe sees what the visual ray sees.
-func _probe_tabletop_below() -> bool:
+func _probe_tabletop_below(original_collider: Node = null) -> bool:
 	_has_probe_hit = false
 	var hit_point := _player.ray.get_collision_point()
 	var from := hit_point + Vector3.UP * 0.5
@@ -1831,6 +1880,12 @@ func _probe_tabletop_below() -> bool:
 	var n: Node = hits.get("collider", null)
 	if n == null:
 		return false
+	# The probe must hit the same object (or a descendant) we originally
+	# hit on the side. This prevents the tabletop probe from snapping to
+	# the floor when aiming at the edge of a table or stand.
+	if original_collider != null and n != original_collider:
+		if not original_collider.is_ancestor_of(n):
+			return false
 	var normal: Vector3 = hits.get("normal", Vector3.ZERO)
 	if normal.y <= 0.7:
 		return false

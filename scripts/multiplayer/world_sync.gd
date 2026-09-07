@@ -152,6 +152,12 @@ func _on_net_object_tree_exited(net_id: int) -> void:
 	_placed_objects.erase(net_id)
 
 
+## Public helper to remove a stale name from the node cache.
+## Used when a peer disconnects and its player node is freed.
+func erase_node_cache(obj_name: String) -> void:
+	_node_cache.erase(obj_name)
+
+
 ## Send a full snapshot of all placed containers and supply boxes to
 ## clients. Called after the host respawns saved/default containers.
 ## This ensures clients see objects that were placed before they joined
@@ -774,7 +780,7 @@ func _sync_boxes_fall(box_pos: Vector3) -> void:
 ## the host moves an object (e.g. a supply box from the truck grid to
 ## the world) and clients need to match the hierarchy.
 @rpc("authority", "call_local", "reliable")
-func _reparent_on_clients(new_parent_path_str: String, obj_name: String, net_id: int) -> void:
+func reparent_on_clients(new_parent_path_str: String, obj_name: String, net_id: int) -> void:
 	if is_host():
 		return
 	var obj := _find_node("", obj_name, net_id)
@@ -832,7 +838,7 @@ func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[D
 			# Already parented on the host, but still broadcast to clients
 			# in case they haven't reparented yet (e.g. late joiner or
 			# previous reparent RPC was lost).
-			_reparent_on_clients.rpc(parent_path, item_name, net_id)
+			reparent_on_clients.rpc(parent_path, item_name, net_id)
 			continue
 		var old_pos: Vector3 = item.global_position
 		var old_rot: Vector3 = item.global_rotation
@@ -841,7 +847,7 @@ func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[D
 		item.global_position = old_pos
 		item.global_rotation = old_rot
 		# Tell all clients to do the same reparent
-		_reparent_on_clients.rpc(parent_path, item_name, net_id)
+		reparent_on_clients.rpc(parent_path, item_name, net_id)
 
 
 ## Move an existing object to a new position/rotation on the host and
@@ -941,7 +947,7 @@ func sync_reparent_object(obj: Node, new_parent: Node) -> void:
 	obj.global_position = old_pos
 	obj.global_rotation = old_rot
 	var new_parent_path := _node_path_to_string(new_parent.get_path())
-	_reparent_on_clients.rpc(new_parent_path, obj.name, _get_net_id(obj))
+	reparent_on_clients.rpc(new_parent_path, obj.name, _get_net_id(obj))
 
 
 @rpc("authority", "call_local", "reliable")

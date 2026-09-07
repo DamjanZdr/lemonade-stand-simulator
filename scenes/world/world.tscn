@@ -259,6 +259,24 @@ transform = Transform3D(0.48795187, 0, 5.3290705e-15, 0, 0.48795187, 0, -5.32907
 [node name="Stand2Blackboard" parent="Stands/StandUnit2" unique_id=649107669 instance=ExtResource("45_kx0xk")]
 transform = Transform3D(-1, 0, 2.6226832e-07, 0, 1, 0, -2.6226832e-07, 0, -1, 0.75783443, 1.8940175, 16.498135)
 
+[node name="TruckRoute2" type="Node3D" parent="Stands/StandUnit2" unique_id=800000001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9.926907)
+
+[node name="PathStart" type="Marker3D" parent="Stands/StandUnit2/TruckRoute2" unique_id=800000002]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -90.59682, 0, 33.169167)
+
+[node name="PathTurnStart" type="Marker3D" parent="Stands/StandUnit2/TruckRoute2" unique_id=800000003]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -90.2681, 0, 2.1691666)
+
+[node name="PathTurnEnd" type="Marker3D" parent="Stands/StandUnit2/TruckRoute2" unique_id=800000004]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -86.02107, 0, 0.098667145)
+
+[node name="PathDrop" type="Marker3D" parent="Stands/StandUnit2/TruckRoute2" unique_id=800000005]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 8.720001, 0, 0.12294769)
+
+[node name="PathEnd" type="Marker3D" parent="Stands/StandUnit2/TruckRoute2" unique_id=800000006]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 393.6401, 0, -1.8308334)
+
 [node name="PlacableFloor" type="StaticBody3D" parent="Stands/StandUnit2" unique_id=794825641 groups=["placement_surface"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.20456696, 0, 0)
 collision_layer = 8

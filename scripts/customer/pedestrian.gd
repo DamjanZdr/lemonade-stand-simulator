@@ -204,6 +204,7 @@ func _physics_process(delta: float) -> void:
 			_recovering = true
 			_recover_timer = _npc.get_anim_length("Fall")
 			_npc.play_anim_reverse("Fall", 0.3)
+			_sync_recover_start.rpc()
 		return
 
 	# Recovery: wait for Fall reverse to finish, then resume previous state.
@@ -217,6 +218,7 @@ func _physics_process(delta: float) -> void:
 			if _npc != null and is_instance_valid(_npc):
 				_npc.play_anim_blend(_pre_stun_anim, 0.3)
 			_state = _pre_stun_state
+			sync_state(_pre_stun_state, _pre_stun_anim)
 		return
 
 	match _state:
@@ -348,6 +350,30 @@ func sync_serving() -> void:
 ## Host: NPC resumed walking (after offer timeout or serving done). Synced.
 func sync_resume(waypoint_idx: int) -> void:
 	_sync_resume.rpc(waypoint_idx)
+
+
+## Host: sync an arbitrary state change + animation to clients.
+func sync_state(new_state: int, anim: String) -> void:
+	_sync_state.rpc(new_state, anim)
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_state(new_state: int, anim: String) -> void:
+	if multiplayer.is_server():
+		return
+	_state = new_state as PedestrianState
+	if _npc != null and is_instance_valid(_npc):
+		_npc.play_anim(anim)
+
+
+## Host: start the recovery (Fall in reverse) on clients.
+@rpc("authority", "call_local", "reliable")
+func _sync_recover_start() -> void:
+	if multiplayer.is_server():
+		return
+	_recovering = true
+	if _npc != null and is_instance_valid(_npc):
+		_npc.play_anim_reverse("Fall", 0.3)
 
 
 @rpc("authority", "call_local", "reliable")

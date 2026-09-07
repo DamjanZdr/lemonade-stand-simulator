@@ -44,6 +44,11 @@ const _NET_LERP_SPEED: float = 15.0
 
 var _landed: bool = false
 var _sync_timer: float = 0.0
+const _TRANSFORM_SYNC_INTERVAL: float = 0.1
+const _TRANSFORM_SYNC_POS_THRESHOLD: float = 0.05
+const _TRANSFORM_SYNC_ROT_THRESHOLD: float = 0.05
+var _last_synced_pos: Vector3 = Vector3.ZERO
+var _last_synced_rot: Vector3 = Vector3.ZERO
 ## Y offset of the visual model from the RigidBody origin.
 ## Used in _finalize() to place the TrashItem so its visual sits on
 ## the ground. Read from the variant scene's model child position.
@@ -58,6 +63,10 @@ func _ready() -> void:
 
 	# Build the visual + collision from the variant scene.
 	_build_visuals()
+	# Prime last-synced values so the first comparison is against the spawn
+	# transform, not the world origin.
+	_last_synced_pos = global_position
+	_last_synced_rot = global_rotation
 
 	# Lock all rotation.
 	axis_lock_angular_x = true
@@ -98,11 +107,21 @@ func _physics_process(delta: float) -> void:
 		# objects (tunneling). Check overlap each frame after grace period.
 		if _spawn_time >= _SPAWN_GRACE and not _hit_someone:
 			_check_npc_overlap()
-		# Sync transform to clients periodically (every ~50ms).
+		# Sync transform to clients periodically, but only when the object
+		# has moved/rotated enough to matter. This reduces per-trash network
+		# load, which scales badly with player count on joiners.
 		_sync_timer += delta
-		if _sync_timer >= 0.05:
+		if _sync_timer >= _TRANSFORM_SYNC_INTERVAL:
 			_sync_timer = 0.0
-			WorldSync.sync_transform(self, global_position, global_rotation)
+			var pos_delta := global_position.distance_to(_last_synced_pos)
+			var rot_delta := global_rotation.distance_to(_last_synced_rot)
+			if (
+				pos_delta >= _TRANSFORM_SYNC_POS_THRESHOLD
+				or rot_delta >= _TRANSFORM_SYNC_ROT_THRESHOLD
+			):
+				_last_synced_pos = global_position
+				_last_synced_rot = global_rotation
+				WorldSync.sync_transform(self, global_position, global_rotation)
 	else:
 		# Client: interpolate toward received position.
 		if _has_net_target:
@@ -125,6 +144,7 @@ func _build_visuals() -> void:
 		shape.size = Vector3(0.2, 0.2, 0.2)
 		col.shape = shape
 		add_child(col)
+		_visual_y_offset = -shape.size.y * 0.5
 		return
 	var scene_path: String = _VARIANT_SCENES.get(trash_type, "")
 	if scene_path == "":
@@ -133,10 +153,16 @@ func _build_visuals() -> void:
 	if scene == null:
 		return
 	var instance := scene.instantiate()
+	var lowest_bottom: float = _visual_y_offset
 	for child in instance.get_children():
 		if child is CollisionShape3D:
 			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
 			add_child(dup)
+			# Record the lowest collision shape bottom so the final TrashItem
+			# is placed with its collision (and therefore visual) resting on
+			# the ground, not sinking below it.
+			var bottom := _get_shape_bottom_y(dup)
+			lowest_bottom = minf(lowest_bottom, bottom)
 		elif child is Node3D:
 			var dup := (child as Node3D).duplicate() as Node3D
 			dup.visible = true
@@ -144,6 +170,22 @@ func _build_visuals() -> void:
 			# Record the visual model's Y offset for ground placement.
 			_visual_y_offset = dup.position.y
 	instance.queue_free()
+	# Prefer the collision bottom if it's lower; this is the actual resting point.
+	_visual_y_offset = minf(_visual_y_offset, lowest_bottom)
+
+
+## Calculate the bottom Y of a CollisionShape3D in local space (ignoring rotation).
+func _get_shape_bottom_y(col: CollisionShape3D) -> float:
+	if col.shape == null:
+		return 0.0
+	var half_height: float = 0.0
+	if col.shape is BoxShape3D:
+		half_height = (col.shape as BoxShape3D).size.y * 0.5
+	elif col.shape is CylinderShape3D:
+		half_height = (col.shape as CylinderShape3D).height * 0.5
+	elif col.shape is SphereShape3D:
+		half_height = (col.shape as SphereShape3D).radius
+	return col.position.y - half_height
 
 
 ## Remove collision shapes on clients (no physics needed).

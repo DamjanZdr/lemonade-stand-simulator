@@ -31,11 +31,11 @@ var _held_mesh: Node3D = null
 ## When > 0, the player is stunned (hit by trash) and can't move.
 ## Decremented by the controller each physics frame. Set by the host
 ## via stun() and synced to clients via RPC.
-var _stun_timer: float = 0.0
+var stun_timer: float = 0.0
 const STUN_DOWN_DURATION: float = 2.0
-var _stun_fall_played: bool = false
-var _stun_recovering: bool = false
-var _stun_recover_timer: float = 0.0
+var stun_fall_played: bool = false
+var stun_recovering: bool = false
+var stun_recover_timer: float = 0.0
 
 ## Crouch state (0 = standing, 1 = crouching). Toggled by CTRL/C.
 var is_crouching: bool = false
@@ -55,6 +55,10 @@ var last_interact_hit: Node = null
 @onready var controller: PlayerController = $PlayerController
 
 var _money_mode: bool = false
+
+
+func is_money_mode() -> bool:
+	return _money_mode
 
 
 func set_money_mode(active: bool) -> void:
@@ -87,22 +91,22 @@ func stun(duration: float) -> void:
 	# Only the host should trigger stuns (trash physics run on host).
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	_stun_timer = maxf(_stun_timer, duration)
-	_stun_fall_played = false
-	_stun_recovering = false
-	_stun_recover_timer = 0.0
+	stun_timer = maxf(stun_timer, duration)
+	stun_fall_played = false
+	stun_recovering = false
+	stun_recover_timer = 0.0
 	# Sync to all clients (including the owning peer). The RPC is
 	# authority-to-all, but we use rpc_id to reach the owning peer
 	# even though the host doesn't have authority over that node.
 	var owner_id := get_multiplayer_authority()
 	if owner_id != 1:
-		_sync_stun.rpc_id(owner_id, _stun_timer)
-	_sync_stun.rpc(_stun_timer)
+		_sync_stun.rpc_id(owner_id, stun_timer)
+	_sync_stun.rpc(stun_timer)
 
 
 ## Check if the player is currently stunned.
 func is_stunned() -> bool:
-	return _stun_timer > 0.0
+	return stun_timer > 0.0
 
 
 ## Sync stun timer to clients (for animation/visuals).
@@ -114,10 +118,10 @@ func _sync_stun(timer: float) -> void:
 	var sender := multiplayer.get_remote_sender_id()
 	if sender != 1 and not is_multiplayer_authority():
 		return
-	_stun_timer = timer
-	_stun_fall_played = false
-	_stun_recovering = false
-	_stun_recover_timer = 0.0
+	stun_timer = timer
+	stun_fall_played = false
+	stun_recovering = false
+	stun_recover_timer = 0.0
 
 
 func _enter_tree() -> void:
@@ -177,7 +181,7 @@ func _ready() -> void:
 	)
 	_setup_visuals()
 	if is_multiplayer_authority():
-		_configure_local_player()
+		configure_local_player()
 	else:
 		# This is another peer's player, replicated here so we can see
 		# them ΓÇö not ours to control. Skip capturing input/camera/audio,
@@ -199,7 +203,7 @@ func _ready() -> void:
 ## Applies local-player-only setup: mouse capture, camera, audio, and physics.
 ## Called from _ready for the local player, and from main.gd when a late
 ## joiner's authority is claimed after the spawner replicates the node.
-func _configure_local_player() -> void:
+func configure_local_player() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Layer 2 is used by the screen-space outline system for white fill nodes.
 	# The main camera must not render them ΓÇö only the SubViewport OutlineCamera does.

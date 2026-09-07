@@ -57,6 +57,10 @@ var _priceboard_camera_original_top_level := false
 func _update_anim() -> void:
 	if _player.visuals == null:
 		return
+	# Stun/recovery animation is driven by _physics_process (Fall once,
+	# then Fall in reverse). Don't let the per-frame _process override it.
+	if _player.is_stunned() or _player.stun_recover_timer > 0.0:
+		return
 
 	var on_floor: bool
 	if _player.is_multiplayer_authority():
@@ -241,7 +245,7 @@ func _process(delta: float) -> void:
 			var cam_pitch := _player.head.rotation.x
 			var body_yaw := _player.global_rotation.y
 			_player.visuals.set_look_target(cam_yaw, cam_pitch, body_yaw)
-		if _player.interaction != null and not _player._money_mode:
+		if _player.interaction != null and not _player.is_money_mode():
 			_player.interaction.poll_hint()
 			_player.interaction.update_rapid_fire(delta)
 		_player.placement.update_ghost()
@@ -279,23 +283,23 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# Tick stun timer.
-	if _player._stun_timer > 0.0:
-		_player._stun_timer = maxf(_player._stun_timer - delta, 0.0)
+	if _player.stun_timer > 0.0:
+		_player.stun_timer = maxf(_player.stun_timer - delta, 0.0)
 		# When stun ends, play Fall in reverse to get back up.
-		if _player._stun_timer <= 0.0 and _player._stun_recovering:
-			_player._stun_recovering = false
-			_player._stun_recover_timer = 0.0
+		if _player.stun_timer <= 0.0 and _player.stun_recovering:
+			_player.stun_recovering = false
+			_player.stun_recover_timer = 0.0
 			if _player.visuals:
 				_player.visuals.play_anim_reverse("Fall", 0.3)
-				_player._stun_recover_timer = _player.visuals.get_anim_length("Fall")
+				_player.stun_recover_timer = _player.visuals.get_anim_length("Fall")
 
 	# Tick recovery timer (Fall playing in reverse).
-	if _player._stun_recover_timer > 0.0:
-		_player._stun_recover_timer = maxf(_player._stun_recover_timer - delta, 0.0)
+	if _player.stun_recover_timer > 0.0:
+		_player.stun_recover_timer = maxf(_player.stun_recover_timer - delta, 0.0)
 		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
 		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
 		_player.move_and_slide()
-		if _player._stun_recover_timer <= 0.0:
+		if _player.stun_recover_timer <= 0.0:
 			_update_anim()
 		return
 
@@ -317,19 +321,26 @@ func _physics_process(delta: float) -> void:
 		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
 		_player.move_and_slide()
 		# Play Fall once when stun starts.
-		if not _player._stun_fall_played:
-			_player._stun_fall_played = true
-			_player._stun_recovering = true
+		if not _player.stun_fall_played:
+			_player.stun_fall_played = true
+			_player.stun_recovering = true
 			if _player.visuals:
 				_player.visuals.play_anim_once("Fall", 0.05)
 		return
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	# Movement follows the head's yaw only — zero out Y so pitch
-	# (looking up/down) doesn't reduce horizontal speed.
-	var direction := (_player.head.global_transform.basis * Vector3(input_dir.x, 0, input_dir.y))
-	direction.y = 0
-	direction = direction.normalized()
+	# Movement follows the head's yaw only. Use the horizontal projections of
+	# the head's right/forward basis vectors so looking up/down doesn't shrink
+	# the forward/back component of diagonal movement.
+	var right := _player.head.global_transform.basis.x
+	right.y = 0.0
+	right = right.normalized()
+	var forward := -_player.head.global_transform.basis.z
+	forward.y = 0.0
+	forward = forward.normalized()
+	var direction := (right * input_dir.x + forward * input_dir.y)
+	if direction.length_squared() > 0.0:
+		direction = direction.normalized()
 	_is_sprinting = (
 		Input.is_action_pressed("sprint") and direction != Vector3.ZERO and not _player.is_crouching
 	)

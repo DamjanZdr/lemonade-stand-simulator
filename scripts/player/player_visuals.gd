@@ -98,6 +98,8 @@ const CLOTHING_SURFACES: Array[String] = [
 
 
 func _ready() -> void:
+	_man_skel = $man/Armature/Skeleton3D as Skeleton3D
+	_woman_skel = $woman/Armature/Skeleton3D as Skeleton3D
 	_disable_cast_shadows()
 	# The tscn has stale AnimationLibrary sub-resources that are missing
 	# Crouch/Fall/Jump (or have empty tracks). Replace them with the
@@ -199,6 +201,11 @@ var _is_near_player: bool = true
 var _check_timer: float = 0.0
 var _closest_player_cache: Node3D = null
 var _closest_player_dist: float = INF
+
+var _man_skel: Skeleton3D = null
+var _woman_skel: Skeleton3D = null
+const _EYE_UPDATE_INTERVAL: float = 0.1
+var _eye_update_timer: float = 0.0
 
 
 func _get_player_camera() -> Camera3D:
@@ -731,8 +738,8 @@ func seek_anim(anim_name: String, time: float) -> void:
 
 func get_active_skeleton() -> Skeleton3D:
 	if _man.visible:
-		return $man/Armature/Skeleton3D as Skeleton3D
-	return $woman/Armature/Skeleton3D as Skeleton3D
+		return _man_skel
+	return _woman_skel
 
 
 ## Update neck and head bones based on camera look direction.
@@ -843,8 +850,12 @@ func _process(delta: float) -> void:
 		_check_timer = 0.2
 		_is_near_player = _is_player_near()
 
-	if _is_near_player:
-		_update_eye_look(delta)
+	if not _is_near_player:
+		return
+	_eye_update_timer -= delta
+	if _eye_update_timer <= 0.0:
+		_eye_update_timer = _EYE_UPDATE_INTERVAL
+		_update_eye_look(_EYE_UPDATE_INTERVAL)
 
 
 func _update_eye_look(delta: float) -> void:

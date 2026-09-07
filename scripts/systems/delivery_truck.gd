@@ -33,7 +33,8 @@ var _net_target_pos: Vector3 = Vector3.ZERO
 var _net_target_rot: Vector3 = Vector3.ZERO
 const _NET_LERP_SPEED: float = 10.0
 
-# Waypoint markers (read from children)
+# Waypoint markers (read from children of the route node)
+var _truck_route_name: String = "TruckRoute"
 var _path_start: Marker3D = null
 var _path_turn_start: Marker3D = null
 var _path_turn_end: Marker3D = null
@@ -58,6 +59,13 @@ func _ready() -> void:
 	visible = false
 	_scene_y = global_position.y
 	_scene_yaw = global_rotation.y
+	# Derive the route node name from this truck's name: DeliveryTruck
+	# uses TruckRoute, DeliveryTruck2 uses TruckRoute2, etc.
+	var suffix := ""
+	var digits := name.split("DeliveryTruck", false, 1)
+	if digits.size() > 0:
+		suffix = digits[-1]
+	_truck_route_name = "TruckRoute" + suffix
 	_find_route_markers()
 	_recolor_truck(Color.WHITE)
 	call_deferred("_fix_labels")
@@ -98,9 +106,9 @@ func _fix_labels() -> void:
 
 func _find_route_markers() -> void:
 	var world := get_tree().current_scene
-	var route := world.find_child("TruckRoute", true, false) as Node3D
+	var route := world.find_child(_truck_route_name, true, false) as Node3D
 	if route == null:
-		push_warning("DeliveryTruck: no TruckRoute node found in world")
+		push_warning("DeliveryTruck: no %s node found in world" % _truck_route_name)
 		return
 	_path_start = route.get_node_or_null("PathStart") as Marker3D
 	_path_turn_start = route.get_node_or_null("PathTurnStart") as Marker3D
@@ -611,8 +619,8 @@ func _animate_arc(box: SupplyBox, target_pos: Vector3, target_rot: Vector3) -> v
 	# The host already did this; clients need to match so the box
 	# isn't stuck on the truck grid visually.
 	if WorldSync.is_host():
-		var parent_path := WorldSync._node_path_to_string(get_tree().current_scene.get_path())
-		WorldSync._reparent_on_clients.rpc(parent_path, box.name, WorldSync._get_net_id(box))
+		var parent_path := str(get_tree().current_scene.get_path())
+		WorldSync.reparent_on_clients.rpc(parent_path, box.name, WorldSync.get_net_id(box))
 
 	var tween := box.create_tween()
 	tween.set_parallel(true)

@@ -19,6 +19,7 @@ const HOVER_POP: float = 1.12
 )
 @onready var _ready_button: Button = $LeftContainer/BottomRow/ReadyButton
 @onready var _start_button: Button = $LeftContainer/BottomRow/StartButton
+@onready var _start_spacer: Control = $LeftContainer/BottomRow/RightSpacer
 @onready var _back_button: Button = $LeftContainer/BottomRow/BackButton
 @onready var _version_label: Label = $VersionLabel
 @onready var _customize_panel: PanelContainer = $LeftContainer/CustomizePanel
@@ -129,7 +130,17 @@ func _apply_menu_style() -> void:
 
 	var blur_shader := load("res://shaders/ui_blur.gdshader") as Shader
 	var blur_panel := ColorRect.new()
-	blur_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Keep the blur/dim overlay on the left side only so the 3D player preview
+	# on the right is not obscured. 500 px covers the panel plus a small margin.
+	blur_panel.anchor_left = 0.0
+	blur_panel.anchor_top = 0.0
+	blur_panel.anchor_right = 0.0
+	blur_panel.anchor_bottom = 1.0
+	blur_panel.offset_left = 0.0
+	blur_panel.offset_top = 0.0
+	blur_panel.offset_right = 500.0
+	blur_panel.offset_bottom = 0.0
+	blur_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	blur_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var blur_mat := ShaderMaterial.new()
 	blur_mat.shader = blur_shader
@@ -141,7 +152,15 @@ func _apply_menu_style() -> void:
 
 	var dim_shader := load("res://shaders/ui_dim_fade.gdshader") as Shader
 	var dim_panel := ColorRect.new()
-	dim_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim_panel.anchor_left = 0.0
+	dim_panel.anchor_top = 0.0
+	dim_panel.anchor_right = 0.0
+	dim_panel.anchor_bottom = 1.0
+	dim_panel.offset_left = 0.0
+	dim_panel.offset_top = 0.0
+	dim_panel.offset_right = 500.0
+	dim_panel.offset_bottom = 0.0
+	dim_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	dim_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var dim_mat := ShaderMaterial.new()
 	dim_mat.shader = dim_shader
@@ -184,6 +203,10 @@ func _apply_menu_style() -> void:
 			btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 			btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 			btn.add_theme_font_size_override("font_size", 24)
+
+	# The room-code eye button uses a system fallback font so the
+	# show/hide symbols (◉ / ◎) render even when the menu font lacks glyphs.
+	_eye_button.add_theme_font_override("font", SystemFont.new())
 
 	# Ready button: pop effect + shadow, but no hover color change.
 	_make_flat_button(_ready_button)
@@ -234,7 +257,34 @@ func _apply_menu_style() -> void:
 	s1h.add_theme_font_size_override("font_size", 20)
 	s2h.add_theme_font_size_override("font_size", 20)
 
-	# 9. Version label: subtle white.
+	# 9. Style the skin color slider so the grabber reaches the track ends at 0/1.
+	var skin_slider: HSlider = (
+		$LeftContainer/CustomizePanel/OptionsCol/ColumnsRow/RightCol/SkinColorRow/SkinColorSlider
+		as HSlider
+	)
+	if skin_slider:
+		var slider_box := StyleBoxFlat.new()
+		slider_box.bg_color = Color(0.12, 0.15, 0.22, 0.7)
+		slider_box.corner_radius_top_left = 4
+		slider_box.corner_radius_top_right = 4
+		slider_box.corner_radius_bottom_left = 4
+		slider_box.corner_radius_bottom_right = 4
+		slider_box.content_margin_left = 6.0
+		slider_box.content_margin_right = 6.0
+		skin_slider.add_theme_stylebox_override("slider", slider_box)
+		var grabber_box := StyleBoxFlat.new()
+		grabber_box.bg_color = Color(0.9, 0.95, 1.0, 1.0)
+		grabber_box.corner_radius_top_left = 6
+		grabber_box.corner_radius_top_right = 6
+		grabber_box.corner_radius_bottom_left = 6
+		grabber_box.corner_radius_bottom_right = 6
+		grabber_box.content_margin_left = 5.0
+		grabber_box.content_margin_right = 5.0
+		skin_slider.add_theme_stylebox_override("grabber", grabber_box)
+		skin_slider.add_theme_stylebox_override("grabber_highlight", grabber_box)
+		skin_slider.add_theme_stylebox_override("grabber_pressed", grabber_box)
+
+	# 10. Version label: subtle white.
 	_version_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.3))
 
 
@@ -242,7 +292,7 @@ func _apply_menu_style() -> void:
 ## Solo: hide stand 2, switch, invite. Single stand only.
 ## Co-op: hide stand 2, switch. Single stand, invite friends.
 ## Versus: show both stands, switch, invite.
-func _apply_mode_layout() -> void:
+func apply_mode_layout() -> void:
 	var mode: int = LobbyManager.game_mode
 	var is_versus := mode == GameState.GameMode.VERSUS
 	var is_solo := mode == GameState.GameMode.SOLO
@@ -550,7 +600,7 @@ func _get_node(path: String) -> Node:
 func _ready() -> void:
 	_color_manager = get_tree().get_first_node_in_group("color_manager")
 	_apply_menu_style()
-	_apply_mode_layout()
+	apply_mode_layout()
 	_update_room_display()
 	_eye_button.pressed.connect(_on_eye_pressed)
 	_copy_button.pressed.connect(_on_copy_pressed)
@@ -707,7 +757,7 @@ func _go_to_main_menu() -> void:
 
 func _refresh() -> void:
 	# Re-apply mode layout in case the mode was synced from the host.
-	_apply_mode_layout()
+	apply_mode_layout()
 	# Update stand 1 header with the host's stand name (synced via
 	# LobbyManager._sync_stand_name when joining).
 	var stand1_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
@@ -758,6 +808,7 @@ func _refresh() -> void:
 
 	var is_host := multiplayer.is_server()
 	_start_button.visible = is_host
+	_start_spacer.visible = is_host
 	_start_button.disabled = not LobbyManager.all_ready()
 
 # ── Drag to spin player models ────────────────────────────────────────────────

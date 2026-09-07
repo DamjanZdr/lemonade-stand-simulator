@@ -20,21 +20,21 @@ var _transition_tween: Tween = null
 func _ready() -> void:
 	EventBus.day_timer_updated.connect(_on_day_timer_updated)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
-	_update_for_time(0.0)
+	update_for_time(0.0)
 
 
 func _on_day_timer_updated(time_left: float, total_time: float) -> void:
 	if total_time <= 0.0:
 		return
 	var t := clampf(1.0 - (time_left / total_time), 0.0, 1.0)
-	_update_for_time(t)
+	update_for_time(t)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
 	if phase == DayManager.Phase.MORNING:
 		_tween_to_time(0.0, 0.6)
 	elif phase == DayManager.Phase.EVENING:
-		_update_for_time(1.0)
+		update_for_time(1.0)
 
 
 ## Smoothly tweens the sun to the target time over the given duration.
@@ -45,7 +45,7 @@ func _tween_to_time(target_t: float, duration: float) -> void:
 	_transition_tween \
 			.tween_method(
 		func(t: float) -> void:
-			_update_for_time(t),
+			update_for_time(t),
 		_current_t,
 		target_t,
 		duration,
@@ -54,7 +54,7 @@ func _tween_to_time(target_t: float, duration: float) -> void:
 			.set_ease(Tween.EASE_IN_OUT)
 
 
-func _update_for_time(t: float) -> void:
+func update_for_time(t: float) -> void:
 	_current_t = t
 	# t = 0 (start of day) → start rotation/energy
 	# t = 0.5 (midday) → peak energy

@@ -85,7 +85,7 @@ var highest_money: float = 0.0
 ## MultiplayerSynchronizer (which only works reliably for nodes spawned
 ## via MultiplayerSpawner, not static scene nodes loaded independently
 ## on each peer), we use simple RPCs: the host applies mutations locally
-## and broadcasts the new state to all clients via _push_state().
+## and broadcasts the new state to all clients via push_state().
 ## See _setup_replication() and the request_* / _rpc_* methods below.
 const STATE_PROPS: Array[String] = [
 	"money",
@@ -115,7 +115,7 @@ func _setup_replication() -> void:
 ## update their local copy + emit signals so UI (HUD, price board, etc.)
 ## refreshes. Only the host calls this; only clients apply it (the host
 ## already has the correct values locally).
-func _push_state() -> void:
+func push_state() -> void:
 	# Guard: if no multiplayer peer is assigned (e.g. loading a save
 	# from the main menu before hosting), skip the RPC entirely.
 	if not multiplayer.has_multiplayer_peer():
@@ -271,7 +271,7 @@ func _on_global_money_changed_bridge(new_amount: float) -> void:
 	if money > highest_money:
 		highest_money = money
 	money_changed.emit(money)
-	_push_state()
+	push_state()
 
 
 func _on_global_price_changed_bridge(fruit_type: String, new_price: float) -> void:
@@ -279,7 +279,7 @@ func _on_global_price_changed_bridge(fruit_type: String, new_price: float) -> vo
 		return
 	prices[fruit_type] = new_price
 	price_changed.emit(fruit_type, new_price)
-	_push_state()
+	push_state()
 
 
 func _on_global_popularity_changed_bridge(new_rating: float) -> void:
@@ -287,7 +287,7 @@ func _on_global_popularity_changed_bridge(new_rating: float) -> void:
 		return
 	popularity = new_rating
 	popularity_changed.emit(popularity)
-	_push_state()
+	push_state()
 
 
 func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void:
@@ -320,7 +320,7 @@ func add_money(amount: float) -> void:
 	if money > highest_money:
 		highest_money = money
 	money_changed.emit(money)
-	_push_state()
+	push_state()
 
 
 func spend_money(amount: float) -> bool:
@@ -331,7 +331,7 @@ func spend_money(amount: float) -> bool:
 	if amount > highest_purchase:
 		highest_purchase = amount
 	money_changed.emit(money)
-	_push_state()
+	push_state()
 	return true
 
 
@@ -362,7 +362,7 @@ func get_recipe(fruit_type: String) -> Dictionary:
 ## Call these instead of the direct methods above so the change is routed
 ## to whichever peer has authority (the host, in our host-authoritative
 ## design) via RPC, applied there, and the resulting state pushed back
-## out to every peer via _push_state(). In solo/offline play (no real
+## out to every peer via push_state(). In solo/offline play (no real
 ## network peer), rpc_id(1, ...) targeting yourself just runs locally
 ## immediately — the same call site works correctly either way, no
 ## branching needed at the call site.
@@ -377,7 +377,7 @@ func _rpc_add_money(amount: float) -> void:
 	if not is_multiplayer_authority():
 		return
 	add_money(amount)
-	_push_state()
+	push_state()
 
 
 func request_set_price(fruit_type: String, new_price: float) -> void:
@@ -389,7 +389,7 @@ func _rpc_set_price(fruit_type: String, new_price: float) -> void:
 	if not is_multiplayer_authority():
 		return
 	set_price(fruit_type, new_price)
-	_push_state()
+	push_state()
 
 
 func request_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
@@ -401,7 +401,7 @@ func _rpc_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 	if not is_multiplayer_authority():
 		return
 	set_recipe(fruit_type, recipe)
-	_push_state()
+	push_state()
 
 
 func request_customer_served(outcome: String) -> void:
@@ -413,7 +413,7 @@ func _rpc_on_customer_served(outcome: String) -> void:
 	if not is_multiplayer_authority():
 		return
 	on_customer_served(outcome)
-	_push_state()
+	push_state()
 
 
 func set_recipe(fruit_type: String, recipe: Dictionary) -> void:

@@ -7,6 +7,8 @@ const DAY_SUMMARY_SCENE: PackedScene = preload("res://scenes/ui/day_summary.tscn
 const WORLD_MENU_SCENE: PackedScene = preload("res://scenes/ui/world_menu.tscn")
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
+const DIM_SHADER: Shader = preload("res://shaders/radial_dim_fade.gdshader")
+const MENU_FONT: FontFile = preload("res://assets/fonts/AmaticSC-Bold.ttf")
 
 ## Game states. MAIN_MENU shows the in-world menu overlay; LOBBY is the
 ## pre-game customization phase; PLAYING is the active simulation.
@@ -279,8 +281,8 @@ func _setup_lobby() -> void:
 		lobby_ui.show_lobby_tab()
 	# Re-apply the mode layout so the lobby UI reflects the current
 	# game mode (it was read in _ready() before the mode was set).
-	if lobby_ui.has_method("_apply_mode_layout"):
-		lobby_ui._apply_mode_layout()
+	if lobby_ui.has_method("apply_mode_layout"):
+		lobby_ui.apply_mode_layout()
 
 ## --- In-world main menu ---
 
@@ -789,8 +791,15 @@ func _position_lobby_camera(stand_index: int, tween: bool) -> void:
 		var end_pitch: float = end_euler.x
 		var tw := create_tween()
 		tw.set_parallel(true)
-		tw.tween_property(lobby_camera, "global_position", target_transform.origin, CAMERA_TWEEN_TIME) \
-				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw \
+				.tween_property(
+			lobby_camera,
+			"global_position",
+			target_transform.origin,
+			CAMERA_TWEEN_TIME,
+		) \
+				.set_trans(Tween.TRANS_SINE) \
+				.set_ease(Tween.EASE_IN_OUT)
 		tw \
 				.tween_method(
 			func(t: float) -> void:
@@ -835,8 +844,10 @@ func _on_game_starting() -> void:
 	print("[Main] _on_game_starting: creating fade overlay")
 
 	# Create the fade overlay immediately so it's on top of the lobby.
+	# Start fully black so the game world is hidden from the very first frame;
+	# this prevents the joiner "flash of gameworld" before the Day X overlay.
 	var fade_rect := ColorRect.new()
-	fade_rect.color = Color(0, 0, 0, 0)
+	fade_rect.color = Color(0, 0, 0, 1)
 	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_transition_overlay.add_child(fade_rect)
@@ -844,7 +855,7 @@ func _on_game_starting() -> void:
 
 	# Create a radial dim panel behind the "Day X" text (dark in center,
 	# fading to transparent at edges — like the menu's dim layer).
-	var dim_shader := load("res://shaders/radial_dim_fade.gdshader") as Shader
+	var dim_shader := DIM_SHADER
 	var dim_panel := ColorRect.new()
 	dim_panel.color = Color(1, 1, 1, 1)
 	dim_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -865,7 +876,7 @@ func _on_game_starting() -> void:
 	day_label.modulate = Color(1, 1, 1, 0)
 	# Explicitly load the menu font (AmaticSC-Bold) since the TransitionOverlay
 	# CanvasLayer doesn't have the menu theme applied.
-	var menu_font := load("res://assets/fonts/AmaticSC-Bold.ttf") as FontFile
+	var menu_font := MENU_FONT
 	if menu_font:
 		day_label.add_theme_font_override("font", menu_font)
 	day_label.add_theme_font_size_override("font_size", 120)
@@ -1035,7 +1046,7 @@ func _spawn_player_on_client(
 		var sync := p.get_node_or_null("PositionSync") as MultiplayerSynchronizer
 		if sync:
 			sync.set_multiplayer_authority(name_peer)
-		p._configure_local_player()
+		p.configure_local_player()
 		p.visuals.visible = false
 	# Set assigned stand from roster.
 	if is_local:
@@ -1238,9 +1249,9 @@ func _push_initial_stand_state() -> void:
 	# Push both stands' initial state to clients so they see correct
 	# money, prices, etc. from the start (not just 0).
 	if stand_unit:
-		stand_unit._push_state()
+		stand_unit.push_state()
 	if stand_unit2:
-		stand_unit2._push_state()
+		stand_unit2.push_state()
 
 
 ## Send all placed containers and supply boxes to clients so they see
@@ -1284,7 +1295,7 @@ func _on_spawner_spawned(node: Node) -> void:
 		var sync := p.get_node_or_null("PositionSync") as MultiplayerSynchronizer
 		if sync:
 			sync.set_multiplayer_authority(name_peer)
-		p._configure_local_player()
+		p.configure_local_player()
 		p.visuals.visible = false
 	# Set spawn position from the assigned stand's start marker.
 	# The spawner creates the node at (0,0,0) and the host sets the
@@ -1334,7 +1345,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		var p := players_node.get_node(player_name)
 		p.queue_free()
 	# Clean up any cached references
-	WorldSync._node_cache.erase(player_name)
+	WorldSync.erase_node_cache(player_name)
 	_assigned_stands.erase(peer_id)
 
 
@@ -1466,7 +1477,7 @@ func _on_local_player_ready(p: Player) -> void:
 		return
 	_local_player = p
 	# Ensure the player's camera is current. There's a race condition
-	# during game start: _configure_local_player() may have been called
+	# during game start: configure_local_player() may have been called
 	# while defer_camera_claim was true (camera not made current), and
 	# _snap_to_player_camera() may have run before _local_player was set
 	# (so it couldn't switch the camera either). This ensures the camera
@@ -1531,7 +1542,7 @@ func _start_late_join_day_transition() -> void:
 	_transition_overlay.add_child(fade_rect)
 	_transition_overlay.visible = true
 	# Create dim panel
-	var dim_shader := load("res://shaders/radial_dim_fade.gdshader") as Shader
+	var dim_shader := DIM_SHADER
 	var dim_panel := ColorRect.new()
 	dim_panel.color = Color(1, 1, 1, 1)
 	dim_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1549,7 +1560,7 @@ func _start_late_join_day_transition() -> void:
 	day_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	day_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	day_label.modulate = Color(1, 1, 1, 0)
-	var menu_font := load("res://assets/fonts/AmaticSC-Bold.ttf") as FontFile
+	var menu_font := MENU_FONT
 	if menu_font:
 		day_label.add_theme_font_override("font", menu_font)
 	day_label.add_theme_font_size_override("font_size", 120)
@@ -1656,10 +1667,11 @@ func _menu_cam_parallax(delta: float) -> void:
 		target,
 		clamp(delta * MENU_CAM_PARALLAX_SMOOTH, 0.0, 1.0),
 	)
-	# Apply offset to camera position (invert Y so up = up).
+	# Apply offset to camera position. X already moves opposite to the mouse;
+	# invert Y so it also goes opposite to the mouse (scene pushes back).
 	var offset := Vector3(
 		_menu_cam_parallax_current.x * MENU_CAM_PARALLAX_STRENGTH,
-		-_menu_cam_parallax_current.y * MENU_CAM_PARALLAX_STRENGTH,
+		_menu_cam_parallax_current.y * MENU_CAM_PARALLAX_STRENGTH,
 		0.0,
 	)
 	main_menu_camera.global_position = _menu_cam_base_pos + offset
@@ -1775,8 +1787,8 @@ func _on_esc_back_to_menu() -> void:
 			_enhanced_lighting = true
 			_enable_enhanced_lighting()
 			var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
-			if sun_node and sun_node.has_method("_update_for_time"):
-				sun_node._update_for_time(0.0),
+			if sun_node and sun_node.has_method("update_for_time"):
+				sun_node.update_for_time(0.0),
 	)
 	# Hold a bit more so lighting fully settles.
 	tw.tween_interval(0.3)

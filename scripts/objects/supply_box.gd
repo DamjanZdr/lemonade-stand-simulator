@@ -28,6 +28,11 @@ const _FACE_NORMALS: Array[Vector3] = [
 	Vector3(1, 0, 0),
 	Vector3(0, 1, 0),
 ]
+const _ICON_UPDATE_INTERVAL: float = 0.1
+var _icon_update_timer: float = 0.0
+var _cam: Camera3D = null
+var _has_icon: bool = false
+var _show_qty: bool = false
 
 # Per-instance metrics (updated by update_metrics()). Defaults match
 # the actual computed values from the box mesh AABB (box child at scale
@@ -174,33 +179,25 @@ func _cache_face_nodes() -> void:
 		_face_labels.append(lbl)
 
 
-func _process(_delta: float) -> void:
-	var has_icon: bool
-	if is_equipment:
-		has_icon = INGREDIENT_ICONS.has(equipment_type)
-	else:
-		has_icon = (
-			INGREDIENT_ICONS.has(ingredient_type) and (quantity > 0.0 or ingredient_type == "trash")
-		)
-	var cam := get_viewport().get_camera_3d()
-	if cam == null:
+func _process(delta: float) -> void:
+	_icon_update_timer += delta
+	if _icon_update_timer < _ICON_UPDATE_INTERVAL:
 		return
-	var to_cam := (cam.global_position - global_position).normalized()
+	_icon_update_timer = 0.0
+	if _cam == null or not is_instance_valid(_cam):
+		_cam = get_viewport().get_camera_3d()
+	if _cam == null:
+		return
+	var to_cam := (_cam.global_position - global_position).normalized()
 	for i in range(_FACE_NAMES.size()):
 		var world_normal: Vector3 = (global_transform.basis * _FACE_NORMALS[i]).normalized()
 		var facing: bool = world_normal.dot(to_cam) > 0.0
 		var icon := _face_icons[i]
 		if icon != null:
-			if has_icon:
-				icon.visible = facing
-			icon.no_depth_test = false
+			icon.visible = _has_icon and facing
 		var lbl := _face_labels[i]
 		if lbl != null:
-			if ingredient_type == "trash":
-				lbl.visible = false
-			else:
-				lbl.visible = facing
-			lbl.no_depth_test = false
+			lbl.visible = _show_qty and facing
 
 
 static func _make_icon_texture(itype: String) -> Texture2D:
@@ -225,7 +222,8 @@ static func _make_icon_texture(itype: String) -> Texture2D:
 
 
 func _setup_equipment_icon() -> void:
-	var has_icon := INGREDIENT_ICONS.has(equipment_type)
+	_has_icon = INGREDIENT_ICONS.has(equipment_type)
+	_show_qty = true
 	var label_text := "×1"
 	for i in range(_FACE_NAMES.size()):
 		var fname: String = _FACE_NAMES[i]
@@ -233,7 +231,7 @@ func _setup_equipment_icon() -> void:
 		if icon_node != null:
 			if fname == "Top" and not is_hand_mesh:
 				icon_node.visible = false
-			elif not has_icon:
+			elif not _has_icon:
 				icon_node.visible = false
 			else:
 				icon_node.no_depth_test = false
@@ -258,12 +256,13 @@ func _setup_icon() -> void:
 		is_hand_mesh,
 	)
 	var qty_text := "×%.0f" % quantity if ingredient_type != "trash" else ""
-	var has_icon := (
+	_has_icon = (
 		INGREDIENT_ICONS.has(ingredient_type) and (quantity > 0.0 or ingredient_type == "trash")
 	)
+	_show_qty = ingredient_type != "trash"
 	print(
 		"[SupplyBox] has_icon=",
-		has_icon,
+		_has_icon,
 		" INGREDIENT_ICONS.has=",
 		INGREDIENT_ICONS.has(ingredient_type),
 	)
@@ -273,7 +272,7 @@ func _setup_icon() -> void:
 		if icon_node != null:
 			if fname == "Top" and not is_hand_mesh:
 				icon_node.visible = false
-			elif not has_icon:
+			elif not _has_icon:
 				icon_node.visible = false
 			else:
 				icon_node.no_depth_test = false

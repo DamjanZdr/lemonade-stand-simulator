@@ -25,6 +25,12 @@ var _day_duration: float = 180.0 # 3 minutes default
 var _day_running: bool = false
 var day_time_over: bool = false
 
+# Throttle day-timer sync so it isn't sent every frame.
+var _last_synced_timer: float = -1.0
+var _sync_interval_timer: float = 0.0
+const TIMER_SYNC_INTERVAL: float = 0.5
+const TIMER_SYNC_THRESHOLD: float = 0.1
+
 
 func _ready() -> void:
 	EventBus.change_finalized.connect(_on_change_finalized)
@@ -51,7 +57,19 @@ func _process(delta: float) -> void:
 			_day_running = false
 			EventBus.day_time_over.emit()
 	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
-	if multiplayer.get_peers().size() > 0:
+	# Throttle timer RPCs: only send when the timer has changed meaningfully,
+	# the day-over flag changed, or a minimum interval elapsed.
+	var should_sync_timer := false
+	if _last_synced_timer < 0.0:
+		should_sync_timer = true
+	else:
+		_sync_interval_timer += delta
+		var timer_delta := absf(_last_synced_timer - _day_timer)
+		if timer_delta >= TIMER_SYNC_THRESHOLD or _sync_interval_timer >= TIMER_SYNC_INTERVAL:
+			should_sync_timer = true
+	if should_sync_timer and multiplayer.get_peers().size() > 0:
+		_last_synced_timer = _day_timer
+		_sync_interval_timer = 0.0
 		_sync_day_timer.rpc(_day_timer, _day_duration, day_time_over)
 
 

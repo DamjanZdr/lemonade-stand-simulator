@@ -31,7 +31,15 @@ const CUP_SCENE: PackedScene = preload("res://scenes/objects/cup.tscn")
 
 func _ready() -> void:
 	add_to_group("container")
-	Pickupable.setup_for_container(self, "cup_stack")
+	var p := Pickupable.setup_for_container(self, "cup_stack")
+	# Override pickup: only allow picking up the empty stack container.
+	# While cups remain, the player should take one cup via interact().
+	p.can_pickup_callback = func(player: Node) -> bool:
+		if player == null or player.get("held_item") != HeldItem.NONE:
+			return false
+		if not can_player_use(player):
+			return false
+		return current_count <= 0
 	_item_nodes.clear()
 	for child in item_grid.get_children():
 		_item_nodes.append(child as Node3D)

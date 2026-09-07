@@ -102,6 +102,14 @@ var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
 var _last_patience_percent: int = -1
 
+# Throttle patience-bar network sync: only send when the ratio changes by
+# at least 5% or 0.5s has elapsed. The bar depletes slowly, so per-frame
+# reliable RPCs are wasteful and scale badly with customer count.
+var _last_patience_sync_ratio: float = -1.0
+var _last_patience_sync_ms: int = 0
+const PATIENCE_SYNC_THRESHOLD: float = 0.05
+const PATIENCE_SYNC_INTERVAL_MS: int = 500
+
 var _preserve_appearance: bool = false
 
 ## Set by WorldSync spawn state before _ready(). Forwarded to NPCBody
@@ -191,6 +199,7 @@ func _physics_process(delta: float) -> void:
 			_recovering = true
 			_recover_timer = _npc.get_anim_length("Fall")
 			_npc.play_anim_reverse("Fall", 0.3)
+			_sync_recover_start.rpc()
 		return
 
 	# Recovery: wait for Fall reverse to finish, then resume previous state.
@@ -204,6 +213,7 @@ func _physics_process(delta: float) -> void:
 			if _npc != null and is_instance_valid(_npc):
 				_npc.play_anim_blend(_pre_stun_anim, 0.3)
 			state = _pre_stun_state
+			sync_state(_pre_stun_state, _pre_stun_anim)
 		return
 
 	match state:
@@ -369,6 +379,16 @@ func _sync_state(new_state: int, anim: String) -> void:
 		return
 	state = new_state as CustomerState
 	_npc.play_anim(anim)
+
+
+## Host: start the recovery (Fall in reverse) on clients.
+@rpc("authority", "call_local", "reliable")
+func _sync_recover_start() -> void:
+	if multiplayer.is_server():
+		return
+	_recovering = true
+	if _npc != null and is_instance_valid(_npc):
+		_npc.play_anim_reverse("Fall", 0.3)
 
 
 ## Host: sync the engaged (talking + facing) state to clients.
@@ -771,6 +791,15 @@ func _refresh_patience_bar(ratio: float) -> void:
 
 ## Host: sync patience ratio to clients so they see the meter deplete.
 func sync_patience(ratio: float) -> void:
+	# Throttle: the progress bar changes slowly, so avoid a reliable RPC
+	# every 0.07s for every waiting customer.
+	var now := Time.get_ticks_msec()
+	var elapsed := now - _last_patience_sync_ms
+	var delta := absf(ratio - _last_patience_sync_ratio)
+	if delta < PATIENCE_SYNC_THRESHOLD and elapsed < PATIENCE_SYNC_INTERVAL_MS:
+		return
+	_last_patience_sync_ratio = ratio
+	_last_patience_sync_ms = now
 	_sync_patience.rpc(ratio)
 
 
