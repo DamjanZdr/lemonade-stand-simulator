@@ -105,14 +105,12 @@ func _ready() -> void:
 	_eye_btn = Button.new()
 	_eye_btn.text = "◎"
 	_eye_btn.flat = true
-	_eye_btn.custom_minimum_size = Vector2(28, 28)
-	_eye_btn.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	_eye_btn.offset_left = 4.0
-	_eye_btn.offset_top = -14.0
-	_eye_btn.offset_right = 32.0
-	_eye_btn.offset_bottom = 14.0
+	_eye_btn.custom_minimum_size = Vector2(32, 32)
 	_eye_btn.add_theme_font_override("font", SystemFont.new())
-	_eye_btn.add_theme_font_size_override("font_size", 18)
+	_eye_btn.add_theme_font_size_override("font_size", 24)
+	_eye_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
+	_eye_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	_eye_btn.add_theme_color_override("font_pressed_color", Color(1, 1, 1, 1))
 	_eye_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	_eye_btn.pressed.connect(
 		func():
@@ -120,6 +118,11 @@ func _ready() -> void:
 			_eye_btn.text = "◎" if _join_field.secret else "◉",
 	)
 	_join_field.add_child(_eye_btn)
+	_eye_btn.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	_eye_btn.offset_left = 0.0
+	_eye_btn.offset_top = -16.0
+	_eye_btn.offset_right = 32.0
+	_eye_btn.offset_bottom = 16.0
 	# Inline Paste/Clear button inside the field, at the right edge.
 	# Paste shows when empty, Clear shows when not empty.
 	_join_paste_btn = Button.new()
