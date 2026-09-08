@@ -264,7 +264,7 @@ func _physics_process(delta: float) -> void:
 	_apply_motion(delta)
 
 
-func _apply_motion(delta: float) -> void:
+func _apply_motion(_delta: float) -> void:
 	# Always use move_and_slide() — it handles floor following,
 	# slopes, and surface transitions natively via CharacterBody3D.
 	move_and_slide()
@@ -332,6 +332,12 @@ func _advance_waypoint() -> void:
 		# Despawn via WorldSync so clients remove this pedestrian too
 		WorldSync.despawn_networked(self)
 		return
+
+
+func resume_route() -> void:
+	_advance_waypoint()
+	if is_instance_valid(self) and _npc != null and is_instance_valid(_npc):
+		_npc.play_anim("Walk")
 
 
 ## Host: NPC was offered a free lemonade and stopped. Synced to clients.
@@ -485,7 +491,7 @@ func can_interact() -> bool:
 ## Stun the pedestrian (host-authoritative). Called when hit by thrown trash.
 ## The NPC plays Fall, holds the last frame for _STUN_DOWN_DURATION seconds,
 ## then plays Fall in reverse to get back up and resumes their previous state.
-func stun(duration: float) -> void:
+func stun(_duration: float) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	# Save state to restore after recovery.

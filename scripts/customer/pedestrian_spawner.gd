@@ -240,9 +240,7 @@ func _finalize_conversion(ped: Pedestrian) -> void:
 ## Resumes a pedestrian rejected by a full queue — advance past the convertable waypoint.
 func _resume(ped: Pedestrian) -> void:
 	_ped_spawner_map.erase(ped)
-	ped._advance_waypoint()
-	if is_instance_valid(ped):
-		ped._npc.play_anim("Walk")
+	ped.resume_route()
 
 
 func _update_spawner() -> void:

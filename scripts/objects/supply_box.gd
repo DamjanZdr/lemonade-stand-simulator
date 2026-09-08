@@ -15,7 +15,9 @@ var is_hand_mesh: bool = false
 
 @onready var physics: StaticBody3D = get_node_or_null("Physics") as StaticBody3D
 @onready var label: Label3D = get_node_or_null("Label") as Label3D
-@onready var collision_shape: CollisionShape3D = get_node_or_null("Physics/CollisionShape3D") as CollisionShape3D
+@onready var collision_shape: CollisionShape3D = (
+	get_node_or_null("Physics/CollisionShape3D") as CollisionShape3D
+)
 
 # Cached icon/label nodes per face for _process
 var _face_icons: Array[Sprite3D] = []
