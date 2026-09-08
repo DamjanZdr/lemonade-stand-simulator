@@ -14,7 +14,7 @@ height = 2.2
 
 [node name="Pedestrian" type="CharacterBody3D"]
 collision_layer = 16
-collision_mask = 3
+collision_mask = 0
 script = ExtResource("1_ped")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

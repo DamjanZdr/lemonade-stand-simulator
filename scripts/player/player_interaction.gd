@@ -491,19 +491,12 @@ func primary_interact() -> void:
 			return
 		if _player.ray.is_colliding():
 			var collider := _player.ray.get_collider()
-			if _player.is_placement_surface(collider):
-				if _player.is_ground_surface(collider):
-					# Floor — drop the box
-					_player.placement._place_held_supply_box_on(
-						_player.ray.get_collision_point()
-						+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
-					)
-					return
-				# Workstation/stand — place cup stack
+			if _player.placement.is_stand_or_workstation_surface(collider):
 				_player.placement._place_cup_stack_from_box()
 				return
-		# Fallback: drop the box
-		_player.placement._drop_held_box()
+		EventBus.interaction_hint_changed.emit(
+			"Cups can only be placed on your stand or workstation"
+		)
 		return
 
 	# Handle non-cup supply box placement (stack on boxes or place on ground)
@@ -553,27 +546,24 @@ func primary_interact() -> void:
 						_player.last_interact_hit = null
 						return
 			var collider := _player.ray.get_collider()
-			var on_surface := _player.is_placement_surface(collider)
 			var is_ground := _player.is_ground_surface(collider)
 			var equipment_type: String = _player.inventory.held_item_data.get("equipment_type", "")
-			if (
-				is_equipment
-				and (
-					on_surface and not is_ground and equipment_type != "workstation"
-					or is_ground and equipment_type == "workstation"
-				)
-			):
-				# Place working equipment on workstation (or floor for tables)
+			var valid_equipment_surface := (
+				equipment_type == "workstation" and is_ground
+				and _player.placement.is_owned_stand_surface(collider)
+				or equipment_type != "workstation"
+				and _player.placement.is_stand_or_workstation_surface(collider)
+			)
+			if is_equipment and valid_equipment_surface:
 				_player.placement._place_equipment_from_box()
 				return
-			if on_surface and not is_equipment:
-				# Place ingredient box on a surface
+			if not is_equipment and _player.placement.is_stand_or_workstation_surface(collider):
 				_player.placement._place_held_supply_box_on(
 					_player.ray.get_collision_point()
 					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
 				)
 				return
-		_player.placement._drop_held_box()
+		EventBus.interaction_hint_changed.emit("Can only place on your stand or workstation")
 		return
 
 	# Handle fallback interactables (not caught by specific cases above)
@@ -615,13 +605,8 @@ func secondary_interact() -> void:
 		interactable.interact_secondary(_player)
 		return
 
-	# Drop supply box or empty box trash
-	if (
-		_player.inventory.held_item == HeldItem.SUPPLY_BOX
-		and _player.inventory.held_item_data.get("source") == "delivery"
-	):
-		_player.placement._drop_held_box()
-	elif _player.inventory.held_item == HeldItem.TRASH \
+	# Empty trash boxes can still be dropped on the ground.
+	if _player.inventory.held_item == HeldItem.TRASH \
 			and _player.inventory.held_item_data.get("trash_type", "") == "empty_box":
 		_player.placement._drop_trash()
 
@@ -893,6 +878,7 @@ func _do_throw(charge: float) -> void:
 		"trash_type": trash_type,
 		"trash_value": trash_value,
 		"stand_name": stand_name,
+		"source_peer_id": _player.get_multiplayer_authority(),
 		"_initial_velocity": aim_dir * force,
 	}
 	var body := WorldSync.request_spawn(

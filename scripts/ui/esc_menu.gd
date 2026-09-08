@@ -939,6 +939,7 @@ func _on_button_click(btn: Button, callback: Callable) -> void:
 
 ## Style an HSlider with a custom flat look: thin track + circular grabber.
 func _style_slider(slider: HSlider) -> void:
+	slider.add_theme_constant_override("center_grabber", 1)
 	var track := StyleBoxFlat.new()
 	track.bg_color = Color(1, 1, 1, 0.15)
 	track.set_corner_radius_all(3)

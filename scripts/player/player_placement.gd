@@ -46,6 +46,7 @@ var _stack_yaw: float = 0.0
 var _probe_hit_point: Vector3 = Vector3.ZERO
 var _probe_hit_normal: Vector3 = Vector3.UP
 var _has_probe_hit: bool = false
+var _resolved_ground_surface: Node = null
 
 const CUP_STACK_SCENE: PackedScene = preload("res://scenes/objects/cup_stack.tscn")
 
@@ -171,6 +172,11 @@ func empty_held_pitcher() -> void:
 
 
 func _place_cup_stack_from_box() -> void:
+	if (
+		not _player.ray.is_colliding()
+		or not is_stand_or_workstation_surface(_player.ray.get_collider())
+	):
+		return
 	# Place ONE cup on the surface or add to existing stack.
 
 	# Get quantity from held box
@@ -203,8 +209,10 @@ func _place_cup_stack_from_box() -> void:
 	# Place new stack with ONE cup
 	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get("cup_stack")
 	var place_point := _player.ray.get_collision_point()
-	var bottom_offset_estimate := 0.5
-	var stack_pos := place_point + Vector3(0, -bottom_offset_estimate * placement_scale.y, 0)
+	var temp_stack := CUP_STACK_SCENE.instantiate() as Node3D
+	var bottom_offset := _get_container_bottom_offset(temp_stack) * placement_scale.y
+	temp_stack.free()
+	var stack_pos := place_point + Vector3(0, -bottom_offset, 0)
 	var look_dir := _player.global_position - place_point
 	look_dir.y = 0
 	var stack_rot := Vector3.ZERO
@@ -535,6 +543,8 @@ func is_aiming_at_grid() -> bool:
 
 
 func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> void:
+	if not is_owned_stand_surface(grid):
+		return
 	var cell_idx := grid.get_closest_cell(hit_point)
 	if cell_idx < 0:
 		_drop_held_box()
@@ -551,6 +561,8 @@ func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> v
 
 
 func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
+	if not is_owned_stand_surface(root):
+		return
 	root.update_metrics()
 	var top := _get_topmost_box_in_stack(root)
 	top.update_metrics()
@@ -1128,6 +1140,10 @@ func _update_supply_box_ghost() -> void:
 		node = node.get_parent()
 
 	if target_box != null and target_box.is_inside_tree():
+		if not is_owned_stand_surface(target_box):
+			_ghost.visible = false
+			_ghost_valid = false
+			return
 		target_box.update_metrics()
 		var target_id := target_box.get_instance_id()
 		if target_id != _stack_target_id:
@@ -1154,8 +1170,13 @@ func _update_supply_box_ghost() -> void:
 			return
 		grid_node = grid_node.get_parent()
 
-	# Otherwise only show ghost on approved placement surfaces (ground, tables, etc.)
-	var on_surface := is_placement_surface(collider)
+	# Supply crates belong on a stand/workstation; empty trash boxes may use the ground.
+	var is_trash_box := _player.held_item == HeldItem.TRASH
+	var on_surface := (
+		is_placement_surface(collider)
+		if is_trash_box
+		else is_stand_or_workstation_surface(collider)
+	)
 	if not on_surface:
 		_ghost.visible = false
 		_ghost_valid = false
@@ -1237,7 +1258,7 @@ func _update_equipment_box_ghost() -> void:
 	# Cross-stand placement restriction: equipment (and its box) can only be
 	# placed on surfaces/ground owned by the player's assigned stand. Delivery
 	# grids and supply box stacks are handled above and return early.
-	if not _is_placement_allowed_on(collider):
+	if not is_owned_stand_surface(collider):
 		_destroy_ghost()
 		_ghost_valid = false
 		_stack_target_id = -1
@@ -1245,7 +1266,7 @@ func _update_equipment_box_ghost() -> void:
 
 	# Workstations are tables ΓÇö they can only be placed on the floor.
 	if equipment_type == "workstation":
-		if not is_ground:
+		if not is_ground or not is_owned_stand_surface(collider):
 			_destroy_ghost()
 			_ghost_valid = false
 			_stack_target_id = -1
@@ -1267,37 +1288,27 @@ func _update_equipment_box_ghost() -> void:
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		return
 
-	if not on_surface:
+	if not on_surface or not is_stand_or_workstation_surface(collider):
 		_destroy_ghost()
 		_ghost_valid = false
 		_stack_target_id = -1
 		return
 
-	if is_ground:
-		# Floor placement for other equipment ΓÇö just drop the box
-		_ensure_box_ghost()
-		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
-		_ghost.visible = true
-		_ghost_valid = true
+	_ensure_container_ghost(equipment_type)
+	if _ghost == null:
+		_ghost_valid = false
 		_stack_target_id = -1
-		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
-	else:
-		# Other equipment on a surface ΓÇö show container ghost
-		_ensure_container_ghost(equipment_type)
-		if _ghost == null:
-			_ghost_valid = false
-			_stack_target_id = -1
-			return
-		var equip_offset: float = _ghost.get_meta("bottom_offset", 0.0)
-		_ghost.global_position = hit_point + Vector3(0, -equip_offset, 0)
-		var look_dir := _player.global_position - hit_point
-		look_dir.y = 0
-		if look_dir.length_squared() > 0.001:
-			_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
-		_ghost.visible = true
-		_ghost_valid = true
-		_stack_target_id = -1
-		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+		return
+	var equip_offset: float = _ghost.get_meta("bottom_offset", 0.0)
+	_ghost.global_position = hit_point + Vector3(0, -equip_offset, 0)
+	var look_dir := _player.global_position - hit_point
+	look_dir.y = 0
+	if look_dir.length_squared() > 0.001:
+		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
+	_ghost.visible = true
+	_ghost_valid = true
+	_stack_target_id = -1
+	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 
 
 func _ensure_box_ghost() -> void:
@@ -1453,11 +1464,11 @@ func _update_ghost() -> void:
 	# be placed on the ground. Other containers need an existing stand or
 	# workstation surface.
 	if container_type == "workstation" or container_type == "water_dispenser":
-		if not is_ground:
+		if not is_ground or not is_owned_stand_surface(collider):
 			_ghost.visible = false
 			_ghost_valid = false
 			return
-	elif not on_surface:
+	elif not on_surface or not is_stand_or_workstation_surface(collider):
 		_ghost.visible = false
 		_ghost_valid = false
 		return
@@ -1791,9 +1802,7 @@ func _get_placement_owner_stand(collider: Node) -> String:
 	if collider == null:
 		return ""
 	var node := collider
-	for i in range(5):
-		if node == null:
-			break
+	while node != null:
 		if node is StandUnit:
 			return node.name
 		if "stand_owner" in node and node.stand_owner is String and node.stand_owner != "":
@@ -1817,11 +1826,37 @@ func _is_placement_allowed_on(collider: Node) -> bool:
 	if mp == null or mp.multiplayer_peer == null or mp.get_peers().is_empty():
 		return true
 	var surface_owner := _get_placement_owner_stand(collider)
+	if surface_owner == "" and is_ground_surface(collider):
+		surface_owner = _get_placement_owner_stand(_resolved_ground_surface)
 	if surface_owner == "":
 		return true
 	if _player.assigned_stand == null or not is_instance_valid(_player.assigned_stand):
 		return false
 	return surface_owner == _player.assigned_stand.name
+
+
+func is_owned_stand_surface(collider: Node) -> bool:
+	if collider == null:
+		return false
+	var surface_owner := _get_placement_owner_stand(collider)
+	if surface_owner == "" and is_ground_surface(collider):
+		surface_owner = _get_placement_owner_stand(_resolved_ground_surface)
+	if surface_owner == "":
+		return false
+	if _player.assigned_stand == null or not is_instance_valid(_player.assigned_stand):
+		return not _player.multiplayer.has_multiplayer_peer()
+	return surface_owner == _player.assigned_stand.name
+
+
+func is_stand_or_workstation_surface(collider: Node) -> bool:
+	if collider == null or not is_placement_surface(collider):
+		return false
+	var node := collider
+	while node != null:
+		if node is StandUnit or node is Workstation:
+			return is_owned_stand_surface(collider)
+		node = node.get_parent()
+	return false
 
 
 func is_placement_surface(collider: Object) -> bool:
@@ -1852,10 +1887,8 @@ func is_placement_surface(collider: Object) -> bool:
 		return false
 	if is_placement_node:
 		return true
-	# Fallback: the main ray might have hit a sidewalk/ground (layer 1)
-	# that's above the PlacableFloor (layer 4). Do a separate raycast
-	# on layer 4 only to check for a PlacableFloor underneath.
-	return _check_layer4_placement_surface()
+	# Fallback: resolve only the PlacableFloor directly below this hit point.
+	return is_ground_surface(collider)
 
 
 ## Probe downward from the ray hit point to find a valid tabletop
@@ -1903,63 +1936,30 @@ func _probe_tabletop_below(original_collider: Node = null) -> bool:
 	return false
 
 
-## Do a raycast on collision layer 4 only (where PlacableFloor lives).
-## Returns true if it hits a placement_surface node. This bypasses
-## sidewalks/ground on layer 1 that may block the main raycast.
-func _check_layer4_placement_surface() -> bool:
-	var from := _player.ray.global_position
-	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
-	var space := _player.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, 8)
-	query.exclude = [_player.get_rid()]
-	var hits := space.intersect_ray(query)
-	if hits.is_empty():
-		return false
-	var node: Node = hits.get("collider", null)
-	if node == null:
-		return false
-	for i in range(3):
-		if node.is_in_group("placement_surface"):
-			return true
-		node = node.get_parent()
-		if node == null:
-			break
-	return false
-
-
 func is_ground_surface(collider: Object) -> bool:
+	_resolved_ground_surface = null
 	var node := collider as Node
-	if node == null:
-		return false
-	for i in range(3):
+	while node != null:
 		if node.name == "PlacableFloor":
+			_resolved_ground_surface = node
 			return true
 		node = node.get_parent()
-		if node == null:
-			break
-	# Fallback: check layer 4 for PlacableFloor (same as is_placement_surface)
-	return _check_layer4_ground_surface()
-
-
-## Raycast on layer 4 only to check for PlacableFloor.
-func _check_layer4_ground_surface() -> bool:
-	var from := _player.ray.global_position
-	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
-	var space := _player.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, 8)
+	if not _player.ray.is_colliding():
+		return false
+	var hit_point := _player.ray.get_collision_point()
+	var query := PhysicsRayQueryParameters3D.create(
+		hit_point + Vector3.UP * 0.25,
+		hit_point + Vector3.DOWN * 1.0,
+		8,
+	)
 	query.exclude = [_player.get_rid()]
-	var hits := space.intersect_ray(query)
-	if hits.is_empty():
-		return false
-	var node: Node = hits.get("collider", null)
-	if node == null:
-		return false
-	for i in range(3):
+	var hit := _player.get_world_3d().direct_space_state.intersect_ray(query)
+	node = hit.get("collider", null)
+	while node != null:
 		if node.name == "PlacableFloor":
+			_resolved_ground_surface = node
 			return true
 		node = node.get_parent()
-		if node == null:
-			break
 	return false
 
 

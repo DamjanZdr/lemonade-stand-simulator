@@ -391,6 +391,7 @@ func _find_all_buttons_recursive(node: Node) -> Array[Button]:
 
 ## Style an HSlider with a custom flat look: thin track + circular grabber.
 func _style_slider(slider: HSlider) -> void:
+	slider.add_theme_constant_override("center_grabber", 1)
 	# Track: thin, semi-transparent white with rounded corners.
 	var track := StyleBoxFlat.new()
 	track.bg_color = Color(1, 1, 1, 0.15)

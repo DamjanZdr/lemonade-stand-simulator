@@ -11,8 +11,6 @@ extends CharacterBody3D
 ## This avoids syncing positions every frame — clients walk independently
 ## until the host tells them something changed.
 
-const GRAVITY := 9.8
-
 @export var walk_speed: float = 2.2
 
 signal wants_to_join(pedestrian: Pedestrian)
@@ -182,8 +180,7 @@ func _physics_process(delta: float) -> void:
 	if _playable_area == null:
 		_connect_playable_area()
 
-	if not is_on_floor():
-		velocity.y -= GRAVITY * delta
+	velocity.y = 0.0
 
 	if _is_rotating_to_face:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)

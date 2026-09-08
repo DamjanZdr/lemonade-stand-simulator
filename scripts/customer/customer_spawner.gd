@@ -107,7 +107,7 @@ func _spawn_at_slot(slot_index: int) -> void:
 		return
 	spawned.add_to_group("trash_spawn_candidates")
 	spawned.collision_layer = 16
-	spawned.collision_mask = 3
+	spawned.collision_mask = 0
 	spawned.stand = stand
 	_apply_facing(spawned)
 	spawned.order = _random_order()
@@ -347,7 +347,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 		return
 	spawned.add_to_group("trash_spawn_candidates")
 	spawned.collision_layer = 16
-	spawned.collision_mask = 3
+	spawned.collision_mask = 0
 	spawned.stand = stand
 	_apply_facing(spawned)
 	spawned.order = _random_order()

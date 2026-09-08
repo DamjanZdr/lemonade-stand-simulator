@@ -184,8 +184,9 @@ func _process(delta: float) -> void:
 	if _icon_update_timer < _ICON_UPDATE_INTERVAL:
 		return
 	_icon_update_timer = 0.0
-	if _cam == null or not is_instance_valid(_cam):
-		_cam = get_viewport().get_camera_3d()
+	var current_cam := get_viewport().get_camera_3d()
+	if current_cam != _cam:
+		_cam = current_cam
 	if _cam == null:
 		return
 	var to_cam := (_cam.global_position - global_position).normalized()

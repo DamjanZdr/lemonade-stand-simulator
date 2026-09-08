@@ -151,7 +151,7 @@ func _spawn_pedestrian(path: PedestrianPath) -> void:
 	if spawned == null:
 		return
 	spawned.collision_layer = 16
-	spawned.collision_mask = 3
+	spawned.collision_mask = 0
 	spawned.setup(path.waypoints, 1)
 	spawned.wants_to_join.connect(_on_wants_to_join)
 	spawned.add_to_group("trash_spawn_candidates")

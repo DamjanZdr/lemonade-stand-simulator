@@ -218,6 +218,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_update_stun_animation(delta)
 	# Remote players: interpolate toward network target and update animation
 	if not _player.is_multiplayer_authority():
 		_time_since_sync += delta
@@ -255,6 +256,29 @@ func _process(delta: float) -> void:
 		_player.placement.update_ghost()
 
 
+func _update_stun_animation(delta: float) -> void:
+	if _player.stun_timer > 0.0:
+		if not _player.stun_fall_played:
+			_player.stun_fall_played = true
+			_player.stun_recovering = true
+			_current_anim = "Fall"
+			if _player.visuals:
+				_player.visuals.play_anim_once("Fall", 0.05)
+		_player.stun_timer = maxf(_player.stun_timer - delta, 0.0)
+		if _player.stun_timer <= 0.0 and _player.stun_recovering:
+			_player.stun_recovering = false
+			if _player.visuals:
+				_player.visuals.play_anim_reverse("Fall", 0.3)
+				_player.stun_recover_timer = _player.visuals.get_anim_length("Fall")
+		return
+	if _player.stun_recover_timer <= 0.0:
+		return
+	_player.stun_recover_timer = maxf(_player.stun_recover_timer - delta, 0.0)
+	if _player.stun_recover_timer <= 0.0:
+		_current_anim = ""
+		_update_anim()
+
+
 func _physics_process(delta: float) -> void:
 	if not _player.is_multiplayer_authority():
 		# Remote players' position/_player.rotation come from RPC sync
@@ -286,25 +310,10 @@ func _physics_process(delta: float) -> void:
 		_update_anim()
 		return
 
-	# Tick stun timer.
-	if _player.stun_timer > 0.0:
-		_player.stun_timer = maxf(_player.stun_timer - delta, 0.0)
-		# When stun ends, play Fall in reverse to get back up.
-		if _player.stun_timer <= 0.0 and _player.stun_recovering:
-			_player.stun_recovering = false
-			_player.stun_recover_timer = 0.0
-			if _player.visuals:
-				_player.visuals.play_anim_reverse("Fall", 0.3)
-				_player.stun_recover_timer = _player.visuals.get_anim_length("Fall")
-
-	# Tick recovery timer (Fall playing in reverse).
 	if _player.stun_recover_timer > 0.0:
-		_player.stun_recover_timer = maxf(_player.stun_recover_timer - delta, 0.0)
 		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
 		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
 		_player.move_and_slide()
-		if _player.stun_recover_timer <= 0.0:
-			_update_anim()
 		return
 
 	# Crouch toggle (CTRL or C).
@@ -319,17 +328,11 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("jump") and not _player.is_crouching:
 			_player.velocity.y = _player.jump_velocity
 
-	# Stunned: can't move, play Fall, hold last frame.
+	# Stunned: can't move while the shared visual timer handles the animation.
 	if _player.is_stunned():
 		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
 		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
 		_player.move_and_slide()
-		# Play Fall once when stun starts.
-		if not _player.stun_fall_played:
-			_player.stun_fall_played = true
-			_player.stun_recovering = true
-			if _player.visuals:
-				_player.visuals.play_anim_once("Fall", 0.05)
 		return
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")

@@ -10,8 +10,6 @@ enum CustomerState {
 	LEAVING,
 }
 
-const GRAVITY: float = 9.8
-
 var queue_position: Vector3 = Vector3.ZERO
 var queue_slot: int = 0 # 0 = active (faces counter), 1+ = queued (faces front of queue)
 var queue_face_dir: Vector3 = Vector3(1, 0, 0) # set by spawner
@@ -177,8 +175,7 @@ func _physics_process(delta: float) -> void:
 		_physics_client_interpolate(delta)
 		return
 
-	if not is_on_floor():
-		velocity.y -= GRAVITY * delta
+	velocity.y = 0.0
 
 	if _is_rotating_to_face:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)

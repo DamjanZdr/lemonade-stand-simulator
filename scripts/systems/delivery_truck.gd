@@ -648,6 +648,8 @@ func _animate_arc(box: SupplyBox, target_pos: Vector3, target_rot: Vector3) -> v
 
 	tween.finished.connect(
 		func():
+			box.global_rotation = target_rot
+			WorldSync.sync_property(box, "global_rotation", target_rot)
 			AudioManager.play_sfx("box_drop", box.global_position),
 	)
 

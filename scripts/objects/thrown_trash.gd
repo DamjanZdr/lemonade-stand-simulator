@@ -18,6 +18,7 @@ var is_npc_drop: bool = false
 ## The node that threw/dropped this trash. Ignored by collision detection
 ## so the thrower/dropper doesn't stun themselves.
 var source_node: Node = null
+var source_peer_id: int = 0
 
 ## Grace period after spawn during which collisions are ignored (seconds).
 ## Prevents the trash from stunning the thrower/dropper on spawn overlap.
@@ -50,10 +51,6 @@ const _TRANSFORM_SYNC_POS_THRESHOLD: float = 0.05
 const _TRANSFORM_SYNC_ROT_THRESHOLD: float = 0.05
 var _last_synced_pos: Vector3 = Vector3.ZERO
 var _last_synced_rot: Vector3 = Vector3.ZERO
-## Y offset of the visual model from the RigidBody origin.
-## Used in _finalize() to place the TrashItem so its visual sits on
-## the ground. Read from the variant scene's model child position.
-var _visual_y_offset: float = -0.12
 
 
 func _ready() -> void:
@@ -152,7 +149,6 @@ func _build_visuals() -> void:
 			if box_visual != null:
 				add_child(box_visual.duplicate())
 			box_instance.free()
-		_visual_y_offset = -shape.size.y * 0.5
 		return
 	var scene_path: String = _VARIANT_SCENES.get(trash_type, "")
 	if scene_path == "":
@@ -161,39 +157,15 @@ func _build_visuals() -> void:
 	if scene == null:
 		return
 	var instance := scene.instantiate()
-	var lowest_bottom: float = _visual_y_offset
 	for child in instance.get_children():
 		if child is CollisionShape3D:
 			var dup := (child as CollisionShape3D).duplicate() as CollisionShape3D
 			add_child(dup)
-			# Record the lowest collision shape bottom so the final TrashItem
-			# is placed with its collision (and therefore visual) resting on
-			# the ground, not sinking below it.
-			var bottom := _get_shape_bottom_y(dup)
-			lowest_bottom = minf(lowest_bottom, bottom)
 		elif child is Node3D:
 			var dup := (child as Node3D).duplicate() as Node3D
 			dup.visible = true
 			add_child(dup)
-			# Record the visual model's Y offset for ground placement.
-			_visual_y_offset = dup.position.y
 	instance.queue_free()
-	# Prefer the collision bottom if it's lower; this is the actual resting point.
-	_visual_y_offset = minf(_visual_y_offset, lowest_bottom)
-
-
-## Calculate the bottom Y of a CollisionShape3D in local space (ignoring rotation).
-func _get_shape_bottom_y(col: CollisionShape3D) -> float:
-	if col.shape == null:
-		return 0.0
-	var half_height: float = 0.0
-	if col.shape is BoxShape3D:
-		half_height = (col.shape as BoxShape3D).size.y * 0.5
-	elif col.shape is CylinderShape3D:
-		half_height = (col.shape as CylinderShape3D).height * 0.5
-	elif col.shape is SphereShape3D:
-		half_height = (col.shape as SphereShape3D).radius
-	return col.position.y - half_height
 
 
 ## Remove collision shapes on clients (no physics needed).
@@ -275,6 +247,8 @@ func _try_stun(body: Node) -> bool:
 			return false
 		if node is Player:
 			var p := node as Player
+			if source_peer_id > 0 and p.get_multiplayer_authority() == source_peer_id:
+				return false
 			_hit_someone = true
 			p.stun(2.0)
 			GameLog.log("[ThrownTrash] Stunned player %s for 2s" % p.name)
@@ -320,18 +294,8 @@ func _finalize() -> void:
 	if land_pos.y < -1.0:
 		WorldSync.despawn_networked(self)
 		return
-	# If the trash is clipping through the ground (Y < 0, body penetrated
-	# the surface) or floating above ground level (Y > 0.5, landed on a
-	# stand desk or similar), raycast to find the actual ground surface.
-	# Raycast from Y=0.4 (below stand desk level ~1.23, above ground
-	# surfaces ~0.06) downward to find the highest ground-level surface.
-	# Place the TrashItem so the visual model sits on the ground:
-	# ground_y - visual_y_offset (since visual_y_offset is negative,
-	# this raises the origin so the visual bottom touches the ground).
-	if land_pos.y < 0.0 or land_pos.y > 0.5:
-		var ground_y := _find_ground_surface(land_pos)
-		if ground_y > -1.0:
-			land_pos.y = ground_y - _visual_y_offset
+	# Preserve the settled physics transform so finalization cannot snap
+	# trash from a tabletop to the ground or apply the model scale twice.
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
@@ -360,22 +324,6 @@ func _finalize() -> void:
 			WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
 	# Despawn self via WorldSync so clients remove it too.
 	WorldSync.despawn_networked(self)
-
-
-## Raycast from Y=0.4 downward to find the ground-level surface.
-## This avoids hitting stand desks (top at Y≈1.23) while finding
-## PlacableFloor (Y≈0.06), sidewalks (Y≈-0.05), and streets (Y≈-0.09).
-## Falls back to pos.y if no ground is found.
-func _find_ground_surface(pos: Vector3) -> float:
-	var space := get_world_3d().direct_space_state
-	var from := Vector3(pos.x, 0.4, pos.z)
-	var to := Vector3(pos.x, -1.0, pos.z)
-	var query := PhysicsRayQueryParameters3D.create(from, to)
-	query.exclude = [get_rid()]
-	var result := space.intersect_ray(query)
-	if result and result.has("position"):
-		return result.position.y
-	return pos.y
 
 
 ## Called by the host when a player picks up this trash mid-air.
