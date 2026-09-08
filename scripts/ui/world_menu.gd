@@ -103,19 +103,23 @@ func _ready() -> void:
 	)
 	# Eye toggle button inside the field at the left edge.
 	_eye_btn = Button.new()
-	_eye_btn.text = "👁"
+	_eye_btn.text = "◎"
 	_eye_btn.flat = true
 	_eye_btn.custom_minimum_size = Vector2(28, 28)
-	_eye_btn.add_theme_font_size_override("font_size", 16)
+	_eye_btn.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	_eye_btn.offset_left = 4.0
+	_eye_btn.offset_top = -14.0
+	_eye_btn.offset_right = 32.0
+	_eye_btn.offset_bottom = 14.0
+	_eye_btn.add_theme_font_override("font", SystemFont.new())
+	_eye_btn.add_theme_font_size_override("font_size", 18)
 	_eye_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	_eye_btn.pressed.connect(
 		func():
 			_join_field.secret = not _join_field.secret
-			_eye_btn.text = "👁" if _join_field.secret else "🙈",
+			_eye_btn.text = "◎" if _join_field.secret else "◉",
 	)
 	_join_field.add_child(_eye_btn)
-	# Make room for the eye icon so text doesn't overlap it.
-	_join_field.add_theme_constant_override("inner_margin_left", 32)
 	# Inline Paste/Clear button inside the field, at the right edge.
 	# Paste shows when empty, Clear shows when not empty.
 	_join_paste_btn = Button.new()
@@ -329,6 +333,7 @@ func _ready() -> void:
 	jf_style.border_color = Color(1, 1, 1, 0.4)
 	jf_style.set_border_width_all(1)
 	jf_style.set_content_margin_all(10)
+	jf_style.content_margin_left = 40.0
 	jf_style.set_corner_radius_all(4)
 	_join_field.add_theme_stylebox_override("normal", jf_style)
 	var jf_focus := StyleBoxFlat.new()
@@ -336,6 +341,7 @@ func _ready() -> void:
 	jf_focus.border_color = Color(1, 1, 1, 1.0)
 	jf_focus.set_border_width_all(1)
 	jf_focus.set_content_margin_all(10)
+	jf_focus.content_margin_left = 40.0
 	jf_focus.set_corner_radius_all(4)
 	_join_field.add_theme_stylebox_override("focus", jf_focus)
 	_make_flat_button(_saves_back)
@@ -755,9 +761,6 @@ func _animate_buttons_in() -> void:
 
 ## Position the inline Paste/Clear buttons at the right edge inside the field.
 func _position_join_inline_btns() -> void:
-	# Position eye button at the left edge inside the field.
-	if _eye_btn and is_instance_valid(_eye_btn):
-		_eye_btn.position = Vector2(4, (_join_field.size.y - _eye_btn.size.y) / 2.0)
 	for btn: Button in [_join_paste_btn, _join_clear_btn]:
 		if btn and is_instance_valid(btn) and btn.visible:
 			btn.position = Vector2(
@@ -772,7 +775,7 @@ func _toggle_join_row() -> void:
 	_join_field.text = ""
 	_join_field.secret = true
 	if _eye_btn:
-		_eye_btn.text = "👁"
+		_eye_btn.text = "◎"
 	_join_error_label.visible = false
 	_join_paste_btn.visible = true
 	_join_clear_btn.visible = false
