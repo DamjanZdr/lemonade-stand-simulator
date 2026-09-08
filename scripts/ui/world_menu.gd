@@ -111,6 +111,9 @@ func _ready() -> void:
 	_eye_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 	_eye_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	_eye_btn.add_theme_color_override("font_pressed_color", Color(1, 1, 1, 1))
+	var eye_style := StyleBoxEmpty.new()
+	for state in ["normal", "hover", "pressed", "focus"]:
+		_eye_btn.add_theme_stylebox_override(state, eye_style)
 	_eye_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	_eye_btn.pressed.connect(
 		func():
