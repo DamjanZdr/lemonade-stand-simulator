@@ -51,6 +51,10 @@ var _priceboard_camera_original_local: Transform3D
 var _priceboard_camera_original_top_level := false
 
 
+func set_current_animation(animation_name: String) -> void:
+	_current_anim = animation_name
+
+
 ## Update the player's animation based on movement state.
 ## Jump plays only while ascending; transitions to Idle/Walk when falling.
 ## Crouch freezes at frame 0 when standing, plays forward when crouch-walking.
@@ -338,7 +342,7 @@ func _physics_process(delta: float) -> void:
 	var forward := -_player.head.global_transform.basis.z
 	forward.y = 0.0
 	forward = forward.normalized()
-	var direction := (right * input_dir.x + forward * input_dir.y)
+	var direction := (right * input_dir.x - forward * input_dir.y)
 	if direction.length_squared() > 0.0:
 		direction = direction.normalized()
 	_is_sprinting = (

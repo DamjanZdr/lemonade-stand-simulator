@@ -12,8 +12,8 @@ func _ready() -> void:
 
 ## Local-player placement init: precompute shared box metrics and load the
 ## workstation scene at runtime (avoiding compile-time preload issues while
-## the editor reimports .uid files). Called from Player._configure_local_player.
-func _configure_local_player() -> void:
+## the editor reimports .uid files). Called from Player.configure_local_player.
+func configure_local_player() -> void:
 	var temp_box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	temp_box.update_metrics()
 	temp_box.free()
@@ -138,7 +138,7 @@ func _get_container_scene(container_type: String) -> PackedScene:
 	return CONTAINER_SCENES.get(container_type) as PackedScene
 
 
-func _held_pitcher_has_contents() -> bool:
+func held_pitcher_has_contents() -> bool:
 	var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
 	return (
 		recipe.get("fruit_count", recipe.get("lemons", 0.0)) > 0.0 or recipe.get("water", 0.0) > 0.0
@@ -146,10 +146,10 @@ func _held_pitcher_has_contents() -> bool:
 	)
 
 
-func _empty_held_pitcher() -> void:
+func empty_held_pitcher() -> void:
 	## Dumps out whatever's currently in the held pitcher. Keeps the pitcher
 	## itself held ΓÇö only clears its contents.
-	if not _held_pitcher_has_contents():
+	if not held_pitcher_has_contents():
 		EventBus.interaction_hint_changed.emit("Pitcher is already empty!")
 		return
 
@@ -292,7 +292,7 @@ func _update_single_cup_ghost() -> void:
 		return
 
 	var collider := _player.ray.get_collider()
-	var on_surface := _is_placement_surface(collider)
+	var on_surface := is_placement_surface(collider)
 	var hit_point := _player.ray.get_collision_point()
 
 	# Check if looking at existing cup stack
@@ -319,7 +319,7 @@ func _update_single_cup_ghost() -> void:
 		return
 
 	# Filled cups can't go on ground
-	var is_ground := _is_ground_surface(collider)
+	var is_ground := is_ground_surface(collider)
 	if _player.held_item == HeldItem.CUP_FILLED and is_ground:
 		_ghost.visible = true
 		_ghost_valid = false
@@ -413,7 +413,8 @@ func _place_filled_cup() -> void:
 		"state": Cup.CupState.FILLED,
 		"_net_groups": ["container"],
 	}
-	var cup := WorldSync.request_spawn("res://scenes/objects/cup.tscn", cup_pos, cup_rot, state) as Cup
+	var cup_scene_path := "res://scenes/objects/cup.tscn"
+	var cup := WorldSync.request_spawn(cup_scene_path, cup_pos, cup_rot, state) as Cup
 	if cup:
 		cup.scale = placement_scale
 		cup.add_to_group("container")
@@ -517,7 +518,7 @@ func _get_delivery_grid() -> DeliveryGrid:
 	return grid
 
 
-func _is_aiming_at_grid() -> bool:
+func is_aiming_at_grid() -> bool:
 	if not _player.ray.is_colliding():
 		return false
 	var collider := _player.ray.get_collider()
@@ -636,7 +637,7 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	var drop_pos: Vector3
 	if place_pos != Vector3.ZERO:
 		drop_pos = place_pos
-	elif _player.ray.is_colliding() and _is_placement_surface(_player.ray.get_collider()):
+	elif _player.ray.is_colliding() and is_placement_surface(_player.ray.get_collider()):
 		drop_pos = _player.ray.get_collision_point() + Vector3(
 			0,
 			SupplyBox.DEFAULT_BOTTOM_OFFSET,
@@ -839,7 +840,7 @@ func _create_container_hand_mesh(
 	_disable_hand_collision(inst)
 
 	# Hand-held clones must not be counted as real placed objects
-	_remove_placement_groups(inst)
+	remove_placement_groups(inst)
 
 	return inst
 
@@ -972,7 +973,7 @@ func _create_ghost(container_type: String) -> void:
 	_ghost.visible = false
 
 
-func _remove_placement_groups(node: Node) -> void:
+func remove_placement_groups(node: Node) -> void:
 	# Hand or ghost meshes must not be counted as real placed objects.
 	if not is_instance_valid(node):
 		return
@@ -985,10 +986,10 @@ func _remove_placement_groups(node: Node) -> void:
 
 func _mark_ghost(node: Node) -> void:
 	node.add_to_group("ghost")
-	_remove_placement_groups(node)
+	remove_placement_groups(node)
 	# _ready() may add the node to placement groups after add_child,
 	# so remove them again once the tree is done setting up.
-	call_deferred("_remove_placement_groups", node)
+	call_deferred("remove_placement_groups", node)
 
 
 func _destroy_ghost() -> void:
@@ -1008,7 +1009,7 @@ func _update_cup_box_ghost() -> void:
 
 	var collider := _player.ray.get_collider()
 	var hit_point := _player.ray.get_collision_point()
-	var on_surface := _is_placement_surface(collider)
+	var on_surface := is_placement_surface(collider)
 
 	# If looking at a supply box, stack like other supply boxes.
 	var node: Node = collider
@@ -1040,7 +1041,7 @@ func _update_cup_box_ghost() -> void:
 		_ghost_valid = false
 		return
 
-	var is_ground := _is_ground_surface(collider)
+	var is_ground := is_ground_surface(collider)
 	if is_ground:
 		# Floor ΓÇö show box ghost but invalid (cup boxes can't go on floor)
 		_ensure_box_ghost()
@@ -1154,7 +1155,7 @@ func _update_supply_box_ghost() -> void:
 		grid_node = grid_node.get_parent()
 
 	# Otherwise only show ghost on approved placement surfaces (ground, tables, etc.)
-	var on_surface := _is_placement_surface(collider)
+	var on_surface := is_placement_surface(collider)
 	if not on_surface:
 		_ghost.visible = false
 		_ghost_valid = false
@@ -1189,7 +1190,7 @@ func _update_equipment_box_ghost() -> void:
 
 	var collider := _player.ray.get_collider()
 	var hit_point := _player.ray.get_collision_point()
-	# Reset probe cache; _is_placement_surface may populate it.
+	# Reset probe cache; is_placement_surface may populate it.
 	_has_probe_hit = false
 
 	# Check if looking at another SupplyBox ΓÇö stack on top (box ghost)
@@ -1226,8 +1227,8 @@ func _update_equipment_box_ghost() -> void:
 			return
 		grid_node = grid_node.get_parent()
 
-	var on_surface := _is_placement_surface(collider)
-	var is_ground := _is_ground_surface(collider)
+	var on_surface := is_placement_surface(collider)
+	var is_ground := is_ground_surface(collider)
 	# If the probe found a corrected tabletop hit point, use it instead
 	# of the original side-hit point for ghost positioning.
 	if _has_probe_hit:
@@ -1413,7 +1414,7 @@ func _update_ghost() -> void:
 	var hit_point := _player.ray.get_collision_point()
 	var _hit_normal := _player.ray.get_collision_normal()
 	var from_box: bool = _player.held_item_data.get("from_delivery_box", false)
-	# Reset probe cache; _is_placement_surface may populate it if the
+	# Reset probe cache; is_placement_surface may populate it if the
 	# ray hit a side and a tabletop probe was needed.
 	_has_probe_hit = false
 
@@ -1440,8 +1441,8 @@ func _update_ghost() -> void:
 			return
 		grid_node = grid_node.get_parent()
 
-	var on_surface := _is_placement_surface(collider)
-	var is_ground := _is_ground_surface(collider)
+	var on_surface := is_placement_surface(collider)
+	var is_ground := is_ground_surface(collider)
 	# If the probe found a corrected tabletop hit point, use it instead
 	# of the original side-hit point for ghost positioning.
 	if _has_probe_hit:
@@ -1741,7 +1742,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 	_player.held_item_data["deployed"] = true
 
 
-func _find_customer_in_ancestors(node: Node) -> Customer:
+func find_customer_in_ancestors(node: Node) -> Customer:
 	var current := node
 	while current != null:
 		if current is Customer:
@@ -1750,7 +1751,7 @@ func _find_customer_in_ancestors(node: Node) -> Customer:
 	return null
 
 
-func _find_pedestrian_in_ancestors(node: Node) -> Pedestrian:
+func find_pedestrian_in_ancestors(node: Node) -> Pedestrian:
 	var current := node
 	while current != null:
 		if current is Pedestrian:
@@ -1809,7 +1810,7 @@ func _is_placement_allowed_on(collider: Node) -> bool:
 	# This only checks stand ownership, not whether the collider is a valid
 	# placement surface. In solo/offline (no peers) allow all valid surfaces.
 	# In multiplayer, a surface with an owner requires the player to be assigned
-	# to that same stand. Use together with _is_placement_surface().
+	# to that same stand. Use together with is_placement_surface().
 	if collider == null:
 		return false
 	var mp := _player.get("multiplayer") as MultiplayerAPI
@@ -1823,7 +1824,7 @@ func _is_placement_allowed_on(collider: Node) -> bool:
 	return surface_owner == _player.assigned_stand.name
 
 
-func _is_placement_surface(collider: Object) -> bool:
+func is_placement_surface(collider: Object) -> bool:
 	if collider == null:
 		return false
 	if not _player.ray.is_colliding():
@@ -1926,7 +1927,7 @@ func _check_layer4_placement_surface() -> bool:
 	return false
 
 
-func _is_ground_surface(collider: Object) -> bool:
+func is_ground_surface(collider: Object) -> bool:
 	var node := collider as Node
 	if node == null:
 		return false
@@ -1936,7 +1937,7 @@ func _is_ground_surface(collider: Object) -> bool:
 		node = node.get_parent()
 		if node == null:
 			break
-	# Fallback: check layer 4 for PlacableFloor (same as _is_placement_surface)
+	# Fallback: check layer 4 for PlacableFloor (same as is_placement_surface)
 	return _check_layer4_ground_surface()
 
 
@@ -2033,8 +2034,11 @@ func _check_ghost_overlap() -> bool:
 	var max_check_dist := ghost_bounds_radius + 2.0
 
 	# Check against all placed containers
+	var support := _player.ray.get_collider() as Node if _player.ray.is_colliding() else null
 	for node in get_tree().get_nodes_in_group("container"):
 		if node == _ghost:
+			continue
+		if _is_ancestor_of_node(node, support):
 			continue
 		if node.is_in_group("ghost"):
 			continue # Skip other ghosts
@@ -2077,6 +2081,14 @@ func _check_ghost_overlap() -> bool:
 			if dist < (ghost_radius + other_radius):
 				return true
 
+	return false
+
+
+func _is_ancestor_of_node(ancestor: Node, node: Node) -> bool:
+	while node != null:
+		if node == ancestor:
+			return true
+		node = node.get_parent()
 	return false
 
 

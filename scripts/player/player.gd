@@ -21,7 +21,7 @@ static var defer_camera_claim: bool = false
 
 var held_item: int = HeldItem.NONE
 var held_item_data: Dictionary = { }
-var _held_mesh: Node3D = null
+var held_mesh: Node3D = null
 
 @export var gravity: float = 9.8
 @export var sprint_multiplier: float = 5.0
@@ -225,7 +225,7 @@ func configure_local_player() -> void:
 	floor_block_on_wall = false
 
 	# Precompute shared box metrics and load the workstation scene for placement.
-	placement._configure_local_player()
+	placement.configure_local_player()
 
 
 ## Set up the PlayerVisuals: apply customization from the lobby roster,
@@ -255,7 +255,7 @@ func _setup_visuals() -> void:
 	visuals.visible = not is_multiplayer_authority()
 	# Start idle animation
 	visuals.play_anim("Idle")
-	controller._current_anim = "Idle"
+	controller.set_current_animation("Idle")
 
 # ---------------------------------------------------------------------------
 #  Placement delegation wrappers
@@ -267,7 +267,7 @@ func _setup_visuals() -> void:
 
 ## Rapid-fire interval adjusted by the nimbleness upgrade. Used by
 ## PlayerInteraction to throttle held-mouse deposits.
-func _get_rapid_fire_interval() -> float:
+func get_rapid_fire_interval() -> float:
 	var nimble_bonus: float = UpgradeManager.get_effect_total("nimbleness")
 	if nimble_bonus > 0.0:
 		return rapid_fire_interval * (1.0 - nimble_bonus)
@@ -278,36 +278,36 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 	placement.pickup_container(interactable, container_type)
 
 
-func _remove_placement_groups(node: Node) -> void:
-	placement._remove_placement_groups(node)
+func remove_placement_groups(node: Node) -> void:
+	placement.remove_placement_groups(node)
 
 
-func _held_pitcher_has_contents() -> bool:
-	return placement._held_pitcher_has_contents()
+func held_pitcher_has_contents() -> bool:
+	return placement.held_pitcher_has_contents()
 
 
-func _empty_held_pitcher() -> void:
-	placement._empty_held_pitcher()
+func empty_held_pitcher() -> void:
+	placement.empty_held_pitcher()
 
 
-func _is_aiming_at_grid() -> bool:
-	return placement._is_aiming_at_grid()
+func is_aiming_at_grid() -> bool:
+	return placement.is_aiming_at_grid()
 
 
-func _is_placement_surface(collider: Object) -> bool:
-	return placement._is_placement_surface(collider)
+func is_placement_surface(collider: Object) -> bool:
+	return placement.is_placement_surface(collider)
 
 
-func _is_ground_surface(collider: Object) -> bool:
-	return placement._is_ground_surface(collider)
+func is_ground_surface(collider: Object) -> bool:
+	return placement.is_ground_surface(collider)
 
 
-func _find_customer_in_ancestors(node: Node) -> Customer:
-	return placement._find_customer_in_ancestors(node)
+func find_customer_in_ancestors(node: Node) -> Customer:
+	return placement.find_customer_in_ancestors(node)
 
 
-func _find_pedestrian_in_ancestors(node: Node) -> Pedestrian:
-	return placement._find_pedestrian_in_ancestors(node)
+func find_pedestrian_in_ancestors(node: Node) -> Pedestrian:
+	return placement.find_pedestrian_in_ancestors(node)
 
 
 func _set_visual_visible(node: Node, on: bool) -> void:

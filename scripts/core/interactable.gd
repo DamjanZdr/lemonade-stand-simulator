@@ -42,11 +42,11 @@ func can_player_use(player: Node) -> bool:
 	return stand.name == stand_owner
 
 
-func interact(player: Node) -> void:
+func interact(_player: Node) -> void:
 	pass
 
 
-func interact_secondary(player: Node) -> void:
+func interact_secondary(_player: Node) -> void:
 	pass
 
 
@@ -95,7 +95,7 @@ func _apply_outline(node: Node, on: bool) -> void:
 
 ## Returns the player's held mesh center for throw-arc animations.
 func _get_hand_pos(player: Node) -> Vector3:
-	var held_mesh: Node3D = player.get("_held_mesh")
+	var held_mesh: Node3D = player.get("held_mesh")
 	if held_mesh != null and is_instance_valid(held_mesh):
 		return held_mesh.global_position
 	var hand: Node3D = player.get("hand_slot")

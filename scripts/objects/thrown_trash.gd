@@ -9,6 +9,7 @@ extends RigidBody3D
 var trash_type: String = "empty_box"
 ## Refund value when disposed of in a trashcan.
 var trash_value: float = 0.0
+var stand_name: String = ""
 ## Initial velocity to apply on the host after spawn.
 var _initial_velocity: Vector3 = Vector3.ZERO
 ## Whether this is an NPC drop (vs player throw). Determines spawn behavior.
@@ -141,9 +142,16 @@ func _build_visuals() -> void:
 	if trash_type == "empty_box":
 		var col := CollisionShape3D.new()
 		var shape := BoxShape3D.new()
-		shape.size = Vector3(0.2, 0.2, 0.2)
+		shape.size = Vector3(0.7529297, 0.4765625, 0.5957031)
 		col.shape = shape
 		add_child(col)
+		var box_scene := load("res://scenes/objects/supply_box.tscn") as PackedScene
+		if box_scene != null:
+			var box_instance := box_scene.instantiate()
+			var box_visual := box_instance.get_node_or_null("box") as Node3D
+			if box_visual != null:
+				add_child(box_visual.duplicate())
+			box_instance.free()
 		_visual_y_offset = -shape.size.y * 0.5
 		return
 	var scene_path: String = _VARIANT_SCENES.get(trash_type, "")
@@ -208,7 +216,30 @@ static func _get_no_bounce_material() -> PhysicsMaterial:
 ## Only applies once per trash, and only after the spawn grace period.
 ## The source node (thrower/dropper) is ignored.
 func _on_body_entered(body: Node) -> void:
+	var trashcan := _get_trashcan(body)
+	if trashcan != null:
+		_dispose_in_trashcan.call_deferred(trashcan)
+		return
 	_try_stun(body)
+
+
+func _get_trashcan(body: Node) -> Trashcan:
+	var node := body
+	while node != null:
+		if node is Trashcan:
+			return node as Trashcan
+		node = node.get_parent()
+	return null
+
+
+func _dispose_in_trashcan(trashcan: Trashcan) -> void:
+	if _landed or not is_instance_valid(trashcan) or not is_instance_valid(self):
+		return
+	_landed = true
+	freeze = true
+	trashcan.apply_trash_disposal(trash_type, trash_value, stand_name)
+	AudioManager.play_sfx("trash", trashcan.global_position)
+	WorldSync.despawn_networked(self)
 
 
 ## Host: manual overlap check each physics frame. More reliable than

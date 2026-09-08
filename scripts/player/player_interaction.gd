@@ -69,27 +69,16 @@ func set_money_mode(active: bool) -> void:
 func set_primary_held(held: bool) -> void:
 	_primary_held = held
 	if held:
-		_rapid_fire_timer = _player._get_rapid_fire_interval()
+		_rapid_fire_timer = _player.get_rapid_fire_interval()
 		_rapid_fire_cup_target = null
-		# Start throw charging if holding trash and not looking at a trashcan.
-		# Empty boxes are not throwable — they can only be disposed of at a trashcan.
-		if _player.inventory.held_item == HeldItem.TRASH:
-			var trash_type: String = _player.inventory.held_item_data.get("trash_type", "")
-			var is_empty_box := trash_type == "empty_box"
-			var interactable := get_looked_at_interactable()
-			var looking_at_trashcan := false
-			if interactable and interactable.is_in_group("trashcan"):
-				looking_at_trashcan = true
-			if not looking_at_trashcan and _player.ray.is_colliding():
-				var node: Node = _player.ray.get_collider()
-				while node != null:
-					if node is Interactable and node.is_in_group("trashcan"):
-						looking_at_trashcan = true
-						break
-					node = node.get_parent()
-			if not looking_at_trashcan and not is_empty_box:
-				_throw_charging = true
-				_throw_charge = 0.0
+		# Empty boxes use direct disposal/placement; loose trash can be thrown.
+		if (
+			_player.inventory.held_item == HeldItem.TRASH
+			and _player.inventory.held_item_data.get("trash_type", "") != "empty_box"
+			and _get_looked_at_trashcan() == null
+		):
+			_throw_charging = true
+			_throw_charge = 0.0
 	else:
 		_rapid_fire_cup_target = null
 		# Release throw if charging.
@@ -114,6 +103,17 @@ func _get_looked_at_thrown_trash() -> RigidBody3D:
 	while node != null:
 		if node is RigidBody3D and node.has_meta("is_thrown_trash"):
 			return node as RigidBody3D
+		node = node.get_parent()
+	return null
+
+
+func _get_looked_at_trashcan() -> Trashcan:
+	if not _player.ray.is_colliding():
+		return null
+	var node := _player.ray.get_collider() as Node
+	while node != null:
+		if node is Trashcan:
+			return node as Trashcan
 		node = node.get_parent()
 	return null
 
@@ -152,10 +152,10 @@ func poll_hint() -> void:
 			EventBus.interaction_hint_changed.emit(hint)
 		return
 	if _player.inventory.held_item_data.get("is_trash", false):
-		if interactable != null and interactable.is_in_group("trashcan"):
-			hint = interactable.get_hint(_player)
+		if _get_looked_at_trashcan() != null:
+			hint = _get_looked_at_trashcan().get_hint(_player)
 		elif _player.inventory.held_item_data.get("trash_type", "") == "empty_box":
-			hint = "Empty box | use trashcan to recycle"
+			hint = "Empty box | LMB: place | aim at trashcan to recycle"
 		else:
 			hint = "Trash | LMB: hold to throw | find a trashcan"
 		if hint != _last_hint:
@@ -203,7 +203,7 @@ func poll_hint() -> void:
 				hint = _player.HINT_GROUND
 			else:
 				hint = "%s | %s" % [_player.inventory.get_held_item_name(), _player.HINT_STAND]
-		if container_type == "pitcher" and _player._held_pitcher_has_contents():
+		if container_type == "pitcher" and _player.held_pitcher_has_contents():
 			hint += "  |  RMB: empty"
 	elif _player.inventory.held_item == HeldItem.SUPPLY_BOX \
 			and _player.inventory.held_item_data.get("source") == "bin_scoop":
@@ -218,7 +218,7 @@ func poll_hint() -> void:
 			and _player.inventory.held_item_data.get("ingredient_type") == "cups":
 		var _held_name := _player.inventory.get_held_item_name()
 		hint = "%s | LMB: place 1 cup" % _held_name
-		if _player._is_aiming_at_grid():
+		if _player.is_aiming_at_grid():
 			hint = "%s | LMB: place box on grid" % _held_name
 		if interactable is SupplyBox:
 			hint = "%s | LMB: stack box" % _held_name
@@ -227,7 +227,7 @@ func poll_hint() -> void:
 	elif _player.inventory.held_item == HeldItem.SUPPLY_BOX:
 		var _hn := _player.inventory.get_held_item_name()
 		hint = "%s | LMB: place box" % _hn
-		if _player._is_aiming_at_grid():
+		if _player.is_aiming_at_grid():
 			hint = "%s | LMB: place on grid" % _hn
 		if interactable is SupplyBox:
 			hint = "%s | LMB: stack on box" % _hn
@@ -239,8 +239,8 @@ func poll_hint() -> void:
 		hint = "Filled Cup | LMB: place filled cup"
 		if _player.ray.is_colliding():
 			var hit_node: Node = _player.ray.get_collider() as Node
-			var has_customer := _player._find_customer_in_ancestors(hit_node) != null
-			var has_ped := _player._find_pedestrian_in_ancestors(hit_node) != null
+			var has_customer := _player.find_customer_in_ancestors(hit_node) != null
+			var has_ped := _player.find_pedestrian_in_ancestors(hit_node) != null
 			if has_customer or has_ped:
 				hint = "Filled Cup | LMB: serve lemonade"
 	else:
@@ -302,20 +302,13 @@ func primary_interact() -> void:
 	# Trash items can be disposed of at a trashcan, thrown, or placed
 	# (empty boxes can be dropped on the ground).
 	if _player.inventory.held_item_data.get("is_trash", false):
-		# If looking at a trashcan, dispose immediately.
-		if interactable != null and interactable.is_in_group("trashcan"):
-			interactable.interact(_player)
+		if _throw_charging:
+			return
+		var trashcan := _get_looked_at_trashcan()
+		if trashcan != null:
+			trashcan.interact(_player)
 			_player.placement._destroy_ghost()
 			return
-		# Also check ray collider ancestor chain for trashcan group
-		if _player.ray.is_colliding():
-			var node: Node = _player.ray.get_collider()
-			while node != null:
-				if node is Interactable and node.is_in_group("trashcan"):
-					(node as Interactable).interact(_player)
-					_player.placement._destroy_ghost()
-					return
-				node = node.get_parent()
 		# Empty boxes can be placed on the ground or stacked on other
 		# boxes (ghost is shown by update_ghost). If looking at a supply
 		# box, stack on top of it; otherwise drop on the ground.
@@ -413,7 +406,7 @@ func primary_interact() -> void:
 					return
 				node = node.get_parent()
 			# Ground placement for equipment boxes
-			if not _player._is_placement_surface(_player.ray.get_collider()):
+			if not _player.is_placement_surface(_player.ray.get_collider()):
 				_player.placement._ghost_valid = false
 				return
 		_player.placement._try_place_container()
@@ -440,7 +433,7 @@ func primary_interact() -> void:
 			_player.last_interact_hit = null
 			return
 		# Place on surface to start new stack
-		if _player.ray.is_colliding() and _player._is_placement_surface(_player.ray.get_collider()):
+		if _player.ray.is_colliding() and _player.is_placement_surface(_player.ray.get_collider()):
 			_player.placement._place_single_cup(false)
 			return
 		return
@@ -450,13 +443,13 @@ func primary_interact() -> void:
 		# First check if looking at a customer or pedestrian to serve.
 		if _player.ray.is_colliding():
 			var hit_node: Node = _player.ray.get_collider() as Node
-			var customer: Customer = _player._find_customer_in_ancestors(hit_node)
+			var customer: Customer = _player.find_customer_in_ancestors(hit_node)
 			if customer != null:
 				var peer_id := int(_player.name)
 				var recipe_data: Dictionary = _player.inventory.held_item_data.get("recipe", { })
 				customer.request_serve(peer_id, recipe_data)
 				return
-			var ped: Pedestrian = _player._find_pedestrian_in_ancestors(hit_node)
+			var ped: Pedestrian = _player.find_pedestrian_in_ancestors(hit_node)
 			if ped != null:
 				var peer_id := int(_player.name)
 				var recipe_data: Dictionary = _player.inventory.held_item_data.get("recipe", { })
@@ -465,7 +458,7 @@ func primary_interact() -> void:
 		# Then place on surface (only on workstation/stand, not ground)
 		if _player.ray.is_colliding():
 			var collider := _player.ray.get_collider()
-			if _player._is_placement_surface(collider) and not _player._is_ground_surface(collider):
+			if _player.is_placement_surface(collider) and not _player.is_ground_surface(collider):
 				_player.placement._place_filled_cup()
 				return
 		return
@@ -498,8 +491,8 @@ func primary_interact() -> void:
 			return
 		if _player.ray.is_colliding():
 			var collider := _player.ray.get_collider()
-			if _player._is_placement_surface(collider):
-				if _player._is_ground_surface(collider):
+			if _player.is_placement_surface(collider):
+				if _player.is_ground_surface(collider):
 					# Floor — drop the box
 					_player.placement._place_held_supply_box_on(
 						_player.ray.get_collision_point()
@@ -560,8 +553,8 @@ func primary_interact() -> void:
 						_player.last_interact_hit = null
 						return
 			var collider := _player.ray.get_collider()
-			var on_surface := _player._is_placement_surface(collider)
-			var is_ground := _player._is_ground_surface(collider)
+			var on_surface := _player.is_placement_surface(collider)
+			var is_ground := _player.is_ground_surface(collider)
 			var equipment_type: String = _player.inventory.held_item_data.get("equipment_type", "")
 			if (
 				is_equipment
@@ -603,7 +596,7 @@ func secondary_interact() -> void:
 		_player.inventory.held_item == HeldItem.CONTAINER
 		and _player.inventory.held_item_data.get("container_type", "") == "pitcher"
 	):
-		_player._empty_held_pitcher()
+		_player.empty_held_pitcher()
 		return
 
 	var interactable := get_looked_at_interactable()
@@ -671,7 +664,7 @@ func update_rapid_fire(delta: float) -> void:
 		var amount: float = _player.inventory.held_item_data.get("amount", 0.0)
 		if amount <= 0.0:
 			return
-		_rapid_fire_timer = _player._get_rapid_fire_interval()
+		_rapid_fire_timer = _player.get_rapid_fire_interval()
 		_player.last_interact_hit = _player.ray.get_collider()
 		cup_stack.interact(_player)
 		_player.last_interact_hit = null
@@ -687,7 +680,7 @@ func update_rapid_fire(delta: float) -> void:
 		var amount: float = _player.inventory.held_item_data.get("amount", 0.0)
 		if amount <= 0.0:
 			return
-		_rapid_fire_timer = _player._get_rapid_fire_interval()
+		_rapid_fire_timer = _player.get_rapid_fire_interval()
 		_player.last_interact_hit = _player.ray.get_collider()
 		dispenser.interact(_player)
 		_player.last_interact_hit = null
@@ -700,7 +693,7 @@ func update_rapid_fire(delta: float) -> void:
 			if bin.current_amount < bin.max_capacity:
 				var amount: float = _player.inventory.held_item_data.get("amount", 0.0)
 				if amount > 0.0:
-					_rapid_fire_timer = _player._get_rapid_fire_interval()
+					_rapid_fire_timer = _player.get_rapid_fire_interval()
 					_player.last_interact_hit = _player.ray.get_collider()
 					bin.interact(_player)
 					_player.last_interact_hit = null
@@ -711,7 +704,7 @@ func update_rapid_fire(delta: float) -> void:
 		if fbin.fruit_grids.has(itype):
 			var amt: float = _player.inventory.held_item_data.get("amount", 0.0)
 			if amt > 0.0 and fbin.fruit_amounts.get(itype, 0.0) < fbin.get_capacity(itype):
-				_rapid_fire_timer = _player._get_rapid_fire_interval()
+				_rapid_fire_timer = _player.get_rapid_fire_interval()
 				_player.last_interact_hit = _player.ray.get_collider()
 				fbin.interact(_player)
 				_player.last_interact_hit = null
@@ -892,10 +885,14 @@ func _do_throw(charge: float) -> void:
 	var start_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
 	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
 	var trash_value: float = _player.held_item_data.get("trash_value", 0.0)
+	var stand_name := ""
+	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+		stand_name = _player.assigned_stand.name
 	# Spawn the networked thrown trash body via WorldSync.
 	var state: Dictionary = {
 		"trash_type": trash_type,
 		"trash_value": trash_value,
+		"stand_name": stand_name,
 		"_initial_velocity": aim_dir * force,
 	}
 	var body := WorldSync.request_spawn(
