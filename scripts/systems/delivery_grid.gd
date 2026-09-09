@@ -37,6 +37,10 @@ func _count_existing_boxes() -> void:
 		if node.is_in_group("ghost"):
 			continue
 		var box := node as SupplyBox
+		# Skip boxes that are still on the truck (they have truck_cell_idx
+		# meta). These are not on this palette grid yet.
+		if box.has_meta("truck_cell_idx"):
+			continue
 		# Check if this box is on our grid by finding the closest cell
 		var cell_idx := get_closest_cell(box.global_position)
 		if cell_idx < 0:

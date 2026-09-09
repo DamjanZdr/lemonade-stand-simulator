@@ -266,6 +266,12 @@ func _start_edit(label_idx: int, field_idx: int) -> void:
 func _confirm_and_next() -> void:
 	_store_buffer()
 	if _field_index == 0:
+		# For ice, apply immediately after the first field (Celsius OR
+		# Fahrenheit) and auto-convert the other. The user should not
+		# have to fill both fields.
+		var data: Dictionary = _label_data[_label_index]
+		if data.get("name", "").to_lower() == "ice":
+			_apply_current_fruit_recipe()
 		_start_edit(_label_index, 1)
 	else:
 		# Apply the recipe for the current fruit immediately when both
@@ -430,6 +436,8 @@ func _apply_recipes_to_stand() -> void:
 ## Apply ice degrees to the stand. v1 is Celsius, v2 is Fahrenheit.
 ## If both are provided, Celsius takes priority. If only Fahrenheit is
 ## provided, it's converted to Celsius (divide by 1.8).
+## After applying, auto-fills the other field with the converted value
+## so the user only needs to set one field.
 func _apply_ice_to_stand(stand: StandUnit, v1: String, v2: String) -> void:
 	var c_val: float = -1.0
 	if v1 != "" and v1.is_valid_float():
@@ -439,6 +447,16 @@ func _apply_ice_to_stand(stand: StandUnit, v1: String, v2: String) -> void:
 	if c_val < 0.0:
 		return
 	stand.request_set_ice_degrees(c_val)
+	# Auto-convert and fill the other field
+	if _label_index >= 0 and _label_index < _label_data.size():
+		var data: Dictionary = _label_data[_label_index]
+		if v1 != "" and v1.is_valid_float():
+			# Celsius was set → fill Fahrenheit
+			data["value2"] = str(int(float(v1) * 1.8))
+		elif v2 != "" and v2.is_valid_float():
+			# Fahrenheit was set → fill Celsius
+			data["value1"] = str(int(float(v2) / 1.8))
+		_refresh_label(_label_index)
 
 
 ## Find the closest StandUnit in the scene to this blackboard.

@@ -242,10 +242,6 @@ func _setup_equipment_icon() -> void:
 			else:
 				icon_node.no_depth_test = false
 				icon_node.shaded = false
-				# Use ALPHA_CUT_OPAQUE so the icon renders in the opaque
-				# pass and writes to the depth buffer. Without this, the
-				# icon renders in the transparency pass and doesn't write
-				# to depth, causing it to show through closer boxes.
 				icon_node.alpha_cut = 1
 				if not texture_cache.has(equipment_type):
 					texture_cache[equipment_type] = _make_icon_texture(equipment_type)
@@ -253,10 +249,12 @@ func _setup_equipment_icon() -> void:
 					icon_node.texture = texture_cache[equipment_type] as Texture2D
 		var label_node := _face_labels[i]
 		if label_node != null:
+			# Opt out of label_style.gd's always-in-front enforcement.
+			# Without this, reparenting the box (e.g. delivery transfer
+			# from truck grid to world) re-fires node_added and resets
+			# no_depth_test to true, making labels show through boxes.
+			label_node.set_meta("no_depth_override", true)
 			label_node.no_depth_test = false
-			# ALPHA_CUT_DISCARD drops transparent pixels so the label
-			# quad doesn't show through closer boxes. The outline must
-			# be disabled because DISCARD renders it as opaque black.
 			label_node.alpha_cut = 1
 			label_node.outline_size = 0
 			label_node.render_priority = -1
@@ -280,10 +278,6 @@ func _setup_icon() -> void:
 			else:
 				icon_node.no_depth_test = false
 				icon_node.shaded = false
-				# Use ALPHA_CUT_OPAQUE so the icon renders in the opaque
-				# pass and writes to the depth buffer. Without this, the
-				# icon renders in the transparency pass and doesn't write
-				# to depth, causing it to show through closer boxes.
 				icon_node.alpha_cut = 1
 				if not texture_cache.has(ingredient_type):
 					texture_cache[ingredient_type] = _make_icon_texture(ingredient_type)
@@ -291,10 +285,12 @@ func _setup_icon() -> void:
 					icon_node.texture = texture_cache[ingredient_type] as Texture2D
 		var label_node := _face_labels[i]
 		if label_node != null:
+			# Opt out of label_style.gd's always-in-front enforcement.
+			# Without this, reparenting the box (e.g. delivery transfer
+			# from truck grid to world) re-fires node_added and resets
+			# no_depth_test to true, making labels show through boxes.
+			label_node.set_meta("no_depth_override", true)
 			label_node.no_depth_test = false
-			# ALPHA_CUT_DISCARD drops transparent pixels so the label
-			# quad doesn't show through closer boxes. The outline must
-			# be disabled because DISCARD renders it as opaque black.
 			label_node.alpha_cut = 1
 			label_node.outline_size = 0
 			label_node.render_priority = -1
