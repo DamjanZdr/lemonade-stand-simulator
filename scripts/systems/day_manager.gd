@@ -160,6 +160,17 @@ func end_day() -> void:
 	_sync_phase_to_clients()
 
 
+## Stop the day cycle and reset timer state. Called when returning to
+## the main menu so the day cycle doesn't keep running (and adjusting
+## lighting via _on_day_timer_updated) while the player is in the menu
+## or lobby. Without this, the exposure/ambient from the previous
+## game's day cycle persists and makes the lobby appear dark.
+func stop_day_cycle() -> void:
+	_day_running = false
+	day_time_over = false
+	_day_timer = 0.0
+
+
 func end_evening() -> void:
 	day_number += 1
 	start_morning()

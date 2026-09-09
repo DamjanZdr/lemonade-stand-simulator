@@ -706,11 +706,21 @@ func _on_return_to_menu() -> void:
 	NetworkManager.leave_game()
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
+	# Stop the day cycle so it doesn't keep adjusting lighting while
+	# in the menu/lobby. See _on_esc_back_to_menu for details.
+	DayManager.stop_day_cycle()
 	# Reset the world-setup guard so the next game re-captures
 	# containers and re-spawns from the new save. Without this,
 	# _setup_world_systems() is a no-op on the second game and the
 	# previous game's containers/supply boxes persist.
 	_world_setup_done = false
+	# Reset lighting to enhanced defaults so the menu/lobby isn't
+	# dark from the previous game's day-cycle exposure.
+	if _enhanced_lighting:
+		_enable_enhanced_lighting()
+		var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
+		if sun_node and sun_node.has_method("update_for_time"):
+			sun_node.update_for_time(0.0)
 	# Fade out lobby UI.
 	if lobby_ui:
 		var fade_tw := create_tween()
@@ -1774,6 +1784,11 @@ func _on_esc_back_to_menu() -> void:
 			# Reset lobby state so the next game doesn't auto-start.
 			LobbyManager.game_started = false
 			LobbyManager.reset()
+			# Stop the day cycle so it doesn't keep adjusting lighting
+			# while in the menu/lobby. Without this, the exposure/ambient
+			# from the previous game's day cycle persists and makes the
+			# lobby appear dark (exposure drops to ~0.12 at dawn/dusk).
+			DayManager.stop_day_cycle()
 			# Reset the world-setup guard so the next game re-captures
 			# containers and re-spawns from the new save. Without this,
 			# the previous game's containers/supply boxes persist.
