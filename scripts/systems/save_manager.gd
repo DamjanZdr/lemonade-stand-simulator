@@ -27,6 +27,11 @@ var _pending_container_respawn: Array = []
 var _pending_supply_box_respawn: Array = []
 var _default_container_positions: Array = []
 
+## When true, _build_save_dict uses pristine default containers instead
+## of scanning the (potentially dirty) world. Set by start_new_game() so
+## a brand-new save doesn't inherit the previous game's equipment.
+var _save_use_defaults: bool = false
+
 ## The currently active save slot (set when hosting New Game or Load Game).
 ## Empty string means no save loaded (fresh start, no auto-saving).
 var current_slot: String = ""
@@ -233,8 +238,16 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	OnboardingManager.reset()
 	UpgradeManager.reset()
 	UpgradeManager.set_active_stand(stand_name)
-	# Save immediately to create the slot (force: not a host yet)
+	# Queue pristine default containers for respawn so the world is
+	# reset to its initial state when the game starts. The world scene
+	# is persistent (no reload between games), so without this the
+	# previous game's containers would remain.
+	_pending_container_respawn = _default_container_positions.duplicate(true)
+	_pending_supply_box_respawn = []
+	# Save pristine defaults (not the dirty world) into the new slot.
+	_save_use_defaults = true
 	save_game(true)
+	_save_use_defaults = false
 
 
 ## Load an existing save slot and set it as the current slot.
@@ -358,6 +371,18 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 
 
 func _build_save_dict() -> Dictionary:
+	# For a brand-new game, save the pristine default containers
+	# instead of scanning the (potentially dirty) world. The world
+	# scene is persistent across games, so without this a new save
+	# would inherit the previous game's placed equipment.
+	var placed_containers: Array
+	var supply_boxes: Array
+	if _save_use_defaults:
+		placed_containers = _default_container_positions.duplicate(true)
+		supply_boxes = []
+	else:
+		placed_containers = _scan_placed_containers()
+		supply_boxes = _scan_supply_boxes()
 	return {
 		"stand_name": GameState.stand_name,
 		"game_mode": GameState.game_mode,
@@ -380,8 +405,8 @@ func _build_save_dict() -> Dictionary:
 		"day_number": DayManager.day_number,
 		"purchased_nodes": UpgradeManager.get_save_data_for_stand(GameState.stand_name),
 		"unlocked_fruits": ["lemon"], # TODO: dynamic
-		"placed_containers": _scan_placed_containers(),
-		"supply_boxes": _scan_supply_boxes(),
+		"placed_containers": placed_containers,
+		"supply_boxes": supply_boxes,
 		"customization": _collect_customization(),
 		"onboarding": OnboardingManager.serialize(),
 		"version": 2,
@@ -582,6 +607,13 @@ func respawn_placed_containers() -> void:
 
 
 func capture_default_containers() -> void:
+	# Only capture once. The world scene is persistent (no scene reload
+	# between games), so re-capturing on a later game would snapshot a
+	# dirty world (containers moved/modified by a previous game).
+	# The pristine defaults captured at first scene load are the
+	# authoritative starting point for every new game.
+	if not _default_container_positions.is_empty():
+		return
 	_default_container_positions = []
 	if get_tree() == null or get_tree().current_scene == null:
 		return
@@ -623,13 +655,15 @@ func _do_respawn() -> void:
 	# --- Respawn containers ---
 	var cdata: Array = _pending_container_respawn
 	_pending_container_respawn = []
+	# Always remove existing containers of known types so the world is
+	# reset cleanly. Without this, containers from a previous game
+	# persist when the new save has no placed containers (e.g. a
+	# brand-new game).
+	for node in root.get_tree().get_nodes_in_group("container"):
+		var ctype := _get_container_type(node)
+		if ctype != "" and _is_known_container_type(ctype):
+			node.queue_free()
 	if not cdata.is_empty():
-		# Remove existing containers of known types so we don't duplicate
-		for node in root.get_tree().get_nodes_in_group("container"):
-			var ctype := _get_container_type(node)
-			if ctype != "" and _is_known_container_type(ctype):
-				node.queue_free()
-
 		for entry in cdata:
 			var ctype: String = entry.get("type", "")
 			var pos: Array = entry.get("position", [])
@@ -719,10 +753,10 @@ func _do_respawn() -> void:
 	# --- Respawn supply boxes ---
 	var sdata: Array = _pending_supply_box_respawn
 	_pending_supply_box_respawn = []
+	# Always remove existing supply boxes so the world is reset cleanly.
+	for node in root.get_tree().get_nodes_in_group("supply_box"):
+		node.queue_free()
 	if not sdata.is_empty():
-		for node in root.get_tree().get_nodes_in_group("supply_box"):
-			node.queue_free()
-
 		for entry in sdata:
 			var pos: Array = entry.get("position", [])
 			var rot: Array = entry.get("rotation", [])

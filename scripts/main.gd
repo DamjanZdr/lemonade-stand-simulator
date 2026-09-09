@@ -706,6 +706,11 @@ func _on_return_to_menu() -> void:
 	NetworkManager.leave_game()
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
+	# Reset the world-setup guard so the next game re-captures
+	# containers and re-spawns from the new save. Without this,
+	# _setup_world_systems() is a no-op on the second game and the
+	# previous game's containers/supply boxes persist.
+	_world_setup_done = false
 	# Fade out lobby UI.
 	if lobby_ui:
 		var fade_tw := create_tween()
@@ -1764,6 +1769,10 @@ func _on_esc_back_to_menu() -> void:
 			# Reset lobby state so the next game doesn't auto-start.
 			LobbyManager.game_started = false
 			LobbyManager.reset()
+			# Reset the world-setup guard so the next game re-captures
+			# containers and re-spawns from the new save. Without this,
+			# the previous game's containers/supply boxes persist.
+			_world_setup_done = false
 			# Clean up players.
 			for child in players_node.get_children():
 				child.queue_free()
