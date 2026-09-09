@@ -20,7 +20,6 @@ var _input_center: CenterContainer = null
 var _selected_idx: int = -1
 var _prev_mouse_mode: int = Input.MOUSE_MODE_CAPTURED
 var _people_was_active: bool = false
-var _debug_logged: int = 0
 
 
 func _ready() -> void:
@@ -195,7 +194,13 @@ func _try_select_npc() -> void:
 
 
 func _show_input_popup(current_name: String = "") -> void:
-	_close_input_popup()
+	# Close any existing popup WITHOUT resetting the selected index
+	# (the caller set it just before calling us).
+	if _input_center != null:
+		_input_center.queue_free()
+		_input_center = null
+	_input_popup = null
+	_input_field = null
 	# Freeze player movement while typing.
 	EventBus.esc_menu_open = true
 
@@ -262,7 +267,6 @@ func _show_input_popup(current_name: String = "") -> void:
 
 
 func _on_name_submitted(text: String) -> void:
-	print("[NpcNamer] _on_name_submitted: text='%s' idx=%d" % [text, _selected_idx])
 	var name := text.strip_edges()
 	if name != "" and _selected_idx >= 0 and _selected_idx < _spawned.size():
 		var entry: Dictionary = _spawned[_selected_idx]
@@ -277,12 +281,6 @@ func _on_name_submitted(text: String) -> void:
 		entry.panel.size = label_size + pad * 2
 		entry.label.position = pad
 		entry.label.size = label_size
-		print(
-			"[NpcNamer] named=%s label_size=%s panel_size=%s"
-			% [entry.named, label_size, entry.panel.size]
-		)
-	else:
-		print("[NpcNamer] skipped: name empty or bad idx")
 	_close_input_popup()
 
 
@@ -357,12 +355,6 @@ func _process(_delta: float) -> void:
 		var panel_size: Vector2 = entry.panel.size * ui_scale
 		entry.panel.position = screen_pos - panel_size * 0.5
 		entry.panel.visible = true
-		if _debug_logged < 3:
-			print(
-				"[NpcNamer] _process: pos=%s scale=%s panel_size=%s visible=%s"
-				% [screen_pos, ui_scale, panel_size, entry.panel.visible]
-			)
-			_debug_logged += 1
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
