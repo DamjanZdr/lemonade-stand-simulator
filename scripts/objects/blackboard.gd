@@ -30,7 +30,6 @@ func _ready() -> void:
 	# Listen to global recipe changes so the blackboard labels stay in
 	# sync when another player edits the same recipes.
 	EventBus.recipe_changed.connect(_on_recipe_changed)
-	OnboardingManager.stand_progress_changed.connect(_on_onboarding_progress)
 
 
 func get_hint(_player: Node) -> String:
@@ -135,7 +134,6 @@ func _scan_labels() -> void:
 		var lines := label.text.split("\n")
 		var prefix1 := _extract_prefix(lines[0] if lines.size() > 0 else "")
 		var prefix2 := _extract_prefix(lines[1] if lines.size() > 1 else "")
-		var value_lines := _create_value_lines(label)
 		_label_data.append(
 			{
 				"name": label.name,
@@ -143,8 +141,6 @@ func _scan_labels() -> void:
 				"prefix2": prefix2,
 				"value1": "",
 				"value2": "",
-				"line1": value_lines[0],
-				"line2": value_lines[1],
 				"locked": is_locked,
 			}
 		)
@@ -155,22 +151,6 @@ func _scan_labels() -> void:
 				if locked_lbl != null:
 					locked_lbl.visible = is_locked
 		_add_click_area(label, _label_nodes.size() - 1)
-
-
-func _create_value_lines(source: Label3D) -> Array[Label3D]:
-	var first := source.duplicate() as Label3D
-	var second := source.duplicate() as Label3D
-	first.name = source.name + "FruitValue"
-	second.name = source.name + "SugarValue"
-	var offset := float(source.font_size) * source.pixel_size * 0.55
-	first.position = source.position + Vector3(0.0, offset, 0.0)
-	second.position = source.position - Vector3(0.0, offset, 0.0)
-	first.text = ""
-	second.text = ""
-	source.get_parent().add_child(first)
-	source.get_parent().add_child(second)
-	source.visible = false
-	return [first, second]
 
 
 func _extract_prefix(line: String) -> String:
@@ -200,17 +180,15 @@ func _refresh_all_labels() -> void:
 
 
 func _refresh_label(index: int) -> void:
+	var label: Label3D = _label_nodes[index]
 	var data: Dictionary = _label_data[index]
-	var line1_label: Label3D = data.line1
-	var line2_label: Label3D = data.line2
 	if data.get("locked", false):
-		line1_label.text = ""
-		line2_label.text = ""
+		label.text = ""
 		return
-	line1_label.text = _build_line(data["prefix1"], data["value1"], 0, index)
-	line2_label.text = _build_line(data["prefix2"], data["value2"], 1, index)
-	line1_label.modulate = Color.WHITE
-	line2_label.modulate = Color.WHITE
+	var line1 := _build_line(data["prefix1"], data["value1"], 0, index)
+	var line2 := _build_line(data["prefix2"], data["value2"], 1, index)
+	label.text = line1 + "\n" + line2
+	label.modulate = Color.WHITE
 	var stand := _find_nearest_stand()
 	var fruit_id: String = data.get("name", "").to_lower()
 	if stand == null:
@@ -219,23 +197,13 @@ func _refresh_label(index: int) -> void:
 		fruit_id,
 		{ },
 	)
-	if found.is_empty():
-		return
-	var color: Color = Press.FRUIT_COLORS.get(fruit_id, Color.WHITE)
-	var fruit_matches := (
-		str(data.value1).is_valid_float()
-		and is_equal_approx(float(data.value1), float(found.get("fruit_count", -1.0)))
-	)
-	var sugar_matches := (
-		str(data.value2).is_valid_float()
-		and is_equal_approx(float(data.value2), float(found.get("sugar", -1.0)))
-	)
-	if fruit_matches:
-		line1_label.modulate = color
-	if sugar_matches:
-		line2_label.modulate = color
-	if fruit_matches and sugar_matches:
-		line2_label.text += "  ✓ Perfect recipe set"
+	var shown := {
+		"fruit_count": float(data.value1) if str(data.value1).is_valid_float() else -1.0,
+		"sugar": float(data.value2) if str(data.value2).is_valid_float() else -1.0,
+	}
+	if not found.is_empty() and shown == found:
+		label.modulate = Press.FRUIT_COLORS.get(fruit_id, Color.WHITE)
+		label.text += "  ✓"
 
 
 func _build_line(prefix: String, value: String, field: int, index: int) -> String:
@@ -433,11 +401,6 @@ func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 					if locked_lbl != null:
 						locked_lbl.visible = now_locked
 	_refresh_all_labels()
-
-
-func _on_onboarding_progress(stand: StandUnit, _progress: Dictionary) -> void:
-	if stand == _find_nearest_stand():
-		_refresh_all_labels()
 
 
 func _on_recipe_changed(fruit_type: String, recipe: Dictionary) -> void:

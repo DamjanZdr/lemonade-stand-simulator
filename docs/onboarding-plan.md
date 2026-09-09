@@ -31,13 +31,13 @@ The system should teach normal gameplay rather than create tutorial-only version
 
 ### Checklist presentation
 
-- Place a compact onboarding panel below or near the existing HUD objectives area.
+- Place a compact onboarding panel in the top-right corner.
+- Use the same Amatic font for the heading and task text.
 - Show the active task with a short instruction and optional control hint.
-- A completed task changes to a checked/struck-through state for approximately one second.
-- The next task then slides or fades into the same location.
-- Show progress such as `4 / 10` without revealing a long wall of future instructions.
-- Allow players to collapse the panel without stopping progression.
-- Include `Skip onboarding` behind a confirmation prompt.
+- While a compound task is active, cross out only the individual completed phrases.
+- When every part is complete, cross out the entire sentence for approximately one second.
+- The next task then replaces the completed sentence.
+- Do not show unexplained collapse or skip controls on the panel.
 - Only local UI is rendered; its data comes from the local player's assigned stand.
 
 ### Wording rules
@@ -107,52 +107,55 @@ goal after the guided controls and service loop are understood.
 |---|---|---|---|
 | 1 | `demo_order_workstation` | Order a workstation from your computer. | The host accepts and charges this stand for a workstation order. |
 | 2 | `demo_place_workstation` | Place the workstation inside your stand. | The delivered workstation is validly placed on this stand's floor. |
-| 3 | `demo_order_equipment` | Order a crate, press, bucket, bowl, and pitcher. | Cross out each equipment word when its order is accepted; advance when all five are ordered. |
-| 4 | `demo_order_ingredients` | Order boxes of lemons, sugar, and ice. | Cross out each ingredient when its supply order is accepted for this stand. |
-| 5 | `demo_stock_ingredients` | Place the lemons in the crate, sugar in the bowl, and ice in the bucket. | Cross out each full phrase after the matching delivery is deposited into this stand's matching container. |
+| 3 | `demo_trash_workstation_box` | Throw the empty workstation box in the trashcan. | This stand authoritatively disposes of the empty box. |
+| 4 | `demo_order_equipment` | Order a crate, press, bucket, bowl, and pitcher. | Cross out each equipment word when its order is accepted; advance when all five are ordered. |
+| 5 | `demo_place_equipment` | Place the crate, press, bucket, bowl, and pitcher on the workstation. | Cross out each equipment word after that item is placed on this stand's workstation. |
+| 6 | `demo_order_ingredients` | Order a box of lemons, a box of sugar, and a box of ice. | Cross out each box phrase when its supply order is accepted for this stand. |
+| 7 | `demo_stock_ingredients` | Place the lemons in the crate, sugar in the bowl, and ice in the bucket. | Cross out each full phrase after the matching delivery is deposited into this stand's matching container. |
 
 ### Phase B — Make the first pitcher
 
 | # | Task ID | Player-facing objective | Completion condition for this stand |
 |---|---|---|---|
-| 6 | `demo_place_pitcher_press` | Place the pitcher beneath the press. | This stand's pitcher is placed in its press slot. |
-| 7 | `demo_load_press` | Put at least one lemon into the press. | At least one lemon from this stand is loaded into the press. |
-| 8 | `demo_squeeze_lemons` | Squeeze the lemons until they are completely dry. | Every lemon currently loaded in the press has been fully squeezed. |
-| 9 | `demo_add_sugar_ice` | Add at least one scoop each of sugar and ice to the pitcher. | Cross out `sugar` and `ice` independently when at least one scoop of each enters the pitcher. |
-| 10 | `demo_place_water_dispenser` | Place the pitcher on the water dispenser. | This stand's pitcher enters the water-dispenser slot. |
-| 11 | `demo_fill_water` | Fill the rest of the pitcher with water. | The pitcher reaches its liquid capacity through the dispenser. |
-| 12 | `demo_place_pitcher_stand` | Place the finished pitcher on your stand. | The prepared pitcher enters this stand's serving position. |
+| 8 | `demo_place_pitcher_press` | Place the pitcher beneath the press. | This stand's pitcher is placed in its press slot. |
+| 9 | `demo_load_press` | Put at least one lemon into the press. | At least one lemon from this stand is loaded into the press. |
+| 10 | `demo_squeeze_lemons` | Squeeze the lemons until they are completely dry. | Every lemon currently loaded in the press has been fully squeezed. |
+| 11 | `demo_move_pitcher_to_workstation` | Take the pitcher out of the press and place it on the workstation. | The removed pitcher is placed on this stand's workstation. |
+| 12 | `demo_add_sugar_ice` | Add at least one scoop each of sugar and ice to the pitcher. | Cross out `sugar` and `ice` independently when at least one scoop of each enters the pitcher. |
+| 13 | `demo_place_water_dispenser` | Place the pitcher on the water dispenser. | This stand's pitcher enters the water-dispenser slot. |
+| 14 | `demo_fill_water` | Fill the rest of the pitcher with water. | The pitcher reaches its liquid capacity through the dispenser. |
+| 15 | `demo_place_pitcher_stand` | Place the finished pitcher on your stand. | The prepared pitcher enters this stand's serving position. |
 
 ### Phase C — Make the first sale
 
 | # | Task ID | Player-facing objective | Completion condition for this stand |
 |---|---|---|---|
-| 13 | `demo_order_place_cups` | Order cups and place them on your stand. | Cross out `Order cups` when accepted and `place them on your stand` when the delivered cups are validly placed there. |
-| 14 | `demo_fill_cup` | Fill at least one cup with lemonade. | A cup is filled from this stand's serving pitcher. |
-| 15 | `demo_ask_customer` | Ask a customer what they would like. | An assigned player asks a customer queued for this stand for their order. |
-| 16 | `demo_serve_customer` | Serve the customer their order. | That customer accepts the requested drink from this stand. |
-| 17 | `demo_correct_change` | Give the customer the correct change. | This stand completes the transaction with the correct change. |
+| 16 | `demo_order_place_cups` | Order cups and place them on your stand. | Cross out `Order cups` when accepted and `place them on your stand` when the delivered cups are validly placed there. |
+| 17 | `demo_fill_cup` | Fill at least one cup with lemonade. | A cup is filled from this stand's serving pitcher. |
+| 18 | `demo_ask_customer` | Ask a customer what they would like. | An assigned player asks a customer queued for this stand for their order. |
+| 19 | `demo_serve_customer` | Serve the customer their order. | That customer accepts the requested drink from this stand. |
+| 20 | `demo_correct_change` | Give the customer the correct change. | This stand completes the transaction with the correct change. |
 
 ### Phase D — Learn business and recipe controls
 
 | # | Task ID | Player-facing objective | Completion condition for this stand |
 |---|---|---|---|
-| 18 | `demo_set_price` | Increase the lemonade price to $1.00. | The host accepts a $1.00 lemon price for this stand; the starting price should be $0.80. |
-| 19 | `demo_record_recipe` | On the recipe board, record the lemons and sugar used in your latest pitcher. | Cross out `lemons` and `sugar` when each board value matches the most recently prepared lemon pitcher. |
-| 20 | `demo_set_ice_ratio` | Set how many degrees the temperature must rise before adding another ice cube. | This stand changes its global degrees-per-additional-ice setting on the recipe board. |
+| 21 | `demo_set_price` | Increase the lemonade price to $1.00. | The host accepts a $1.00 lemon price for this stand; the starting price should be $0.80. |
+| 22 | `demo_record_recipe` | On the recipe board, record the lemons and sugar used in your latest pitcher. | Cross out `lemons` and `sugar` when each board value matches the most recently prepared lemon pitcher. |
+| 23 | `demo_set_ice_ratio` | Set how many degrees the temperature must rise before adding another ice cube. | This stand changes its global degrees-per-additional-ice setting on the recipe board. |
 
 ### Phase E — Master lemonade
 
 | # | Task ID | Player-facing objective | Completion condition for this stand |
 |---|---|---|---|
-| 21 | `demo_master_lemon` | Use customer feedback to perfect your lemon recipe. | Five consecutive eligible customers evaluate the same perfect lemon-and-sugar candidate without a strength or sweetness complaint. |
-| 22 | `demo_set_perfect_lemon` | Set your perfected lemon recipe on the recipe board. | The lemon and sugar board values both match the now-discovered perfect lemon recipe. |
-| 23 | `demo_master_ice` | Use customer feedback to perfect your ice setting. | Five consecutive eligible customers evaluate the same perfect global ice candidate without a temperature complaint. |
-| 24 | `demo_set_perfect_ice` | Set your perfected ice ratio on the recipe board. | The global board value matches the now-discovered perfect ice ratio. |
-| 25 | `demo_research_second_fruit` | Research and unlock a second fruit. | This stand purchases its one permitted Demo fruit unlock. |
-| 26 | `demo_prepare_second_fruit` | Order, prepare, and serve lemonade made with your new fruit. | Cross out the three sentence phrases as this stand orders the fruit, prepares a pitcher, and serves an eligible customer. |
-| 27 | `demo_master_second_fruit` | Use customer feedback to perfect your new fruit recipe. | Five consecutive eligible customers evaluate the same perfect fruit-and-sugar candidate without a strength or sweetness complaint. |
-| 28 | `demo_set_second_recipe` | Save your perfected new fruit recipe on the recipe board. | Both board values for the selected second fruit match its discovered perfect recipe. |
+| 24 | `demo_master_lemon` | Use customer feedback to perfect your lemon recipe. | Five consecutive eligible customers evaluate the same perfect lemon-and-sugar candidate without a strength or sweetness complaint. |
+| 25 | `demo_set_perfect_lemon` | Set your perfected lemon recipe on the recipe board. | The lemon and sugar board values both match the now-discovered perfect lemon recipe. |
+| 26 | `demo_master_ice` | Use customer feedback to perfect your ice setting. | Five consecutive eligible customers evaluate the same perfect global ice candidate without a temperature complaint. |
+| 27 | `demo_set_perfect_ice` | Set your perfected ice ratio on the recipe board. | The global board value matches the now-discovered perfect ice ratio. |
+| 28 | `demo_research_second_fruit` | Research and unlock a second fruit. | This stand purchases its one permitted Demo fruit unlock. |
+| 29 | `demo_prepare_second_fruit` | Order, prepare, and serve lemonade made with your new fruit. | Cross out the three sentence phrases as this stand orders the fruit, prepares a pitcher, and serves an eligible customer. |
+| 30 | `demo_master_second_fruit` | Use customer feedback to perfect your new fruit recipe. | Five consecutive eligible customers evaluate the same perfect fruit-and-sugar candidate without a strength or sweetness complaint. |
+| 31 | `demo_set_second_recipe` | Save your perfected new fruit recipe on the recipe board. | Both board values for the selected second fruit match its discovered perfect recipe. |
 
 ### Demo scope decisions
 
@@ -243,11 +246,11 @@ force a specific upgrade build beyond teaching the first fruit research action.
 At 6 PM, the day flow temporarily takes priority over onboarding:
 
 1. Suspend each stand's active task and preserve every completed sentence span, candidate, and counter.
-2. Replace the visible objective with `End the day.`
+2. Replace the visible objective with `It's late, end the day.`
 3. Follow the normal authoritative multiplayer day-ending flow.
 4. When the next morning becomes playable, restore each stand's suspended task and partial progress.
 
-`End the day` is an interruption, not a permanent step in the task sequence. In Versus, both stands see the
+`It's late, end the day` is an interruption, not a permanent step in the task sequence. In Versus, both stands see the
 day objective because the phase is global, but each independently restores its own previous task afterward.
 Saving, loading, disconnecting, or late joining during the interruption must preserve both the suspended task
 and the fact that the day-end objective is active.
@@ -390,7 +393,7 @@ A presentation-only HUD component that:
 - displays the current sentence and crosses out completed named spans independently;
 - displays recipe-mastery streaks and discovered-value confirmation without revealing hidden values;
 - plays completion/transition and discovery-message animations;
-- supports collapse and skip requests;
+- has no unexplained collapse or skip controls;
 - never decides that a gameplay task is complete.
 
 ## Edge Cases and Anti-Exploits
@@ -445,13 +448,12 @@ Playtest matrices:
 11. Independent fruit and ice streaks when only one category is correct.
 12. Free NPC samples provide feedback without changing mastery state.
 13. Discovery messages and board coloring appear only for the owning stand.
-14. Skip onboarding, then save/load.
 
 ## Implementation Phases
 
 ### Phase 1 — Foundation
 
-- Finalize Demo/Full selection and shared-skip policy.
+- Finalize Demo/Full selection.
 - Add stable sentence/span task definitions and per-stand runtime state.
 - Add host-authoritative advancement, day-end suspension, and snapshot synchronization.
 - Add save migration and persistence.
@@ -483,12 +485,9 @@ These should be decided before implementation:
 
 1. How is Demo versus Full selected: separate build flag, save type, platform entitlement, or menu choice?
 2. Does every new stand start onboarding, or only stands in a newly created save?
-3. Who may skip shared onboarding: host only, stand leader, or unanimous stand vote?
-4. Should an experienced player joining a new teammate's stand see the shared panel automatically or have
-   it collapsed locally?
-5. Are onboarding tasks purely instructional, or will any task grant rewards? Recommended: no rewards.
-6. When should normal customer spawning begin so early construction cannot cause unavoidable timeouts?
-7. Can one customer display strength/sweetness and temperature feedback together, or must guaranteed
+3. Are onboarding tasks purely instructional, or will any task grant rewards? Recommended: no rewards.
+4. When should normal customer spawning begin so early construction cannot cause unavoidable timeouts?
+5. Can one customer display strength/sweetness and temperature feedback together, or must guaranteed
    categories be queued across later customers?
 
 ## Recommended First-Version Decisions
@@ -496,11 +495,10 @@ These should be decided before implementation:
 For the smallest reliable implementation:
 
 - Select the track from an explicit save/build field, not inferred content availability.
-- Start each new stand empty and use the 28-task Demo sequence.
+- Start each new stand empty and use the 31-task Demo sequence.
 - In the Demo, permit one player-chosen fruit research unlock and reserve everything else for Full Game.
 - Start onboarding once per stand on new saves.
-- Make skip host-only and stand-wide.
-- Keep experienced teammates' panel collapsible locally but progression shared.
-- Do not grant onboarding rewards or discoveries for skipping.
+- Keep progression shared even though each teammate renders their own local panel.
+- Do not grant onboarding rewards.
 - Delay normal customer spawning until the first pitcher reaches the stand, preventing customers from
   timing out while players learn construction and preparation.

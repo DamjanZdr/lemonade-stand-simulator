@@ -31,7 +31,7 @@ signal supply_order_placed(
 	cost: float,
 	stand_name: String,
 )
-signal trash_disposed(item_type: String, refund: float)
+signal trash_disposed(item_type: String, refund: float, stand_name: String)
 signal equipment_order_placed(container_type: String, stand_name: String)
 signal supply_box_spawned(box: Node)
 signal checkout_completed(stand_name: String)

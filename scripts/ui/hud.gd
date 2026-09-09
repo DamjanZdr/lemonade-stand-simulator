@@ -41,7 +41,6 @@ var _throw_charge_bar: ProgressBar = null
 var _onboarding_panel: PanelContainer
 var _onboarding_text: RichTextLabel
 var _onboarding_progress: Label
-var _onboarding_collapsed := false
 var _displayed_task_id := ""
 var _onboarding_revision := -1
 var _discovery_label: Label
@@ -440,33 +439,22 @@ func set_stand(stand: StandUnit) -> void:
 func _build_onboarding_panel() -> void:
 	_onboarding_panel = PanelContainer.new()
 	_onboarding_panel.name = "OnboardingPanel"
-	_onboarding_panel.position = Vector2(20, 145)
-	_onboarding_panel.custom_minimum_size = Vector2(390, 108)
+	_onboarding_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_onboarding_panel.offset_left = -430.0
+	_onboarding_panel.offset_top = 20.0
+	_onboarding_panel.offset_right = -20.0
+	_onboarding_panel.offset_bottom = 138.0
 	var box := VBoxContainer.new()
 	_onboarding_panel.add_child(box)
-	var header := HBoxContainer.new()
-	box.add_child(header)
-	_onboarding_progress = _make_label("Onboarding", 20, AMATIC_FONT)
-	_onboarding_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(_onboarding_progress)
-	var collapse := Button.new()
-	collapse.text = "−"
-	collapse.pressed.connect(
-		func():
-			_onboarding_collapsed = not _onboarding_collapsed
-			_onboarding_text.visible = not _onboarding_collapsed
-			collapse.text = "+" if _onboarding_collapsed else "−",
-	)
-	header.add_child(collapse)
-	var skip := Button.new()
-	skip.text = "Skip"
-	skip.visible = WorldSync.is_host()
-	skip.pressed.connect(_confirm_skip)
-	header.add_child(skip)
+	_onboarding_progress = _make_label("Onboarding", 24, AMATIC_FONT)
+	_onboarding_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	box.add_child(_onboarding_progress)
 	_onboarding_text = RichTextLabel.new()
 	_onboarding_text.bbcode_enabled = true
 	_onboarding_text.fit_content = true
-	_onboarding_text.custom_minimum_size.y = 55
+	_onboarding_text.custom_minimum_size.y = 64
+	_onboarding_text.add_theme_font_override("normal_font", AMATIC_FONT)
+	_onboarding_text.add_theme_font_size_override("normal_font_size", 24)
 	box.add_child(_onboarding_text)
 	_discovery_label = _make_label("", 30, AMATIC_FONT, Color(1.0, 0.85, 0.25))
 	_discovery_label.visible = false
@@ -476,24 +464,6 @@ func _build_onboarding_panel() -> void:
 	_discovery_label.custom_minimum_size.x = 440
 	add_child(_discovery_label)
 	add_child(_onboarding_panel)
-
-
-func _confirm_skip() -> void:
-	if _stand == null:
-		return
-	var dialog := ConfirmationDialog.new()
-	dialog.dialog_text = (
-		"Skip onboarding for everyone at this stand? "
-		+ "No rewards or discoveries will be granted."
-	)
-	add_child(dialog)
-	dialog.confirmed.connect(
-		func():
-			OnboardingManager.request_skip(_stand)
-			dialog.queue_free(),
-	)
-	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered()
 
 
 func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
@@ -514,10 +484,7 @@ func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
 		var old_progress := progress.duplicate(true)
 		old_progress["current_task_id"] = _displayed_task_id
 		old_progress["completed_parts"] = { }
-		var old_task := OnboardingManager.get_task(old_progress)
-		for part in old_task.get("parts", { }):
-			old_progress.completed_parts[part] = true
-		_render_onboarding(old_progress, true)
+		_render_onboarding(old_progress, true, true)
 		_displayed_task_id = next_id
 		await get_tree().create_timer(1.0).timeout
 		if _stand == stand and _onboarding_revision == revision:
@@ -527,19 +494,32 @@ func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
 	_render_onboarding(progress)
 
 
-func _render_onboarding(progress: Dictionary, force_visible: bool = false) -> void:
+func _render_onboarding(
+	progress: Dictionary,
+	force_visible: bool = false,
+	whole_task_complete: bool = false,
+) -> void:
 	_onboarding_panel.visible = (
 		force_visible
 		or (not progress.get("completed", false) and not progress.get("skipped", false))
 	)
 	var task := OnboardingManager.get_task(progress)
 	var text: String = task.get("text", "")
-	for part in task.get("parts", { }):
-		var done: bool = progress.get("completed_parts", { }).get(part, false)
-		text = text.replace(
-			"{%s}" % part,
-			("[s][color=#8fd18f]%s[/color][/s]" % part) if done else part,
-		)
+	var parts: Dictionary = task.get("parts", { })
+	if whole_task_complete:
+		for part in parts:
+			text = text.replace("{%s}" % part, part)
+		text = "[s][color=#8fd18f]%s[/color][/s]" % text
+	elif parts.size() > 1:
+		for part in parts:
+			var done: bool = progress.get("completed_parts", { }).get(part, false)
+			text = text.replace(
+				"{%s}" % part,
+				("[s][color=#8fd18f]%s[/color][/s]" % part) if done else part,
+			)
+	else:
+		for part in parts:
+			text = text.replace("{%s}" % part, part)
 	var task_id: String = task.get("id", "")
 	if task_id in ["demo_master_lemon", "demo_master_second_fruit"]:
 		var fruit: String = (

@@ -71,7 +71,7 @@ func apply_trash_disposal(trash_type: String, refund: float, stand_name: String 
 		return
 	if refund > 0.0:
 		_add_money_to_stand(refund, stand_name)
-	EventBus.trash_disposed.emit(trash_type, refund)
+	EventBus.trash_disposed.emit(trash_type, refund, stand_name)
 	# Suppress the disposable visual for empty boxes/supply boxes — the box
 	# is the item being thrown away, so an apple shouldn't pop out of it.
 	if trash_type != "empty_box":

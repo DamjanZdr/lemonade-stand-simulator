@@ -740,6 +740,7 @@ func _place_equipment_from_box() -> void:
 	# Use same position as ghost (already includes collision offset)
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
+	var on_workstation := _is_workstation_surface(_player.ray.get_collider())
 	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
 	var state: Dictionary = { }
 	# Set initial state so _ready() sees it
@@ -764,6 +765,11 @@ func _place_equipment_from_box() -> void:
 	_destroy_ghost()
 	_player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 	AudioManager.play_sfx(_get_place_sfx_key(equipment_type), place_pos, -1.0, 0.05, 0.85)
+	OnboardingManager.report(
+		_player.assigned_stand,
+		"equipment_placed",
+		{ "type": equipment_type, "on_workstation": on_workstation },
+	)
 	EventBus.container_placed.emit(equipment_type, instance)
 
 
@@ -1638,10 +1644,11 @@ func _try_place_container() -> Node3D:
 	_destroy_ghost()
 	var container_type_str: String = _player.held_item_data.get("container_type", "")
 	var placed_recipe: Dictionary = _player.held_item_data.get("saved_recipe", { }).duplicate(true)
+	var on_workstation := _is_workstation_surface(_player.ray.get_collider())
 	OnboardingManager.report(
 		_player.assigned_stand,
 		"equipment_placed",
-		{ "type": container_type_str, "snapshot": placed_recipe },
+		{ "type": container_type_str, "snapshot": placed_recipe, "on_workstation": on_workstation },
 	)
 	_player.inventory.clear_held()
 	EventBus.container_placed.emit(container_type_str, instance)
@@ -1852,6 +1859,16 @@ func is_owned_stand_surface(collider: Node) -> bool:
 	if _player.assigned_stand == null or not is_instance_valid(_player.assigned_stand):
 		return not _player.multiplayer.has_multiplayer_peer()
 	return surface_owner == _player.assigned_stand.name
+
+
+func _is_workstation_surface(collider: Node) -> bool:
+	var node := collider
+	while node != null:
+		var script := node.get_script() as Script
+		if script != null and script.resource_path == "res://scripts/objects/workstation.gd":
+			return true
+		node = node.get_parent()
+	return false
 
 
 func is_stand_or_workstation_surface(collider: Node) -> bool:

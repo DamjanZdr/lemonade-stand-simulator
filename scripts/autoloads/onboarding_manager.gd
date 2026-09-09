@@ -33,6 +33,12 @@ const TASKS: Array[Dictionary] = [
 		"parts": { "workstation": "workstation" },
 	},
 	{
+		"id": "demo_trash_workstation_box",
+		"text": "Throw the {empty workstation box} in the trashcan.",
+		"event": "trash_disposed",
+		"parts": { "empty workstation box": "empty_box" },
+	},
+	{
 		"id": "demo_order_equipment",
 		"text": "Order a {crate}, {press}, {bucket}, {bowl}, and {pitcher}.",
 		"event": "equipment_ordered",
@@ -45,10 +51,23 @@ const TASKS: Array[Dictionary] = [
 		},
 	},
 	{
+		"id": "demo_place_equipment",
+		"text": "Place the {crate}, {press}, {bucket}, {bowl}, and {pitcher} on the workstation.",
+		"event": "equipment_placed",
+		"parts": {
+			"crate": "fruit_bin",
+			"press": "press",
+			"bucket": "ice_bin",
+			"bowl": "sugar_bin",
+			"pitcher": "pitcher",
+		},
+		"requires_workstation": true,
+	},
+	{
 		"id": "demo_order_ingredients",
-		"text": "Order boxes of {lemons}, {sugar}, and {ice}.",
+		"text": "Order {a box of lemons}, {a box of sugar}, and {a box of ice}.",
 		"event": "supply_ordered",
-		"parts": { "lemons": "lemon", "sugar": "sugar", "ice": "ice" },
+		"parts": { "a box of lemons": "lemon", "a box of sugar": "sugar", "a box of ice": "ice" },
 	},
 	{
 		"id": "demo_stock_ingredients",
@@ -77,6 +96,13 @@ const TASKS: Array[Dictionary] = [
 		"text": "{Squeeze the lemons until they are completely dry}.",
 		"event": "fruit_pressed",
 		"parts": { "Squeeze the lemons until they are completely dry": "lemon" },
+	},
+	{
+		"id": "demo_move_pitcher_to_workstation",
+		"text": "Take the {pitcher out of the press and place it on the workstation}.",
+		"event": "equipment_placed",
+		"parts": { "pitcher out of the press and place it on the workstation": "pitcher" },
+		"requires_workstation": true,
 	},
 	{
 		"id": "demo_add_sugar_ice",
@@ -208,6 +234,7 @@ var _pending_saved: Dictionary = { }
 
 func _ready() -> void:
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
+	EventBus.day_time_over.connect(_on_day_time_over)
 	EventBus.equipment_order_placed.connect(
 		func(t: String, sn: String):
 			report(find_stand(sn), "equipment_ordered", { "type": t }),
@@ -215,6 +242,10 @@ func _ready() -> void:
 	EventBus.supply_order_placed.connect(
 		func(t: String, _q: float, _c: float, sn: String):
 			report(find_stand(sn), "supply_ordered", { "type": t }),
+	)
+	EventBus.trash_disposed.connect(
+		func(t: String, _refund: float, sn: String):
+			report(find_stand(sn), "trash_disposed", { "type": t }),
 	)
 	EventBus.container_placed.connect(
 		func(t: String, n: Node):
@@ -447,6 +478,8 @@ func _part_matches(
 		)
 	if event_name != task.event:
 		return false
+	if task.get("requires_workstation", false) and not data.get("on_workstation", false):
+		return false
 	if task.id == "demo_place_pitcher_stand":
 		var snapshot: Dictionary = data.get("snapshot", { })
 		return (
@@ -638,22 +671,32 @@ func request_skip(stand: StandUnit) -> void:
 	_touch(stand)
 
 
+func _on_day_time_over() -> void:
+	_set_day_end_active(true)
+
+
 func _on_day_phase_changed(phase: int, _day: int) -> void:
+	if phase == DayManager.Phase.EVENING:
+		_set_day_end_active(true)
+	elif phase == DayManager.Phase.MORNING:
+		_set_day_end_active(false)
+
+
+func _set_day_end_active(active: bool) -> void:
 	if not WorldSync.is_host():
 		return
 	for node in get_tree().get_nodes_in_group("stand"):
 		var stand := node as StandUnit
 		initialize_stand(stand)
 		var p := stand.onboarding_progress
-		var day_end := phase == DayManager.Phase.EVENING
-		if day_end and not p.day_end_active:
+		if active and not p.day_end_active:
 			p.suspended_task_state = {
 				"task": p.current_task_id,
 				"parts": p.completed_parts.duplicate(true),
 			}
 			p.day_end_active = true
 			_touch(stand)
-		elif not day_end and p.day_end_active:
+		elif not active and p.day_end_active:
 			p.current_task_id = p.suspended_task_state.get("task", p.current_task_id)
 			p.completed_parts = p.suspended_task_state.get("parts", { })
 			p.suspended_task_state = { }
@@ -687,7 +730,11 @@ func deserialize(data: Dictionary) -> void:
 
 func get_task(progress: Dictionary) -> Dictionary:
 	if progress.get("day_end_active", false):
-		return { "id": "day_end", "text": "{End the day}.", "parts": { "End the day": "day" } }
+		return {
+			"id": "day_end",
+			"text": "{It's late, end the day}.",
+			"parts": { "It's late, end the day": "day" },
+		}
 	var idx := _task_index(progress.get("current_task_id", ""))
 	return TASKS[idx] if idx >= 0 else { }
 
