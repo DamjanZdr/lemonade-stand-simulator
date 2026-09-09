@@ -1,12 +1,11 @@
 extends Node
-## Debug tool for video recording: press F9 to enter NPC naming mode.
+## Debug tool for video recording: press N to enter NPC naming mode.
 ## Right-click spawns a random NPC at the looked-at floor position, facing the player.
 ## Left-click on a spawned NPC opens a name input popup.
 ## Enter confirms the name and shows it as a floating label above the NPC.
 ## Escape closes the input popup without naming.
 ## Regular pedestrian spawning is paused while the mode is active.
-## Press F9 again to exit and clean up all spawned NPCs + labels.
-## (F8 is the Godot editor's "stop game" shortcut, so we use F9 instead.)
+## Press N again to exit and clean up all spawned NPCs + labels.
 
 const PEDESTRIAN_SCENE: PackedScene = preload("res://scenes/customer/pedestrian.tscn")
 const AMATIC_FONT := preload("res://assets/fonts/AmaticSC-Bold.ttf")
@@ -27,7 +26,7 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_F9:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_N:
 		_toggle_mode()
 		get_viewport().set_input_as_handled()
 		return
