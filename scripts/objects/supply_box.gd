@@ -87,6 +87,7 @@ func _ready() -> void:
 		if label:
 			label.no_depth_test = false
 			label.alpha_cut = 1
+			label.outline_size = 0
 		var top_icon_node := get_node_or_null("IconSprite_Top") as Sprite3D
 		if top_icon_node:
 			top_icon_node.no_depth_test = false
@@ -253,32 +254,21 @@ func _setup_equipment_icon() -> void:
 		var label_node := _face_labels[i]
 		if label_node != null:
 			label_node.no_depth_test = false
-			# Use ALPHA_CUT_OPAQUE so the label renders in the opaque
-			# pass and writes to the depth buffer, preventing see-through.
+			# ALPHA_CUT_DISCARD drops transparent pixels so the label
+			# quad doesn't show through closer boxes. The outline must
+			# be disabled because DISCARD renders it as opaque black.
 			label_node.alpha_cut = 1
+			label_node.outline_size = 0
+			label_node.render_priority = -1
 			label_node.text = label_text
 
 
 func _setup_icon() -> void:
-	print(
-		"[SupplyBox] _setup_icon called, ingredient_type='",
-		ingredient_type,
-		"' quantity=",
-		quantity,
-		" is_hand_mesh=",
-		is_hand_mesh,
-	)
 	var qty_text := "×%.0f" % quantity if ingredient_type != "trash" else ""
 	_has_icon = (
 		INGREDIENT_ICONS.has(ingredient_type) and (quantity > 0.0 or ingredient_type == "trash")
 	)
 	_show_qty = ingredient_type != "trash"
-	print(
-		"[SupplyBox] has_icon=",
-		_has_icon,
-		" INGREDIENT_ICONS.has=",
-		INGREDIENT_ICONS.has(ingredient_type),
-	)
 	for i in range(_FACE_NAMES.size()):
 		var fname: String = _FACE_NAMES[i]
 		var icon_node := _face_icons[i]
@@ -302,9 +292,12 @@ func _setup_icon() -> void:
 		var label_node := _face_labels[i]
 		if label_node != null:
 			label_node.no_depth_test = false
-			# Use ALPHA_CUT_OPAQUE so the label renders in the opaque
-			# pass and writes to the depth buffer, preventing see-through.
+			# ALPHA_CUT_DISCARD drops transparent pixels so the label
+			# quad doesn't show through closer boxes. The outline must
+			# be disabled because DISCARD renders it as opaque black.
 			label_node.alpha_cut = 1
+			label_node.outline_size = 0
+			label_node.render_priority = -1
 			label_node.text = qty_text
 
 

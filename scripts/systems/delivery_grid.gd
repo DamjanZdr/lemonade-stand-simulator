@@ -127,6 +127,15 @@ func get_slot_rotation(cell_index: int) -> Vector3:
 	return base_rot + Vector3(0, _get_cell_yaw(cell_index, _stacks[cell_index]), 0)
 
 
+## Recount existing boxes on this grid. Called before a delivery to
+## ensure stacks are accurate even if boxes were placed after the
+## initial _count_existing_boxes run (which fires 0.5s after _ready).
+func recount_boxes() -> void:
+	for i in range(_stacks.size()):
+		_stacks[i] = 0
+	_count_existing_boxes()
+
+
 ## Returns the closest grid cell to the given world point (using X/Z distance).
 func get_closest_cell(point: Vector3) -> int:
 	var best := -1

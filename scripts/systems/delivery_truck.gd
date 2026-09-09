@@ -205,6 +205,13 @@ func start_delivery() -> void:
 	if _pending_boxes.is_empty():
 		return
 
+	# Recount existing boxes on the target grid so stacks are accurate.
+	# The initial _count_existing_boxes runs 0.5s after _ready, but boxes
+	# may be spawned later (by the save manager or player placement).
+	# Without this, new deliveries would be placed at ground level and
+	# clip through existing boxes.
+	_target_grid.recount_boxes()
+
 	# Rearrange boxes on the truck grid in reverse order so first-ordered is on top
 	_rearrange_boxes_reverse()
 

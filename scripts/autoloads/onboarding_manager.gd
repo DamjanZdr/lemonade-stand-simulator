@@ -516,12 +516,15 @@ func _part_matches(
 	if task.id == "demo_set_price":
 		return data.get("fruit_type") == "lemon" and is_equal_approx(data.get("value", 0.0), 1.0)
 	if task.id == "demo_record_recipe":
-		var latest: Dictionary = p.latest_pitchers.get("lemon", { })
+		# The task is to "record" the recipe on the board — i.e. enter
+		# values for both fields (changed from "?" to a number). We don't
+		# require the values to match the stored pitcher snapshot because
+		# that snapshot can be overwritten by reduced pours (pour_portion
+		# halves values after each cup). The onboarding goal is to teach
+		# the player how to use the recipe board, not to test their memory.
 		var recipe_in: Dictionary = data.get("recipe", { })
-		return (
-			data.get("fruit_type") == "lemon"
-			and is_equal_approx(recipe_in.get(expected, -1.0), latest.get(expected, -2.0))
-		)
+		var val: float = float(recipe_in.get(expected, 0.0))
+		return data.get("fruit_type") == "lemon" and val > 0.0
 	if task.id in ["demo_master_second_fruit", "demo_set_second_recipe"]:
 		return data.get("fruit_type") == p.selected_demo_fruit
 	return data.get("type", data.get("fruit_type", data.get("part", ""))) == expected

@@ -58,13 +58,22 @@ func _sync_label_values_from_stand() -> void:
 	var stand := _find_nearest_stand()
 	for i in range(_label_data.size()):
 		var data: Dictionary = _label_data[i]
-		var fruit_id: String = data.get("name", "").to_lower()
-		if fruit_id == "" or not fruit_id in StandUnit.FRUIT_TYPES:
+		var label_name: String = data.get("name", "").to_lower()
+		if label_name == "ice":
+			if stand != null:
+				var c_val: float = stand.ice_degrees_per_scoop
+				data["value1"] = str(int(c_val))
+				data["value2"] = str(int(c_val * 1.8))
+			else:
+				data["value1"] = ""
+				data["value2"] = ""
+			continue
+		if label_name == "" or not label_name in StandUnit.FRUIT_TYPES:
 			data["value1"] = ""
 			data["value2"] = ""
 			continue
 		if stand != null:
-			var recipe: Dictionary = stand.get_recipe(fruit_id)
+			var recipe: Dictionary = stand.get_recipe(label_name)
 			data["value1"] = str(int(recipe.get("fruit_count", 0)))
 			data["value2"] = str(int(recipe.get("sugar", 0)))
 		else:
@@ -284,19 +293,22 @@ func _apply_current_fruit_recipe() -> void:
 	var data: Dictionary = _label_data[_label_index]
 	if data.get("locked", false):
 		return
-	var fruit_id: String = data.get("name", "").to_lower()
-	if fruit_id == "" or not fruit_id in StandUnit.FRUIT_TYPES:
-		return
+	var label_name: String = data.get("name", "").to_lower()
 	var v1: String = data.get("value1", "")
 	var v2: String = data.get("value2", "")
 	if v1 == "" and v2 == "":
 		return
-	var recipe := GameState.get_recipe(fruit_id).duplicate()
+	if label_name == "ice":
+		_apply_ice_to_stand(stand, v1, v2)
+		return
+	if label_name == "" or not label_name in StandUnit.FRUIT_TYPES:
+		return
+	var recipe := GameState.get_recipe(label_name).duplicate()
 	if v1 != "" and v1.is_valid_float():
 		recipe["fruit_count"] = float(v1)
 	if v2 != "" and v2.is_valid_float():
 		recipe["sugar"] = float(v2)
-	stand.request_set_recipe(fruit_id, recipe)
+	stand.request_set_recipe(label_name, recipe)
 
 
 func _move_horizontal(direction: int) -> void:
@@ -392,24 +404,41 @@ func _apply_recipes_to_stand() -> void:
 		var data: Dictionary = _label_data[i]
 		if data.get("locked", false):
 			continue
-		var fruit_id: String = data.get("name", "").to_lower()
-		if fruit_id == "" or not fruit_id in StandUnit.FRUIT_TYPES:
-			continue
+		var label_name: String = data.get("name", "").to_lower()
 		var v1: String = data.get("value1", "")
 		var v2: String = data.get("value2", "")
 		if v1 == "" and v2 == "":
+			continue
+		if label_name == "ice":
+			_apply_ice_to_stand(stand, v1, v2)
+			continue
+		if label_name == "" or not label_name in StandUnit.FRUIT_TYPES:
 			continue
 		# Build recipe from current GameState values, then override
 		# with the edited fields. The request is sent to the host, which
 		# applies it and broadcasts the authoritative state; GameState
 		# is updated by StandUnit.set_recipe on the host and by _apply_state
 		# on clients, so we don't duplicate the write here.
-		var recipe := GameState.get_recipe(fruit_id).duplicate()
+		var recipe := GameState.get_recipe(label_name).duplicate()
 		if v1 != "" and v1.is_valid_float():
 			recipe["fruit_count"] = float(v1)
 		if v2 != "" and v2.is_valid_float():
 			recipe["sugar"] = float(v2)
-		stand.request_set_recipe(fruit_id, recipe)
+		stand.request_set_recipe(label_name, recipe)
+
+
+## Apply ice degrees to the stand. v1 is Celsius, v2 is Fahrenheit.
+## If both are provided, Celsius takes priority. If only Fahrenheit is
+## provided, it's converted to Celsius (divide by 1.8).
+func _apply_ice_to_stand(stand: StandUnit, v1: String, v2: String) -> void:
+	var c_val: float = -1.0
+	if v1 != "" and v1.is_valid_float():
+		c_val = float(v1)
+	elif v2 != "" and v2.is_valid_float():
+		c_val = float(v2) / 1.8
+	if c_val < 0.0:
+		return
+	stand.request_set_ice_degrees(c_val)
 
 
 ## Find the closest StandUnit in the scene to this blackboard.
