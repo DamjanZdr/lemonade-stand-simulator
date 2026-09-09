@@ -47,6 +47,7 @@
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
 [ext_resource type="Shader" uid="uid://bacxbwma0dens" path="res://shaders/transition_motion_blur.gdshader" id="72_tblur"]
+[ext_resource type="Script" path="res://scripts/tools/npc_namer.gd" id="73_npcnamer"]
 
 [sub_resource type="ShaderMaterial" id="TransitionBlurMat"]
 shader = ExtResource("72_tblur")
@@ -181,3 +182,6 @@ transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -2.6
 
 [node name="Stand1StartPosition" type="Marker3D" parent="." unique_id=538939789]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.688334, 0.23163146, 11.260717)
+
+[node name="NpcNamer" type="Node" parent="."]
+script = ExtResource("73_npcnamer")
