@@ -600,12 +600,7 @@ func respawn_placed_containers() -> void:
 	# Only the host respawns saved containers. Clients will receive them
 	# via WorldSync replication.
 	if not WorldSync.is_host():
-		print("[SaveManager] respawn_placed_containers: NOT host, skipping")
 		return
-	print(
-		"[SaveManager] respawn_placed_containers: is_host=true, defaults=%d"
-		% _default_container_positions.size()
-	)
 	call_deferred("_do_respawn")
 
 
@@ -628,10 +623,6 @@ func capture_default_containers() -> void:
 		var ctype := _get_container_type(node)
 		if ctype == "" or not _is_known_container_type(ctype):
 			continue
-		print(
-			"[SaveManager] capture_default: type=%s name=%s pos=%s"
-			% [ctype, node.name, node.global_position]
-		)
 		var entry := {
 			"type": ctype,
 			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
@@ -658,10 +649,6 @@ func _do_respawn() -> void:
 	if get_tree() == null or get_tree().current_scene == null:
 		return
 	var root := get_tree().current_scene
-	print(
-		"[SaveManager] _do_respawn: pending_containers=%d pending_boxes=%d"
-		% [_pending_container_respawn.size(), _pending_supply_box_respawn.size()]
-	)
 
 	# --- Respawn containers ---
 	var cdata: Array = _pending_container_respawn
@@ -680,7 +667,6 @@ func _do_respawn() -> void:
 	for node in root.get_tree().get_nodes_in_group("container"):
 		var ctype := _get_container_type(node)
 		if ctype != "" and _is_known_container_type(ctype):
-			print("[SaveManager] _do_respawn: freeing type=%s name=%s" % [ctype, node.name])
 			node.queue_free()
 	if not cdata.is_empty():
 		for entry in cdata:
@@ -715,10 +701,6 @@ func _do_respawn() -> void:
 				rot[2] if rot.size() > 2 else 0.0,
 			)
 			instance.add_to_group("container")
-			print(
-				"[SaveManager] _do_respawn: respawned type=%s at %s"
-				% [ctype, instance.global_position]
-			)
 
 			# Restore container contents
 			if instance is FruitBin:

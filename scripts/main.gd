@@ -1163,7 +1163,11 @@ func _setup_world_systems() -> void:
 	# when the camera tween runs from lobby to first-person).
 	SaveManager.capture_default_containers()
 	SaveManager.respawn_placed_containers()
-	add_child(DAY_SUMMARY_SCENE.instantiate())
+	# Only create the DaySummary once. _setup_world_systems can run
+	# again after returning to menu (we reset _world_setup_done), so
+	# guard against duplicate DaySummary nodes.
+	if not has_node("DaySummary"):
+		add_child(DAY_SUMMARY_SCENE.instantiate())
 
 
 ## Starts the multiplayer game phase: spawns players and sets up network
@@ -1746,6 +1750,7 @@ func _on_esc_back_to_game() -> void:
 ## ESC menu: Back to Menu — fade to black, leave the game, fade back in.
 func _on_esc_back_to_menu() -> void:
 	_esc_menu_visible = false
+	EventBus.esc_menu_open = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	# Create the fade overlay.
 	var fade_rect := ColorRect.new()
