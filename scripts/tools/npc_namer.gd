@@ -16,6 +16,7 @@ var _spawned: Array = []
 var _ui_layer: CanvasLayer = null
 var _input_popup: PanelContainer = null
 var _input_field: LineEdit = null
+var _input_center: CenterContainer = null
 var _selected_idx: int = -1
 var _prev_mouse_mode: int = Input.MOUSE_MODE_CAPTURED
 
@@ -85,6 +86,7 @@ func _enter_mode() -> void:
 
 func _exit_mode() -> void:
 	_active = false
+	EventBus.esc_menu_open = false
 	# Resume regular pedestrian spawning.
 	var spawner := get_tree().get_first_node_in_group("pedestrian_spawner")
 	if spawner and spawner.has_method("set_managed"):
@@ -137,9 +139,10 @@ func _spawn_at_mouse() -> void:
 		if dir.length() > 0.001:
 			ped.basis = Basis.looking_at(dir, Vector3.UP)
 
-	# Switch from Walk (set in _ready) to Idle.
+	# Switch from Walk (set in _ready) to Idle. Use call_deferred so
+	# it runs after the pedestrian's _ready and any queued animations.
 	if ped._npc and is_instance_valid(ped._npc):
-		ped._npc.play_anim("Idle")
+		ped._npc.call_deferred("play_anim", "Idle")
 
 	# Remove the PedestrianInteractable so the player's interaction
 	# system doesn't highlight or interact with these debug NPCs.
@@ -169,9 +172,15 @@ func _try_select_npc() -> void:
 
 func _show_input_popup(current_name: String = "") -> void:
 	_close_input_popup()
+	# Freeze player movement while typing.
+	EventBus.esc_menu_open = true
+
+	# CenterContainer wraps the popup so it's truly centered on screen.
+	_input_center = CenterContainer.new()
+	_input_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ui_layer.add_child(_input_center)
 
 	_input_popup = PanelContainer.new()
-	_input_popup.set_anchors_preset(Control.PRESET_CENTER)
 	_input_popup.custom_minimum_size = Vector2(360, 0)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.04, 0.045, 0.055, 0.94)
@@ -189,7 +198,7 @@ func _show_input_popup(current_name: String = "") -> void:
 	sb.content_margin_top = 14.0
 	sb.content_margin_bottom = 14.0
 	_input_popup.add_theme_stylebox_override("panel", sb)
-	_ui_layer.add_child(_input_popup)
+	_input_center.add_child(_input_popup)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
@@ -234,20 +243,30 @@ func _on_name_submitted(text: String) -> void:
 		var entry: Dictionary = _spawned[_selected_idx]
 		entry.label.text = name
 		entry.named = true
-		# Size the panel to fit the text.
-		var label_size: Vector2 = entry.label.get_combined_minimum_size()
-		entry.panel.size = label_size + Vector2(16, 8)
+		# Calculate size from font metrics (get_combined_minimum_size
+		# returns 0 before the first layout pass).
+		var text_size: Vector2 = AMATIC_FONT.get_string_size(
+			name,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			-1,
+			24,
+		)
+		entry.panel.size = text_size + Vector2(16, 8)
 		entry.label.position = Vector2(8, 4)
-		entry.label.size = label_size
+		entry.label.size = text_size
 	_close_input_popup()
 
 
 func _close_input_popup() -> void:
-	if _input_popup != null:
-		_input_popup.queue_free()
-		_input_popup = null
-		_input_field = null
+	if _input_center != null:
+		_input_center.queue_free()
+		_input_center = null
+	_input_popup = null
+	_input_field = null
 	_selected_idx = -1
+	# Restore player movement.
+	if _active:
+		EventBus.esc_menu_open = false
 
 # ── Name labels (CanvasLayer-based, same approach as customer order bubbles) ──
 
