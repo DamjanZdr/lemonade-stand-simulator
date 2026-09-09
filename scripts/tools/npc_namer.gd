@@ -77,9 +77,9 @@ func _enter_mode() -> void:
 	if spawner and spawner.has_method("set_managed"):
 		spawner.set_managed(true)
 	var people := get_tree().get_first_node_in_group("people_manager")
-	if people and people.get("active") != null:
-		_people_was_active = people.active
-		people.active = false
+	if people:
+		_people_was_active = people._active
+		people._active = false
 	# Create a CanvasLayer for name labels + input popup.
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.name = "NpcNamerLayer"
@@ -99,8 +99,8 @@ func _exit_mode() -> void:
 	if spawner and spawner.has_method("set_managed"):
 		spawner.set_managed(false)
 	var people := get_tree().get_first_node_in_group("people_manager")
-	if people and people.get("active") != null:
-		people.active = _people_was_active
+	if people:
+		people._active = _people_was_active
 	# Clean up all spawned NPCs and their labels.
 	for entry in _spawned:
 		if is_instance_valid(entry.ped):
@@ -255,8 +255,15 @@ func _on_name_submitted(text: String) -> void:
 		var entry: Dictionary = _spawned[_selected_idx]
 		entry.label.text = name
 		entry.named = true
-		# PanelContainer auto-sizes to the label — force a layout update.
-		entry.panel.reset_size()
+		# Replicate the customer order bubble sizing: force the label
+		# to recalculate its minimum size, then size the panel around it.
+		entry.label.reset_size()
+		entry.label.visible = true
+		var label_size: Vector2 = entry.label.get_combined_minimum_size()
+		var pad := Vector2(8, 4)
+		entry.panel.size = label_size + pad * 2
+		entry.label.position = pad
+		entry.label.size = label_size
 	_close_input_popup()
 
 
@@ -275,7 +282,7 @@ func _close_input_popup() -> void:
 
 
 func _create_name_label(ped: Pedestrian) -> Dictionary:
-	var panel := PanelContainer.new()
+	var panel := Panel.new()
 	panel.name = "NameLabelPanel"
 	panel.visible = false
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -290,10 +297,6 @@ func _create_name_label(ped: Pedestrian) -> Dictionary:
 	sb.corner_radius_top_right = 5
 	sb.corner_radius_bottom_left = 5
 	sb.corner_radius_bottom_right = 5
-	sb.content_margin_left = 8.0
-	sb.content_margin_right = 8.0
-	sb.content_margin_top = 4.0
-	sb.content_margin_bottom = 4.0
 	panel.add_theme_stylebox_override("panel", sb)
 	_ui_layer.add_child(panel)
 
@@ -307,6 +310,7 @@ func _create_name_label(ped: Pedestrian) -> Dictionary:
 	label.add_theme_constant_override("outline_size", 3)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.visible = false
 	panel.add_child(label)
 
 	return { "ped": ped, "panel": panel, "label": label, "named": false }
