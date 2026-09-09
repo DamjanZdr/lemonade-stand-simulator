@@ -28,26 +28,26 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# While the input popup is open, let all key events go to the
+	# LineEdit — don't toggle the mode or process any other keys.
+	if _input_popup != null:
+		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+			_close_input_popup()
+			get_viewport().set_input_as_handled()
+			return
+		# Consume all other key/mouse events so they don't reach the
+		# player controller. The LineEdit still gets them because it's
+		# a focus-based control, not an _input handler.
+		if event is InputEventMouseButton and event.pressed:
+			get_viewport().set_input_as_handled()
+		return
+
 	if event is InputEventKey and event.pressed and event.keycode == KEY_N:
 		_toggle_mode()
 		get_viewport().set_input_as_handled()
 		return
 
 	if not _active:
-		return
-
-	# Escape closes the input popup (but doesn't exit the mode).
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		if _input_popup != null:
-			_close_input_popup()
-			get_viewport().set_input_as_handled()
-		return
-
-	# While the input popup is open, consume mouse clicks so they don't
-	# pass through to the player controller.
-	if _input_popup != null:
-		if event is InputEventMouseButton and event.pressed:
-			get_viewport().set_input_as_handled()
 		return
 
 	if event is InputEventMouseButton and event.pressed:
@@ -72,10 +72,14 @@ func _enter_mode() -> void:
 	_active = true
 	# Pause regular pedestrian spawning. PeopleManager schedules spawns
 	# via day_timer_updated → spawn_on_path, bypassing the spawner's
-	# _managed flag, so we must pause both.
+	# _managed flag, so we must pause both. Also stop the spawn timer
+	# directly to be thorough.
 	var spawner := get_tree().get_first_node_in_group("pedestrian_spawner")
-	if spawner and spawner.has_method("set_managed"):
-		spawner.set_managed(true)
+	if spawner:
+		if spawner.has_method("set_managed"):
+			spawner.set_managed(true)
+		if spawner.has_node("_spawn_timer"):
+			spawner._spawn_timer.stop()
 	var people := get_tree().get_first_node_in_group("people_manager")
 	if people:
 		_people_was_active = people._active
@@ -96,8 +100,15 @@ func _exit_mode() -> void:
 	EventBus.esc_menu_open = false
 	# Resume regular pedestrian spawning.
 	var spawner := get_tree().get_first_node_in_group("pedestrian_spawner")
-	if spawner and spawner.has_method("set_managed"):
-		spawner.set_managed(false)
+	if spawner:
+		if spawner.has_method("set_managed"):
+			spawner.set_managed(false)
+		# Restart the timer if it's daytime.
+		if (
+			spawner.has_node("_spawn_timer") and DayManager
+			and DayManager.phase == DayManager.Phase.DAY
+		):
+			spawner._spawn_timer.start()
 	var people := get_tree().get_first_node_in_group("people_manager")
 	if people:
 		people._active = _people_was_active

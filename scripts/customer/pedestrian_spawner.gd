@@ -122,6 +122,8 @@ func set_managed(enabled: bool) -> void:
 
 
 func spawn_on_path(path: PedestrianPath) -> void:
+	if _managed:
+		return
 	_pedestrians = _pedestrians.filter(
 		func(p):
 			return is_instance_valid(p),
