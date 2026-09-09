@@ -238,11 +238,9 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	OnboardingManager.reset()
 	UpgradeManager.reset()
 	UpgradeManager.set_active_stand(stand_name)
-	# Queue pristine default containers for respawn so the world is
-	# reset to its initial state when the game starts. The world scene
-	# is persistent (no reload between games), so without this the
-	# previous game's containers would remain.
-	_pending_container_respawn = _default_container_positions.duplicate(true)
+	# Clear any pending respawn from a previous game. _do_respawn will
+	# fall back to _default_container_positions when _pending is empty.
+	_pending_container_respawn = []
 	_pending_supply_box_respawn = []
 	# Save pristine defaults (not the dirty world) into the new slot.
 	_save_use_defaults = true
@@ -602,7 +600,12 @@ func respawn_placed_containers() -> void:
 	# Only the host respawns saved containers. Clients will receive them
 	# via WorldSync replication.
 	if not WorldSync.is_host():
+		print("[SaveManager] respawn_placed_containers: NOT host, skipping")
 		return
+	print(
+		"[SaveManager] respawn_placed_containers: is_host=true, defaults=%d"
+		% _default_container_positions.size()
+	)
 	call_deferred("_do_respawn")
 
 
@@ -625,6 +628,10 @@ func capture_default_containers() -> void:
 		var ctype := _get_container_type(node)
 		if ctype == "" or not _is_known_container_type(ctype):
 			continue
+		print(
+			"[SaveManager] capture_default: type=%s name=%s pos=%s"
+			% [ctype, node.name, node.global_position]
+		)
 		var entry := {
 			"type": ctype,
 			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
@@ -651,10 +658,21 @@ func _do_respawn() -> void:
 	if get_tree() == null or get_tree().current_scene == null:
 		return
 	var root := get_tree().current_scene
+	print(
+		"[SaveManager] _do_respawn: pending_containers=%d pending_boxes=%d"
+		% [_pending_container_respawn.size(), _pending_supply_box_respawn.size()]
+	)
 
 	# --- Respawn containers ---
 	var cdata: Array = _pending_container_respawn
 	_pending_container_respawn = []
+	# Fall back to pristine defaults when no save data was queued.
+	# This happens for a brand-new game: start_new_game() runs before
+	# capture_default_containers(), so _default_container_positions is
+	# empty at that point and can't be pre-queued. By the time we get
+	# here, capture_default_containers() has run, so use the defaults.
+	if cdata.is_empty() and not _default_container_positions.is_empty():
+		cdata = _default_container_positions.duplicate(true)
 	# Always remove existing containers of known types so the world is
 	# reset cleanly. Without this, containers from a previous game
 	# persist when the new save has no placed containers (e.g. a
@@ -662,6 +680,7 @@ func _do_respawn() -> void:
 	for node in root.get_tree().get_nodes_in_group("container"):
 		var ctype := _get_container_type(node)
 		if ctype != "" and _is_known_container_type(ctype):
+			print("[SaveManager] _do_respawn: freeing type=%s name=%s" % [ctype, node.name])
 			node.queue_free()
 	if not cdata.is_empty():
 		for entry in cdata:
@@ -696,6 +715,10 @@ func _do_respawn() -> void:
 				rot[2] if rot.size() > 2 else 0.0,
 			)
 			instance.add_to_group("container")
+			print(
+				"[SaveManager] _do_respawn: respawned type=%s at %s"
+				% [ctype, instance.global_position]
+			)
 
 			# Restore container contents
 			if instance is FruitBin:
