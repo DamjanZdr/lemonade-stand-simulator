@@ -131,10 +131,12 @@ func _spawn_at_mouse() -> void:
 	ped.setup([], 0)
 	ped.velocity = Vector3.ZERO
 
-	# Face the player on the horizontal plane.
+	# Face the player on the horizontal plane. The NPC model faces +Z by
+	# default, so look in the opposite direction (away from the player)
+	# to end up facing toward them.
 	var player := _get_local_player()
 	if player:
-		var dir := (player.global_position - pos).normalized()
+		var dir := (pos - player.global_position).normalized()
 		dir.y = 0.0
 		if dir.length() > 0.001:
 			ped.basis = Basis.looking_at(dir, Vector3.UP)
