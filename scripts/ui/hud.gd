@@ -40,7 +40,6 @@ var _gain_label: Label = null
 var _throw_charge_bar: ProgressBar = null
 var _onboarding_panel: PanelContainer
 var _onboarding_text: RichTextLabel
-var _onboarding_progress: Label
 var _displayed_task_id := ""
 var _displayed_parts: Dictionary = { }
 var _onboarding_revision := -1
@@ -446,7 +445,7 @@ func _build_onboarding_panel() -> void:
 	_onboarding_panel.offset_left = -400.0
 	_onboarding_panel.offset_top = 20.0
 	_onboarding_panel.offset_right = -20.0
-	_onboarding_panel.offset_bottom = 132.0
+	_onboarding_panel.offset_bottom = 110.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.04, 0.045, 0.055, 0.82)
 	panel_style.border_width_left = 4
@@ -463,17 +462,13 @@ func _build_onboarding_panel() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	_onboarding_panel.add_child(box)
-	_onboarding_progress = _make_label("Onboarding", 24, AMATIC_FONT)
-	_onboarding_progress.add_theme_color_override("font_color", Color(0.96, 0.83, 0.32))
-	_onboarding_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	box.add_child(_onboarding_progress)
 	_onboarding_text = RichTextLabel.new()
 	_onboarding_text.bbcode_enabled = true
 	_onboarding_text.fit_content = true
 	_onboarding_text.custom_minimum_size = Vector2(344, 58)
 	_onboarding_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_onboarding_text.add_theme_font_override("normal_font", AMATIC_FONT)
-	_onboarding_text.add_theme_font_size_override("normal_font_size", 24)
+	_onboarding_text.add_theme_font_size_override("normal_font_size", 20)
 	_onboarding_text.add_theme_color_override("default_color", Color(0.96, 0.96, 0.92))
 	box.add_child(_onboarding_text)
 	_discovery_label = _make_label("", 30, AMATIC_FONT, Color(1.0, 0.85, 0.25))
@@ -570,7 +565,6 @@ func _render_onboarding(
 		var candidate: Dictionary = progress.get("active_ice_candidate", { })
 		text += "\nValidation: %d / 5 customers" % int(candidate.get("streak", 0))
 	_onboarding_text.text = text
-	_onboarding_progress.text = "Onboarding"
 
 
 func _on_discovery(stand: StandUnit, title: String, detail: String) -> void:
