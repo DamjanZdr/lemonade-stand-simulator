@@ -45,12 +45,31 @@ func interact(_player: Node) -> void:
 	if p != null and board_camera != null:
 		_editing_player = p
 		p.enter_priceboard_focus(board_camera.global_transform)
+	# Sync label values from the stand's current recipes so the board
+	# shows the actual recipe values instead of question marks when
+	# reopened after a previous edit.
+	_sync_label_values_from_stand()
 	_start_edit(0, 0)
-	# Clear any stale edited values from a previous session so ESC
-	# truly cancels instead of re-applying old values.
+
+
+## Populate _label_data value1/value2 from the nearest stand's current
+## recipes so the board doesn't reset to "?" every time it's opened.
+func _sync_label_values_from_stand() -> void:
+	var stand := _find_nearest_stand()
 	for i in range(_label_data.size()):
-		_label_data[i]["value1"] = ""
-		_label_data[i]["value2"] = ""
+		var data: Dictionary = _label_data[i]
+		var fruit_id: String = data.get("name", "").to_lower()
+		if fruit_id == "" or not fruit_id in StandUnit.FRUIT_TYPES:
+			data["value1"] = ""
+			data["value2"] = ""
+			continue
+		if stand != null:
+			var recipe: Dictionary = stand.get_recipe(fruit_id)
+			data["value1"] = str(int(recipe.get("fruit_count", 0)))
+			data["value2"] = str(int(recipe.get("sugar", 0)))
+		else:
+			data["value1"] = ""
+			data["value2"] = ""
 
 
 func _input(event: InputEvent) -> void:
@@ -240,11 +259,44 @@ func _confirm_and_next() -> void:
 	if _field_index == 0:
 		_start_edit(_label_index, 1)
 	else:
+		# Apply the recipe for the current fruit immediately when both
+		# fields are filled, rather than requiring the user to tab through
+		# ALL fruits before any recipe is applied. This was the root cause
+		# of the recipe-board onboarding task never completing: the user
+		# edited lemon's values, pressed Enter, and the cursor moved to
+		# the next fruit (strawberry) instead of applying the recipe.
+		_apply_current_fruit_recipe()
 		var next_idx := _next_editable_index(_label_index, 1)
 		if next_idx < 0:
 			_apply_and_finish_edit()
 		else:
 			_start_edit(next_idx, 0)
+
+
+## Apply the recipe for the currently-edited fruit only. Called after
+## both fields (fruit_count and sugar) have been entered.
+func _apply_current_fruit_recipe() -> void:
+	var stand := _find_nearest_stand()
+	if stand == null:
+		return
+	if _label_index < 0 or _label_index >= _label_data.size():
+		return
+	var data: Dictionary = _label_data[_label_index]
+	if data.get("locked", false):
+		return
+	var fruit_id: String = data.get("name", "").to_lower()
+	if fruit_id == "" or not fruit_id in StandUnit.FRUIT_TYPES:
+		return
+	var v1: String = data.get("value1", "")
+	var v2: String = data.get("value2", "")
+	if v1 == "" and v2 == "":
+		return
+	var recipe := GameState.get_recipe(fruit_id).duplicate()
+	if v1 != "" and v1.is_valid_float():
+		recipe["fruit_count"] = float(v1)
+	if v2 != "" and v2.is_valid_float():
+		recipe["sugar"] = float(v2)
+	stand.request_set_recipe(fruit_id, recipe)
 
 
 func _move_horizontal(direction: int) -> void:

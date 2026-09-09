@@ -291,6 +291,15 @@ func _physics_process(delta: float) -> void:
 		_try_sync_position(delta)
 		return
 
+	# Money/change mode: freeze movement so the player can't walk away
+	# while making change for a customer.
+	if _player.is_money_mode():
+		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
+		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
+		_player.move_and_slide()
+		_update_anim()
+		return
+
 	# ESC menu open: freeze movement.
 	if EventBus.esc_menu_open:
 		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)

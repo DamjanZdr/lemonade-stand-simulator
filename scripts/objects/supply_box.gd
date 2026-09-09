@@ -86,12 +86,12 @@ func _ready() -> void:
 		_apply_tint()
 		if label:
 			label.no_depth_test = false
-			label.alpha_cut = 2
+			label.alpha_cut = 1
 		var top_icon_node := get_node_or_null("IconSprite_Top") as Sprite3D
 		if top_icon_node:
 			top_icon_node.no_depth_test = false
 			top_icon_node.shaded = false
-			top_icon_node.alpha_cut = 2
+			top_icon_node.alpha_cut = 1
 		if not is_equipment:
 			_setup_icon()
 		else:
@@ -245,7 +245,7 @@ func _setup_equipment_icon() -> void:
 				# pass and writes to the depth buffer. Without this, the
 				# icon renders in the transparency pass and doesn't write
 				# to depth, causing it to show through closer boxes.
-				icon_node.alpha_cut = 2
+				icon_node.alpha_cut = 1
 				if not texture_cache.has(equipment_type):
 					texture_cache[equipment_type] = _make_icon_texture(equipment_type)
 				if texture_cache.has(equipment_type):
@@ -255,7 +255,7 @@ func _setup_equipment_icon() -> void:
 			label_node.no_depth_test = false
 			# Use ALPHA_CUT_OPAQUE so the label renders in the opaque
 			# pass and writes to the depth buffer, preventing see-through.
-			label_node.alpha_cut = 2
+			label_node.alpha_cut = 1
 			label_node.text = label_text
 
 
@@ -294,7 +294,7 @@ func _setup_icon() -> void:
 				# pass and writes to the depth buffer. Without this, the
 				# icon renders in the transparency pass and doesn't write
 				# to depth, causing it to show through closer boxes.
-				icon_node.alpha_cut = 2
+				icon_node.alpha_cut = 1
 				if not texture_cache.has(ingredient_type):
 					texture_cache[ingredient_type] = _make_icon_texture(ingredient_type)
 				if texture_cache.has(ingredient_type):
@@ -304,7 +304,7 @@ func _setup_icon() -> void:
 			label_node.no_depth_test = false
 			# Use ALPHA_CUT_OPAQUE so the label renders in the opaque
 			# pass and writes to the depth buffer, preventing see-through.
-			label_node.alpha_cut = 2
+			label_node.alpha_cut = 1
 			label_node.text = qty_text
 
 

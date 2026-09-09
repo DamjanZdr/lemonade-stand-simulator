@@ -383,7 +383,17 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 			var is_first_cup: bool = (
 				event_name == "cup_filled" and int(data.get("cups_poured", 1)) <= 1
 			)
-			if event_name != "cup_filled" or is_first_cup:
+			# equipment_placed snapshots reflect the pitcher's CURRENT state
+			# when picked up. If cups have been poured (cups_poured > 0),
+			# the values are already reduced and would overwrite the original
+			# recipe — skip storing in that case.
+			var is_fresh_pitcher_placement: bool = (
+				event_name == "equipment_placed" and int(snap.get("cups_poured", 0)) == 0
+			)
+			var should_store: bool = (
+				event_name == "pitcher_prepared" or is_first_cup or is_fresh_pitcher_placement
+			)
+			if should_store:
 				stand.onboarding_progress.latest_pitchers[fruit] = snap
 			if (
 				event_name == "pitcher_prepared"
@@ -507,12 +517,10 @@ func _part_matches(
 		return data.get("fruit_type") == "lemon" and is_equal_approx(data.get("value", 0.0), 1.0)
 	if task.id == "demo_record_recipe":
 		var latest: Dictionary = p.latest_pitchers.get("lemon", { })
+		var recipe_in: Dictionary = data.get("recipe", { })
 		return (
 			data.get("fruit_type") == "lemon"
-			and is_equal_approx(data.get("recipe", { }).get(expected, -1.0), latest.get(
-					expected,
-					-2.0,
-				))
+			and is_equal_approx(recipe_in.get(expected, -1.0), latest.get(expected, -2.0))
 		)
 	if task.id in ["demo_master_second_fruit", "demo_set_second_recipe"]:
 		return data.get("fruit_type") == p.selected_demo_fruit
