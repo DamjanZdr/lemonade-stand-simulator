@@ -118,7 +118,12 @@ func _spawn_at_mouse() -> void:
 	var ped := PEDESTRIAN_SCENE.instantiate() as Pedestrian
 	if ped == null:
 		return
-	get_tree().current_scene.add_child(ped)
+	# Add to the World node (which has the 3D world), not the Main root.
+	var world := get_tree().current_scene.get_node_or_null("World")
+	if world:
+		world.add_child(ped)
+	else:
+		get_tree().current_scene.add_child(ped)
 	ped.global_position = pos
 	# Empty waypoints → pedestrian stands still (physics process returns early).
 	ped.setup([], 0)
@@ -319,10 +324,7 @@ func _raycast_from_mouse() -> Dictionary:
 	var from := cam.project_ray_origin(mouse_pos)
 	var dir := cam.project_ray_normal(mouse_pos)
 	var to := from + dir * 100.0
-	var space: PhysicsDirectSpaceState3D = get_tree() \
-			.current_scene \
-			.get_world_3d() \
-			.direct_space_state
+	var space: PhysicsDirectSpaceState3D = cam.get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [cam]
 	return space.intersect_ray(query)
