@@ -22,21 +22,21 @@ const CLIENT_REPORTED_EVENTS := [
 const TASKS: Array[Dictionary] = [
 	{
 		"id": "demo_order_workstation",
-		"text": "Order a {workstation} from your computer.",
+		"text": "Order a {table} from your computer.",
 		"event": "equipment_ordered",
-		"parts": { "workstation": "workstation" },
+		"parts": { "table": "workstation" },
 	},
 	{
 		"id": "demo_place_workstation",
-		"text": "Place the {workstation} inside your stand.",
+		"text": "Place the {table} on the ground near your stand.",
 		"event": "equipment_placed",
-		"parts": { "workstation": "workstation" },
+		"parts": { "table": "workstation" },
 	},
 	{
 		"id": "demo_trash_workstation_box",
-		"text": "Throw the {empty workstation box} in the trashcan.",
+		"text": "Throw the {empty table box} in the trashcan.",
 		"event": "trash_disposed",
-		"parts": { "empty workstation box": "empty_box" },
+		"parts": { "empty table box": "empty_box" },
 	},
 	{
 		"id": "demo_order_equipment",
@@ -52,7 +52,7 @@ const TASKS: Array[Dictionary] = [
 	},
 	{
 		"id": "demo_place_equipment",
-		"text": "Place the {crate}, {press}, {bucket}, {bowl}, and {pitcher} on the workstation.",
+		"text": "Place the {crate}, {press}, {bucket}, {bowl}, and {pitcher} on the table.",
 		"event": "equipment_placed",
 		"parts": {
 			"crate": "fruit_bin",
@@ -99,9 +99,9 @@ const TASKS: Array[Dictionary] = [
 	},
 	{
 		"id": "demo_move_pitcher_to_workstation",
-		"text": "Take the {pitcher out of the press and place it on the workstation}.",
+		"text": "Take the {pitcher out of the press and place it on the table}.",
 		"event": "equipment_placed",
-		"parts": { "pitcher out of the press and place it on the workstation": "pitcher" },
+		"parts": { "pitcher out of the press and place it on the table": "pitcher" },
 		"requires_workstation": true,
 	},
 	{
@@ -367,12 +367,19 @@ func _request_report(stand_name: String, event_name: String, data: Dictionary) -
 
 func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> void:
 	initialize_stand(stand)
-	if event_name == "pitcher_prepared":
+	if (
+		event_name in ["pitcher_prepared", "cup_filled"]
+		or (event_name == "equipment_placed" and data.get("type", "") == "pitcher")
+	):
 		var snap: Dictionary = data.get("snapshot", { }).duplicate(true)
 		var fruit: String = snap.get("fruit_type", "")
-		stand.onboarding_progress.latest_pitchers[fruit] = snap
-		if fruit == stand.onboarding_progress.selected_demo_fruit:
-			_match_task(stand, "second_fruit_prepared", { "fruit_type": fruit })
+		if fruit != "":
+			stand.onboarding_progress.latest_pitchers[fruit] = snap
+			if (
+				event_name == "pitcher_prepared"
+				and fruit == (stand.onboarding_progress.selected_demo_fruit)
+			):
+				_match_task(stand, "second_fruit_prepared", { "fruit_type": fruit })
 	if (
 		event_name == "supply_ordered"
 		and data.get("type", "") == stand.onboarding_progress.selected_demo_fruit

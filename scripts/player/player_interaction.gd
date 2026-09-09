@@ -494,9 +494,7 @@ func primary_interact() -> void:
 			if _player.placement.is_stand_or_workstation_surface(collider):
 				_player.placement._place_cup_stack_from_box()
 				return
-		EventBus.interaction_hint_changed.emit(
-			"Cups can only be placed on your stand or workstation"
-		)
+		EventBus.interaction_hint_changed.emit("Cups can only be placed on your stand or table")
 		return
 
 	# Handle non-cup supply box placement (stack on boxes or place on ground)
@@ -546,16 +544,23 @@ func primary_interact() -> void:
 						_player.last_interact_hit = null
 						return
 			var collider := _player.ray.get_collider()
-			var is_ground := _player.is_ground_surface(collider)
 			var equipment_type: String = _player.inventory.held_item_data.get("equipment_type", "")
 			var valid_equipment_surface := (
-				equipment_type == "workstation" and is_ground
-				and _player.placement.is_owned_stand_surface(collider)
-				or equipment_type != "workstation"
-				and _player.placement.is_stand_or_workstation_surface(collider)
+				equipment_type == "workstation" and _player.placement.is_table_floor_surface(
+					collider
+				)
+				or equipment_type != "workstation" and _player.placement.is_workstation_surface(
+					collider
+				)
 			)
 			if is_equipment and valid_equipment_surface:
 				_player.placement._place_equipment_from_box()
+				return
+			if is_equipment and _player.placement.is_table_floor_surface(collider):
+				_player.placement._place_held_supply_box_on(
+					_player.ray.get_collision_point()
+					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
+				)
 				return
 			if not is_equipment and _player.placement.is_stand_or_workstation_surface(collider):
 				_player.placement._place_held_supply_box_on(
@@ -563,7 +568,7 @@ func primary_interact() -> void:
 					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
 				)
 				return
-		EventBus.interaction_hint_changed.emit("Can only place on your stand or workstation")
+		EventBus.interaction_hint_changed.emit("Can only place on your stand or table")
 		return
 
 	# Handle fallback interactables (not caught by specific cases above)

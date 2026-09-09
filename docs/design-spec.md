@@ -7,7 +7,7 @@
 
 A fully connected 3D first-person Lemonade Stand Simulator. All visuals use primitive shapes (boxes, cylinders, spheres) so it is instantly playable before 3D models are added. The architecture is completely modular — every major system is isolated from the others and communicates only through a central EventBus. This makes individual systems safe to rewrite or rebalance without side-effects.
 
-**Starting Money:** $50.00  
+**Starting Money:** $150.00
 **Engine:** Godot 4.6 (GL Compatibility renderer, Jolt Physics)
 
 ---
@@ -334,7 +334,7 @@ Lost (bad/timeout): X
 
 | Constant | Default Value | Description |
 |---|---|---|
-| STARTING_MONEY | $50.00 | Player starting funds |
+| STARTING_MONEY | $150.00 | Player starting funds |
 | PATIENCE_BASE | 45.0 s | How long a customer waits before timing out |
 | PRICE_FAIR_MAX | $2.00 | Price above this makes customers unhappy |
 | PRICE_TOO_EXPENSIVE | $2.75 | Price above this → "too_expensive" emoji |

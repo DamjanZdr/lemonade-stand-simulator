@@ -302,27 +302,21 @@ func get_hint(player: Node) -> String:
 		return ""
 	var held_item: int = player.get("held_item")
 	var data: Dictionary = player.get("held_item_data")
+	var container_name := "Bowl" if ingredient_type == "sugar" else "Bucket"
 
 	if held_item == HELD_SUPPLY_BOX:
 		if data.get("is_trash", false):
 			return ""
 		if data.get("source") == "bin_scoop" \
 				and data.get("ingredient_type", "") == ingredient_type:
-			return "%s Bin | LMB: return %s" % [
-				ingredient_type.capitalize(),
-				ingredient_type.capitalize(),
-			]
+			return "%s | LMB: return %s" % [container_name, ingredient_type.capitalize()]
 		if data.get("source") == "delivery" \
 				and data.get("ingredient_type", "") == ingredient_type:
 			var space := max_capacity - current_amount
 			if space <= 0.0:
-				return "%s Bin | full! (%.0f / %.0f)" % [
-					ingredient_type.capitalize(),
-					current_amount,
-					max_capacity,
-				]
-			return "%s Bin | LMB: deposit %s (x%.0f in box)" % [
-				ingredient_type.capitalize(),
+				return "%s | full! (%.0f / %.0f)" % [container_name, current_amount, max_capacity]
+			return "%s | LMB: deposit %s (x%.0f in box)" % [
+				container_name,
 				ingredient_type.capitalize(),
 				data.get("amount", 0.0),
 			]
@@ -330,12 +324,12 @@ func get_hint(player: Node) -> String:
 
 	if held_item == HELD_NONE:
 		if current_amount >= Balancing.GRAB_AMOUNT:
-			return "%s Bin | LMB: take %s (%.0f)  |  RMB: pick up" % [
-				ingredient_type.capitalize(),
+			return "%s | LMB: take %s (%.0f)  |  RMB: pick up" % [
+				container_name,
 				ingredient_type.capitalize(),
 				current_amount,
 			]
-		return "%s Bin | LMB: pick up" % ingredient_type.capitalize()
+		return "%s | LMB: pick up" % container_name
 	return ""
 
 

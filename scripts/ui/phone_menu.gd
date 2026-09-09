@@ -62,9 +62,9 @@ func _build_order_buttons() -> void:
 	container_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	order_buttons.add_child(container_header)
 	var containers := [
-		["fruit_bin", "Fruit Bin", Balancing.CONTAINER_COST_FRUIT_BIN],
-		["sugar_bin", "Sugar Bin", Balancing.CONTAINER_COST_SUGAR_BIN],
-		["ice_bin", "Ice Plate", Balancing.CONTAINER_COST_ICE_BIN],
+		["fruit_bin", "Crate", Balancing.CONTAINER_COST_FRUIT_BIN],
+		["sugar_bin", "Bowl", Balancing.CONTAINER_COST_SUGAR_BIN],
+		["ice_bin", "Bucket", Balancing.CONTAINER_COST_ICE_BIN],
 		["pitcher", "Pitcher", Balancing.CONTAINER_COST_PITCHER],
 		["press", "Fruit Press", Balancing.CONTAINER_COST_PRESS],
 		["workstation", "Table", Balancing.CONTAINER_COST_WORKSTATION],

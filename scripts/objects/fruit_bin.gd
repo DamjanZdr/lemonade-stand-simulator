@@ -345,33 +345,33 @@ func get_hint(player: Node) -> String:
 			return ""
 		var itype: String = data.get("ingredient_type", "")
 		if not fruit_grids.has(itype):
-			return "Fruit Bin | no %s grid" % itype.capitalize()
+			return "Crate | no %s grid" % itype.capitalize()
 		if data.get("source") == "bin_scoop":
-			return "Fruit Bin | LMB: return %s" % itype.capitalize()
+			return "Crate | LMB: return %s" % itype.capitalize()
 		if data.get("source") == "delivery":
 			var space: float = get_capacity(itype) - fruit_amounts.get(itype, 0.0)
 			if space <= 0.0:
-				return "Fruit Bin | %s full!" % itype.capitalize()
+				return "Crate | %s full!" % itype.capitalize()
 			var box_amount: float = data.get("amount", 0.0)
-			return "Fruit Bin | LMB: deposit %s (x%.0f in box)" % [itype.capitalize(), box_amount]
+			return "Crate | LMB: deposit %s (x%.0f in box)" % [itype.capitalize(), box_amount]
 		return ""
 
 	if held_item == HELD_NONE:
 		var hit_node: Node = player.get("last_interact_hit")
 		var fruit_type := _get_fruit_type_from_hit(hit_node)
 		if fruit_type != "" and fruit_amounts.get(fruit_type, 0.0) >= Balancing.GRAB_AMOUNT:
-			return "Fruit Bin | LMB: take %s (%.0f)  |  RMB: pick up" % [
+			return "Crate | LMB: take %s (%.0f)  |  RMB: pick up" % [
 				fruit_type.capitalize(),
 				fruit_amounts[fruit_type],
 			]
 		# Fallback to first available
 		fruit_type = _get_first_available_fruit()
 		if fruit_type != "":
-			return "Fruit Bin | LMB: take %s (%.0f)  |  RMB: pick up" % [
+			return "Crate | LMB: take %s (%.0f)  |  RMB: pick up" % [
 				fruit_type.capitalize(),
 				fruit_amounts[fruit_type],
 			]
-		return "Fruit Bin | LMB: pick up"
+		return "Crate | LMB: pick up"
 	return ""
 
 

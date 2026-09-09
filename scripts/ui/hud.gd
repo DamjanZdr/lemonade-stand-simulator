@@ -42,6 +42,7 @@ var _onboarding_panel: PanelContainer
 var _onboarding_text: RichTextLabel
 var _onboarding_progress: Label
 var _displayed_task_id := ""
+var _displayed_parts: Dictionary = { }
 var _onboarding_revision := -1
 var _discovery_label: Label
 
@@ -428,6 +429,8 @@ func set_stand(stand: StandUnit) -> void:
 	if _stand and _stand.money_changed.is_connected(_on_money):
 		_stand.money_changed.disconnect(_on_money)
 	_stand = stand
+	_displayed_task_id = ""
+	_displayed_parts = { }
 	if _stand == null:
 		return
 	_stand.money_changed.connect(_on_money)
@@ -440,21 +443,38 @@ func _build_onboarding_panel() -> void:
 	_onboarding_panel = PanelContainer.new()
 	_onboarding_panel.name = "OnboardingPanel"
 	_onboarding_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_onboarding_panel.offset_left = -430.0
+	_onboarding_panel.offset_left = -400.0
 	_onboarding_panel.offset_top = 20.0
 	_onboarding_panel.offset_right = -20.0
-	_onboarding_panel.offset_bottom = 138.0
+	_onboarding_panel.offset_bottom = 132.0
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.04, 0.045, 0.055, 0.82)
+	panel_style.border_width_left = 4
+	panel_style.border_color = Color(0.96, 0.83, 0.32)
+	panel_style.corner_radius_top_left = 8
+	panel_style.corner_radius_top_right = 8
+	panel_style.corner_radius_bottom_left = 8
+	panel_style.corner_radius_bottom_right = 8
+	panel_style.content_margin_left = 18.0
+	panel_style.content_margin_top = 10.0
+	panel_style.content_margin_right = 18.0
+	panel_style.content_margin_bottom = 10.0
+	_onboarding_panel.add_theme_stylebox_override("panel", panel_style)
 	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
 	_onboarding_panel.add_child(box)
 	_onboarding_progress = _make_label("Onboarding", 24, AMATIC_FONT)
-	_onboarding_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_onboarding_progress.add_theme_color_override("font_color", Color(0.96, 0.83, 0.32))
+	_onboarding_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	box.add_child(_onboarding_progress)
 	_onboarding_text = RichTextLabel.new()
 	_onboarding_text.bbcode_enabled = true
 	_onboarding_text.fit_content = true
-	_onboarding_text.custom_minimum_size.y = 64
+	_onboarding_text.custom_minimum_size = Vector2(344, 58)
+	_onboarding_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_onboarding_text.add_theme_font_override("normal_font", AMATIC_FONT)
 	_onboarding_text.add_theme_font_size_override("normal_font_size", 24)
+	_onboarding_text.add_theme_color_override("default_color", Color(0.96, 0.96, 0.92))
 	box.add_child(_onboarding_text)
 	_discovery_label = _make_label("", 30, AMATIC_FONT, Color(1.0, 0.85, 0.25))
 	_discovery_label.visible = false
@@ -481,17 +501,34 @@ func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
 		and next_id != "day_end" and not bool(progress.get("day_end_active", false))
 	)
 	if should_hold_completion:
+		_play_onboarding_completion_sound()
+	elif next_id == _displayed_task_id and next_id != "":
+		var new_parts: Dictionary = progress.get("completed_parts", { })
+		for part in new_parts:
+			if new_parts.get(part, false) and not _displayed_parts.get(part, false):
+				_play_onboarding_completion_sound()
+				break
+	if should_hold_completion:
 		var old_progress := progress.duplicate(true)
 		old_progress["current_task_id"] = _displayed_task_id
 		old_progress["completed_parts"] = { }
 		_render_onboarding(old_progress, true, true)
 		_displayed_task_id = next_id
-		await get_tree().create_timer(1.0).timeout
+		_displayed_parts = { }
+		await get_tree().create_timer(5.0).timeout
 		if _stand == stand and _onboarding_revision == revision:
+			_displayed_parts = progress.get("completed_parts", { }).duplicate(true)
 			_render_onboarding(progress)
 		return
 	_displayed_task_id = next_id
+	_displayed_parts = progress.get("completed_parts", { }).duplicate(true)
 	_render_onboarding(progress)
+
+
+func _play_onboarding_completion_sound() -> void:
+	var player := WorldSync.get_local_player() as Node3D
+	var position := player.global_position if player != null else Vector3.ZERO
+	AudioManager.play_sfx("trash", position)
 
 
 func _render_onboarding(
@@ -509,13 +546,13 @@ func _render_onboarding(
 	if whole_task_complete:
 		for part in parts:
 			text = text.replace("{%s}" % part, part)
-		text = "[s][color=#8fd18f]%s[/color][/s]" % text
+		text = "[s][color=#f4d350]%s[/color][/s]" % text
 	elif parts.size() > 1:
 		for part in parts:
 			var done: bool = progress.get("completed_parts", { }).get(part, false)
 			text = text.replace(
 				"{%s}" % part,
-				("[s][color=#8fd18f]%s[/color][/s]" % part) if done else part,
+				("[s][color=#f4d350]%s[/color][/s]" % part) if done else part,
 			)
 	else:
 		for part in parts:

@@ -10,3 +10,14 @@ const CUP_FILLED := 2
 const SUPPLY_BOX := 3
 const CONTAINER := 4
 const TRASH := 5
+
+const CONTAINER_NAMES := {
+	"fruit_bin": "Crate",
+	"sugar_bin": "Bowl",
+	"ice_bin": "Bucket",
+	"workstation": "Table",
+}
+
+
+func container_name(container_type: String) -> String:
+	return CONTAINER_NAMES.get(container_type, container_type.capitalize().replace("_", " "))

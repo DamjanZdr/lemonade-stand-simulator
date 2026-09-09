@@ -4,7 +4,7 @@ extends CharacterBody3D
 @export var move_speed: float = 3.0
 
 const HINT_GROUND := "Aim at ground to place"
-const HINT_STAND := "Aim at stand or workstation to place"
+const HINT_STAND := "Aim at stand or table to place"
 
 ## Which stand this player is assigned to (set by whatever assigns players
 ## to stands ΓÇö the lobby, in real multiplayer). Null in solo/offline play,

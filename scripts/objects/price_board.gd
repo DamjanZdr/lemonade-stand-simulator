@@ -169,9 +169,12 @@ func _confirm_and_next() -> void:
 	var next := _next_editable_index(_editing_index, 1)
 	if next < 0:
 		_editing_index = -1
+		_edit_buffer = ""
+		_cursor_visible = true
 		if _editing_player != null and is_instance_valid(_editing_player):
 			_editing_player.exit_priceboard_focus()
 		_editing_player = null
+		_refresh_label()
 	else:
 		_editing_index = next
 		_edit_buffer = ""

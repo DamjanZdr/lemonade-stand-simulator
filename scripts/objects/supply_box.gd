@@ -227,7 +227,7 @@ static func _make_icon_texture(itype: String) -> Texture2D:
 func _setup_equipment_icon() -> void:
 	_has_icon = INGREDIENT_ICONS.has(equipment_type)
 	_show_qty = true
-	var label_text := "×1"
+	var label_text := HeldItem.container_name(equipment_type)
 	for i in range(_FACE_NAMES.size()):
 		var fname: String = _FACE_NAMES[i]
 		var icon_node := _face_icons[i]
@@ -360,7 +360,9 @@ func get_hint(player: Node) -> String:
 	if is_trash_box:
 		return "Trash Box | LMB: pick up"
 	if is_equipment:
-		return "Supply Box | LMB: pick up %s box" % equipment_type.capitalize().replace("_", " ")
+		return "Supply Box | LMB: pick up %s box" % HeldItem \
+				.container_name(equipment_type) \
+				.to_lower()
 	if ingredient_type == "cups":
 		return "Supply Box | LMB: pick up cup box (x%d cups)" % quantity
 	return "Supply Box | LMB: pick up %s box (x%.0f)" % [ingredient_type.capitalize(), quantity]

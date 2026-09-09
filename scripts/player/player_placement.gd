@@ -26,7 +26,7 @@ func update_ghost() -> void:
 
 
 const HINT_GROUND := "Aim at ground to place"
-const HINT_STAND := "Aim at stand or workstation to place"
+const HINT_STAND := "Aim at stand or table to place"
 # --- Container placement ghost ---
 var _ghost: Node3D = null
 var _ghost_valid: bool = false
@@ -730,7 +730,7 @@ func _get_place_sfx_key(container_type: String) -> String:
 
 func _place_equipment_from_box() -> void:
 	if not _ghost_valid or _ghost == null:
-		EventBus.interaction_hint_changed.emit("Can only place on stand or workstation!")
+		EventBus.interaction_hint_changed.emit("Can only place on stand or table!")
 		return
 	var equipment_type: String = _player.held_item_data.get("equipment_type", "")
 	var scene_path: String = CONTAINER_SCENE_PATHS.get(equipment_type, "")
@@ -740,7 +740,7 @@ func _place_equipment_from_box() -> void:
 	# Use same position as ghost (already includes collision offset)
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
-	var on_workstation := _is_workstation_surface(_player.ray.get_collider())
+	var on_workstation := is_workstation_surface(_player.ray.get_collider())
 	var placement_scale: Vector3 = CONTAINER_PLACEMENT_SCALE.get(equipment_type, Vector3.ONE)
 	var state: Dictionary = { }
 	# Set initial state so _ready() sees it
@@ -1255,7 +1255,6 @@ func _update_equipment_box_ghost() -> void:
 		grid_node = grid_node.get_parent()
 
 	var on_surface := is_placement_surface(collider)
-	var is_ground := is_ground_surface(collider)
 	# If the probe found a corrected tabletop hit point, use it instead
 	# of the original side-hit point for ghost positioning.
 	if _has_probe_hit:
@@ -1272,7 +1271,7 @@ func _update_equipment_box_ghost() -> void:
 
 	# Workstations are tables ΓÇö they can only be placed on the floor.
 	if equipment_type == "workstation":
-		if not is_ground or not is_owned_stand_surface(collider):
+		if not is_table_floor_surface(collider):
 			_destroy_ghost()
 			_ghost_valid = false
 			_stack_target_id = -1
@@ -1294,7 +1293,16 @@ func _update_equipment_box_ghost() -> void:
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		return
 
-	if not on_surface or not is_stand_or_workstation_surface(collider):
+	if is_table_floor_surface(collider):
+		_ensure_box_ghost()
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
+		_ghost.visible = true
+		_ghost_valid = true
+		_stack_target_id = -1
+		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+		return
+
+	if not on_surface or not is_workstation_surface(collider):
 		_destroy_ghost()
 		_ghost_valid = false
 		_stack_target_id = -1
@@ -1469,7 +1477,12 @@ func _update_ghost() -> void:
 	# Workstations and water dispensers are floor-standing equipment and can only
 	# be placed on the ground. Other containers need an existing stand or
 	# workstation surface.
-	if container_type == "workstation" or container_type == "water_dispenser":
+	if container_type == "workstation":
+		if not is_table_floor_surface(collider):
+			_ghost.visible = false
+			_ghost_valid = false
+			return
+	elif container_type == "water_dispenser":
 		if not is_ground or not is_owned_stand_surface(collider):
 			_ghost.visible = false
 			_ghost_valid = false
@@ -1518,7 +1531,7 @@ func _update_ghost() -> void:
 
 func _try_place_container() -> Node3D:
 	if not _ghost_valid or _ghost == null:
-		EventBus.interaction_hint_changed.emit("Can only place on stand or workstation!")
+		EventBus.interaction_hint_changed.emit("Can only place on stand or table!")
 		return null
 
 	var container_type: String = _player.held_item_data.get("container_type", "")
@@ -1644,7 +1657,7 @@ func _try_place_container() -> Node3D:
 	_destroy_ghost()
 	var container_type_str: String = _player.held_item_data.get("container_type", "")
 	var placed_recipe: Dictionary = _player.held_item_data.get("saved_recipe", { }).duplicate(true)
-	var on_workstation := _is_workstation_surface(_player.ray.get_collider())
+	var on_workstation := is_workstation_surface(_player.ray.get_collider())
 	OnboardingManager.report(
 		_player.assigned_stand,
 		"equipment_placed",
@@ -1861,7 +1874,18 @@ func is_owned_stand_surface(collider: Node) -> bool:
 	return surface_owner == _player.assigned_stand.name
 
 
-func _is_workstation_surface(collider: Node) -> bool:
+func is_table_floor_surface(collider: Node) -> bool:
+	if collider == null or _player.ray.get_collision_normal().y <= 0.7:
+		return false
+	var node := collider
+	while node != null:
+		if node.name == "PlacableFloor":
+			return is_owned_stand_surface(collider)
+		node = node.get_parent()
+	return false
+
+
+func is_workstation_surface(collider: Node) -> bool:
 	var node := collider
 	while node != null:
 		var script := node.get_script() as Script

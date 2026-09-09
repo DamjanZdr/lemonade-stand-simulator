@@ -41,10 +41,10 @@ func get_held_item_name() -> String:
 				return "Cup Box"
 			if held_item_data.get("is_equipment", false):
 				var etype: String = held_item_data.get("equipment_type", "equipment")
-				return etype.capitalize().replace("_", " ") + " Box"
+				return HeldItem.container_name(etype) + " Box"
 			return itype.capitalize() + " Box"
 		HeldItem.CONTAINER:
-			return held_item_data.get("container_type", "").capitalize().replace("_", " ")
+			return HeldItem.container_name(held_item_data.get("container_type", ""))
 		HeldItem.TRASH:
 			return "Trash"
 	return ""

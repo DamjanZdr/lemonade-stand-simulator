@@ -149,9 +149,9 @@ var shop_items: Array[Dictionary] = [
 ]
 
 var container_items: Array[Dictionary] = [
-	{ "id": "fruit_bin", "name": "Fruit Bin", "cost": Balancing.CONTAINER_COST_FRUIT_BIN },
-	{ "id": "sugar_bin", "name": "Sugar Bin", "cost": Balancing.CONTAINER_COST_SUGAR_BIN },
-	{ "id": "ice_bin", "name": "Ice Plate", "cost": Balancing.CONTAINER_COST_ICE_BIN },
+	{ "id": "fruit_bin", "name": "Crate", "cost": Balancing.CONTAINER_COST_FRUIT_BIN },
+	{ "id": "sugar_bin", "name": "Bowl", "cost": Balancing.CONTAINER_COST_SUGAR_BIN },
+	{ "id": "ice_bin", "name": "Bucket", "cost": Balancing.CONTAINER_COST_ICE_BIN },
 	{ "id": "pitcher", "name": "Pitcher", "cost": Balancing.CONTAINER_COST_PITCHER },
 	{ "id": "press", "name": "Fruit Press", "cost": Balancing.CONTAINER_COST_PRESS },
 	{ "id": "workstation", "name": "Table", "cost": Balancing.CONTAINER_COST_WORKSTATION },
@@ -1662,7 +1662,7 @@ func _buy_container(container_type: String, cost: float) -> void:
 			cost,
 			WorldSync.get_local_stand_name(),
 		)
-	_status_lbl.text = "%s ordered!" % container_type.capitalize().replace("_", " ")
+	_status_lbl.text = "%s ordered!" % HeldItem.container_name(container_type)
 	_animate_status()
 
 
@@ -2026,7 +2026,7 @@ func _refresh_stats() -> void:
 	for etype in _equipment_counts:
 		var cnt: int = _equipment_counts[etype]
 		var line := Label.new()
-		line.text = "%s: %d" % [etype.capitalize().replace("_", " "), cnt]
+		line.text = "%s: %d" % [HeldItem.container_name(etype), cnt]
 		line.add_theme_font_size_override("font_size", 15)
 		line.add_theme_color_override("font_color", Color(0.6, 0.58, 0.52))
 		_stats_vbox.add_child(line)

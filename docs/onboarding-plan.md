@@ -35,7 +35,8 @@ The system should teach normal gameplay rather than create tutorial-only version
 - Use the same Amatic font for the heading and task text.
 - Show the active task with a short instruction and optional control hint.
 - While a compound task is active, cross out only the individual completed phrases.
-- When every part is complete, cross out the entire sentence for approximately one second.
+- Use lemon yellow and play the trash sound whenever a partial phrase or whole task is crossed out.
+- When every part is complete, cross out the entire sentence for five seconds and play the trash sound.
 - The next task then replaces the completed sentence.
 - Do not show unexplained collapse or skip controls on the panel.
 - Only local UI is rendered; its data comes from the local player's assigned stand.
@@ -105,11 +106,11 @@ goal after the guided controls and service loop are understood.
 
 | # | Task ID | Player-facing objective | Completion condition for this stand |
 |---|---|---|---|
-| 1 | `demo_order_workstation` | Order a workstation from your computer. | The host accepts and charges this stand for a workstation order. |
-| 2 | `demo_place_workstation` | Place the workstation inside your stand. | The delivered workstation is validly placed on this stand's floor. |
-| 3 | `demo_trash_workstation_box` | Throw the empty workstation box in the trashcan. | This stand authoritatively disposes of the empty box. |
+| 1 | `demo_order_workstation` | Order a table from your computer. | The host accepts and charges this stand for a table order. |
+| 2 | `demo_place_workstation` | Place the table on the ground near your stand. | The delivered table is validly placed on this stand's nearby floor area. |
+| 3 | `demo_trash_workstation_box` | Throw the empty table box in the trashcan. | This stand authoritatively disposes of the empty box. |
 | 4 | `demo_order_equipment` | Order a crate, press, bucket, bowl, and pitcher. | Cross out each equipment word when its order is accepted; advance when all five are ordered. |
-| 5 | `demo_place_equipment` | Place the crate, press, bucket, bowl, and pitcher on the workstation. | Cross out each equipment word after that item is placed on this stand's workstation. |
+| 5 | `demo_place_equipment` | Place the crate, press, bucket, bowl, and pitcher on the table. | Cross out each equipment word after that item is placed on this stand's table. |
 | 6 | `demo_order_ingredients` | Order a box of lemons, a box of sugar, and a box of ice. | Cross out each box phrase when its supply order is accepted for this stand. |
 | 7 | `demo_stock_ingredients` | Place the lemons in the crate, sugar in the bowl, and ice in the bucket. | Cross out each full phrase after the matching delivery is deposited into this stand's matching container. |
 
@@ -120,7 +121,7 @@ goal after the guided controls and service loop are understood.
 | 8 | `demo_place_pitcher_press` | Place the pitcher beneath the press. | This stand's pitcher is placed in its press slot. |
 | 9 | `demo_load_press` | Put at least one lemon into the press. | At least one lemon from this stand is loaded into the press. |
 | 10 | `demo_squeeze_lemons` | Squeeze the lemons until they are completely dry. | Every lemon currently loaded in the press has been fully squeezed. |
-| 11 | `demo_move_pitcher_to_workstation` | Take the pitcher out of the press and place it on the workstation. | The removed pitcher is placed on this stand's workstation. |
+| 11 | `demo_move_pitcher_to_workstation` | Take the pitcher out of the press and place it on the table. | The removed pitcher is placed on this stand's table. |
 | 12 | `demo_add_sugar_ice` | Add at least one scoop each of sugar and ice to the pitcher. | Cross out `sugar` and `ice` independently when at least one scoop of each enters the pitcher. |
 | 13 | `demo_place_water_dispenser` | Place the pitcher on the water dispenser. | This stand's pitcher enters the water-dispenser slot. |
 | 14 | `demo_fill_water` | Fill the rest of the pitcher with water. | The pitcher reaches its liquid capacity through the dispenser. |
@@ -478,6 +479,12 @@ Playtest matrices:
 - Add existing-save opt-in and post-onboarding tips.
 - Add world markers only where playtesting shows players cannot locate an objective.
 - Add accessibility options for animation speed, text size, color indicators, and panel visibility.
+
+## Known Follow-up Work
+
+- Solo mode still renders the rival stand and allows customers to route there. A future world-layout pass
+  must replace that rival lot with the planned invisible-house setup when Solo is selected. This is
+  intentionally deferred from the onboarding work.
 
 ## Open Product Decisions
 
