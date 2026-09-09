@@ -141,10 +141,16 @@ func _spawn_pedestrian(path: PedestrianPath) -> void:
 	# Server-authoritative: spawn on host + replicate to clients via WorldSync.
 	# Pass the appearance seed in spawn state so clients randomize identically.
 	var state := { "appearance_seed": seed }
+	# NPCs have collision_mask=0 (no floor detection), so they stay at whatever
+	# Y they spawn at. The route markers have Y values ranging from ~-0.1 to
+	# ~+0.07, which causes visible sinking/floating. Force Y=0 (the ground
+	# reference used by queue markers, the player, and most waypoints).
+	var spawn_pos := path.waypoints[0].global_position
+	spawn_pos.y = 0.0
 	var spawned := WorldSync.spawn_networked(
 		"res://scenes/customer/pedestrian.tscn",
 		get_parent(),
-		path.waypoints[0].global_position,
+		spawn_pos,
 		Vector3.ZERO,
 		state,
 	) as Pedestrian

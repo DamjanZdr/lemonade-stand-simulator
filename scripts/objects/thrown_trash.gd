@@ -294,8 +294,13 @@ func _finalize() -> void:
 	if land_pos.y < -1.0:
 		WorldSync.despawn_networked(self)
 		return
-	# Preserve the settled physics transform so finalization cannot snap
-	# trash from a tabletop to the ground or apply the model scale twice.
+	# Snap the trash to the ground surface. The RigidBody3D's origin rests
+	# at the collision shape's center, but the visual model extends below
+	# that origin (e.g., apple collision at Y=-0.125, banana at Y=-0.121).
+	# Without snapping, the trash appears to float above the ground by
+	# roughly half the collision shape's height. Raycast down to find the
+	# actual ground and place the TrashItem at ground level.
+	land_pos = _snap_to_ground(land_pos)
 	# Spawn the real trash item at this position via WorldSync.
 	if trash_type == "empty_box":
 		var state: Dictionary = {
@@ -324,6 +329,24 @@ func _finalize() -> void:
 			WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
 	# Despawn self via WorldSync so clients remove it too.
 	WorldSync.despawn_networked(self)
+
+
+## Raycast straight down from the given position to find the ground surface.
+## Returns a position with Y snapped to the ground (or the original position
+## if no ground is found within 2 meters). This prevents trash from floating
+## above the ground due to collision shape offsets in the trash variant scenes.
+func _snap_to_ground(pos: Vector3) -> Vector3:
+	var space := get_world_3d().direct_space_state
+	var from := pos + Vector3(0, 0.5, 0)
+	var to := pos - Vector3(0, 2.0, 0)
+	var params := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF)
+	params.exclude = [get_rid()]
+	var result := space.intersect_ray(params)
+	if result.is_empty():
+		return pos
+	var hit_pos: Vector3 = result.position
+	# Place the trash slightly above the hit point so it rests on the surface.
+	return Vector3(pos.x, hit_pos.y, pos.z)
 
 
 ## Called by the host when a player picks up this trash mid-air.

@@ -37,8 +37,11 @@ func _ready() -> void:
 	visible = false
 	_set_areas_enabled(false)
 	EventBus.sale_initiated.connect(_on_sale_initiated)
-	EventBus.change_finalized.connect(_on_change_finalized)
-	EventBus.customer_left.connect(_on_customer_left)
+	# Don't listen to change_finalized — it's a global signal with multiple
+	# emitters (MoneyController, CashRegisterProp, cash_register UI). Instead,
+	# deactivate directly in _give_change() so only THIS controller's own
+	# finalization deactivates it, preventing stale/foreign finalization
+	# events from prematurely hiding the change UI.
 
 
 func _hidden_position() -> Vector3:
@@ -105,15 +108,6 @@ func _on_sale_initiated(payment: float, change_due: float) -> void:
 	_slide_tween = create_tween()
 	_slide_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	_slide_tween.tween_property(self, "position", _rest_position, slide_up_duration)
-
-
-func _on_change_finalized(_earned: float) -> void:
-	_deactivate()
-
-
-func _on_customer_left(_customer: Node, _outcome: String) -> void:
-	if _active:
-		_deactivate()
 
 
 func _deactivate() -> void:
@@ -207,3 +201,7 @@ func _give_change() -> void:
 		return
 	var earned := (_payment_cents - _tendered_cents) / 100.0
 	EventBus.change_finalized.emit(earned)
+	# Deactivate directly instead of listening to change_finalized —
+	# the signal is global and has multiple emitters, so listening to
+	# it would cause premature deactivation from foreign finalizations.
+	_deactivate()

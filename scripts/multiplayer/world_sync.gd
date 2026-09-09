@@ -728,10 +728,6 @@ func spawn_networked(
 	var obj_scale: Vector3 = obj.scale
 	# Broadcast to clients
 	var parent_path := _node_path_to_string(parent.get_path())
-	GameLog.log(
-		"[WorldSync] Host spawned %s name=%s net_id=%d parent=%s pos=%s scale=%s"
-		% [scene_path, obj.name, net_id, parent_path, str(global_pos), str(obj_scale)]
-	)
 	_spawn_on_clients.rpc(
 		scene_path,
 		parent_path,
@@ -756,9 +752,6 @@ func despawn_networked(obj: Node) -> void:
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	var obj_name := obj.name
 	var net_id := _get_net_id(obj)
-	GameLog.log(
-		"[WorldSync] Host despawning %s net_id=%d parent=%s" % [obj_name, net_id, parent_path]
-	)
 	# If this is a supply box, release any delivery-grid slot it occupies
 	# (host-authoritative) and make boxes above fall on the host AND clients.
 	if obj is SupplyBox:

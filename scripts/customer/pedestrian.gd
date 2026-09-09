@@ -181,6 +181,11 @@ func _physics_process(delta: float) -> void:
 		_connect_playable_area()
 
 	velocity.y = 0.0
+	# NPCs have collision_mask=0 (no floor detection), so lock Y to the
+	# ground reference. Without this, NPCs stay at whatever Y they spawned
+	# at (route markers range from ~-0.1 to ~+0.07), causing visible
+	# sinking/floating.
+	global_position.y = 0.0
 
 	if _is_rotating_to_face:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)
@@ -196,6 +201,7 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
+		global_position.y = 0.0
 		# When stun ends, play Fall in reverse to get back up.
 		if _stun_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
 			_recovering = true
@@ -210,6 +216,7 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
+		global_position.y = 0.0
 		if _recover_timer <= 0.0:
 			_recovering = false
 			if _npc != null and is_instance_valid(_npc):
@@ -268,6 +275,9 @@ func _apply_motion(_delta: float) -> void:
 	# Always use move_and_slide() — it handles floor following,
 	# slopes, and surface transitions natively via CharacterBody3D.
 	move_and_slide()
+	# NPCs have collision_mask=0 (no floor detection), so re-lock Y to the
+	# ground reference after movement to prevent drift/sinking.
+	global_position.y = 0.0
 
 
 # ── Client-side interpolation ─────────────────────────────────────────────────
@@ -299,6 +309,9 @@ func _physics_client_interpolate(delta: float) -> void:
 	if _has_net_target:
 		var t := clampf(_NET_LERP_SPEED * delta, 0.0, 1.0)
 		global_position = global_position.lerp(_net_target_pos, t)
+		# NPCs have collision_mask=0 (no floor detection), so lock Y to the
+		# ground reference on clients too, to match the host's Y-lock.
+		global_position.y = 0.0
 		# Smoothly rotate toward target rotation
 		var curr_q := basis.get_rotation_quaternion()
 		var target_q := Quaternion.from_euler(_net_target_rot)

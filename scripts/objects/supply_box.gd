@@ -86,10 +86,12 @@ func _ready() -> void:
 		_apply_tint()
 		if label:
 			label.no_depth_test = false
+			label.alpha_cut = 2
 		var top_icon_node := get_node_or_null("IconSprite_Top") as Sprite3D
 		if top_icon_node:
 			top_icon_node.no_depth_test = false
 			top_icon_node.shaded = false
+			top_icon_node.alpha_cut = 2
 		if not is_equipment:
 			_setup_icon()
 		else:
@@ -239,6 +241,11 @@ func _setup_equipment_icon() -> void:
 			else:
 				icon_node.no_depth_test = false
 				icon_node.shaded = false
+				# Use ALPHA_CUT_OPAQUE so the icon renders in the opaque
+				# pass and writes to the depth buffer. Without this, the
+				# icon renders in the transparency pass and doesn't write
+				# to depth, causing it to show through closer boxes.
+				icon_node.alpha_cut = 2
 				if not texture_cache.has(equipment_type):
 					texture_cache[equipment_type] = _make_icon_texture(equipment_type)
 				if texture_cache.has(equipment_type):
@@ -246,6 +253,9 @@ func _setup_equipment_icon() -> void:
 		var label_node := _face_labels[i]
 		if label_node != null:
 			label_node.no_depth_test = false
+			# Use ALPHA_CUT_OPAQUE so the label renders in the opaque
+			# pass and writes to the depth buffer, preventing see-through.
+			label_node.alpha_cut = 2
 			label_node.text = label_text
 
 
@@ -280,6 +290,11 @@ func _setup_icon() -> void:
 			else:
 				icon_node.no_depth_test = false
 				icon_node.shaded = false
+				# Use ALPHA_CUT_OPAQUE so the icon renders in the opaque
+				# pass and writes to the depth buffer. Without this, the
+				# icon renders in the transparency pass and doesn't write
+				# to depth, causing it to show through closer boxes.
+				icon_node.alpha_cut = 2
 				if not texture_cache.has(ingredient_type):
 					texture_cache[ingredient_type] = _make_icon_texture(ingredient_type)
 				if texture_cache.has(ingredient_type):
@@ -287,6 +302,9 @@ func _setup_icon() -> void:
 		var label_node := _face_labels[i]
 		if label_node != null:
 			label_node.no_depth_test = false
+			# Use ALPHA_CUT_OPAQUE so the label renders in the opaque
+			# pass and writes to the depth buffer, preventing see-through.
+			label_node.alpha_cut = 2
 			label_node.text = qty_text
 
 

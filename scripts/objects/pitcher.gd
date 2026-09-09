@@ -292,7 +292,11 @@ func interact(player: Node) -> void:
 				OnboardingManager.report(
 					OnboardingManager.stand_for_node(self),
 					"cup_filled",
-					{ "type": "cup", "snapshot": recipe.duplicate(true) },
+					{
+						"type": "cup",
+						"snapshot": recipe.duplicate(true),
+						"cups_poured": cups_poured,
+					},
 				)
 				if is_fully_empty():
 					_clear_and_return()
@@ -313,7 +317,11 @@ func interact(player: Node) -> void:
 				OnboardingManager.report(
 					OnboardingManager.stand_for_node(self),
 					"cup_filled",
-					{ "type": "cup", "snapshot": recipe.duplicate(true) },
+					{
+						"type": "cup",
+						"snapshot": recipe.duplicate(true),
+						"cups_poured": cups_poured,
+					},
 				)
 				if is_fully_empty():
 					_clear_and_return()

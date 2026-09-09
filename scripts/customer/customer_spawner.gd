@@ -325,9 +325,14 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 		seed = source_pedestrian.appearance_seed
 
 	var spawn_pos: Vector3 = _queue_spots[slot_index]
+	# NPCs have collision_mask=0 (no floor detection), so they stay at whatever
+	# Y they spawn at. Force Y=0 (the ground reference) to prevent sinking.
+	spawn_pos.y = 0.0
 	var route_continuation: Dictionary = { }
 	if source_pedestrian != null and is_instance_valid(source_pedestrian):
-		spawn_pos = source_pedestrian.global_position
+		# Preserve the pedestrian's XZ position but snap Y to the ground.
+		spawn_pos.x = source_pedestrian.global_position.x
+		spawn_pos.z = source_pedestrian.global_position.z
 		route_continuation = source_pedestrian.get_route_continuation()
 
 	# Build spawn state for WorldSync — clients get appearance_seed + queue data

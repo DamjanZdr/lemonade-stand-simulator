@@ -75,7 +75,6 @@ var _serving_peer_id: int = 1
 ## still owed while the player makes change.
 var _payment_amount: float = 0.0
 var _feedback_text: String = ""
-var _fallback_tween: Tween = null
 var _facing_target: Basis = Basis.IDENTITY
 var _is_rotating_to_face: bool = false
 const _ROTATION_SPEED: float = 10.0
@@ -166,6 +165,20 @@ func _ready() -> void:
 		_disable_collision()
 
 
+func _exit_tree() -> void:
+	# Clean up any remaining change-flow signal connections so stale
+	# ONE_SHOT connections don't get consumed by the next customer's
+	# change_finalized event.
+	if EventBus.change_tendered_updated.is_connected(_forward_change_tendered):
+		EventBus.change_tendered_updated.disconnect(_forward_change_tendered)
+	if EventBus.change_finalized.is_connected(_forward_change_finalized):
+		EventBus.change_finalized.disconnect(_forward_change_finalized)
+	if EventBus.change_tendered_updated.is_connected(_on_change_tendered):
+		EventBus.change_tendered_updated.disconnect(_on_change_tendered)
+	if _change_callable.is_valid() and EventBus.change_finalized.is_connected(_change_callable):
+		EventBus.change_finalized.disconnect(_change_callable)
+
+
 func _process(_delta: float) -> void:
 	if _ui_label != null and _ui_label.visible:
 		_update_bubble_screen_pos()
@@ -179,6 +192,11 @@ func _physics_process(delta: float) -> void:
 		return
 
 	velocity.y = 0.0
+	# NPCs have collision_mask=0 (no floor detection), so lock Y to the
+	# ground reference. Without this, NPCs stay at whatever Y they spawned
+	# at (route markers range from ~-0.1 to ~+0.07), causing visible
+	# sinking/floating.
+	global_position.y = 0.0
 
 	if _is_rotating_to_face:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)
@@ -277,9 +295,13 @@ func _apply_motion(delta: float) -> void:
 	match state:
 		CustomerState.WAITING, CustomerState.RECEIVING, CustomerState.REACTING:
 			velocity.y = 0.0
+			global_position.y = 0.0
 			global_position += velocity * delta
 		_:
 			move_and_slide()
+			# NPCs have collision_mask=0 (no floor detection), so re-lock Y
+			# after move_and_slide to prevent drift from any source.
+			global_position.y = 0.0
 
 
 ## Stun the customer (host-authoritative). Called when hit by thrown trash.
@@ -356,6 +378,9 @@ func _physics_client_interpolate(delta: float) -> void:
 	if _has_net_target:
 		var t := clampf(_NET_LERP_SPEED * delta, 0.0, 1.0)
 		global_position = global_position.lerp(_net_target_pos, t)
+		# NPCs have collision_mask=0 (no floor detection), so lock Y to the
+		# ground reference on clients too, to match the host's Y-lock.
+		global_position.y = 0.0
 		var curr_q := basis.get_rotation_quaternion()
 		var target_q := Quaternion.from_euler(_net_target_rot)
 		basis = Basis(curr_q.slerp(target_q, t))
@@ -562,16 +587,23 @@ func _resolve(outcome: String) -> void:
 		var price := _accumulated_price
 		var payment := _customer_payment(price)
 		var change_due := roundf((payment - price) * 100.0) / 100.0
-		_npc.start_payment_pose(_npc.global_position + Vector3(0, 1.0, 0.5))
-		_payment_amount = payment
 		_change_due_cents = roundi(change_due * 100.0)
-		_last_tendered_cents = 0
-		_waiting_for_change = true
-		_begin_change.rpc_id(_serving_peer_id, payment, change_due)
-		# Fallback: give up after 60 s if the player ignores the money.
-		_fallback_tween = create_tween()
-		_fallback_tween.tween_interval(60.0)
-		_fallback_tween.tween_callback(_leave_after_change)
+		if _change_due_cents > 0:
+			# Only enter the change flow if the customer is owed change.
+			# If change_due is 0 (customer paid exact amount), skip the
+			# change UI entirely — there's nothing for the player to do.
+			_npc.start_payment_pose(_npc.global_position + Vector3(0, 1.0, 0.5))
+			_payment_amount = payment
+			_last_tendered_cents = 0
+			_waiting_for_change = true
+			_begin_change.rpc_id(_serving_peer_id, payment, change_due)
+		else:
+			# Exact payment — no change needed. Pay directly and leave.
+			if stand != null and not stand.is_legacy_primary:
+				stand.request_add_money(payment - price)
+			else:
+				GameState.add_money(payment - price)
+			_start_leaving()
 	else:
 		var serve_bonus: float = UpgradeManager.get_effect_total("speed_serve")
 		var interval: float = 1.8 * (1.0 - serve_bonus)
@@ -640,9 +672,13 @@ func _leave_after_change() -> void:
 	_change_callable = Callable()
 	if EventBus.change_tendered_updated.is_connected(_on_change_tendered):
 		EventBus.change_tendered_updated.disconnect(_on_change_tendered)
-	if _fallback_tween and _fallback_tween.is_valid():
-		_fallback_tween.kill()
-	_fallback_tween = null
+	# Also clean up the forwarding connections from _begin_change so stale
+	# ONE_SHOT connections don't get consumed by the next customer's
+	# change_finalized event.
+	if EventBus.change_tendered_updated.is_connected(_forward_change_tendered):
+		EventBus.change_tendered_updated.disconnect(_forward_change_tendered)
+	if EventBus.change_finalized.is_connected(_forward_change_finalized):
+		EventBus.change_finalized.disconnect(_forward_change_finalized)
 	# Only linger with feedback if the player actually completed the change.
 	if _last_tendered_cents == _change_due_cents and _change_due_cents >= 0:
 		OnboardingManager.report(

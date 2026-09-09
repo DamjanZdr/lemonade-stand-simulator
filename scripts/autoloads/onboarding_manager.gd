@@ -374,7 +374,17 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 		var snap: Dictionary = data.get("snapshot", { }).duplicate(true)
 		var fruit: String = snap.get("fruit_type", "")
 		if fruit != "":
-			stand.onboarding_progress.latest_pitchers[fruit] = snap
+			# cup_filled snapshots are taken before pour_portion() reduces the
+			# remaining amounts, so the FIRST cup has the original recipe values.
+			# Subsequent cups have proportionally-reduced values that don't
+			# represent "the recipe used" — don't let them overwrite the
+			# authoritative snapshot from pitcher_prepared/equipment_placed
+			# or the first cup.
+			var is_first_cup: bool = (
+				event_name == "cup_filled" and int(data.get("cups_poured", 1)) <= 1
+			)
+			if event_name != "cup_filled" or is_first_cup:
+				stand.onboarding_progress.latest_pitchers[fruit] = snap
 			if (
 				event_name == "pitcher_prepared"
 				and fruit == (stand.onboarding_progress.selected_demo_fruit)
