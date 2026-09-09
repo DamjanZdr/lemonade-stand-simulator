@@ -2124,7 +2124,10 @@ func _build_recipes_page() -> void:
 	_style_unit_button(f_btn, ice_accent)
 
 	var _update_ice_display := func():
-		var c_val: float = GameState.ice_degrees_per_scoop
+		var stand := _get_local_stand()
+		var c_val: float = (
+			stand.ice_degrees_per_scoop if stand != null else GameState.ice_degrees_per_scoop
+		)
 		var display: float = c_val * (1.8 if _ice_unit == "F" else 1.0)
 		if _ice_unit == "F":
 			ice_spin.min_value = 0.9
@@ -2137,7 +2140,11 @@ func _build_recipes_page() -> void:
 	ice_spin.value_changed.connect(
 		func(v: float):
 			var c_val: float = v if _ice_unit == "C" else v / 1.8
-			GameState.ice_degrees_per_scoop = c_val
+			var stand := _get_local_stand()
+			if stand != null:
+				stand.request_set_ice_degrees(c_val)
+			else:
+				GameState.ice_degrees_per_scoop = c_val
 			_update_ice_display.call(),
 	)
 	c_btn.pressed.connect(

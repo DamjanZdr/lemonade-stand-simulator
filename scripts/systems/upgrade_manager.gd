@@ -296,6 +296,18 @@ func _apply_radial_layout() -> void:
 
 ## Check if a node can be purchased (adjacent to a purchased node or root).
 func can_unlock(node_name: String) -> bool:
+	var candidate: Dictionary = tree_nodes.get(node_name, { })
+	var candidate_id: String = candidate.get("upgrade_id", "")
+	if (
+		OS.has_feature("demo") and candidate_id.ends_with("_unlock")
+		and candidate_id != "lemon_unlock"
+	):
+		var unlocked_extra := 0
+		for fruit in RECIPE_ORDER:
+			if fruit != "lemon" and is_fruit_unlocked(fruit):
+				unlocked_extra += 1
+		if unlocked_extra >= 1:
+			return false
 	if node_name == root_node_name:
 		return true
 	if is_node_purchased(node_name):
@@ -346,6 +358,15 @@ func get_node_data(node_name: String) -> Dictionary:
 		data["name"] = "Root" if data.get("is_root", false) else "???"
 		data["description"] = ""
 		data["icon"] = null
+	if OS.has_feature("demo") and upgrade_id.ends_with("_unlock") and not data.can_unlock:
+		var has_extra_fruit := false
+		for fruit in RECIPE_ORDER:
+			if fruit != "lemon" and is_fruit_unlocked(fruit):
+				has_extra_fruit = true
+				break
+		if has_extra_fruit and not data.purchased:
+			data["name"] = "%s — Full Game" % data.name
+			data["description"] = "Additional fruit research is available in the Full Game."
 	return data
 
 
@@ -363,6 +384,16 @@ func purchase_node(node_name: String) -> bool:
 		stand_purchased_nodes[_active_stand] = purchased_nodes.duplicate()
 	var upgrade_id: String = data.get("upgrade_id", "")
 	_apply_effect(upgrade_id)
+	if upgrade_id.ends_with("_unlock") and upgrade_id != "lemon_unlock":
+		var fruit := upgrade_id.trim_suffix("_unlock")
+		var stand := OnboardingManager.find_stand(_active_stand)
+		if stand != null:
+			stand.onboarding_progress.selected_demo_fruit = fruit
+			OnboardingManager.report(
+				stand,
+				"fruit_unlocked",
+				{ "type": "fruit", "fruit_type": fruit },
+			)
 	EventBus.upgrade_purchased.emit(data.get("id", 0), cost)
 	EventBus.game_saved.emit()
 	return true

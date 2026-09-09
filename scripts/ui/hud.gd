@@ -38,6 +38,13 @@ var _gain_label: Label = null
 
 # Throw charge bar
 var _throw_charge_bar: ProgressBar = null
+var _onboarding_panel: PanelContainer
+var _onboarding_text: RichTextLabel
+var _onboarding_progress: Label
+var _onboarding_collapsed := false
+var _displayed_task_id := ""
+var _onboarding_revision := -1
+var _discovery_label: Label
 
 ## Which stand's economy this HUD displays. Assigned by whatever wires up
 ## the player-to-stand relationship (main.gd in Stage A; later, whichever
@@ -53,6 +60,7 @@ func _ready() -> void:
 	_build_hint_box()
 	_build_styles()
 	_build_ui()
+	_build_onboarding_panel()
 	_build_version_label()
 	_remove_legacy()
 	_connect_signals()
@@ -409,6 +417,8 @@ func _connect_signals() -> void:
 	EventBus.weather_changed.connect(_on_weather)
 	EventBus.interaction_hint_changed.connect(_on_hint)
 	EventBus.throw_charge_changed.connect(_on_throw_charge)
+	OnboardingManager.stand_progress_changed.connect(_on_onboarding_progress)
+	OnboardingManager.discovery_announced.connect(_on_discovery)
 	_build_throw_charge_bar()
 
 
@@ -424,6 +434,141 @@ func set_stand(stand: StandUnit) -> void:
 	_stand.money_changed.connect(_on_money)
 	_prev_money = _stand.money
 	_on_money(_stand.money)
+	_on_onboarding_progress(_stand, _stand.onboarding_progress)
+
+
+func _build_onboarding_panel() -> void:
+	_onboarding_panel = PanelContainer.new()
+	_onboarding_panel.name = "OnboardingPanel"
+	_onboarding_panel.position = Vector2(20, 145)
+	_onboarding_panel.custom_minimum_size = Vector2(390, 108)
+	var box := VBoxContainer.new()
+	_onboarding_panel.add_child(box)
+	var header := HBoxContainer.new()
+	box.add_child(header)
+	_onboarding_progress = _make_label("Onboarding", 20, AMATIC_FONT)
+	_onboarding_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(_onboarding_progress)
+	var collapse := Button.new()
+	collapse.text = "−"
+	collapse.pressed.connect(
+		func():
+			_onboarding_collapsed = not _onboarding_collapsed
+			_onboarding_text.visible = not _onboarding_collapsed
+			collapse.text = "+" if _onboarding_collapsed else "−",
+	)
+	header.add_child(collapse)
+	var skip := Button.new()
+	skip.text = "Skip"
+	skip.visible = WorldSync.is_host()
+	skip.pressed.connect(_confirm_skip)
+	header.add_child(skip)
+	_onboarding_text = RichTextLabel.new()
+	_onboarding_text.bbcode_enabled = true
+	_onboarding_text.fit_content = true
+	_onboarding_text.custom_minimum_size.y = 55
+	box.add_child(_onboarding_text)
+	_discovery_label = _make_label("", 30, AMATIC_FONT, Color(1.0, 0.85, 0.25))
+	_discovery_label.visible = false
+	_discovery_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_discovery_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_discovery_label.position = Vector2(-220, 70)
+	_discovery_label.custom_minimum_size.x = 440
+	add_child(_discovery_label)
+	add_child(_onboarding_panel)
+
+
+func _confirm_skip() -> void:
+	if _stand == null:
+		return
+	var dialog := ConfirmationDialog.new()
+	dialog.dialog_text = (
+		"Skip onboarding for everyone at this stand? "
+		+ "No rewards or discoveries will be granted."
+	)
+	add_child(dialog)
+	dialog.confirmed.connect(
+		func():
+			OnboardingManager.request_skip(_stand)
+			dialog.queue_free(),
+	)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.popup_centered()
+
+
+func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
+	if stand != _stand or _onboarding_panel == null:
+		return
+	if progress.is_empty():
+		_onboarding_panel.visible = false
+		return
+	var task := OnboardingManager.get_task(progress)
+	var next_id: String = task.get("id", "")
+	var revision := int(progress.get("revision", 0))
+	_onboarding_revision = revision
+	var should_hold_completion: bool = (
+		_displayed_task_id != "" and next_id != _displayed_task_id
+		and next_id != "day_end" and not bool(progress.get("day_end_active", false))
+	)
+	if should_hold_completion:
+		var old_progress := progress.duplicate(true)
+		old_progress["current_task_id"] = _displayed_task_id
+		old_progress["completed_parts"] = { }
+		var old_task := OnboardingManager.get_task(old_progress)
+		for part in old_task.get("parts", { }):
+			old_progress.completed_parts[part] = true
+		_render_onboarding(old_progress, true)
+		_displayed_task_id = next_id
+		await get_tree().create_timer(1.0).timeout
+		if _stand == stand and _onboarding_revision == revision:
+			_render_onboarding(progress)
+		return
+	_displayed_task_id = next_id
+	_render_onboarding(progress)
+
+
+func _render_onboarding(progress: Dictionary, force_visible: bool = false) -> void:
+	_onboarding_panel.visible = (
+		force_visible
+		or (not progress.get("completed", false) and not progress.get("skipped", false))
+	)
+	var task := OnboardingManager.get_task(progress)
+	var text: String = task.get("text", "")
+	for part in task.get("parts", { }):
+		var done: bool = progress.get("completed_parts", { }).get(part, false)
+		text = text.replace(
+			"{%s}" % part,
+			("[s][color=#8fd18f]%s[/color][/s]" % part) if done else part,
+		)
+	var task_id: String = task.get("id", "")
+	if task_id in ["demo_master_lemon", "demo_master_second_fruit"]:
+		var fruit: String = (
+			"lemon"
+			if task_id == "demo_master_lemon"
+			else str(progress.get("selected_demo_fruit", ""))
+		)
+		var candidate: Dictionary = progress.get("active_recipe_candidates", { }).get(fruit, { })
+		text += "\nValidation: %d / 5 customers" % int(candidate.get("streak", 0))
+	elif task_id == "demo_master_ice":
+		var candidate: Dictionary = progress.get("active_ice_candidate", { })
+		text += "\nValidation: %d / 5 customers" % int(candidate.get("streak", 0))
+	_onboarding_text.text = text
+	_onboarding_progress.text = "Onboarding"
+
+
+func _on_discovery(stand: StandUnit, title: String, detail: String) -> void:
+	if stand != _stand:
+		return
+	_discovery_label.text = title + "\n" + detail
+	_discovery_label.visible = true
+	var tween := create_tween()
+	tween.tween_interval(4.0)
+	tween.tween_property(_discovery_label, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(
+		func():
+			_discovery_label.visible = false
+			_discovery_label.modulate.a = 1.0,
+	)
 
 
 func _show_money_gain(amount: float, new_total: float) -> void:
@@ -486,6 +631,13 @@ func set_hud_visible(vis: bool) -> void:
 		_main_panel.visible = vis
 	if _hint_box:
 		_hint_box.visible = vis
+	if _onboarding_panel:
+		_onboarding_panel.visible = (
+			vis and _stand != null
+			and not (_stand.onboarding_progress.get("completed", false) or _stand
+				.onboarding_progress
+				.get("skipped", false))
+		)
 
 # ─── Throw Charge Bar ───
 

@@ -230,6 +230,7 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	GameState.total_money_spent = 0.0
 	GameState.highest_purchase = 0.0
 	DayManager.day_number = 1
+	OnboardingManager.reset()
 	UpgradeManager.reset()
 	UpgradeManager.set_active_stand(stand_name)
 	# Save immediately to create the slot (force: not a host yet)
@@ -284,6 +285,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	_pending_supply_box_respawn = data.get("supply_boxes", [])
 	GameState.stand_name = data.get("stand_name", current_slot)
 	GameState.game_mode = data.get("game_mode", GameState.GameMode.SOLO) as GameState.GameMode
+	OnboardingManager.deserialize(data.get("onboarding", { "version": 1, "stands": { } }))
 	GameState.money = data.get("money", Balancing.STARTING_MONEY)
 	GameState.popularity = data.get("popularity", 0.1)
 	GameState.temperature = data.get("temperature", 25.0)
@@ -381,7 +383,8 @@ func _build_save_dict() -> Dictionary:
 		"placed_containers": _scan_placed_containers(),
 		"supply_boxes": _scan_supply_boxes(),
 		"customization": _collect_customization(),
-		"version": 1,
+		"onboarding": OnboardingManager.serialize(),
+		"version": 2,
 	}
 
 

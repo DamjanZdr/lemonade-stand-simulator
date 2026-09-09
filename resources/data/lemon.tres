@@ -4,3 +4,4 @@
 
 [resource]
 script = ExtResource("1_ingredient_data")
+default_price = 0.8

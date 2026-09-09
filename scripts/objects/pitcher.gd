@@ -149,6 +149,11 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 			return false
 	update_label()
 	EventBus.pitcher_ingredient_added.emit(ingredient_type, amount)
+	OnboardingManager.report(
+		OnboardingManager.stand_for_node(self),
+		"pitcher_ingredient",
+		{ "type": ingredient_type, "amount": amount },
+	)
 	_sync_state_to_peers()
 	return true
 
@@ -284,6 +289,11 @@ func interact(player: Node) -> void:
 					_make_filled_cup_mesh(cup_color),
 				)
 				EventBus.pitcher_cup_filled.emit(recipe)
+				OnboardingManager.report(
+					OnboardingManager.stand_for_node(self),
+					"cup_filled",
+					{ "type": "cup", "snapshot": recipe.duplicate(true) },
+				)
 				if is_fully_empty():
 					_clear_and_return()
 				return
@@ -300,6 +310,11 @@ func interact(player: Node) -> void:
 					_make_filled_cup_mesh(cup_color),
 				)
 				EventBus.pitcher_cup_filled.emit(recipe)
+				OnboardingManager.report(
+					OnboardingManager.stand_for_node(self),
+					"cup_filled",
+					{ "type": "cup", "snapshot": recipe.duplicate(true) },
+				)
 				if is_fully_empty():
 					_clear_and_return()
 				return

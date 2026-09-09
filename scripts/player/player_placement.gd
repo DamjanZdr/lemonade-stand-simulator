@@ -1637,6 +1637,12 @@ func _try_place_container() -> Node3D:
 
 	_destroy_ghost()
 	var container_type_str: String = _player.held_item_data.get("container_type", "")
+	var placed_recipe: Dictionary = _player.held_item_data.get("saved_recipe", { }).duplicate(true)
+	OnboardingManager.report(
+		_player.assigned_stand,
+		"equipment_placed",
+		{ "type": container_type_str, "snapshot": placed_recipe },
+	)
 	_player.inventory.clear_held()
 	EventBus.container_placed.emit(container_type_str, instance)
 	AudioManager.play_sfx(_get_place_sfx_key(container_type_str), place_pos, -1.0, 0.05, 0.85)

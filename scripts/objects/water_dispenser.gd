@@ -55,6 +55,16 @@ func _apply_finish_fill() -> void:
 		_snapped_pitcher.end_press_eraser_animation()
 		_snapped_pitcher.update_liquid_color()
 		EventBus.pitcher_ingredient_added.emit("water", _fill_amount)
+		OnboardingManager.report(
+			OnboardingManager.stand_for_node(self),
+			"pitcher_water_filled",
+			{ "type": "water", "snapshot": _snapped_pitcher.get_recipe_snapshot() },
+		)
+		OnboardingManager.report(
+			OnboardingManager.stand_for_node(self),
+			"pitcher_prepared",
+			{ "snapshot": _snapped_pitcher.get_recipe_snapshot() },
+		)
 		if _snapped_pitcher.fruit_count > 0.0 and _snapped_pitcher.water > 0.0 \
 				and _snapped_pitcher.state == Pitcher.PitcherState.PREPPING:
 			_snapped_pitcher.state = Pitcher.PitcherState.COMPLETE
@@ -287,6 +297,11 @@ func get_hint(player: Node) -> String:
 
 func snap_pitcher(pitcher: Pitcher) -> void:
 	_snapped_pitcher = pitcher
+	OnboardingManager.report(
+		OnboardingManager.stand_for_node(self),
+		"pitcher_placed",
+		{ "type": "water_dispenser" },
+	)
 	if _snap_point != null:
 		_snapped_pitcher.global_position = _snap_point.global_position
 

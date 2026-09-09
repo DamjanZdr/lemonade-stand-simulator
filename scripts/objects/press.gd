@@ -336,6 +336,11 @@ func has_snapped_pitcher() -> bool:
 
 func snap_pitcher(pitcher: Pitcher) -> void:
 	_snapped_pitcher = pitcher
+	OnboardingManager.report(
+		OnboardingManager.stand_for_node(self),
+		"pitcher_placed",
+		{ "type": "press" },
+	)
 	if _snap_point != null:
 		_snapped_pitcher.global_position = _snap_point.global_position
 
@@ -440,6 +445,11 @@ func _finish_press() -> void:
 
 	EventBus.interaction_hint_changed.emit(
 		"Pressed %.0f %s into pitcher!" % [fruit_count, fruit_type.capitalize()],
+	)
+	OnboardingManager.report(
+		OnboardingManager.stand_for_node(self),
+		"fruit_pressed",
+		{ "type": fruit_type, "amount": fruit_count },
 	)
 	fruit_count = 0.0
 	fruit_type = ""
@@ -563,6 +573,11 @@ func _animate_fruit_drop(itype: String, amount: float, start_pos: Vector3) -> vo
 				fruit_type = itype
 				fruit_count += amount
 				_drop_busy = false
+				OnboardingManager.report(
+					OnboardingManager.stand_for_node(self),
+					"fruit_loaded",
+					{ "type": itype, "amount": amount },
+				)
 				AudioManager.play_sfx("fruit_in_crate", global_position)
 				EventBus.interaction_hint_changed.emit(
 					"%s in press: %.0f" % [fruit_type.capitalize(), fruit_count],
@@ -573,6 +588,11 @@ func _animate_fruit_drop(itype: String, amount: float, start_pos: Vector3) -> vo
 		fruit_type = itype
 		fruit_count += amount
 		_drop_busy = false
+		OnboardingManager.report(
+			OnboardingManager.stand_for_node(self),
+			"fruit_loaded",
+			{ "type": itype, "amount": amount },
+		)
 
 
 func _make_fruit_mesh(itype: String) -> Node3D:

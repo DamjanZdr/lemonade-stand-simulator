@@ -10,10 +10,7 @@ extends Node
 
 
 func get_ideal_ice(temperature: float) -> float:
-	var deg_per_scoop: float = GameState.ice_degrees_per_scoop
-	if deg_per_scoop <= 0.0:
-		deg_per_scoop = 4.0
-	return temperature / deg_per_scoop
+	return temperature / Balancing.PERFECT_ICE_DEGREES_PER_SCOOP
 
 
 func get_ingredient_data(fruit_type: String) -> IngredientData:

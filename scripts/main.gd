@@ -1264,6 +1264,11 @@ func _push_world_state_to_clients() -> void:
 ## Same as above but only to a specific peer (for late joiners).
 func _push_world_state_to_client(peer_id: int) -> void:
 	WorldSync.sync_world_state_to_peer(peer_id)
+	# Static StandUnit nodes use their own RPC payload instead of the world snapshot.
+	if stand_unit:
+		stand_unit.push_state()
+	if stand_unit2:
+		stand_unit2.push_state()
 	# Sync the current day/phase to the late joiner
 	if multiplayer.is_server():
 		DayManager.sync_day_state_to_peer(peer_id)

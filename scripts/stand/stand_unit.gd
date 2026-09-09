@@ -52,6 +52,9 @@ var popularity: float = 0.1
 var feedback_tier: int = 0
 var prices: Dictionary = { }
 var recipes: Dictionary = { }
+var ice_degrees_per_scoop: float = 4.0
+## Synchronized and persisted stand-owned tutorial/mastery state.
+var onboarding_progress: Dictionary = { }
 
 ## Mirrors UpgradeManager.purchased_nodes (node_name -> true) for this
 ## stand. The upgrade TREE STRUCTURE (tree_nodes, connections, positions,
@@ -93,6 +96,7 @@ const STATE_PROPS: Array[String] = [
 	"feedback_tier",
 	"prices",
 	"recipes",
+	"ice_degrees_per_scoop",
 	"customers_served_happy",
 	"customers_lost",
 	"total_customers_served",
@@ -101,6 +105,7 @@ const STATE_PROPS: Array[String] = [
 	"total_money_spent",
 	"highest_purchase",
 	"highest_money",
+	"onboarding_progress",
 ]
 
 
@@ -130,6 +135,7 @@ func push_state() -> void:
 		feedback_tier,
 		prices.duplicate(true),
 		recipes.duplicate(true),
+		ice_degrees_per_scoop,
 		customers_served_happy,
 		customers_lost,
 		total_customers_served,
@@ -138,6 +144,7 @@ func push_state() -> void:
 		total_money_spent,
 		highest_purchase,
 		highest_money,
+		onboarding_progress.duplicate(true),
 	)
 
 
@@ -148,6 +155,7 @@ func _apply_state(
 	new_feedback_tier: int,
 	new_prices: Dictionary,
 	new_recipes: Dictionary,
+	new_ice_degrees_per_scoop: float,
 	new_customers_served_happy: int,
 	new_customers_lost: int,
 	new_total_customers_served: int,
@@ -156,12 +164,16 @@ func _apply_state(
 	new_total_money_spent: float,
 	new_highest_purchase: float,
 	new_highest_money: float,
+	new_onboarding_progress: Dictionary,
 ) -> void:
 	if is_multiplayer_authority():
 		return # Host already has correct values; don't overwrite
 	var changed_money := not is_equal_approx(money, new_money)
 	var changed_pop := not is_equal_approx(popularity, new_popularity)
 	var changed_tier := feedback_tier != new_feedback_tier
+	var had_onboarding_state := not onboarding_progress.is_empty()
+	var old_discoveries: Dictionary = onboarding_progress.get("discovered_recipes", { }).duplicate()
+	var old_ice_discovery = onboarding_progress.get("discovered_ice_ratio")
 	# Detect per-fruit price/recipe changes so we can emit the right signals
 	var changed_prices: Array[String] = []
 	for ft in new_prices:
@@ -179,6 +191,7 @@ func _apply_state(
 	feedback_tier = new_feedback_tier
 	prices = new_prices
 	recipes = new_recipes
+	ice_degrees_per_scoop = new_ice_degrees_per_scoop
 	customers_served_happy = new_customers_served_happy
 	customers_lost = new_customers_lost
 	total_customers_served = new_total_customers_served
@@ -187,6 +200,25 @@ func _apply_state(
 	total_money_spent = new_total_money_spent
 	highest_purchase = new_highest_purchase
 	highest_money = new_highest_money
+	onboarding_progress = new_onboarding_progress.duplicate(true)
+	OnboardingManager.stand_progress_changed.emit(self, onboarding_progress.duplicate(true))
+	var new_discoveries: Dictionary = onboarding_progress.get("discovered_recipes", { })
+	for fruit in new_discoveries:
+		if not had_onboarding_state or old_discoveries.has(fruit):
+			continue
+		var found: Dictionary = new_discoveries[fruit]
+		OnboardingManager.discovery_announced.emit(
+			self,
+			"Perfect %s Recipe Found" % str(fruit).capitalize(),
+			"%g %s · %g scoops of sugar" % [found.fruit_count, fruit, found.sugar],
+		)
+	var new_ice_discovery = onboarding_progress.get("discovered_ice_ratio")
+	if had_onboarding_state and old_ice_discovery == null and new_ice_discovery != null:
+		OnboardingManager.discovery_announced.emit(
+			self,
+			"Perfect Ice Ratio Found",
+			"1 cube every %g degrees" % float(new_ice_discovery),
+		)
 	if changed_money:
 		money_changed.emit(money)
 	if changed_pop:
@@ -222,6 +254,7 @@ func _ready() -> void:
 	# but it doesn't emit money_changed for that initial assignment, so we
 	# read it directly here rather than waiting for the first future change.
 	money = GameState.money
+	ice_degrees_per_scoop = GameState.ice_degrees_per_scoop
 	highest_money = maxf(highest_money, money)
 
 	# TEMPORARY migration bridge (primary stand only): many systems still
@@ -347,6 +380,11 @@ func get_price(fruit_type: String) -> float:
 func set_price(fruit_type: String, new_price: float) -> void:
 	prices[fruit_type] = new_price
 	price_changed.emit(fruit_type, new_price)
+	OnboardingManager.report(
+		self,
+		"price_changed",
+		{ "fruit_type": fruit_type, "value": new_price },
+	)
 	if not is_legacy_primary:
 		return
 	# Primary stand only: GameState is the read-only global view of this
@@ -404,6 +442,21 @@ func _rpc_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 	push_state()
 
 
+func request_set_ice_degrees(value: float) -> void:
+	_rpc_set_ice_degrees.rpc_id(1, value)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_set_ice_degrees(value: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	ice_degrees_per_scoop = clampf(value, 0.5, 10.0)
+	if is_legacy_primary:
+		GameState.ice_degrees_per_scoop = ice_degrees_per_scoop
+	OnboardingManager.notify_ice_changed(self, ice_degrees_per_scoop)
+	push_state()
+
+
 func request_customer_served(outcome: String) -> void:
 	_rpc_on_customer_served.rpc_id(1, outcome)
 
@@ -424,6 +477,7 @@ func set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 		# primary-stand value. Non-primary stands must not pollute GameState.
 		GameState.set_recipe(fruit_type, recipes[fruit_type])
 	recipe_changed.emit(fruit_type, recipes[fruit_type])
+	OnboardingManager.notify_recipe_changed(self, fruit_type, recipes[fruit_type])
 
 
 func set_feedback_tier(tier: int) -> void:

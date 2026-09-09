@@ -20,6 +20,7 @@ const IDEAL_SUGAR_PER_LIQUID: float = 0.20 # 2 scoops out of 10 liquid = perfect
 # === TEMPERATURE RANGE ===
 const TEMP_MIN: float = 10.0
 const TEMP_MAX: float = 40.0
+const PERFECT_ICE_DEGREES_PER_SCOOP: float = 7.0
 
 # === PITCHER ===
 const PITCHER_MAX_LIQUID: float = 10.0

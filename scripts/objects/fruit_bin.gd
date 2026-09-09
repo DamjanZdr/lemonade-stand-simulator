@@ -297,6 +297,11 @@ func interact(player: Node) -> void:
 			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
 			add_amount(itype, deposited, _get_hand_pos(player))
 			EventBus.supply_box_deposited.emit(itype, deposited)
+			OnboardingManager.report(
+				OnboardingManager.stand_for_node(self),
+				"supply_deposited",
+				{ "type": itype, "amount": deposited },
+			)
 			var remaining: float = to_deposit - deposited
 			if remaining > 0.0:
 				player.inventory.update_held_amount(remaining)

@@ -63,11 +63,14 @@ var _accumulated_price: float = 0.0
 ## First quality complaint hit across all correctly-served cups (e.g.
 ## too_sweet); empty string means everything served was spot-on so far.
 var _best_complaint: String = ""
+## Immutable cup snapshots and axis complaints, retained until feedback is shown.
+var _served_evaluations: Array[Dictionary] = []
 var _outcome: String = ""
 var _waiting_for_change: bool = false
 var _change_callable: Callable = Callable()
 var _change_due_cents: int = 0
 var _last_tendered_cents: int = 0
+var _serving_peer_id: int = 1
 ## What the customer handed over (in dollars), shown alongside how much is
 ## still owed while the player makes change.
 var _payment_amount: float = 0.0
@@ -489,8 +492,30 @@ func try_serve(player: Node) -> void:
 		_reject_wrong_item(fruit_type)
 		return
 
+	_serving_peer_id = p.get_multiplayer_authority()
 	p.inventory.clear_held()
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, fruit_type)
+	OnboardingManager.enforce_guaranteed_feedback(stand, recipe, result)
+	_served_evaluations.append(
+		{
+			"snapshot": recipe.duplicate(true),
+			"complaints": result.complaints.duplicate(),
+			"requested_fruit": fruit_type,
+			"temperature": GameState.temperature,
+			"ice_ratio": (
+				stand.ice_degrees_per_scoop
+				if stand != null
+				else GameState.ice_degrees_per_scoop
+			),
+		}
+	)
+	OnboardingManager.report(
+		stand,
+		"customer_served",
+		{ "type": "served", "fruit_type": fruit_type },
+	)
+	if fruit_type != "lemon":
+		OnboardingManager.report(stand, "second_fruit_served", { "fruit_type": fruit_type })
 	if _best_complaint == "" and not result.complaints.is_empty():
 		_best_complaint = result.complaints[0]
 	_accumulated_price += _get_price(fruit_type)
@@ -541,21 +566,8 @@ func _resolve(outcome: String) -> void:
 		_payment_amount = payment
 		_change_due_cents = roundi(change_due * 100.0)
 		_last_tendered_cents = 0
-		EventBus.change_tendered_updated.connect(_on_change_tendered)
-		EventBus.sale_initiated.emit(payment, change_due)
 		_waiting_for_change = true
-		_change_callable = func(earned: float):
-			# Explicitly route the money to whichever stand this sale was
-			# actually for. GameState no longer listens to change_finalized
-			# globally (that would credit every stand's sale into the same
-			# pot) — this is now the single place a sale's money is
-			# credited, one way or the other.
-			if stand != null and not stand.is_legacy_primary:
-				stand.request_add_money(earned)
-			else:
-				GameState.add_money(earned)
-			_leave_after_change()
-		EventBus.change_finalized.connect(_change_callable, CONNECT_ONE_SHOT)
+		_begin_change.rpc_id(_serving_peer_id, payment, change_due)
 		# Fallback: give up after 60 s if the player ignores the money.
 		_fallback_tween = create_tween()
 		_fallback_tween.tween_interval(60.0)
@@ -566,6 +578,56 @@ func _resolve(outcome: String) -> void:
 		var tween := create_tween()
 		tween.tween_interval(interval)
 		tween.tween_callback(_start_leaving)
+
+
+@rpc("authority", "call_local", "reliable")
+func _begin_change(payment: float, change_due: float) -> void:
+	if not EventBus.change_tendered_updated.is_connected(_forward_change_tendered):
+		EventBus.change_tendered_updated.connect(_forward_change_tendered)
+	if not EventBus.change_finalized.is_connected(_forward_change_finalized):
+		EventBus.change_finalized.connect(_forward_change_finalized, CONNECT_ONE_SHOT)
+	EventBus.sale_initiated.emit(payment, change_due)
+
+
+func _forward_change_tendered(tendered_cents: int, due_cents: int) -> void:
+	_last_tendered_cents = tendered_cents
+	_receive_change_tendered.rpc_id(1, tendered_cents, due_cents)
+
+
+func _forward_change_finalized(_earned: float) -> void:
+	if EventBus.change_tendered_updated.is_connected(_forward_change_tendered):
+		EventBus.change_tendered_updated.disconnect(_forward_change_tendered)
+	_receive_change_finalized.rpc_id(1, _last_tendered_cents)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _receive_change_tendered(tendered_cents: int, due_cents: int) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	if sender == 0:
+		sender = multiplayer.get_unique_id()
+	if not multiplayer.is_server() or sender != _serving_peer_id:
+		return
+	if due_cents != _change_due_cents:
+		return
+	_on_change_tendered(tendered_cents, due_cents)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _receive_change_finalized(tendered_cents: int) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	if sender == 0:
+		sender = multiplayer.get_unique_id()
+	if not multiplayer.is_server() or sender != _serving_peer_id:
+		return
+	if not _waiting_for_change or tendered_cents < _change_due_cents:
+		return
+	_last_tendered_cents = tendered_cents
+	var earned := float(roundi(_payment_amount * 100.0) - tendered_cents) / 100.0
+	if stand != null and not stand.is_legacy_primary:
+		stand.request_add_money(earned)
+	else:
+		GameState.add_money(earned)
+	_leave_after_change()
 
 
 func _leave_after_change() -> void:
@@ -582,7 +644,16 @@ func _leave_after_change() -> void:
 		_fallback_tween.kill()
 	_fallback_tween = null
 	# Only linger with feedback if the player actually completed the change.
-	if _last_tendered_cents >= _change_due_cents and _change_due_cents >= 0:
+	if _last_tendered_cents == _change_due_cents and _change_due_cents >= 0:
+		OnboardingManager.report(
+			stand,
+			"correct_change",
+			{
+				"type": "change",
+				"tendered_cents": _last_tendered_cents,
+				"due_cents": _change_due_cents,
+			},
+		)
 		_show_feedback_then_leave()
 	else:
 		_start_leaving()
@@ -645,6 +716,12 @@ func _on_change_tendered(tendered_cents: int, _due_cents: int) -> void:
 
 
 func _show_feedback_then_leave() -> void:
+	# Only real, correctly paid customer transactions are mastery-eligible.
+	for evaluation in _served_evaluations:
+		var payload := evaluation.duplicate(true)
+		payload["eligible"] = true
+		OnboardingManager.report(stand, "customer_feedback", payload)
+	_served_evaluations.clear()
 	_npc.stop_payment_pose()
 	# Hide the hand-held cash pickup on the NPC if it's still visible.
 	for cp_name: String in ["CashPoint/CashPickup", "CashPoint2/CashPickup"]:
@@ -728,6 +805,7 @@ func show_order_to_player(player: Node) -> void:
 	elif not _price_checking:
 		_show_order()
 	if not was_already_engaged:
+		OnboardingManager.report(stand, "customer_asked", { "type": "asked" })
 		_npc.play_anim("Talk")
 		_talk_anim_playing = true
 		# Connect to animation finished to know when Talk ends
