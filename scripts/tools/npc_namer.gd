@@ -19,6 +19,7 @@ var _input_field: LineEdit = null
 var _input_center: CenterContainer = null
 var _selected_idx: int = -1
 var _prev_mouse_mode: int = Input.MOUSE_MODE_CAPTURED
+var _people_was_active: bool = false
 
 
 func _ready() -> void:
@@ -69,10 +70,16 @@ func _toggle_mode() -> void:
 
 func _enter_mode() -> void:
 	_active = true
-	# Pause regular pedestrian spawning.
+	# Pause regular pedestrian spawning. PeopleManager schedules spawns
+	# via day_timer_updated → spawn_on_path, bypassing the spawner's
+	# _managed flag, so we must pause both.
 	var spawner := get_tree().get_first_node_in_group("pedestrian_spawner")
 	if spawner and spawner.has_method("set_managed"):
 		spawner.set_managed(true)
+	var people := get_tree().get_first_node_in_group("people_manager")
+	if people and people.get("active") != null:
+		_people_was_active = people.active
+		people.active = false
 	# Create a CanvasLayer for name labels + input popup.
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.name = "NpcNamerLayer"
@@ -91,6 +98,9 @@ func _exit_mode() -> void:
 	var spawner := get_tree().get_first_node_in_group("pedestrian_spawner")
 	if spawner and spawner.has_method("set_managed"):
 		spawner.set_managed(false)
+	var people := get_tree().get_first_node_in_group("people_manager")
+	if people and people.get("active") != null:
+		people.active = _people_was_active
 	# Clean up all spawned NPCs and their labels.
 	for entry in _spawned:
 		if is_instance_valid(entry.ped):
@@ -245,17 +255,8 @@ func _on_name_submitted(text: String) -> void:
 		var entry: Dictionary = _spawned[_selected_idx]
 		entry.label.text = name
 		entry.named = true
-		# Calculate size from font metrics (get_combined_minimum_size
-		# returns 0 before the first layout pass).
-		var text_size: Vector2 = AMATIC_FONT.get_string_size(
-			name,
-			HORIZONTAL_ALIGNMENT_CENTER,
-			-1,
-			24,
-		)
-		entry.panel.size = text_size + Vector2(16, 8)
-		entry.label.position = Vector2(8, 4)
-		entry.label.size = text_size
+		# PanelContainer auto-sizes to the label — force a layout update.
+		entry.panel.reset_size()
 	_close_input_popup()
 
 
@@ -274,7 +275,7 @@ func _close_input_popup() -> void:
 
 
 func _create_name_label(ped: Pedestrian) -> Dictionary:
-	var panel := Panel.new()
+	var panel := PanelContainer.new()
 	panel.name = "NameLabelPanel"
 	panel.visible = false
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
