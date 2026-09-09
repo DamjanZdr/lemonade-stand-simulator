@@ -126,6 +126,10 @@ const CAMERA_TWEEN_TIME: float = 1.0
 var _transition_active: bool = false
 var _transition_loaded: bool = false
 var _world_setup_done: bool = false
+# When true, _finish_transition will host a new game after the whip
+# transition completes. Used by _on_menu_new_stand so the loading
+# transition plays before the lobby is created.
+var _host_after_transition: bool = false
 var _transition_tween: Tween = null
 var _transition_blur_tween: Tween = null
 const TRANSITION_WHIP_TIME: float = 0.5
@@ -396,10 +400,12 @@ func _on_menu_play() -> void:
 func _on_menu_new_stand(stand_name: String, game_mode: int) -> void:
 	SaveManager.start_new_game(stand_name, game_mode)
 	LobbyManager.game_mode = game_mode
-	# Go to the lobby (same flow as Play with an existing save) so the
-	# player can invite friends, pick teams, etc. before starting.
-	NetworkManager.host_game()
-	_world_menu.hide_menu()
+	# Use the same whip loading transition as _on_menu_load_stand so
+	# the player sees the "Loading..." feedback instead of an instant
+	# menu hide. host_game() is deferred to _finish_transition so the
+	# lobby transition doesn't conflict with the whip camera tween.
+	_host_after_transition = true
+	_start_stand_transition(stand_name, stand_name)
 
 
 ## Load an existing stand from the saves panel.
@@ -550,6 +556,14 @@ func _finish_transition() -> void:
 				if _transition_overlay:
 					_transition_overlay.visible = false,
 		)
+	# If this was a new-stand creation, host the game now that the
+	# transition is done. The session-ready signal will then transition
+	# to the lobby smoothly without conflicting with the whip tween.
+	if _host_after_transition:
+		_host_after_transition = false
+		NetworkManager.host_game()
+		_world_menu.hide_menu()
+		return
 	# Show the menu again (without animation — animation tween may not
 	# process reliably right after the transition tweens).
 	if _world_menu and is_instance_valid(_world_menu):
@@ -702,6 +716,7 @@ func _on_return_to_menu() -> void:
 	if _transition_active:
 		return
 	_transition_active = true
+	_host_after_transition = false
 	# Clean up networking and save state now.
 	NetworkManager.leave_game()
 	LobbyManager.reset()
@@ -1761,6 +1776,7 @@ func _on_esc_back_to_game() -> void:
 func _on_esc_back_to_menu() -> void:
 	_esc_menu_visible = false
 	EventBus.esc_menu_open = false
+	_host_after_transition = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	# Create the fade overlay.
 	var fade_rect := ColorRect.new()
