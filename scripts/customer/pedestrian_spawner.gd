@@ -24,6 +24,11 @@ var _stand_entries: Array[Dictionary] = []
 var _ped_spawner_map: Dictionary = { }
 
 var _managed: bool = false
+## Set by the NpcNamer debug tool to pause ALL spawning. Unlike _managed
+## (which only disables the spawner's own timer in favour of PeopleManager
+## scheduling), _paused blocks every spawn path including direct
+## spawn_on_path() calls from PeopleManager.
+var _paused: bool = false
 var _pedestrians: Array = []
 var _spawn_timer: Timer
 var _sync_timer: float = 0.0
@@ -121,8 +126,12 @@ func set_managed(enabled: bool) -> void:
 	_managed = enabled
 
 
+func set_paused(enabled: bool) -> void:
+	_paused = enabled
+
+
 func spawn_on_path(path: PedestrianPath) -> void:
-	if _managed:
+	if _paused:
 		return
 	_pedestrians = _pedestrians.filter(
 		func(p):
@@ -168,7 +177,7 @@ func _spawn_pedestrian(path: PedestrianPath) -> void:
 
 
 func _try_spawn() -> void:
-	if _managed:
+	if _managed or _paused:
 		return
 	_update_spawner()
 	_pedestrians = _pedestrians.filter(

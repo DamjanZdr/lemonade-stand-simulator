@@ -25,7 +25,6 @@ var prep_position: Vector3 = Vector3.ZERO
 var _prep_scale: Vector3 = Vector3.ONE
 
 @onready var _body_mesh: Node3D = $pitcher
-@onready var contents_label: Label3D = $ContentsLabel
 @onready var physics: StaticBody3D = $Physics
 @onready var _lemonade_node: Node3D = $lemonade
 @onready var _glass_mesh: MeshInstance3D = $pitcher/Cylinder_001
@@ -246,7 +245,6 @@ func set_pitcher_visible(v: bool) -> void:
 		return
 	_body_mesh.visible = v
 	_lemonade_node.visible = v
-	contents_label.visible = v
 	physics.collision_layer = 1 if v else 0
 
 # --- Interaction ---
@@ -418,25 +416,6 @@ func _make_filled_cup_mesh(color: Color = Color(0.0, 0.0, 0.0, -1.0)) -> Node3D:
 
 
 func update_label() -> void:
-	var status := ""
-	match state:
-		PitcherState.PREPPING:
-			status = "[Prepping]"
-		PitcherState.COMPLETE:
-			status = "[Complete]"
-		PitcherState.SERVING:
-			status = "[Serving]"
-		_:
-			status = ""
-	var fruit_label := fruit_type.capitalize() if fruit_type != "" else "Fruit"
-	contents_label.text = "%s\n%s: %.1f  Sugar: %.1f  Ice: %.1f\nCups: %d" % [
-		status,
-		fruit_label,
-		fruit_count,
-		sugar,
-		ice,
-		cups_poured,
-	]
 	_update_eraser_position()
 
 

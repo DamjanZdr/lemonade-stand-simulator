@@ -133,7 +133,11 @@ func _on_checkout_completed(stand_name: String) -> void:
 		_truck.queue_box(box, box.get_meta("truck_cell_idx", -1))
 	_batched_boxes.clear()
 
-	# Start the delivery sequence (rearrange, drive in, transfer, drive away)
+	# Start the delivery sequence. If the truck is already busy (driving
+	# in, transferring, or driving out), start_delivery() is a no-op —
+	# the boxes are already queued and will be delivered with the current
+	# run (if transferring) or auto-start a new run when the truck returns
+	# to idle (if driving out).
 	_truck.start_delivery()
 
 

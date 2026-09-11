@@ -76,8 +76,8 @@ func _enter_mode() -> void:
 	# directly to be thorough.
 	var spawner := get_tree().get_first_node_in_group("pedestrian_spawner")
 	if spawner:
-		if spawner.has_method("set_managed"):
-			spawner.set_managed(true)
+		if spawner.has_method("set_paused"):
+			spawner.set_paused(true)
 		if spawner.has_node("_spawn_timer"):
 			spawner._spawn_timer.stop()
 	var people := get_tree().get_first_node_in_group("people_manager")
@@ -101,12 +101,13 @@ func _exit_mode() -> void:
 	# Resume regular pedestrian spawning.
 	var spawner := get_tree().get_first_node_in_group("pedestrian_spawner")
 	if spawner:
-		if spawner.has_method("set_managed"):
-			spawner.set_managed(false)
-		# Restart the timer if it's daytime.
+		if spawner.has_method("set_paused"):
+			spawner.set_paused(false)
+		# Restart the timer if it's daytime and the spawner is NOT managed
+		# by PeopleManager (managed → PeopleManager handles scheduling).
 		if (
 			spawner.has_node("_spawn_timer") and DayManager
-			and DayManager.phase == DayManager.Phase.DAY
+			and DayManager.phase == DayManager.Phase.DAY and not spawner._managed
 		):
 			spawner._spawn_timer.start()
 	var people := get_tree().get_first_node_in_group("people_manager")

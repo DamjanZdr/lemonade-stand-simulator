@@ -28,6 +28,10 @@ const FRUIT_COLORS: Dictionary = {
 }
 
 var _snapped_pitcher: Pitcher = null
+## Net_id of a pitcher that was snapped on the host but hasn't been
+## replicated to this peer yet. Resolved in _process so clients catch
+## the snap even if the spawn RPC arrives after the sync_property RPC.
+var _pending_snap_pitcher_net_id: int = -1
 
 @onready var _mesh: Node3D = $PressMesh
 @onready var _juice_mesh: Node3D = $press/JuiceMesh
@@ -61,6 +65,16 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_update_snap()
+
+	# On clients, resolve a pending snap once the pitcher has been
+	# replicated to this peer (the spawn RPC may arrive after the
+	# sync_property RPC that set _pending_snap_pitcher_net_id).
+	if _snapped_pitcher == null and _pending_snap_pitcher_net_id != -1:
+		var pitcher := WorldSync.find_node_by_net_id(_pending_snap_pitcher_net_id)
+		if pitcher != null and pitcher is Pitcher:
+			_snapped_pitcher = pitcher as Pitcher
+			if _snap_point != null:
+				_snapped_pitcher.global_position = _snap_point.global_position
 
 	if _pressing:
 		_press_progress += delta
@@ -160,6 +174,8 @@ func interact(player: Node) -> void:
 	):
 		var pitcher := _snapped_pitcher
 		_snapped_pitcher = null
+		_pending_snap_pitcher_net_id = -1
+		WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
 		pitcher.visible = false
 		pitcher.set_pitcher_visible(false)
 		p.pickup_container(pitcher, "pitcher")
@@ -336,6 +352,7 @@ func has_snapped_pitcher() -> bool:
 
 func snap_pitcher(pitcher: Pitcher) -> void:
 	_snapped_pitcher = pitcher
+	_pending_snap_pitcher_net_id = WorldSync.get_net_id(pitcher)
 	OnboardingManager.report(
 		OnboardingManager.stand_for_node(self),
 		"pitcher_placed",

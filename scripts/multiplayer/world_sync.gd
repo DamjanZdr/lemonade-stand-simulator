@@ -144,6 +144,11 @@ func _find_node_by_net_id(net_id: int) -> Node:
 	return null
 
 
+## Public wrapper for finding a networked object by its net_id.
+func find_node_by_net_id(net_id: int) -> Node:
+	return _find_node_by_net_id(net_id)
+
+
 func _on_net_object_tree_exited(net_id: int) -> void:
 	var node: Node = _net_id_to_node.get(net_id, null)
 	if node != null and is_instance_valid(node):

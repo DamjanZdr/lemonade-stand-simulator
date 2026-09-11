@@ -138,15 +138,6 @@ watermelon_color = Color(0.90876645, 0, 0.25791737, 1)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4346559, 0)
 shape = SubResource("CylinderShape3D_col")
 
-[node name="ContentsLabel" type="Label3D" parent="." unique_id=982179225]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
-pixel_size = 0.002
-billboard = 1
-text = "0.0 / 10 liq
-Sugar 0.0  Ice 0"
-font_size = 16
-outline_size = 4
-
 [node name="LemonadeEraser" type="MeshInstance3D" parent="." unique_id=34368795]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.517808, 0)
 visible = false

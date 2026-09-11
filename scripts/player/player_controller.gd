@@ -88,7 +88,7 @@ func _update_anim() -> void:
 			# Falling or at peak: transition to Idle/Walk/Run
 			if moving:
 				target_anim = "Run" if _is_sprinting else "Walk"
-				target_speed = 3.0 if _is_sprinting else 1.7
+				target_speed = 2.1 if _is_sprinting else 1.7
 			else:
 				target_anim = "Idle"
 				target_speed = 1.0
@@ -102,7 +102,7 @@ func _update_anim() -> void:
 			target_speed = 0.0
 	elif moving:
 		target_anim = "Run" if _is_sprinting else "Walk"
-		target_speed = 3.0 if _is_sprinting else 1.7
+		target_speed = 2.1 if _is_sprinting else 1.7
 	else:
 		target_anim = "Idle"
 		target_speed = 1.0
@@ -123,6 +123,8 @@ func _update_anim() -> void:
 var _head_base_y: float = 0.0
 var _head_base_set: bool = false
 const CROUCH_DROP: float = 0.6
+const FALL_CAMERA_DROP: float = 1.2
+var _stun_head_tween: Tween = null
 
 
 func _apply_crouch_visual() -> void:
@@ -264,12 +266,32 @@ func _update_stun_animation(delta: float) -> void:
 			_current_anim = "Fall"
 			if _player.visuals:
 				_player.visuals.play_anim_once("Fall", 0.05)
+			# Drop the camera to match the body falling.
+			if not _head_base_set:
+				_head_base_y = _player.head.position.y
+				_head_base_set = true
+			if _stun_head_tween:
+				_stun_head_tween.kill()
+			_stun_head_tween = _player.create_tween()
+			_stun_head_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			_stun_head_tween.tween_property(
+				_player.head,
+				"position:y",
+				_head_base_y - FALL_CAMERA_DROP,
+				0.4,
+			)
 		_player.stun_timer = maxf(_player.stun_timer - delta, 0.0)
 		if _player.stun_timer <= 0.0 and _player.stun_recovering:
 			_player.stun_recovering = false
 			if _player.visuals:
 				_player.visuals.play_anim_reverse("Fall", 0.3)
 				_player.stun_recover_timer = _player.visuals.get_anim_length("Fall")
+			# Raise the camera back up as the character recovers.
+			if _stun_head_tween:
+				_stun_head_tween.kill()
+			_stun_head_tween = _player.create_tween()
+			_stun_head_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			_stun_head_tween.tween_property(_player.head, "position:y", _head_base_y, 0.3)
 		return
 	if _player.stun_recover_timer <= 0.0:
 		return

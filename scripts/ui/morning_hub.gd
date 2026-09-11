@@ -1854,7 +1854,6 @@ func _update_morning_data(day: int) -> void:
 	var price_slider := ($MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
 	if price_slider:
 		pass
-	_show_tab("analytics")
 
 
 func _show_morning_hub() -> void:
@@ -1863,6 +1862,10 @@ func _show_morning_hub() -> void:
 	var stand := _get_local_stand()
 	if stand:
 		UpgradeManager.set_active_stand(stand.name)
+	# Restore the last-used tab instead of always defaulting to analytics.
+	if not _flow_tabs.has(_active_tab):
+		_active_tab = "analytics"
+	_show_tab(_active_tab)
 	panel.visible = true
 	backdrop.visible = true
 	if _right_panel:

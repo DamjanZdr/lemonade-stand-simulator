@@ -30,6 +30,13 @@ func get_hint(player: Node) -> String:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		var cost := _get_container_cost_for_trash(ctype)
 		return "Trashcan | LMB: recycle for $%.2f" % cost
+	if p.held_item == HeldItem.SUPPLY_BOX:
+		var box_data: Dictionary = p.held_item_data
+		if box_data.get("is_equipment", false):
+			var eq_type: String = box_data.get("equipment_type", "")
+			var cost := _get_container_cost_for_trash(eq_type)
+			return "Trashcan | LMB: recycle for $%.2f" % cost
+		return "Trashcan | LMB: trash for $%.2f" % empty_box_refund
 	return "Trashcan"
 
 
@@ -59,6 +66,27 @@ func interact(player: Node) -> void:
 			apply_trash_disposal(ctype, refund, stand_name)
 		else:
 			_request_trash_disposal.rpc_id(1, ctype, refund, stand_name)
+		AudioManager.play_sfx("trash", global_position)
+		player.inventory.clear_held()
+		return
+	if p.held_item == HeldItem.SUPPLY_BOX:
+		# Unopened equipment/ingredient boxes can be sold directly.
+		var box_data: Dictionary = p.held_item_data
+		var stand_name := _get_player_stand_name(p)
+		if box_data.get("is_equipment", false):
+			var eq_type: String = box_data.get("equipment_type", "")
+			var refund := _get_container_cost_for_trash(eq_type)
+			if WorldSync.is_host():
+				apply_trash_disposal(eq_type, refund, stand_name)
+			else:
+				_request_trash_disposal.rpc_id(1, eq_type, refund, stand_name)
+		else:
+			var trash_type: String = box_data.get("ingredient_type", "empty_box")
+			var refund := empty_box_refund
+			if WorldSync.is_host():
+				apply_trash_disposal(trash_type, refund, stand_name)
+			else:
+				_request_trash_disposal.rpc_id(1, trash_type, refund, stand_name)
 		AudioManager.play_sfx("trash", global_position)
 		player.inventory.clear_held()
 		return

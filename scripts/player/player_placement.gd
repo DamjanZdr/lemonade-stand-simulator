@@ -1855,7 +1855,7 @@ func _is_placement_allowed_on(collider: Node) -> bool:
 	if surface_owner == "" and is_ground_surface(collider):
 		surface_owner = _get_placement_owner_stand(_resolved_ground_surface)
 	if surface_owner == "":
-		return true
+		return false
 	if _player.assigned_stand == null or not is_instance_valid(_player.assigned_stand):
 		return false
 	return surface_owner == _player.assigned_stand.name

@@ -374,6 +374,11 @@ func primary_interact() -> void:
 					var placed := _player.placement._try_place_container()
 					if placed is Pitcher:
 						press.snap_pitcher(placed as Pitcher)
+						WorldSync.sync_property(
+							press,
+							"_pending_snap_pitcher_net_id",
+							press._pending_snap_pitcher_net_id,
+						)
 					return
 				EventBus.interaction_hint_changed.emit(press.get_pitcher_snap_hint(snap_recipe))
 				return

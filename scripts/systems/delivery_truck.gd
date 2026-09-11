@@ -387,6 +387,7 @@ func _drive_out(delta: float) -> void:
 		_state = "idle"
 		_stop_engine_sound()
 		_set_truck_visible.rpc(false)
+		_try_auto_restart()
 		return
 
 	var target_pos := _path_end.global_position
@@ -400,6 +401,9 @@ func _drive_out(delta: float) -> void:
 		_state = "idle"
 		_fade_engine_out(0.15)
 		_set_truck_visible.rpc(false)
+		# If boxes were queued while the truck was driving away (or
+		# en route), auto-start a new delivery now that we're idle.
+		_try_auto_restart()
 		return
 
 	var step := minf(DRIVE_SPEED * delta, dist)
@@ -524,6 +528,24 @@ func _drive_away() -> void:
 func _on_engine_restart_done() -> void:
 	_start_engine_sound()
 	_state = "driving_out"
+
+
+## If boxes are still pending (ordered while the truck was busy), start
+## a new delivery immediately now that the truck is idle.
+func _try_auto_restart() -> void:
+	if _pending_boxes.is_empty():
+		return
+	# Re-collect boxes that are still on the truck grid but not in
+	# _pending_boxes (e.g. spawned during driving_out before checkout).
+	for child in _grid.get_children():
+		if child is SupplyBox and not _pending_boxes.has(child):
+			_pending_boxes.append(child as SupplyBox)
+			var cell_idx: int = (child as SupplyBox).get_meta("truck_cell_idx", -1)
+			if cell_idx < 0:
+				cell_idx = 0
+			child.set_meta("truck_cell_idx", cell_idx)
+	if not _pending_boxes.is_empty():
+		start_delivery()
 
 
 func _play_skew_effect() -> void:
@@ -665,3 +687,10 @@ func _animate_arc(box: SupplyBox, target_pos: Vector3, target_rot: Vector3) -> v
 func queue_box(box: SupplyBox, cell_idx: int) -> void:
 	_pending_boxes.append(box)
 	box.set_meta("truck_cell_idx", cell_idx)
+	# If the truck is already transferring, schedule this box too so
+	# it gets delivered with the current run instead of waiting.
+	if _state == "transferring":
+		var delay := _pending_boxes.size() * BOX_DELAY
+		get_tree().create_timer(delay).timeout.connect(
+			_transfer_next_box.bind(_pending_boxes.size() - 1)
+		)
