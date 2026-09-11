@@ -29,6 +29,14 @@ var _queue_arrived_cb: Callable = Callable() # called once the pedestrian reache
 
 @onready var _npc: Node3D = $NPCBody
 
+
+## Public wrapper for playing an animation on the NPC body.
+## Used by external tools (e.g. NpcNamer) that shouldn't access _npc directly.
+func play_npc_anim(anim_name: String) -> void:
+	if _npc != null and is_instance_valid(_npc):
+		_npc.call_deferred("play_anim", anim_name)
+
+
 enum PedestrianState {
 	WALKING,
 	OFFERED,

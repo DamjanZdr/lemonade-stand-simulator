@@ -130,6 +130,20 @@ func set_paused(enabled: bool) -> void:
 	_paused = enabled
 
 
+func is_managed() -> bool:
+	return _managed
+
+
+func stop_spawn_timer() -> void:
+	if _spawn_timer != null:
+		_spawn_timer.stop()
+
+
+func start_spawn_timer() -> void:
+	if _spawn_timer != null and not _managed:
+		_spawn_timer.start()
+
+
 func spawn_on_path(path: PedestrianPath) -> void:
 	if _paused:
 		return

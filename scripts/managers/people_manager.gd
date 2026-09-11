@@ -19,6 +19,14 @@ var _day_total_time: float = 0.0
 var _active: bool = false
 
 
+func is_active() -> bool:
+	return _active
+
+
+func set_active(active: bool) -> void:
+	_active = active
+
+
 func _ready() -> void:
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.day_timer_updated.connect(_on_day_timer_updated)

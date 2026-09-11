@@ -78,12 +78,16 @@ func _enter_mode() -> void:
 	if spawner:
 		if spawner.has_method("set_paused"):
 			spawner.set_paused(true)
-		if spawner.has_node("_spawn_timer"):
-			spawner._spawn_timer.stop()
+		if spawner.has_method("stop_spawn_timer"):
+			spawner.stop_spawn_timer()
 	var people := get_tree().get_first_node_in_group("people_manager")
 	if people:
-		_people_was_active = people._active
-		people._active = false
+		if people.has_method("is_active"):
+			_people_was_active = people.is_active()
+		else:
+			_people_was_active = false
+		if people.has_method("set_active"):
+			people.set_active(false)
 	# Create a CanvasLayer for name labels + input popup.
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.name = "NpcNamerLayer"
@@ -106,13 +110,14 @@ func _exit_mode() -> void:
 		# Restart the timer if it's daytime and the spawner is NOT managed
 		# by PeopleManager (managed → PeopleManager handles scheduling).
 		if (
-			spawner.has_node("_spawn_timer") and DayManager
-			and DayManager.phase == DayManager.Phase.DAY and not spawner._managed
+			spawner.has_method("start_spawn_timer") and DayManager
+			and DayManager.phase == DayManager.Phase.DAY
 		):
-			spawner._spawn_timer.start()
+			spawner.start_spawn_timer()
 	var people := get_tree().get_first_node_in_group("people_manager")
 	if people:
-		people._active = _people_was_active
+		if people.has_method("set_active"):
+			people.set_active(_people_was_active)
 	# Clean up all spawned NPCs and their labels.
 	for entry in _spawned:
 		if is_instance_valid(entry.ped):
@@ -163,10 +168,9 @@ func _spawn_at_mouse() -> void:
 		if dir.length() > 0.001:
 			ped.basis = Basis.looking_at(dir, Vector3.UP)
 
-	# Switch from Walk (set in _ready) to Idle. Use call_deferred so
-	# it runs after the pedestrian's _ready and any queued animations.
-	if ped._npc and is_instance_valid(ped._npc):
-		ped._npc.call_deferred("play_anim", "Idle")
+	# Switch from Walk (set in _ready) to Idle.
+	if ped.has_method("play_npc_anim"):
+		ped.play_npc_anim("Idle")
 
 	# Remove the PedestrianInteractable so the player's interaction
 	# system doesn't highlight or interact with these debug NPCs.
