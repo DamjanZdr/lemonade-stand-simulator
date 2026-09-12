@@ -229,7 +229,7 @@ func _build_line(prefix: String, value: String, field: int, index: int) -> Strin
 		if _edit_buffer == "":
 			return "> " + prefix + display
 		return "> " + prefix + _edit_buffer
-	return "  " + prefix + display
+	return prefix + display
 
 
 func _start_edit(label_idx: int, field_idx: int) -> void:

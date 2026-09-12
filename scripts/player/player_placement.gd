@@ -1360,7 +1360,7 @@ func _update_equipment_box_ghost() -> void:
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		return
 
-	if is_table_floor_surface(collider):
+	if is_table_floor_surface(collider) or is_ground_surface(collider):
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true

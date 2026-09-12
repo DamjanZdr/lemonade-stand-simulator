@@ -627,7 +627,7 @@ func primary_interact() -> void:
 			if is_equipment and valid_equipment_surface:
 				_player.placement._place_equipment_from_box()
 				return
-			if is_equipment and _player.placement.is_table_floor_surface(collider):
+			if is_equipment and _player.placement.is_box_placeable_surface(collider):
 				_player.placement._place_held_supply_box_on(
 					_player.ray.get_collision_point()
 					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
