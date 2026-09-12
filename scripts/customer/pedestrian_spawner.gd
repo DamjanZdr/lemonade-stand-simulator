@@ -78,12 +78,22 @@ func _process(delta: float) -> void:
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
-	if _managed:
-		return
-	if phase == DayManager.Phase.DAY:
-		_spawn_timer.start()
-	else:
+	if phase != DayManager.Phase.DAY:
 		_spawn_timer.stop()
+		_clear_all_pedestrians()
+		return
+	if not _managed and not _paused:
+		_spawn_timer.start()
+
+
+func _clear_all_pedestrians() -> void:
+	if not WorldSync.is_host():
+		return
+	for ped in get_tree().get_nodes_in_group("pedestrians"):
+		if ped != null and is_instance_valid(ped):
+			WorldSync.despawn_networked(ped)
+	_pedestrians.clear()
+	_ped_spawner_map.clear()
 
 
 ## Legacy single-stand setup. Equivalent to register_stand(spawner, null),

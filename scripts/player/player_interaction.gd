@@ -328,10 +328,12 @@ func primary_interact() -> void:
 		# will throw on release.
 		return
 
-	# Containers can be recycled at a trashcan for 70% refund.
-	if _player.inventory.held_item == HeldItem.CONTAINER:
-		if interactable != null and interactable.is_in_group("trashcan"):
-			interactable.interact(_player)
+	# Containers and unopened delivery boxes can be recycled at a trashcan.
+	if _player.inventory.held_item in [HeldItem.CONTAINER, HeldItem.SUPPLY_BOX]:
+		var trashcan := _get_looked_at_trashcan()
+		if trashcan != null:
+			trashcan.interact(_player)
+			_player.placement._destroy_ghost()
 			return
 
 	# Handle water tap interaction when holding pitcher - fill directly
@@ -496,6 +498,12 @@ func primary_interact() -> void:
 			return
 		if _player.ray.is_colliding():
 			var collider := _player.ray.get_collider()
+			if _player.placement.is_table_floor_surface(collider):
+				_player.placement._place_held_supply_box_on(
+					_player.ray.get_collision_point()
+					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
+				)
+				return
 			if _player.placement.is_stand_or_workstation_surface(collider):
 				_player.placement._place_cup_stack_from_box()
 				return
@@ -567,7 +575,13 @@ func primary_interact() -> void:
 					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
 				)
 				return
-			if not is_equipment and _player.placement.is_stand_or_workstation_surface(collider):
+			if (
+				not is_equipment
+				and (
+					_player.placement.is_table_floor_surface(collider)
+					or _player.placement.is_stand_or_workstation_surface(collider)
+				)
+			):
 				_player.placement._place_held_supply_box_on(
 					_player.ray.get_collision_point()
 					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),

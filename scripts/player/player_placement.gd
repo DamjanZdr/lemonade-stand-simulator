@@ -1047,26 +1047,28 @@ func _update_cup_box_ghost() -> void:
 		_ghost_valid = true # Valid to add to existing
 		return
 
-	if not on_surface:
-		_destroy_ghost()
-		_ghost_valid = false
-		return
-
-	# Cross-stand placement restriction: cup boxes can only be placed on
-	# surfaces/ground owned by the player's assigned stand.
-	if not _is_placement_allowed_on(collider):
-		_destroy_ghost()
-		_ghost_valid = false
-		return
-
-	var is_ground := is_ground_surface(collider)
-	if is_ground:
-		# Floor ΓÇö show box ghost but invalid (cup boxes can't go on floor)
+	var is_owned_floor := is_table_floor_surface(collider)
+	var is_owned_counter := is_stand_or_workstation_surface(collider)
+	if not on_surface or (not is_owned_floor and not is_owned_counter):
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
 		_ghost_valid = false
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
+		return
+
+	var is_ground := is_ground_surface(collider)
+	if is_ground:
+		# On the player's floor the unopened box can be placed. Other ground
+		# was rejected above and remains a red box preview.
+		_ensure_box_ghost()
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
+		_ghost.visible = true
+		_ghost_valid = is_owned_floor
+		_apply_ghost_material(
+			_ghost,
+			_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
+		)
 		return
 
 	# Workstation/stand ΓÇö show cup stack ghost
@@ -1176,25 +1178,45 @@ func _update_supply_box_ghost() -> void:
 			return
 		grid_node = grid_node.get_parent()
 
-	# Supply crates belong on a stand/workstation; empty trash boxes may use the ground.
+	# Ingredient boxes stay as box previews and turn green over the matching
+	# destination container, where clicking will deposit their contents.
+	var interactable := _player.interaction.get_looked_at_interactable() as Interactable
+	var ingredient_type: String = _player.held_item_data.get("ingredient_type", "")
+	var matches_container := (
+		interactable is IngredientBin
+		and (interactable as IngredientBin).ingredient_type == ingredient_type
+		or interactable is FruitBin and (interactable as FruitBin).fruit_grids.has(ingredient_type)
+		or interactable is WaterDispenser and ingredient_type == "water"
+	)
+	if matches_container:
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
+		_ghost.visible = true
+		_ghost_valid = true
+		_stack_target_id = -1
+		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+		return
+
+	# Supply crates can remain boxed on the player's floor, stand, or workstation.
 	var is_trash_box := _player.held_item == HeldItem.TRASH
 	var on_surface := (
 		is_placement_surface(collider)
 		if is_trash_box
-		else is_stand_or_workstation_surface(collider)
+		else is_table_floor_surface(collider) or is_stand_or_workstation_surface(collider)
 	)
-	if not on_surface:
-		_ghost.visible = false
+	if not on_surface or (not is_trash_box and not is_owned_stand_surface(collider)):
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
+		_ghost.visible = true
 		_ghost_valid = false
 		_stack_target_id = -1
+		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
 		return
 
-	# Cross-stand placement restriction: supply boxes can only be placed on
-	# surfaces/ground owned by the player's assigned stand.
-	if not _is_placement_allowed_on(collider):
-		_ghost.visible = false
+	if is_trash_box and not _is_placement_allowed_on(collider):
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
+		_ghost.visible = true
 		_ghost_valid = false
 		_stack_target_id = -1
+		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
 		return
 
 	_stack_target_id = -1
@@ -1264,9 +1286,12 @@ func _update_equipment_box_ghost() -> void:
 	# placed on surfaces/ground owned by the player's assigned stand. Delivery
 	# grids and supply box stacks are handled above and return early.
 	if not is_owned_stand_surface(collider):
-		_destroy_ghost()
+		_ensure_box_ghost()
+		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
+		_ghost.visible = true
 		_ghost_valid = false
 		_stack_target_id = -1
+		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
 		return
 
 	# Workstations are tables ΓÇö they can only be placed on the floor.

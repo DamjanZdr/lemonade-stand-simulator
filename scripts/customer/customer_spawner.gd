@@ -70,15 +70,21 @@ func _process(delta: float) -> void:
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
-	# During morning/evening, clear any remaining queue
-	if phase != DayManager.Phase.DAY:
+	if phase == DayManager.Phase.DAY:
+		return
+	if WorldSync.is_host():
+		var remaining: Array[Customer] = []
 		for c in _queue:
-			if c != null and is_instance_valid(c):
-				var cust := c as Customer
-				if cust != null and cust.state != Customer.CustomerState.LEAVING:
-					cust.force_timeout()
-		_queue.fill(null)
-		_reserved_slots.clear()
+			if c != null and is_instance_valid(c) and not remaining.has(c):
+				remaining.append(c as Customer)
+		for c in _leaving_customers:
+			if c != null and is_instance_valid(c) and not remaining.has(c):
+				remaining.append(c)
+		for customer in remaining:
+			WorldSync.despawn_networked(customer)
+	_queue.fill(null)
+	_leaving_customers.clear()
+	_reserved_slots.clear()
 
 
 func set_queue_spots(spots: Array[Vector3], _step: Vector3 = Vector3.ZERO) -> void:
