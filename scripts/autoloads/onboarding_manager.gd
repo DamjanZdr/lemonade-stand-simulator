@@ -8,6 +8,10 @@ const VERSION := 1
 const TRACK_DEMO := "DEMO"
 const FRUIT_COMPLAINTS := ["too_strong", "not_enough_fruit", "too_sweet", "not_sweet_enough"]
 const ICE_COMPLAINTS := ["too_cold", "not_cold_enough"]
+const LEMON_MASTERY_TEXT := (
+	"Make more lemonade with different amounts of lemon until 5 customers in a row "
+	+ "are happy with the recipe"
+)
 const CLIENT_REPORTED_EVENTS := [
 	"equipment_placed",
 	"supply_deposited",
@@ -181,11 +185,9 @@ const TASKS: Array[Dictionary] = [
 	},
 	{
 		"id": "demo_master_lemon",
-		"text": "{Make more lemonade with different amounts of lemon until 5 customers in a row are happy with the recipe}.",
+		"text": "{%s}." % LEMON_MASTERY_TEXT,
 		"event": "recipe_discovered",
-		"parts": {
-			"Make more lemonade with different amounts of lemon until 5 customers in a row are happy with the recipe": "lemon"
-		},
+		"parts": { LEMON_MASTERY_TEXT: "lemon" },
 	},
 	{
 		"id": "demo_set_perfect_lemon",

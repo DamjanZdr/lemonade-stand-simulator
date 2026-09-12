@@ -1400,7 +1400,7 @@ func _update_ghost() -> void:
 		_update_cup_box_ghost()
 		return
 	# Handle single cup ghost preview
-	if _player.held_item == HeldItem.CUP_EMPTY or _player.held_item == HeldItem.CUP_FILLED:
+	if _player.held_item in [HeldItem.CUP_EMPTY, HeldItem.CUP_FILLED]:
 		_update_single_cup_ghost()
 		return
 	# Handle equipment box ΓÇö show container ghost on workstation, box ghost on floor/boxes
