@@ -105,9 +105,9 @@ func _finish_held_disposal(player: Player) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	# Fly along a quadratic bezier arc (start -> mid -> target).
-	tween.tween_method(_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
-		Tween.EASE_IN_OUT
-	)
+	tween.tween_method(
+		_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(mesh, "scale", Vector3.ZERO, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
 		Tween.EASE_IN
 	)

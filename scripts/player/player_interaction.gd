@@ -277,7 +277,10 @@ func primary_interact() -> void:
 	# checked before container/supply-box placement so that clicking a
 	# customer while holding a fruit bin asks for the order instead of
 	# trying to place the bin.
-	if (interactable is CustomerInteractable and _player.inventory.held_item != HeldItem.CUP_FILLED):
+	if (
+		interactable is CustomerInteractable
+		and _player.inventory.held_item != HeldItem.CUP_FILLED
+	):
 		interactable.interact(_player)
 		return
 
