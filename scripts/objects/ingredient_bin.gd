@@ -30,6 +30,9 @@ var _ice_bucket: Node3D = null
 var _ice_cubes: Array[MeshInstance3D] = []
 var _ice_origins: Array[Vector3] = []
 var _cubes_per_scoop: int = 0
+# Stashed counts from the last _apply_add_amount for _sync_state_to_peers.
+var _last_old_count: int = 0
+var _last_new_count: int = 0
 
 
 func _ready() -> void:
@@ -138,7 +141,7 @@ func add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 		_rpc_request_add_amount.rpc_id(1, qty, from_pos)
 		return
 	_apply_add_amount(qty, from_pos)
-	_sync_state_to_peers()
+	_sync_state_to_peers(from_pos)
 
 
 func _apply_add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
@@ -154,6 +157,9 @@ func _apply_add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	for i in range(old_count, new_count):
 		_drop_item(i, from_pos)
 	EventBus.bin_amount_changed.emit(ingredient_type, current_amount)
+	# Stash counts for _sync_state_to_peers.
+	_last_old_count = old_count
+	_last_new_count = new_count
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -161,12 +167,31 @@ func _rpc_request_add_amount(qty: float, from_pos: Vector3) -> void:
 	if not is_multiplayer_authority():
 		return
 	_apply_add_amount(qty, from_pos)
-	_sync_state_to_peers()
+	_sync_state_to_peers(from_pos)
 
 
-func _sync_state_to_peers() -> void:
+func _sync_state_to_peers(from_pos: Vector3 = Vector3.ZERO) -> void:
 	WorldSync.sync_property(self, "current_amount", current_amount)
-	WorldSync.sync_call(self, "update_display")
+	if from_pos != Vector3.ZERO:
+		WorldSync.sync_call(self, "_play_fly_in", [from_pos, _last_old_count, _last_new_count])
+	else:
+		WorldSync.sync_call(self, "update_display")
+
+
+## Client-side: play the fly-in animation for newly visible items.
+## Called via sync_call from the host after current_amount changes.
+func _play_fly_in(from_pos: Vector3, old_count: int, new_count: int) -> void:
+	if WorldSync.is_host():
+		return
+	# Always update display first so item nodes are visible.
+	update_display()
+	if ingredient_type == "ice" and _ice_bucket != null:
+		return
+	var start_idx := maxi(0, old_count)
+	var end_idx := mini(new_count, _item_nodes.size())
+	for i in range(start_idx, end_idx):
+		if i < _item_nodes.size() and is_instance_valid(_item_nodes[i]):
+			_drop_item(i, from_pos)
 
 
 func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:

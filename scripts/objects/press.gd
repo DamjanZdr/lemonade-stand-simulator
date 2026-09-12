@@ -384,6 +384,7 @@ func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
 	var snap_rot := Vector3.ZERO
 	var state: Dictionary = {
 		"_net_groups": ["container", "pitcher"],
+		"_net_scale": Vector3.ONE * 0.1575,
 		"fruit_type": recipe.get("fruit_type", ""),
 		"fruit_count": recipe.get("fruit_count", recipe.get("lemons", 0.0)),
 		"sugar": recipe.get("sugar", 0.0),
@@ -401,6 +402,8 @@ func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
 	) as Pitcher
 	if pitcher == null:
 		return
+	# Apply the placement scale so the host's pitcher matches clients.
+	pitcher.scale = Vector3.ONE * 0.1575
 	# Apply recipe state (request_spawn on host returns the instance, but
 	# _ready() has already run with defaults, so we re-apply the recipe).
 	pitcher.fruit_type = recipe.get("fruit_type", "")
