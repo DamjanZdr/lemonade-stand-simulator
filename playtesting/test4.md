@@ -30,12 +30,12 @@
 - **RC-4G — Destination interactions and placement previews ran independently**
   The placement system rendered a box preview even when clicking would consume the held item through a trashcan or matching bin. Trash boxes also inherited supply-box ownership limits despite being ordinary litter that can be dropped on neutral ground.
   - **Evidence:** Red boxes appeared over trashcans, green boxes appeared over matching bowls, and empty boxes could not be placed farther along the sidewalk.
-  - **Status:** Addressed in code — valid consuming destinations suppress ghosts, held trash animates into the trashcan, and empty trash boxes may use any placement surface.
+  - **Status:** Addressed in code — valid consuming destinations suppress ghosts, held trash animates into the trashcan. Trash-box placement now follows the same ownership rules as equipment boxes (stand floor / workstation / delivery grid only), and trash-box clicks on the delivery grid snap to the correct cell instead of dropping at the mouse position.
 
 - **RC-4H — Price edits committed only on navigation**
   The price board kept typed digits in a temporary buffer and only called `request_set_price()` on Enter or vertical navigation. Escape discarded the buffer and refreshed the old authoritative price.
   - **Evidence:** Typing a new price and pressing Escape restored the previous value.
-  - **Status:** Addressed in code — each valid text change commits immediately; Enter only advances and Escape closes without reverting.
+  - **Status:** Addressed in code — each valid text change commits immediately. The blinking `_` cursor was replaced with a `>` arrow to the left of the edited line. Typing past the valid format (e.g. a third decimal digit) automatically restarts the buffer with the new character, so prices can be typed continuously without manual clearing. Escape commits and closes; Enter commits and advances.
 
 - **RC-4E — Delivery truck had no auto-restart for orders placed while busy**
   `start_delivery()` was a no-op when the truck was not idle. Boxes ordered during a delivery were queued in `_pending_boxes` but never delivered if the truck was driving away. `_drive_away()` cleared `_pending_boxes`, and nothing checked for leftover boxes when the truck returned to idle.
@@ -52,8 +52,8 @@
 - **Selling equipment** — RC-4D — **Follow-up addressed; retest trashing unopened equipment boxes through the normal LMB interaction path.**
 - **Wrong Blueprint showings** — RC-4C — **Follow-up addressed; retest boxed cups/equipment/ingredients on owned floor, street, workstation, and matching bins.**
 - **End day NPCs** — RC-4F — **Addressed in code; retest ending the day with walking, queued, and leaving NPCs still active.**
-- **Destination blueprints / trash placement** — RC-4G — **Addressed in code; retest trashcans, matching ingredient containers, and distant sidewalk placement.**
-- **Immediate price updates** — RC-4H — **Addressed in code; retest typing, backspace, Enter, and Escape.**
+- **Destination blueprints / trash placement** — RC-4G — **Follow-up addressed; retest trashcans, matching ingredient containers, trash-box on delivery grid (should snap to cell), and trash-box on sidewalk (should be red).**
+- **Immediate price updates** — RC-4H — **Follow-up addressed; retest typing with arrow indicator, override typing (type past 2 decimals to restart), Escape commits, Enter advances.**
 - **Lemon mastery instruction** — **Updated to explicitly require making more lemonade with varied lemon amounts until five customers in a row are happy.**
 - **Keep computer tab same** — **Addressed in code; retest that last-used tab persists across computer open/close.**
 - **Player camera when fall** — **Addressed in code; retest that camera drops and rises with the Fall animation.**

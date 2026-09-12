@@ -649,7 +649,7 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	var drop_pos: Vector3
 	if place_pos != Vector3.ZERO:
 		drop_pos = place_pos
-	elif _player.ray.is_colliding() and is_placement_surface(_player.ray.get_collider()):
+	elif _player.ray.is_colliding() and is_owned_stand_surface(_player.ray.get_collider()):
 		drop_pos = _player.ray.get_collision_point() + Vector3(
 			0,
 			SupplyBox.DEFAULT_BOTTOM_OFFSET,
@@ -718,6 +718,54 @@ func _place_held_trash_box_on_stack(root: SupplyBox) -> void:
 	AudioManager.play_sfx("box_drop", place_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()
+
+
+## Place a held trash box (empty_box) on a delivery grid cell.
+## Mirrors _place_held_supply_box_on_grid but spawns a trash box.
+func _place_held_trash_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> void:
+	if not is_owned_stand_surface(grid):
+		return
+	var cell_idx := grid.get_closest_cell(hit_point)
+	if cell_idx < 0:
+		_drop_trash()
+		return
+	var slot := grid.reserve_slot(cell_idx)
+	var state: Dictionary = {
+		"is_trash_box": true,
+		"ingredient_type": "trash",
+		"quantity": 0.0,
+		"trash_value": _player.held_item_data.get("trash_value", 0.0),
+		"trash_type": _player.held_item_data.get("trash_type", "empty_box"),
+		"_net_delivery_cell_idx": cell_idx,
+		"_net_delivery_grid_path": str(grid.get_path()),
+	}
+	var box := _place_held_trash_box_at(slot["position"], slot["rotation"], state)
+	if box == null:
+		return
+	box.set_meta("delivery_cell_idx", cell_idx)
+	box.set_meta("delivery_grid_path", grid.get_path())
+
+
+## Spawn a trash box at the given position (shared helper for grid/stack).
+func _place_held_trash_box_at(
+	place_pos: Vector3,
+	place_rot: Vector3,
+	state: Dictionary,
+) -> SupplyBox:
+	var box := WorldSync.request_spawn(
+		"res://scenes/objects/supply_box.tscn",
+		place_pos,
+		place_rot,
+		state,
+	) as SupplyBox
+	if box:
+		box.update_metrics()
+		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
+		box.global_position.y += y_diff
+	AudioManager.play_sfx("box_drop", place_pos)
+	_destroy_ghost()
+	_player.inventory.clear_held()
+	return box
 
 
 func _get_place_sfx_key(container_type: String) -> String:
@@ -1194,14 +1242,12 @@ func _update_supply_box_ghost() -> void:
 		_stack_target_id = -1
 		return
 
-	# Supply crates can remain boxed on the player's floor, stand, or workstation.
-	var is_trash_box := _player.held_item == HeldItem.TRASH
+	# Supply crates (and trash boxes) can remain boxed on the player's
+	# floor, stand, or workstation — same ownership rules for both.
 	var on_surface := (
-		is_placement_surface(collider)
-		if is_trash_box
-		else is_table_floor_surface(collider) or is_stand_or_workstation_surface(collider)
+		is_table_floor_surface(collider) or is_stand_or_workstation_surface(collider)
 	)
-	if not on_surface or (not is_trash_box and not is_owned_stand_surface(collider)):
+	if not on_surface or not is_owned_stand_surface(collider):
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
 		_ghost_valid = false

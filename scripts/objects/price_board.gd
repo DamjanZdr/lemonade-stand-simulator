@@ -18,15 +18,12 @@ const FRUIT_LABELS: Dictionary = {
 
 var _editing_index := -1
 var _edit_buffer := ""
-var _cursor_visible := true
-var _cursor_timer := 0.0
 var _price_prefix: Dictionary = { }
 ## The player who is currently editing prices on this board. Stored so we
 ## can release THEM from priceboard focus when editing ends — not just
 ## whichever player happens to be first in the "player" group (which in
 ## multiplayer would often be the wrong one).
 var _editing_player: Player = null
-const CURSOR_BLINK := 0.5
 
 
 func _ready() -> void:
@@ -42,7 +39,7 @@ func _ready() -> void:
 
 func get_hint(_player: Node) -> String:
 	if _editing_index >= 0:
-		return "Price Board | Enter: next / Esc: close"
+		return "Price Board | Type price, Enter: next, Esc: save & close"
 	return "Price Board | LMB: edit prices"
 
 
@@ -78,8 +75,6 @@ func _input(event: InputEvent) -> void:
 			_edit_buffer = _edit_buffer.substr(0, _edit_buffer.length() - 1)
 		else:
 			_edit_buffer = ""
-		_cursor_visible = true
-		_cursor_timer = 0.0
 		_commit_current_price()
 		_refresh_label()
 	elif key == KEY_0 or key == KEY_KP_0:
@@ -139,21 +134,9 @@ func _load_price_prefixes() -> void:
 				break
 
 
-func _process(delta: float) -> void:
-	if _editing_index < 0:
-		return
-	_cursor_timer += delta
-	if _cursor_timer >= CURSOR_BLINK:
-		_cursor_timer -= CURSOR_BLINK
-		_cursor_visible = not _cursor_visible
-		_refresh_label()
-
-
 func _start_edit() -> void:
 	_editing_index = _next_editable_index(-1, 1)
 	_edit_buffer = ""
-	_cursor_visible = true
-	_cursor_timer = 0.0
 	_refresh_label()
 
 
@@ -171,7 +154,6 @@ func _confirm_and_next() -> void:
 	if next < 0:
 		_editing_index = -1
 		_edit_buffer = ""
-		_cursor_visible = true
 		if _editing_player != null and is_instance_valid(_editing_player):
 			_editing_player.exit_priceboard_focus()
 		_editing_player = null
@@ -179,8 +161,6 @@ func _confirm_and_next() -> void:
 	else:
 		_editing_index = next
 		_edit_buffer = ""
-		_cursor_visible = true
-		_cursor_timer = 0.0
 		_refresh_label()
 
 
@@ -192,16 +172,13 @@ func _move_vertical(direction: int) -> void:
 	if next >= 0:
 		_editing_index = next
 	_edit_buffer = ""
-	_cursor_visible = true
-	_cursor_timer = 0.0
 	_refresh_label()
 
 
 func _cancel_edit() -> void:
+	_commit_current_price()
 	_editing_index = -1
 	_edit_buffer = ""
-	_cursor_visible = true
-	_cursor_timer = 0.0
 	if _editing_player != null and is_instance_valid(_editing_player):
 		_editing_player.exit_priceboard_focus()
 	_editing_player = null
@@ -210,12 +187,14 @@ func _cancel_edit() -> void:
 
 func _append_char(c: String) -> void:
 	var candidate := _edit_buffer + c
-	var sanitized := _sanitize_price(candidate)
-	if sanitized != candidate:
+	if _is_valid_price_prefix(candidate):
+		_edit_buffer = candidate
+	elif _is_valid_price_prefix(c):
+		# Typing past the valid format restarts the buffer with the
+		# new character, so the player can immediately start a new price.
+		_edit_buffer = c
+	else:
 		return
-	_edit_buffer = sanitized
-	_cursor_visible = true
-	_cursor_timer = 0.0
 	_commit_current_price()
 	_refresh_label()
 
@@ -229,10 +208,9 @@ func _refresh_label() -> void:
 		var label: String = FRUIT_LABELS.get(ft, ft.capitalize())
 		var prefix: String = _price_prefix.get(ft, label + ".....")
 		if i == _editing_index:
-			var cursor := "_" if _cursor_visible else " "
-			txt += "%s%s%s\n" % [prefix, _edit_buffer, cursor]
+			txt += "> %s%s\n" % [prefix, _edit_buffer]
 		else:
-			txt += "%s%.2f\n" % [prefix, _stand.get_price(ft)]
+			txt += "  %s%.2f\n" % [prefix, _stand.get_price(ft)]
 	label_3d.text = txt
 
 
@@ -255,17 +233,19 @@ func _next_editable_index(from: int, direction: int) -> int:
 	return -1
 
 
-func _sanitize_price(text: String) -> String:
-	var out := ""
-	var dot_count := 0
-	var digit_count := 0
-	for c in text:
-		if c.is_valid_int():
-			if digit_count >= 3:
-				continue
-			out += c
-			digit_count += 1
-		elif c == "." and dot_count == 0:
-			out += c
-			dot_count += 1
-	return out
+## Returns true if the text is a valid prefix of a price string.
+## Valid prefixes: "", "1", "12", "1.", "1.2", "1.20", "12.34".
+## Invalid: "1.200" (3+ decimal digits), "1.." (two dots), ".5" (no int part).
+func _is_valid_price_prefix(text: String) -> bool:
+	if text == "":
+		return true
+	var dot_idx := text.find(".")
+	if dot_idx == -1:
+		return text.is_valid_int() and text.length() <= 4
+	var int_part := text.substr(0, dot_idx)
+	var dec_part := text.substr(dot_idx + 1)
+	if int_part == "" or not int_part.is_valid_int():
+		return false
+	if dec_part == "":
+		return true
+	return dec_part.is_valid_int() and dec_part.length() <= 2

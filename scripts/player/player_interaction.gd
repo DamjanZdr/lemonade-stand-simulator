@@ -320,6 +320,12 @@ func primary_interact() -> void:
 					if node is SupplyBox:
 						_player.placement._place_held_trash_box_on_stack(node as SupplyBox)
 						return
+					if node is DeliveryGrid:
+						_player.placement._place_held_trash_box_on_grid(
+							node as DeliveryGrid,
+							_player.ray.get_collision_point(),
+						)
+						return
 					node = node.get_parent()
 			_player.placement._drop_trash()
 			return
