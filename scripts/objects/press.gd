@@ -362,6 +362,10 @@ func snap_pitcher(pitcher: Pitcher) -> void:
 		_snapped_pitcher.global_position = _snap_point.global_position
 
 
+func sync_snapped_pitcher() -> void:
+	WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", _pending_snap_pitcher_net_id)
+
+
 func can_snap_pitcher(recipe: Dictionary) -> bool:
 	if has_snapped_pitcher():
 		return false
