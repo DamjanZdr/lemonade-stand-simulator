@@ -125,10 +125,11 @@ func _deactivate() -> void:
 	_slide_tween = create_tween()
 	_slide_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	_slide_tween.tween_property(self, "position", _hidden_position(), slide_down_duration)
-	_slide_tween.tween_callback(
-		func():
-			visible = false,
-	)
+	_slide_tween.tween_callback(_on_slide_down_finished)
+
+
+func _on_slide_down_finished() -> void:
+	visible = false
 
 
 func _process(_delta: float) -> void:

@@ -22,6 +22,7 @@ const CLIENT_REPORTED_EVENTS := [
 	"pitcher_water_filled",
 	"pitcher_prepared",
 	"cup_filled",
+	"cup_placed_stand",
 ]
 const TASKS: Array[Dictionary] = [
 	{
@@ -145,6 +146,12 @@ const TASKS: Array[Dictionary] = [
 		"parts": { "Fill at least one cup with lemonade": "cup" },
 	},
 	{
+		"id": "demo_place_filled_cup",
+		"text": "{Place the filled cup on your stand} for customers to take.",
+		"event": "cup_placed_stand",
+		"parts": { "Place the filled cup on your stand": "filled_cup" },
+	},
+	{
 		"id": "demo_ask_customer",
 		"text": "{Ask a customer what they would like}.",
 		"event": "customer_asked",
@@ -260,7 +267,9 @@ func _ready() -> void:
 			var stand := stand_for_node(n)
 			if stand == null:
 				stand = WorldSync.get_local_stand() as StandUnit
-			report(stand, "equipment_placed", data),
+			report(stand, "equipment_placed", data)
+			if t == "filled_cup":
+				report(stand, "cup_placed_stand", { "type": "filled_cup" }),
 	)
 	get_tree().node_added.connect(_on_node_added)
 	call_deferred("_initialize_stands")

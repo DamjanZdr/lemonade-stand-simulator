@@ -612,7 +612,7 @@ func _resolve(outcome: String) -> void:
 		tween.tween_callback(_start_leaving)
 
 
-@rpc("authority", "call_local", "reliable")
+@rpc("authority", "reliable")
 func _begin_change(payment: float, change_due: float) -> void:
 	if not EventBus.change_tendered_updated.is_connected(_forward_change_tendered):
 		EventBus.change_tendered_updated.connect(_forward_change_tendered)

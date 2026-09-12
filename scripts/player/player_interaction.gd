@@ -271,6 +271,16 @@ func primary_interact() -> void:
 		interactable.interact(_player)
 		return
 
+	# Customer interaction: asking for an order should work regardless of
+	# what the player is holding (empty hands, fruit bin, etc.), as long as
+	# they're not holding a filled cup (which serves instead). This must be
+	# checked before container/supply-box placement so that clicking a
+	# customer while holding a fruit bin asks for the order instead of
+	# trying to place the bin.
+	if (interactable is CustomerInteractable and _player.inventory.held_item != HeldItem.CUP_FILLED):
+		interactable.interact(_player)
+		return
+
 	# Unified pickup path: if the interactable has a Pickupable component and
 	# we can pick it up, let it handle pickup/held-item setup.
 	# Skip this for bins (FruitBin, IngredientBin) — their interact() method
@@ -327,7 +337,13 @@ func primary_interact() -> void:
 						)
 						return
 					node = node.get_parent()
-			_player.placement._drop_trash()
+			# Only drop if the ghost is valid (green). If the ghost is red
+			# (invalid placement area like the street), refuse the drop
+			# instead of placing the box in front of the player.
+			if _player.placement._ghost_valid:
+				_player.placement._drop_trash()
+			else:
+				EventBus.interaction_hint_changed.emit("Cannot place here - stand area only!")
 			return
 		# Other trash types — throw charge system handles release.
 		# set_primary_held started charging and set_primary_held(false)
@@ -377,12 +393,30 @@ func primary_interact() -> void:
 					{ },
 				)
 				if press.can_snap_pitcher(snap_recipe):
-					_player.placement._ghost.global_position = press.get_snap_global_position()
-					_player.placement._ghost_valid = true
-					var placed := _player.placement._try_place_container()
-					if placed is Pitcher:
-						press.snap_pitcher(placed as Pitcher)
-						press.sync_snapped_pitcher()
+					# Host-authoritative snap: on the host, place the pitcher
+					# locally and snap it. On a client, send an RPC to the
+					# host which spawns the pitcher, snaps it, and syncs to
+					# all clients. This avoids the client getting null from
+					# WorldSync.request_spawn() and never snapping.
+					if WorldSync.is_host():
+						_player.placement._ghost.global_position = (
+							press.get_snap_global_position()
+						)
+						_player.placement._ghost_valid = true
+						var placed := _player.placement._try_place_container()
+						if placed is Pitcher:
+							press.snap_pitcher(placed as Pitcher)
+							press.sync_snapped_pitcher()
+					else:
+						var stand_owner := ""
+						if (
+							_player.assigned_stand != null
+							and is_instance_valid(_player.assigned_stand)
+						):
+							stand_owner = _player.assigned_stand.name
+						press.request_snap_pitcher.rpc_id(1, snap_recipe, stand_owner)
+						_player.placement._destroy_ghost()
+						_player.inventory.clear_held()
 					return
 				EventBus.interaction_hint_changed.emit(press.get_pitcher_snap_hint(snap_recipe))
 				return
@@ -390,11 +424,28 @@ func primary_interact() -> void:
 			if dispenser != null:
 				var _recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
 				if dispenser.can_snap_pitcher_from_recipe(_recipe):
-					_player.placement._ghost.global_position = dispenser.get_snap_global_position()
-					_player.placement._ghost_valid = true
-					var placed := _player.placement._try_place_container()
-					if placed is Pitcher:
-						dispenser.snap_pitcher(placed as Pitcher)
+					# Host-authoritative snap: on the host, place the pitcher
+					# locally and snap it. On a client, send an RPC to the
+					# host which spawns the pitcher, snaps it, and syncs to
+					# all clients.
+					if WorldSync.is_host():
+						_player.placement._ghost.global_position = (
+							dispenser.get_snap_global_position()
+						)
+						_player.placement._ghost_valid = true
+						var placed := _player.placement._try_place_container()
+						if placed is Pitcher:
+							dispenser.snap_pitcher(placed as Pitcher)
+					else:
+						var stand_owner := ""
+						if (
+							_player.assigned_stand != null
+							and is_instance_valid(_player.assigned_stand)
+						):
+							stand_owner = _player.assigned_stand.name
+						dispenser.request_snap_pitcher.rpc_id(1, _recipe, stand_owner)
+						_player.placement._destroy_ghost()
+						_player.inventory.clear_held()
 					return
 				# Can't snap to dispenser — fall through to normal placement
 		var from_box: bool = _player.inventory.held_item_data.get("from_delivery_box", false)
@@ -442,7 +493,9 @@ func primary_interact() -> void:
 			_player.last_interact_hit = null
 			return
 		# Place on surface to start new stack
-		if _player.ray.is_colliding() and _player.is_placement_surface(_player.ray.get_collider()):
+		if _player.ray.is_colliding() and _player.placement.is_stand_or_workstation_surface(
+				_player.ray.get_collider(),
+			):
 			_player.placement._place_single_cup(false)
 			return
 		return
@@ -467,7 +520,7 @@ func primary_interact() -> void:
 		# Then place on surface (only on workstation/stand, not ground)
 		if _player.ray.is_colliding():
 			var collider := _player.ray.get_collider()
-			if _player.is_placement_surface(collider) and not _player.is_ground_surface(collider):
+			if _player.placement.is_stand_or_workstation_surface(collider):
 				_player.placement._place_filled_cup()
 				return
 		return

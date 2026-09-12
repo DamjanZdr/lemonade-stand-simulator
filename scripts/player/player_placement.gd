@@ -300,7 +300,9 @@ func _update_single_cup_ghost() -> void:
 		return
 
 	var collider := _player.ray.get_collider()
-	var on_surface := is_placement_surface(collider)
+	# Cups can only be placed on stand/workstation surfaces, not sidewalks
+	# or other generic placement surfaces outside the stand area.
+	var on_surface := is_stand_or_workstation_surface(collider)
 	var hit_point := _player.ray.get_collision_point()
 
 	# Check if looking at existing cup stack
@@ -420,6 +422,7 @@ func _place_filled_cup() -> void:
 		"fill_color": recipe.get("color", Color(1.0, 0.9, 0.3, 1.0)),
 		"state": Cup.CupState.FILLED,
 		"_net_groups": ["container"],
+		"_net_scale": placement_scale,
 	}
 	var cup_scene_path := "res://scenes/objects/cup.tscn"
 	var cup := WorldSync.request_spawn(cup_scene_path, cup_pos, cup_rot, state) as Cup
@@ -438,6 +441,7 @@ func _place_filled_cup() -> void:
 	_player.inventory.clear_held()
 	AudioManager.play_sfx("taking_cup", cup_pos)
 	EventBus.interaction_hint_changed.emit("Filled cup placed!")
+	EventBus.container_placed.emit("filled_cup", cup)
 
 
 func _place_held_supply_box_on(

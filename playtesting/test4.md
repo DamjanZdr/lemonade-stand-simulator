@@ -42,6 +42,41 @@
   - **Evidence:** Orders placed while the truck is en route don't get delivered until a subsequent order triggers a new delivery.
   - **Status:** Addressed in code — `queue_box` now schedules mid-transfer boxes; `_try_auto_restart()` starts a new delivery when the truck returns to idle with pending boxes.
 
+- **RC-4I — Money controller reactivated by `call_local` change RPC on clients**
+  The customer's `_begin_change` RPC used `call_local`, so the host emitted `sale_initiated` and activated the local `MoneyController` even though the host is not the one paying. The money visual stayed visible after the customer left because the host's controller was activated by the same RPC that activated the paying client's controller.
+  - **Evidence:** Money remains visible in front of the player after the correct change was paid and the customer left.
+  - **Status:** Addressed in code — `_begin_change` no longer uses `call_local`; only the paying client's `MoneyController` is activated. The slide-down tween also uses a named method callback instead of a lambda for reliable `visible = false` cleanup.
+
+- **RC-4J — Onboarding `customer_asked` not reachable while holding a container**
+  `primary_interact()` dispatched container placement before checking for `CustomerInteractable`, so clicking a customer while holding a fruit bin tried to place the bin and returned without ever calling `customer.request_show_order()`. The order task could only register with empty hands.
+  - **Evidence:** Holding a lemon (fruit bin) and clicking the customer shows the order but the "ask customer for order" task does not register.
+  - **Status:** Addressed in code — `CustomerInteractable` is now checked early in `primary_interact()` for any held item except `CUP_FILLED` (which serves), so asking for an order works regardless of what the player is holding.
+
+- **RC-4K — Filled cups spawned without `_net_scale` and despawned with `queue_free()`**
+  `_place_filled_cup()` applied `cup.scale = Vector3.ONE * 0.03` only after `WorldSync.request_spawn()` returned on the host. The spawn state did not include `_net_scale`, so clients received the default scene scale and saw a giant cup. Separately, `Cup.pick_up_callback` and `Cup.interact()` called `queue_free()` locally instead of `WorldSync.request_despawn()`, so on a client the local copy was freed but the host and other clients still saw the cup — producing duplication.
+  - **Evidence:** Filled cups duplicate or have inconsistent scale between host and client; a filled cup placed by the host appears giant to the client; if the client picks it up and places it, it becomes giant for both.
+  - **Status:** Addressed in code — filled-cup spawn state now includes `_net_scale`. Cup pickup now routes through `WorldSync.request_despawn()` and removes the local copy immediately, matching the `pickup_container()` pattern used by other networked containers.
+
+- **RC-4L — Cup ghost validation used a broader surface predicate than placement**
+  `_update_single_cup_ghost()` used `is_placement_surface()` (which includes sidewalks) plus `_is_placement_allowed_on()` (which returns `true` in solo mode). The click handler used the same broad predicate, so cups could be placed on sidewalks outside the stand area in solo play.
+  - **Evidence:** Cup previews show green on invalid surfaces such as sidewalks outside the player's stand placement area.
+  - **Status:** Addressed in code — cup ghost validation and click handlers now use `is_stand_or_workstation_surface()`, which requires the collider to be part of a `StandUnit` or `Workstation` and owned by the player's stand. Sidewalks and other neutral surfaces show red and reject placement.
+
+- **RC-4M — Trash-box click handler fell through to `_drop_trash()` on invalid surfaces**
+  The trash-box ghost was previously restricted to stand-area surfaces (RC-4G), but the click handler still called `_drop_trash()` as a fallback when no supply box or delivery grid was hit. Clicking a red/invalid area (e.g. the street) dropped the box in front of the player instead of refusing the placement.
+  - **Evidence:** Trash-box preview is correctly red on the street, but clicking the red area still drops the box in front of the player.
+  - **Status:** Addressed in code — the click handler now checks `_ghost_valid` before calling `_drop_trash()`. Invalid placements emit a hint and do nothing instead of dropping the box.
+
+- **RC-4N — Client pitcher snap never reached the host; water fill didn't sync pitcher state**
+  `player_interaction.gd` called `_try_place_container()` which returns `null` on clients (because `WorldSync.request_spawn()` returns `null` on clients). The subsequent `press.snap_pitcher(placed)` was skipped, so the host never received a snap request, the press's `_snapped_pitcher` stayed `null` on all peers, and onboarding `pitcher_placed` never fired for clients. The same gap existed for the water dispenser. Separately, the water dispenser's `_apply_finish_fill()` updated `_snapped_pitcher.water` directly on the host but never synced the pitcher's state to clients, so clients never saw the fill result.
+  - **Evidence:** A client/joiner cannot put a pitcher into the press and the tutorial does not register it (hard lock). A client cannot fill a pitcher on the water dispenser; pitcher state does not register correctly for the client.
+  - **Status:** Addressed in code — added `request_snap_pitcher()` RPC on both `Press` and `WaterDispenser`. Clients send the recipe + stand owner to the host, which spawns the pitcher at the snap point, applies the recipe state, snaps it, and syncs to all clients. The water dispenser's `_apply_finish_fill()` now syncs the pitcher's properties and display calls to all clients via `WorldSync.sync_properties` / `sync_call`.
+
+- **RC-4O — Missing onboarding step between filling a cup and asking a customer**
+  The onboarding task list jumped from "fill a cup" directly to "ask a customer", skipping the step where the player places the filled cup on the stand for customers to take. Players would fill a cup and then ask a customer without ever placing the cup down.
+  - **Evidence:** After filling a cup, onboarding should require placing the cup on the stand before asking a customer for their order.
+  - **Status:** Addressed in code — added `demo_place_filled_cup` task between `demo_fill_cup` and `demo_ask_customer`. The task is satisfied by the `cup_placed_stand` event, reported when a filled cup is placed on a stand surface.
+
 ---
 
 ## Reported Issues
@@ -59,3 +94,11 @@
 - **Player camera when fall** — **Addressed in code; retest that camera drops and rises with the Fall animation.**
 - **Remove pitcher 3d label** — **Addressed in code; visual retest.**
 - **Slow down running** — **Addressed in code; sprint_multiplier 2.5→1.75, run anim speed 3.0→2.1.**
+- **Money change remains visible** — RC-4I — **Addressed in code; retest that money disappears after the customer leaves.**
+- **Place cup on stand onboarding task** — RC-4O — **Addressed in code; retest that the new task appears between fill and ask, and that placing a filled cup on the stand completes it.**
+- **Ask customer while holding lemon** — RC-4J — **Addressed in code; retest clicking a customer while holding a fruit bin or other non-filled-cup item.**
+- **Filled cup scale mismatch / duplication** — RC-4K — **Addressed in code; retest filled-cup placement and pickup on both host and client.**
+- **Wrong cup blueprint** — RC-4L — **Addressed in code; retest cup previews on sidewalks (should be red) and stand surfaces (should be green).**
+- **Trash-box placement on red area** — RC-4M — **Addressed in code; retest clicking a red trash-box preview on the street.**
+- **Press pickup with pitcher inside** — RC-4N — **Addressed in code; retest that a press with a snapped pitcher cannot be picked up, and that clients can snap pitchers to the press.**
+- **Client pitcher water fill** — RC-4N — **Addressed in code; retest that a client can fill a pitcher on the water dispenser and that the water state syncs to all peers.**

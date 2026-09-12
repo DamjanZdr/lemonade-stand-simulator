@@ -45,8 +45,12 @@ func _setup_pickupable() -> void:
 			CupState.EMPTY:
 				p.inventory.set_held(HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
 			CupState.FILLED:
-				p.inventory.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
-		queue_free()
+				p.inventory.set_held(
+					HeldItem.CUP_FILLED,
+					{ "recipe": recipe },
+					_make_hand_mesh(true),
+				)
+		_despawn_networked()
 		return { }
 	add_child(pickupable)
 
@@ -77,12 +81,27 @@ func _pick_up_player(player: Node) -> void:
 			physics.collision_layer = 0
 			model.visible = false
 			p.inventory.set_held(HeldItem.CUP_EMPTY, { }, _make_hand_mesh(false))
-			queue_free()
 		CupState.FILLED:
 			physics.collision_layer = 0
 			model.visible = false
 			p.inventory.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
-			queue_free()
+	_despawn_networked()
+
+
+## Despawn this cup on all peers via WorldSync (host authority). Falls back
+## to queue_free() for cups that weren't spawned through WorldSync (e.g.
+## scene-default cups or testing instances).
+func _despawn_networked() -> void:
+	if WorldSync.get_net_id(self) != -1:
+		WorldSync.request_despawn(self)
+		# Remove the local copy immediately so it can't be interacted
+		# with or duplicated while waiting for the host's despawn RPC.
+		var parent := get_parent()
+		if parent != null:
+			parent.remove_child(self)
+		queue_free()
+	else:
+		queue_free()
 
 
 func get_hint(player: Node) -> String:

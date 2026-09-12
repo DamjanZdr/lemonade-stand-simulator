@@ -69,6 +69,23 @@ func _apply_finish_fill() -> void:
 				and _snapped_pitcher.state == Pitcher.PitcherState.PREPPING:
 			_snapped_pitcher.state = Pitcher.PitcherState.COMPLETE
 			EventBus.pitcher_state_changed.emit(int(_snapped_pitcher.state))
+		# Sync the pitcher's updated water/state to all clients so they
+		# see the fill result. Without this, only the host's pitcher has
+		# the updated water amount.
+		WorldSync.sync_properties(
+			_snapped_pitcher,
+			{
+				"fruit_type": _snapped_pitcher.fruit_type,
+				"fruit_count": _snapped_pitcher.fruit_count,
+				"water": _snapped_pitcher.water,
+				"sugar": _snapped_pitcher.sugar,
+				"ice": _snapped_pitcher.ice,
+				"cups_poured": _snapped_pitcher.cups_poured,
+				"state": _snapped_pitcher.state,
+			},
+		)
+		WorldSync.sync_call(_snapped_pitcher, "sync_fill_display")
+		WorldSync.sync_call(_snapped_pitcher, "update_label")
 	# Return tap to closed
 	if _tap_mesh:
 		if _tap_tween and _tap_tween.is_valid():
@@ -335,6 +352,62 @@ func get_snap_global_position() -> Vector3:
 	if _snap_point == null:
 		return global_position
 	return _snap_point.global_position
+
+
+## Client → host: request to snap a held pitcher to this dispenser. The
+## host spawns the pitcher at the snap point, applies the recipe state,
+## snaps it, and syncs to all clients. This is the authoritative path —
+## clients never snap locally because WorldSync.request_spawn() returns
+## null on clients.
+@rpc("any_peer", "call_local", "reliable")
+func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
+	if not is_multiplayer_authority():
+		return
+	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
+		return
+	if not can_snap_pitcher_from_recipe(recipe):
+		return
+	# Spawn the pitcher at the snap point.
+	var snap_pos := get_snap_global_position()
+	var snap_rot := Vector3.ZERO
+	var state: Dictionary = {
+		"_net_groups": ["container", "pitcher"],
+		"fruit_type": recipe.get("fruit_type", ""),
+		"fruit_count": recipe.get("fruit_count", recipe.get("lemons", 0.0)),
+		"sugar": recipe.get("sugar", 0.0),
+		"ice": recipe.get("ice", 0.0),
+		"water": recipe.get("water", 0.0),
+		"cups_poured": recipe.get("cups_poured", 0),
+	}
+	if stand_owner != "":
+		state["stand_owner"] = stand_owner
+	var pitcher := WorldSync.request_spawn(
+		"res://scenes/objects/pitcher.tscn",
+		snap_pos,
+		snap_rot,
+		state,
+	) as Pitcher
+	if pitcher == null:
+		return
+	# Apply recipe state (request_spawn on host returns the instance, but
+	# _ready() has already run with defaults, so we re-apply the recipe).
+	pitcher.fruit_type = recipe.get("fruit_type", "")
+	pitcher.fruit_count = recipe.get("fruit_count", recipe.get("lemons", 0.0))
+	pitcher.sugar = recipe.get("sugar", 0.0)
+	pitcher.ice = recipe.get("ice", 0.0)
+	pitcher.water = recipe.get("water", 0.0)
+	pitcher.cups_poured = recipe.get("cups_poured", 0)
+	if pitcher.cups_poured > 0:
+		pitcher.state = Pitcher.PitcherState.SERVING
+	elif pitcher.fruit_count > 0.0 and pitcher.water > 0.0:
+		pitcher.state = Pitcher.PitcherState.COMPLETE
+	else:
+		pitcher.state = Pitcher.PitcherState.PREPPING
+	pitcher.set_pitcher_visible(true)
+	pitcher.sync_fill_display()
+	pitcher.call_deferred("update_label")
+	# Snap the pitcher to the dispenser.
+	snap_pitcher(pitcher)
 
 
 func _start_fill(water_amount: float) -> void:
