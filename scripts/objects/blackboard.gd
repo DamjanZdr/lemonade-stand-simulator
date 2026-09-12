@@ -2,7 +2,6 @@ extends Interactable
 ## Interactive recipe blackboard. Uses scene-placed Label3D nodes.
 
 const EMPTY_VALUE := "?"
-const CURSOR_BLINK := 0.5
 
 @export var columns: int = 2
 @export var click_collider_size: Vector3 = Vector3(0.9, 0.45, 0.05)
@@ -14,8 +13,6 @@ var _label_data: Array[Dictionary] = []
 var _label_index := -1
 var _field_index := 0 # 0 = primary, 1 = sugar
 var _edit_buffer := ""
-var _cursor_visible := true
-var _cursor_timer := 0.0
 ## The player currently editing recipes on this board. Stored so we
 ## can release THEM from focus when editing ends — not just whichever
 ## player happens to be first in the "player" group (which in MP
@@ -97,8 +94,6 @@ func _input(event: InputEvent) -> void:
 			_finish_edit()
 		KEY_BACKSPACE:
 			_edit_buffer = ""
-			_cursor_visible = true
-			_cursor_timer = 0.0
 			_refresh_label(_label_index)
 		KEY_0, KEY_KP_0:
 			_append_char("0")
@@ -133,16 +128,6 @@ func _input(event: InputEvent) -> void:
 
 	if handled:
 		get_viewport().set_input_as_handled()
-
-
-func _process(delta: float) -> void:
-	if _label_index < 0:
-		return
-	_cursor_timer += delta
-	if _cursor_timer >= CURSOR_BLINK:
-		_cursor_timer -= CURSOR_BLINK
-		_cursor_visible = not _cursor_visible
-		_refresh_label(_label_index)
 
 
 func _scan_labels() -> void:
@@ -239,13 +224,12 @@ func _build_line(prefix: String, value: String, field: int, index: int) -> Strin
 	if data.get("locked", false):
 		return prefix + "Locked"
 	var is_active := index == _label_index and field == _field_index
+	var display := value if value != "" else EMPTY_VALUE
 	if is_active:
 		if _edit_buffer == "":
-			var cursor := "_" if _cursor_visible else " "
-			return prefix + cursor
-		return prefix + _edit_buffer
-	var display := value if value != "" else EMPTY_VALUE
-	return prefix + display
+			return "> " + prefix + display
+		return "> " + prefix + _edit_buffer
+	return "  " + prefix + display
 
 
 func _start_edit(label_idx: int, field_idx: int) -> void:
@@ -258,8 +242,6 @@ func _start_edit(label_idx: int, field_idx: int) -> void:
 	_label_index = label_idx
 	_field_index = field_idx
 	_edit_buffer = ""
-	_cursor_visible = true
-	_cursor_timer = 0.0
 	_refresh_all_labels()
 
 
@@ -385,8 +367,6 @@ func _finish_edit() -> void:
 	_label_index = -1
 	_field_index = 0
 	_edit_buffer = ""
-	_cursor_visible = true
-	_cursor_timer = 0.0
 	_refresh_all_labels()
 	if _editing_player != null and is_instance_valid(_editing_player):
 		_editing_player.exit_priceboard_focus()

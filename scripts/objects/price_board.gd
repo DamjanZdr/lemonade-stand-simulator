@@ -208,7 +208,10 @@ func _refresh_label() -> void:
 		var label: String = FRUIT_LABELS.get(ft, ft.capitalize())
 		var prefix: String = _price_prefix.get(ft, label + ".....")
 		if i == _editing_index:
-			txt += "> %s%s\n" % [prefix, _edit_buffer]
+			if _edit_buffer == "":
+				txt += "> %s%.2f\n" % [prefix, _stand.get_price(ft)]
+			else:
+				txt += "> %s%s\n" % [prefix, _edit_buffer]
 		else:
 			txt += "  %s%.2f\n" % [prefix, _stand.get_price(ft)]
 	label_3d.text = txt
