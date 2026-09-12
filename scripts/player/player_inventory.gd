@@ -104,6 +104,14 @@ func update_held_amount(new_amount: float) -> void:
 		_player.held_mesh = _held_mesh
 
 
+func release_hand_mesh() -> Node3D:
+	var mesh := _held_mesh
+	_held_mesh = null
+	if _player != null:
+		_player.held_mesh = null
+	return mesh
+
+
 func clear_held() -> void:
 	set_held(HeldItem.NONE, { })
 

@@ -1189,11 +1189,9 @@ func _update_supply_box_ghost() -> void:
 		or interactable is WaterDispenser and ingredient_type == "water"
 	)
 	if matches_container:
-		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
-		_ghost.visible = true
+		_destroy_ghost()
 		_ghost_valid = true
 		_stack_target_id = -1
-		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		return
 
 	# Supply crates can remain boxed on the player's floor, stand, or workstation.
@@ -1204,14 +1202,6 @@ func _update_supply_box_ghost() -> void:
 		else is_table_floor_surface(collider) or is_stand_or_workstation_surface(collider)
 	)
 	if not on_surface or (not is_trash_box and not is_owned_stand_surface(collider)):
-		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
-		_ghost.visible = true
-		_ghost_valid = false
-		_stack_target_id = -1
-		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
-		return
-
-	if is_trash_box and not _is_placement_allowed_on(collider):
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
 		_ghost_valid = false
@@ -1390,6 +1380,14 @@ func _ensure_container_ghost(container_type: String) -> void:
 
 
 func _update_ghost() -> void:
+	var trashcan := _player.interaction.get_looked_at_interactable() as Trashcan
+	var can_trash_held := (
+		_player.held_item_data.get("is_trash", false) or _player.held_item == HeldItem.CONTAINER
+		or (_player.held_item == HeldItem.SUPPLY_BOX and _player.held_item_data.get("source", "") == "delivery")
+	)
+	if trashcan != null and can_trash_held:
+		_destroy_ghost()
+		return
 	# Bin scoops don't have a placement ghost
 	if _player.held_item == HeldItem.SUPPLY_BOX \
 			and _player.held_item_data.get("source") == "bin_scoop":

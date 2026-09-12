@@ -42,7 +42,7 @@ func _ready() -> void:
 
 func get_hint(_player: Node) -> String:
 	if _editing_index >= 0:
-		return "Price Board | Enter: next / Esc: cancel"
+		return "Price Board | Enter: next / Esc: close"
 	return "Price Board | LMB: edit prices"
 
 
@@ -80,6 +80,7 @@ func _input(event: InputEvent) -> void:
 			_edit_buffer = ""
 		_cursor_visible = true
 		_cursor_timer = 0.0
+		_commit_current_price()
 		_refresh_label()
 	elif key == KEY_0 or key == KEY_KP_0:
 		_append_char("0")
@@ -215,6 +216,7 @@ func _append_char(c: String) -> void:
 	_edit_buffer = sanitized
 	_cursor_visible = true
 	_cursor_timer = 0.0
+	_commit_current_price()
 	_refresh_label()
 
 

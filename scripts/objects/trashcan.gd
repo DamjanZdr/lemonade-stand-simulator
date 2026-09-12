@@ -55,8 +55,7 @@ func interact(player: Node) -> void:
 			apply_trash_disposal(trash_type, refund, stand_name)
 		else:
 			_request_trash_disposal.rpc_id(1, trash_type, refund, stand_name)
-		AudioManager.play_sfx("trash", global_position)
-		player.inventory.clear_held()
+		_finish_held_disposal(p)
 		return
 	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
@@ -66,8 +65,7 @@ func interact(player: Node) -> void:
 			apply_trash_disposal(ctype, refund, stand_name)
 		else:
 			_request_trash_disposal.rpc_id(1, ctype, refund, stand_name)
-		AudioManager.play_sfx("trash", global_position)
-		player.inventory.clear_held()
+		_finish_held_disposal(p)
 		return
 	if p.held_item == HeldItem.SUPPLY_BOX:
 		# Unopened equipment/ingredient boxes can be sold directly.
@@ -87,9 +85,31 @@ func interact(player: Node) -> void:
 				apply_trash_disposal(trash_type, refund, stand_name)
 			else:
 				_request_trash_disposal.rpc_id(1, trash_type, refund, stand_name)
-		AudioManager.play_sfx("trash", global_position)
-		player.inventory.clear_held()
+		_finish_held_disposal(p)
 		return
+
+
+func _finish_held_disposal(player: Player) -> void:
+	var mesh := player.inventory.release_hand_mesh()
+	player.inventory.clear_held()
+	AudioManager.play_sfx("trash", global_position)
+	if mesh == null or not is_instance_valid(mesh):
+		return
+	var start_transform := mesh.global_transform
+	mesh.reparent(get_tree().current_scene)
+	mesh.global_transform = start_transform
+	var target := global_position + Vector3.UP * 0.65
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween \
+			.tween_property(mesh, "global_position", target, 0.35) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_IN)
+	tween.tween_property(mesh, "scale", Vector3.ZERO, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(
+		Tween.EASE_IN
+	)
+	tween.tween_property(mesh, "rotation", mesh.rotation + Vector3(0.8, 1.6, 0.4), 0.35)
+	tween.chain().tween_callback(mesh.queue_free)
 
 
 ## Host-side: apply money refund and spawn trash visual.

@@ -181,9 +181,11 @@ const TASKS: Array[Dictionary] = [
 	},
 	{
 		"id": "demo_master_lemon",
-		"text": "{Use customer feedback to perfect your lemon recipe}.",
+		"text": "{Make more lemonade with different amounts of lemon until 5 customers in a row are happy with the recipe}.",
 		"event": "recipe_discovered",
-		"parts": { "Use customer feedback to perfect your lemon recipe": "lemon" },
+		"parts": {
+			"Make more lemonade with different amounts of lemon until 5 customers in a row are happy with the recipe": "lemon"
+		},
 	},
 	{
 		"id": "demo_set_perfect_lemon",
