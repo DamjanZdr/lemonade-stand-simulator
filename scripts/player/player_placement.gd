@@ -1381,7 +1381,7 @@ func _ensure_container_ghost(container_type: String) -> void:
 
 func _update_ghost() -> void:
 	var trashcan := _player.interaction.get_looked_at_interactable() as Trashcan
-	var can_trash_held := (
+	var can_trash_held: bool = (
 		_player.held_item_data.get("is_trash", false) or _player.held_item == HeldItem.CONTAINER
 		or (_player.held_item == HeldItem.SUPPLY_BOX and _player.held_item_data.get("source", "") == "delivery")
 	)
