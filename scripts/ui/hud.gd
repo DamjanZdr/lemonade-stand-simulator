@@ -459,13 +459,17 @@ func _build_onboarding_panel() -> void:
 	panel_style.content_margin_right = 18.0
 	panel_style.content_margin_bottom = 10.0
 	_onboarding_panel.add_theme_stylebox_override("panel", panel_style)
+	# VBoxContainer with center alignment vertically centers the text and
+	# lets the panel size to its content instead of always being tall
+	# enough for 3 lines.
 	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 4)
 	_onboarding_panel.add_child(box)
 	_onboarding_text = RichTextLabel.new()
 	_onboarding_text.bbcode_enabled = true
 	_onboarding_text.fit_content = true
-	_onboarding_text.custom_minimum_size = Vector2(344, 58)
+	_onboarding_text.custom_minimum_size = Vector2(344, 0)
 	_onboarding_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_onboarding_text.add_theme_font_override("normal_font", AMATIC_FONT)
 	_onboarding_text.add_theme_font_size_override("normal_font_size", 20)
@@ -495,25 +499,33 @@ func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
 		_displayed_task_id != "" and next_id != _displayed_task_id
 		and next_id != "day_end" and not bool(progress.get("day_end_active", false))
 	)
-	if should_hold_completion:
-		_play_onboarding_completion_sound()
-	elif next_id == _displayed_task_id and next_id != "":
+	if not should_hold_completion and next_id == _displayed_task_id and next_id != "":
 		var new_parts: Dictionary = progress.get("completed_parts", { })
 		for part in new_parts:
 			if new_parts.get(part, false) and not _displayed_parts.get(part, false):
 				_play_onboarding_completion_sound()
 				break
 	if should_hold_completion:
+		_play_onboarding_completion_sound()
+		# Render the old task as crossed out, then animate it out.
 		var old_progress := progress.duplicate(true)
 		old_progress["current_task_id"] = _displayed_task_id
 		old_progress["completed_parts"] = { }
 		_render_onboarding(old_progress, true, true)
+		# Brief pause to show the crossed-out state, then exit animation.
+		await get_tree().create_timer(1.0).timeout
+		if _stand != stand or _onboarding_revision != revision:
+			return
+		await _animate_task_exit()
+		if _stand != stand or _onboarding_revision != revision:
+			return
 		_displayed_task_id = next_id
 		_displayed_parts = { }
-		await get_tree().create_timer(5.0).timeout
+		# Render the new task off-screen, then animate it in.
+		_render_onboarding(progress)
+		await _animate_task_enter()
 		if _stand == stand and _onboarding_revision == revision:
 			_displayed_parts = progress.get("completed_parts", { }).duplicate(true)
-			_render_onboarding(progress)
 		return
 	_displayed_task_id = next_id
 	_displayed_parts = progress.get("completed_parts", { }).duplicate(true)
@@ -524,6 +536,65 @@ func _play_onboarding_completion_sound() -> void:
 	var player := WorldSync.get_local_player() as Node3D
 	var position := player.global_position if player != null else Vector3.ZERO
 	AudioManager.play_sfx("trash", position)
+
+
+## Exit animation: slide the onboarding panel left slightly, then off to
+## the right. The panel's rest position is offset_left=-400, offset_right=-20.
+func _animate_task_exit() -> void:
+	if _onboarding_panel == null or not is_instance_valid(_onboarding_panel):
+		return
+	var tw := create_tween()
+	# Slide left a bit (nudge 25px left).
+	tw \
+			.tween_property(
+		_onboarding_panel,
+		"offset_left",
+		_onboarding_panel.offset_left - 25.0,
+		0.15,
+	) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_OUT)
+	tw \
+			.parallel() \
+			.tween_property(
+		_onboarding_panel,
+		"offset_right",
+		_onboarding_panel.offset_right - 25.0,
+		0.15,
+	) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_OUT)
+	# Then slide off-screen to the right.
+	tw \
+			.tween_property(_onboarding_panel, "offset_left", 420.0, 0.35) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_IN)
+	tw \
+			.parallel() \
+			.tween_property(_onboarding_panel, "offset_right", 420.0, 0.35) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_IN)
+	await tw.finished
+
+
+## Enter animation: start the panel off-screen to the right and slide it to
+## its rest position (offset_left=-400, offset_right=-20).
+func _animate_task_enter() -> void:
+	if _onboarding_panel == null or not is_instance_valid(_onboarding_panel):
+		return
+	_onboarding_panel.offset_left = 420.0
+	_onboarding_panel.offset_right = 420.0
+	var tw := create_tween()
+	tw \
+			.tween_property(_onboarding_panel, "offset_left", -400.0, 0.35) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_OUT)
+	tw \
+			.parallel() \
+			.tween_property(_onboarding_panel, "offset_right", -20.0, 0.35) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_OUT)
+	await tw.finished
 
 
 func _render_onboarding(
@@ -553,6 +624,14 @@ func _render_onboarding(
 		for part in parts:
 			text = text.replace("{%s}" % part, part)
 	var task_id: String = task.get("id", "")
+	# Show count progress for tasks that require N occurrences (e.g. 3 cups).
+	var required: int = int(task.get("required_count", 0))
+	if required > 1:
+		var counts: Dictionary = progress.get("part_counts", { })
+		var placed: int = 0
+		for part in parts:
+			placed = maxi(placed, int(counts.get(part, 0)))
+		text += "\nProgress: %d / %d" % [mini(placed, required), required]
 	if task_id in ["demo_master_lemon", "demo_master_second_fruit"]:
 		var fruit: String = (
 			"lemon"
@@ -565,6 +644,20 @@ func _render_onboarding(
 		var candidate: Dictionary = progress.get("active_ice_candidate", { })
 		text += "\nValidation: %d / 5 customers" % int(candidate.get("streak", 0))
 	_onboarding_text.text = text
+	# Size the panel to the text content instead of a fixed height. The
+	# RichTextLabel with fit_content reports its required height after the
+	# text is set; defer so the layout updates first.
+	call_deferred("_resize_onboarding_panel")
+
+
+func _resize_onboarding_panel() -> void:
+	if _onboarding_panel == null or not is_instance_valid(_onboarding_panel):
+		return
+	# The RichTextLabel's get_content_height gives the rendered text height.
+	# Add padding (stylebox margins ~20px top+bottom) for the panel size.
+	var text_h: float = float(_onboarding_text.get_content_height())
+	var min_h: float = maxf(text_h + 20.0, 36.0)
+	_onboarding_panel.offset_bottom = _onboarding_panel.offset_top + min_h
 
 
 func _on_discovery(stand: StandUnit, title: String, detail: String) -> void:

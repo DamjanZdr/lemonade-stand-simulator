@@ -277,10 +277,7 @@ func primary_interact() -> void:
 	# checked before container/supply-box placement so that clicking a
 	# customer while holding a fruit bin asks for the order instead of
 	# trying to place the bin.
-	if (
-		interactable is CustomerInteractable
-		and _player.inventory.held_item != HeldItem.CUP_FILLED
-	):
+	if (interactable is CustomerInteractable and _player.inventory.held_item != HeldItem.CUP_FILLED):
 		interactable.interact(_player)
 		return
 
@@ -638,6 +635,7 @@ func primary_interact() -> void:
 				and (
 					_player.placement.is_table_floor_surface(collider)
 					or _player.placement.is_stand_or_workstation_surface(collider)
+					or _player.placement.is_box_placeable_surface(collider)
 				)
 			):
 				_player.placement._place_held_supply_box_on(
@@ -645,7 +643,7 @@ func primary_interact() -> void:
 					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
 				)
 				return
-		EventBus.interaction_hint_changed.emit("Can only place on your stand or table")
+		EventBus.interaction_hint_changed.emit("Can only place on a stand area")
 		return
 
 	# Handle fallback interactables (not caught by specific cases above)

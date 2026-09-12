@@ -547,7 +547,7 @@ func is_aiming_at_grid() -> bool:
 
 
 func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> void:
-	if not is_owned_stand_surface(grid):
+	if not is_any_stand_surface(grid):
 		return
 	var cell_idx := grid.get_closest_cell(hit_point)
 	if cell_idx < 0:
@@ -565,7 +565,7 @@ func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> v
 
 
 func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
-	if not is_owned_stand_surface(root):
+	if not is_any_stand_surface(root):
 		return
 	root.update_metrics()
 	var top := _get_topmost_box_in_stack(root)
@@ -653,7 +653,7 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	var drop_pos: Vector3
 	if place_pos != Vector3.ZERO:
 		drop_pos = place_pos
-	elif _player.ray.is_colliding() and is_owned_stand_surface(_player.ray.get_collider()):
+	elif _player.ray.is_colliding() and is_box_placeable_surface(_player.ray.get_collider()):
 		drop_pos = _player.ray.get_collision_point() + Vector3(
 			0,
 			SupplyBox.DEFAULT_BOTTOM_OFFSET,
@@ -727,7 +727,7 @@ func _place_held_trash_box_on_stack(root: SupplyBox) -> void:
 ## Place a held trash box (empty_box) on a delivery grid cell.
 ## Mirrors _place_held_supply_box_on_grid but spawns a trash box.
 func _place_held_trash_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> void:
-	if not is_owned_stand_surface(grid):
+	if not is_any_stand_surface(grid):
 		return
 	var cell_idx := grid.get_closest_cell(hit_point)
 	if cell_idx < 0:
@@ -1200,7 +1200,7 @@ func _update_supply_box_ghost() -> void:
 		node = node.get_parent()
 
 	if target_box != null and target_box.is_inside_tree():
-		if not is_owned_stand_surface(target_box):
+		if not is_any_stand_surface(target_box):
 			_ghost.visible = false
 			_ghost_valid = false
 			return
@@ -1246,12 +1246,13 @@ func _update_supply_box_ghost() -> void:
 		_stack_target_id = -1
 		return
 
-	# Supply crates (and trash boxes) can remain boxed on the player's
-	# floor, stand, or workstation — same ownership rules for both.
+	# Supply crates (and trash boxes) can remain boxed on any stand's
+	# floor/ground, or the player's own stand/table/workstation.
 	var on_surface := (
-		is_table_floor_surface(collider) or is_stand_or_workstation_surface(collider)
+		is_table_floor_surface(collider)
+		or is_stand_or_workstation_surface(collider) or is_ground_surface(collider)
 	)
-	if not on_surface or not is_owned_stand_surface(collider):
+	if not on_surface or not is_box_placeable_surface(collider):
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
 		_ghost_valid = false
@@ -1322,10 +1323,11 @@ func _update_equipment_box_ghost() -> void:
 	if _has_probe_hit:
 		hit_point = _probe_hit_point
 
-	# Cross-stand placement restriction: equipment (and its box) can only be
-	# placed on surfaces/ground owned by the player's assigned stand. Delivery
-	# grids and supply box stacks are handled above and return early.
-	if not is_owned_stand_surface(collider):
+	# Cross-stand placement restriction: equipment (and its box) can be
+	# placed on any stand's ground/palette, but only on the player's own
+	# stand/table/workstation. Delivery grids and supply box stacks are
+	# handled above and return early.
+	if not is_box_placeable_surface(collider):
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
@@ -1945,6 +1947,35 @@ func is_owned_stand_surface(collider: Node) -> bool:
 	if _player.assigned_stand == null or not is_instance_valid(_player.assigned_stand):
 		return not _player.multiplayer.has_multiplayer_peer()
 	return surface_owner == _player.assigned_stand.name
+
+
+## Like is_owned_stand_surface, but also accepts ANY stand's ground/palette
+## (PlacableFloor). Used for supply/equipment/trash boxes, which can be
+## placed on other stands' ground but not on their tables/workstations.
+func is_box_placeable_surface(collider: Node) -> bool:
+	if collider == null:
+		return false
+	# Table/workstation surfaces still require own-stand ownership.
+	if is_table_floor_surface(collider) or is_workstation_surface(collider):
+		return is_owned_stand_surface(collider)
+	# Ground/palette: allow on any stand (own or another player's).
+	if is_ground_surface(collider):
+		var surface_owner := _get_placement_owner_stand(_resolved_ground_surface)
+		return surface_owner != ""
+	# Any other placement surface under a StandUnit: own-stand only.
+	return is_owned_stand_surface(collider)
+
+
+## Like is_owned_stand_surface, but accepts ANY stand's surface (not just
+## the local player's). Used for box-on-box stacking and delivery grid
+## placement, which are allowed across stands.
+func is_any_stand_surface(collider: Node) -> bool:
+	if collider == null:
+		return false
+	var surface_owner := _get_placement_owner_stand(collider)
+	if surface_owner == "" and is_ground_surface(collider):
+		surface_owner = _get_placement_owner_stand(_resolved_ground_surface)
+	return surface_owner != ""
 
 
 func is_table_floor_surface(collider: Node) -> bool:

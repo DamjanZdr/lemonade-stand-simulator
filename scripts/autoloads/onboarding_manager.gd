@@ -147,9 +147,10 @@ const TASKS: Array[Dictionary] = [
 	},
 	{
 		"id": "demo_place_filled_cup",
-		"text": "{Place the filled cup on your stand} for customers to take.",
+		"text": "Place at least {3 filled cups} on your stand.",
 		"event": "cup_placed_stand",
-		"parts": { "Place the filled cup on your stand": "filled_cup" },
+		"parts": { "3 filled cups": "filled_cup" },
+		"required_count": 3,
 	},
 	{
 		"id": "demo_ask_customer",
@@ -438,6 +439,19 @@ func _match_task(stand: StandUnit, event_name: String, data: Dictionary) -> void
 		if completed_parts.get(part, false):
 			continue
 		if _part_matches(task, part, event_name, data, p):
+			# Support tasks that require N occurrences of the same event
+			# (e.g. place 3 filled cups). Count accumulates in
+			# p.part_counts[part] until it reaches required_count.
+			var required: int = int(task.get("required_count", 1))
+			if required > 1:
+				var counts: Dictionary = p.get("part_counts", { })
+				var n := int(counts.get(part, 0)) + 1
+				counts[part] = n
+				p["part_counts"] = counts
+				if n < required:
+					changed = true
+					_touch(stand)
+					continue
 			completed_parts[part] = true
 			changed = true
 	if not changed:
@@ -446,6 +460,7 @@ func _match_task(stand: StandUnit, event_name: String, data: Dictionary) -> void
 	if completed_parts.size() >= task.parts.size():
 		p.completed_task_ids.append(task.id)
 		p.completed_parts = { }
+		p["part_counts"] = { }
 		if idx + 1 >= TASKS.size():
 			p.completed = true
 			p.current_task_id = ""
@@ -488,6 +503,7 @@ func _advance_satisfied_tasks(stand: StandUnit) -> void:
 		if not p.completed_task_ids.has(id):
 			p.completed_task_ids.append(id)
 		p.completed_parts = { }
+		p["part_counts"] = { }
 		if idx + 1 >= TASKS.size():
 			p.completed = true
 			p.current_task_id = ""

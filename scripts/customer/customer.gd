@@ -596,7 +596,7 @@ func _resolve(outcome: String) -> void:
 			_payment_amount = payment
 			_last_tendered_cents = 0
 			_waiting_for_change = true
-			_begin_change.rpc_id(_serving_peer_id, payment, change_due)
+			_begin_change.rpc_id(_serving_peer_id, _serving_peer_id, payment, change_due)
 		else:
 			# Exact payment — no change needed. Pay directly and leave.
 			if stand != null and not stand.is_legacy_primary:
@@ -612,8 +612,16 @@ func _resolve(outcome: String) -> void:
 		tween.tween_callback(_start_leaving)
 
 
-@rpc("authority", "reliable")
-func _begin_change(payment: float, change_due: float) -> void:
+@rpc("authority", "call_local", "reliable")
+func _begin_change(serving_peer_id: int, payment: float, change_due: float) -> void:
+	# Only activate the money UI on the peer that is actually serving
+	# this customer. call_local means the host also runs this method when
+	# it sends the RPC; without this guard the host's MoneyController would
+	# activate even when a client is the one being served. The serving
+	# peer ID is passed as a parameter because _serving_peer_id is only
+	# set on the host (not synced to clients).
+	if multiplayer.get_unique_id() != serving_peer_id:
+		return
 	if not EventBus.change_tendered_updated.is_connected(_forward_change_tendered):
 		EventBus.change_tendered_updated.connect(_forward_change_tendered)
 	if not EventBus.change_finalized.is_connected(_forward_change_finalized):

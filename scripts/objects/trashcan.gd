@@ -98,21 +98,34 @@ func _finish_held_disposal(player: Player) -> void:
 	var start_transform := mesh.global_transform
 	mesh.reparent(get_tree().current_scene)
 	mesh.global_transform = start_transform
+	var start_pos := mesh.global_position
 	var target := global_position + Vector3.UP * 0.65
+	# Arc apex: midpoint between start and target, raised to form a parabola.
+	var mid := (start_pos + target) * 0.5 + Vector3.UP * 1.2
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween \
-			.tween_property(mesh, "global_position", target, 0.35) \
-			.set_trans(Tween.TRANS_QUAD) \
-			.set_ease(Tween.EASE_IN)
-	tween.tween_property(mesh, "scale", Vector3.ZERO, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(
+	# Fly along a quadratic bezier arc (start -> mid -> target).
+	tween.tween_method(_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
+		Tween.EASE_IN_OUT
+	)
+	tween.tween_property(mesh, "scale", Vector3.ZERO, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
 		Tween.EASE_IN
 	)
-	tween.tween_property(mesh, "rotation", mesh.rotation + Vector3(0.8, 1.6, 0.4), 0.35)
+	tween.tween_property(mesh, "rotation", mesh.rotation + Vector3(0.8, 1.6, 0.4), 0.45)
 	tween.chain().tween_callback(mesh.queue_free)
 
 
-## Host-side: apply money refund and spawn trash visual.
+## Quadratic bezier helper for the trash arc animation. `t` goes 0 -> 1,
+## `a`/`b`/`c` are start/mid/end, `mesh` is the node to move.
+func _bezier_pos(t: float, a: Vector3, b: Vector3, c: Vector3, mesh: Node3D) -> void:
+	if mesh == null or not is_instance_valid(mesh):
+		return
+	var u := 1.0 - t
+	mesh.global_position = u * u * a + 2.0 * u * t * b + t * t * c
+
+
+## Host-side: apply money refund. The disposable visual was removed — the
+## held-item arc into the can is the only animation now.
 ## Public so ThrownTrash can call it when trash lands in the can.
 func apply_trash_disposal(trash_type: String, refund: float, stand_name: String = "") -> void:
 	if not WorldSync.is_host():
@@ -120,10 +133,6 @@ func apply_trash_disposal(trash_type: String, refund: float, stand_name: String 
 	if refund > 0.0:
 		_add_money_to_stand(refund, stand_name)
 	EventBus.trash_disposed.emit(trash_type, refund, stand_name)
-	# Suppress the disposable visual for empty boxes/supply boxes — the box
-	# is the item being thrown away, so an apple shouldn't pop out of it.
-	if trash_type != "empty_box":
-		_spawn_disposed_trash(trash_type)
 
 
 ## Client -> Host RPC to request trash disposal.
@@ -152,38 +161,6 @@ func _get_player_stand_name(p: Player) -> String:
 	if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
 		return p.assigned_stand.name
 	return ""
-
-
-func _spawn_disposed_trash(trash_type: String = "") -> void:
-	if not WorldSync.is_host():
-		return
-	var start := global_position + Vector3.UP * 1.0
-	var end := global_position + Vector3.UP * 0.2
-	var state: Dictionary = { }
-	if trash_type != "":
-		state["trash_type"] = trash_type
-	# Use the per-variant scene if available, otherwise default to apple.
-	var scene_path: String = _VARIANT_SCENES.get(
-		trash_type,
-		"res://scenes/objects/trash_apple.tscn",
-	)
-	var trash := WorldSync.spawn_networked(
-		scene_path,
-		get_tree().current_scene,
-		start,
-		Vector3.ZERO,
-		state,
-	) as Node3D
-	if trash == null:
-		return
-	if trash is Area3D:
-		trash.monitoring = false
-		trash.monitorable = false
-	var tw := create_tween()
-	tw.tween_property(trash, "global_position", end, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(
-		Tween.EASE_IN
-	)
-	tw.tween_callback(WorldSync.request_despawn.bind(trash))
 
 
 func _is_valid_player(player: Node) -> bool:
