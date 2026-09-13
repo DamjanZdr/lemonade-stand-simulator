@@ -341,7 +341,7 @@ func _finalize() -> void:
 			}
 			var item := WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2) as Node3D
 			if item != null:
-				_align_visual_bottom_to_ground(item, land_pos.y)
+				_align_collision_bottom_to_ground(item, land_pos.y)
 	# Despawn self via WorldSync so clients remove it too.
 	WorldSync.despawn_networked(self)
 
@@ -350,17 +350,29 @@ func _finalize() -> void:
 ## Returns a position with Y snapped to the ground (or the original position
 ## if no ground is found within 2 meters). This prevents trash from floating
 ## above the ground due to collision shape offsets in the trash variant scenes.
-func _align_visual_bottom_to_ground(item: Node3D, ground_y: float) -> void:
+func _align_collision_bottom_to_ground(item: Node3D, ground_y: float) -> void:
 	var lowest_y := INF
-	for node in item.find_children("*", "MeshInstance3D", true, false):
-		var mesh_instance := node as MeshInstance3D
-		if mesh_instance == null or mesh_instance.mesh == null or not mesh_instance.visible:
+	for node in item.find_children("*", "CollisionShape3D", true, false):
+		var collision := node as CollisionShape3D
+		if collision == null or collision.shape == null or collision.disabled:
 			continue
-		var bounds := mesh_instance.mesh.get_aabb()
-		for x in [bounds.position.x, bounds.end.x]:
-			for y in [bounds.position.y, bounds.end.y]:
-				for z in [bounds.position.z, bounds.end.z]:
-					var point := mesh_instance.global_transform * Vector3(x, y, z)
+		var extents := Vector3.ZERO
+		if collision.shape is BoxShape3D:
+			extents = (collision.shape as BoxShape3D).size * 0.5
+		elif collision.shape is SphereShape3D:
+			extents = Vector3.ONE * (collision.shape as SphereShape3D).radius
+		elif collision.shape is CylinderShape3D:
+			var cylinder := collision.shape as CylinderShape3D
+			extents = Vector3(cylinder.radius, cylinder.height * 0.5, cylinder.radius)
+		elif collision.shape is CapsuleShape3D:
+			var capsule := collision.shape as CapsuleShape3D
+			extents = Vector3(capsule.radius, capsule.height * 0.5, capsule.radius)
+		else:
+			continue
+		for x in [-extents.x, extents.x]:
+			for y in [-extents.y, extents.y]:
+				for z in [-extents.z, extents.z]:
+					var point := collision.global_transform * Vector3(x, y, z)
 					lowest_y = minf(lowest_y, point.y)
 	if lowest_y < INF:
 		item.global_position.y += ground_y - lowest_y

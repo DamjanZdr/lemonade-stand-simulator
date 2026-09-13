@@ -70,6 +70,7 @@ const _ROTATION_SPEED: float = 10.0
 var _resume_waypoint_idx: int = 0
 var _feedback_timer: float = 0.0
 var _ground_y: float = 0.0
+var _visual_ground_offset: float = 0.0
 var _ground_snapped: bool = false
 var _snap_attempts: int = 0
 var _playable_area: Area3D = null
@@ -93,6 +94,7 @@ var appearance_seed: int = 0
 
 func _ready() -> void:
 	_ground_y = global_position.y
+	_visual_ground_offset = _measure_visual_ground_offset()
 	_ground_sample_timer = randf() * _GROUND_SAMPLE_INTERVAL
 	up_direction = Vector3.UP
 	floor_max_angle = deg_to_rad(60.0)
@@ -301,7 +303,22 @@ func _update_ground_height(delta: float) -> void:
 	query.exclude = [get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty() and (hit.get("normal", Vector3.UP) as Vector3).y > 0.5:
-		_ground_y = (hit.get("position", origin) as Vector3).y
+		_ground_y = (hit.get("position", origin) as Vector3).y + _visual_ground_offset
+
+
+func _measure_visual_ground_offset() -> float:
+	var lowest_y := INF
+	for node in _npc.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null or not mesh_instance.visible:
+			continue
+		var bounds := mesh_instance.mesh.get_aabb()
+		for x in [bounds.position.x, bounds.end.x]:
+			for y in [bounds.position.y, bounds.end.y]:
+				for z in [bounds.position.z, bounds.end.z]:
+					var point := mesh_instance.global_transform * Vector3(x, y, z)
+					lowest_y = minf(lowest_y, point.y)
+	return maxf(0.0, global_position.y - lowest_y) if lowest_y < INF else 0.0
 
 
 # ── Client-side interpolation ─────────────────────────────────────────────────

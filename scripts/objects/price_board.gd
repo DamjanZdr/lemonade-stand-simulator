@@ -150,7 +150,11 @@ func _commit_current_price() -> void:
 
 func _confirm_and_next() -> void:
 	_commit_current_price()
-	var next := _next_editable_index(_editing_index, 1)
+	var next := -1
+	for idx in range(_editing_index + 1, StandUnit.FRUIT_TYPES.size()):
+		if UpgradeManager.is_fruit_unlocked(StandUnit.FRUIT_TYPES[idx]):
+			next = idx
+			break
 	if next < 0:
 		_editing_index = -1
 		_edit_buffer = ""
