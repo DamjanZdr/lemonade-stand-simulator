@@ -371,13 +371,13 @@ func sync_snapped_pitcher() -> void:
 ## it, and syncs to all clients. This is the authoritative path — clients
 ## never snap locally because WorldSync.request_spawn() returns null on
 ## clients.
-@rpc("any_peer", "call_local", "reliable")
+@rpc("any_peer", "reliable")
 func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
+	var requester := multiplayer.get_remote_sender_id()
 	if not is_multiplayer_authority():
 		return
-	if has_snapped_pitcher():
-		return
-	if not can_snap_pitcher(recipe):
+	if has_snapped_pitcher() or not can_snap_pitcher(recipe):
+		_pitcher_snap_result.rpc_id(requester, false)
 		return
 	# Spawn the pitcher at the snap point.
 	var snap_pos := get_snap_global_position()
@@ -401,6 +401,7 @@ func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
 		state,
 	) as Pitcher
 	if pitcher == null:
+		_pitcher_snap_result.rpc_id(requester, false)
 		return
 	# Apply the placement scale so the host's pitcher matches clients.
 	pitcher.scale = Vector3.ONE * 0.1575
@@ -424,6 +425,24 @@ func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
 	# Snap the pitcher to the press and sync to all clients.
 	snap_pitcher(pitcher)
 	sync_snapped_pitcher()
+	_pitcher_snap_result.rpc_id(requester, true)
+
+
+@rpc("authority", "reliable")
+func _pitcher_snap_result(accepted: bool) -> void:
+	var player := WorldSync.get_local_player()
+	if player == null or player.held_item != HeldItem.CONTAINER:
+		return
+	if player.held_item_data.get("container_type", "") != "pitcher":
+		return
+	if not player.held_item_data.get("snap_pending", false):
+		return
+	player.held_item_data.erase("snap_pending")
+	if accepted:
+		player.placement._destroy_ghost()
+		player.inventory.clear_held()
+	else:
+		EventBus.interaction_hint_changed.emit("Press could not accept pitcher")
 
 
 func can_snap_pitcher(recipe: Dictionary) -> bool:

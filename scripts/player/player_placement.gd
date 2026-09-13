@@ -1589,13 +1589,13 @@ func _update_ghost() -> void:
 	# Check for overlap with existing containers
 	var overlapping := _check_ghost_overlap()
 	# Deployed containers (picked up from workstation) can't go on ground,
-	# except for workstations and water dispensers, which are floor-standing.
+	# except pitchers and floor-standing workstations or water dispensers.
 	var deployed: bool = _player.held_item_data.get("deployed", false)
 	var valid := (
 		not overlapping
 		and (
-			not (deployed and is_ground) or container_type == "workstation"
-			or container_type == "water_dispenser"
+			not (deployed and is_ground) or container_type == "pitcher"
+			or container_type == "workstation" or container_type == "water_dispenser"
 		)
 	)
 

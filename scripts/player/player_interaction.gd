@@ -264,6 +264,8 @@ func poll_hint() -> void:
 func primary_interact() -> void:
 	# Check if looking at an interactable first (even when holding items)
 	var interactable := get_looked_at_interactable()
+	if _player.held_item_data.get("snap_pending", false):
+		return
 
 	# Walking pedestrians take priority: first click starts the offer no matter
 	# what the player is holding. Subsequent clicks serve lemonade.
@@ -277,10 +279,8 @@ func primary_interact() -> void:
 	# checked before container/supply-box placement so that clicking a
 	# customer while holding a fruit bin asks for the order instead of
 	# trying to place the bin.
-	if (
-		interactable is CustomerInteractable
-		and _player.inventory.held_item != HeldItem.CUP_FILLED
-	):
+	if interactable is CustomerInteractable \
+			and _player.inventory.held_item != HeldItem.CUP_FILLED:
 		interactable.interact(_player)
 		return
 
@@ -417,9 +417,9 @@ func primary_interact() -> void:
 							and is_instance_valid(_player.assigned_stand)
 						):
 							stand_owner = _player.assigned_stand.name
-						press.request_snap_pitcher.rpc_id(1, snap_recipe, stand_owner)
-						_player.placement._destroy_ghost()
-						_player.inventory.clear_held()
+						if not _player.held_item_data.get("snap_pending", false):
+							_player.held_item_data["snap_pending"] = true
+							press.request_snap_pitcher.rpc_id(1, snap_recipe, stand_owner)
 					return
 				EventBus.interaction_hint_changed.emit(press.get_pitcher_snap_hint(snap_recipe))
 				return
@@ -446,9 +446,9 @@ func primary_interact() -> void:
 							and is_instance_valid(_player.assigned_stand)
 						):
 							stand_owner = _player.assigned_stand.name
-						dispenser.request_snap_pitcher.rpc_id(1, _recipe, stand_owner)
-						_player.placement._destroy_ghost()
-						_player.inventory.clear_held()
+						if not _player.held_item_data.get("snap_pending", false):
+							_player.held_item_data["snap_pending"] = true
+							dispenser.request_snap_pitcher.rpc_id(1, _recipe, stand_owner)
 					return
 				# Can't snap to dispenser — fall through to normal placement
 		var from_box: bool = _player.inventory.held_item_data.get("from_delivery_box", false)
@@ -663,6 +663,8 @@ func primary_interact() -> void:
 
 
 func secondary_interact() -> void:
+	if _player.held_item_data.get("snap_pending", false):
+		return
 	# Holding a pitcher: RMB always empties it, regardless of what's being
 	# looked at.
 	if (

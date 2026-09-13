@@ -12,6 +12,7 @@ var _is_filling: bool = false
 var _fill_progress: float = 0.0
 var _fill_amount: float = 0.0
 var _snapped_pitcher: Pitcher = null
+var _pending_snap_pitcher_net_id: int = -1
 var _tap_tween: Tween = null
 var _last_display_fillings: float = -1000.0
 
@@ -132,6 +133,11 @@ func _rpc_request_take_pitcher() -> void:
 
 func _process(delta: float) -> void:
 	_update_snap()
+	if _snapped_pitcher == null and _pending_snap_pitcher_net_id != -1:
+		var pitcher := WorldSync.find_node_by_net_id(_pending_snap_pitcher_net_id)
+		if pitcher is Pitcher:
+			_snapped_pitcher = pitcher as Pitcher
+			_snapped_pitcher.global_position = _snap_point.global_position
 	if _is_filling and _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
 		_fill_progress += delta
 		var t := _fill_progress / fill_time_per_pitcher
@@ -245,6 +251,8 @@ func interact(player: Node) -> void:
 			# Pitcher full — pick it up
 			var pitcher := _snapped_pitcher
 			_snapped_pitcher = null
+			_pending_snap_pitcher_net_id = -1
+			WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
 			if not WorldSync.is_host():
 				_rpc_request_take_pitcher.rpc_id(1)
 			p.pickup_container(pitcher, "pitcher")
@@ -262,6 +270,8 @@ func interact_secondary(player: Node) -> void:
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling:
 		var pitcher := _snapped_pitcher
 		_snapped_pitcher = null
+		_pending_snap_pitcher_net_id = -1
+		WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
 		if not WorldSync.is_host():
 			_rpc_request_take_pitcher.rpc_id(1)
 		p.pickup_container(pitcher, "pitcher")
@@ -314,6 +324,8 @@ func get_hint(player: Node) -> String:
 
 func snap_pitcher(pitcher: Pitcher) -> void:
 	_snapped_pitcher = pitcher
+	_pending_snap_pitcher_net_id = WorldSync.get_net_id(pitcher)
+	WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", _pending_snap_pitcher_net_id)
 	OnboardingManager.report(
 		OnboardingManager.stand_for_node(self),
 		"pitcher_placed",
@@ -359,13 +371,13 @@ func get_snap_global_position() -> Vector3:
 ## snaps it, and syncs to all clients. This is the authoritative path —
 ## clients never snap locally because WorldSync.request_spawn() returns
 ## null on clients.
-@rpc("any_peer", "call_local", "reliable")
+@rpc("any_peer", "reliable")
 func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
+	var requester := multiplayer.get_remote_sender_id()
 	if not is_multiplayer_authority():
 		return
-	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
-		return
 	if not can_snap_pitcher_from_recipe(recipe):
+		_pitcher_snap_result.rpc_id(requester, false)
 		return
 	# Spawn the pitcher at the snap point.
 	var snap_pos := get_snap_global_position()
@@ -389,6 +401,7 @@ func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
 		state,
 	) as Pitcher
 	if pitcher == null:
+		_pitcher_snap_result.rpc_id(requester, false)
 		return
 	# Apply the placement scale so the host's pitcher matches clients.
 	pitcher.scale = Vector3.ONE * 0.1575
@@ -411,6 +424,24 @@ func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
 	pitcher.call_deferred("update_label")
 	# Snap the pitcher to the dispenser.
 	snap_pitcher(pitcher)
+	_pitcher_snap_result.rpc_id(requester, true)
+
+
+@rpc("authority", "reliable")
+func _pitcher_snap_result(accepted: bool) -> void:
+	var player := WorldSync.get_local_player()
+	if player == null or player.held_item != HeldItem.CONTAINER:
+		return
+	if player.held_item_data.get("container_type", "") != "pitcher":
+		return
+	if not player.held_item_data.get("snap_pending", false):
+		return
+	player.held_item_data.erase("snap_pending")
+	if accepted:
+		player.placement._destroy_ghost()
+		player.inventory.clear_held()
+	else:
+		EventBus.interaction_hint_changed.emit("Water dispenser could not accept pitcher")
 
 
 func _start_fill(water_amount: float) -> void:
