@@ -37,9 +37,11 @@ func can_player_use(player: Node) -> bool:
 	if player == null or not ("assigned_stand" in player):
 		return false
 	var stand: Node = player.assigned_stand
-	if stand == null or not is_instance_valid(stand):
-		return false
-	return stand.name == stand_owner
+	if stand != null and is_instance_valid(stand):
+		return stand.name == stand_owner
+	if "assigned_stand_name" in player:
+		return player.assigned_stand_name == stand_owner
+	return false
 
 
 func interact(_player: Node) -> void:

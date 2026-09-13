@@ -226,8 +226,9 @@ func _place_cup_stack_from_box() -> void:
 		"_net_scale": placement_scale,
 	}
 	# Assign stand ownership based on the placing player's stand.
-	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
-		state["stand_owner"] = _player.assigned_stand.name
+	var stand_name := _get_assigned_stand_name()
+	if stand_name != "":
+		state["stand_owner"] = stand_name
 	var stack := WorldSync.request_spawn(
 		"res://scenes/objects/cup_stack.tscn",
 		stack_pos,
@@ -378,8 +379,9 @@ func _place_single_cup(_filled: bool) -> void:
 		"_net_scale": placement_scale,
 	}
 	# Assign stand ownership based on the placing player's stand.
-	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
-		state["stand_owner"] = _player.assigned_stand.name
+	var stand_name := _get_assigned_stand_name()
+	if stand_name != "":
+		state["stand_owner"] = stand_name
 	var stack := WorldSync.request_spawn(
 		"res://scenes/objects/cup_stack.tscn",
 		stack_pos,
@@ -457,8 +459,9 @@ func _place_held_supply_box_on(
 		state["ingredient_type"] = _player.held_item_data.get("ingredient_type", "lemon")
 		state["quantity"] = _player.held_item_data.get("amount", 1.0)
 	# Transfer box ownership to the placing player's stand.
-	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
-		state["stand_owner"] = _player.assigned_stand.name
+	var stand_name := _get_assigned_stand_name()
+	if stand_name != "":
+		state["stand_owner"] = stand_name
 	var box := WorldSync.request_spawn(
 		"res://scenes/objects/supply_box.tscn",
 		place_pos,
@@ -609,8 +612,9 @@ func _drop_held_box() -> void:
 		state["ingredient_type"] = _player.held_item_data.get("ingredient_type", "lemon")
 		state["quantity"] = _player.held_item_data.get("amount", 1.0)
 	# Transfer box ownership to the dropping player's stand.
-	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
-		state["stand_owner"] = _player.assigned_stand.name
+	var stand_name := _get_assigned_stand_name()
+	if stand_name != "":
+		state["stand_owner"] = stand_name
 	# Drop exactly where the raycast hits, or 0.8 m ahead if not hitting anything.
 	var drop_pos: Vector3
 	if _player.ray.is_colliding():
@@ -801,8 +805,9 @@ func _place_equipment_from_box() -> void:
 	state["_net_groups"] = ["container"]
 	state["_net_scale"] = placement_scale
 	# Assign stand ownership based on the placing player's stand.
-	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
-		state["stand_owner"] = _player.assigned_stand.name
+	var stand_name := _get_assigned_stand_name()
+	if stand_name != "":
+		state["stand_owner"] = stand_name
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance:
 		instance.scale = placement_scale
@@ -1628,9 +1633,10 @@ func _try_place_container() -> Node3D:
 			if _player.interaction != null:
 				_player.interaction.clear_hover()
 			# Update stand ownership to the placing player's stand.
-			if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
-				source_node.set("stand_owner", _player.assigned_stand.name)
-				WorldSync.sync_property(source_node, "stand_owner", source_node.stand_owner)
+			var stand_name := _get_assigned_stand_name()
+			if stand_name != "":
+				source_node.set("stand_owner", stand_name)
+				WorldSync.sync_property(source_node, "stand_owner", stand_name)
 			# _enable_physics already called above re-enables collision
 			# Sync the move + show to clients in a single RPC so the
 			# position and visibility are set atomically. This is more
@@ -1678,8 +1684,9 @@ func _try_place_container() -> Node3D:
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
 	# Assign stand ownership based on the placing player's stand.
-	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
-		state["stand_owner"] = _player.assigned_stand.name
+	var stand_name := _get_assigned_stand_name()
+	if stand_name != "":
+		state["stand_owner"] = stand_name
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance == null:
 		_destroy_ghost()

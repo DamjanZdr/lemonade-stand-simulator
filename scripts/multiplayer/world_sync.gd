@@ -266,6 +266,7 @@ func _serialize_container(node: Node) -> Dictionary:
 		"position": [node.global_position.x, node.global_position.y, node.global_position.z],
 		"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
 		"scale": [node.scale.x, node.scale.y, node.scale.z],
+		"stand_owner": node.get("stand_owner") if "stand_owner" in node else "",
 	}
 	# Capture container-specific state
 	if node is FruitBin:
@@ -368,6 +369,8 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 		instance.fruit_count = float(entry.get("fruit_count", 0.0))
 	if instance is IngredientBin:
 		instance.ingredient_type = entry.get("ingredient_type", "")
+	if "stand_owner" in instance:
+		instance.stand_owner = entry.get("stand_owner", "")
 	# Apply scale before adding to tree
 	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
 	if scl.size() >= 3:
@@ -441,6 +444,8 @@ func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
 		)
 		if scl.size() >= 3:
 			existing.scale = Vector3(scl[0], scl[1], scl[2])
+	if "stand_owner" in existing:
+		existing.stand_owner = entry.get("stand_owner", "")
 	if existing is FruitBin:
 		var fb := existing as FruitBin
 		var amounts: Array = entry.get("fruit_amounts", [])
@@ -582,7 +587,17 @@ func request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: Dictio
 func _rpc_request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: Dictionary) -> void:
 	if not is_host():
 		return
-	spawn_networked(scene_path, get_world_objects(), pos, rot, state)
+	var authoritative_state := state.duplicate(true)
+	var sender := multiplayer.get_remote_sender_id()
+	var root := get_tree().current_scene
+	var player := root.get_node_or_null("Players/" + str(sender)) as Player if root else null
+	if player != null:
+		var stand_name := player.assigned_stand_name
+		if player.assigned_stand != null and is_instance_valid(player.assigned_stand):
+			stand_name = player.assigned_stand.name
+		if stand_name != "":
+			authoritative_state["stand_owner"] = stand_name
+	spawn_networked(scene_path, get_world_objects(), pos, rot, authoritative_state)
 
 
 ## Request a despawn from any peer. On the host, despawns directly.
