@@ -1171,13 +1171,15 @@ func _despawn_on_clients(parent_path_str: String, obj_name: String, net_id: int)
 	)
 	# Prefer stable net_id lookup, then fall back to name/path for objects
 	# that pre-date the net_id system or default scene objects.
-	var obj := _find_node_by_net_id(net_id)
-	if obj == null:
+	var obj: Node = null
+	if net_id >= 0:
+		obj = _find_node_by_net_id(net_id)
+	else:
 		var parent := _string_to_node(parent_path_str)
 		if parent:
 			obj = parent.get_node_or_null(obj_name)
-	if obj == null:
-		obj = _find_node_by_name(get_tree().current_scene, obj_name)
+		if obj == null:
+			obj = _find_node_by_name(get_tree().current_scene, obj_name)
 	if obj:
 		# Release any delivery-grid slot this box occupied so the client's
 		# grid matches the host's.
@@ -1417,9 +1419,7 @@ func _call_method(
 func _find_node(parent_path_str: String, obj_name: String, net_id: int = -1) -> Node:
 	# Prefer stable net_id lookup (survives reparenting).
 	if net_id >= 0:
-		var by_id := _find_node_by_net_id(net_id)
-		if by_id != null:
-			return by_id
+		return _find_node_by_net_id(net_id)
 	# Check name cache next
 	if _node_cache.has(obj_name):
 		var cached: Node = _node_cache[obj_name]
