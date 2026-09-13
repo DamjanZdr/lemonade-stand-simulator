@@ -428,6 +428,15 @@ func _start_fill(water_amount: float) -> void:
 	_is_filling = true
 	_fill_progress = 0.0
 	_fill_amount = water_amount
+	_play_fill_visual(water_amount)
+	WorldSync.sync_call(self, "_play_fill_visual", [water_amount])
+
+
+func _play_fill_visual(water_amount: float) -> void:
+	if _snapped_pitcher == null and _pending_snap_pitcher_net_id != -1:
+		_snapped_pitcher = WorldSync.find_node_by_net_id(_pending_snap_pitcher_net_id) as Pitcher
+	if _snapped_pitcher == null or not is_instance_valid(_snapped_pitcher):
+		return
 	AudioManager.play_sfx("water_pour_in_pitcher", global_position, fill_time_per_pitcher)
 	# Animate tap to open
 	if _tap_mesh:

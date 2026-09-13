@@ -1689,6 +1689,23 @@ func _try_place_container() -> Node3D:
 		state["stand_owner"] = stand_name
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance == null:
+		if not WorldSync.is_host():
+			var placed_recipe: Dictionary = _player \
+					.held_item_data \
+					.get("saved_recipe", { }) \
+					.duplicate(true)
+			var report_stand := _player.assigned_stand
+			if report_stand == null:
+				report_stand = OnboardingManager.find_stand(stand_name)
+			OnboardingManager.report(
+				report_stand,
+				"equipment_placed",
+				{
+					"type": container_type,
+					"snapshot": placed_recipe,
+					"on_workstation": is_workstation_surface(_player.ray.get_collider()),
+				},
+			)
 		_destroy_ghost()
 		_player.inventory.clear_held()
 		return null
