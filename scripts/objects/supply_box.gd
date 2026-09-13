@@ -160,10 +160,12 @@ func _pick_up_player(player: Node) -> void:
 		}
 		p.inventory.set_held(HeldItem.SUPPLY_BOX, held_data, hand_mesh)
 
+	if not WorldSync.is_host():
+		p.held_item_data["pickup_pending"] = true
 	AudioManager.play_sfx("pick_up_box", global_position)
 	# Request the despawn BEFORE removing locally so WorldSync can read
 	# the original parent path and name.
-	WorldSync.request_despawn(self)
+	WorldSync.request_despawn(self, not WorldSync.is_host())
 	# Remove the local box immediately so it can't be interacted with or
 	# duplicated while waiting for the host's despawn RPC.
 	var parent := get_parent()

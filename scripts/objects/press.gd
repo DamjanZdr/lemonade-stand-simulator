@@ -350,14 +350,13 @@ func has_snapped_pitcher() -> bool:
 	return _snapped_pitcher != null and is_instance_valid(_snapped_pitcher)
 
 
-func snap_pitcher(pitcher: Pitcher) -> void:
+func snap_pitcher(pitcher: Pitcher, onboarding_stand: StandUnit = null) -> void:
 	_snapped_pitcher = pitcher
 	_pending_snap_pitcher_net_id = WorldSync.get_net_id(pitcher)
-	OnboardingManager.report(
-		OnboardingManager.stand_for_node(self),
-		"pitcher_placed",
-		{ "type": "press" },
+	var report_stand := (
+		onboarding_stand if onboarding_stand != null else OnboardingManager.stand_for_node(self)
 	)
+	OnboardingManager.report(report_stand, "pitcher_placed", { "type": "press" })
 	if _snap_point != null:
 		_snapped_pitcher.global_position = _snap_point.global_position
 
@@ -419,7 +418,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	pitcher.sync_fill_display()
 	pitcher.call_deferred("update_label")
 	# Snap the pitcher to the press and sync to all clients.
-	snap_pitcher(pitcher)
+	snap_pitcher(pitcher, OnboardingManager.find_stand(stand_owner))
 	sync_snapped_pitcher()
 	return true
 

@@ -264,7 +264,8 @@ func poll_hint() -> void:
 func primary_interact() -> void:
 	# Check if looking at an interactable first (even when holding items)
 	var interactable := get_looked_at_interactable()
-	if _player.held_item_data.get("snap_pending", false):
+	if _player.held_item_data.get("snap_pending", false) \
+			or _player.held_item_data.get("pickup_pending", false):
 		return
 
 	# Walking pedestrians take priority: first click starts the offer no matter
@@ -663,7 +664,8 @@ func primary_interact() -> void:
 
 
 func secondary_interact() -> void:
-	if _player.held_item_data.get("snap_pending", false):
+	if _player.held_item_data.get("snap_pending", false) \
+			or _player.held_item_data.get("pickup_pending", false):
 		return
 	# Holding a pitcher: RMB always empties it, regardless of what's being
 	# looked at.
@@ -697,6 +699,8 @@ func secondary_interact() -> void:
 
 
 func update_rapid_fire(delta: float) -> void:
+	if _player.held_item_data.get("pickup_pending", false):
+		return
 	# Update throw charge if charging.
 	if _throw_charging:
 		_throw_charge = minf(_throw_charge + delta / THROW_CHARGE_RATE, THROW_MAX_CHARGE)

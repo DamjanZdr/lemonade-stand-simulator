@@ -322,15 +322,14 @@ func get_hint(player: Node) -> String:
 	return "Water Dispenser | fixed in place"
 
 
-func snap_pitcher(pitcher: Pitcher) -> void:
+func snap_pitcher(pitcher: Pitcher, onboarding_stand: StandUnit = null) -> void:
 	_snapped_pitcher = pitcher
 	_pending_snap_pitcher_net_id = WorldSync.get_net_id(pitcher)
 	WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", _pending_snap_pitcher_net_id)
-	OnboardingManager.report(
-		OnboardingManager.stand_for_node(self),
-		"pitcher_placed",
-		{ "type": "water_dispenser" },
+	var report_stand := (
+		onboarding_stand if onboarding_stand != null else OnboardingManager.stand_for_node(self)
 	)
+	OnboardingManager.report(report_stand, "pitcher_placed", { "type": "water_dispenser" })
 	if _snap_point != null:
 		_snapped_pitcher.global_position = _snap_point.global_position
 
@@ -419,7 +418,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	pitcher.sync_fill_display()
 	pitcher.call_deferred("update_label")
 	# Snap the pitcher to the dispenser.
-	snap_pitcher(pitcher)
+	snap_pitcher(pitcher, OnboardingManager.find_stand(stand_owner))
 	return true
 
 

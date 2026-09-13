@@ -642,6 +642,13 @@ func _rpc_request_pitcher_snap(
 	if not is_host():
 		return
 	var requester := multiplayer.get_remote_sender_id()
+	var root := get_tree().current_scene
+	var player := root.get_node_or_null("Players/" + str(requester)) as Player if root else null
+	if player != null:
+		if player.assigned_stand != null and is_instance_valid(player.assigned_stand):
+			stand_owner = player.assigned_stand.name
+		elif player.assigned_stand_name != "":
+			stand_owner = player.assigned_stand_name
 	var accepted := _apply_pitcher_snap(net_id, target_type, recipe, stand_owner)
 	_apply_pitcher_snap_result.rpc_id(requester, accepted, target_type)
 
@@ -653,6 +660,8 @@ func _apply_pitcher_snap(
 	stand_owner: String,
 ) -> bool:
 	var target := _find_node_by_net_id(net_id)
+	if target is Interactable and target.stand_owner != "" and target.stand_owner != stand_owner:
+		return false
 	if target_type == "press" and target is Press:
 		return target.apply_pitcher_snap_request(recipe, stand_owner)
 	if target_type == "water_dispenser" and target is WaterDispenser:
@@ -726,7 +735,7 @@ func _apply_container_action(net_id: int, action: String, args: Array) -> void:
 
 ## Request a despawn from any peer. On the host, despawns directly.
 ## On a client, sends an RPC to the host.
-func request_despawn(obj: Node) -> void:
+func request_despawn(obj: Node, confirm_pickup: bool = false) -> void:
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] request_despawn: obj is null/invalid")
 		return
@@ -742,13 +751,19 @@ func request_despawn(obj: Node) -> void:
 		"[WorldSync] Client sending despawn RPC to host: parent=%s name=%s net_id=%d"
 		% [parent_path, obj.name, net_id]
 	)
-	_rpc_request_despawn.rpc_id(1, parent_path, obj.name, net_id)
+	_rpc_request_despawn.rpc_id(1, parent_path, obj.name, net_id, confirm_pickup)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_despawn(parent_path_str: String, obj_name: String, net_id: int) -> void:
+func _rpc_request_despawn(
+	parent_path_str: String,
+	obj_name: String,
+	net_id: int,
+	confirm_pickup: bool,
+) -> void:
 	if not is_host():
 		return
+	var requester := multiplayer.get_remote_sender_id()
 	GameLog.log(
 		"[WorldSync] Host received despawn request: parent=%s name=%s net_id=%d"
 		% [parent_path_str, obj_name, net_id]
@@ -763,6 +778,16 @@ func _rpc_request_despawn(parent_path_str: String, obj_name: String, net_id: int
 		despawn_networked(obj)
 	else:
 		GameLog.log("[WorldSync] Host despawn: object not found: " + obj_name)
+	if confirm_pickup:
+		await get_tree().create_timer(0.3).timeout
+		_confirm_pickup_despawn.rpc_id(requester)
+
+
+@rpc("authority", "reliable")
+func _confirm_pickup_despawn() -> void:
+	var player := get_local_player()
+	if player != null:
+		player.held_item_data.erase("pickup_pending")
 
 
 ## Request a thrown-trash pickup from any peer. On the host, picks up
