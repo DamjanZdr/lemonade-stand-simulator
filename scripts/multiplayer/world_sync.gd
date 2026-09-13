@@ -331,6 +331,7 @@ func _apply_world_snapshot(snapshot: Dictionary) -> void:
 	var root := get_tree().current_scene
 	if root == null:
 		return
+	_clear_client_world_objects()
 	# Spawn containers
 	for entry in snapshot.get("containers", []):
 		_spawn_container_from_snapshot(entry, root)
@@ -341,6 +342,25 @@ func _apply_world_snapshot(snapshot: Dictionary) -> void:
 		"[WorldSync] Applied world snapshot: %d containers, %d supply boxes"
 		% [snapshot.get("containers", []).size(), snapshot.get("supply_boxes", []).size()]
 	)
+
+
+func _clear_client_world_objects() -> void:
+	var removed: Dictionary = { }
+	for group_name in ["container", "supply_box"]:
+		for node in get_tree().get_nodes_in_group(group_name):
+			if not is_instance_valid(node) or node.is_queued_for_deletion():
+				continue
+			if node.is_in_group("ghost") or removed.has(node.get_instance_id()):
+				continue
+			var ctype := SaveManager._get_container_type(node)
+			if group_name == "container" and not SaveManager._is_known_container_type(ctype):
+				continue
+			removed[node.get_instance_id()] = true
+			_node_cache.erase(node.name)
+			var parent := node.get_parent()
+			if parent != null:
+				parent.remove_child(node)
+			node.queue_free()
 
 
 func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
