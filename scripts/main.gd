@@ -1125,6 +1125,8 @@ func _start_late_join(peer_id: int) -> void:
 	print("[Main] Starting late join transition for peer %d" % peer_id)
 	_late_join_camera_pending = true
 	_do_late_join_transition()
+	if _local_player != null and is_instance_valid(_local_player):
+		_complete_pending_local_transition()
 
 
 ## Transitions the local player from the late-join lobby into the running game.
@@ -1543,7 +1545,8 @@ func _stand_for_peer(peer_id: int) -> StandUnit:
 func _on_local_player_ready(p: Player) -> void:
 	if _local_player != null and is_instance_valid(_local_player):
 		# Already set up — don't create a second outline system.
-		GameLog.log("[Main] _on_local_player_ready already called, skipping")
+		GameLog.log("[Main] _on_local_player_ready already called, finishing pending state")
+		_complete_pending_local_transition()
 		return
 	_local_player = p
 	# Ensure the player's camera is current. There's a race condition
@@ -1576,12 +1579,7 @@ func _on_local_player_ready(p: Player) -> void:
 		hud.set_stand(p.assigned_stand)
 	# Run the pending fade-to-black + Day X transition if one was stored
 	# by _on_game_starting() or _do_late_join_transition().
-	if not _pending_transition.is_empty():
-		_run_pending_transition()
-	elif _late_join_camera_pending:
-		_late_join_camera_pending = false
-		# Late joiner with no stored transition — create a full Day X fade.
-		_start_late_join_day_transition()
+	_complete_pending_local_transition()
 	# Host-first readiness: after the host's local player is ready and
 	# world state has been pushed (both deferred), notify clients that
 	# they can safely start their game transition. This prevents joiners
@@ -1591,7 +1589,15 @@ func _on_local_player_ready(p: Player) -> void:
 		call_deferred("_notify_clients_ready")
 
 
-## Run the stored pending transition (fade-in + Day X overlay).
+## Complete whichever game-start transition is pending for the local player.
+func _complete_pending_local_transition() -> void:
+	if not _pending_transition.is_empty():
+		_run_pending_transition()
+	elif _late_join_camera_pending:
+		_late_join_camera_pending = false
+		_start_late_join_day_transition()
+
+
 func _run_pending_transition() -> void:
 	if _pending_transition.is_empty():
 		return
