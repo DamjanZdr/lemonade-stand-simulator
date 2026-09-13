@@ -1419,7 +1419,9 @@ func _call_method(
 func _find_node(parent_path_str: String, obj_name: String, net_id: int = -1) -> Node:
 	# Prefer stable net_id lookup (survives reparenting).
 	if net_id >= 0:
-		return _find_node_by_net_id(net_id)
+		var by_id := _find_node_by_net_id(net_id)
+		if by_id != null:
+			return by_id
 	# Check name cache next
 	if _node_cache.has(obj_name):
 		var cached: Node = _node_cache[obj_name]

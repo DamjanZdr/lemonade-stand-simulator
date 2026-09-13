@@ -827,39 +827,27 @@ func _can_interact(interactable: Interactable) -> bool:
 ## Interactables (e.g. fruit bins on top of the table).
 func _find_closer_interactable_along_ray(workstation: Workstation) -> Interactable:
 	var from := _player.ray.global_position
-	var to := from + _player.ray.target_position * _player.ray.global_transform.basis
+	var to := _player.ray.to_global(_player.ray.target_position)
 	var space := _player.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, _player.ray.collision_mask)
-	query.exclude = [_player.get_rid()]
-	var hits := space.intersect_ray(query)
-	if hits.is_empty():
-		return null
-	# intersect_ray only returns the closest hit. But we can check if
-	# the Workstation has child Interactables whose bounds contain the
-	# hit point. If the player is looking at a bin on the table, the
-	# hit point should be within the bin's bounds.
-	var hit_point: Vector3 = hits.get("position", Vector3.ZERO)
-	for child in workstation.get_children():
-		if child is Interactable and child != workstation:
-			var child3d := child as Node3D
-			if child3d == null or not child3d.visible:
-				continue
-			# Check if the hit point is within the child's bounds.
-			# Node3D doesn't have get_aabb(), so check VisualInstance3D
-			# children (MeshInstance3D, etc.) for their AABB.
-			var matched := false
-			for sub in child3d.find_children("*", "VisualInstance3D", true, false):
-				var vi := sub as VisualInstance3D
-				if vi == null or not vi.visible:
-					continue
-				var aabb: AABB = vi.get_aabb()
-				# get_aabb() returns local-space AABB; transform to world.
-				var world_aabb := AABB(vi.global_transform * aabb.position, aabb.size)
-				if world_aabb.has_point(hit_point):
-					matched = true
-					break
-			if matched:
-				return child as Interactable
+	var excluded: Array[RID] = [_player.get_rid()]
+	for _attempt in range(12):
+		var query := PhysicsRayQueryParameters3D.create(from, to, _player.ray.collision_mask)
+		query.exclude = excluded
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			break
+		var collider := hit.get("collider") as CollisionObject3D
+		if collider == null:
+			break
+		excluded.append(collider.get_rid())
+		var node: Node = collider
+		while node != null:
+			if node is Interactable:
+				var candidate := node as Interactable
+				if candidate != workstation and _can_interact(candidate):
+					return candidate
+				break
+			node = node.get_parent()
 	return null
 
 
