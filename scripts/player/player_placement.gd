@@ -2105,11 +2105,16 @@ func _probe_tabletop_below(original_collider: Node = null) -> bool:
 func is_ground_surface(collider: Object) -> bool:
 	_resolved_ground_surface = null
 	var node := collider as Node
+	var hit_non_ground_surface := false
 	while node != null:
 		if node.name == "PlacableFloor":
 			_resolved_ground_surface = node
 			return true
+		if node.is_in_group("placement_surface"):
+			hit_non_ground_surface = true
 		node = node.get_parent()
+	if hit_non_ground_surface:
+		return false
 	if not _player.ray.is_colliding():
 		return false
 	var hit_point := _player.ray.get_collision_point()
