@@ -265,7 +265,8 @@ func primary_interact() -> void:
 	# Check if looking at an interactable first (even when holding items)
 	var interactable := get_looked_at_interactable()
 	if _player.held_item_data.get("snap_pending", false) \
-			or _player.held_item_data.get("pickup_pending", false):
+			or _player.held_item_data.get("pickup_pending", false) \
+			or _player.held_item_data.get("serve_pending", false):
 		return
 
 	# Walking pedestrians take priority: first click starts the offer no matter
@@ -665,7 +666,8 @@ func primary_interact() -> void:
 
 func secondary_interact() -> void:
 	if _player.held_item_data.get("snap_pending", false) \
-			or _player.held_item_data.get("pickup_pending", false):
+			or _player.held_item_data.get("pickup_pending", false) \
+			or _player.held_item_data.get("serve_pending", false):
 		return
 	# Holding a pitcher: RMB always empties it, regardless of what's being
 	# looked at.

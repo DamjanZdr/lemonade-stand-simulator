@@ -458,17 +458,35 @@ func request_serve(peer_id: int, recipe: Dictionary) -> void:
 			player.held_item_data["recipe"] = recipe
 			try_serve(player)
 	else:
+		var player := WorldSync.get_local_player()
+		if player != null:
+			player.held_item_data["serve_pending"] = true
 		_request_serve.rpc_id(1, peer_id, recipe)
 
 
 @rpc("any_peer", "reliable")
 func _request_serve(peer_id: int, recipe: Dictionary) -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.is_server() or multiplayer.get_remote_sender_id() != peer_id:
 		return
-	var player := _find_player_by_peer(peer_id)
+	var player := _find_player_by_peer(peer_id) as Player
 	if player != null:
-		player.held_item_data["recipe"] = recipe
+		player.held_item = HeldItem.CUP_FILLED
+		player.held_item_data = { "recipe": recipe }
 		try_serve(player)
+		var consumed := player.held_item == HeldItem.NONE
+		if not consumed:
+			player.inventory.clear_held()
+		_serve_result.rpc_id(peer_id, consumed)
+
+
+@rpc("authority", "reliable")
+func _serve_result(consumed: bool) -> void:
+	var player := WorldSync.get_local_player()
+	if player == null:
+		return
+	player.held_item_data.erase("serve_pending")
+	if consumed and player.held_item == HeldItem.CUP_FILLED:
+		player.inventory.clear_held()
 
 
 ## Find a player node by peer ID. Players are named by peer ID under Players/.
