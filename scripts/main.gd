@@ -1083,11 +1083,38 @@ func _spawn_player_on_client(
 		var stand := _stand_for_peer(multiplayer.get_unique_id())
 		if stand:
 			p.assigned_stand = stand
+			p.assigned_stand_name = stand.name
 			_assigned_stands[multiplayer.get_unique_id()] = stand
 		_on_local_player_ready(p)
 	else:
 		# Remote player — just cache it for WorldSync lookups.
 		WorldSync._node_cache[p.name] = p
+
+
+@rpc("authority", "reliable")
+func _assign_local_player_stand(peer_id: int, stand_name: String) -> void:
+	if peer_id != multiplayer.get_unique_id():
+		return
+	var p: Player = null
+	for attempt in range(120):
+		p = players_node.get_node_or_null(str(peer_id)) as Player
+		if p != null:
+			break
+		await get_tree().process_frame
+	if p == null:
+		return
+	var stand: StandUnit = null
+	for candidate in [stand_unit, stand_unit2]:
+		if candidate != null and candidate.name == stand_name:
+			stand = candidate
+			break
+	if stand == null:
+		return
+	p.assigned_stand = stand
+	p.assigned_stand_name = stand.name
+	_assigned_stands[peer_id] = stand
+	if p == _local_player and hud and hud.has_method("set_stand"):
+		hud.set_stand(stand)
 
 
 ## Tells a specific peer to transition from the late-join lobby into the game.
@@ -1343,6 +1370,7 @@ func _on_spawner_spawned(node: Node) -> void:
 	var my_stand := _stand_for_peer(name_peer)
 	if my_stand:
 		p.assigned_stand = my_stand
+		p.assigned_stand_name = my_stand.name
 		var marker := _get_stand_start_marker(my_stand)
 		if marker:
 			p.global_position = marker.global_position
@@ -1434,6 +1462,7 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 	_assigned_stands[peer_id] = stand
 	if stand:
 		p.assigned_stand = stand
+		p.assigned_stand_name = stand.name
 		# Spawn the player at the stand's start marker position + rotation.
 		var spawn_marker := _get_stand_start_marker(stand)
 		if spawn_marker != null:
@@ -1441,6 +1470,8 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 			p.global_rotation = Vector3(0, spawn_marker.global_rotation.y, 0)
 		else:
 			p.global_position = stand.global_position + Vector3(0, 0, 2)
+		if peer_id != multiplayer.get_unique_id():
+			_assign_local_player_stand.rpc_id(peer_id, peer_id, stand.name)
 	GameLog.log(
 		"[Main] Spawned player %d (stand=%s, is_me=%s)"
 		% [peer_id, stand.name if stand else "null", peer_id == multiplayer.get_unique_id()]

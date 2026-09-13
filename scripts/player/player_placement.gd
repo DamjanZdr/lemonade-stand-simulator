@@ -1915,6 +1915,12 @@ func _get_placement_owner_stand(collider: Node) -> String:
 	return ""
 
 
+func _get_assigned_stand_name() -> String:
+	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+		return _player.assigned_stand.name
+	return _player.assigned_stand_name
+
+
 func _is_placement_allowed_on(collider: Node) -> bool:
 	# Ownership check: is the local player allowed to place on this surface?
 	# This only checks stand ownership, not whether the collider is a valid
@@ -1931,9 +1937,10 @@ func _is_placement_allowed_on(collider: Node) -> bool:
 		surface_owner = _get_placement_owner_stand(_resolved_ground_surface)
 	if surface_owner == "":
 		return false
-	if _player.assigned_stand == null or not is_instance_valid(_player.assigned_stand):
+	var assigned_name := _get_assigned_stand_name()
+	if assigned_name == "":
 		return false
-	return surface_owner == _player.assigned_stand.name
+	return surface_owner == assigned_name
 
 
 func is_owned_stand_surface(collider: Node) -> bool:
@@ -1944,9 +1951,10 @@ func is_owned_stand_surface(collider: Node) -> bool:
 		surface_owner = _get_placement_owner_stand(_resolved_ground_surface)
 	if surface_owner == "":
 		return false
-	if _player.assigned_stand == null or not is_instance_valid(_player.assigned_stand):
+	var assigned_name := _get_assigned_stand_name()
+	if assigned_name == "":
 		return not _player.multiplayer.has_multiplayer_peer()
-	return surface_owner == _player.assigned_stand.name
+	return surface_owner == assigned_name
 
 
 ## Like is_owned_stand_surface, but also accepts ANY stand's ground/palette

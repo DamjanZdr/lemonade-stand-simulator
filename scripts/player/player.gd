@@ -13,6 +13,7 @@ const HINT_STAND := "Aim at stand or table to place"
 ## used to restrict serving another stand's customers in real multiplayer
 ## without blocking solo testing of every stand.
 var assigned_stand: StandUnit = null
+var assigned_stand_name: String = ""
 
 ## When true, the local player's camera won't make_current() immediately
 ## on spawn — the lobby-to-game camera tween handles the switch instead.
