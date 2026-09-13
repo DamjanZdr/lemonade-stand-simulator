@@ -92,7 +92,7 @@ func _drop_trash_with_physics(variant: String, drop_pos: Vector3, source_npc: No
 		state,
 	) as ThrownTrash
 	if body and source_npc:
-		body.source_node = source_npc
+		body.set_source(source_npc)
 
 
 func _get_feet_y(npc: Node3D) -> float:

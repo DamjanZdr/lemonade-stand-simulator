@@ -27,6 +27,9 @@ var _spawn_time: float = 0.0
 
 ## Whether this trash has already hit someone (stun only applies once).
 var _hit_someone: bool = false
+var _overlap_timer: float = 0.0
+var _npc_overlap_shape: SphereShape3D = null
+const _OVERLAP_INTERVAL: float = 0.05
 
 const _VARIANT_SCENES: Dictionary = {
 	"apple": "res://scenes/objects/trash_apple.tscn",
@@ -70,8 +73,8 @@ func _ready() -> void:
 	axis_lock_angular_x = true
 	axis_lock_angular_y = true
 	axis_lock_angular_z = true
-	# Collide with all layers.
-	collision_mask = 0xFFFFFFFF
+	# Collide with ground, street, props, and players; NPC hits use the throttled shape query.
+	collision_mask = 3
 	# No bounce.
 	physics_material_override = _get_no_bounce_material()
 
@@ -83,6 +86,8 @@ func _ready() -> void:
 		# Enable contact monitoring so we can detect hits on players/NPCs.
 		contact_monitor = true
 		max_contacts_reported = 4
+		_npc_overlap_shape = SphereShape3D.new()
+		_npc_overlap_shape.radius = 0.35
 		body_entered.connect(_on_body_entered)
 		# When the body sleeps (lands), finalize.
 		sleeping_state_changed.connect(_on_sleeping)
@@ -102,9 +107,12 @@ func _physics_process(delta: float) -> void:
 			return
 		_spawn_time += delta
 		# Manual NPC hit detection — body_entered is unreliable for fast
-		# objects (tunneling). Check overlap each frame after grace period.
+		# objects (tunneling). Check overlap at a fixed interval after the grace period.
 		if _spawn_time >= _SPAWN_GRACE and not _hit_someone:
-			_check_npc_overlap()
+			_overlap_timer += delta
+			if _overlap_timer >= _OVERLAP_INTERVAL:
+				_overlap_timer = 0.0
+				_check_npc_overlap()
 		# Sync transform to clients periodically, but only when the object
 		# has moved/rotated enough to matter. This reduces per-trash network
 		# load, which scales badly with player count on joiners.
@@ -183,10 +191,14 @@ static func _get_no_bounce_material() -> PhysicsMaterial:
 	return _no_bounce_mat
 
 
-## Host: called when the thrown trash collides with another body.
-## If it hits a player or pedestrian/customer, stun them for 3 seconds.
-## Only applies once per trash, and only after the spawn grace period.
-## The source node (thrower/dropper) is ignored.
+## Assign the thrower and prevent its body from deflecting the trash.
+func set_source(node: Node) -> void:
+	source_node = node
+	if node is CollisionObject3D:
+		add_collision_exception_with(node as CollisionObject3D)
+
+
+## Host: handle physical collisions with ground-layer bodies and players.
 func _on_body_entered(body: Node) -> void:
 	var trashcan := _get_trashcan(body)
 	if trashcan != null:
@@ -218,11 +230,10 @@ func _dispose_in_trashcan(trashcan: Trashcan) -> void:
 ## body_entered for fast-moving objects that can tunnel through NPCs.
 func _check_npc_overlap() -> void:
 	var space := get_world_3d().direct_space_state
-	var shape := SphereShape3D.new()
-	shape.radius = 0.35
 	var params := PhysicsShapeQueryParameters3D.new()
-	params.shape = shape
+	params.shape = _npc_overlap_shape
 	params.transform = global_transform
+	params.collision_mask = 18
 	params.collide_with_bodies = true
 	params.collide_with_areas = false
 	var results := space.intersect_shape(params, 32)
@@ -318,6 +329,8 @@ func _finalize() -> void:
 		) as SupplyBox
 		if box:
 			box.update_metrics()
+			box.global_position.y = land_pos.y + box.bottom_offset
+			WorldSync.sync_move_object(box, box.global_position, box.global_rotation)
 	else:
 		var scene_path: String = _VARIANT_SCENES.get(trash_type, "")
 		if scene_path != "":
@@ -326,7 +339,9 @@ func _finalize() -> void:
 				"trash_type": trash_type,
 				"trash_value": trash_value,
 			}
-			WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2)
+			var item := WorldSync.request_spawn(scene_path, land_pos, Vector3.ZERO, state2) as Node3D
+			if item != null:
+				_align_visual_bottom_to_ground(item, land_pos.y)
 	# Despawn self via WorldSync so clients remove it too.
 	WorldSync.despawn_networked(self)
 
@@ -335,6 +350,23 @@ func _finalize() -> void:
 ## Returns a position with Y snapped to the ground (or the original position
 ## if no ground is found within 2 meters). This prevents trash from floating
 ## above the ground due to collision shape offsets in the trash variant scenes.
+func _align_visual_bottom_to_ground(item: Node3D, ground_y: float) -> void:
+	var lowest_y := INF
+	for node in item.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null or not mesh_instance.visible:
+			continue
+		var bounds := mesh_instance.mesh.get_aabb()
+		for x in [bounds.position.x, bounds.end.x]:
+			for y in [bounds.position.y, bounds.end.y]:
+				for z in [bounds.position.z, bounds.end.z]:
+					var point := mesh_instance.global_transform * Vector3(x, y, z)
+					lowest_y = minf(lowest_y, point.y)
+	if lowest_y < INF:
+		item.global_position.y += ground_y - lowest_y
+		WorldSync.sync_move_object(item, item.global_position, item.global_rotation)
+
+
 func _snap_to_ground(pos: Vector3) -> Vector3:
 	var space := get_world_3d().direct_space_state
 	var from := pos + Vector3(0, 0.5, 0)

@@ -967,7 +967,7 @@ func _do_throw(charge: float) -> void:
 		state,
 	) as ThrownTrash
 	if body:
-		body.source_node = _player
+		body.set_source(_player)
 	AudioManager.play_sfx("box_drop", start_pos)
 	_player.placement._destroy_ghost()
 	_player.inventory.clear_held()

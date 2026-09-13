@@ -92,6 +92,8 @@ var appearance_seed: int = 0
 
 
 func _ready() -> void:
+	_ground_y = global_position.y
+	_ground_sample_timer = randf() * _GROUND_SAMPLE_INTERVAL
 	up_direction = Vector3.UP
 	floor_max_angle = deg_to_rad(60.0)
 	floor_snap_length = 1.5
@@ -189,11 +191,8 @@ func _physics_process(delta: float) -> void:
 		_connect_playable_area()
 
 	velocity.y = 0.0
-	# NPCs have collision_mask=0 (no floor detection), so lock Y to the
-	# ground reference. Without this, NPCs stay at whatever Y they spawned
-	# at (route markers range from ~-0.1 to ~+0.07), causing visible
-	# sinking/floating.
-	global_position.y = 0.0
+	_update_ground_height(delta)
+	global_position.y = _ground_y
 
 	if _is_rotating_to_face:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)
@@ -209,7 +208,7 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		global_position.y = 0.0
+		global_position.y = _ground_y
 		# When stun ends, play Fall in reverse to get back up.
 		if _stun_timer <= 0.0 and _npc != null and is_instance_valid(_npc):
 			_recovering = true
@@ -224,7 +223,7 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		move_and_slide()
-		global_position.y = 0.0
+		global_position.y = _ground_y
 		if _recover_timer <= 0.0:
 			_recovering = false
 			if _npc != null and is_instance_valid(_npc):
@@ -285,7 +284,24 @@ func _apply_motion(_delta: float) -> void:
 	move_and_slide()
 	# NPCs have collision_mask=0 (no floor detection), so re-lock Y to the
 	# ground reference after movement to prevent drift/sinking.
-	global_position.y = 0.0
+	global_position.y = _ground_y
+
+
+func _update_ground_height(delta: float) -> void:
+	_ground_sample_timer -= delta
+	if _ground_sample_timer > 0.0:
+		return
+	_ground_sample_timer = _GROUND_SAMPLE_INTERVAL
+	var origin := global_position
+	var query := PhysicsRayQueryParameters3D.create(
+		origin + Vector3.UP * 1.5,
+		origin + Vector3.DOWN * 2.5,
+		3,
+	)
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty() and (hit.get("normal", Vector3.UP) as Vector3).y > 0.5:
+		_ground_y = (hit.get("position", origin) as Vector3).y
 
 
 # ── Client-side interpolation ─────────────────────────────────────────────────
@@ -300,6 +316,8 @@ func _apply_motion(_delta: float) -> void:
 var _net_target_pos: Vector3 = Vector3.ZERO
 var _net_target_rot: Vector3 = Vector3.ZERO
 var _has_net_target: bool = false
+var _ground_sample_timer: float = 0.0
+const _GROUND_SAMPLE_INTERVAL: float = 0.12
 const _NET_LERP_SPEED: float = 12.0 # How fast to interpolate toward target
 
 
@@ -317,9 +335,6 @@ func _physics_client_interpolate(delta: float) -> void:
 	if _has_net_target:
 		var t := clampf(_NET_LERP_SPEED * delta, 0.0, 1.0)
 		global_position = global_position.lerp(_net_target_pos, t)
-		# NPCs have collision_mask=0 (no floor detection), so lock Y to the
-		# ground reference on clients too, to match the host's Y-lock.
-		global_position.y = 0.0
 		# Smoothly rotate toward target rotation
 		var curr_q := basis.get_rotation_quaternion()
 		var target_q := Quaternion.from_euler(_net_target_rot)
