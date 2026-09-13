@@ -87,7 +87,7 @@ func add_amount(fruit_type: String, qty: float, from_pos: Vector3 = Vector3.ZERO
 	# Client-side: send a request to the host. Do NOT mutate locally so the
 	# host stays the single source of truth and there is no double application.
 	if not WorldSync.is_host():
-		_rpc_request_add_amount.rpc_id(1, fruit_type, qty, from_pos)
+		WorldSync.request_container_action(self, "add", [fruit_type, qty, from_pos])
 		return
 	var old_count := mini(roundi(fruit_amounts.get(fruit_type, 0.0)), _get_capacity(fruit_type))
 	_apply_add_amount(fruit_type, qty, from_pos)
@@ -202,7 +202,7 @@ func take_amount(fruit_type: String, qty: float) -> float:
 		return 0.0
 	# Client-side: send a request to the host and do not mutate locally.
 	if not WorldSync.is_host():
-		_rpc_request_take_amount.rpc_id(1, fruit_type, qty)
+		WorldSync.request_container_action(self, "take", [fruit_type, qty])
 		return 0.0
 	var taken := _apply_take_amount(fruit_type, qty)
 	_sync_state_to_peers()

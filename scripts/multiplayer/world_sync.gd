@@ -600,6 +600,110 @@ func _rpc_request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: D
 	spawn_networked(scene_path, get_world_objects(), pos, rot, authoritative_state)
 
 
+func request_pitcher_snap(target: Node, recipe: Dictionary, stand_owner: String) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var net_id := get_net_id(target)
+	var target_type := "press" if target is Press else "water_dispenser"
+	if is_host():
+		var accepted := _apply_pitcher_snap(net_id, target_type, recipe, stand_owner)
+		_apply_pitcher_snap_result(accepted, target_type)
+	else:
+		_rpc_request_pitcher_snap.rpc_id(1, net_id, target_type, recipe, stand_owner)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_pitcher_snap(
+	net_id: int,
+	target_type: String,
+	recipe: Dictionary,
+	stand_owner: String,
+) -> void:
+	if not is_host():
+		return
+	var requester := multiplayer.get_remote_sender_id()
+	var accepted := _apply_pitcher_snap(net_id, target_type, recipe, stand_owner)
+	_apply_pitcher_snap_result.rpc_id(requester, accepted, target_type)
+
+
+func _apply_pitcher_snap(
+	net_id: int,
+	target_type: String,
+	recipe: Dictionary,
+	stand_owner: String,
+) -> bool:
+	var target := _find_node_by_net_id(net_id)
+	if target_type == "press" and target is Press:
+		return target.apply_pitcher_snap_request(recipe, stand_owner)
+	if target_type == "water_dispenser" and target is WaterDispenser:
+		return target.apply_pitcher_snap_request(recipe, stand_owner)
+	return false
+
+
+@rpc("authority", "call_local", "reliable")
+func _apply_pitcher_snap_result(accepted: bool, target_type: String) -> void:
+	var player := get_local_player()
+	if player == null or player.held_item != HeldItem.CONTAINER:
+		return
+	if player.held_item_data.get("container_type", "") != "pitcher":
+		return
+	if not player.held_item_data.get("snap_pending", false):
+		return
+	player.held_item_data.erase("snap_pending")
+	if accepted:
+		player.placement._destroy_ghost()
+		player.inventory.clear_held()
+	else:
+		var label := "Press" if target_type == "press" else "Water dispenser"
+		EventBus.interaction_hint_changed.emit(label + " could not accept pitcher")
+
+
+func request_container_action(obj: Node, action: String, args: Array) -> void:
+	if obj == null or not is_instance_valid(obj):
+		return
+	var net_id := get_net_id(obj)
+	if is_host():
+		_apply_container_action(net_id, action, args)
+	else:
+		_rpc_request_container_action.rpc_id(1, net_id, action, args)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_container_action(net_id: int, action: String, args: Array) -> void:
+	if not is_host():
+		return
+	_apply_container_action(net_id, action, args)
+
+
+func _apply_container_action(net_id: int, action: String, args: Array) -> void:
+	var obj := _find_node_by_net_id(net_id)
+	if obj is IngredientBin:
+		if action == "add" and args.size() >= 2:
+			obj._apply_add_amount(float(args[0]), args[1] as Vector3)
+			obj._sync_state_to_peers(args[1] as Vector3)
+		elif action == "take" and not args.is_empty():
+			obj._apply_take_amount(float(args[0]))
+			obj._sync_state_to_peers()
+	elif obj is FruitBin:
+		if action == "add" and args.size() >= 3:
+			obj.add_amount(str(args[0]), float(args[1]), args[2] as Vector3)
+		elif action == "take" and args.size() >= 2:
+			obj.take_amount(str(args[0]), float(args[1]))
+	elif obj is WaterDispenser:
+		if action == "refill" and not args.is_empty():
+			obj._apply_refill(int(args[0]))
+		elif action == "start_fill" and not args.is_empty():
+			obj._start_fill(float(args[0]))
+		elif action == "finish_fill":
+			obj._apply_finish_fill()
+		elif action == "take_pitcher":
+			obj._snapped_pitcher = null
+			obj._pending_snap_pitcher_net_id = -1
+			obj._is_filling = false
+			obj._fill_progress = 0.0
+			obj._reset_tap()
+
+
 ## Request a despawn from any peer. On the host, despawns directly.
 ## On a client, sends an RPC to the host.
 func request_despawn(obj: Node) -> void:

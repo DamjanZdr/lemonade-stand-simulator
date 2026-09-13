@@ -419,7 +419,7 @@ func primary_interact() -> void:
 							stand_owner = _player.assigned_stand.name
 						if not _player.held_item_data.get("snap_pending", false):
 							_player.held_item_data["snap_pending"] = true
-							press.request_snap_pitcher.rpc_id(1, snap_recipe, stand_owner)
+							WorldSync.request_pitcher_snap(press, snap_recipe, stand_owner)
 					return
 				EventBus.interaction_hint_changed.emit(press.get_pitcher_snap_hint(snap_recipe))
 				return
@@ -448,7 +448,7 @@ func primary_interact() -> void:
 							stand_owner = _player.assigned_stand.name
 						if not _player.held_item_data.get("snap_pending", false):
 							_player.held_item_data["snap_pending"] = true
-							dispenser.request_snap_pitcher.rpc_id(1, _recipe, stand_owner)
+							WorldSync.request_pitcher_snap(dispenser, _recipe, stand_owner)
 					return
 				# Can't snap to dispenser — fall through to normal placement
 		var from_box: bool = _player.inventory.held_item_data.get("from_delivery_box", false)

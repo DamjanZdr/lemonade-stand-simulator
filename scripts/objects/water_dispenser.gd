@@ -222,7 +222,7 @@ func interact(player: Node) -> void:
 			_animate_water_drop(start_pos, to_add)
 			# Route through host for authoritative state.
 			if not WorldSync.is_host():
-				_rpc_request_refill.rpc_id(1, to_add)
+				WorldSync.request_container_action(self, "refill", [to_add])
 			else:
 				_apply_refill(to_add)
 			return
@@ -244,7 +244,7 @@ func interact(player: Node) -> void:
 					return
 				# Route through host for authoritative state.
 				if not WorldSync.is_host():
-					_rpc_request_start_fill.rpc_id(1, space)
+					WorldSync.request_container_action(self, "start_fill", [space])
 				else:
 					_start_fill(space)
 				return
@@ -254,7 +254,7 @@ func interact(player: Node) -> void:
 			_pending_snap_pitcher_net_id = -1
 			WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
 			if not WorldSync.is_host():
-				_rpc_request_take_pitcher.rpc_id(1)
+				WorldSync.request_container_action(self, "take_pitcher", [])
 			p.pickup_container(pitcher, "pitcher")
 			return
 
@@ -273,7 +273,7 @@ func interact_secondary(player: Node) -> void:
 		_pending_snap_pitcher_net_id = -1
 		WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
 		if not WorldSync.is_host():
-			_rpc_request_take_pitcher.rpc_id(1)
+			WorldSync.request_container_action(self, "take_pitcher", [])
 		p.pickup_container(pitcher, "pitcher")
 		return
 	# The dispenser itself is fixed in place — no pickup on RMB either.
@@ -371,14 +371,11 @@ func get_snap_global_position() -> Vector3:
 ## snaps it, and syncs to all clients. This is the authoritative path —
 ## clients never snap locally because WorldSync.request_spawn() returns
 ## null on clients.
-@rpc("any_peer", "reliable")
-func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
-	var requester := multiplayer.get_remote_sender_id()
+func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool:
 	if not is_multiplayer_authority():
-		return
+		return false
 	if not can_snap_pitcher_from_recipe(recipe):
-		_pitcher_snap_result.rpc_id(requester, false)
-		return
+		return false
 	# Spawn the pitcher at the snap point.
 	var snap_pos := get_snap_global_position()
 	var snap_rot := Vector3.ZERO
@@ -401,8 +398,7 @@ func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
 		state,
 	) as Pitcher
 	if pitcher == null:
-		_pitcher_snap_result.rpc_id(requester, false)
-		return
+		return false
 	# Apply the placement scale so the host's pitcher matches clients.
 	pitcher.scale = Vector3.ONE * 0.1575
 	# Apply recipe state (request_spawn on host returns the instance, but
@@ -424,24 +420,7 @@ func request_snap_pitcher(recipe: Dictionary, stand_owner: String) -> void:
 	pitcher.call_deferred("update_label")
 	# Snap the pitcher to the dispenser.
 	snap_pitcher(pitcher)
-	_pitcher_snap_result.rpc_id(requester, true)
-
-
-@rpc("authority", "reliable")
-func _pitcher_snap_result(accepted: bool) -> void:
-	var player := WorldSync.get_local_player()
-	if player == null or player.held_item != HeldItem.CONTAINER:
-		return
-	if player.held_item_data.get("container_type", "") != "pitcher":
-		return
-	if not player.held_item_data.get("snap_pending", false):
-		return
-	player.held_item_data.erase("snap_pending")
-	if accepted:
-		player.placement._destroy_ghost()
-		player.inventory.clear_held()
-	else:
-		EventBus.interaction_hint_changed.emit("Water dispenser could not accept pitcher")
+	return true
 
 
 func _start_fill(water_amount: float) -> void:
@@ -468,7 +447,7 @@ func _start_fill(water_amount: float) -> void:
 func _finish_fill() -> void:
 	# Route through host for authoritative state.
 	if not WorldSync.is_host():
-		_rpc_request_finish_fill.rpc_id(1)
+		WorldSync.request_container_action(self, "finish_fill", [])
 		# Still update local visual state for the client
 		_is_filling = false
 		_fill_progress = 0.0

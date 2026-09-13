@@ -138,7 +138,7 @@ func update_display() -> void:
 func add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	# Client-side: send a request to the host. Do NOT mutate locally.
 	if not WorldSync.is_host():
-		_rpc_request_add_amount.rpc_id(1, qty, from_pos)
+		WorldSync.request_container_action(self, "add", [qty, from_pos])
 		return
 	_apply_add_amount(qty, from_pos)
 	_sync_state_to_peers(from_pos)
@@ -209,7 +209,7 @@ func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 func take_amount(qty: float) -> float:
 	# Client-side: send a request to the host. Do NOT mutate locally.
 	if not WorldSync.is_host():
-		_rpc_request_take_amount.rpc_id(1, qty)
+		WorldSync.request_container_action(self, "take", [qty])
 		# Return optimistic value so the client can proceed immediately
 		return minf(qty, current_amount)
 	var taken := _apply_take_amount(qty)
