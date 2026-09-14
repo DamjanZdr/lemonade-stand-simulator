@@ -225,6 +225,8 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	GameState.temperature = 25.0
 	GameState._init_default_prices()
 	GameState._init_default_recipes()
+	_sync_live_stand_recipes(false)
+	EventBus.game_reset.emit()
 	GameState.feedback_tier = 0
 	GameState.highest_money = GameState.money
 	GameState.customers_served_happy = 0
@@ -313,8 +315,8 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		GameState.recipes = saved_recipes.duplicate(true)
 	else:
 		GameState.recipes.clear()
-		for ft in GameState.FRUIT_TYPES:
-			GameState.recipes[ft] = GameState.get_recipe(ft)
+		GameState._init_default_recipes()
+	_sync_live_stand_recipes(true)
 	GameState.ice_degrees_per_scoop = data.get("ice_degrees_per_scoop", 4.0)
 	GameState.feedback_tier = data.get("feedback_tier", 0)
 	GameState.customers_served_happy = data.get("customers_served_happy", 0)
@@ -366,6 +368,21 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		EventBus.price_changed.emit(ft, GameState.get_price(ft))
 		EventBus.recipe_changed.emit(ft, GameState.get_recipe(ft))
 	EventBus.feedback_tier_changed.emit(GameState.feedback_tier)
+
+
+func _sync_live_stand_recipes(announce: bool) -> void:
+	if get_tree() == null:
+		return
+	for node in get_tree().get_nodes_in_group("stand"):
+		var stand := node as StandUnit
+		if stand == null:
+			continue
+		stand._init_default_recipes()
+		if stand.is_legacy_primary:
+			stand.recipes = GameState.recipes.duplicate(true)
+			if announce:
+				for fruit_type in GameState.FRUIT_TYPES:
+					EventBus.recipe_changed.emit(fruit_type, stand.recipes[fruit_type])
 
 
 func _build_save_dict() -> Dictionary:

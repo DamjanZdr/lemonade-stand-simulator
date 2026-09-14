@@ -27,6 +27,7 @@ func _ready() -> void:
 	# Listen to global recipe changes so the blackboard labels stay in
 	# sync when another player edits the same recipes.
 	EventBus.recipe_changed.connect(_on_recipe_changed)
+	EventBus.game_reset.connect(_on_game_reset)
 
 
 func get_hint(_player: Node) -> String:
@@ -42,10 +43,6 @@ func interact(_player: Node) -> void:
 	if p != null and board_camera != null:
 		_editing_player = p
 		p.enter_priceboard_focus(board_camera.global_transform)
-	# Sync label values from the stand's current recipes so the board
-	# shows the actual recipe values instead of question marks when
-	# reopened after a previous edit.
-	_sync_label_values_from_stand()
 	_start_edit(0, 0)
 
 
@@ -479,6 +476,13 @@ func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 					var locked_lbl := parent_title.get_node_or_null(label.name + "Locked") as Label3D
 					if locked_lbl != null:
 						locked_lbl.visible = now_locked
+	_refresh_all_labels()
+
+
+func _on_game_reset() -> void:
+	for data in _label_data:
+		data["value1"] = ""
+		data["value2"] = ""
 	_refresh_all_labels()
 
 
