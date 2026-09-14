@@ -29,7 +29,7 @@ var _spawn_time: float = 0.0
 var _hit_someone: bool = false
 var _overlap_timer: float = 0.0
 var _npc_overlap_shape: SphereShape3D = null
-const _OVERLAP_INTERVAL: float = 0.05
+const _OVERLAP_INTERVAL: float = 0.1
 
 const _VARIANT_SCENES: Dictionary = {
 	"apple": "res://scenes/objects/trash_apple.tscn",
@@ -79,6 +79,8 @@ func _ready() -> void:
 	physics_material_override = _get_no_bounce_material()
 
 	if WorldSync.is_host():
+		_spawn_time = 0.0
+		_overlap_timer = randf() * _OVERLAP_INTERVAL
 		# Host: run physics. Apply initial velocity after spawn.
 		freeze = false
 		if _initial_velocity != Vector3.ZERO:

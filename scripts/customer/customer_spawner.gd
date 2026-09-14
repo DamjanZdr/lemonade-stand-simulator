@@ -30,7 +30,7 @@ func _ready() -> void:
 
 
 var _sync_timer: float = 0.0
-const NPC_SYNC_INTERVAL: float = 0.07 # ~14Hz position sync
+const NPC_SYNC_INTERVAL: float = 0.1 # 10Hz position sync
 var _leaving_customers: Array[Customer] = [] # tracked for position sync after leaving
 
 

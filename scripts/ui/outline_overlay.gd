@@ -18,6 +18,7 @@ extends Node
 
 var _main_cam: Camera3D = null
 var _target_width: float = 1.5
+var _outline_active: bool = false
 
 
 func _get_base_viewport_size() -> Vector2i:
@@ -50,7 +51,7 @@ func _ready() -> void:
 	# when the window is a different size (e.g. running outside editor).
 	_subvp.size = _get_actual_viewport_size()
 	_subvp.world_3d = get_viewport().world_3d
-	_subvp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_subvp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 	# Make sure the outline camera is the active camera in the SubViewport.
@@ -114,6 +115,8 @@ func setup(main_cam: Camera3D) -> void:
 
 
 func _process(_delta: float) -> void:
+	if not _outline_active:
+		return
 	if _main_cam == null or not is_instance_valid(_main_cam) or _cam == null:
 		return
 	# Update SubViewport size to match the actual viewport every frame.
@@ -133,9 +136,13 @@ func _on_frame_pre_draw() -> void:
 			or not is_instance_valid(_main_cam):
 		return
 	# Only show the outline overlay when at least one object is highlighted.
-	var active := get_tree().get_first_node_in_group("outline_fill") != null
-	_display.visible = active
-	_subvp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_outline_active = get_tree().get_first_node_in_group("outline_fill") != null
+	_display.visible = _outline_active
+	_subvp.render_target_update_mode = (
+		SubViewport.UPDATE_ALWAYS if _outline_active else SubViewport.UPDATE_DISABLED
+	)
+	if not _outline_active:
+		return
 	# Update SubViewport size right before rendering so the outline
 	# camera's projection matches the main camera's projection exactly.
 	var vp_size := _get_actual_viewport_size()

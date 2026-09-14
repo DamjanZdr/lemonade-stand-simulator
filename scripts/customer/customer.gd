@@ -97,6 +97,8 @@ var _talk_anim_playing: bool = false
 var _ui_layer: CanvasLayer = null
 var _ui_label: Label = null
 var _ui_panel: Panel = null
+var _ui_update_timer: float = 0.0
+const _UI_UPDATE_INTERVAL: float = 0.1
 
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
@@ -125,6 +127,7 @@ func _ready() -> void:
 	_ground_y = global_position.y
 	_visual_ground_offset = _measure_visual_ground_offset()
 	_ground_sample_timer = randf() * _GROUND_SAMPLE_INTERVAL
+	_ui_update_timer = randf() * _UI_UPDATE_INTERVAL
 	up_direction = Vector3.UP
 	floor_max_angle = deg_to_rad(60.0)
 	floor_snap_length = 0.3
@@ -182,9 +185,12 @@ func _exit_tree() -> void:
 		EventBus.change_finalized.disconnect(_change_callable)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _ui_label != null and _ui_label.visible:
-		_update_bubble_screen_pos()
+		_ui_update_timer += delta
+		if _ui_update_timer >= _UI_UPDATE_INTERVAL:
+			_ui_update_timer = 0.0
+			_update_bubble_screen_pos()
 
 
 func _physics_process(delta: float) -> void:

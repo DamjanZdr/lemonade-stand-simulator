@@ -30,7 +30,8 @@ const _FACE_NORMALS: Array[Vector3] = [
 	Vector3(1, 0, 0),
 	Vector3(0, 1, 0),
 ]
-const _ICON_UPDATE_INTERVAL: float = 0.1
+const _ICON_UPDATE_INTERVAL: float = 0.25
+const _ICON_MAX_DISTANCE_SQUARED: float = 2500.0
 var _icon_update_timer: float = 0.0
 var _cam: Camera3D = null
 var _has_icon: bool = false
@@ -81,6 +82,7 @@ static func pre_render_all() -> void:
 
 
 func _ready() -> void:
+	_icon_update_timer = randf() * _ICON_UPDATE_INTERVAL
 	_cache_face_nodes()
 	if is_hand_mesh:
 		_apply_tint()
@@ -197,6 +199,14 @@ func _process(delta: float) -> void:
 	if current_cam != _cam:
 		_cam = current_cam
 	if _cam == null:
+		return
+	if _cam.global_position.distance_squared_to(global_position) > _ICON_MAX_DISTANCE_SQUARED:
+		for icon in _face_icons:
+			if icon != null:
+				icon.visible = false
+		for face_label in _face_labels:
+			if face_label != null:
+				face_label.visible = false
 		return
 	var to_cam := (_cam.global_position - global_position).normalized()
 	for i in range(_FACE_NAMES.size()):

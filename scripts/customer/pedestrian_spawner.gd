@@ -32,7 +32,7 @@ var _paused: bool = false
 var _pedestrians: Array = []
 var _spawn_timer: Timer
 var _sync_timer: float = 0.0
-const NPC_SYNC_INTERVAL: float = 0.07 # ~14Hz position sync for NPCs
+const NPC_SYNC_INTERVAL: float = 0.1 # 10Hz position sync for NPCs
 
 
 func _ready() -> void:

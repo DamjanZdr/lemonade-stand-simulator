@@ -192,7 +192,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_refresh_timer += delta
-	if _refresh_timer >= 0.1:
+	if _refresh_timer >= 0.5:
 		_refresh_timer = 0.0
 		_refresh()
 	if _test_payment_cooldown > 0.0:

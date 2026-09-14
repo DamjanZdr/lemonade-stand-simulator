@@ -95,6 +95,8 @@ const CLOTHING_SURFACES: Array[String] = [
 
 
 func _ready() -> void:
+	_check_timer = randf() * 0.2
+	_eye_update_timer = randf() * _EYE_UPDATE_INTERVAL
 	_disable_cast_shadows()
 	_copy_extra_animations()
 	# Hide the newman node — it's only used as an animation source.
@@ -156,8 +158,10 @@ var _eye_rot_l := Quaternion.IDENTITY
 var _eye_rot_r := Quaternion.IDENTITY
 var _player_cache: Node3D = null
 var _camera_cache: Camera3D = null
-var _is_near_player: bool = true
+var _is_near_player: bool = false
 var _check_timer: float = 0.0
+var _eye_update_timer: float = 0.0
+const _EYE_UPDATE_INTERVAL: float = 0.05
 
 
 func _get_player_camera() -> Camera3D:
@@ -174,7 +178,8 @@ func _ensure_player() -> bool:
 		return true
 	if get_tree().current_scene == null:
 		return false
-	_player_cache = get_tree().current_scene.find_child("Player", true, false) as Node3D
+	_player_cache = WorldSync.get_local_player() as Node3D
+	_camera_cache = null
 	return _player_cache != null
 
 
@@ -381,7 +386,10 @@ func _process(delta: float) -> void:
 		_is_near_player = _is_player_near()
 
 	if _is_near_player:
-		_update_eye_look(delta)
+		_eye_update_timer -= delta
+		if _eye_update_timer <= 0.0:
+			_eye_update_timer = _EYE_UPDATE_INTERVAL
+			_update_eye_look(_EYE_UPDATE_INTERVAL)
 
 
 func _update_eye_look(delta: float) -> void:
@@ -389,7 +397,8 @@ func _update_eye_look(delta: float) -> void:
 		return
 
 	if not is_instance_valid(_player_cache):
-		_player_cache = get_tree().current_scene.find_child("Player", true, false) as Node3D
+		_player_cache = WorldSync.get_local_player() as Node3D
+		_camera_cache = null
 	if _player_cache == null:
 		return
 
