@@ -1,0 +1,10 @@
+Revert NPC bubble screen-position throttle to prevent visible snapping.
+
+The 10 Hz update made order bubbles lag behind camera/NPC movement and
+snap back each interval. Keep screen-space projection per-frame so the
+bubbles track smoothly while the NPC sync interval and other throttles
+still reduce load.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
