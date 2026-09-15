@@ -1,10 +1,10 @@
-Use X/Z blocker footprints so grass is rejected under houses.
+Compute tight blocker footprints from mesh vertices.
 
-- The old 3D AABB check missed ground samples when a house mesh's imported
-  AABB didn't extend down to the ground plane.
-- _is_blocked now treats every blocker as an infinite vertical column using
-  only its X/Z footprint, so anything inside a house/sidewalk/road footprint
-  is rejected regardless of vertical pivot/offset.
+- Replace AABB-based blocker detection with a footprint built from each
+  blocker mesh's actual vertex X/Z extents. This removes the false empty
+  gaps around houses caused by loose AABBs.
+- Only MeshInstance3D blockers are used for footprints (the common case for
+  houses, streets, sidewalks, and trees).
 
 Generated with [Devin](https://devin.ai)
 

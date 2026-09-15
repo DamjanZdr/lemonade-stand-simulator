@@ -259,14 +259,47 @@ func _collect_blockers(node: Node) -> void:
 		return
 	if node == _multimesh:
 		return
-	if node is GeometryInstance3D:
-		var geom := node as GeometryInstance3D
-		var local_aabb := geom.get_aabb()
-		if local_aabb.size.length_squared() > 0.0:
-			_blockers.append({ "transform": geom.global_transform, "aabb": local_aabb })
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		var footprint := _compute_mesh_footprint(mi.mesh)
+		if footprint.size.length_squared() > 0.0:
+			_blockers.append({ "transform": mi.global_transform, "aabb": footprint })
 		return
 	for child in node.get_children():
 		_collect_blockers(child)
+
+
+func _compute_mesh_footprint(mesh: Mesh) -> AABB:
+	if mesh == null:
+		return AABB()
+	var first := true
+	var min_x := 0.0
+	var max_x := 0.0
+	var min_z := 0.0
+	var max_z := 0.0
+	var surface_count := mesh.get_surface_count()
+	for s in range(surface_count):
+		var arr := mesh.surface_get_arrays(s)
+		if arr.is_empty():
+			continue
+		var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		if verts.is_empty():
+			continue
+		for v in verts:
+			if first:
+				min_x = v.x
+				max_x = v.x
+				min_z = v.z
+				max_z = v.z
+				first = false
+			else:
+				min_x = minf(min_x, v.x)
+				max_x = maxf(max_x, v.x)
+				min_z = minf(min_z, v.z)
+				max_z = maxf(max_z, v.z)
+	if first:
+		return AABB()
+	return AABB(Vector3(min_x, 0.0, min_z), Vector3(max_x - min_x, 1.0, max_z - min_z))
 
 
 func _is_blocked(pos: Vector3) -> bool:
