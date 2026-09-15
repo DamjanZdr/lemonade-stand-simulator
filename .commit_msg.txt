@@ -1,0 +1,18 @@
+Fix cross-stand ownership, client label visibility, and UI exit bugs.
+
+- Customer/pedestrian bubbles: sync change/feedback/wrong-item text to clients.
+- Money UI: only the local player's MoneyController reacts to sale_initiated.
+- Computer: add stand ownership and disable PlayerController process while open
+  so the outline doesn't show through the shop.
+- Recipe board: lock to owning stand, only the editing peer processes keys.
+- Main: don't open ESC menu while local player is in priceboard/blackboard.
+- Supply box: host no longer removes the node locally before WorldSync despawns.
+- Cup boxes: allow placement on any stand's floor/palette, not only own stand.
+- Pitchers/equipment: require a table/workstation surface; no floor placement.
+- Day manager: reliable day-over RPC so joiners don't get stuck at 05:59.
+- Customer spawner: derive queue/counter facing from stand orientation so rival
+  customers don't face the wrong way.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

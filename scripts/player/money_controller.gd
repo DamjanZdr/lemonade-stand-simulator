@@ -90,6 +90,9 @@ func _disable_depth_test_recursive(node: Node) -> void:
 
 
 func _on_sale_initiated(payment: float, change_due: float) -> void:
+	# Only the local player's money tray should react to a sale.
+	if _camera == null or not _camera.is_current():
+		return
 	_payment_cents = roundi(payment * 100.0)
 	_change_due_cents = roundi(change_due * 100.0)
 	_tendered_cents = 0

@@ -7,6 +7,7 @@ const EMPTY_VALUE := "?"
 @export var click_collider_size: Vector3 = Vector3(0.9, 0.45, 0.05)
 
 @onready var board_camera: Camera3D = $Camera3D
+@onready var _stand: StandUnit = get_parent() as StandUnit
 
 var _label_nodes: Array[Label3D] = []
 var _label_data: Array[Dictionary] = []
@@ -28,6 +29,10 @@ func _ready() -> void:
 	# sync when another player edits the same recipes.
 	EventBus.recipe_changed.connect(_on_recipe_changed)
 	EventBus.game_reset.connect(_on_game_reset)
+	# Assign stand ownership based on parent StandUnit so rival players can't
+	# edit this stand's recipes.
+	if _stand != null:
+		stand_owner = _stand.name
 
 
 func get_hint(_player: Node) -> String:
@@ -40,7 +45,12 @@ func interact(_player: Node) -> void:
 	if _label_index >= 0:
 		return
 	var p := _player as Player
-	if p != null and board_camera != null:
+	if p == null:
+		return
+	# Only this stand's players can edit its recipe board.
+	if not can_player_use(p):
+		return
+	if p.is_multiplayer_authority() and board_camera != null:
 		_editing_player = p
 		p.enter_priceboard_focus(board_camera.global_transform)
 	_start_edit(0, 0)
@@ -77,6 +87,10 @@ func _sync_label_values_from_stand() -> void:
 
 func _input(event: InputEvent) -> void:
 	if _label_index < 0:
+		return
+	# Only the editing peer should process blackboard keystrokes.
+	if _editing_player == null or not is_instance_valid(_editing_player) \
+			or not _editing_player.is_multiplayer_authority():
 		return
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return

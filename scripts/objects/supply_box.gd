@@ -168,12 +168,15 @@ func _pick_up_player(player: Node) -> void:
 	# Request the despawn BEFORE removing locally so WorldSync can read
 	# the original parent path and name.
 	WorldSync.request_despawn(self, not WorldSync.is_host())
-	# Remove the local box immediately so it can't be interacted with or
-	# duplicated while waiting for the host's despawn RPC.
-	var parent := get_parent()
-	if parent != null:
-		parent.remove_child(self)
-	queue_free()
+	# On clients, remove the local box immediately so it can't be interacted
+	# with or duplicated while waiting for the host's despawn RPC. On the
+	# host, let WorldSync.despawn_networked() broadcast the removal and free
+	# the node authoritatively so the despawn RPC can still resolve the object.
+	if not WorldSync.is_host():
+		var parent := get_parent()
+		if parent != null:
+			parent.remove_child(self)
+		queue_free()
 
 
 func _cache_face_nodes() -> void:

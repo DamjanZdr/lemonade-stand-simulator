@@ -1104,9 +1104,9 @@ func _update_cup_box_ghost() -> void:
 		_ghost_valid = true # Valid to add to existing
 		return
 
-	var is_owned_floor := is_table_floor_surface(collider)
 	var is_owned_counter := is_stand_or_workstation_surface(collider)
-	if not on_surface or (not is_owned_floor and not is_owned_counter):
+	var is_box_surface := is_box_placeable_surface(collider)
+	if not on_surface or (not is_owned_counter and not is_box_surface):
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
@@ -1116,12 +1116,11 @@ func _update_cup_box_ghost() -> void:
 
 	var is_ground := is_ground_surface(collider)
 	if is_ground:
-		# On the player's floor the unopened box can be placed. Other ground
-		# was rejected above and remains a red box preview.
+		# Cup boxes can be placed on any stand's floor/palette as unopened boxes.
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
-		_ghost_valid = is_owned_floor
+		_ghost_valid = is_box_surface
 		_apply_ghost_material(
 			_ghost,
 			_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
@@ -1365,7 +1364,10 @@ func _update_equipment_box_ghost() -> void:
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 		return
 
-	if is_table_floor_surface(collider) or is_ground_surface(collider):
+	# Only floor-standing equipment (workstation, water dispenser) may be placed
+	# directly on the ground/floor. Other equipment must go on a table/workstation.
+	if equipment_type in ["workstation", "water_dispenser"] \
+			and (is_table_floor_surface(collider) or is_ground_surface(collider)):
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
@@ -1594,13 +1596,13 @@ func _update_ghost() -> void:
 	# Check for overlap with existing containers
 	var overlapping := _check_ghost_overlap()
 	# Deployed containers (picked up from workstation) can't go on ground,
-	# except pitchers and floor-standing workstations or water dispensers.
+	# except floor-standing workstations or water dispensers.
 	var deployed: bool = _player.held_item_data.get("deployed", false)
 	var valid := (
 		not overlapping
 		and (
-			not (deployed and is_ground) or container_type == "pitcher"
-			or container_type == "workstation" or container_type == "water_dispenser"
+			not (deployed and is_ground) or container_type == "workstation"
+			or container_type == "water_dispenser"
 		)
 	)
 

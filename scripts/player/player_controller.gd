@@ -137,6 +137,10 @@ func _apply_crouch_visual() -> void:
 	tween.tween_property(_player.head, "position:y", target_y, 0.15)
 
 
+func is_in_priceboard_mode() -> bool:
+	return _in_priceboard_mode
+
+
 func enter_priceboard_focus(focus_transform: Transform3D) -> void:
 	_in_priceboard_mode = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

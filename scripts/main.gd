@@ -1767,6 +1767,13 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed:
 		if _game_state == MenuState.PLAYING:
+			# Don't open the ESC menu while the local player is in a priceboard
+			# or recipe-board view; let those UI handles consume ESC instead.
+			if (
+				_local_player != null and is_instance_valid(_local_player)
+				and _local_player.is_in_priceboard_mode()
+			):
+				return
 			_toggle_esc_menu()
 			get_viewport().set_input_as_handled()
 		return

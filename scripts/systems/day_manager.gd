@@ -54,8 +54,13 @@ func _process(delta: float) -> void:
 		if _day_timer <= 0.0:
 			_day_timer = 0.0
 			day_time_over = true
-			_day_running = false
 			EventBus.day_time_over.emit()
+			# Reliable sync for the final day-over state: the regular timer
+			# sync is unreliable_ordered and can be dropped, leaving joiners stuck
+			# at ~5:59 with no interactable end-day sign.
+			if multiplayer.get_peers().size() > 0:
+				_sync_day_over.rpc()
+			_day_running = false
 	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
 	# Throttle timer RPCs: only send when the timer has changed meaningfully,
 	# the day-over flag changed, or a minimum interval elapsed.
@@ -73,6 +78,17 @@ func _process(delta: float) -> void:
 		_sync_day_timer.rpc(_day_timer, _day_duration, day_time_over)
 
 
+## Reliable final day-over sync for clients. The regular timer sync is
+## unreliable_ordered and can drop the single packet that carries is_over=true.
+@rpc("authority", "call_local", "reliable")
+func _sync_day_over() -> void:
+	if multiplayer.is_server():
+		return
+	if not day_time_over:
+		day_time_over = true
+		EventBus.day_time_over.emit()
+
+
 @rpc("authority", "call_local", "unreliable_ordered")
 func _sync_day_timer(timer: float, duration: float, is_over: bool) -> void:
 	if multiplayer.is_server():
@@ -81,11 +97,11 @@ func _sync_day_timer(timer: float, duration: float, is_over: bool) -> void:
 	_day_duration = duration
 	# Emit day_time_over signal when the day ends for clients so the
 	# end-day sign becomes interactable on clients too.
+	# Never reset day_time_over back to false from a stale unreliable packet
+	# after the reliable _sync_day_over has already fired.
 	if is_over and not day_time_over:
 		day_time_over = true
 		EventBus.day_time_over.emit()
-	else:
-		day_time_over = is_over
 	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
 
 

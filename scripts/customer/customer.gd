@@ -999,6 +999,9 @@ func _set_order_text(text: String) -> void:
 		# happened with the stale (pre-update) size, which also contributed
 		# to the panel/text looking misaligned right after the text changed.
 		_resize_order_panel()
+	# Sync any bubble text change to clients so they see change/feedback/wrong-item messages.
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		sync_show_order(text)
 
 
 func _update_bubble_screen_pos() -> void:
@@ -1026,7 +1029,6 @@ func _update_bubble_screen_pos() -> void:
 func _show_order() -> void:
 	if order.is_empty():
 		_set_order_text("")
-		sync_show_order("")
 		return
 	var parts: Array[String] = []
 	for fruit_type: String in order.keys():
@@ -1034,7 +1036,6 @@ func _show_order() -> void:
 		parts.append("%d %s" % [qty, fruit_type.capitalize()])
 	var text := ", ".join(parts)
 	_set_order_text(text)
-	sync_show_order(text)
 
 
 ## Host: sync the order bubble text to clients so they see it too.

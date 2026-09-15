@@ -279,8 +279,14 @@ func get_slot_for_pedestrian(pedestrian: Pedestrian) -> int:
 
 
 func _apply_facing(customer: Customer) -> void:
-	customer.queue_face_dir = _queue_face_dir
-	customer.counter_face_dir = _counter_face_dir
+	# Derive facing directions from the stand's orientation so customers on a
+	# rotated rival stand still face the counter / front of the queue correctly.
+	if stand != null and is_instance_valid(stand):
+		customer.queue_face_dir = stand.global_transform.basis * Vector3(1, 0, 0)
+		customer.counter_face_dir = stand.global_transform.basis * Vector3(0, 0, 1)
+	else:
+		customer.queue_face_dir = _queue_face_dir
+		customer.counter_face_dir = _counter_face_dir
 
 
 ## Returns the world position of a queue slot (used by PedestrianSpawner to route a

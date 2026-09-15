@@ -81,6 +81,10 @@ func enter_priceboard_focus(focus_transform: Transform3D) -> void:
 	controller.enter_priceboard_focus(focus_transform)
 
 
+func is_in_priceboard_mode() -> bool:
+	return controller.is_in_priceboard_mode() if controller != null else false
+
+
 func exit_priceboard_focus() -> void:
 	controller.exit_priceboard_focus()
 

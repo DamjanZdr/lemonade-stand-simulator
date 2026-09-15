@@ -558,16 +558,16 @@ func primary_interact() -> void:
 			return
 		if _player.ray.is_colliding():
 			var collider := _player.ray.get_collider()
-			if _player.placement.is_table_floor_surface(collider):
+			if _player.placement.is_stand_or_workstation_surface(collider):
+				_player.placement._place_cup_stack_from_box()
+				return
+			if _player.placement.is_box_placeable_surface(collider):
 				_player.placement._place_held_supply_box_on(
 					_player.ray.get_collision_point()
 					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
 				)
 				return
-			if _player.placement.is_stand_or_workstation_surface(collider):
-				_player.placement._place_cup_stack_from_box()
-				return
-		EventBus.interaction_hint_changed.emit("Cups can only be placed on your stand or table")
+		EventBus.interaction_hint_changed.emit("Cups can only be placed on a stand surface")
 		return
 
 	# Handle non-cup supply box placement (stack on boxes or place on ground)

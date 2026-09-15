@@ -14,6 +14,7 @@ var _transitioning: bool = false
 var _player: Node = null
 var _player_camera: Camera3D = null
 var _zoom_tween: Tween = null
+var _stand: StandUnit = null
 
 
 func _ready() -> void:
@@ -40,6 +41,20 @@ func _ready() -> void:
 	# resampled onto a 3D quad at a different pixel density.
 	_screen_ui.msaa_2d = Viewport.MSAA_4X
 	_setup_screen_material.call_deferred()
+
+	# Stand ownership so only this stand's players can use this computer.
+	_stand = _find_owning_stand()
+	if _stand != null:
+		stand_owner = _stand.name
+
+
+func _find_owning_stand() -> StandUnit:
+	var n := get_parent()
+	while n != null:
+		if n is StandUnit:
+			return n as StandUnit
+		n = n.get_parent()
+	return null
 
 
 func _setup_screen_material() -> void:
@@ -75,6 +90,8 @@ func _setup_screen_material() -> void:
 func interact(player: Node) -> void:
 	if _transitioning:
 		return
+	if not can_player_use(player):
+		return
 	if _active:
 		_exit()
 	else:
@@ -103,6 +120,9 @@ func _enter(player: Node) -> void:
 	_player.set_physics_process(false)
 	_player.set_process_input(false)
 	_player.set_process_unhandled_input(false)
+	if _player.controller != null:
+		_player.controller.set_process(false)
+		_player.controller.set_physics_process(false)
 
 	_player_camera.current = false
 	_screen_camera.current = true
@@ -152,6 +172,9 @@ func _exit() -> void:
 		_player.set_physics_process(true)
 		_player.set_process_input(true)
 		_player.set_process_unhandled_input(true)
+		if _player.controller != null:
+			_player.controller.set_process(true)
+			_player.controller.set_physics_process(true)
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 

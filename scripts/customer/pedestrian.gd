@@ -403,6 +403,11 @@ func sync_serving() -> void:
 	_sync_serving.rpc()
 
 
+## Host: update the feedback/order text on the NPC's bubble for clients.
+func sync_show_order_text(text: String) -> void:
+	_sync_show_order_text.rpc(text)
+
+
 ## Host: NPC resumed walking (after offer timeout or serving done). Synced.
 func sync_resume(waypoint_idx: int) -> void:
 	_sync_resume.rpc(waypoint_idx)
@@ -475,6 +480,13 @@ func _sync_serving() -> void:
 	if _patience_circle:
 		_patience_circle.visible = false
 	_npc.play_anim("Talk")
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_show_order_text(text: String) -> void:
+	if multiplayer.is_server():
+		return
+	_show_order_text(text)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -683,10 +695,11 @@ func try_serve(player: Node) -> void:
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "")
 	var feedback := _feedback_text(result)
 	_show_order_text(feedback)
+	# Sync to clients
+	sync_show_order_text(feedback)
+	sync_serving()
 	_npc.play_anim("Talk")
 	_feedback_timer = 2.5
-	# Sync to clients
-	sync_serving()
 
 
 func _offer_timeout() -> void:
