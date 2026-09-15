@@ -7895,6 +7895,7 @@ transform = Transform3D(-0.29989395, 0, 0.007975996, 0, 0.3, 0, -0.007975996, 0,
 transform = Transform3D(0.2999184, 0, -0.006996623, 0, 0.3, 0, 0.006996623, 0, 0.2999184, 19.825558, 1.9087119, -38)
 
 [node name="Grass" type="Node3D" parent="." unique_id=1714388584]
+visible = false
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="Grass" unique_id=1672096950]
 multimesh = SubResource("MultiMesh_r8fkd")
