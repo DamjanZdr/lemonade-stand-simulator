@@ -14,8 +14,10 @@ void vertex() {
 	float hash = fract(sin(dot(world_pos.xz, vec2(12.9898, 78.233))) * 43758.5453);
 	float phase = hash * TAU;
 	float wave = sin(TIME * wind_speed + (world_pos.x + world_pos.z) * wind_frequency + phase);
-	float height = clamp(VERTEX.y, 0.0, 1.0);
-	float bend = wave * height * sway_strength;
+	// The imported blade mesh is lengthwise along local Z; UV.y maps from
+	// tip (0) to base (1). Lock the bottom/base vertices so they don't sway.
+	float height = 1.0 - clamp(UV.y, 0.0, 1.0);
+	float bend = wave * pow(height, 0.5) * sway_strength;
 	VERTEX.x += bend;
 	VERTEX.z += bend * 0.6;
 }

@@ -1,6 +1,8 @@
-Double test-plane grass density again.
+Lock grass blade bottom vertices during wind sway.
 
-- blade_count 1600 -> 3200
+- The imported grassblade mesh is lengthwise along local Z, so VERTEX.y does
+  not correspond to height. Use UV.y instead (tip=0, base=1) so the bottom
+  vertices stay anchored and only the upper part sways.
 
 Generated with [Devin](https://devin.ai)
 
