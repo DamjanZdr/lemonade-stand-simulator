@@ -51,7 +51,6 @@
 [ext_resource type="Script" uid="uid://e7o24oyy11ah" path="res://scripts/objects/cup.gd" id="46_myl1y"]
 [ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
 [ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
-[ext_resource type="PackedScene" path="res://scenes/environment/grass_field.tscn" id="51_grassfield"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g4v7s"]
 albedo_color = Color(0.7921569, 1, 0.19607843, 1)
@@ -1888,8 +1887,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.53274, 0.2921645, -4.2231
 use_collision = true
 size = Vector3(2047, 1.4, 1477)
 material = SubResource("StandardMaterial3D_g4v7s")
-
-[node name="GrassField" parent="." instance=ExtResource("51_grassfield")]
 
 [node name="Houses" type="Node3D" parent="." unique_id=641800392 groups=["grass_blocker"]]
 
