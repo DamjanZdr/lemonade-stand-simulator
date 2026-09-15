@@ -1,7 +1,8 @@
-Add explicit culling AABB to procedural grass.
+Match GrassScatterer MultiMesh creation to working plane test.
 
-- Set custom_aabb on the MultiMeshInstance3D and on the MultiMesh resource
-  so the renderer doesn't cull the whole world-grass patch.
+- Build the MultiMesh fully before assigning it to the MultiMeshInstance3D.
+- Remove top_level and custom_aabb; use local-space instance origins like the
+  NewGrass/Grass test script does.
 
 Generated with [Devin](https://devin.ai)
 

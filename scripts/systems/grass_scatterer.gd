@@ -127,41 +127,33 @@ func _generate_grass() -> void:
 			grass_transform = grass_transform.rotated(Vector3.RIGHT, tilt_x)
 			grass_transform = grass_transform.rotated(Vector3.FORWARD, tilt_z)
 			grass_transform = grass_transform.rotated(Vector3.UP, rotation_y)
-			# Place the blade's bottom end on the surface, not the mesh origin.
-			grass_transform.origin = pos - grass_transform.basis * local_bottom_offset
+			# Place the blade's bottom end on the surface, not the mesh origin,
+			# then convert the world-space origin into this node's local space.
+			grass_transform.origin = global_transform.affine_inverse() * (
+				pos - grass_transform.basis * local_bottom_offset
+			)
 
 			instances.append(grass_transform)
 			yield_counter += 1
 			if yield_counter % YIELD_EVERY == 0:
 				await get_tree().process_frame
 
-	_multimesh = MultiMeshInstance3D.new()
-	_multimesh.name = "GrassMultiMesh"
-	add_child(_multimesh, true)
-
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = mesh
-	mm.instance_count = 0
-	_multimesh.multimesh = mm
-	if material != null:
-		_multimesh.material_override = material
-
 	mm.instance_count = instances.size()
 	for i in range(instances.size()):
 		mm.set_instance_transform(i, instances[i])
 
-	_multimesh.top_level = true
+	_multimesh = MultiMeshInstance3D.new()
+	_multimesh.name = "GrassMultiMesh"
+	add_child(_multimesh, true)
+	_multimesh.multimesh = mm
+	if material != null:
+		_multimesh.material_override = material
+
 	_multimesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_multimesh.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-	# Ensure the renderer never culls the whole patch because of an empty/wrong
-	# aggregate AABB. Cover the spawn circle plus a little vertical range.
-	var cull_aabb := AABB(
-		spawn_center - Vector3(spawn_radius, 2.0, spawn_radius),
-		Vector3(spawn_radius * 2.0, 8.0, spawn_radius * 2.0),
-	)
-	_multimesh.custom_aabb = cull_aabb
-	_multimesh.multimesh.custom_aabb = cull_aabb
 	print("GrassScatterer: Generated %d grass instances" % instances.size())
 	for j in range(min(instances.size(), 3)):
 		print("[GrassScatterer] instance %d pos=%s" % [j, str(instances[j].origin)])
