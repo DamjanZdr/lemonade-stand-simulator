@@ -45,6 +45,9 @@ func _generate_grass() -> void:
 		return
 	var mesh_aabb: AABB = mesh.get_aabb()
 	print("[GrassScatterer] mesh=%s aabb=%s" % [mesh.resource_name, str(mesh_aabb)])
+	# With +90° X rotation local +Z becomes world -Y. The blade's bottom end in
+	# world Y is at local z = aabb_end_z, so offset the origin onto the surface.
+	var local_bottom_offset := Vector3(0.0, 0.0, mesh_aabb.position.z + mesh_aabb.size.z)
 
 	_surfaces = _get_grass_surfaces()
 	if _surfaces.is_empty():
@@ -124,7 +127,8 @@ func _generate_grass() -> void:
 			grass_transform = grass_transform.rotated(Vector3.RIGHT, tilt_x)
 			grass_transform = grass_transform.rotated(Vector3.FORWARD, tilt_z)
 			grass_transform = grass_transform.rotated(Vector3.UP, rotation_y)
-			grass_transform.origin = pos
+			# Place the blade's bottom end on the surface, not the mesh origin.
+			grass_transform.origin = pos - grass_transform.basis * local_bottom_offset
 
 			instances.append(grass_transform)
 			yield_counter += 1

@@ -1,8 +1,9 @@
-Fix test-plane grass alignment by using local-space instance origins.
+Place grass blades by their bottom end instead of mesh origin.
 
-- Convert target world positions into the MultiMeshInstance3D's local space
-  instead of relying on top_level, ensuring the grass patch aligns with the
-  sibling Plane node regardless of parent transforms.
+- The grassblade mesh origin is not at the bottom of the blade. Compute the
+  local offset to the bottom end and use it so blades sit on the surface
+  instead of sinking halfway through.
+- Apply to both PlaneGrassTest and GrassScatterer.
 
 Generated with [Devin](https://devin.ai)
 
