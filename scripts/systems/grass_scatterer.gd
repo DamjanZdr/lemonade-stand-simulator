@@ -157,6 +157,19 @@ func _generate_grass() -> void:
 		% [_multimesh.visible, _multimesh.material_override]
 	)
 
+	# DEBUG: single scaled/rotated blade at spawn center as a size/orientation reference.
+	var debug_single := MeshInstance3D.new()
+	debug_single.name = "DebugGrassBlade"
+	debug_single.mesh = mesh
+	debug_single.material_override = material
+	add_child(debug_single, true)
+	debug_single.global_position = spawn_center
+	debug_single.global_transform = debug_single.global_transform.scaled(
+		Vector3(base_scale, base_scale, base_scale)
+	)
+	debug_single.global_transform = debug_single.global_transform.rotated(Vector3.RIGHT, PI / 2.0)
+	print("[GrassScatterer] debug single at %s" % str(debug_single.global_position))
+
 
 func _get_grass_mesh() -> Mesh:
 	if grass_mesh != null:

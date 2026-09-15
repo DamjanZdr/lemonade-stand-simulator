@@ -1,7 +1,8 @@
-Scale grass to one third and reduce random tilt.
+Debug: add a single scaled/rotated reference blade at spawn center.
 
-- Set base_scale to 0.33 and scale_variance to 0.05 in grass_field.tscn.
-- Reduce blade tilt from ±0.2 to ±0.03 radians so blades stay nearly upright.
+- Add a visible MeshInstance3D blade at the spawn center using the same mesh,
+  material, scale, and rotation as the MultiMesh instances. This lets us tell
+  whether the issue is mesh/scale/material or the MultiMesh itself.
 
 Generated with [Devin](https://devin.ai)
 
