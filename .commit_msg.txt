@@ -1,8 +1,7 @@
-Halve test-plane blade size and align grass to sibling Plane node.
+Fix test-plane grass offset by using top_level.
 
-- Reduce PlaneGrassTest base_scale from 0.33 to 0.165.
-- Use the sibling Plane node as the reference position/basis so the square
-  patch lines up with the plane mesh.
+- Set top_level=true on the test MultiMeshInstance3D so instance transforms
+  are interpreted in world space and the patch aligns with the Plane mesh.
 
 Generated with [Devin](https://devin.ai)
 
