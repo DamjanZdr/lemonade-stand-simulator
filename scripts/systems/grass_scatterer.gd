@@ -56,14 +56,6 @@ func _generate_grass() -> void:
 	_build_blockers()
 
 	var material := _get_grass_material()
-	# DEBUG: force bright standard material to isolate shader/mesh issues.
-	var debug_mat := StandardMaterial3D.new()
-	debug_mat.albedo_color = Color(0.0, 1.0, 0.0, 1.0)
-	debug_mat.emission_enabled = true
-	debug_mat.emission = Color(0.0, 1.0, 0.0, 1.0)
-	debug_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	if material != null:
-		print("[GrassScatterer] original material=%s" % material.resource_name)
 
 	var instances: Array[Transform3D] = []
 	var spawn_r2 := spawn_radius * spawn_radius
@@ -137,9 +129,6 @@ func _generate_grass() -> void:
 				await get_tree().process_frame
 
 	_multimesh = MultiMeshInstance3D.new()
-	# DEBUG: set material on mesh surface as well as override.
-	mesh.surface_set_material(0, debug_mat)
-
 	_multimesh.name = "GrassMultiMesh"
 	add_child(_multimesh, true)
 
@@ -148,7 +137,8 @@ func _generate_grass() -> void:
 	mm.mesh = mesh
 	mm.instance_count = 0
 	_multimesh.multimesh = mm
-	_multimesh.material_override = debug_mat
+	if material != null:
+		_multimesh.material_override = material
 
 	mm.instance_count = instances.size()
 	for i in range(instances.size()):
@@ -165,17 +155,6 @@ func _generate_grass() -> void:
 		% [_multimesh.visible, _multimesh.material_override]
 	)
 
-	# DEBUG: place a single bright MeshInstance3D at the spawn center to prove
-	# the mesh/material renders at all.
-	var debug_single := MeshInstance3D.new()
-	debug_single.name = "DebugGrassBlade"
-	debug_single.mesh = mesh
-	debug_single.material_override = debug_mat
-	debug_single.top_level = true
-	add_child(debug_single, true)
-	debug_single.global_position = spawn_center
-	print("[GrassScatterer] debug single placed at %s" % str(debug_single.global_position))
-
 
 func _get_grass_mesh() -> Mesh:
 	if grass_mesh != null:
@@ -186,7 +165,11 @@ func _get_grass_mesh() -> Mesh:
 		var found: Mesh = _extract_first_mesh(scene)
 		scene.queue_free()
 		return found
-	# Fallback: a simple low-poly blade so the scatterer works out of the box.
+	# Fallback: load the converted grassblade mesh resource.
+	var saved_mesh := load("res://assets/models/environment/Grass/grassblade.res") as Mesh
+	if saved_mesh != null:
+		return saved_mesh
+	# Last resort: a simple low-poly blade.
 	return _create_default_blade_mesh()
 
 
