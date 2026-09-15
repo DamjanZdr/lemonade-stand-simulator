@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode cull_disabled;
+render_mode cull_disabled, unshaded;
 
 uniform vec4 bottom_color : source_color = vec4(0.12, 0.35, 0.08, 1.0);
 uniform vec4 top_color : source_color = vec4(0.42, 0.68, 0.20, 1.0);
@@ -22,6 +22,6 @@ void vertex() {
 
 void fragment() {
 	float t = pow(clamp(UV.y, 0.0, 1.0), color_mix_power);
-	ALBEDO = mix(bottom_color.rgb, top_color.rgb, t);
+	ALBEDO = mix(bottom_color.rgb, top_color.rgb, t) * 2.0;
 	ROUGHNESS = 0.85;
 }
