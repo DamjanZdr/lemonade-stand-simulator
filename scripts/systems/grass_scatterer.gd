@@ -43,7 +43,8 @@ func _generate_grass() -> void:
 	if mesh == null:
 		push_error("GrassScatterer: No grass mesh assigned!")
 		return
-	print("[GrassScatterer] mesh=%s aabb=%s" % [mesh.resource_name, str(mesh.get_aabb())])
+	var mesh_aabb: AABB = mesh.get_aabb()
+	print("[GrassScatterer] mesh=%s aabb=%s" % [mesh.resource_name, str(mesh_aabb)])
 
 	_surfaces = _get_grass_surfaces()
 	if _surfaces.is_empty():

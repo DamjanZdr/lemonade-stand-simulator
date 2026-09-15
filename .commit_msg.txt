@@ -1,10 +1,8 @@
-Fix grass density and gradient; keep smaller blade scale.
+Fix grass blade placement offset.
 
-- Keep base_scale at 0.33 and random tilt at ±0.03 rad.
-- Raise grass_density to 80 and instance caps to 100,000 so the smaller
-  blades still form a dense lawn (now ~26,000 instances).
-- Invert UV.y in the shader so the gradient is base dark → tip light.
-- Remove debug single blade.
+- Remove the incorrect base-offset shift that was burying the small-scale
+  blades underground.
+- Keep blades at base_scale 0.33, tiny tilt, and higher density.
 
 Generated with [Devin](https://devin.ai)
 
