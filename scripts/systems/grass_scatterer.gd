@@ -62,8 +62,15 @@ func _generate_grass() -> void:
 	_multimesh.multimesh.mesh = mesh
 
 	var material := _get_grass_material()
+	# DEBUG: force bright standard material to isolate shader/mesh issues.
+	var debug_mat := StandardMaterial3D.new()
+	debug_mat.albedo_color = Color(0.0, 1.0, 0.0, 1.0)
+	debug_mat.emission_enabled = true
+	debug_mat.emission = Color(0.0, 1.0, 0.0, 1.0)
+	debug_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_multimesh.material_override = debug_mat
 	if material != null:
-		_multimesh.material_override = material
+		print("[GrassScatterer] original material=%s" % material.resource_name)
 
 	var instances: Array[Transform3D] = []
 	var spawn_r2 := spawn_radius * spawn_radius
