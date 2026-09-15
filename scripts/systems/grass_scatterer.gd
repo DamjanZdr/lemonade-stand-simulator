@@ -15,6 +15,11 @@ extends Node3D
 @export var surface_group: StringName = &"grass_surface"
 @export var blocker_group: StringName = &"grass_blocker"
 @export var blocker_margin: float = 0.05
+## If > 0, grass is only spawned within this radius of spawn_center.
+## Use this to avoid generating millions of blades when the floor surface is huge.
+@export var spawn_radius: float = 0.0
+## World-space center of the spawn circle. Default is the scene origin.
+@export var spawn_center: Vector3 = Vector3.ZERO
 
 var _multimesh: MultiMeshInstance3D
 var _blockers: Array[Dictionary] = []
@@ -70,6 +75,11 @@ func _generate_grass() -> void:
 			var pos := geom.global_transform * Vector3(local_x, top_y, local_z)
 
 			if _is_blocked(pos):
+				continue
+			if (
+				spawn_radius > 0.0
+				and pos.distance_squared_to(spawn_center) > spawn_radius * spawn_radius
+			):
 				continue
 
 			var rotation_y := randf() * TAU
