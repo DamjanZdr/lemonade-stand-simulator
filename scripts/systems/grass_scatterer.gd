@@ -147,19 +147,16 @@ func _generate_grass() -> void:
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = mesh
 	mm.instance_count = 0
+	_multimesh.multimesh = mm
+	_multimesh.material_override = debug_mat
+
 	mm.instance_count = instances.size()
 	for i in range(instances.size()):
 		mm.set_instance_transform(i, instances[i])
-	_multimesh.multimesh = mm
 
-	_multimesh.material_override = debug_mat
 	_multimesh.top_level = true
 	_multimesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_multimesh.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-	_multimesh.visibility_range_end = 0.0
-	if false and max_draw_distance > 0.0:
-		_multimesh.visibility_range_end = max_draw_distance
-		_multimesh.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	print("GrassScatterer: Generated %d grass instances" % instances.size())
 	for j in range(min(instances.size(), 3)):
 		print("[GrassScatterer] instance %d pos=%s" % [j, str(instances[j].origin)])
