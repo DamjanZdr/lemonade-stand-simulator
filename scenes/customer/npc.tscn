@@ -8999,6 +8999,7 @@ bone_name = "Head"
 bone_idx = 4
 
 [node name="LeftEyeMale" type="MeshInstance3D" parent="man/Armature/Skeleton3D/Head" unique_id=1970188787]
+gi_mode = 2
 transform = Transform3D(0.30564013, 0, 0, 0, 0.30564013, 0, 0, 0, 0.30564013, 0.49693987, 1.7207661, 1.3990625)
 mesh = SubResource("ArrayMesh_l7u6r")
 
@@ -9006,6 +9007,7 @@ mesh = SubResource("ArrayMesh_l7u6r")
 transform = Transform3D(3.2718217, 0, 0, 0, 3.2718217, 0, 0, 0, 3.2718217, -0.003972858, 0.027026474, 1.1863194)
 
 [node name="RightEyeMale" type="MeshInstance3D" parent="man/Armature/Skeleton3D/Head" unique_id=376396660]
+gi_mode = 2
 transform = Transform3D(0.30564013, 0, 0, 0, 0.30564013, 0, 0, 0, 0.30564013, -0.50306016, 1.7207661, 1.3990625)
 mesh = SubResource("ArrayMesh_16xex")
 
@@ -9071,6 +9073,7 @@ visible = false
 visible = false
 
 [node name="MaleMesh" type="MeshInstance3D" parent="man/Armature/Skeleton3D" unique_id=1909113374]
+gi_mode = 2
 mesh = SubResource("ArrayMesh_sva0g")
 skin = SubResource("Skin_27xht")
 skeleton = NodePath("..")
@@ -9274,6 +9277,7 @@ bone_name = "Head"
 bone_idx = 4
 
 [node name="LeftEyeFemale" type="MeshInstance3D" parent="woman/Armature/Skeleton3D/Head" unique_id=286566053]
+gi_mode = 2
 transform = Transform3D(0.30564013, 0, 0, 0, 0.30564013, 0, 0, 0, 0.30564013, 0.42693987, 1.3650904, 1.2913773)
 mesh = SubResource("ArrayMesh_6ogs1")
 
@@ -9281,6 +9285,7 @@ mesh = SubResource("ArrayMesh_6ogs1")
 transform = Transform3D(3.2718217, 0, 0, 0, 3.2718217, 0, 0, 0, 3.2718217, -0.003972858, 0.027026474, 1.1863194)
 
 [node name="RightEyeFemale" type="MeshInstance3D" parent="woman/Armature/Skeleton3D/Head" unique_id=1793171282]
+gi_mode = 2
 transform = Transform3D(0.30564013, 0, 0, 0, 0.30564013, 0, 0, 0, 0.30564013, -0.43306017, 1.3650904, 1.2913773)
 mesh = SubResource("ArrayMesh_4b3em")
 
@@ -9346,6 +9351,7 @@ visible = false
 visible = false
 
 [node name="FemaleMesh" type="MeshInstance3D" parent="woman/Armature/Skeleton3D" unique_id=956771414]
+gi_mode = 2
 mesh = SubResource("ArrayMesh_7h28d")
 skin = SubResource("Skin_4leiq")
 skeleton = NodePath("..")
@@ -9563,31 +9569,38 @@ bone_name = "Head"
 bone_idx = 4
 
 [node name="LeftEyebrowMale" type="MeshInstance3D" parent="newman/Armature/Skeleton3D/Head" unique_id=254674147]
+gi_mode = 2
 transform = Transform3D(1, 6.2038546e-25, 1.4992649e-24, -6.2038546e-25, 1, 0, -1.4992649e-24, 0, 1, -0.0030540696, -8.383753, 0.09243429)
 mesh = SubResource("ArrayMesh_iqd4a")
 
 [node name="LeftEyeMale" type="MeshInstance3D" parent="newman/Armature/Skeleton3D/Head" unique_id=766288924]
+gi_mode = 2
 transform = Transform3D(0.28555948, -0.00041366596, 0.10895642, 0.00043164214, 0.30563983, 2.9124276e-05, -0.10895633, 0.00012666355, 0.28555983, 0.49691394, 1.6627731, 1.4331247)
 mesh = SubResource("ArrayMesh_qu2jm")
 
 [node name="MaleHair" type="MeshInstance3D" parent="newman/Armature/Skeleton3D/Head" unique_id=1930999393]
+gi_mode = 2
 transform = Transform3D(0.3952938, -0.31201696, -1.634264, -0.4350538, 1.2168422, -0.5148675, 1.5370724, 0.42465806, 0.2745605, 0.01639693, 2.6594772, 0.14190488)
 mesh = SubResource("ArrayMesh_trdnv")
 
 [node name="RightEyebrowMale" type="MeshInstance3D" parent="newman/Armature/Skeleton3D/Head" unique_id=1654159039]
+gi_mode = 2
 transform = Transform3D(1, 6.2038546e-25, 1.4992649e-24, -6.2038546e-25, 1, 0, -1.4992649e-24, 0, 1, -0.0030540696, -8.383753, 0.09243429)
 mesh = SubResource("ArrayMesh_xq6ta")
 
 [node name="RightEyeMale" type="MeshInstance3D" parent="newman/Armature/Skeleton3D/Head" unique_id=1505253665]
+gi_mode = 2
 transform = Transform3D(0.28555948, -0.00041366596, 0.10895642, 0.00043164214, 0.30563983, 2.9124276e-05, -0.10895633, 0.00012666355, 0.28555983, -0.5030861, 1.6627731, 1.4331247)
 mesh = SubResource("ArrayMesh_h8hex")
 
 [node name="MaleMesh" type="MeshInstance3D" parent="newman/Armature/Skeleton3D" unique_id=1279149807]
+gi_mode = 2
 mesh = SubResource("ArrayMesh_4kn5g")
 skin = SubResource("Skin_iq6ei")
 skeleton = NodePath("..")
 
 [node name="SurfCircle" type="MeshInstance3D" parent="newman" unique_id=238424146]
+gi_mode = 2
 transform = Transform3D(0.092621766, 0, 0, 0, -0.014828833, -0.09142702, 0, 0.09142702, -0.014828833, 0, 4.917453, 1.1552758)
 mesh = SubResource("ArrayMesh_wx8fn")
 
