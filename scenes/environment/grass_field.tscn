@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/grass_scatterer.gd" id="1_scatter"]
+[ext_resource type="PackedScene" uid="uid://ckjl5kl1qpedc" path="res://assets/models/grassblades.glb" id="2_blades"]
+[ext_resource type="Material" path="res://assets/materials/grass_blade.tres" id="3_mat"]
+
+[node name="GrassField" type="Node3D"]
+script = ExtResource("1_scatter")
+grass_mesh_scene = ExtResource("2_blades")
+grass_material = ExtResource("3_mat")
+grass_density = 1.0
+base_scale = 0.1
+scale_variance = 0.05
+max_draw_distance = 80.0
+spawn_radius = 150.0
+spawn_center = Vector3(0, 0, 0)
+surface_group = &"grass_surface"
+blocker_group = &"grass_blocker"
