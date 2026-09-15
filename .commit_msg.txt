@@ -1,12 +1,7 @@
-Match GrassField scatterer settings to the working test plane.
+Add explicit culling AABB to procedural grass.
 
-- base_scale 0.33 -> 0.099 (matches NewGrass/Grass patch)
-- grass_density 80 -> 160
-- scale_variance 0.05 -> 0.02
-- spawn_radius 50 -> 60
-- instance caps 100k -> 200k
-
-This now generates ~77,000 blades in the sampled radius.
+- Set custom_aabb on the MultiMeshInstance3D and on the MultiMesh resource
+  so the renderer doesn't cull the whole world-grass patch.
 
 Generated with [Devin](https://devin.ai)
 

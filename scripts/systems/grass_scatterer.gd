@@ -154,6 +154,14 @@ func _generate_grass() -> void:
 	_multimesh.top_level = true
 	_multimesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_multimesh.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+	# Ensure the renderer never culls the whole patch because of an empty/wrong
+	# aggregate AABB. Cover the spawn circle plus a little vertical range.
+	var cull_aabb := AABB(
+		spawn_center - Vector3(spawn_radius, 2.0, spawn_radius),
+		Vector3(spawn_radius * 2.0, 8.0, spawn_radius * 2.0),
+	)
+	_multimesh.custom_aabb = cull_aabb
+	_multimesh.multimesh.custom_aabb = cull_aabb
 	print("GrassScatterer: Generated %d grass instances" % instances.size())
 	for j in range(min(instances.size(), 3)):
 		print("[GrassScatterer] instance %d pos=%s" % [j, str(instances[j].origin)])
