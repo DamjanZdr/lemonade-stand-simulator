@@ -1,10 +1,10 @@
-Convert grassblades.glb to grassblade.res and use it in scatterer.
+Tune grass scale, tilt, gradient, and coverage.
 
-- Add a conversion script that exports the imported grassblades.glb mesh to
-  assets/models/environment/Grass/grassblade.res.
-- GrassScatterer now loads that saved .res mesh instead of extracting from
-  the glb at runtime or generating a fallback blade.
-- Remove debug single blade and debug material override.
+- Reduce base_scale from 1.0 to 0.33 (one third size).
+- Reduce random tilt to ±0.03 rad so blades stay mostly vertical.
+- Invert UV.y in shader so base stays dark and tip stays light.
+- Remove unshaded debug render mode; widen spawn_radius to 80 and draw
+  distance to 120 for better coverage.
 
 Generated with [Devin](https://devin.ai)
 

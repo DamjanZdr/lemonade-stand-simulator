@@ -1880,6 +1880,11 @@ size = Vector2(26.35, 12)
 [sub_resource type="PlaneMesh" id="PlaneMesh_82vox"]
 size = Vector2(10, 2.2)
 
+[sub_resource type="PlaneMesh" id="PlaneMesh_82f87"]
+size = Vector2(10, 10)
+
+[sub_resource type="MultiMesh" id="MultiMesh_82f87"]
+
 [node name="Neighborhood" type="Node3D" unique_id=1396389632]
 script = ExtResource("22_neigh")
 
@@ -1889,7 +1894,7 @@ use_collision = true
 size = Vector3(2047, 1.4, 1477)
 material = SubResource("StandardMaterial3D_g4v7s")
 
-[node name="GrassField" parent="." instance=ExtResource("51_grassfield")]
+[node name="GrassField" parent="." unique_id=597608404 instance=ExtResource("51_grassfield")]
 
 [node name="Houses" type="Node3D" parent="." unique_id=641800392 groups=["grass_blocker"]]
 
@@ -8964,3 +8969,12 @@ transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
 light_energy = 10.0
 omni_range = 20.0
+
+[node name="NewGrass" type="Node3D" parent="." unique_id=1141130280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1825972, 0)
+
+[node name="Plane" type="MeshInstance3D" parent="NewGrass" unique_id=559370651]
+mesh = SubResource("PlaneMesh_82f87")
+
+[node name="Grass" type="MultiMeshInstance3D" parent="NewGrass" unique_id=863292231]
+multimesh = SubResource("MultiMesh_82f87")
