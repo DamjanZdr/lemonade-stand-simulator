@@ -112,15 +112,12 @@ func _generate_grass() -> void:
 				continue
 
 			var rotation_y := randf() * TAU
-			var tilt_x := randf_range(-0.03, 0.03)
-			var tilt_z := randf_range(-0.03, 0.03)
+			var tilt_x := randf_range(-0.2, 0.2)
+			var tilt_z := randf_range(-0.2, 0.2)
 			var scale_var := base_scale + randf_range(-scale_variance, scale_variance)
 
 			var grass_transform := Transform3D()
 			grass_transform = grass_transform.scaled(Vector3(scale_var, scale_var, scale_var))
-			# The imported grassblade mesh is Z-up (Blender); rotate so it stands
-			# upright in Godot's Y-up coordinate system.
-			grass_transform = grass_transform.rotated(Vector3.RIGHT, -PI / 2.0)
 			grass_transform = grass_transform.rotated(Vector3.RIGHT, tilt_x)
 			grass_transform = grass_transform.rotated(Vector3.FORWARD, tilt_z)
 			grass_transform = grass_transform.rotated(Vector3.UP, rotation_y)

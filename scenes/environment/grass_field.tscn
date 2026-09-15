@@ -7,10 +7,10 @@
 script = ExtResource("1_scatter")
 grass_material = ExtResource("2_mat")
 grass_density = 6.0
-base_scale = 0.33
-scale_variance = 0.05
-max_draw_distance = 120.0
-spawn_radius = 80.0
+base_scale = 1.0
+scale_variance = 0.0
+max_draw_distance = 800.0
+spawn_radius = 40.0
 spawn_center = Vector3(0, 0, 0)
 max_instances_per_surface = 20000
 max_total_instances = 20000

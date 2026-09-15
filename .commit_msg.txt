@@ -1,7 +1,8 @@
-Debug: re-add unshaded render mode to test if lighting hides grass.
+Revert grass tuning to last known visible state.
 
-- The grass disappeared after removing unshaded from the shader. This test
-  restores unshaded to confirm whether normal lighting/shadows are the cause.
+- Restore scenes/environment/grass_field.tscn, scripts/systems/grass_scatterer.gd,
+  assets/shaders/grass_blade.gdshader, and assets/materials/grass_blade.tres to
+  commit 787a08a, the last state where grass was visible.
 
 Generated with [Devin](https://devin.ai)
 

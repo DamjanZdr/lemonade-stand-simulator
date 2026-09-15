@@ -22,6 +22,6 @@ void vertex() {
 
 void fragment() {
 	float t = pow(clamp(UV.y, 0.0, 1.0), color_mix_power);
-	ALBEDO = mix(bottom_color.rgb, top_color.rgb, t);
+	ALBEDO = mix(bottom_color.rgb, top_color.rgb, t) * 2.0;
 	ROUGHNESS = 0.85;
 }
