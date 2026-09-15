@@ -1,8 +1,8 @@
 shader_type spatial;
 render_mode cull_disabled;
 
-uniform vec4 bottom_color : source_color = vec4(0.0, 0.8, 0.0, 1.0);
-uniform vec4 top_color : source_color = vec4(0.6, 1.0, 0.0, 1.0);
+uniform vec4 bottom_color : source_color = vec4(0.12, 0.35, 0.08, 1.0);
+uniform vec4 top_color : source_color = vec4(0.42, 0.68, 0.20, 1.0);
 uniform float color_mix_power : hint_range(0.1, 5.0) = 1.2;
 
 uniform float wind_speed = 1.2;

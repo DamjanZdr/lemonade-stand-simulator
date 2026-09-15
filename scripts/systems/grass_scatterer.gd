@@ -43,11 +43,15 @@ func _generate_grass() -> void:
 	if mesh == null:
 		push_error("GrassScatterer: No grass mesh assigned!")
 		return
+	print("[GrassScatterer] mesh=%s aabb=%s" % [mesh.resource_name, str(mesh.get_aabb())])
 
 	_surfaces = _get_grass_surfaces()
 	if _surfaces.is_empty():
 		push_error("GrassScatterer: No grass surfaces found!")
 		return
+	print("[GrassScatterer] surfaces=%d" % _surfaces.size())
+	for s in _surfaces:
+		print("[GrassScatterer] surface=%s transform=%s" % [s.name, str(s.global_transform)])
 
 	_build_blockers()
 
@@ -145,20 +149,45 @@ func _generate_grass() -> void:
 		_multimesh.visibility_range_end = max_draw_distance
 		_multimesh.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	print("GrassScatterer: Generated %d grass instances" % instances.size())
+	for j in range(min(instances.size(), 3)):
+		print("[GrassScatterer] instance %d pos=%s" % [j, str(instances[j].origin)])
+	print(
+		"[GrassScatterer] multimesh visible=%s material_override=%s"
+		% [_multimesh.visible, _multimesh.material_override]
+	)
 
 
 func _get_grass_mesh() -> Mesh:
 	if grass_mesh != null:
 		return grass_mesh
 	var scene_source := grass_mesh_scene
-	if scene_source == null:
-		scene_source = load("res://assets/models/environment/grass/grass.glb") as PackedScene
 	if scene_source != null:
 		var scene := scene_source.instantiate()
 		var found: Mesh = _extract_first_mesh(scene)
 		scene.queue_free()
 		return found
-	return null
+	# Fallback: a simple low-poly blade so the scatterer works out of the box.
+	return _create_default_blade_mesh()
+
+
+func _create_default_blade_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# A simple blade: bottom-left, bottom-right, tip.
+	# Width 0.1, height 1.0, centered on X/Z, origin at bottom.
+	var p0 := Vector3(-0.05, 0.0, 0.0)
+	var p1 := Vector3(0.05, 0.0, 0.0)
+	var p2 := Vector3(0.0, 1.0, 0.0)
+	var normal := ((p1 - p0).cross(p2 - p0)).normalized()
+	st.set_normal(normal)
+	st.set_uv(Vector2(0.0, 0.0))
+	st.add_vertex(p0)
+	st.set_uv(Vector2(1.0, 0.0))
+	st.add_vertex(p1)
+	st.set_uv(Vector2(0.5, 1.0))
+	st.add_vertex(p2)
+	st.index()
+	return st.commit()
 
 
 func _extract_first_mesh(node: Node) -> Mesh:
