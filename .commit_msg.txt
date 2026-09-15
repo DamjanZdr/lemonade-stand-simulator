@@ -1,8 +1,8 @@
-Add plane grass test on NewGrass node.
+Halve test-plane blade size and align grass to sibling Plane node.
 
-- Create scripts/systems/plane_grass_test.gd that populates the existing
-  MultiMeshInstance3D under NewGrass with 400 grass blades on a 10x10 plane.
-- Wire the script into the NewGrass/Grass node in neighborhood.tscn.
+- Reduce PlaneGrassTest base_scale from 0.33 to 0.165.
+- Use the sibling Plane node as the reference position/basis so the square
+  patch lines up with the plane mesh.
 
 Generated with [Devin](https://devin.ai)
 
