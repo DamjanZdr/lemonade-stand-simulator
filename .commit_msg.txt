@@ -1,8 +1,7 @@
-Rotate imported grass blades upright in Godot and fix gradient direction.
+Debug: re-add unshaded render mode to test if lighting hides grass.
 
-- The grassblades.glb mesh is Z-up from Blender. Add a -90° X rotation in
-  GrassScatterer so the blades stand upright in Godot's Y-up world.
-- Revert the shader UV inversion since the blade now extends along Y.
+- The grass disappeared after removing unshaded from the shader. This test
+  restores unshaded to confirm whether normal lighting/shadows are the cause.
 
 Generated with [Devin](https://devin.ai)
 
