@@ -55,12 +55,6 @@ func _generate_grass() -> void:
 
 	_build_blockers()
 
-	_multimesh = MultiMeshInstance3D.new()
-	_multimesh.name = "GrassMultiMesh"
-	_multimesh.multimesh = MultiMesh.new()
-	_multimesh.multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	_multimesh.multimesh.mesh = mesh
-
 	var material := _get_grass_material()
 	# DEBUG: force bright standard material to isolate shader/mesh issues.
 	var debug_mat := StandardMaterial3D.new()
@@ -68,7 +62,6 @@ func _generate_grass() -> void:
 	debug_mat.emission_enabled = true
 	debug_mat.emission = Color(0.0, 1.0, 0.0, 1.0)
 	debug_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_multimesh.material_override = debug_mat
 	if material != null:
 		print("[GrassScatterer] original material=%s" % material.resource_name)
 
@@ -143,16 +136,28 @@ func _generate_grass() -> void:
 			if yield_counter % YIELD_EVERY == 0:
 				await get_tree().process_frame
 
-	_multimesh.multimesh.instance_count = instances.size()
+	_multimesh = MultiMeshInstance3D.new()
+	# DEBUG: set material on mesh surface as well as override.
+	mesh.surface_set_material(0, debug_mat)
 
+	_multimesh.name = "GrassMultiMesh"
+	add_child(_multimesh, true)
+
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = 0
+	mm.instance_count = instances.size()
 	for i in range(instances.size()):
-		_multimesh.multimesh.set_instance_transform(i, instances[i])
+		mm.set_instance_transform(i, instances[i])
+	_multimesh.multimesh = mm
 
-	add_child(_multimesh)
+	_multimesh.material_override = debug_mat
 	_multimesh.top_level = true
 	_multimesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_multimesh.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-	if max_draw_distance > 0.0:
+	_multimesh.visibility_range_end = 0.0
+	if false and max_draw_distance > 0.0:
 		_multimesh.visibility_range_end = max_draw_distance
 		_multimesh.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	print("GrassScatterer: Generated %d grass instances" % instances.size())
@@ -162,6 +167,17 @@ func _generate_grass() -> void:
 		"[GrassScatterer] multimesh visible=%s material_override=%s"
 		% [_multimesh.visible, _multimesh.material_override]
 	)
+
+	# DEBUG: place a single bright MeshInstance3D at the spawn center to prove
+	# the mesh/material renders at all.
+	var debug_single := MeshInstance3D.new()
+	debug_single.name = "DebugGrassBlade"
+	debug_single.mesh = mesh
+	debug_single.material_override = debug_mat
+	debug_single.top_level = true
+	add_child(debug_single, true)
+	debug_single.global_position = spawn_center
+	print("[GrassScatterer] debug single placed at %s" % str(debug_single.global_position))
 
 
 func _get_grass_mesh() -> Mesh:
