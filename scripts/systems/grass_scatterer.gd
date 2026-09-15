@@ -272,11 +272,10 @@ func _collect_blockers(node: Node) -> void:
 func _compute_mesh_footprint(mesh: Mesh) -> AABB:
 	if mesh == null:
 		return AABB()
-	var first := true
-	var min_x := 0.0
-	var max_x := 0.0
-	var min_z := 0.0
-	var max_z := 0.0
+
+	# First pass: find the lowest Y in the mesh.
+	var min_y := 0.0
+	var first_y := true
 	var surface_count := mesh.get_surface_count()
 	for s in range(surface_count):
 		var arr := mesh.surface_get_arrays(s)
@@ -286,6 +285,33 @@ func _compute_mesh_footprint(mesh: Mesh) -> AABB:
 		if verts.is_empty():
 			continue
 		for v in verts:
+			if first_y:
+				min_y = v.y
+				first_y = false
+			else:
+				min_y = minf(min_y, v.y)
+	if first_y:
+		return AABB()
+
+	# Second pass: only use vertices near the bottom to build the footprint.
+	# This excludes roof overhangs and upper-floor geometry that creates
+	# false no-grass rings around houses.
+	var height_limit := 0.5
+	var first := true
+	var min_x := 0.0
+	var max_x := 0.0
+	var min_z := 0.0
+	var max_z := 0.0
+	for s in range(surface_count):
+		var arr := mesh.surface_get_arrays(s)
+		if arr.is_empty():
+			continue
+		var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		if verts.is_empty():
+			continue
+		for v in verts:
+			if v.y > min_y + height_limit:
+				continue
 			if first:
 				min_x = v.x
 				max_x = v.x
