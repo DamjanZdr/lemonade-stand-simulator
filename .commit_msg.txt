@@ -1,6 +1,7 @@
-Fix grass blade rotation direction.
+Scale grass to one third and reduce random tilt.
 
-- Flip the X rotation from -90° to +90° so blades point up instead of down.
+- Set base_scale to 0.33 and scale_variance to 0.05 in grass_field.tscn.
+- Reduce blade tilt from ±0.2 to ±0.03 radians so blades stay nearly upright.
 
 Generated with [Devin](https://devin.ai)
 

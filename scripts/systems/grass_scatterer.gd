@@ -112,8 +112,8 @@ func _generate_grass() -> void:
 				continue
 
 			var rotation_y := randf() * TAU
-			var tilt_x := randf_range(-0.2, 0.2)
-			var tilt_z := randf_range(-0.2, 0.2)
+			var tilt_x := randf_range(-0.03, 0.03)
+			var tilt_z := randf_range(-0.03, 0.03)
 			var scale_var := base_scale + randf_range(-scale_variance, scale_variance)
 
 			var grass_transform := Transform3D()
