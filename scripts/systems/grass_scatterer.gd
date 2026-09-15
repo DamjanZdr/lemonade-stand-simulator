@@ -20,6 +20,10 @@ extends Node3D
 @export var spawn_radius: float = 0.0
 ## World-space center of the spawn circle. Default is the scene origin.
 @export var spawn_center: Vector3 = Vector3.ZERO
+## Hard cap on instances per surface so a huge floor doesn't iterate forever.
+@export var max_instances_per_surface: int = 10000
+## Hard cap on total instances across all surfaces.
+@export var max_total_instances: int = 100000
 
 var _multimesh: MultiMeshInstance3D
 var _blockers: Array[Dictionary] = []
@@ -58,28 +62,57 @@ func _generate_grass() -> void:
 		_multimesh.material_override = material
 
 	var instances: Array[Transform3D] = []
+	var spawn_r2 := spawn_radius * spawn_radius
+	var yield_counter := 0
+	const YIELD_EVERY := 2048
 
 	for surface in _surfaces:
+		if instances.size() >= max_total_instances:
+			break
 		if not surface is GeometryInstance3D:
 			continue
 		var geom := surface as GeometryInstance3D
 		var aabb: AABB = geom.get_aabb()
 		if aabb.size.length_squared() <= 0.0:
 			continue
-		var patch_size := Vector2(aabb.size.x, aabb.size.z)
-		var patch_instances := int(patch_size.x * patch_size.y * grass_density)
+
+		var local_min_x := aabb.position.x
+		var local_max_x := aabb.position.x + aabb.size.x
+		var local_min_z := aabb.position.z
+		var local_max_z := aabb.position.z + aabb.size.z
+
+		# If a spawn radius is set, restrict sampling to the intersection of
+		# the surface and the spawn circle's bounding box (in local space).
+		# This prevents iterating over a huge floor when grass is only wanted
+		# around a small area.
+		if spawn_radius > 0.0:
+			var circle_aabb := AABB(
+				spawn_center - Vector3(spawn_radius, 0.0, spawn_radius),
+				Vector3(spawn_radius * 2.0, 0.0, spawn_radius * 2.0),
+			)
+			var circle_local := geom.global_transform.affine_inverse() * circle_aabb
+			local_min_x = maxf(local_min_x, circle_local.position.x)
+			local_max_x = minf(local_max_x, circle_local.position.x + circle_local.size.x)
+			local_min_z = maxf(local_min_z, circle_local.position.z)
+			local_max_z = minf(local_max_z, circle_local.position.z + circle_local.size.z)
+			if local_max_x <= local_min_x or local_max_z <= local_min_z:
+				continue
+
+		var sample_area := (local_max_x - local_min_x) * (local_max_z - local_min_z)
+		var raw_count := int(sample_area * grass_density)
+		var patch_instances := clampi(raw_count, 0, max_instances_per_surface)
+
 		for i in range(patch_instances):
-			var local_x := randf_range(aabb.position.x, aabb.position.x + aabb.size.x)
-			var local_z := randf_range(aabb.position.z, aabb.position.z + aabb.size.z)
+			if instances.size() >= max_total_instances:
+				break
+			var local_x := randf_range(local_min_x, local_max_x)
+			var local_z := randf_range(local_min_z, local_max_z)
 			var top_y := aabb.position.y + aabb.size.y
 			var pos := geom.global_transform * Vector3(local_x, top_y, local_z)
 
 			if _is_blocked(pos):
 				continue
-			if (
-				spawn_radius > 0.0
-				and pos.distance_squared_to(spawn_center) > spawn_radius * spawn_radius
-			):
+			if spawn_radius > 0.0 and pos.distance_squared_to(spawn_center) > spawn_r2:
 				continue
 
 			var rotation_y := randf() * TAU
@@ -95,6 +128,9 @@ func _generate_grass() -> void:
 			grass_transform.origin = pos
 
 			instances.append(grass_transform)
+			yield_counter += 1
+			if yield_counter % YIELD_EVERY == 0:
+				await get_tree().process_frame
 
 	_multimesh.multimesh.instance_count = instances.size()
 
