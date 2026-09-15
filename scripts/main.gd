@@ -1784,7 +1784,9 @@ func _input(event: InputEvent) -> void:
 		else:
 			_disable_enhanced_lighting()
 		get_viewport().set_input_as_handled()
-	elif event is InputEventKey and event.keycode == KEY_F and event.pressed and not event.is_echo():
+	elif (
+		event is InputEventKey and event.keycode == KEY_F and event.pressed and not event.is_echo()
+	):
 		_fps_shown = not _fps_shown
 		if _fps_label:
 			_fps_label.visible = _fps_shown
@@ -2011,7 +2013,11 @@ func _disable_enhanced_lighting() -> void:
 
 
 func _set_grass_gi(enabled: bool) -> void:
-	var mode := GeometryInstance3D.GI_MODE_DYNAMIC if enabled else GeometryInstance3D.GI_MODE_DISABLED
+	var mode := (
+		GeometryInstance3D.GI_MODE_DYNAMIC
+		if enabled
+		else GeometryInstance3D.GI_MODE_DISABLED
+	)
 	for node in get_tree().get_nodes_in_group(&"grass_surface"):
 		if node is GeometryInstance3D:
 			(node as GeometryInstance3D).gi_mode = mode
