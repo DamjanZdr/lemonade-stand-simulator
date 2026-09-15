@@ -1,10 +1,8 @@
-Tune grass scale, tilt, gradient, and coverage.
+Rotate imported grass blades upright in Godot and fix gradient direction.
 
-- Reduce base_scale from 1.0 to 0.33 (one third size).
-- Reduce random tilt to ±0.03 rad so blades stay mostly vertical.
-- Invert UV.y in shader so base stays dark and tip stays light.
-- Remove unshaded debug render mode; widen spawn_radius to 80 and draw
-  distance to 120 for better coverage.
+- The grassblades.glb mesh is Z-up from Blender. Add a -90° X rotation in
+  GrassScatterer so the blades stand upright in Godot's Y-up world.
+- Revert the shader UV inversion since the blade now extends along Y.
 
 Generated with [Devin](https://devin.ai)
 
