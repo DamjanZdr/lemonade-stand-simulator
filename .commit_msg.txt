@@ -1,8 +1,10 @@
-Debug: add a single scaled/rotated reference blade at spawn center.
+Fix grass density and gradient; keep smaller blade scale.
 
-- Add a visible MeshInstance3D blade at the spawn center using the same mesh,
-  material, scale, and rotation as the MultiMesh instances. This lets us tell
-  whether the issue is mesh/scale/material or the MultiMesh itself.
+- Keep base_scale at 0.33 and random tilt at ±0.03 rad.
+- Raise grass_density to 80 and instance caps to 100,000 so the smaller
+  blades still form a dense lawn (now ~26,000 instances).
+- Invert UV.y in the shader so the gradient is base dark → tip light.
+- Remove debug single blade.
 
 Generated with [Devin](https://devin.ai)
 

@@ -6,13 +6,13 @@
 [node name="GrassField" type="Node3D"]
 script = ExtResource("1_scatter")
 grass_material = ExtResource("2_mat")
-grass_density = 6.0
+grass_density = 80.0
 base_scale = 0.33
 scale_variance = 0.05
-max_draw_distance = 800.0
-spawn_radius = 40.0
+max_draw_distance = 120.0
+spawn_radius = 50.0
 spawn_center = Vector3(0, 0, 0)
-max_instances_per_surface = 20000
-max_total_instances = 20000
+max_instances_per_surface = 100000
+max_total_instances = 100000
 surface_group = &"grass_surface"
 blocker_group = &"grass_blocker"

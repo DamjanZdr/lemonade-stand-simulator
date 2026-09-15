@@ -21,7 +21,9 @@ void vertex() {
 }
 
 void fragment() {
-	float t = pow(clamp(UV.y, 0.0, 1.0), color_mix_power);
+	// The grassblade mesh UV has the tip at UV.y=0 and base at UV.y=1.
+	float v = 1.0 - clamp(UV.y, 0.0, 1.0);
+	float t = pow(v, color_mix_power);
 	ALBEDO = mix(bottom_color.rgb, top_color.rgb, t) * 2.0;
 	ROUGHNESS = 0.85;
 }
