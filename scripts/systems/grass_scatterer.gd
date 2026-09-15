@@ -118,6 +118,8 @@ func _generate_grass() -> void:
 
 			var grass_transform := Transform3D()
 			grass_transform = grass_transform.scaled(Vector3(scale_var, scale_var, scale_var))
+			# Imported grassblade mesh is Z-up (Blender); stand upright in Y-up.
+			grass_transform = grass_transform.rotated(Vector3.RIGHT, -PI / 2.0)
 			grass_transform = grass_transform.rotated(Vector3.RIGHT, tilt_x)
 			grass_transform = grass_transform.rotated(Vector3.FORWARD, tilt_z)
 			grass_transform = grass_transform.rotated(Vector3.UP, rotation_y)
