@@ -1,7 +1,6 @@
-Step 1: rotate grass blades upright, keep all other settings unchanged.
+Fix grass blade rotation direction.
 
-- Add -90° X rotation so the Z-up Blender mesh stands upright in Godot.
-- No scale, tilt, density, or shader changes yet.
+- Flip the X rotation from -90° to +90° so blades point up instead of down.
 
 Generated with [Devin](https://devin.ai)
 
