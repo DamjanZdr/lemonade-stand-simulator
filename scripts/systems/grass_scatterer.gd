@@ -276,7 +276,16 @@ func _is_blocked(pos: Vector3) -> bool:
 		var trans: Transform3D = blocker["transform"]
 		var aabb: AABB = blocker["aabb"]
 		var local_pos := trans.affine_inverse() * pos
-		var expanded := aabb.grow(blocker_margin)
-		if expanded.has_point(local_pos):
+		# Treat each blocker as an infinite vertical column using its X/Z
+		# footprint. This catches houses whose imported AABB doesn't reach
+		# all the way down to the ground plane.
+		var min_x := aabb.position.x - blocker_margin
+		var max_x := aabb.position.x + aabb.size.x + blocker_margin
+		var min_z := aabb.position.z - blocker_margin
+		var max_z := aabb.position.z + aabb.size.z + blocker_margin
+		if (
+			local_pos.x >= min_x and local_pos.x <= max_x
+			and local_pos.z >= min_z and local_pos.z <= max_z
+		):
 			return true
 	return false

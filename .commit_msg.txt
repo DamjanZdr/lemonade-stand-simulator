@@ -1,8 +1,10 @@
-Match GrassScatterer MultiMesh creation to working plane test.
+Use X/Z blocker footprints so grass is rejected under houses.
 
-- Build the MultiMesh fully before assigning it to the MultiMeshInstance3D.
-- Remove top_level and custom_aabb; use local-space instance origins like the
-  NewGrass/Grass test script does.
+- The old 3D AABB check missed ground samples when a house mesh's imported
+  AABB didn't extend down to the ground plane.
+- _is_blocked now treats every blocker as an infinite vertical column using
+  only its X/Z footprint, so anything inside a house/sidewalk/road footprint
+  is rejected regardless of vertical pivot/offset.
 
 Generated with [Devin](https://devin.ai)
 
