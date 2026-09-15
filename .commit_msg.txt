@@ -1,8 +1,8 @@
-Fix grass blade placement offset.
+Add plane grass test on NewGrass node.
 
-- Remove the incorrect base-offset shift that was burying the small-scale
-  blades underground.
-- Keep blades at base_scale 0.33, tiny tilt, and higher density.
+- Create scripts/systems/plane_grass_test.gd that populates the existing
+  MultiMeshInstance3D under NewGrass with 400 grass blades on a 10x10 plane.
+- Wire the script into the NewGrass/Grass node in neighborhood.tscn.
 
 Generated with [Devin](https://devin.ai)
 
