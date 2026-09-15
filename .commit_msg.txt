@@ -1,8 +1,12 @@
-Lock grass blade bottom vertices during wind sway.
+Match GrassField scatterer settings to the working test plane.
 
-- The imported grassblade mesh is lengthwise along local Z, so VERTEX.y does
-  not correspond to height. Use UV.y instead (tip=0, base=1) so the bottom
-  vertices stay anchored and only the upper part sways.
+- base_scale 0.33 -> 0.099 (matches NewGrass/Grass patch)
+- grass_density 80 -> 160
+- scale_variance 0.05 -> 0.02
+- spawn_radius 50 -> 60
+- instance caps 100k -> 200k
+
+This now generates ~77,000 blades in the sampled radius.
 
 Generated with [Devin](https://devin.ai)
 
