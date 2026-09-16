@@ -259,6 +259,8 @@ func _collect_blockers(node: Node) -> void:
 		return
 	if node == _multimesh:
 		return
+	if node is Node3D and not (node as Node3D).visible:
+		return
 	if node is MeshInstance3D:
 		var mi := node as MeshInstance3D
 		var footprint := _compute_mesh_footprint(mi.mesh)
