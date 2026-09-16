@@ -6,8 +6,8 @@
 [node name="GrassField" type="Node3D"]
 script = ExtResource("1_scatter")
 grass_material = ExtResource("2_mat")
-grass_density = 160.0
-base_scale = 0.099
+grass_density = 320.0
+base_scale = 0.0792
 scale_variance = 0.02
 max_draw_distance = 120.0
 spawn_radius = 60.0
