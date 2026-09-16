@@ -1,8 +1,8 @@
-Handle CSGBox3D and MultiMeshInstance3D as grass blockers.
+Expose grass gradient colors as scene exports.
 
-- Collect CSGBox3D and MultiMeshInstance3D nodes in grass_blocker groups and
-  rasterize their AABB footprint (CSG boxes) or per-instance mesh footprint.
-- MeshInstance3D blockers still use the tighter triangle rasterization.
+- Add grass_bottom_color and grass_top_color to GrassScatterer and
+  PlaneGrassTest so the blade gradient can be tuned in the Inspector.
+- The colors are applied to the shared ShaderMaterial at startup.
 
 Generated with [Devin](https://devin.ai)
 

@@ -35,6 +35,10 @@ extends Node3D
 @export var chunk_radius: int = 3
 ## Maximum instances allowed inside a single chunk.
 @export var max_instances_per_chunk: int = 8000
+## Color at the base of each blade (bottom of the gradient).
+@export var grass_bottom_color: Color = Color(0.05, 0.3, 0.05)
+## Color at the tip of each blade (top of the gradient).
+@export var grass_top_color: Color = Color(0.45, 0.9, 0.25)
 
 var _multimesh: MultiMeshInstance3D
 var _blockers: Array[Dictionary] = []
@@ -74,6 +78,9 @@ func _ready() -> void:
 
 	_build_blockers()
 	_material = _get_grass_material()
+	if _material is ShaderMaterial:
+		(_material as ShaderMaterial).set_shader_parameter("bottom_color", grass_bottom_color)
+		(_material as ShaderMaterial).set_shader_parameter("top_color", grass_top_color)
 	_initialized = true
 
 
