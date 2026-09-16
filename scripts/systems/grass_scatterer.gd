@@ -132,7 +132,8 @@ func _update_chunks() -> void:
 				(float(coord.x) + 0.5) * chunk_size,
 				(float(coord.y) + 0.5) * chunk_size,
 			)
-			if Vector2(player_pos.x, player_pos.z).distance_to(chunk_center) <= grass_radius + chunk_size:
+			var dist_to_chunk := Vector2(player_pos.x, player_pos.z).distance_to(chunk_center)
+			if dist_to_chunk <= grass_radius + chunk_size:
 				needed[coord] = true
 	var to_remove: Array[Vector2i] = []
 	for key in _active_chunks.keys():
@@ -215,7 +216,8 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 		chunk_origin.x + chunk_size * 0.5,
 		chunk_origin.z + chunk_size * 0.5,
 	)
-	if Vector2(cur_player_pos.x, cur_player_pos.z).distance_to(cur_chunk_center) > grass_radius + chunk_size:
+	var cur_dist := Vector2(cur_player_pos.x, cur_player_pos.z).distance_to(cur_chunk_center)
+	if cur_dist > grass_radius + chunk_size:
 		return
 
 	var chunk_center_world := Vector3(
