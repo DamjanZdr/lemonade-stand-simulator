@@ -997,6 +997,7 @@ func _apply_outline_recursive(node: Node, on: bool) -> void:
 			ol.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			mi.add_child(ol)
 			ol.transform = Transform3D.IDENTITY
+			ol.reset_physics_interpolation()
 		elif not on and existing != null:
 			existing.queue_free()
 	for child in node.get_children():

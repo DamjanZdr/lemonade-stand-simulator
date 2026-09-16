@@ -62,10 +62,9 @@ func _ready() -> void:
 	# parameter. Assign it in code as well so it survives project reloads.
 	if _display != null and _display.material != null:
 		_display.texture = _subvp.get_texture()
-		(_display.material as ShaderMaterial).set_shader_parameter(
-			"outline_texture",
-			_subvp.get_texture(),
-		)
+		(
+			_display.material as ShaderMaterial
+		).set_shader_parameter("outline_texture", _subvp.get_texture())
 
 	# Dev panel live controls.
 	EventBus.debug_set_outline_width.connect(_on_set_width)
@@ -73,6 +72,10 @@ func _ready() -> void:
 
 	# Sync outline camera right before every render to avoid one-frame lag.
 	RenderingServer.frame_pre_draw.connect(_on_frame_pre_draw)
+	# The outline camera is driven manually every frame — turn off its own
+	# physics interpolation so it doesn't double-interpolate and trail the
+	# (already interpolated) main camera by a frame.
+	_cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
 	_update_shader_width()
 
@@ -158,7 +161,11 @@ func _sync_outline_camera() -> void:
 		return
 	if not is_inside_tree() or not _cam.is_inside_tree() or not _main_cam.is_inside_tree():
 		return
-	_cam.global_transform = _main_cam.global_transform
+	# Use the interpolated transform — global_transform returns the raw
+	# physics-tick state, but the main view renders the interpolated one.
+	# Using the raw transform offsets the silhouette by up to a tick of
+	# camera motion until the camera settles.
+	_cam.global_transform = _main_cam.get_global_transform_interpolated()
 	_cam.fov = _main_cam.fov
 	_cam.near = _main_cam.near
 	_cam.far = _main_cam.far

@@ -108,6 +108,9 @@ func _apply_outline(node: Node, on: bool) -> void:
 			mi.add_child(ol)
 			_outline_nodes.append(ol)
 			ol.transform = Transform3D.IDENTITY
+			# Reset interpolation so the fill doesn't render one frame at a
+			# stale transform when the parent mesh is mid-move.
+			ol.reset_physics_interpolation()
 			var skel := mi.get_node_or_null(mi.skeleton) as Skeleton3D
 			if skel != null:
 				ol.skeleton = ol.get_path_to(skel)
