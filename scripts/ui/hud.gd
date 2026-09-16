@@ -650,7 +650,11 @@ func _resize_onboarding_panel() -> void:
 	# Add padding (stylebox margins ~20px top+bottom) for the panel size.
 	var text_h: float = float(_onboarding_text.get_content_height())
 	var min_h: float = maxf(text_h + 20.0, 36.0)
-	_onboarding_panel.offset_bottom = _onboarding_panel.offset_top + min_h
+	# Keep the panel vertically centered on the money HUD (spans y=10..130,
+	# center 70) no matter how tall the task text gets.
+	var center_y := 10.0 + float(CIRCLE_SIZE) * 0.5
+	_onboarding_panel.offset_top = center_y - min_h * 0.5
+	_onboarding_panel.offset_bottom = center_y + min_h * 0.5
 
 
 func _on_discovery(stand: StandUnit, title: String, detail: String) -> void:
