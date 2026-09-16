@@ -1,7 +1,7 @@
 extends MultiMeshInstance3D
 ## Scatters grass blades across the grass_surface CSGBox3D inside a radius.
 
-@export var blade_mesh: Mesh = preload("res://assets/models/environment/Grass/grass.res")
+@export var blade_mesh: Mesh = preload("res://assets/models/environment/Grass/grassblade.res")
 @export var blade_material: Material = preload("res://assets/materials/grass_blade.tres")
 @export var blade_count: int = 25600
 @export var spawn_center: Vector3 = Vector3.ZERO
@@ -25,7 +25,9 @@ func _ready() -> void:
 	var aabb: AABB = geom.get_aabb()
 	var top_y := aabb.position.y + aabb.size.y
 	var blade_aabb: AABB = blade_mesh.get_aabb()
-	var local_bottom_offset := Vector3(0.0, blade_aabb.position.y, 0.0)
+	# grassblade.res is Z-up (Blender); after +90° X rotation local +Z becomes
+	# world -Y. The blade's bottom is at local z = aabb.position.z.
+	var local_bottom_offset := Vector3(0.0, 0.0, blade_aabb.position.z)
 
 	var instances: Array[Transform3D] = []
 	var spawn_r2 := spawn_radius * spawn_radius
@@ -40,6 +42,8 @@ func _ready() -> void:
 
 		var t := Transform3D()
 		t = t.scaled(Vector3(scale_var, scale_var, scale_var))
+		# Stand Z-up blade upright in Y-up.
+		t = t.rotated(Vector3.RIGHT, PI / 2.0)
 		t = t.rotated(Vector3.UP, rotation_y)
 		var bottom_end_world := pos - t.basis * local_bottom_offset
 		t.origin = global_transform.affine_inverse() * bottom_end_world
