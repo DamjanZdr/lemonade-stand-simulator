@@ -55,7 +55,7 @@
 [ext_resource type="Script" uid="uid://c2wsvktmw4pkx" path="res://scripts/systems/plane_grass_test.gd" id="52_planegrass"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g4v7s"]
-albedo_color = Color(0.7921569, 1, 0.19607843, 1)
+albedo_color = Color(0.63529414, 0.6509804, 0, 1)
 albedo_texture = ExtResource("7_cc7c0")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]

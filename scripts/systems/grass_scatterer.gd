@@ -90,6 +90,7 @@ func _ready() -> void:
 	if _material is ShaderMaterial:
 		(_material as ShaderMaterial).set_shader_parameter("bottom_color", grass_bottom_color)
 		(_material as ShaderMaterial).set_shader_parameter("top_color", grass_top_color)
+	set_process(true)
 	_initialized = true
 
 
@@ -154,19 +155,7 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 	var yield_counter := 0
 	const YIELD_EVERY := 2048
 
-	# Density falls off with distance from the player.
 	var player_pos := _player.global_position
-	var chunk_center := Vector2(
-		chunk_origin.x + chunk_size * 0.5,
-		chunk_origin.z + chunk_size * 0.5,
-	)
-	var dist := Vector2(player_pos.x, player_pos.z).distance_to(chunk_center)
-	var density_scale := density_outer
-	if dist <= grass_radius / 3.0:
-		density_scale = density_inner
-	elif dist <= grass_radius * 2.0 / 3.0:
-		density_scale = density_middle
-	var effective_density := grass_density * density_scale
 
 	for surface in _surfaces:
 		if not surface is GeometryInstance3D:
@@ -189,7 +178,7 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 		if local_max_x <= local_min_x or local_max_z <= local_min_z:
 			continue
 		var sample_area := (local_max_x - local_min_x) * (local_max_z - local_min_z)
-		var raw_count := int(sample_area * effective_density)
+		var raw_count := int(sample_area * grass_density)
 		var target := clampi(raw_count, 0, max_instances_per_chunk)
 		var top_y := aabb.position.y + aabb.size.y
 		for i in range(target):
@@ -197,6 +186,14 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 			var local_z := randf_range(local_min_z, local_max_z)
 			var pos := geom.global_transform * Vector3(local_x, top_y, local_z)
 			if _is_blocked(pos):
+				continue
+			var dist := Vector2(player_pos.x, player_pos.z).distance_to(Vector2(pos.x, pos.z))
+			var density_scale := density_outer
+			if dist <= grass_radius / 3.0:
+				density_scale = density_inner
+			elif dist <= grass_radius * 2.0 / 3.0:
+				density_scale = density_middle
+			if randf() > density_scale:
 				continue
 			instances.append(_make_blade_transform(pos))
 			yield_counter += 1
@@ -217,16 +214,29 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 	if Vector2(cur_player_pos.x, cur_player_pos.z).distance_to(cur_chunk_center) > grass_radius:
 		return
 
+	var chunk_center_world := Vector3(
+		chunk_origin.x + chunk_size * 0.5,
+		0.0,
+		chunk_origin.z + chunk_size * 0.5,
+	)
+	var chunk_local := global_transform.affine_inverse() * chunk_center_world
+
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = _mesh
 	mm.instance_count = instances.size()
 	for i in range(instances.size()):
-		mm.set_instance_transform(i, instances[i])
+		var t := instances[i]
+		t.origin -= chunk_local
+		mm.set_instance_transform(i, t)
 
 	var mi := MultiMeshInstance3D.new()
 	mi.name = "GrassChunk_%d_%d" % [chunk_coord.x, chunk_coord.y]
 	mi.multimesh = mm
+	mi.position = chunk_local
+	mi.visibility_range_begin = 0.0
+	mi.visibility_range_end = grass_radius + chunk_size
+	mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	if _material != null:
 		mi.material_override = _material
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
