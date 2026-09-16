@@ -443,17 +443,17 @@ func _build_onboarding_panel() -> void:
 	_onboarding_panel.name = "OnboardingPanel"
 	_onboarding_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_onboarding_panel.offset_left = -400.0
-	_onboarding_panel.offset_top = 20.0
-	_onboarding_panel.offset_right = -20.0
-	_onboarding_panel.offset_bottom = 110.0
+	_onboarding_panel.offset_top = 10.0
+	_onboarding_panel.offset_right = 0.0
+	_onboarding_panel.offset_bottom = 100.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.04, 0.045, 0.055, 0.82)
 	panel_style.border_width_left = 4
 	panel_style.border_color = Color(0.96, 0.83, 0.32)
 	panel_style.corner_radius_top_left = 8
-	panel_style.corner_radius_top_right = 8
+	panel_style.corner_radius_top_right = 0
 	panel_style.corner_radius_bottom_left = 8
-	panel_style.corner_radius_bottom_right = 8
+	panel_style.corner_radius_bottom_right = 0
 	panel_style.content_margin_left = 18.0
 	panel_style.content_margin_top = 10.0
 	panel_style.content_margin_right = 18.0
@@ -539,29 +539,19 @@ func _play_onboarding_completion_sound() -> void:
 
 
 ## Exit animation: slide the onboarding panel left slightly, then off to
-## the right. The panel's rest position is offset_left=-400, offset_right=-20.
+## the right. The panel's rest position is offset_left=-400, offset_right=0.
 func _animate_task_exit() -> void:
 	if _onboarding_panel == null or not is_instance_valid(_onboarding_panel):
 		return
 	var tw := create_tween()
 	# Slide left a bit (nudge 25px left).
 	tw \
-			.tween_property(
-		_onboarding_panel,
-		"offset_left",
-		_onboarding_panel.offset_left - 25.0,
-		0.15,
-	) \
+			.tween_property(_onboarding_panel, "offset_left", _onboarding_panel.offset_left - 25.0, 0.15) \
 			.set_trans(Tween.TRANS_QUAD) \
 			.set_ease(Tween.EASE_OUT)
 	tw \
 			.parallel() \
-			.tween_property(
-		_onboarding_panel,
-		"offset_right",
-		_onboarding_panel.offset_right - 25.0,
-		0.15,
-	) \
+			.tween_property(_onboarding_panel, "offset_right", _onboarding_panel.offset_right - 25.0, 0.15) \
 			.set_trans(Tween.TRANS_QUAD) \
 			.set_ease(Tween.EASE_OUT)
 	# Then slide off-screen to the right.
@@ -578,7 +568,7 @@ func _animate_task_exit() -> void:
 
 
 ## Enter animation: start the panel off-screen to the right and slide it to
-## its rest position (offset_left=-400, offset_right=-20).
+## its rest position flush with the right edge (offset_left=-400, offset_right=0).
 func _animate_task_enter() -> void:
 	if _onboarding_panel == null or not is_instance_valid(_onboarding_panel):
 		return
@@ -591,7 +581,7 @@ func _animate_task_enter() -> void:
 			.set_ease(Tween.EASE_OUT)
 	tw \
 			.parallel() \
-			.tween_property(_onboarding_panel, "offset_right", -20.0, 0.35) \
+			.tween_property(_onboarding_panel, "offset_right", 0.0, 0.35) \
 			.set_trans(Tween.TRANS_QUAD) \
 			.set_ease(Tween.EASE_OUT)
 	await tw.finished
