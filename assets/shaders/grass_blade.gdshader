@@ -8,6 +8,9 @@ uniform float color_mix_power : hint_range(0.1, 5.0) = 1.2;
 uniform float wind_speed = 1.2;
 uniform float wind_frequency = 0.5;
 uniform float sway_strength = 0.12;
+uniform vec3 player_pos = vec3(0.0);
+uniform float fade_radius = 30.0;
+uniform float fade_width = 8.0;
 
 void vertex() {
 	vec3 world_pos = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
@@ -20,6 +23,11 @@ void vertex() {
 	float bend = wave * pow(height, 0.5) * sway_strength;
 	VERTEX.x += bend;
 	VERTEX.z += bend * 0.6;
+
+	// Shrink blades to zero as they leave the radius around the player.
+	float dist = distance(world_pos.xz, player_pos.xz);
+	float fade = 1.0 - smoothstep(fade_radius - fade_width, fade_radius, dist);
+	VERTEX *= fade;
 }
 
 void fragment() {

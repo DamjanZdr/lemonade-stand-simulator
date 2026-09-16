@@ -102,6 +102,10 @@ func _process(_delta: float) -> void:
 		if _player == null:
 			return
 	_update_chunks()
+	if _material is ShaderMaterial:
+		(_material as ShaderMaterial).set_shader_parameter("player_pos", _player.global_position)
+		(_material as ShaderMaterial).set_shader_parameter("fade_radius", grass_radius)
+		(_material as ShaderMaterial).set_shader_parameter("fade_width", chunk_size)
 	if not _pending_chunks.is_empty():
 		var coord: Vector2i = _pending_chunks.pop_front()
 		_generate_chunk_async(coord)
@@ -128,7 +132,7 @@ func _update_chunks() -> void:
 				(float(coord.x) + 0.5) * chunk_size,
 				(float(coord.y) + 0.5) * chunk_size,
 			)
-			if Vector2(player_pos.x, player_pos.z).distance_to(chunk_center) <= grass_radius:
+			if Vector2(player_pos.x, player_pos.z).distance_to(chunk_center) <= grass_radius + chunk_size:
 				needed[coord] = true
 	var to_remove: Array[Vector2i] = []
 	for key in _active_chunks.keys():
@@ -211,7 +215,7 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 		chunk_origin.x + chunk_size * 0.5,
 		chunk_origin.z + chunk_size * 0.5,
 	)
-	if Vector2(cur_player_pos.x, cur_player_pos.z).distance_to(cur_chunk_center) > grass_radius:
+	if Vector2(cur_player_pos.x, cur_player_pos.z).distance_to(cur_chunk_center) > grass_radius + chunk_size:
 		return
 
 	var chunk_center_world := Vector3(
@@ -234,9 +238,6 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 	mi.name = "GrassChunk_%d_%d" % [chunk_coord.x, chunk_coord.y]
 	mi.multimesh = mm
 	mi.position = chunk_local
-	mi.visibility_range_begin = 0.0
-	mi.visibility_range_end = grass_radius + chunk_size
-	mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	if _material != null:
 		mi.material_override = _material
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
