@@ -693,6 +693,12 @@ func _do_respawn() -> void:
 			var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
 			if ctype == "" or pos.size() < 3:
 				continue
+			# A container at exact world origin is always a bug artifact
+			# (e.g. a raycast-miss placement saved as Vector3.ZERO), never a
+			# real spot on a stand — skip it instead of spawning it sunken
+			# into the ground.
+			if pos[0] == 0.0 and pos[1] == 0.0 and pos[2] == 0.0:
+				continue
 			var scene: PackedScene = _get_container_scene(ctype)
 			if scene == null:
 				continue
@@ -784,6 +790,8 @@ func _do_respawn() -> void:
 			var rot: Array = entry.get("rotation", [])
 			var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
 			if pos.size() < 3:
+				continue
+			if pos[0] == 0.0 and pos[1] == 0.0 and pos[2] == 0.0:
 				continue
 			if not WorldSync.is_host():
 				continue
