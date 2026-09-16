@@ -442,10 +442,13 @@ func _build_onboarding_panel() -> void:
 	_onboarding_panel = PanelContainer.new()
 	_onboarding_panel.name = "OnboardingPanel"
 	_onboarding_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	# Vertically centered on the money HUD: the main panel spans y=10..130
+	# (offset_top 10 + CIRCLE_SIZE 120), so center is y=70. This panel is
+	# 90px tall -> top 25, bottom 115.
 	_onboarding_panel.offset_left = -400.0
-	_onboarding_panel.offset_top = 10.0
+	_onboarding_panel.offset_top = 25.0
 	_onboarding_panel.offset_right = 0.0
-	_onboarding_panel.offset_bottom = 100.0
+	_onboarding_panel.offset_bottom = 115.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.04, 0.045, 0.055, 0.82)
 	panel_style.border_width_left = 4
