@@ -2,6 +2,7 @@ class_name GrassScatterer
 extends Node3D
 ## Procedurally scatters grass instances across grass patch surfaces.
 ## Culls blades that sit under blocker geometry (roads, sidewalks, houses).
+## Streams chunks in a radius around the player so only nearby grass exists.
 
 @export var grass_mesh: Mesh
 @export var grass_material: Material
@@ -24,12 +25,28 @@ extends Node3D
 @export var max_instances_per_surface: int = 10000
 ## Hard cap on total instances across all surfaces.
 @export var max_total_instances: int = 100000
+## If true, grass is generated in chunks around the player instead of a fixed
+## radius around spawn_center.
+@export var follow_player := false
+## World-space size of each grass chunk.
+@export var chunk_size: float = 20.0
+## Radius in chunks around the player to keep alive (0 = only the player's
+## chunk, 1 = 3x3, 2 = 5x5, ...).
+@export var chunk_radius: int = 3
+## Maximum instances allowed inside a single chunk.
+@export var max_instances_per_chunk: int = 8000
 
 var _multimesh: MultiMeshInstance3D
 var _blockers: Array[Dictionary] = []
 var _surfaces: Array[Node] = []
 var _blocked_cells: Dictionary = { }
 var _blocker_cell_size := 0.5
+var _mesh: Mesh
+var _material: Material
+var _local_bottom_offset := Vector3.ZERO
+var _active_chunks: Dictionary = { } # Vector2i -> MultiMeshInstance3D
+var _player: Node3D
+var _initialized := false
 
 
 func _ready() -> void:
@@ -37,19 +54,15 @@ func _ready() -> void:
 		seed(random_seed)
 	# Wait one frame so all transforms are committed before sampling AABBs.
 	await get_tree().process_frame
-	_generate_grass()
-
-
-func _generate_grass() -> void:
-	var mesh := _get_grass_mesh()
-	if mesh == null:
+	_mesh = _get_grass_mesh()
+	if _mesh == null:
 		push_error("GrassScatterer: No grass mesh assigned!")
 		return
-	var mesh_aabb: AABB = mesh.get_aabb()
-	print("[GrassScatterer] mesh=%s aabb=%s" % [mesh.resource_name, str(mesh_aabb)])
+	var mesh_aabb: AABB = _mesh.get_aabb()
+	print("[GrassScatterer] mesh=%s aabb=%s" % [_mesh.resource_name, str(mesh_aabb)])
 	# With +90° X rotation local +Z becomes world -Y. The blade's bottom end in
 	# world Y is at local z = aabb_end_z, so offset the origin onto the surface.
-	var local_bottom_offset := Vector3(0.0, 0.0, mesh_aabb.position.z + mesh_aabb.size.z)
+	_local_bottom_offset = Vector3(0.0, 0.0, mesh_aabb.position.z + mesh_aabb.size.z)
 
 	_surfaces = _get_grass_surfaces()
 	if _surfaces.is_empty():
@@ -60,109 +73,128 @@ func _generate_grass() -> void:
 		print("[GrassScatterer] surface=%s transform=%s" % [s.name, str(s.global_transform)])
 
 	_build_blockers()
+	_material = _get_grass_material()
+	_initialized = true
 
-	var material := _get_grass_material()
 
+func _process(_delta: float) -> void:
+	if not _initialized:
+		return
+	if _player == null:
+		_player = _find_player()
+		if _player == null:
+			return
+	_update_chunks()
+
+
+func _find_player() -> Node3D:
+	var players := get_tree().get_nodes_in_group("player")
+	if not players.is_empty():
+		return players[0] as Node3D
+	return get_tree().root.find_child("Player", true, false) as Node3D
+
+
+func _update_chunks() -> void:
+	var player_pos := _player.global_position
+	var center_chunk := Vector2i(
+		int(floor(player_pos.x / chunk_size)),
+		int(floor(player_pos.z / chunk_size)),
+	)
+	var needed := { }
+	for dx in range(-chunk_radius, chunk_radius + 1):
+		for dz in range(-chunk_radius, chunk_radius + 1):
+			needed[Vector2i(center_chunk.x + dx, center_chunk.y + dz)] = true
+	var to_remove: Array[Vector2i] = []
+	for key in _active_chunks.keys():
+		if not needed.has(key):
+			to_remove.append(key)
+	for key in to_remove:
+		var mi: MultiMeshInstance3D = _active_chunks[key]
+		if is_instance_valid(mi):
+			mi.queue_free()
+		_active_chunks.erase(key)
+	for key in needed.keys():
+		if not _active_chunks.has(key):
+			var chunk := _generate_chunk(key)
+			if chunk != null:
+				_active_chunks[key] = chunk
+
+
+func _generate_chunk(chunk_coord: Vector2i) -> MultiMeshInstance3D:
+	var chunk_origin := Vector3(chunk_coord.x * chunk_size, 0.0, chunk_coord.y * chunk_size)
+	var chunk_aabb := AABB(chunk_origin, Vector3(chunk_size, 0.0, chunk_size))
 	var instances: Array[Transform3D] = []
-	var spawn_r2 := spawn_radius * spawn_radius
-	var yield_counter := 0
-	const YIELD_EVERY := 2048
 
 	for surface in _surfaces:
-		if instances.size() >= max_total_instances:
-			break
 		if not surface is GeometryInstance3D:
 			continue
 		var geom := surface as GeometryInstance3D
 		var aabb: AABB = geom.get_aabb()
 		if aabb.size.length_squared() <= 0.0:
 			continue
-
-		var local_min_x := aabb.position.x
-		var local_max_x := aabb.position.x + aabb.size.x
-		var local_min_z := aabb.position.z
-		var local_max_z := aabb.position.z + aabb.size.z
-
-		# If a spawn radius is set, restrict sampling to the intersection of
-		# the surface and the spawn circle's bounding box (in local space).
-		# This prevents iterating over a huge floor when grass is only wanted
-		# around a small area.
-		if spawn_radius > 0.0:
-			var circle_aabb := AABB(
-				spawn_center - Vector3(spawn_radius, 0.0, spawn_radius),
-				Vector3(spawn_radius * 2.0, 0.0, spawn_radius * 2.0),
-			)
-			var circle_local := geom.global_transform.affine_inverse() * circle_aabb
-			local_min_x = maxf(local_min_x, circle_local.position.x)
-			local_max_x = minf(local_max_x, circle_local.position.x + circle_local.size.x)
-			local_min_z = maxf(local_min_z, circle_local.position.z)
-			local_max_z = minf(local_max_z, circle_local.position.z + circle_local.size.z)
-			if local_max_x <= local_min_x or local_max_z <= local_min_z:
-				continue
-
+		var chunk_local := geom.global_transform.affine_inverse() * chunk_aabb
+		var local_min_x := maxf(aabb.position.x, chunk_local.position.x)
+		var local_max_x := minf(
+			aabb.position.x + aabb.size.x,
+			chunk_local.position.x + chunk_local.size.x,
+		)
+		var local_min_z := maxf(aabb.position.z, chunk_local.position.z)
+		var local_max_z := minf(
+			aabb.position.z + aabb.size.z,
+			chunk_local.position.z + chunk_local.size.z,
+		)
+		if local_max_x <= local_min_x or local_max_z <= local_min_z:
+			continue
 		var sample_area := (local_max_x - local_min_x) * (local_max_z - local_min_z)
 		var raw_count := int(sample_area * grass_density)
-		var patch_instances := clampi(raw_count, 0, max_instances_per_surface)
-
-		for i in range(patch_instances):
-			if instances.size() >= max_total_instances:
-				break
+		var target := clampi(raw_count, 0, max_instances_per_chunk)
+		var top_y := aabb.position.y + aabb.size.y
+		for i in range(target):
 			var local_x := randf_range(local_min_x, local_max_x)
 			var local_z := randf_range(local_min_z, local_max_z)
-			var top_y := aabb.position.y + aabb.size.y
 			var pos := geom.global_transform * Vector3(local_x, top_y, local_z)
-
 			if _is_blocked(pos):
 				continue
-			if spawn_radius > 0.0 and pos.distance_squared_to(spawn_center) > spawn_r2:
-				continue
+			instances.append(_make_blade_transform(pos))
+			if instances.size() >= max_instances_per_chunk:
+				break
 
-			var rotation_y := randf() * TAU
-			var tilt_x := randf_range(-0.03, 0.03)
-			var tilt_z := randf_range(-0.03, 0.03)
-			var scale_var := base_scale + randf_range(-scale_variance, scale_variance)
-
-			var grass_transform := Transform3D()
-			grass_transform = grass_transform.scaled(Vector3(scale_var, scale_var, scale_var))
-			# Imported grassblade mesh is Z-up (Blender); stand upright in Y-up.
-			grass_transform = grass_transform.rotated(Vector3.RIGHT, PI / 2.0)
-			grass_transform = grass_transform.rotated(Vector3.RIGHT, tilt_x)
-			grass_transform = grass_transform.rotated(Vector3.FORWARD, tilt_z)
-			grass_transform = grass_transform.rotated(Vector3.UP, rotation_y)
-			# Place the blade's bottom end on the surface, not the mesh origin,
-			# then convert the world-space origin into this node's local space.
-			grass_transform.origin = global_transform.affine_inverse() * (
-				pos - grass_transform.basis * local_bottom_offset
-			)
-
-			instances.append(grass_transform)
-			yield_counter += 1
-			if yield_counter % YIELD_EVERY == 0:
-				await get_tree().process_frame
+	if instances.is_empty():
+		return null
 
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
+	mm.mesh = _mesh
 	mm.instance_count = instances.size()
 	for i in range(instances.size()):
 		mm.set_instance_transform(i, instances[i])
 
-	_multimesh = MultiMeshInstance3D.new()
-	_multimesh.name = "GrassMultiMesh"
-	add_child(_multimesh, true)
-	_multimesh.multimesh = mm
-	if material != null:
-		_multimesh.material_override = material
+	var mi := MultiMeshInstance3D.new()
+	mi.name = "GrassChunk_%d_%d" % [chunk_coord.x, chunk_coord.y]
+	mi.multimesh = mm
+	if _material != null:
+		mi.material_override = _material
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+	add_child(mi, true)
+	return mi
 
-	_multimesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_multimesh.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-	print("GrassScatterer: Generated %d grass instances" % instances.size())
-	for j in range(min(instances.size(), 3)):
-		print("[GrassScatterer] instance %d pos=%s" % [j, str(instances[j].origin)])
-	print(
-		"[GrassScatterer] multimesh visible=%s material_override=%s"
-		% [_multimesh.visible, _multimesh.material_override]
-	)
+
+func _make_blade_transform(pos: Vector3) -> Transform3D:
+	var rotation_y := randf() * TAU
+	var tilt_x := randf_range(-0.03, 0.03)
+	var tilt_z := randf_range(-0.03, 0.03)
+	var scale_var := base_scale + randf_range(-scale_variance, scale_variance)
+
+	var grass_transform := Transform3D()
+	grass_transform = grass_transform.scaled(Vector3(scale_var, scale_var, scale_var))
+	grass_transform = grass_transform.rotated(Vector3.RIGHT, PI / 2.0)
+	grass_transform = grass_transform.rotated(Vector3.RIGHT, tilt_x)
+	grass_transform = grass_transform.rotated(Vector3.FORWARD, tilt_z)
+	grass_transform = grass_transform.rotated(Vector3.UP, rotation_y)
+	var bottom_end_world := pos - grass_transform.basis * _local_bottom_offset
+	grass_transform.origin = global_transform.affine_inverse() * bottom_end_world
+	return grass_transform
 
 
 func _get_grass_mesh() -> Mesh:
@@ -185,8 +217,6 @@ func _get_grass_mesh() -> Mesh:
 func _create_default_blade_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# A simple blade: bottom-left, bottom-right, tip.
-	# Width 0.1, height 1.0, centered on X/Z, origin at bottom.
 	var p0 := Vector3(-0.05, 0.0, 0.0)
 	var p1 := Vector3(0.05, 0.0, 0.0)
 	var p2 := Vector3(0.0, 1.0, 0.0)
@@ -215,7 +245,6 @@ func _extract_first_mesh(node: Node) -> Mesh:
 func _get_grass_material() -> Material:
 	if grass_material != null:
 		return grass_material
-	# Billboard wind shader so the grass blade always faces the camera.
 	var shader := load("res://assets/shaders/grass.gdshader") as Shader
 	if shader != null:
 		var mat := ShaderMaterial.new()
@@ -281,8 +310,6 @@ func _collect_blockers(node: Node) -> void:
 func _compute_mesh_footprint(mesh: Mesh) -> AABB:
 	if mesh == null:
 		return AABB()
-
-	# First pass: find the lowest Y in the mesh.
 	var min_y := 0.0
 	var first_y := true
 	var surface_count := mesh.get_surface_count()
@@ -302,9 +329,6 @@ func _compute_mesh_footprint(mesh: Mesh) -> AABB:
 	if first_y:
 		return AABB()
 
-	# Second pass: only use vertices near the bottom to build the footprint.
-	# This excludes roof overhangs and upper-floor geometry that creates
-	# false no-grass rings around houses.
 	var height_limit := 0.5
 	var first := true
 	var min_x := 0.0
