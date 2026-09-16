@@ -2,7 +2,7 @@ extends MultiMeshInstance3D
 
 @export var blade_mesh: Mesh = preload("res://assets/models/environment/Grass/grassblade.res")
 @export var blade_material: Material = preload("res://assets/materials/grass_blade.tres")
-@export var blade_count: int = 12800
+@export var blade_count: int = 25600
 @export var plane_size: Vector2 = Vector2(10, 10)
 @export var base_scale: float = 0.0792
 @export var plane_node_path: NodePath = "../Plane"
