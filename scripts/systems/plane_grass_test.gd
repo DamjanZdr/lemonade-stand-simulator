@@ -5,7 +5,7 @@ extends MultiMeshInstance3D
 @export var blade_material: Material = preload("res://assets/materials/grass_blade.tres")
 @export var blade_count: int = 25600
 @export var spawn_center: Vector3 = Vector3.ZERO
-@export var spawn_radius: float = 60.0
+@export var spawn_radius: float = 0.0
 @export var base_scale: float = 0.2
 @export var grass_bottom_color: Color = Color(0.05, 0.3, 0.05)
 @export var grass_top_color: Color = Color(0.45, 0.9, 0.25)
@@ -22,7 +22,12 @@ func _ready() -> void:
 		push_error("PlaneGrassTest: no grass surface found")
 		return
 	var geom := surface as GeometryInstance3D
-	var aabb: AABB = geom.get_aabb()
+	var aabb: AABB
+	if geom is CSGBox3D:
+		var csg := geom as CSGBox3D
+		aabb = AABB(-csg.size * 0.5, csg.size)
+	else:
+		aabb = geom.get_aabb()
 	var top_y := aabb.position.y + aabb.size.y
 	var blade_aabb: AABB = blade_mesh.get_aabb()
 	# grassblade.res is Z-up (Blender); after +90° X rotation local +Z becomes
@@ -61,10 +66,14 @@ func _ready() -> void:
 		(blade_material as ShaderMaterial).set_shader_parameter("bottom_color", grass_bottom_color)
 		(blade_material as ShaderMaterial).set_shader_parameter("top_color", grass_top_color)
 		(blade_material as ShaderMaterial).set_shader_parameter("player_pos", spawn_center)
-		(blade_material as ShaderMaterial).set_shader_parameter("fade_radius", spawn_radius)
-		(blade_material as ShaderMaterial).set_shader_parameter("fade_width", spawn_radius * 0.2)
+		var fade_radius := spawn_radius if spawn_radius > 0.0 else 1e6
+		(blade_material as ShaderMaterial).set_shader_parameter("fade_radius", fade_radius)
+		(blade_material as ShaderMaterial).set_shader_parameter("fade_width", fade_radius * 0.2)
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	print("PlaneGrassTest: spawned %d blades on %s" % [blade_count, name])
+	print(
+		"PlaneGrassTest: spawned %d blades on %s (instances=%d)"
+		% [blade_count, name, instances.size()]
+	)
 
 
 func _find_grass_surface() -> Node:
