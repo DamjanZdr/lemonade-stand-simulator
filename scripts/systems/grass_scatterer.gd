@@ -297,6 +297,35 @@ func _collect_blockers(node: Node) -> void:
 		return
 	if node is Node3D and not (node as Node3D).visible:
 		return
+	if node is MultiMeshInstance3D:
+		var mmi := node as MultiMeshInstance3D
+		if mmi.multimesh != null and mmi.multimesh.mesh != null:
+			var footprint := _compute_mesh_footprint(mmi.multimesh.mesh)
+			if footprint.size.length_squared() > 0.0:
+				for i in range(mmi.multimesh.instance_count):
+					var instance_t := mmi.multimesh.get_instance_transform(i)
+					_blockers.append(
+						{
+							"transform": mmi.global_transform * instance_t,
+							"aabb": footprint,
+							"node": mmi,
+							"use_aabb": true,
+						}
+					)
+		return
+	if node is CSGBox3D:
+		var geom := node as CSGBox3D
+		var local_aabb := geom.get_aabb()
+		if local_aabb.size.length_squared() > 0.0:
+			_blockers.append(
+				{
+					"transform": geom.global_transform,
+					"aabb": local_aabb,
+					"node": geom,
+					"use_aabb": true,
+				}
+			)
+		return
 	if node is MeshInstance3D:
 		var mi := node as MeshInstance3D
 		var footprint := _compute_mesh_footprint(mi.mesh)
@@ -374,10 +403,32 @@ func _is_blocked(pos: Vector3) -> bool:
 func _rasterize_blockers() -> void:
 	var y_limit := 1.0
 	for blocker in _blockers:
+		var trans: Transform3D = blocker["transform"]
+		if blocker.get("use_aabb", false):
+			var aabb: AABB = blocker["aabb"]
+			var corners := [
+				Vector3(aabb.position.x, 0.0, aabb.position.z),
+				Vector3(aabb.position.x + aabb.size.x, 0.0, aabb.position.z),
+				Vector3(aabb.position.x + aabb.size.x, 0.0, aabb.position.z + aabb.size.z),
+				Vector3(aabb.position.x, 0.0, aabb.position.z + aabb.size.z),
+			]
+			var w := []
+			for c in corners:
+				w.append(trans * c)
+			_rasterize_triangle(
+				Vector2(w[0].x, w[0].z),
+				Vector2(w[1].x, w[1].z),
+				Vector2(w[2].x, w[2].z),
+			)
+			_rasterize_triangle(
+				Vector2(w[0].x, w[0].z),
+				Vector2(w[2].x, w[2].z),
+				Vector2(w[3].x, w[3].z),
+			)
+			continue
 		var mi: MeshInstance3D = blocker.get("node")
 		if mi == null:
 			continue
-		var trans: Transform3D = blocker["transform"]
 		var mesh: Mesh = mi.mesh
 		if mesh == null:
 			continue
@@ -411,27 +462,26 @@ func _rasterize_blockers() -> void:
 				var w2 := trans * v2
 				if minf(w0.y, minf(w1.y, w2.y)) > ground_limit:
 					continue
-				var min_x := minf(w0.x, minf(w1.x, w2.x)) - blocker_margin
-				var max_x := maxf(w0.x, maxf(w1.x, w2.x)) + blocker_margin
-				var min_z := minf(w0.z, minf(w1.z, w2.z)) - blocker_margin
-				var max_z := maxf(w0.z, maxf(w1.z, w2.z)) + blocker_margin
-				var cx0 := int(floor(min_x / _blocker_cell_size))
-				var cx1 := int(floor(max_x / _blocker_cell_size))
-				var cz0 := int(floor(min_z / _blocker_cell_size))
-				var cz1 := int(floor(max_z / _blocker_cell_size))
-				for cx in range(cx0, cx1 + 1):
-					for cz in range(cz0, cz1 + 1):
-						var cell_center := Vector2(
-							(float(cx) + 0.5) * _blocker_cell_size,
-							(float(cz) + 0.5) * _blocker_cell_size,
-						)
-						if _point_in_triangle_2d(
-							cell_center,
-							Vector2(w0.x, w0.z),
-							Vector2(w1.x, w1.z),
-							Vector2(w2.x, w2.z),
-						):
-							_blocked_cells[Vector2i(cx, cz)] = true
+				_rasterize_triangle(Vector2(w0.x, w0.z), Vector2(w1.x, w1.z), Vector2(w2.x, w2.z))
+
+
+func _rasterize_triangle(a: Vector2, b: Vector2, c: Vector2) -> void:
+	var min_x := minf(a.x, minf(b.x, c.x)) - blocker_margin
+	var max_x := maxf(a.x, maxf(b.x, c.x)) + blocker_margin
+	var min_z := minf(a.y, minf(b.y, c.y)) - blocker_margin
+	var max_z := maxf(a.y, maxf(b.y, c.y)) + blocker_margin
+	var cx0 := int(floor(min_x / _blocker_cell_size))
+	var cx1 := int(floor(max_x / _blocker_cell_size))
+	var cz0 := int(floor(min_z / _blocker_cell_size))
+	var cz1 := int(floor(max_z / _blocker_cell_size))
+	for cx in range(cx0, cx1 + 1):
+		for cz in range(cz0, cz1 + 1):
+			var cell_center := Vector2(
+				(float(cx) + 0.5) * _blocker_cell_size,
+				(float(cz) + 0.5) * _blocker_cell_size,
+			)
+			if _point_in_triangle_2d(cell_center, a, b, c):
+				_blocked_cells[Vector2i(cx, cz)] = true
 
 
 func _point_in_triangle_2d(p: Vector2, a: Vector2, b: Vector2, c: Vector2) -> bool:

@@ -1,11 +1,8 @@
-Switch to player-centered chunked grass generation.
+Handle CSGBox3D and MultiMeshInstance3D as grass blockers.
 
-- Replace the fixed spawn_center circle with streaming chunks that load in a
-  radius around the player and unload when they leave it.
-- Chunks are MultiMeshInstance3D nodes, so each is independently culled and
-  only nearby grass exists at any time.
-- Settings: follow_player=true, chunk_size=20m, chunk_radius=3 (~60m radius),
-  grass_density=320, base_scale=0.0792, max_instances_per_chunk=8000.
+- Collect CSGBox3D and MultiMeshInstance3D nodes in grass_blocker groups and
+  rasterize their AABB footprint (CSG boxes) or per-instance mesh footprint.
+- MeshInstance3D blockers still use the tighter triangle rasterization.
 
 Generated with [Devin](https://devin.ai)
 
