@@ -29,12 +29,20 @@ extends Node3D
 ## radius around spawn_center.
 @export var follow_player := false
 ## World-space size of each grass chunk.
-@export var chunk_size: float = 20.0
+@export var chunk_size: float = 10.0
 ## Radius in chunks around the player to keep alive (0 = only the player's
 ## chunk, 1 = 3x3, 2 = 5x5, ...).
 @export var chunk_radius: int = 3
 ## Maximum instances allowed inside a single chunk.
 @export var max_instances_per_chunk: int = 8000
+## Grass is kept within this circular radius of the player (meters).
+@export var grass_radius: float = 30.0
+## Density multiplier for the nearest third of the radius.
+@export var density_inner: float = 1.0
+## Density multiplier for the middle third of the radius.
+@export var density_middle: float = 0.5
+## Density multiplier for the outer third of the radius.
+@export var density_outer: float = 0.25
 ## Color at the base of each blade (bottom of the gradient).
 @export var grass_bottom_color: Color = Color(0.05, 0.3, 0.05)
 ## Color at the tip of each blade (top of the gradient).
@@ -114,7 +122,13 @@ func _update_chunks() -> void:
 	var needed := { }
 	for dx in range(-chunk_radius, chunk_radius + 1):
 		for dz in range(-chunk_radius, chunk_radius + 1):
-			needed[Vector2i(center_chunk.x + dx, center_chunk.y + dz)] = true
+			var coord := Vector2i(center_chunk.x + dx, center_chunk.y + dz)
+			var chunk_center := Vector2(
+				(float(coord.x) + 0.5) * chunk_size,
+				(float(coord.y) + 0.5) * chunk_size,
+			)
+			if Vector2(player_pos.x, player_pos.z).distance_to(chunk_center) <= grass_radius:
+				needed[coord] = true
 	var to_remove: Array[Vector2i] = []
 	for key in _active_chunks.keys():
 		if not needed.has(key):
@@ -124,6 +138,10 @@ func _update_chunks() -> void:
 		if is_instance_valid(mi):
 			mi.queue_free()
 		_active_chunks.erase(key)
+	# Drop pending chunks that are no longer needed.
+	for i in range(_pending_chunks.size() - 1, -1, -1):
+		if not needed.has(_pending_chunks[i]):
+			_pending_chunks.remove_at(i)
 	for key in needed.keys():
 		if not _active_chunks.has(key) and not _pending_chunks.has(key):
 			_pending_chunks.append(key)
@@ -135,6 +153,20 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 	var instances: Array[Transform3D] = []
 	var yield_counter := 0
 	const YIELD_EVERY := 2048
+
+	# Density falls off with distance from the player.
+	var player_pos := _player.global_position
+	var chunk_center := Vector2(
+		chunk_origin.x + chunk_size * 0.5,
+		chunk_origin.z + chunk_size * 0.5,
+	)
+	var dist := Vector2(player_pos.x, player_pos.z).distance_to(chunk_center)
+	var density_scale := density_outer
+	if dist <= grass_radius / 3.0:
+		density_scale = density_inner
+	elif dist <= grass_radius * 2.0 / 3.0:
+		density_scale = density_middle
+	var effective_density := grass_density * density_scale
 
 	for surface in _surfaces:
 		if not surface is GeometryInstance3D:
@@ -157,7 +189,7 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 		if local_max_x <= local_min_x or local_max_z <= local_min_z:
 			continue
 		var sample_area := (local_max_x - local_min_x) * (local_max_z - local_min_z)
-		var raw_count := int(sample_area * grass_density)
+		var raw_count := int(sample_area * effective_density)
 		var target := clampi(raw_count, 0, max_instances_per_chunk)
 		var top_y := aabb.position.y + aabb.size.y
 		for i in range(target):
@@ -177,14 +209,12 @@ func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 		return
 
 	# If the player moved on while this chunk was generating, skip adding it.
-	var center_chunk := Vector2i(
-		int(floor(_player.global_position.x / chunk_size)),
-		int(floor(_player.global_position.z / chunk_size)),
+	var cur_player_pos := _player.global_position
+	var cur_chunk_center := Vector2(
+		chunk_origin.x + chunk_size * 0.5,
+		chunk_origin.z + chunk_size * 0.5,
 	)
-	if (
-		abs(chunk_coord.x - center_chunk.x) > chunk_radius
-		or abs(chunk_coord.y - center_chunk.y) > chunk_radius
-	):
+	if Vector2(cur_player_pos.x, cur_player_pos.z).distance_to(cur_chunk_center) > grass_radius:
 		return
 
 	var mm := MultiMesh.new()
