@@ -52,8 +52,8 @@
 [ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
 [ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
 
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g4v7s"]
+albedo_color = Color(0.7921569, 1, 0.19607843, 1)
 albedo_texture = ExtResource("7_cc7c0")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
@@ -1878,8 +1878,6 @@ size = Vector2(26.35, 12)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_82vox"]
 size = Vector2(10, 2.2)
-
-
 
 [node name="Neighborhood" type="Node3D" unique_id=1396389632]
 script = ExtResource("22_neigh")
@@ -8644,6 +8642,270 @@ visible = false
 transform = Transform3D(-8.742278e-08, 0, -2, 0, 2, 0, 2, 0, -8.742278e-08, -15, -15.896536, 0)
 visible = false
 
+[node name="street light" parent="." unique_id=358366588 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, 17.490528)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light" unique_id=1345909895]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light2" parent="." unique_id=581242416 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -13.509472)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light2" unique_id=1285153630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light3" parent="." unique_id=525494138 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, 5.490528)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light3" unique_id=1976290793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light5" parent="." unique_id=1495902599 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, 45.49053)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light5" unique_id=247952185]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light6" parent="." unique_id=333021157 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, 33.49053)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light6" unique_id=273929925]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light11" parent="." unique_id=94123722 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, 60.49053)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light11" unique_id=174081946]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light7" parent="." unique_id=1902496477 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -40.50947)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light7" unique_id=981864708]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light9" parent="." unique_id=1724229915 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9560556, -66.509476)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light9" unique_id=1428954608]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light8" parent="." unique_id=1432853547 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9560556, -52.50947)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light8" unique_id=1343865002]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light10" parent="." unique_id=52835095 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9560556, -77.509476)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light10" unique_id=1965100426]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light4" parent="." unique_id=190505722 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -25.509472)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light4" unique_id=1958196894]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light12" parent="." unique_id=2014671552 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9560556, -158.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light12" unique_id=506987095]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light13" parent="." unique_id=2041276409 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -189.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light13" unique_id=245812705]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light14" parent="." unique_id=1700520000 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -170.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light14" unique_id=210732271]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light15" parent="." unique_id=1214645108 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9560556, -130.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light15" unique_id=1086060212]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light16" parent="." unique_id=1508683798 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9560556, -142.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light16" unique_id=869358356]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light17" parent="." unique_id=1115018552 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9560556, -115.509476)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light17" unique_id=1646353746]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light18" parent="." unique_id=1410954766 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -216.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light18" unique_id=12835962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light19" parent="." unique_id=1321220661 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -242.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light19" unique_id=1451193567]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light20" parent="." unique_id=2113918098 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -228.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light20" unique_id=604744436]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light21" parent="." unique_id=775635576 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -253.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light21" unique_id=2102466258]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light22" parent="." unique_id=300847241 instance=ExtResource("29_rbikm")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -201.50948)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light22" unique_id=1844096823]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light23" parent="." unique_id=1860080475 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244806, 1.9235487, 137.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light23" unique_id=491821743]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light24" parent="." unique_id=361252800 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244808, 1.9235487, 168.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light24" unique_id=127947034]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light25" parent="." unique_id=1338187462 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.7551932, 1.9235487, 149.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light25" unique_id=2104925755]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light26" parent="." unique_id=1640963829 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244803, 1.9235487, 109.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light26" unique_id=1174548234]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light27" parent="." unique_id=820394165 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.7551956, 1.9235487, 121.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light27" unique_id=1462336091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light28" parent="." unique_id=1516719747 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.755198, 1.9235487, 94.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light28" unique_id=249730865]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light29" parent="." unique_id=375937504 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244811, 1.9235487, 195.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light29" unique_id=1481783607]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light30" parent="." unique_id=710895016 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244813, 1.9235487, 221.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light30" unique_id=1685607864]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light31" parent="." unique_id=1469715949 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.755188, 1.9235487, 207.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light31" unique_id=2106541449]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light32" parent="." unique_id=351937726 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.755186, 1.9235487, 232.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light32" unique_id=136323452]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
+[node name="street light33" parent="." unique_id=1253973534 instance=ExtResource("29_rbikm")]
+transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.7551904, 1.9235487, 180.85411)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="street light33" unique_id=853627597]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+light_energy = 10.0
+omni_range = 20.0
+
 [node name="Sketchfab_Scene" parent="." unique_id=1396670853 instance=ExtResource("30_wewmw")]
 transform = Transform3D(-0.023428977, 0.35000592, 0.9364544, 0.68654084, 0.6865408, -0.23942263, -0.7267135, 0.6373048, -0.25637838, -22.460365, 11.3622265, 2.0936258)
 
@@ -8697,271 +8959,3 @@ transform = Transform3D(-0.5868901, 0, -0.80966675, 0, 1, 0, 0.80966675, 0, -0.5
 
 [node name="PlantPot16" parent="Decorations" unique_id=1205838520 instance=ExtResource("50_q3hpu")]
 transform = Transform3D(-0.64721113, 0, 0.76231086, 0, 1, 0, -0.76231086, 0, -0.64721113, -16.299006, 2.1059017, -144.86655)
-
-[node name="Lights" type="Node3D" parent="." unique_id=1208591834]
-
-[node name="street light" parent="Lights" unique_id=358366588 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, 17.490528)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light" unique_id=1345909895]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light2" parent="Lights" unique_id=581242416 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -13.509472)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light2" unique_id=1285153630]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light3" parent="Lights" unique_id=525494138 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, 5.490528)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light3" unique_id=1976290793]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light5" parent="Lights" unique_id=1495902599 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, 45.49053)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light5" unique_id=247952185]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light6" parent="Lights" unique_id=333021157 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, 33.49053)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light6" unique_id=273929925]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light11" parent="Lights" unique_id=94123722 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, 60.49053)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light11" unique_id=174081946]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light7" parent="Lights" unique_id=1902496477 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -40.50947)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light7" unique_id=981864708]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light9" parent="Lights" unique_id=1724229915 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9560556, -66.509476)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light9" unique_id=1428954608]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light8" parent="Lights" unique_id=1432853547 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9560556, -52.50947)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light8" unique_id=1343865002]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light10" parent="Lights" unique_id=52835095 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9560556, -77.509476)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light10" unique_id=1965100426]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light4" parent="Lights" unique_id=190505722 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -25.509472)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light4" unique_id=1958196894]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light12" parent="Lights" unique_id=2014671552 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9560556, -158.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light12" unique_id=506987095]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light13" parent="Lights" unique_id=2041276409 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -189.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light13" unique_id=245812705]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light14" parent="Lights" unique_id=1700520000 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -170.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light14" unique_id=210732271]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light15" parent="Lights" unique_id=1214645108 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9560556, -130.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light15" unique_id=1086060212]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light16" parent="Lights" unique_id=1508683798 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9560556, -142.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light16" unique_id=869358356]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light17" parent="Lights" unique_id=1115018552 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9560556, -115.509476)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light17" unique_id=1646353746]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light18" parent="Lights" unique_id=1410954766 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -216.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light18" unique_id=12835962]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light19" parent="Lights" unique_id=1321220661 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3.0279188, 1.9235487, -242.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light19" unique_id=1451193567]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light20" parent="Lights" unique_id=2113918098 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -228.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light20" unique_id=604744436]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light21" parent="Lights" unique_id=775635576 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -253.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light21" unique_id=2102466258]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light22" parent="Lights" unique_id=300847241 instance=ExtResource("29_rbikm")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 10.972081, 1.9235487, -201.50948)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light22" unique_id=1844096823]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light23" parent="Lights" unique_id=1860080475 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244806, 1.9235487, 137.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light23" unique_id=491821743]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light24" parent="Lights" unique_id=361252800 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244808, 1.9235487, 168.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light24" unique_id=127947034]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light25" parent="Lights" unique_id=1338187462 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.7551932, 1.9235487, 149.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light25" unique_id=2104925755]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light26" parent="Lights" unique_id=1640963829 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244803, 1.9235487, 109.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light26" unique_id=1174548234]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light27" parent="Lights" unique_id=820394165 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.7551956, 1.9235487, 121.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light27" unique_id=1462336091]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light28" parent="Lights" unique_id=1516719747 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.755198, 1.9235487, 94.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light28" unique_id=249730865]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light29" parent="Lights" unique_id=375937504 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244811, 1.9235487, 195.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light29" unique_id=1481783607]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light30" parent="Lights" unique_id=710895016 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, 11.244813, 1.9235487, 221.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light30" unique_id=1685607864]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light31" parent="Lights" unique_id=1469715949 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.755188, 1.9235487, 207.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light31" unique_id=2106541449]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light32" parent="Lights" unique_id=351937726 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.755186, 1.9235487, 232.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light32" unique_id=136323452]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-[node name="street light33" parent="Lights" unique_id=1253973534 instance=ExtResource("29_rbikm")]
-transform = Transform3D(-0.59999996, 0, -5.2453665e-08, 0, 0.59999996, 0, 5.2453665e-08, 0, -0.59999996, -2.7551904, 1.9235487, 180.85411)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lights/street light33" unique_id=853627597]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
-light_energy = 10.0
-omni_range = 20.0
-
-
