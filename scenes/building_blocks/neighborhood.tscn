@@ -1896,8 +1896,8 @@ size = Vector3(2047, 1.4, 1477)
 material = SubResource("StandardMaterial3D_g4v7s")
 
 [node name="GrassField" parent="." unique_id=597608404 instance=ExtResource("51_grassfield")]
-grass_bottom_color = Color(0.6450267, 0.7554092, 7.70092e-07, 1)
-grass_top_color = Color(0.8627451, 1, 0.21960784, 1)
+grass_bottom_color = Color(0.37254903, 0.5372549, 0.011764706, 1)
+grass_top_color = Color(0.6431373, 0.7490196, 0.2, 1)
 
 [node name="Houses" type="Node3D" parent="." unique_id=641800392 groups=["grass_blocker"]]
 
