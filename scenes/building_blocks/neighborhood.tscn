@@ -51,11 +51,10 @@
 [ext_resource type="Script" uid="uid://e7o24oyy11ah" path="res://scripts/objects/cup.gd" id="46_myl1y"]
 [ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
 [ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
-[ext_resource type="PackedScene" path="res://scenes/environment/grass_field.tscn" id="51_grassfield"]
-[ext_resource type="Script" uid="uid://c2wsvktmw4pkx" path="res://scripts/systems/plane_grass_test.gd" id="52_planegrass"]
+
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g4v7s"]
-albedo_color = Color(0.63529414, 0.6509804, 0, 1)
+albedo_color = Color(0.6885908, 0.7054884, 3.85046e-07, 1)
 albedo_texture = ExtResource("7_cc7c0")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
@@ -1881,10 +1880,7 @@ size = Vector2(26.35, 12)
 [sub_resource type="PlaneMesh" id="PlaneMesh_82vox"]
 size = Vector2(10, 2.2)
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_82f87"]
-size = Vector2(10, 10)
 
-[sub_resource type="MultiMesh" id="MultiMesh_82f87"]
 
 [node name="Neighborhood" type="Node3D" unique_id=1396389632]
 script = ExtResource("22_neigh")
@@ -1895,9 +1891,7 @@ use_collision = true
 size = Vector3(2047, 1.4, 1477)
 material = SubResource("StandardMaterial3D_g4v7s")
 
-[node name="GrassField" parent="." unique_id=597608404 instance=ExtResource("51_grassfield")]
-grass_bottom_color = Color(0.37254903, 0.5372549, 0.011764706, 1)
-grass_top_color = Color(0.6431373, 0.7490196, 0.2, 1)
+
 
 [node name="Houses" type="Node3D" parent="." unique_id=641800392 groups=["grass_blocker"]]
 
@@ -8973,14 +8967,4 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
 light_energy = 10.0
 omni_range = 20.0
 
-[node name="NewGrass" type="Node3D" parent="." unique_id=1141130280]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1825972, 0)
 
-[node name="Plane" type="MeshInstance3D" parent="NewGrass" unique_id=559370651]
-mesh = SubResource("PlaneMesh_82f87")
-
-[node name="Grass" type="MultiMeshInstance3D" parent="NewGrass" unique_id=863292231]
-multimesh = SubResource("MultiMesh_82f87")
-script = ExtResource("52_planegrass")
-grass_bottom_color = Color(0.63659257, 0.7466832, 3.85046e-07, 1)
-grass_top_color = Color(0.8627451, 1, 0.21960784, 1)
