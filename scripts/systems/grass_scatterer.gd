@@ -28,6 +28,8 @@ extends Node3D
 var _multimesh: MultiMeshInstance3D
 var _blockers: Array[Dictionary] = []
 var _surfaces: Array[Node] = []
+var _blocked_cells: Dictionary = { }
+var _blocker_cell_size := 0.5
 
 
 func _ready() -> void:
@@ -246,12 +248,17 @@ func _has_surface_children(node: Node) -> bool:
 
 func _build_blockers() -> void:
 	_blockers.clear()
+	_blocked_cells.clear()
 	if blocker_group.is_empty():
 		return
 	for node in get_tree().get_nodes_in_group(blocker_group):
 		if not surface_group.is_empty() and node.is_in_group(surface_group):
 			continue
 		_collect_blockers(node)
+	if _blockers.size() > 0:
+		print("[GrassScatterer] blockers=%d" % _blockers.size())
+		_rasterize_blockers()
+		print("[GrassScatterer] blocked cells=%d" % _blocked_cells.size())
 
 
 func _collect_blockers(node: Node) -> void:
@@ -265,7 +272,7 @@ func _collect_blockers(node: Node) -> void:
 		var mi := node as MeshInstance3D
 		var footprint := _compute_mesh_footprint(mi.mesh)
 		if footprint.size.length_squared() > 0.0:
-			_blockers.append({ "transform": mi.global_transform, "aabb": footprint })
+			_blockers.append({ "transform": mi.global_transform, "aabb": footprint, "node": mi })
 		return
 	for child in node.get_children():
 		_collect_blockers(child)
@@ -331,22 +338,82 @@ func _compute_mesh_footprint(mesh: Mesh) -> AABB:
 
 
 func _is_blocked(pos: Vector3) -> bool:
-	if _blockers.is_empty():
+	if _blocked_cells.is_empty():
 		return false
+	var cell := Vector2i(
+		int(floor(pos.x / _blocker_cell_size)),
+		int(floor(pos.z / _blocker_cell_size)),
+	)
+	return _blocked_cells.has(cell)
+
+
+func _rasterize_blockers() -> void:
+	var y_limit := 1.0
 	for blocker in _blockers:
+		var mi: MeshInstance3D = blocker.get("node")
+		if mi == null:
+			continue
 		var trans: Transform3D = blocker["transform"]
-		var aabb: AABB = blocker["aabb"]
-		var local_pos := trans.affine_inverse() * pos
-		# Treat each blocker as an infinite vertical column using its X/Z
-		# footprint. This catches houses whose imported AABB doesn't reach
-		# all the way down to the ground plane.
-		var min_x := aabb.position.x - blocker_margin
-		var max_x := aabb.position.x + aabb.size.x + blocker_margin
-		var min_z := aabb.position.z - blocker_margin
-		var max_z := aabb.position.z + aabb.size.z + blocker_margin
-		if (
-			local_pos.x >= min_x and local_pos.x <= max_x
-			and local_pos.z >= min_z and local_pos.z <= max_z
-		):
-			return true
-	return false
+		var mesh: Mesh = mi.mesh
+		if mesh == null:
+			continue
+		var mesh_min_y := 0.0
+		var first := true
+		for s in range(mesh.get_surface_count()):
+			var arr := mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			for v in verts:
+				var wv := trans * v
+				if first:
+					mesh_min_y = wv.y
+					first = false
+				else:
+					mesh_min_y = minf(mesh_min_y, wv.y)
+		if first:
+			continue
+		var ground_limit := mesh_min_y + y_limit
+		for s in range(mesh.get_surface_count()):
+			var arr := mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var indices: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
+			var tri_count := verts.size() / 3 if indices.is_empty() else indices.size() / 3
+			for t in range(tri_count):
+				var i0 := t * 3
+				var v0 := verts[i0] if indices.is_empty() else verts[indices[i0]]
+				var v1 := verts[i0 + 1] if indices.is_empty() else verts[indices[i0 + 1]]
+				var v2 := verts[i0 + 2] if indices.is_empty() else verts[indices[i0 + 2]]
+				var w0 := trans * v0
+				var w1 := trans * v1
+				var w2 := trans * v2
+				if minf(w0.y, minf(w1.y, w2.y)) > ground_limit:
+					continue
+				var min_x := minf(w0.x, minf(w1.x, w2.x)) - blocker_margin
+				var max_x := maxf(w0.x, maxf(w1.x, w2.x)) + blocker_margin
+				var min_z := minf(w0.z, minf(w1.z, w2.z)) - blocker_margin
+				var max_z := maxf(w0.z, maxf(w1.z, w2.z)) + blocker_margin
+				var cx0 := int(floor(min_x / _blocker_cell_size))
+				var cx1 := int(floor(max_x / _blocker_cell_size))
+				var cz0 := int(floor(min_z / _blocker_cell_size))
+				var cz1 := int(floor(max_z / _blocker_cell_size))
+				for cx in range(cx0, cx1 + 1):
+					for cz in range(cz0, cz1 + 1):
+						var cell_center := Vector2(
+							(float(cx) + 0.5) * _blocker_cell_size,
+							(float(cz) + 0.5) * _blocker_cell_size,
+						)
+						if _point_in_triangle_2d(
+							cell_center,
+							Vector2(w0.x, w0.z),
+							Vector2(w1.x, w1.z),
+							Vector2(w2.x, w2.z),
+						):
+							_blocked_cells[Vector2i(cx, cz)] = true
+
+
+func _point_in_triangle_2d(p: Vector2, a: Vector2, b: Vector2, c: Vector2) -> bool:
+	var d1 := (p.x - c.x) * (b.y - c.y) - (b.x - c.x) * (p.y - c.y)
+	var d2 := (p.x - a.x) * (c.y - a.y) - (c.x - a.x) * (p.y - a.y)
+	var d3 := (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y)
+	var has_neg := d1 < 0.0 or d2 < 0.0 or d3 < 0.0
+	var has_pos := d1 > 0.0 or d2 > 0.0 or d3 > 0.0
+	return not (has_neg and has_pos)

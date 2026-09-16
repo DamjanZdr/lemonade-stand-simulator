@@ -1,8 +1,9 @@
-Skip invisible nodes when collecting grass blockers.
+Rasterize blocker footprints so houses no longer leave empty gaps.
 
-- The hidden `playerhouse -col` collision mesh was still blocking grass
-  even though it's invisible and unused for gameplay. Ignore invisible
-  Node3D children so they don't create false no-grass zones.
+- Replace rectangle footprints with a 0.5m ground-cell grid built from the
+  actual ground-level triangles of each blocker mesh.
+- Grass samples now check a cell lookup instead of a loose AABB, so L-shaped
+  houses and irregular footprints no longer wipe out empty corners.
 
 Generated with [Devin](https://devin.ai)
 
