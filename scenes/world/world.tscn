@@ -358,6 +358,7 @@ shape = SubResource("BoxShape3D_5fxch")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -62.04986, 0, -11.774675)
 script = ExtResource("36_0wrxw")
 waypoints = [NodePath("Point 1"), NodePath("Point 2"), NodePath("Point 3"), NodePath("Point 4"), NodePath("Point 5"), NodePath("Point 6")]
+single_stand_only = true
 
 [node name="Point 1" type="Marker3D" parent="Routes/Route 1" unique_id=241292620]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.982567, 0, -28.03636)

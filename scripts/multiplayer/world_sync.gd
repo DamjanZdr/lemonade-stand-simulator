@@ -16,6 +16,10 @@ extends Node
 
 signal object_spawned(node: Node)
 signal object_despawned(node_path: String)
+## Emitted on a client after _apply_world_snapshot finishes instantiating
+## everything — lets the late-join transition hold its loading screen
+## until the world is actually ready.
+signal world_snapshot_applied
 
 ## scene_path -> PackedScene cache
 var _scene_cache: Dictionary = { }
@@ -184,12 +188,12 @@ func sync_world_state_to_clients() -> void:
 
 ## Same as sync_world_state_to_clients but only sent to a specific peer.
 ## Used when a client joins mid-game (late join).
+## Always sends — even an empty snapshot — so the joiner knows the world
+## state push completed and can leave its loading screen.
 func sync_world_state_to_peer(peer_id: int) -> void:
 	if not is_host():
 		return
 	var snapshot := _collect_world_snapshot()
-	if snapshot.is_empty():
-		return
 	_apply_world_snapshot.rpc_id(peer_id, snapshot)
 
 
@@ -330,24 +334,38 @@ func _serialize_supply_box(node: Node) -> Dictionary:
 
 ## Clients receive the full world snapshot and instantiate all
 ## containers and supply boxes to match the host's world.
+## Instantiation is chunked across frames — a mid-game world can hold
+## hundreds of objects and spawning them all in one call freezes the
+## client for seconds (the "0.1 fps on join" hitch).
 @rpc("authority", "call_local", "reliable")
 func _apply_world_snapshot(snapshot: Dictionary) -> void:
 	if is_host():
 		return
 	var root := get_tree().current_scene
 	if root == null:
+		world_snapshot_applied.emit()
 		return
 	_clear_client_world_objects()
-	# Spawn containers
+	# Spawn containers + supply boxes, yielding periodically so the frame
+	# stays responsive (the late-join Day X screen can keep animating).
+	var spawned_since_yield := 0
 	for entry in snapshot.get("containers", []):
 		_spawn_container_from_snapshot(entry, root)
-	# Spawn supply boxes
+		spawned_since_yield += 1
+		if spawned_since_yield >= 12:
+			spawned_since_yield = 0
+			await get_tree().process_frame
 	for entry in snapshot.get("supply_boxes", []):
 		_spawn_supply_box_from_snapshot(entry, root)
+		spawned_since_yield += 1
+		if spawned_since_yield >= 12:
+			spawned_since_yield = 0
+			await get_tree().process_frame
 	GameLog.log(
 		"[WorldSync] Applied world snapshot: %d containers, %d supply boxes"
 		% [snapshot.get("containers", []).size(), snapshot.get("supply_boxes", []).size()]
 	)
+	world_snapshot_applied.emit()
 
 
 func _clear_client_world_objects() -> void:
@@ -1368,6 +1386,24 @@ func _find_node_by_name(root: Node, target_name: String) -> Node:
 	return null
 
 
+## Like _find_node_by_name but only matches a node whose parent's path
+## equals parent_path_str — disambiguates same-named nodes across stands.
+func _find_node_by_name_and_parent(
+	root: Node,
+	target_name: String,
+	parent_path_str: String,
+) -> Node:
+	if root == null:
+		return null
+	if (root.name == target_name and str(root.get_parent().get_path()) == parent_path_str):
+		return root
+	for child in root.get_children():
+		var found := _find_node_by_name_and_parent(child, target_name, parent_path_str)
+		if found:
+			return found
+	return null
+
+
 ## Sync a transform (position + rotation) using unreliable RPCs for
 ## high-frequency updates (e.g. moving trucks). Only call this from
 ## the host's _process.
@@ -1590,25 +1626,22 @@ func _find_node(parent_path_str: String, obj_name: String, net_id: int = -1) -> 
 		var by_id := _find_node_by_net_id(net_id)
 		if by_id != null:
 			return by_id
-	# Check name cache next
-	if _node_cache.has(obj_name):
-		var cached: Node = _node_cache[obj_name]
-		if is_instance_valid(cached):
-			return cached
-		else:
-			_node_cache.erase(obj_name)
 	var parent := _string_to_node(parent_path_str)
 	if parent:
 		var obj := parent.get_node_or_null(obj_name)
 		if obj:
-			_node_cache[obj_name] = obj
 			return obj
-	# Fallback: search the entire scene tree by name in case the object
-	# was re-parented on the host without the client knowing.
-	var found := _find_node_by_name(get_tree().current_scene, obj_name)
-	if found:
-		_node_cache[obj_name] = found
-	return found
+	# Same-named nodes can exist under different parents in versus mode
+	# (e.g. a spawned "Pitcher" on each stand). Prefer a name match whose
+	# parent path matches the sender's.
+	var scoped := _find_node_by_name_and_parent(get_tree().current_scene, obj_name, parent_path_str)
+	if scoped:
+		return scoped
+	# Last resort: name-only match covers nodes reparented since the sender
+	# computed the path (e.g. a supply box picked into a player's hand).
+	# Do NOT cache by bare name here — a stale hit would silently return a
+	# same-named node from the wrong stand.
+	return _find_node_by_name(get_tree().current_scene, obj_name)
 
 
 ## Fast name-only lookup for batch syncs (avoids serializing parent

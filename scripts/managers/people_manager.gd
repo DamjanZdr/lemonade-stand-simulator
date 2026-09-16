@@ -154,7 +154,7 @@ func _fill_hour(start: float, end: float, count: int) -> void:
 func _spawn_one() -> void:
 	var paths := get_tree().get_nodes_in_group("pedestrian_paths").filter(
 		func(p):
-			return not (p as PedestrianPath).waypoints.is_empty(),
+			return (p as PedestrianPath).is_usable(),
 	)
 	if paths.is_empty():
 		push_warning("PeopleManager: no usable pedestrian paths found.")

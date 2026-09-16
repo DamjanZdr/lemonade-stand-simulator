@@ -41,6 +41,6 @@ func _on_day_time_over() -> void:
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
-	if phase == DayManager.Phase.MORNING:
+	if phase != DayManager.Phase.DAY:
 		_ready_to_end = false
 		_mat.emission_energy_multiplier = 0.0

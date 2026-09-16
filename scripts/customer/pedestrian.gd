@@ -713,9 +713,9 @@ func try_serve(player: Node) -> void:
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "")
 	var feedback := _feedback_text(result)
 	_show_order_text(feedback)
-	# Sync to clients
-	sync_show_order_text(feedback)
+	# Sync to clients — serving first so its hide doesn't clobber the feedback text
 	sync_serving()
+	sync_show_order_text(feedback)
 	_npc.play_anim("Talk")
 	_feedback_timer = 2.5
 
@@ -888,6 +888,7 @@ func _resize_order_panel() -> void:
 	var pad := Vector2(8, 4)
 	_ui_panel.size = label_size + pad * 2
 	_ui_label.position = pad
+	_ui_label.size = label_size
 	_ui_panel.visible = true
 
 

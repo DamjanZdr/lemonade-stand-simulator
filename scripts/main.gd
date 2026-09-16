@@ -103,6 +103,11 @@ var _world_menu: CanvasLayer = null
 
 ## True for the local late joiner once the host has started their spawn-in.
 var _late_join_camera_pending: bool = false
+## Set when the client's world snapshot has finished applying. The
+## late-join Day X screen stays up until this is true so the heavy
+## world-state load happens behind the black screen instead of
+## freezing the lobby/game mid-transition.
+var _late_join_world_ready: bool = true
 
 ## True after the host has notified clients to start their game transition.
 ## Prevents duplicate notify_clients_start() calls.
@@ -206,6 +211,7 @@ func _ready() -> void:
 	LobbyManager.game_starting.connect(_on_game_starting)
 	LobbyManager.late_join_starting.connect(_on_late_join_starting)
 	LobbyManager.late_join_denied.connect(_on_late_join_denied)
+	WorldSync.world_snapshot_applied.connect(_on_world_snapshot_applied)
 
 	# If we're connected to a server (joining an existing game), go
 	# straight to the lobby/game flow. Otherwise, show the in-world
@@ -822,12 +828,7 @@ func _position_lobby_camera(stand_index: int, tween: bool) -> void:
 		var tw := create_tween()
 		tw.set_parallel(true)
 		tw \
-				.tween_property(
-			lobby_camera,
-			"global_position",
-			target_transform.origin,
-			CAMERA_TWEEN_TIME,
-		) \
+				.tween_property(lobby_camera, "global_position", target_transform.origin, CAMERA_TWEEN_TIME) \
 				.set_trans(Tween.TRANS_SINE) \
 				.set_ease(Tween.EASE_IN_OUT)
 		tw \
@@ -1124,6 +1125,10 @@ func _start_late_join(peer_id: int) -> void:
 		return
 	print("[Main] Starting late join transition for peer %d" % peer_id)
 	_late_join_camera_pending = true
+	# The world snapshot RPC arrives right after this on the reliable
+	# channel — mark the world as not-ready so the Day X screen holds
+	# until _apply_world_snapshot finishes on this client.
+	_late_join_world_ready = false
 	_do_late_join_transition()
 	if _local_player != null and is_instance_valid(_local_player):
 		_complete_pending_local_transition()
@@ -1650,7 +1655,20 @@ func _start_late_join_day_transition() -> void:
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_property(dim_panel, "modulate:a", 1.0, 1.0) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Hold the black screen until the world snapshot has been applied —
+	# the chunked instantiate yields frames, so this keeps animating while
+	# the world loads. Safety timeout so a missing snapshot can't softlock.
+	var wait_start := Time.get_ticks_msec()
+	while not _late_join_world_ready and Time.get_ticks_msec() - wait_start < 15000:
+		await get_tree().process_frame
+	# Day number syncs inside the same push — refresh the label now that
+	# the world state (and _sync_day_phase) has been applied.
+	day_label.text = "Day %d" % DayManager.day_number
 	call_deferred("_snap_to_player_camera", fade_rect, day_label, dim_panel)
+
+
+func _on_world_snapshot_applied() -> void:
+	_late_join_world_ready = true
 
 
 ## Host-first readiness: called after the host's local player is ready

@@ -19,6 +19,10 @@ var water: float = 0.0
 var sugar: float = 0.0
 var ice: float = 0.0
 var cups_poured: int = 0 # Once > 0, can no longer add sugar/ice
+## Recipe frozen at the first pour — every cup from this batch carries it.
+## Without this, later cups get the proportionally-drained totals, which the
+## evaluator reads as a different (weaker) recipe than the one the player made.
+var serving_recipe: Dictionary = { }
 
 # Set by world at startup so pitcher knows where to return after being thrown out.
 var prep_position: Vector3 = Vector3.ZERO
@@ -182,6 +186,7 @@ func _sync_state_to_peers() -> void:
 			"ice": ice,
 			"cups_poured": cups_poured,
 			"state": state,
+			"serving_recipe": serving_recipe,
 		},
 	)
 	WorldSync.sync_call(self, "sync_fill_display")
@@ -193,6 +198,12 @@ func pour_portion() -> Dictionary:
 	var liquid := get_liquid_volume()
 	if liquid <= 0.0:
 		return snap
+	# Freeze the recipe on the first pour; every later cup serves the same
+	# recipe while the pitcher's remaining volume drains toward empty.
+	if serving_recipe.is_empty():
+		serving_recipe = snap.duplicate(true)
+	else:
+		snap = serving_recipe.duplicate(true)
 	var portion_ratio := minf(Balancing.PORTION_SIZE / liquid, 1.0)
 	fruit_count -= fruit_count * portion_ratio
 	water -= water * portion_ratio
@@ -230,6 +241,7 @@ func _clear_and_return() -> void:
 	sugar = 0.0
 	ice = 0.0
 	cups_poured = 0
+	serving_recipe = { }
 	state = PitcherState.PREPPING
 	# Only move back to prep position if not in SERVING state (i.e., at prep table)
 	if not was_serving:

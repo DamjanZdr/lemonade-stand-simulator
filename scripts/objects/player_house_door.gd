@@ -50,5 +50,5 @@ func _on_day_time_over() -> void:
 
 
 func _on_day_phase_changed(_phase: int, _day: int) -> void:
-	if _phase == DayManager.Phase.MORNING:
+	if _phase != DayManager.Phase.DAY:
 		_ready_to_end = false

@@ -114,7 +114,7 @@ func _spawn_at_slot(slot_index: int) -> void:
 	) as Customer
 	if spawned == null:
 		return
-	spawned.add_to_group("trash_spawn_candidates")
+	# Customers never litter — only free-roaming pedestrians drop trash.
 	spawned.collision_layer = 16
 	spawned.collision_mask = 0
 	spawned.stand = stand
@@ -365,7 +365,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	) as Customer
 	if spawned == null:
 		return
-	spawned.add_to_group("trash_spawn_candidates")
+	# Customers never litter — only free-roaming pedestrians drop trash.
 	spawned.collision_layer = 16
 	spawned.collision_mask = 0
 	spawned.stand = stand

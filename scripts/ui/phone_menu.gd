@@ -2,6 +2,7 @@ extends CanvasLayer
 ## Phone menu: supply ordering. Toggle with Tab.
 
 var _visible_panel: bool = false
+var _closed_overlay: Panel = null
 
 @onready var panel: PanelContainer = $Panel
 @onready var order_buttons: VBoxContainer = $Panel/VBox/Orders
@@ -10,6 +11,39 @@ var _visible_panel: bool = false
 func _ready() -> void:
 	panel.visible = false
 	_build_order_buttons()
+	_build_closed_overlay()
+	EventBus.day_time_over.connect(_on_day_time_over)
+
+
+## Deliveries close at 6 PM — day_time_over is synced to clients by
+## DayManager, so this check works on every peer.
+func _shop_closed() -> bool:
+	return DayManager.day_time_over
+
+
+func _build_closed_overlay() -> void:
+	_closed_overlay = Panel.new()
+	_closed_overlay.name = "ClosedOverlay"
+	_closed_overlay.visible = false
+	# Block clicks from reaching the order buttons underneath.
+	_closed_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.03, 0.03, 0.03, 0.88)
+	_closed_overlay.add_theme_stylebox_override("panel", sb)
+	var lbl := Label.new()
+	lbl.text = "Closed for today"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_closed_overlay.add_child(lbl)
+	# PanelContainer stacks children over the VBox, covering the shop.
+	panel.add_child(_closed_overlay)
+
+
+func _on_day_time_over() -> void:
+	if _closed_overlay:
+		_closed_overlay.visible = true
 
 
 func _input(event: InputEvent) -> void:
@@ -22,6 +56,8 @@ func _input(event: InputEvent) -> void:
 			return
 		_visible_panel = !_visible_panel
 		panel.visible = _visible_panel
+		if _visible_panel and _closed_overlay:
+			_closed_overlay.visible = _shop_closed()
 		# Set the active stand for research so upgrades are per-stand.
 		if _visible_panel:
 			var sn := WorldSync.get_local_stand_name()
@@ -148,6 +184,9 @@ func _get_delivery_cost(qty: float) -> float:
 
 
 func _order(itype: String) -> void:
+	if _shop_closed():
+		EventBus.interaction_hint_changed.emit("Shop is closed for today")
+		return
 	var qty := _get_delivery_quantity()
 	var cost := _get_delivery_cost(qty)
 	# Route purchases through the host. The host spends the money and
@@ -165,6 +204,9 @@ func _order(itype: String) -> void:
 
 
 func _buy_container(container_type: String, cost: float) -> void:
+	if _shop_closed():
+		EventBus.interaction_hint_changed.emit("Shop is closed for today")
+		return
 	var sn := WorldSync.get_local_stand_name()
 	if WorldSync.is_host():
 		if not WorldSync.spend_local_money(cost):
@@ -176,6 +218,9 @@ func _buy_container(container_type: String, cost: float) -> void:
 
 
 func _buy_upgrade(id: String, btn: Button, name_lbl: Label) -> void:
+	if _shop_closed():
+		EventBus.interaction_hint_changed.emit("Shop is closed for today")
+		return
 	if WorldSync.is_host():
 		# Ensure the host's own stand is active before purchasing.
 		var sn := WorldSync.get_local_stand_name()
@@ -215,6 +260,10 @@ func _request_purchase(
 	stand_name: String = "",
 ) -> void:
 	if not WorldSync.is_host():
+		return
+	# Host-side validation: deliveries close at 6 PM. Reject any purchase
+	# request that arrives after closing, even if the client's UI was open.
+	if DayManager.day_time_over:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	GameLog.log(

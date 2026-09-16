@@ -8635,6 +8635,7 @@ mesh = SubResource("PlaneMesh_82vox")
 
 [node name="insider" parent="." unique_id=2014431990 instance=ExtResource("27_7lc8q")]
 transform = Transform3D(-8.742278e-08, 0, -2, 0, 2, 0, 2, 0, -8.742278e-08, -13.608044, -18.343937, 0)
+visible = false
 
 [node name="Insider" parent="." unique_id=225816478 instance=ExtResource("28_mpqsg")]
 transform = Transform3D(-8.742278e-08, 0, -2, 0, 2, 0, 2, 0, -8.742278e-08, -15, -15.896536, 0)

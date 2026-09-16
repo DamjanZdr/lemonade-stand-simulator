@@ -137,6 +137,11 @@ func _sync_day_phase(phase: int, day: int) -> void:
 		return
 	current_phase = phase as Phase
 	day_number = day
+	# Reset the day-over flag when a new day/night phase begins — the flag
+	# is only cleared host-side, so without this a client keeps
+	# day_time_over=true into the next day.
+	if phase != Phase.DAY:
+		day_time_over = false
 	EventBus.day_phase_changed.emit(current_phase, day_number)
 
 

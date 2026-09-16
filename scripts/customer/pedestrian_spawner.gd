@@ -213,10 +213,10 @@ func _try_spawn() -> void:
 	if _pedestrians.size() >= max_pedestrians:
 		return
 
-	# Gather all paths that have at least one waypoint.
+	# Gather all paths that are usable in the current game mode.
 	var usable: Array = get_tree().get_nodes_in_group("pedestrian_paths").filter(
 		func(p):
-			return not (p as PedestrianPath).waypoints.is_empty(),
+			return (p as PedestrianPath).is_usable(),
 	)
 
 	if usable.is_empty():
