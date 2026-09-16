@@ -49,6 +49,7 @@ var _mesh: Mesh
 var _material: Material
 var _local_bottom_offset := Vector3.ZERO
 var _active_chunks: Dictionary = { } # Vector2i -> MultiMeshInstance3D
+var _pending_chunks: Array[Vector2i] = []
 var _player: Node3D
 var _initialized := false
 
@@ -92,6 +93,9 @@ func _process(_delta: float) -> void:
 		if _player == null:
 			return
 	_update_chunks()
+	if not _pending_chunks.is_empty():
+		var coord: Vector2i = _pending_chunks.pop_front()
+		_generate_chunk_async(coord)
 
 
 func _find_player() -> Node3D:
@@ -121,16 +125,16 @@ func _update_chunks() -> void:
 			mi.queue_free()
 		_active_chunks.erase(key)
 	for key in needed.keys():
-		if not _active_chunks.has(key):
-			var chunk := _generate_chunk(key)
-			if chunk != null:
-				_active_chunks[key] = chunk
+		if not _active_chunks.has(key) and not _pending_chunks.has(key):
+			_pending_chunks.append(key)
 
 
-func _generate_chunk(chunk_coord: Vector2i) -> MultiMeshInstance3D:
+func _generate_chunk_async(chunk_coord: Vector2i) -> void:
 	var chunk_origin := Vector3(chunk_coord.x * chunk_size, 0.0, chunk_coord.y * chunk_size)
 	var chunk_aabb := AABB(chunk_origin, Vector3(chunk_size, 0.0, chunk_size))
 	var instances: Array[Transform3D] = []
+	var yield_counter := 0
+	const YIELD_EVERY := 2048
 
 	for surface in _surfaces:
 		if not surface is GeometryInstance3D:
@@ -163,11 +167,25 @@ func _generate_chunk(chunk_coord: Vector2i) -> MultiMeshInstance3D:
 			if _is_blocked(pos):
 				continue
 			instances.append(_make_blade_transform(pos))
+			yield_counter += 1
+			if yield_counter % YIELD_EVERY == 0:
+				await get_tree().process_frame
 			if instances.size() >= max_instances_per_chunk:
 				break
 
 	if instances.is_empty():
-		return null
+		return
+
+	# If the player moved on while this chunk was generating, skip adding it.
+	var center_chunk := Vector2i(
+		int(floor(_player.global_position.x / chunk_size)),
+		int(floor(_player.global_position.z / chunk_size)),
+	)
+	if (
+		abs(chunk_coord.x - center_chunk.x) > chunk_radius
+		or abs(chunk_coord.y - center_chunk.y) > chunk_radius
+	):
+		return
 
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -184,7 +202,7 @@ func _generate_chunk(chunk_coord: Vector2i) -> MultiMeshInstance3D:
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	add_child(mi, true)
-	return mi
+	_active_chunks[chunk_coord] = mi
 
 
 func _make_blade_transform(pos: Vector3) -> Transform3D:
