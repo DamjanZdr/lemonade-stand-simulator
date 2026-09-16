@@ -40,7 +40,7 @@ var _node_to_net_id: Dictionary = { }
 var _placed_objects: Dictionary = { }
 
 
-func setup(world_objects: Node, spawner: MultiplayerSpawner) -> void:
+func setup(_world_objects: Node, _spawner: MultiplayerSpawner) -> void:
 	# Currently unused (we use RPC-based spawning instead of MultiplayerSpawner),
 	# but kept for future use if we switch to spawner-based replication.
 	pass
@@ -151,8 +151,14 @@ func find_node_by_net_id(net_id: int) -> Node:
 
 func _on_net_object_tree_exited(net_id: int) -> void:
 	var node: Node = _net_id_to_node.get(net_id, null)
-	if node != null and is_instance_valid(node):
-		_node_to_net_id.erase(node)
+	# tree_exited also fires on remove_child() during reparenting (delivery
+	# truck arcs, workstation item attachments, client-side pickup
+	# prediction). Only unregister when the node is actually being deleted —
+	# otherwise the surviving node loses its stable id and later despawn /
+	# state RPCs can no longer find it, leaving stale duplicates on peers.
+	if node == null or not is_instance_valid(node) or not node.is_queued_for_deletion():
+		return
+	_node_to_net_id.erase(node)
 	_net_id_to_node.erase(net_id)
 	_placed_objects.erase(net_id)
 
@@ -357,10 +363,12 @@ func _clear_client_world_objects() -> void:
 				continue
 			removed[node.get_instance_id()] = true
 			_node_cache.erase(node.name)
+			# queue_free() first so tree_exited sees is_queued_for_deletion()
+			# and the net_id registration is dropped alongside the node.
+			node.queue_free()
 			var parent := node.get_parent()
 			if parent != null:
 				parent.remove_child(node)
-			node.queue_free()
 
 
 func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
@@ -1319,11 +1327,14 @@ func _despawn_on_clients(parent_path_str: String, obj_name: String, net_id: int)
 		% [parent_path_str, obj_name, net_id]
 	)
 	# Prefer stable net_id lookup, then fall back to name/path for objects
-	# that pre-date the net_id system or default scene objects.
+	# that pre-date the net_id system or default scene objects. The fallback
+	# must also run when the net_id lookup fails — a stale registration (e.g.
+	# from an object reparented before the tree_exited guard existed) would
+	# otherwise leave a zombie copy on this client forever.
 	var obj: Node = null
 	if net_id >= 0:
 		obj = _find_node_by_net_id(net_id)
-	else:
+	if obj == null:
 		var parent := _string_to_node(parent_path_str)
 		if parent:
 			obj = parent.get_node_or_null(obj_name)
@@ -1376,12 +1387,13 @@ func sync_transforms_batch(
 	names: PackedStringArray,
 	positions: PackedVector3Array,
 	rotations: PackedVector3Array,
+	net_ids: PackedInt32Array = PackedInt32Array(),
 ) -> void:
 	if not is_host():
 		return
 	if not multiplayer.multiplayer_peer:
 		return
-	_apply_transforms_batch.rpc_id(0, names, positions, rotations)
+	_apply_transforms_batch.rpc_id(0, names, positions, rotations, net_ids)
 
 
 @rpc("authority", "call_local", "unreliable")
@@ -1389,12 +1401,19 @@ func _apply_transforms_batch(
 	names: PackedStringArray,
 	positions: PackedVector3Array,
 	rotations: PackedVector3Array,
+	net_ids: PackedInt32Array = PackedInt32Array(),
 ) -> void:
 	if is_host():
 		return
 	var count := names.size()
 	for i in count:
-		var obj := _find_node_by_name_only(names[i])
+		# Prefer stable net_id — survives reparenting and name mismatches.
+		# Fall back to the name for entries that pre-date net_id support.
+		var obj: Node = null
+		if i < net_ids.size() and net_ids[i] >= 0:
+			obj = _find_node_by_net_id(net_ids[i])
+		if obj == null:
+			obj = _find_node_by_name_only(names[i])
 		if obj and obj.has_method("net_set_target"):
 			obj.net_set_target(positions[i], rotations[i])
 

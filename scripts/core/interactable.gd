@@ -17,6 +17,12 @@ static var _fill_mat: StandardMaterial3D = null
 ## spawn state so all peers see the same ownership.
 var stand_owner: String = ""
 
+## "_Outline" fill meshes created by the most recent set_highlight(true).
+## Tracked so set_highlight(false) can remove them even when the mesh they
+## were attached to was reparented out of the outlined subtree meanwhile
+## (e.g. a snapped pitcher leaving a Press while highlighted).
+var _outline_nodes: Array[MeshInstance3D] = []
+
 
 ## Returns true if the given player is allowed to interact with this item.
 ## In single-player (no peers), always true. In multiplayer, the player's
@@ -57,7 +63,20 @@ func get_hint(_player: Node) -> String:
 
 
 func set_highlight(on: bool) -> void:
-	_apply_outline(self, on)
+	_clear_highlight_outlines()
+	if on:
+		_apply_outline(self, true)
+
+
+## Frees every "_Outline" fill mesh this interactable created — including
+## ones whose host mesh was reparented out of the outlined subtree since
+## the highlight was applied. Subclass overrides of set_highlight() must
+## call this before applying (or skipping) new outlines.
+func _clear_highlight_outlines() -> void:
+	for ol in _outline_nodes:
+		if is_instance_valid(ol):
+			ol.queue_free()
+	_outline_nodes.clear()
 
 
 func _get_fill_mat() -> StandardMaterial3D:
@@ -73,6 +92,10 @@ func _apply_outline(node: Node, on: bool) -> void:
 	if node is MeshInstance3D and node.name != "_Outline":
 		var mi := node as MeshInstance3D
 		var existing := mi.get_node_or_null("_Outline") as MeshInstance3D
+		# A queued-for-deletion fill still occupies the slot until the frame
+		# ends — treat it as absent so a re-highlight in the same frame works.
+		if existing != null and existing.is_queued_for_deletion():
+			existing = null
 		if on and existing == null and mi.mesh != null:
 			var ol := MeshInstance3D.new()
 			ol.name = "_Outline"
@@ -83,12 +106,14 @@ func _apply_outline(node: Node, on: bool) -> void:
 			ol.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			ol.skin = mi.skin
 			mi.add_child(ol)
+			_outline_nodes.append(ol)
 			ol.transform = Transform3D.IDENTITY
 			var skel := mi.get_node_or_null(mi.skeleton) as Skeleton3D
 			if skel != null:
 				ol.skeleton = ol.get_path_to(skel)
 		elif not on and existing != null:
 			existing.queue_free()
+			_outline_nodes.erase(existing)
 	for child in node.get_children():
 		if child.name == "_Outline":
 			continue # never recurse into outline nodes themselves

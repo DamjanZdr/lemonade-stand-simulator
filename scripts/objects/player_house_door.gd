@@ -38,7 +38,9 @@ func set_highlight(on: bool) -> void:
 	# Outline the configured door mesh, not this trigger area.
 	var door := get_node_or_null(door_node)
 	if door != null:
-		_apply_outline(door, on)
+		_clear_highlight_outlines()
+		if on:
+			_apply_outline(door, true)
 	else:
 		super.set_highlight(on)
 

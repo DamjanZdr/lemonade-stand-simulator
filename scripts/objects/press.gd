@@ -328,6 +328,12 @@ func _build_merged_animation() -> void:
 
 
 func set_highlight(on: bool) -> void:
+	# Always clear tracked outlines first — a previously highlighted pitcher
+	# may have been unsnapped and carried away since, and _apply_outline can
+	# no longer reach it once it leaves this subtree.
+	_clear_highlight_outlines()
+	if not on:
+		return
 	# When a pitcher is snapped, highlight the pitcher (not the press body)
 	# unless the player is holding fruit (in which case highlight the press).
 	if has_snapped_pitcher():
@@ -337,13 +343,11 @@ func set_highlight(on: bool) -> void:
 				and player.held_item_data.get("source") == "bin_scoop":
 			holding_fruit = true
 		if holding_fruit:
-			_apply_outline(self, on)
-			_apply_outline(_snapped_pitcher, false)
+			_apply_outline(self, true)
 		else:
-			_apply_outline(self, false)
-			_apply_outline(_snapped_pitcher, on)
+			_apply_outline(_snapped_pitcher, true)
 	else:
-		_apply_outline(self, on)
+		_apply_outline(self, true)
 
 
 func has_snapped_pitcher() -> bool:

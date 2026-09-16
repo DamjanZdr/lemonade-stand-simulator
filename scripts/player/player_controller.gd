@@ -36,6 +36,9 @@ var _net_head_yaw: float = 0.0
 # yaw exceeds the neck limit; storing them prevents incremental rotations
 # from introducing unwanted roll into the _player.head/_player.camera.
 var _look_yaw: float = 0.0
+## Mouse deltas accumulated by _unhandled_input, applied at the next
+## physics tick so head.rotation stays aligned with physics interpolation.
+var _pending_look: Vector2 = Vector2.ZERO
 var _look_pitch: float = 0.0
 const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
 # Animation state
@@ -191,16 +194,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Update stored yaw/pitch and re-apply the _player.head _player.rotation as a single
-		# clean Euler vector. This avoids mixing rotate_x with _player.rotation.y and
-		# keeps the _player.camera horizon level.
-		_look_yaw = wrap_angle(_look_yaw - event.relative.x * MOUSE_SENSITIVITY)
-		_look_pitch = clampf(
-			_look_pitch - event.relative.y * MOUSE_SENSITIVITY,
-			-PI / 2.1,
-			PI / 2.1,
-		)
-		_player.head.rotation = Vector3(_look_pitch, _look_yaw, 0)
+		# Only accumulate the delta here — the actual head.rotation write
+		# happens at the physics tick in _physics_process. Writing the
+		# transform at input rate desyncs physics interpolation (head yaw is
+		# raw while the body yaw it compensates for is interpolated), which
+		# shows up as camera jitter, especially on the body catch-up turn
+		# when movement starts.
+		_pending_look += event.relative
 
 	if event.is_action_pressed("ui_cancel"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -310,6 +310,16 @@ func _physics_process(delta: float) -> void:
 		# Remote players' position/_player.rotation come from RPC sync
 		# instead of local physics simulation.
 		return
+
+	# Apply accumulated mouse-look at the physics tick so head.rotation
+	# writes are tick-aligned with physics interpolation. Kept before the
+	# mode early-returns so looking around still works in money/ESC/stun
+	# states that skip _update_body_yaw.
+	if _pending_look != Vector2.ZERO:
+		_look_yaw = wrap_angle(_look_yaw - _pending_look.x * MOUSE_SENSITIVITY)
+		_look_pitch = clampf(_look_pitch - _pending_look.y * MOUSE_SENSITIVITY, -PI / 2.1, PI / 2.1)
+		_pending_look = Vector2.ZERO
+		_player.head.rotation = Vector3(_look_pitch, _look_yaw, 0)
 
 	if _in_priceboard_mode:
 		_player.velocity = Vector3.ZERO

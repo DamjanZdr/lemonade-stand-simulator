@@ -64,6 +64,7 @@ func _process(delta: float) -> void:
 	if _pedestrians.is_empty():
 		return
 	var names := PackedStringArray()
+	var net_ids := PackedInt32Array()
 	var positions := PackedVector3Array()
 	var rotations := PackedVector3Array()
 	for ped in _pedestrians:
@@ -71,10 +72,11 @@ func _process(delta: float) -> void:
 		if p == null:
 			continue
 		names.append(p.name)
+		net_ids.append(WorldSync.get_net_id(p))
 		positions.append(p.global_position)
 		rotations.append(p.global_rotation)
 	if names.size() > 0:
-		WorldSync.sync_transforms_batch(names, positions, rotations)
+		WorldSync.sync_transforms_batch(names, positions, rotations, net_ids)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:

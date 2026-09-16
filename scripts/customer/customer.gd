@@ -166,6 +166,9 @@ func _ready() -> void:
 	# Disabling collision shapes saves physics processing on clients.
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		_disable_collision()
+		# Grace period for the stale-sync watchdog starts at spawn; the
+		# first host transform batch should arrive within ~100-200 ms.
+		_last_net_sync_msec = Time.get_ticks_msec()
 
 
 func _exit_tree() -> void:
@@ -396,14 +399,27 @@ func _measure_visual_ground_offset() -> float:
 var _net_target_pos: Vector3 = Vector3.ZERO
 var _net_target_rot: Vector3 = Vector3.ZERO
 var _has_net_target: bool = false
+## Client-side: msec timestamp of the last transform sync received from the
+## host (or of local spawn if none received yet). Used to self-remove stale
+## copies that no longer exist on the host.
+var _last_net_sync_msec: int = 0
 var _ground_y: float = 0.0
 var _visual_ground_offset: float = 0.0
 var _ground_sample_timer: float = 0.0
 const _GROUND_SAMPLE_INTERVAL: float = 0.12
 const _NET_LERP_SPEED: float = 12.0
+## The host syncs every live NPC at ~10 Hz; a client copy that hasn't
+## received a target for this long is a zombie from a missed despawn.
+const _NET_STALE_MSEC: int = 8000
 
 
 func _physics_client_interpolate(delta: float) -> void:
+	# Self-cleanup: if the host hasn't synced this NPC for a while it no
+	# longer exists there (missed despawn or lookup failure), so remove the
+	# stale copy instead of leaving it walking in place forever.
+	if Time.get_ticks_msec() - _last_net_sync_msec > _NET_STALE_MSEC:
+		queue_free()
+		return
 	if _is_rotating_to_face:
 		var t := minf(delta * _ROTATION_SPEED, 1.0)
 		var q := basis.get_rotation_quaternion().slerp(_facing_target.get_rotation_quaternion(), t)
@@ -423,6 +439,7 @@ func net_set_target(pos: Vector3, rot: Vector3) -> void:
 	_net_target_pos = pos
 	_net_target_rot = rot
 	_has_net_target = true
+	_last_net_sync_msec = Time.get_ticks_msec()
 
 
 ## Host: sync a state change + animation to clients.

@@ -50,14 +50,11 @@ func get_hint(_player: Node) -> String:
 
 
 func set_highlight(on: bool) -> void:
-	# Only highlight when active (during sale)
-	if not is_active:
-		if _body != null:
-			_apply_outline(_body, false)
-		return
-	# Highlight only the register body, not denomination children.
-	if _body != null:
-		_apply_outline(_body, on)
+	_clear_highlight_outlines()
+	# Only highlight when active (during sale). Highlight only the register
+	# body, not denomination children.
+	if on and is_active and _body != null:
+		_apply_outline(_body, true)
 
 # --- Called by DenominationItem children ---
 

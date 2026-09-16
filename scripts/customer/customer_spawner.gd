@@ -44,6 +44,7 @@ func _process(delta: float) -> void:
 	_sync_timer = 0.0
 	# Batch all customer transforms into a single RPC
 	var names := PackedStringArray()
+	var net_ids := PackedInt32Array()
 	var positions := PackedVector3Array()
 	var rotations := PackedVector3Array()
 	for c in _queue:
@@ -51,6 +52,7 @@ func _process(delta: float) -> void:
 			var cust := c as Customer
 			if cust != null:
 				names.append(cust.name)
+				net_ids.append(WorldSync.get_net_id(cust))
 				positions.append(cust.global_position)
 				rotations.append(cust.global_rotation)
 				# Sync patience meter for waiting customers
@@ -63,10 +65,11 @@ func _process(delta: float) -> void:
 			_leaving_customers.remove_at(i)
 			continue
 		names.append(c.name)
+		net_ids.append(WorldSync.get_net_id(c))
 		positions.append(c.global_position)
 		rotations.append(c.global_rotation)
 	if names.size() > 0:
-		WorldSync.sync_transforms_batch(names, positions, rotations)
+		WorldSync.sync_transforms_batch(names, positions, rotations, net_ids)
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:

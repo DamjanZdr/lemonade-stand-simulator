@@ -173,10 +173,12 @@ func _pick_up_player(player: Node) -> void:
 	# host, let WorldSync.despawn_networked() broadcast the removal and free
 	# the node authoritatively so the despawn RPC can still resolve the object.
 	if not WorldSync.is_host():
+		# queue_free() first so tree_exited sees is_queued_for_deletion() and
+		# WorldSync drops the net_id registration alongside the node.
+		queue_free()
 		var parent := get_parent()
 		if parent != null:
 			parent.remove_child(self)
-		queue_free()
 
 
 func _cache_face_nodes() -> void:

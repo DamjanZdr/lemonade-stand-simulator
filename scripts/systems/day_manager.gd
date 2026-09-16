@@ -84,6 +84,12 @@ func _process(delta: float) -> void:
 func _sync_day_over() -> void:
 	if multiplayer.is_server():
 		return
+	# Snap the client timer to zero and emit the final update. The last
+	# unreliable _sync_day_timer packet carrying 0.0 may be dropped, which
+	# otherwise leaves the HUD clock frozen at ~5:59 even though the day
+	# is over.
+	_day_timer = 0.0
+	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
 	if not day_time_over:
 		day_time_over = true
 		EventBus.day_time_over.emit()

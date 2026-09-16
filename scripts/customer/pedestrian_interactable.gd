@@ -26,7 +26,9 @@ func interact(player: Node) -> void:
 
 
 func set_highlight(on: bool) -> void:
-	_apply_outline(get_parent(), on)
+	_clear_highlight_outlines()
+	if on:
+		_apply_outline(get_parent(), true)
 
 
 func get_hint(player: Node) -> String:

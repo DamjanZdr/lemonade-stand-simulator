@@ -21,8 +21,10 @@ func get_hint(_player: Node) -> String:
 
 
 func set_highlight(on: bool) -> void:
+	_clear_highlight_outlines()
 	# Only highlight this item's own mesh, not siblings.
-	_apply_outline($Mesh, on)
+	if on:
+		_apply_outline($Mesh, true)
 
 
 func _find_register() -> CashRegisterProp:
