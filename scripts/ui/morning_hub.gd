@@ -61,6 +61,7 @@ var _active_tab: String = "analytics"
 var _flow_tabs: Array[String] = ["analytics", "shop", "upgrades", "employees"]
 var _flow_step: int = 0
 var _cart: Array[Dictionary] = []
+var _closed_overlay: Panel = null
 var _preview_angle: float = 0.0
 var _bin_amounts: Dictionary = { }
 var _equipment_counts: Dictionary = { }
@@ -195,6 +196,8 @@ func _ready() -> void:
 	EventBus.price_changed.connect(_on_price_changed)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.money_changed.connect(_on_money_changed)
+	EventBus.day_time_over.connect(_on_day_time_over)
+	_build_closed_overlay()
 	EventBus.container_placed.connect(
 		func(_t, _n):
 			_scan_stand_state(),
@@ -923,6 +926,10 @@ func _buy_tree_upgrade(
 	var data := UpgradeManager.get_node_data(id)
 	if data.get("purchased", false):
 		return
+	if _shop_closed():
+		_status_lbl.text = "Shop is closed for today"
+		_animate_status()
+		return
 	if not data.get("can_buy", false):
 		_status_lbl.text = "Not enough money!"
 		_animate_status()
@@ -1190,11 +1197,55 @@ func _create_item_card(
 	return card
 
 
+## Deliveries close at 6 PM — day_time_over is synced to clients by
+## DayManager, so this check works on every peer.
+func _shop_closed() -> bool:
+	return DayManager.day_time_over
+
+
+## "Closed for today" overlay stacked over the shop page. Content is a
+## MarginContainer, so every child fills the same rect — the overlay
+## covers whichever page is active; we only show it on the shop tab.
+func _build_closed_overlay() -> void:
+	var content := $MainHBox/Panel/VBox/Content as MarginContainer
+	if content == null:
+		return
+	_closed_overlay = Panel.new()
+	_closed_overlay.name = "ClosedOverlay"
+	_closed_overlay.visible = false
+	# Block clicks from reaching the shop/cart underneath.
+	_closed_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.03, 0.03, 0.03, 0.88)
+	sb.set_corner_radius_all(8)
+	_closed_overlay.add_theme_stylebox_override("panel", sb)
+	var lbl := Label.new()
+	lbl.text = "Closed for today\nDeliveries resume tomorrow morning"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 28)
+	lbl.add_theme_color_override("font_color", Color(0.92, 0.90, 0.82))
+	lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_closed_overlay.add_child(lbl)
+	content.add_child(_closed_overlay)
+
+
+func _update_closed_overlay() -> void:
+	if _closed_overlay:
+		_closed_overlay.visible = _shop_closed() and _active_tab == "shop"
+
+
+func _on_day_time_over() -> void:
+	_update_closed_overlay()
+
+
 func _show_tab(tab_name: String) -> void:
 	_active_tab = tab_name
 	var content := $MainHBox/Panel/VBox/Content as MarginContainer
 	if content:
 		for child in content.get_children():
+			if child == _closed_overlay:
+				continue
 			child.visible = (child.name.to_lower() == tab_name + "page")
 			if child.visible:
 				child.modulate = Color(1, 1, 1, 0)
@@ -1209,6 +1260,7 @@ func _show_tab(tab_name: String) -> void:
 	elif tab_name == "employees":
 		_refresh_employees_page()
 	_update_flow_indicator()
+	_update_closed_overlay()
 
 
 func _update_flow_indicator() -> void:
@@ -1572,6 +1624,10 @@ func _update_cart_ui() -> void:
 
 
 func _checkout_cart() -> void:
+	if _shop_closed():
+		_status_lbl.text = "Shop is closed for today"
+		_animate_status()
+		return
 	AudioManager.play_sfx_ui("coins")
 	var counts: Dictionary = { }
 	var item_lookup: Dictionary = { }
@@ -1605,6 +1661,10 @@ func _checkout_cart() -> void:
 func _request_checkout(stand_name: String) -> void:
 	if not WorldSync.is_host():
 		return
+	# Deliveries close at 6 PM — drop late checkouts so a client can't
+	# trigger the truck after closing.
+	if DayManager.day_time_over:
+		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	GameLog.log("[MorningHub] Host received checkout from %d (stand=%s)" % [sender_id, stand_name])
 	EventBus.checkout_completed.emit(stand_name)
@@ -1624,6 +1684,10 @@ func _animate_status_text(msg: String) -> void:
 
 
 func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
+	if _shop_closed():
+		_status_lbl.text = "Shop is closed for today"
+		_animate_status()
+		return
 	var total: float = qty * item["cost"]
 	# Route purchases through the host. Clients send an RPC; the host
 	# validates money and emits the signal that triggers delivery.
@@ -1647,6 +1711,10 @@ func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
 
 
 func _buy_container(container_type: String, cost: float) -> void:
+	if _shop_closed():
+		_status_lbl.text = "Shop is closed for today"
+		_animate_status()
+		return
 	if WorldSync.is_host():
 		if not WorldSync.spend_local_money(cost):
 			_status_lbl.text = "Not enough money!"
@@ -1679,6 +1747,10 @@ func _request_purchase(
 	stand_name: String = "",
 ) -> void:
 	if not WorldSync.is_host():
+		return
+	# Host-side validation: the shop closes at 6 PM. Reject any purchase
+	# request that arrives after closing, even if the client's UI was open.
+	if DayManager.day_time_over:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	GameLog.log(
