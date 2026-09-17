@@ -44,6 +44,16 @@ var auto_save_enabled: bool = false
 ## appearance in the lobby UI after a save/load or scene transition.
 var _last_local_customization: Dictionary = { }
 
+## Periodic autosave — a guaranteed floor on top of the change-triggered
+## saves, so a session with no meaningful change still checkpoints.
+var _autosave_timer: Timer = null
+
+## True while apply_save_to_game_state() is running. The apply emits
+## money/popularity/recipe signals to refresh UI, and each of those is
+## also an autosave trigger — this flag stops us writing the save back
+## to disk in the middle of loading it.
+var _applying_save: bool = false
+
 
 func _ready() -> void:
 	EventBus.game_saved.connect(_on_game_saved)
@@ -77,8 +87,31 @@ func _ready() -> void:
 	# while the editor imports the new scene/script .uid files.
 	_workstation_scene = load("res://scenes/stand/workstation.tscn") as PackedScene
 
+	# Timed autosave — interval is a player setting (2-15 min, default 5).
+	_autosave_timer = Timer.new()
+	_autosave_timer.wait_time = SettingsManager.get_autosave_minutes() * 60.0
+	_autosave_timer.autostart = true
+	_autosave_timer.timeout.connect(_on_autosave_timer)
+	add_child(_autosave_timer)
+
 	# Migrate legacy save to slot system if needed
 	_migrate_legacy_save()
+
+
+func _on_autosave_timer() -> void:
+	# save_game() already gates on host + slot + auto_save_enabled, so
+	# this is a no-op in menus and on clients.
+	save_game()
+
+
+## Update the running autosave timer (called from the settings UI).
+func set_autosave_interval(minutes: float) -> void:
+	if _autosave_timer == null:
+		return
+	_autosave_timer.wait_time = (
+		clampf(minutes, SettingsManager.AUTOSAVE_MIN_MINUTES, SettingsManager.AUTOSAVE_MAX_MINUTES)
+		* 60.0
+	)
 
 
 func _get_container_scene(ctype: String) -> PackedScene:
@@ -97,6 +130,11 @@ func save_game(force: bool = false) -> void:
 	# 'force' bypasses the host check (used when creating a new game
 	# from the main menu before networking is set up).
 	if not force and not WorldSync.is_host():
+		return
+	# Don't write the save back to disk while we're in the middle of
+	# applying it — the apply emits change signals that are also
+	# autosave triggers.
+	if _applying_save:
 		return
 	if not auto_save_enabled or current_slot == "":
 		return
@@ -294,6 +332,11 @@ func _migrate_legacy_save() -> void:
 func apply_save_to_game_state(data: Dictionary) -> void:
 	if data.is_empty():
 		return
+	_applying_save = true
+	GameLog.log(
+		"[SaveManager] Applying '%s': stored money=$%.2f, live money=$%.2f"
+		% [current_slot, float(data.get("money", -1.0)), GameState.money]
+	)
 	_pending_container_respawn = data.get("placed_containers", [])
 	_pending_supply_box_respawn = data.get("supply_boxes", [])
 	GameState.stand_name = data.get("stand_name", current_slot)
@@ -368,6 +411,8 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		EventBus.price_changed.emit(ft, GameState.get_price(ft))
 		EventBus.recipe_changed.emit(ft, GameState.get_recipe(ft))
 	EventBus.feedback_tier_changed.emit(GameState.feedback_tier)
+	_applying_save = false
+	GameLog.log("[SaveManager] Apply done: GameState.money=$%.2f" % GameState.money)
 
 
 func _sync_live_stand_recipes(announce: bool) -> void:

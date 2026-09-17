@@ -673,11 +673,12 @@ func _resolve(outcome: String) -> void:
 			else:
 				_begin_change.rpc_id(_serving_peer_id, _serving_peer_id, payment, change_due)
 		else:
-			# Exact payment — no change needed. Pay directly and leave.
+			# Exact payment — no change owed (payment == price). The stand
+			# earns the full price; payment - price would credit $0.
 			if stand != null and not stand.is_legacy_primary:
-				stand.request_add_money(payment - price)
+				stand.request_add_money(price)
 			else:
-				GameState.add_money(payment - price)
+				GameState.add_money(price)
 			_start_leaving()
 	else:
 		var serve_bonus: float = UpgradeManager.get_effect_total("speed_serve")

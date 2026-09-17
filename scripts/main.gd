@@ -1842,6 +1842,9 @@ func _on_esc_back_to_menu() -> void:
 	EventBus.esc_menu_open = false
 	_host_after_transition = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Checkpoint before leaving — save_game() is a no-op on clients and
+	# when no slot is active.
+	SaveManager.save_game()
 	# Create the fade overlay.
 	var fade_rect := ColorRect.new()
 	fade_rect.color = Color(0, 0, 0, 0)
@@ -1864,6 +1867,8 @@ func _on_esc_back_to_menu() -> void:
 			# Reset lobby state so the next game doesn't auto-start.
 			LobbyManager.game_started = false
 			LobbyManager.reset()
+			# Release the slot so timed autosaves stop while in the menu.
+			SaveManager.clear_current_slot()
 			# Stop the day cycle so it doesn't keep adjusting lighting
 			# while in the menu/lobby. Without this, the exposure/ambient
 			# from the previous game's day cycle persists and makes the
@@ -1919,6 +1924,9 @@ func _on_esc_back_to_menu() -> void:
 
 ## ESC menu: Quit Game.
 func _on_esc_quit_game() -> void:
+	# Checkpoint before exiting — save_game() is a no-op on clients and
+	# when no slot is active.
+	SaveManager.save_game()
 	get_tree().quit()
 
 

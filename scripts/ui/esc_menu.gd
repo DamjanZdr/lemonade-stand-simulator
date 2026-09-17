@@ -457,6 +457,44 @@ func _build_settings_panel() -> Control:
 	_style_checkbox(fps_check)
 	fps_row.add_child(fps_check)
 
+	# Spacer.
+	var spacer3 := Control.new()
+	spacer3.custom_minimum_size = Vector2(0, 12)
+	list.add_child(spacer3)
+
+	# Gameplay header.
+	var game_header := Label.new()
+	game_header.add_theme_font_size_override("font_size", 22)
+	game_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
+	game_header.text = "Gameplay"
+	list.add_child(game_header)
+
+	# Autosave interval.
+	var autosave_row := HBoxContainer.new()
+	autosave_row.add_theme_constant_override("separation", 12)
+	list.add_child(autosave_row)
+	var autosave_label := Label.new()
+	autosave_label.custom_minimum_size = Vector2(120, 0)
+	autosave_label.add_theme_font_size_override("font_size", 18)
+	autosave_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	autosave_label.text = "Autosave every"
+	autosave_row.add_child(autosave_label)
+	var autosave_slider := HSlider.new()
+	autosave_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	autosave_slider.custom_minimum_size = Vector2(120, 24)
+	autosave_slider.min_value = SettingsManager.AUTOSAVE_MIN_MINUTES
+	autosave_slider.max_value = SettingsManager.AUTOSAVE_MAX_MINUTES
+	autosave_slider.step = 1.0
+	autosave_slider.value = SettingsManager.get_autosave_minutes()
+	_style_slider(autosave_slider)
+	autosave_row.add_child(autosave_slider)
+	var autosave_value := Label.new()
+	autosave_value.custom_minimum_size = Vector2(60, 0)
+	autosave_value.add_theme_font_size_override("font_size", 16)
+	autosave_value.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
+	autosave_value.text = "%d min" % int(autosave_slider.value)
+	autosave_row.add_child(autosave_value)
+
 	# Back button (anchored to bottom-left, same as main menu).
 	_settings_back = Button.new()
 	_settings_back.theme = theme
@@ -528,6 +566,16 @@ func _build_settings_panel() -> Control:
 			fps_toggled.emit(on)
 			SettingsManager.save_graphics_bool("fps_counter", on),
 	)
+	autosave_slider.value_changed.connect(
+		func(v: float):
+			autosave_value.text = "%d min" % int(v),
+	)
+	autosave_slider.drag_ended.connect(
+		func(_changed: bool):
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			SettingsManager.set_autosave_minutes(autosave_slider.value)
+			SaveManager.set_autosave_interval(autosave_slider.value),
+	)
 
 	# Store references for syncing.
 	panel.set_meta("master_slider", master_slider)
@@ -540,6 +588,8 @@ func _build_settings_panel() -> Control:
 	panel.set_meta("vsync_check", vsync_check)
 	panel.set_meta("lighting_check", lighting_check)
 	panel.set_meta("fps_check", fps_check)
+	panel.set_meta("autosave_slider", autosave_slider)
+	panel.set_meta("autosave_value", autosave_value)
 
 	return panel
 
@@ -589,6 +639,8 @@ func _sync_settings() -> void:
 	var vsync_check := _settings_panel.get_meta("vsync_check") as CheckBox
 	var lighting_check := _settings_panel.get_meta("lighting_check") as CheckBox
 	var fps_check := _settings_panel.get_meta("fps_check") as CheckBox
+	var autosave_slider := _settings_panel.get_meta("autosave_slider") as HSlider
+	var autosave_value := _settings_panel.get_meta("autosave_value") as Label
 	var master_val := db_to_linear(AudioServer.get_bus_volume_db(0))
 	master_slider.value = master_val
 	master_value.text = "%d" % int(round(master_val * 100))
@@ -610,6 +662,8 @@ func _sync_settings() -> void:
 	)
 	lighting_check.button_pressed = true
 	fps_check.button_pressed = false
+	autosave_slider.value = SettingsManager.get_autosave_minutes()
+	autosave_value.text = "%d min" % int(autosave_slider.value)
 
 # --- Button handlers ---
 

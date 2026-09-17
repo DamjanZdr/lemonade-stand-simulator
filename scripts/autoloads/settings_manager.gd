@@ -5,6 +5,7 @@ extends Node
 const CONFIG_PATH := "user://settings.cfg"
 const SECTION_AUDIO := "audio"
 const SECTION_GRAPHICS := "graphics"
+const SECTION_GAMEPLAY := "gameplay"
 
 const DEFAULT_MASTER_VOLUME := 0.5
 const DEFAULT_SFX_VOLUME := 0.5
@@ -13,6 +14,9 @@ const DEFAULT_FULLSCREEN := false
 const DEFAULT_VSYNC := true
 const DEFAULT_ENHANCED_LIGHTING := true
 const DEFAULT_FPS_COUNTER := false
+const DEFAULT_AUTOSAVE_MINUTES := 5.0
+const AUTOSAVE_MIN_MINUTES := 2.0
+const AUTOSAVE_MAX_MINUTES := 15.0
 
 signal settings_loaded()
 
@@ -94,3 +98,23 @@ func get_graphics_bool(key: String, default: bool) -> bool:
 	if err != OK:
 		return default
 	return cfg.get_value(SECTION_GRAPHICS, key, default) as bool
+
+
+## Autosave interval in minutes (2-15, default 5).
+func get_autosave_minutes() -> float:
+	var cfg := ConfigFile.new()
+	if cfg.load(CONFIG_PATH) != OK:
+		return DEFAULT_AUTOSAVE_MINUTES
+	var v := cfg.get_value(SECTION_GAMEPLAY, "autosave_minutes", DEFAULT_AUTOSAVE_MINUTES) as float
+	return clampf(v, AUTOSAVE_MIN_MINUTES, AUTOSAVE_MAX_MINUTES)
+
+
+func set_autosave_minutes(minutes: float) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(CONFIG_PATH)
+	cfg.set_value(
+		SECTION_GAMEPLAY,
+		"autosave_minutes",
+		clampf(minutes, AUTOSAVE_MIN_MINUTES, AUTOSAVE_MAX_MINUTES),
+	)
+	cfg.save(CONFIG_PATH)
