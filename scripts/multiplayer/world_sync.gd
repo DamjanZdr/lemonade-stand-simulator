@@ -1647,6 +1647,14 @@ func _find_node(parent_path_str: String, obj_name: String, net_id: int = -1) -> 
 ## Fast name-only lookup for batch syncs (avoids serializing parent
 ## paths for every NPC every tick). Uses the cache, falls back to
 ## tree search only on cache miss.
+## Misses are negative-cached with a TTL: a late joiner never receives
+## NPCs that spawned before they connected (RPCs don't replay), so every
+## transform batch would otherwise re-walk the whole scene tree for each
+## missing NPC — a continuous CPU storm starting at connect.
+var _name_miss_cache: Dictionary = { } ## name -> Time.get_ticks_msec()
+const NAME_MISS_TTL_MSEC := 2000
+
+
 func _find_node_by_name_only(obj_name: String) -> Node:
 	if _node_cache.has(obj_name):
 		var cached: Node = _node_cache[obj_name]
@@ -1654,9 +1662,15 @@ func _find_node_by_name_only(obj_name: String) -> Node:
 			return cached
 		else:
 			_node_cache.erase(obj_name)
+	var last_miss: int = _name_miss_cache.get(obj_name, 0)
+	if last_miss > 0 and Time.get_ticks_msec() - last_miss < NAME_MISS_TTL_MSEC:
+		return null
 	var found := _find_node_by_name(get_tree().current_scene, obj_name)
 	if found:
 		_node_cache[obj_name] = found
+		_name_miss_cache.erase(obj_name)
+	else:
+		_name_miss_cache[obj_name] = Time.get_ticks_msec()
 	return found
 
 
