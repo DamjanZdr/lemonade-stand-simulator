@@ -1322,7 +1322,7 @@ func _on_tab_hover(step_pc: PanelContainer, tab: String) -> void:
 	step_pc.add_theme_stylebox_override("panel", hover_st)
 
 
-func _on_tab_unhover(step_pc: PanelContainer, tab: String) -> void:
+func _on_tab_unhover(_step_pc: PanelContainer, tab: String) -> void:
 	if tab == _active_tab:
 		return
 	_update_flow_indicator()
@@ -1875,7 +1875,7 @@ func _animate_status() -> void:
 	tween.tween_property(_status_lbl, "modulate", Color(1, 1, 1, 0), 0.5)
 
 
-func _on_price_changed(fruit_type: String, new_price: float) -> void:
+func _on_price_changed(_fruit_type: String, new_price: float) -> void:
 	var prices_page := ($MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
 	if prices_page == null:
 		return
