@@ -1121,14 +1121,6 @@ func _create_item_card(
 		q_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		q_lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		preview_holder.add_child(q_lbl)
-		var lock_overlay := Label.new()
-		lock_overlay.text = "LOCKED"
-		lock_overlay.add_theme_font_size_override("font_size", 11)
-		lock_overlay.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-		lock_overlay.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		lock_overlay.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		lock_overlay.z_index = 10
-		preview_panel.add_child(lock_overlay)
 	elif img_path != "" and FileAccess.file_exists(img_path):
 		var preview := TextureRect.new()
 		preview.texture = load(img_path) as Texture2D
@@ -1146,7 +1138,7 @@ func _create_item_card(
 	inner.add_child(right_box)
 
 	var name_lbl := Label.new()
-	name_lbl.text = "???" if is_locked_fruit else item["name"]
+	name_lbl.text = "Unknown Fruit" if is_locked_fruit else item["name"]
 	name_lbl.add_theme_font_size_override("font_size", 18)
 	name_lbl.add_theme_color_override(
 		"font_color",
@@ -1155,11 +1147,17 @@ func _create_item_card(
 	right_box.add_child(name_lbl)
 
 	if is_locked_fruit:
-		var locked_lbl := Label.new()
-		locked_lbl.text = "Locked - research to unlock"
-		locked_lbl.add_theme_font_size_override("font_size", 13)
-		locked_lbl.add_theme_color_override("font_color", Color(0.50, 0.50, 0.50))
-		right_box.add_child(locked_lbl)
+		var pack_lbl := Label.new()
+		pack_lbl.text = "Unknown unit"
+		pack_lbl.add_theme_font_size_override("font_size", 14)
+		pack_lbl.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45))
+		right_box.add_child(pack_lbl)
+
+		var per_unit_lbl := Label.new()
+		per_unit_lbl.text = "Unknown price per unit"
+		per_unit_lbl.add_theme_font_size_override("font_size", 14)
+		per_unit_lbl.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45))
+		right_box.add_child(per_unit_lbl)
 	else:
 		var pack_qty: int = int(item.get("qty", 1))
 		var pack_lbl := Label.new()
@@ -1181,7 +1179,14 @@ func _create_item_card(
 	bottom_row.add_theme_constant_override("separation", 6)
 	right_box.add_child(bottom_row)
 
-	if not is_locked_fruit:
+	if is_locked_fruit:
+		var total_lbl := Label.new()
+		total_lbl.text = "Unknown price"
+		total_lbl.add_theme_font_size_override("font_size", 18)
+		total_lbl.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45))
+		total_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bottom_row.add_child(total_lbl)
+	else:
 		var total_lbl := Label.new()
 		total_lbl.text = "$%.2f" % item["cost"]
 		total_lbl.add_theme_font_size_override("font_size", 18)
