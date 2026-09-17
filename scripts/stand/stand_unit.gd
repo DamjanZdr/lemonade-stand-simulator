@@ -353,6 +353,13 @@ func add_money(amount: float) -> void:
 	if money > highest_money:
 		highest_money = money
 	money_changed.emit(money)
+	if is_legacy_primary:
+		# Write through to GameState — the save file persists
+		# GameState.money, so a stand-only change would be lost on
+		# reload. Same pattern as set_price/set_recipe. The resulting
+		# EventBus.money_changed loops back through the bridge, which
+		# early-returns because the values already match.
+		GameState.add_money(amount)
 	push_state()
 
 
@@ -364,6 +371,8 @@ func spend_money(amount: float) -> bool:
 	if amount > highest_purchase:
 		highest_purchase = amount
 	money_changed.emit(money)
+	if is_legacy_primary:
+		GameState.spend_money(amount)
 	push_state()
 	return true
 

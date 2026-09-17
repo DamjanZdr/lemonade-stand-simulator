@@ -282,6 +282,19 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	# fall back to _default_container_positions when _pending is empty.
 	_pending_container_respawn = []
 	_pending_supply_box_respawn = []
+	# Propagate the reset to live stands/UI — the direct assignments
+	# above don't emit, so a previous session's money/popularity would
+	# linger on the HUD. _applying_save suppresses the autosaves these
+	# signals would trigger; save_game(true) below persists defaults.
+	_applying_save = true
+	EventBus.money_changed.emit(GameState.money)
+	EventBus.popularity_changed.emit(GameState.popularity)
+	EventBus.weather_changed.emit(GameState.temperature)
+	EventBus.feedback_tier_changed.emit(GameState.feedback_tier)
+	for ft in GameState.FRUIT_TYPES:
+		EventBus.price_changed.emit(ft, GameState.get_price(ft))
+		EventBus.recipe_changed.emit(ft, GameState.get_recipe(ft))
+	_applying_save = false
 	# Save pristine defaults (not the dirty world) into the new slot.
 	_save_use_defaults = true
 	save_game(true)
