@@ -425,7 +425,17 @@ func _build_shop() -> void:
 	consumables_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for sep in ["h_separation", "v_separation"]:
 		consumables_grid.add_theme_constant_override(sep, 10)
+	# Unlocked consumables first (keeping their listed order), locked
+	# fruits last. As fruits are researched they move back up into
+	# their original slot after lemon.
+	var unlocked_items: Array[Dictionary] = []
+	var locked_items: Array[Dictionary] = []
 	for item in shop_items:
+		if item["id"] in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(item["id"]):
+			locked_items.append(item)
+		else:
+			unlocked_items.append(item)
+	for item in unlocked_items + locked_items:
 		consumables_grid.add_child(_create_ingredient_card(item))
 	shop_vbox.add_child(consumables_grid)
 	# Equipment section
@@ -1099,9 +1109,27 @@ func _create_item_card(
 	preview_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	preview_panel.add_child(preview_holder)
 
-	# Show product image
+	# Show product image — locked items stay hidden behind a "?" so the
+	# player can't see what they'll unlock.
 	var img_path: String = PRODUCT_IMAGES.get(id, "")
-	if img_path != "" and FileAccess.file_exists(img_path):
+	if is_locked_fruit:
+		var q_lbl := Label.new()
+		q_lbl.text = "?"
+		q_lbl.add_theme_font_size_override("font_size", 56)
+		q_lbl.add_theme_color_override("font_color", Color(0.55, 0.55, 0.60))
+		q_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		q_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		q_lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		preview_holder.add_child(q_lbl)
+		var lock_overlay := Label.new()
+		lock_overlay.text = "LOCKED"
+		lock_overlay.add_theme_font_size_override("font_size", 11)
+		lock_overlay.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+		lock_overlay.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		lock_overlay.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		lock_overlay.z_index = 10
+		preview_panel.add_child(lock_overlay)
+	elif img_path != "" and FileAccess.file_exists(img_path):
 		var preview := TextureRect.new()
 		preview.texture = load(img_path) as Texture2D
 		preview.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
@@ -1111,19 +1139,6 @@ func _create_item_card(
 		preview.size_flags_vertical = Control.SIZE_FILL
 		preview_holder.add_child(preview)
 
-	# Overlay a lock icon on top of the preview for locked items
-	if is_locked_fruit:
-		if preview_holder.get_child_count() > 0:
-			preview_holder.get_child(0).modulate = Color(0.5, 0.5, 0.5, 0.7)
-		var lock_overlay := Label.new()
-		lock_overlay.text = "LOCKED"
-		lock_overlay.add_theme_font_size_override("font_size", 11)
-		lock_overlay.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-		lock_overlay.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		lock_overlay.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		lock_overlay.z_index = 10
-		preview_panel.add_child(lock_overlay)
-
 	var right_box := VBoxContainer.new()
 	right_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1131,7 +1146,7 @@ func _create_item_card(
 	inner.add_child(right_box)
 
 	var name_lbl := Label.new()
-	name_lbl.text = item["name"]
+	name_lbl.text = "???" if is_locked_fruit else item["name"]
 	name_lbl.add_theme_font_size_override("font_size", 18)
 	name_lbl.add_theme_color_override(
 		"font_color",

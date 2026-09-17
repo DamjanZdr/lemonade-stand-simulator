@@ -12,6 +12,7 @@ const MONEY_MIN_WIDTH := 80.0
 const ICON_SIZE := 24
 
 @onready var _hint_label: Label = $HintLabel
+@onready var _crosshair: CenterContainer = $Crosshair
 
 var _hint_box: HBoxContainer
 var _hint_container: VBoxContainer
@@ -732,6 +733,8 @@ func set_hud_visible(vis: bool) -> void:
 		_main_panel.visible = vis
 	if _hint_box:
 		_hint_box.visible = vis
+	if _crosshair:
+		_crosshair.visible = vis
 	if _onboarding_panel:
 		_onboarding_panel.visible = (
 			vis and _stand != null
