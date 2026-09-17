@@ -47,8 +47,8 @@ func _ready() -> void:
 	money = Balancing.STARTING_MONEY
 	popularity = 0.1
 	temperature = 25.0
-	_init_default_prices()
-	_init_default_recipes()
+	init_default_prices()
+	init_default_recipes()
 	feedback_tier = 0
 	highest_money = money
 
@@ -204,7 +204,7 @@ func set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 	EventBus.recipe_changed.emit(fruit_type, recipes[fruit_type])
 
 
-func _init_default_prices() -> void:
+func init_default_prices() -> void:
 	for ft in FRUIT_TYPES:
 		var res := load("res://resources/data/" + ft + ".tres") as IngredientData
 		if res:
@@ -213,7 +213,7 @@ func _init_default_prices() -> void:
 			prices[ft] = 1.50
 
 
-func _init_default_recipes() -> void:
+func init_default_recipes() -> void:
 	for ft in FRUIT_TYPES:
 		recipes[ft] = _default_recipe_for(ft)
 

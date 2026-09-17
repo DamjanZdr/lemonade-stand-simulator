@@ -310,7 +310,7 @@ func _apply_motion(delta: float) -> void:
 ## Stun the customer (host-authoritative). Called when hit by thrown trash.
 ## The NPC plays Fall, holds the last frame for _STUN_DOWN_DURATION seconds,
 ## then plays Fall in reverse to get back up and resumes their previous state.
-func stun(duration: float) -> void:
+func stun(_duration: float) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	# Save state to restore after recovery.

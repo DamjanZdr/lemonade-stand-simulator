@@ -261,8 +261,8 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	GameState.money = Balancing.STARTING_MONEY
 	GameState.popularity = 0.1
 	GameState.temperature = 25.0
-	GameState._init_default_prices()
-	GameState._init_default_recipes()
+	GameState.init_default_prices()
+	GameState.init_default_recipes()
 	_sync_live_stand_recipes(false)
 	EventBus.game_reset.emit()
 	GameState.feedback_tier = 0
@@ -358,7 +358,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		GameState.recipes = saved_recipes.duplicate(true)
 	else:
 		GameState.recipes.clear()
-		GameState._init_default_recipes()
+		GameState.init_default_recipes()
 	_sync_live_stand_recipes(true)
 	GameState.ice_degrees_per_scoop = data.get("ice_degrees_per_scoop", 4.0)
 	GameState.feedback_tier = data.get("feedback_tier", 0)
@@ -422,7 +422,7 @@ func _sync_live_stand_recipes(announce: bool) -> void:
 		var stand := node as StandUnit
 		if stand == null:
 			continue
-		stand._init_default_recipes()
+		stand.init_default_recipes()
 		if stand.is_legacy_primary:
 			stand.recipes = GameState.recipes.duplicate(true)
 			if announce:

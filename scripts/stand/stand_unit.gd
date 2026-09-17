@@ -237,8 +237,8 @@ func _apply_state(
 func _ready() -> void:
 	add_to_group("stand")
 	_setup_replication()
-	_init_default_prices()
-	_init_default_recipes()
+	init_default_prices()
+	init_default_recipes()
 	highest_money = money
 
 	if not is_legacy_primary:
@@ -327,13 +327,13 @@ func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void
 	purchased_upgrade_nodes = UpgradeManager.get_purchased_for_stand(name).duplicate()
 
 
-func _init_default_prices() -> void:
+func init_default_prices() -> void:
 	for ft in FRUIT_TYPES:
 		var res := load("res://resources/data/" + ft + ".tres") as IngredientData
 		prices[ft] = res.default_price if res else 1.50
 
 
-func _init_default_recipes() -> void:
+func init_default_recipes() -> void:
 	for ft in FRUIT_TYPES:
 		recipes[ft] = _default_recipe_for(ft)
 
