@@ -1144,21 +1144,13 @@ func _create_item_card(
 		"font_color",
 		Color(0.45, 0.45, 0.45) if is_locked_fruit else Color(0.92, 0.90, 0.82),
 	)
+	if is_locked_fruit:
+		# Locked cards show only the title — center it next to the "?" icon.
+		name_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	right_box.add_child(name_lbl)
 
-	if is_locked_fruit:
-		var pack_lbl := Label.new()
-		pack_lbl.text = "Unknown unit"
-		pack_lbl.add_theme_font_size_override("font_size", 14)
-		pack_lbl.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45))
-		right_box.add_child(pack_lbl)
-
-		var per_unit_lbl := Label.new()
-		per_unit_lbl.text = "Unknown price per unit"
-		per_unit_lbl.add_theme_font_size_override("font_size", 14)
-		per_unit_lbl.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45))
-		right_box.add_child(per_unit_lbl)
-	else:
+	if not is_locked_fruit:
 		var pack_qty: int = int(item.get("qty", 1))
 		var pack_lbl := Label.new()
 		pack_lbl.text = "%d unit%s" % [pack_qty, "" if pack_qty == 1 else "s"]
@@ -1173,20 +1165,12 @@ func _create_item_card(
 		per_unit_lbl.add_theme_color_override("font_color", Color(0.55, 0.70, 0.85))
 		right_box.add_child(per_unit_lbl)
 
-	var bottom_row := HBoxContainer.new()
-	bottom_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	bottom_row.alignment = BoxContainer.ALIGNMENT_END
-	bottom_row.add_theme_constant_override("separation", 6)
-	right_box.add_child(bottom_row)
+		var bottom_row := HBoxContainer.new()
+		bottom_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		bottom_row.alignment = BoxContainer.ALIGNMENT_END
+		bottom_row.add_theme_constant_override("separation", 6)
+		right_box.add_child(bottom_row)
 
-	if is_locked_fruit:
-		var total_lbl := Label.new()
-		total_lbl.text = "Unknown price"
-		total_lbl.add_theme_font_size_override("font_size", 18)
-		total_lbl.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45))
-		total_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		bottom_row.add_child(total_lbl)
-	else:
 		var total_lbl := Label.new()
 		total_lbl.text = "$%.2f" % item["cost"]
 		total_lbl.add_theme_font_size_override("font_size", 18)
