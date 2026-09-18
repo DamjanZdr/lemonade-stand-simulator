@@ -95,7 +95,7 @@ func reserve_slot(cell_index: int) -> Dictionary:
 	var pos := get_slot_position(cell_index)
 	var rot := get_slot_rotation(cell_index)
 	_stacks[cell_index] += 1
-	_sync_slot_state(cell_index, _stacks[cell_index])
+	_sync_slot_state(cell_index, 1)
 	return { "index": cell_index, "position": pos, "rotation": rot }
 
 
@@ -138,6 +138,12 @@ func recount_boxes() -> void:
 	for i in range(_stacks.size()):
 		_stacks[i] = 0
 	_count_existing_boxes()
+	# The host's recount is authoritative — broadcast every cell so all
+	# peers converge. Covers late joiners whose deferred
+	# _count_existing_boxes() ran before the world snapshot spawned boxes.
+	if WorldSync.is_host() and multiplayer.has_multiplayer_peer():
+		for i in range(_stacks.size()):
+			_apply_slot_state.rpc_id(0, get_path(), i, _stacks[i])
 
 
 ## Returns the closest grid cell to the given world point (using X/Z distance).
@@ -193,24 +199,27 @@ func release_slot_index(cell_index: int) -> void:
 		for key in _cell_yaws.keys():
 			if key / 1000 == cell_index:
 				_cell_yaws.erase(key)
-	_sync_slot_state(cell_index, _stacks[cell_index])
+	_sync_slot_state(cell_index, -1)
 
 
-## Sync the slot stack count to all clients. Only the host sends;
-## clients receive and update their local _stacks to match.
-## On a client, sends the reservation to the host first.
-func _sync_slot_state(cell_index: int, stack_count: int) -> void:
+## Sync slot stack state. The host broadcasts its authoritative count;
+## clients send only the operation delta (+1 reserve / -1 release) and
+## the host recomputes — a client-reported absolute value is never
+## trusted since a late joiner's local _stacks may be stale.
+func _sync_slot_state(cell_index: int, delta: int) -> void:
 	if multiplayer == null or not multiplayer.has_multiplayer_peer():
 		return
 	if WorldSync.is_host():
-		_apply_slot_state.rpc_id(0, get_path(), cell_index, stack_count)
+		_apply_slot_state.rpc_id(0, get_path(), cell_index, _stacks[cell_index])
 	else:
-		_request_slot_state.rpc_id(1, get_path(), cell_index, stack_count)
+		_request_slot_state.rpc_id(1, get_path(), cell_index, delta)
 
 
-## Client→host: client tells host about a slot reservation/release.
+## Client→host: client predicted a reserve (+1) or release (-1) locally
+## and asks the host to apply the same operation authoritatively. The
+## host recomputes and broadcasts the result to all peers.
 @rpc("any_peer", "reliable")
-func _request_slot_state(grid_path: NodePath, cell_index: int, stack_count: int) -> void:
+func _request_slot_state(grid_path: NodePath, cell_index: int, delta: int) -> void:
 	if not WorldSync.is_host():
 		return
 	var grid := get_tree().current_scene.get_node_or_null(grid_path) as DeliveryGrid
@@ -218,9 +227,11 @@ func _request_slot_state(grid_path: NodePath, cell_index: int, stack_count: int)
 		return
 	if cell_index < 0 or cell_index >= grid._stacks.size():
 		return
-	grid._stacks[cell_index] = stack_count
-	# Broadcast to all clients (including the sender) so everyone agrees
-	_apply_slot_state.rpc_id(0, grid_path, cell_index, stack_count)
+	if delta > 0:
+		# reserve_slot on the host re-broadcasts the authoritative count.
+		grid.reserve_slot(cell_index)
+	elif delta < 0:
+		grid.release_slot_index(cell_index)
 
 
 @rpc("authority", "call_local", "reliable")

@@ -49,6 +49,14 @@ func set_stand_name(stand_name: String) -> void:
 	_stand_name = stand_name
 
 
+## Stops the truck and drops queued deliveries. Called when the session
+## returns to the menu so the truck doesn't keep driving there.
+func stop() -> void:
+	_batched_boxes.clear()
+	if _truck and is_instance_valid(_truck):
+		_truck.stop_delivery()
+
+
 func _ensure_truck() -> void:
 	if _truck != null and is_instance_valid(_truck):
 		return

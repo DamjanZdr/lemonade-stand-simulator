@@ -58,6 +58,7 @@ var _fps_timer: float = 0.0
 ## being a static scene node, so a second real player can get their own
 ## instance instead of everyone sharing "the" Player.
 var _local_player: Player = null
+var _outline_sys: Node = null
 ## peer_id -> StandUnit this peer's spawned player was assigned to.
 ## Assignment order: the host (peer 1) always gets the primary stand;
 ## whoever connects next gets the next stand, and so on.
@@ -714,6 +715,32 @@ func _transition_to_lobby() -> void:
 	GameLog.log("[Main] Transitioned to LOBBY state")
 
 
+## Clears per-session world state when returning to the menu: players,
+## the placement ghost (parented to the world, not the player), the
+## outline overlay, and autonomous delivery systems. The scene is reused
+## rather than reloaded, so anything not freed here lingers into the
+## next game (duplicate outlines, stale holograms, idle players).
+func _cleanup_game_session() -> void:
+	# Destroy the placement ghost before freeing the player — the ghost
+	# is a child of the world root and would survive the player's free.
+	if _local_player and is_instance_valid(_local_player):
+		var placement := _local_player.get_node_or_null("PlayerPlacement")
+		if placement and placement.has_method("clear_placement_ghost"):
+			placement.clear_placement_ghost()
+	for child in players_node.get_children():
+		child.queue_free()
+	_local_player = null
+	if _outline_sys and is_instance_valid(_outline_sys):
+		_outline_sys.queue_free()
+	_outline_sys = null
+	# Stop autonomous systems that would keep simulating in the menu —
+	# with no peer, WorldSync.is_host() returns true.
+	if delivery and delivery.has_method("stop"):
+		delivery.stop()
+	if delivery2 and delivery2.has_method("stop"):
+		delivery2.stop()
+
+
 ## Smoothly transition from the lobby back to the main menu.
 ## Tweens the lobby camera back to the main menu camera's transform,
 ## fades out the lobby UI, then switches to the main menu in-place
@@ -727,6 +754,7 @@ func _on_return_to_menu() -> void:
 	NetworkManager.leave_game()
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
+	_cleanup_game_session()
 	# Stop the day cycle so it doesn't keep adjusting lighting while
 	# in the menu/lobby. See _on_esc_back_to_menu for details.
 	DayManager.stop_day_cycle()
@@ -1582,11 +1610,20 @@ func _on_local_player_ready(p: Player) -> void:
 		lobby_player_models.visible = false
 	# Spawn the screen-space outline overlay and hand it the local
 	# player's camera so it can mirror the transform every frame.
+	# Tracked in _outline_sys so session cleanup can free it — a leftover
+	# overlay would stack with the next game's and draw a second outline.
 	var outline_sys: Node = OUTLINE_SCENE.instantiate()
 	add_child(outline_sys)
 	outline_sys.setup(p.get_node("Head/Camera3D") as Camera3D)
-	if hud and hud.has_method("set_stand") and p.assigned_stand:
-		hud.set_stand(p.assigned_stand)
+	_outline_sys = outline_sys
+	if hud:
+		# Re-show the HUD panels — the computer/phone/board UIs hide them
+		# via set_hud_visible(false), which persists on the shared HUD
+		# node and would otherwise leave the next session with no UI.
+		if hud.has_method("set_hud_visible"):
+			hud.set_hud_visible(true)
+		if hud.has_method("set_stand") and p.assigned_stand:
+			hud.set_stand(p.assigned_stand)
 	# Run the pending fade-to-black + Day X transition if one was stored
 	# by _on_game_starting() or _do_late_join_transition().
 	_complete_pending_local_transition()
@@ -1883,10 +1920,10 @@ func _on_esc_back_to_menu() -> void:
 			# containers and re-spawns from the new save. Without this,
 			# the previous game's containers/supply boxes persist.
 			_world_setup_done = false
-			# Clean up players.
-			for child in players_node.get_children():
-				child.queue_free()
-			_local_player = null
+			# Clean up players, the outline overlay, the placement ghost,
+			# and autonomous systems (delivery trucks, spawners via the
+			# day-phase reset in stop_day_cycle above).
+			_cleanup_game_session()
 			# Reset game state.
 			_game_state = MenuState.MAIN_MENU
 			# Show the main menu.

@@ -248,6 +248,14 @@ func _ready() -> void:
 		highest_money = money
 		return
 
+	# On clients, GameState is an unsynced local default (starting money,
+	# never updated by the host) — mirroring it here and via the EventBus
+	# bridge below would clobber the host-pushed stand state every time a
+	# client-side system emits EventBus.money_changed. Client stand state
+	# arrives exclusively through _apply_state().
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
+
 	# Sync the initial value — GameState.money is already correctly set by
 	# the time this runs (starting money or loaded save applied during its
 	# own _ready(), which as an autoload always runs before this node's),

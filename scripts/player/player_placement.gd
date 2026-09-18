@@ -1075,6 +1075,14 @@ func _destroy_ghost() -> void:
 	_ghost_valid = false
 
 
+## Destroys the placement ghost. The ghost is parented to the world
+## root, not the player — freeing the player does NOT remove it, so it
+## must be cleared explicitly when the session ends or it lingers into
+## the next game.
+func clear_placement_ghost() -> void:
+	_destroy_ghost()
+
+
 func _update_cup_box_ghost() -> void:
 	# Show ghost preview for cup placement when holding cup box.
 	if not _player.ray.is_colliding():
@@ -1442,7 +1450,10 @@ func _update_ghost() -> void:
 	var trashcan := _player.interaction.get_looked_at_interactable() as Trashcan
 	var can_trash_held: bool = (
 		_player.held_item_data.get("is_trash", false) or _player.held_item == HeldItem.CONTAINER
-		or (_player.held_item == HeldItem.SUPPLY_BOX and _player.held_item_data.get("source", "") == "delivery")
+		or (
+			_player.held_item == HeldItem.SUPPLY_BOX
+			and _player.held_item_data.get("source", "") == "delivery"
+		)
 	)
 	if trashcan != null and can_trash_held:
 		_destroy_ghost()
@@ -1726,9 +1737,11 @@ func _try_place_container() -> Node3D:
 			instance.fruit_amounts = amounts.duplicate()
 			instance.update_display()
 			# Broadcast to clients so they see the restored amounts
-			WorldSync.sync_property(instance, "fruit_amounts", instance.fruit_amounts.duplicate(
-					true
-				))
+			WorldSync.sync_property(
+				instance,
+				"fruit_amounts",
+				instance.fruit_amounts.duplicate(true),
+			)
 			WorldSync.sync_call(instance, "update_display")
 
 	# Restore pitcher recipe (always ΓÇö water may have been added while holding)
@@ -1776,10 +1789,10 @@ func _cancel_container_placement() -> void:
 	# Restore the workstation to its original position and show it again.
 	var source_node: Node3D = _player.held_item_data.get("source_node") as Node3D
 	if source_node != null and is_instance_valid(source_node):
-		var original: Transform3D = (_player.held_item_data.get(
-				"source_original_transform",
-				source_node.global_transform,
-			) as Transform3D)
+		var original: Transform3D = (
+			_player.held_item_data.get("source_original_transform", source_node.global_transform)
+			as Transform3D
+		)
 		source_node.global_transform = original
 		_enable_physics(source_node)
 		source_node.visible = true

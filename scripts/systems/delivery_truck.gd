@@ -466,6 +466,11 @@ func _transfer_next_box(index: int) -> void:
 		_target_grid.reserve_slot(truck_cell_idx)
 		box.set_meta("delivery_cell_idx", truck_cell_idx)
 		box.set_meta("delivery_grid_path", _target_grid.get_path())
+		# The box has left the truck — clear truck_cell_idx so future
+		# recount_boxes() runs count it as delivered inventory. Without
+		# this the recount skips delivered boxes entirely and later
+		# deliveries stack from ground level, overlapping them.
+		box.remove_meta("truck_cell_idx")
 		# Sync metas to clients so they can release the slot when picking up
 		if multiplayer.has_multiplayer_peer():
 			_set_box_delivery_metas.rpc(box.name, truck_cell_idx, str(_target_grid.get_path()))
@@ -518,6 +523,17 @@ func _rearrange_boxes_reverse() -> void:
 		var cell_idx: int = slot.get("index", -1)
 		if cell_idx >= 0:
 			box.set_meta("truck_cell_idx", cell_idx)
+
+
+## Stops any in-progress delivery and hides the truck. Called when the
+## session returns to the menu — the world keeps ticking with no peer
+## (is_host() is true), so the truck would otherwise keep driving.
+func stop_delivery() -> void:
+	_state = "idle"
+	_pending_boxes.clear()
+	visible = false
+	if _engine_player and is_instance_valid(_engine_player):
+		_engine_player.stop()
 
 
 func _drive_away() -> void:

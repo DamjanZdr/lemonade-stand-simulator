@@ -207,6 +207,15 @@ func stop_day_cycle() -> void:
 	_day_running = false
 	day_time_over = false
 	_day_timer = 0.0
+	# Leaving gameplay entirely: drop the phase to MORNING and notify
+	# listeners. The world keeps ticking in the menu (WorldSync.is_host()
+	# is true with no peer), so without this the phase stays DAY and the
+	# pedestrian/customer spawners keep running, stacking NPCs while the
+	# player sits in the main menu. The phase change triggers each
+	# spawner's clear path, despawning the leftover NPCs.
+	if current_phase != Phase.MORNING:
+		current_phase = Phase.MORNING
+		EventBus.day_phase_changed.emit(current_phase, day_number)
 
 
 ## Serialisable snapshot of the day cycle for SaveManager.

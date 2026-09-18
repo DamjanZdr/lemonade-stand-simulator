@@ -355,13 +355,26 @@ func try_add_ingredient(ingredient_type: String, amount: float) -> bool:
 
 
 func get_contents_string() -> String:
+	# Once the first cup is poured, the recipe freezes — the pitcher keeps
+	# "the recipe it was made with" until emptied, while the live contents
+	# (fruit_count/sugar/ice) drain toward empty. Display the frozen
+	# serving_recipe so the tooltip doesn't count down per cup.
+	var fc := fruit_count
+	var sg := sugar
+	var ic := ice
+	var ft := fruit_type
+	if not serving_recipe.is_empty():
+		fc = float(serving_recipe.get("fruit_count", fc))
+		sg = float(serving_recipe.get("sugar", sg))
+		ic = float(serving_recipe.get("ice", ic))
+		ft = str(serving_recipe.get("fruit_type", ft))
 	var parts: Array[String] = []
-	if fruit_count > 0.0 and fruit_type != "":
-		parts.append("%.0f %s" % [fruit_count, fruit_type])
-	if sugar > 0.0:
-		parts.append("%.0f sugar" % sugar)
-	if ice > 0.0:
-		parts.append("%.0f ice" % ice)
+	if fc > 0.0 and ft != "":
+		parts.append("%.0f %s" % [fc, ft])
+	if sg > 0.0:
+		parts.append("%.0f sugar" % sg)
+	if ic > 0.0:
+		parts.append("%.0f ice" % ic)
 	if parts.is_empty():
 		return "empty"
 	return " ".join(parts)
