@@ -1428,7 +1428,8 @@ func sync_transform(obj: Node, pos: Vector3, rot: Vector3) -> void:
 		return
 	var net_id := _get_net_id(obj)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_broadcast(&"_apply_transform", [parent_path, obj.name, net_id, pos, rot, 1]) # 1 = unreliable channel
+	# 1 = unreliable channel
+	_broadcast(&"_apply_transform", [parent_path, obj.name, net_id, pos, rot, 1])
 
 
 ## Batch sync: sends ALL NPC transforms in a single RPC instead of one
