@@ -972,9 +972,14 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: C
 		hud.visible = true
 	# Start the day cycle (sun transitions smoothly).
 	# Only the host drives the day cycle; clients receive it via RPC.
+	# A loaded save carries pending day state — resume at the saved
+	# time-of-day; a new game starts a fresh Day 1 morning.
 	if multiplayer.is_server():
-		DayManager.start_morning()
-		DayManager.start_day()
+		if DayManager.has_pending_resume():
+			DayManager.resume_from_save()
+		else:
+			DayManager.start_morning()
+			DayManager.start_day()
 	# Sequential timeline:
 	# 1. Fade in from black (eyes opening) — 0.5s (Day X already visible)
 	# 2. Hold for 5 seconds (Day X stays on screen)

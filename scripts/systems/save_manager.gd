@@ -274,7 +274,7 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	GameState.total_money_earned = 0.0
 	GameState.total_money_spent = 0.0
 	GameState.highest_purchase = 0.0
-	DayManager.day_number = 1
+	DayManager.reset_cycle()
 	OnboardingManager.reset()
 	UpgradeManager.reset()
 	UpgradeManager.set_active_stand(stand_name)
@@ -383,7 +383,17 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	GameState.total_money_spent = data.get("total_money_spent", 0.0)
 	GameState.highest_purchase = data.get("highest_purchase", 0.0)
 	GameState.highest_money = data.get("highest_money", GameState.money)
-	DayManager.day_number = data.get("day_number", 1)
+	# Stash the saved day-cycle state — main.gd consumes it via
+	# DayManager.resume_from_save() once the world is up, so a load
+	# resumes at the saved time-of-day instead of restarting at 9 AM.
+	# Legacy saves only stored the flat day_number; they keep the old
+	# fresh-day behaviour.
+	var day_state: Variant = data.get("day_state", null)
+	if day_state is Dictionary and not day_state.is_empty():
+		DayManager.store_pending_resume(day_state)
+	else:
+		DayManager.clear_pending_resume()
+		DayManager.day_number = int(data.get("day_number", 1))
 
 	UpgradeManager.reset()
 	var stand_name_for_research: String = data.get("stand_name", GameState.stand_name)
@@ -476,6 +486,7 @@ func _build_save_dict() -> Dictionary:
 		"highest_purchase": GameState.highest_purchase,
 		"highest_money": GameState.highest_money,
 		"day_number": DayManager.day_number,
+		"day_state": DayManager.get_save_state(),
 		"purchased_nodes": UpgradeManager.get_save_data_for_stand(GameState.stand_name),
 		"unlocked_fruits": ["lemon"], # TODO: dynamic
 		"placed_containers": placed_containers,

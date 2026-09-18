@@ -25,6 +25,11 @@ var _day_duration: float = 180.0 # 3 minutes default
 var _day_running: bool = false
 var day_time_over: bool = false
 
+# Saved day-cycle state waiting to be restored on the next game start
+# (set by SaveManager.apply_save_to_game_state). Empty when the next
+# start should begin a fresh day.
+var _pending_resume: Dictionary = { }
+
 # Throttle day-timer sync so it isn't sent every frame.
 var _last_synced_timer: float = -1.0
 var _sync_interval_timer: float = 0.0
@@ -129,6 +134,12 @@ func sync_day_state_to_peer(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	_sync_day_phase.rpc_id(peer_id, current_phase, day_number)
+	# day_time_over isn't carried by the phase packet and the timer sync
+	# doesn't run while _day_running is false — send the reliable
+	# day-over state so a joiner on a post-6 PM day gets the end-day
+	# sign interactable.
+	if day_time_over:
+		_sync_day_over.rpc_id(peer_id)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -196,6 +207,100 @@ func stop_day_cycle() -> void:
 	_day_running = false
 	day_time_over = false
 	_day_timer = 0.0
+
+
+## Serialisable snapshot of the day cycle for SaveManager.
+func get_save_state() -> Dictionary:
+	return {
+		"day_number": day_number,
+		"phase": int(current_phase),
+		"day_timer": _day_timer,
+		"day_duration": _day_duration,
+		"day_time_over": day_time_over,
+		"day_revenue": day_revenue,
+		"day_serves": day_serves,
+		"day_happy_serves": day_happy_serves,
+		"day_start_money": day_start_money,
+		"day_pedestrians": day_pedestrians,
+		"day_customers_arrived": day_customers_arrived,
+		"day_customers_bought": day_customers_bought,
+		"day_costs": day_costs,
+	}
+
+
+## Stash saved day-cycle state so the next game start resumes where the
+## save left off instead of restarting at 9 AM. day_number is applied
+## immediately because the "Day X" transition reads it before the world
+## is ready for resume_from_save().
+func store_pending_resume(data: Dictionary) -> void:
+	_pending_resume = data.duplicate()
+	day_number = int(data.get("day_number", day_number))
+
+
+func clear_pending_resume() -> void:
+	_pending_resume = { }
+
+
+func has_pending_resume() -> bool:
+	return not _pending_resume.is_empty()
+
+
+## Restore the day cycle captured by get_save_state(). Emits the same
+## signals a normal phase change would so the HUD clock, shop overlay,
+## end-day sign, day summary, and spawners all re-arm for the restored
+## phase.
+func resume_from_save() -> void:
+	var data := _pending_resume
+	_pending_resume = { }
+	current_phase = int(data.get("phase", Phase.DAY)) as Phase
+	if current_phase == Phase.MORNING:
+		# MORNING is a transient prep phase with no resumable progress —
+		# this also covers new-game saves, whose default day_state is
+		# MORNING. Start the day exactly as a fresh game would.
+		start_morning()
+		start_day()
+		return
+	day_revenue = float(data.get("day_revenue", 0.0))
+	day_serves = int(data.get("day_serves", 0))
+	day_happy_serves = int(data.get("day_happy_serves", 0))
+	day_start_money = float(data.get("day_start_money", GameState.money))
+	day_pedestrians = int(data.get("day_pedestrians", 0))
+	day_customers_arrived = int(data.get("day_customers_arrived", 0))
+	day_customers_bought = int(data.get("day_customers_bought", 0))
+	day_costs = float(data.get("day_costs", 0.0))
+	day_time_over = bool(data.get("day_time_over", false))
+	_day_duration = float(data.get("day_duration", _day_duration))
+	_day_timer = clampf(float(data.get("day_timer", _day_duration)), 0.0, _day_duration)
+	# The clock only runs while DAY is in progress and 6 PM hasn't hit.
+	_day_running = current_phase == Phase.DAY and not day_time_over
+	# Force the next _process tick to push the timer to clients
+	# immediately instead of waiting for the threshold.
+	_last_synced_timer = -1.0
+	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
+	EventBus.day_phase_changed.emit(current_phase, day_number)
+	_sync_phase_to_clients()
+	if day_time_over:
+		EventBus.day_time_over.emit()
+		if multiplayer.multiplayer_peer and multiplayer.get_peers().size() > 0:
+			_sync_day_over.rpc()
+
+
+## Reset the whole day cycle to a fresh Day 1 morning. Called when a new
+## game starts so a previous session's phase/timer/stats can't leak into
+## the new save's day_state.
+func reset_cycle() -> void:
+	stop_day_cycle()
+	_pending_resume = { }
+	current_phase = Phase.MORNING
+	day_number = 1
+	day_revenue = 0.0
+	day_serves = 0
+	day_happy_serves = 0
+	day_start_money = 0.0
+	day_pedestrians = 0
+	day_customers_arrived = 0
+	day_customers_bought = 0
+	day_costs = 0.0
 
 
 func end_evening() -> void:
