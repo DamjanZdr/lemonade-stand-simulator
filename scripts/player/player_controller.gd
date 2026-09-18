@@ -437,6 +437,8 @@ func _try_sync_position(delta: float) -> void:
 	_last_synced_yaw = _player.head.rotation.y
 	_last_synced_crouch = _player.is_crouching
 	_last_synced_sprint = _is_sprinting
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_position.rpc(
 		_player.global_position,
 		_player.global_rotation,

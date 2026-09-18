@@ -248,7 +248,8 @@ func start_delivery() -> void:
 	_state = "driving_in"
 	_start_engine_sound()
 	# Tell clients to make the truck visible
-	_set_truck_visible.rpc(true)
+	if multiplayer.has_multiplayer_peer():
+		_set_truck_visible.rpc(true)
 
 
 func _process(delta: float) -> void:
@@ -386,7 +387,8 @@ func _drive_out(delta: float) -> void:
 		visible = false
 		_state = "idle"
 		_stop_engine_sound()
-		_set_truck_visible.rpc(false)
+		if multiplayer.has_multiplayer_peer():
+			_set_truck_visible.rpc(false)
 		_try_auto_restart()
 		return
 
@@ -400,7 +402,8 @@ func _drive_out(delta: float) -> void:
 		visible = false
 		_state = "idle"
 		_fade_engine_out(0.15)
-		_set_truck_visible.rpc(false)
+		if multiplayer.has_multiplayer_peer():
+			_set_truck_visible.rpc(false)
 		# If boxes were queued while the truck was driving away (or
 		# en route), auto-start a new delivery now that we're idle.
 		_try_auto_restart()
@@ -464,7 +467,8 @@ func _transfer_next_box(index: int) -> void:
 		box.set_meta("delivery_cell_idx", truck_cell_idx)
 		box.set_meta("delivery_grid_path", _target_grid.get_path())
 		# Sync metas to clients so they can release the slot when picking up
-		_set_box_delivery_metas.rpc(box.name, truck_cell_idx, str(_target_grid.get_path()))
+		if multiplayer.has_multiplayer_peer():
+			_set_box_delivery_metas.rpc(box.name, truck_cell_idx, str(_target_grid.get_path()))
 
 	# Arc animation: parabolic path from truck to delivery grid
 	_animate_arc(box, target_pos, target_rot)
@@ -647,7 +651,7 @@ func _animate_arc(box: SupplyBox, target_pos: Vector3, target_rot: Vector3) -> v
 	# Reparent the box on clients too (from truck grid to world).
 	# The host already did this; clients need to match so the box
 	# isn't stuck on the truck grid visually.
-	if WorldSync.is_host():
+	if WorldSync.is_host() and multiplayer.has_multiplayer_peer():
 		var parent_path := str(get_tree().current_scene.get_path())
 		WorldSync.reparent_on_clients.rpc(parent_path, box.name, WorldSync.get_net_id(box))
 

@@ -409,14 +409,17 @@ func get_recipe(fruit_type: String) -> Dictionary:
 ## Call these instead of the direct methods above so the change is routed
 ## to whichever peer has authority (the host, in our host-authoritative
 ## design) via RPC, applied there, and the resulting state pushed back
-## out to every peer via push_state(). In solo/offline play (no real
-## network peer), rpc_id(1, ...) targeting yourself just runs locally
-## immediately — the same call site works correctly either way, no
-## branching needed at the call site.
+## out to every peer via push_state(). With no multiplayer peer (menu,
+## lobby, solo before hosting) the RPC can't be sent — callers apply the
+## mutation locally instead, which is exactly what the handler does on
+## the authority.
 
 
 func request_add_money(amount: float) -> void:
-	_rpc_add_money.rpc_id(1, amount)
+	if multiplayer.has_multiplayer_peer():
+		_rpc_add_money.rpc_id(1, amount)
+	else:
+		add_money(amount)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -428,7 +431,10 @@ func _rpc_add_money(amount: float) -> void:
 
 
 func request_set_price(fruit_type: String, new_price: float) -> void:
-	_rpc_set_price.rpc_id(1, fruit_type, new_price)
+	if multiplayer.has_multiplayer_peer():
+		_rpc_set_price.rpc_id(1, fruit_type, new_price)
+	else:
+		set_price(fruit_type, new_price)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -440,7 +446,10 @@ func _rpc_set_price(fruit_type: String, new_price: float) -> void:
 
 
 func request_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
-	_rpc_set_recipe.rpc_id(1, fruit_type, recipe)
+	if multiplayer.has_multiplayer_peer():
+		_rpc_set_recipe.rpc_id(1, fruit_type, recipe)
+	else:
+		set_recipe(fruit_type, recipe)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -452,22 +461,32 @@ func _rpc_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 
 
 func request_set_ice_degrees(value: float) -> void:
-	_rpc_set_ice_degrees.rpc_id(1, value)
+	if multiplayer.has_multiplayer_peer():
+		_rpc_set_ice_degrees.rpc_id(1, value)
+	else:
+		_apply_set_ice_degrees(value)
 
 
 @rpc("any_peer", "call_local", "reliable")
 func _rpc_set_ice_degrees(value: float) -> void:
 	if not is_multiplayer_authority():
 		return
+	_apply_set_ice_degrees(value)
+	push_state()
+
+
+func _apply_set_ice_degrees(value: float) -> void:
 	ice_degrees_per_scoop = clampf(value, 0.5, 10.0)
 	if is_legacy_primary:
 		GameState.ice_degrees_per_scoop = ice_degrees_per_scoop
 	OnboardingManager.notify_ice_changed(self, ice_degrees_per_scoop)
-	push_state()
 
 
 func request_customer_served(outcome: String) -> void:
-	_rpc_on_customer_served.rpc_id(1, outcome)
+	if multiplayer.has_multiplayer_peer():
+		_rpc_on_customer_served.rpc_id(1, outcome)
+	else:
+		on_customer_served(outcome)
 
 
 @rpc("any_peer", "call_local", "reliable")

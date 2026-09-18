@@ -61,6 +61,25 @@ func is_host() -> bool:
 	return multiplayer.is_server()
 
 
+## Broadcast an RPC to all peers, or skip the send when no multiplayer
+## peer is active. is_host() is deliberately true with no peer
+## (local-host mode), so a bare .rpc() in that state errors with
+## ERR_UNCONFIGURED — and the world keeps ticking in the menu/lobby
+## where no peer exists. Local work still runs; only the send is skipped.
+func _broadcast(method: StringName, args: Array = []) -> void:
+	if multiplayer.multiplayer_peer == null:
+		return
+	callv("rpc", [method] + args)
+
+
+## Send a client→host request (rpc_id(1)) only when a peer is active —
+## same ERR_UNCONFIGURED guard as _broadcast.
+func _request_host(method: StringName, args: Array = []) -> void:
+	if multiplayer.multiplayer_peer == null:
+		return
+	callv("rpc_id", [1, method] + args)
+
+
 ## Find the local player (the one this peer has authority over).
 ## Returns null if no local player exists yet. In single-player, returns
 ## the first player found.
@@ -183,7 +202,7 @@ func sync_world_state_to_clients() -> void:
 	var snapshot := _collect_world_snapshot()
 	if snapshot.is_empty():
 		return
-	_apply_world_snapshot.rpc(snapshot)
+	_broadcast(&"_apply_world_snapshot", [snapshot])
 
 
 ## Same as sync_world_state_to_clients but only sent to a specific peer.
@@ -625,7 +644,7 @@ func get_world_objects() -> Node:
 func request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: Dictionary = { }) -> Node:
 	if is_host():
 		return spawn_networked(scene_path, get_world_objects(), pos, rot, state)
-	_rpc_request_spawn.rpc_id(1, scene_path, pos, rot, state)
+	_request_host(&"_rpc_request_spawn", [scene_path, pos, rot, state])
 	return null
 
 
@@ -655,7 +674,7 @@ func request_pitcher_snap(target: Node, recipe: Dictionary, stand_owner: String)
 		var accepted := _apply_pitcher_snap(net_id, target_type, recipe, stand_owner)
 		_apply_pitcher_snap_result(accepted, target_type)
 	else:
-		_rpc_request_pitcher_snap.rpc_id(1, net_id, target_type, recipe, stand_owner)
+		_request_host(&"_rpc_request_pitcher_snap", [net_id, target_type, recipe, stand_owner])
 
 
 @rpc("any_peer", "reliable")
@@ -720,7 +739,7 @@ func request_container_action(obj: Node, action: String, args: Array) -> void:
 	if is_host():
 		_apply_container_action(net_id, action, args)
 	else:
-		_rpc_request_container_action.rpc_id(1, net_id, action, args)
+		_request_host(&"_rpc_request_container_action", [net_id, action, args])
 
 
 @rpc("any_peer", "reliable")
@@ -777,7 +796,7 @@ func request_despawn(obj: Node, confirm_pickup: bool = false) -> void:
 		"[WorldSync] Client sending despawn RPC to host: parent=%s name=%s net_id=%d"
 		% [parent_path, obj.name, net_id]
 	)
-	_rpc_request_despawn.rpc_id(1, parent_path, obj.name, net_id, confirm_pickup)
+	_request_host(&"_rpc_request_despawn", [parent_path, obj.name, net_id, confirm_pickup])
 
 
 @rpc("any_peer", "reliable")
@@ -825,7 +844,7 @@ func request_thrown_trash_pickup(obj: Node, player_path: String) -> void:
 	if is_host():
 		_do_thrown_trash_pickup(net_id, player_path)
 		return
-	_rpc_request_thrown_trash_pickup.rpc_id(1, net_id, player_path)
+	_request_host(&"_rpc_request_thrown_trash_pickup", [net_id, player_path])
 
 
 @rpc("any_peer", "reliable")
@@ -923,15 +942,9 @@ func spawn_networked(
 	var obj_scale: Vector3 = obj.scale
 	# Broadcast to clients
 	var parent_path := _node_path_to_string(parent.get_path())
-	_spawn_on_clients.rpc(
-		scene_path,
-		parent_path,
-		obj.name,
-		net_id,
-		global_pos,
-		global_rot,
-		obj_scale,
-		state,
+	_broadcast(
+		&"_spawn_on_clients",
+		[scene_path, parent_path, obj.name, net_id, global_pos, global_rot, obj_scale, state],
 	)
 	return obj
 
@@ -952,9 +965,9 @@ func despawn_networked(obj: Node) -> void:
 	if obj is SupplyBox:
 		SupplyBox.release_delivery_slot(obj as SupplyBox)
 		SupplyBox.make_boxes_above_pos_fall(obj.global_position)
-		_sync_boxes_fall.rpc(obj.global_position)
+		_broadcast(&"_sync_boxes_fall", [obj.global_position])
 	obj.queue_free()
-	_despawn_on_clients.rpc(parent_path, obj_name, net_id)
+	_broadcast(&"_despawn_on_clients", [parent_path, obj_name, net_id])
 
 
 @rpc("authority", "call_local", "reliable")
@@ -997,7 +1010,7 @@ func reparent_on_clients(new_parent_path_str: String, obj_name: String, net_id: 
 ## 'parent_name' is the workstation name.
 func sync_workstation_items(parent_name: String, item_data: Array[Dictionary]) -> void:
 	if not is_host():
-		_rpc_request_workstation_items.rpc_id(1, parent_name, item_data)
+		_request_host(&"_rpc_request_workstation_items", [parent_name, item_data])
 		return
 	_reparent_workstation_items_on_host(parent_name, item_data)
 
@@ -1026,7 +1039,7 @@ func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[D
 			# Already parented on the host, but still broadcast to clients
 			# in case they haven't reparented yet (e.g. late joiner or
 			# previous reparent RPC was lost).
-			reparent_on_clients.rpc(parent_path, item_name, net_id)
+			_broadcast(&"reparent_on_clients", [parent_path, item_name, net_id])
 			continue
 		var old_pos: Vector3 = item.global_position
 		var old_rot: Vector3 = item.global_rotation
@@ -1035,7 +1048,7 @@ func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[D
 		item.global_position = old_pos
 		item.global_rotation = old_rot
 		# Tell all clients to do the same reparent
-		reparent_on_clients.rpc(parent_path, item_name, net_id)
+		_broadcast(&"reparent_on_clients", [parent_path, item_name, net_id])
 
 
 ## Move an existing object to a new position/rotation on the host and
@@ -1048,11 +1061,11 @@ func sync_move_object(obj: Node, new_pos: Vector3, new_rot: Vector3) -> void:
 	var net_id := _get_net_id(obj)
 	var obj_name := obj.name
 	if not is_host():
-		_rpc_request_move.rpc_id(1, obj_name, net_id, new_pos, new_rot)
+		_request_host(&"_rpc_request_move", [obj_name, net_id, new_pos, new_rot])
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
-	_move_on_clients.rpc(obj_name, net_id, new_pos, new_rot)
+	_broadcast(&"_move_on_clients", [obj_name, net_id, new_pos, new_rot])
 
 
 @rpc("any_peer", "reliable")
@@ -1065,7 +1078,7 @@ func _rpc_request_move(obj_name: String, net_id: int, new_pos: Vector3, new_rot:
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
-	_move_on_clients.rpc(obj.name, net_id, new_pos, new_rot)
+	_broadcast(&"_move_on_clients", [obj.name, net_id, new_pos, new_rot])
 
 
 ## Move AND show/hide an object in a single RPC. More reliable than
@@ -1083,7 +1096,10 @@ func sync_move_and_show(
 	var net_id := _get_net_id(obj)
 	var obj_name := obj.name
 	if not is_host():
-		_rpc_request_move_and_show.rpc_id(1, obj_name, net_id, new_pos, new_rot, new_scale, show)
+		_request_host(
+			&"_rpc_request_move_and_show",
+			[obj_name, net_id, new_pos, new_rot, new_scale, show],
+		)
 		return
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
@@ -1093,7 +1109,7 @@ func sync_move_and_show(
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = not show
-	_move_and_show_on_clients.rpc(obj_name, net_id, new_pos, new_rot, new_scale, show)
+	_broadcast(&"_move_and_show_on_clients", [obj_name, net_id, new_pos, new_rot, new_scale, show])
 
 
 @rpc("any_peer", "reliable")
@@ -1119,7 +1135,7 @@ func _rpc_request_move_and_show(
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = not show
-	_move_and_show_on_clients.rpc(obj.name, net_id, new_pos, new_rot, new_scale, show)
+	_broadcast(&"_move_and_show_on_clients", [obj.name, net_id, new_pos, new_rot, new_scale, show])
 
 
 ## Reparent an object to a new parent on the host and sync to clients.
@@ -1135,7 +1151,7 @@ func sync_reparent_object(obj: Node, new_parent: Node) -> void:
 	obj.global_position = old_pos
 	obj.global_rotation = old_rot
 	var new_parent_path := _node_path_to_string(new_parent.get_path())
-	reparent_on_clients.rpc(new_parent_path, obj.name, _get_net_id(obj))
+	_broadcast(&"reparent_on_clients", [new_parent_path, obj.name, _get_net_id(obj)])
 
 
 @rpc("authority", "call_local", "reliable")
@@ -1183,7 +1199,7 @@ func sync_hide_object(obj: Node) -> void:
 	var net_id := _get_net_id(obj)
 	var obj_name := obj.name
 	if not is_host():
-		_rpc_request_set_visible.rpc_id(1, obj_name, net_id, false)
+		_request_host(&"_rpc_request_set_visible", [obj_name, net_id, false])
 		return
 	# Hide on the host too — the host should see the table disappear
 	# when any player picks it up.
@@ -1192,7 +1208,7 @@ func sync_hide_object(obj: Node) -> void:
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = true
-	_set_visible_on_clients.rpc(obj_name, net_id, false)
+	_broadcast(&"_set_visible_on_clients", [obj_name, net_id, false])
 
 
 ## Show an object on all clients (e.g. when a workstation is placed
@@ -1203,14 +1219,14 @@ func sync_show_object(obj: Node) -> void:
 	var net_id := _get_net_id(obj)
 	var obj_name := obj.name
 	if not is_host():
-		_rpc_request_set_visible.rpc_id(1, obj_name, net_id, true)
+		_request_host(&"_rpc_request_set_visible", [obj_name, net_id, true])
 		return
 	obj.visible = true
 	for child in obj.find_children("*", "CollisionShape3D", true, false):
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = false
-	_set_visible_on_clients.rpc(obj_name, net_id, true)
+	_broadcast(&"_set_visible_on_clients", [obj_name, net_id, true])
 
 
 @rpc("any_peer", "reliable")
@@ -1232,7 +1248,7 @@ func _rpc_request_set_visible(obj_name: String, net_id: int, show: bool) -> void
 		if col:
 			col.disabled = not show
 	# Broadcast to all non-host clients
-	_set_visible_on_clients.rpc(obj.name, net_id, show)
+	_broadcast(&"_set_visible_on_clients", [obj.name, net_id, show])
 
 
 @rpc("authority", "call_local", "reliable")
@@ -1412,7 +1428,7 @@ func sync_transform(obj: Node, pos: Vector3, rot: Vector3) -> void:
 		return
 	var net_id := _get_net_id(obj)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_apply_transform.rpc_id(0, parent_path, obj.name, net_id, pos, rot, 1) # 1 = unreliable channel
+	_broadcast(&"_apply_transform", [parent_path, obj.name, net_id, pos, rot, 1]) # 1 = unreliable channel
 
 
 ## Batch sync: sends ALL NPC transforms in a single RPC instead of one
@@ -1466,9 +1482,9 @@ func sync_property(obj: Node, prop: String, value: Variant) -> void:
 	var obj_name := obj.name
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	if not is_host():
-		_rpc_request_property.rpc_id(1, parent_path, obj_name, net_id, prop, value)
+		_request_host(&"_rpc_request_property", [parent_path, obj_name, net_id, prop, value])
 		return
-	_apply_property.rpc(parent_path, obj_name, net_id, prop, value)
+	_broadcast(&"_apply_property", [parent_path, obj_name, net_id, prop, value])
 
 
 @rpc("any_peer", "reliable")
@@ -1486,7 +1502,7 @@ func _rpc_request_property(
 		return
 	obj.set(prop, value)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_apply_property.rpc(parent_path, obj_name, net_id, prop, value)
+	_broadcast(&"_apply_property", [parent_path, obj_name, net_id, prop, value])
 
 
 ## Sync multiple property changes at once (more efficient than calling
@@ -1498,9 +1514,9 @@ func sync_properties(obj: Node, props: Dictionary) -> void:
 	var obj_name := obj.name
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	if not is_host():
-		_rpc_request_properties.rpc_id(1, parent_path, obj_name, net_id, props)
+		_request_host(&"_rpc_request_properties", [parent_path, obj_name, net_id, props])
 		return
-	_apply_properties.rpc(parent_path, obj_name, net_id, props)
+	_broadcast(&"_apply_properties", [parent_path, obj_name, net_id, props])
 
 
 @rpc("any_peer", "reliable")
@@ -1518,7 +1534,7 @@ func _rpc_request_properties(
 	for key in props:
 		obj.set(key, props[key])
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_apply_properties.rpc(parent_path, obj_name, net_id, props)
+	_broadcast(&"_apply_properties", [parent_path, obj_name, net_id, props])
 
 
 ## Call a method on a world object on all clients (e.g. update_display).
@@ -1529,9 +1545,9 @@ func sync_call(obj: Node, method: String, args: Array = []) -> void:
 	var obj_name := obj.name
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	if not is_host():
-		_rpc_request_call.rpc_id(1, parent_path, obj_name, net_id, method, args)
+		_request_host(&"_rpc_request_call", [parent_path, obj_name, net_id, method, args])
 		return
-	_call_method.rpc(parent_path, obj_name, net_id, method, args)
+	_broadcast(&"_call_method", [parent_path, obj_name, net_id, method, args])
 
 
 @rpc("any_peer", "reliable")
@@ -1550,7 +1566,7 @@ func _rpc_request_call(
 	if obj.has_method(method):
 		obj.callv(method, args)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
-	_call_method.rpc(parent_path, obj_name, net_id, method, args)
+	_broadcast(&"_call_method", [parent_path, obj_name, net_id, method, args])
 
 
 @rpc("authority", "call_local", "reliable")

@@ -167,13 +167,15 @@ func walk_to_queue(target: Vector3, on_arrive: Callable) -> void:
 	_queue_target = target
 	_queue_arrived_cb = on_arrive
 	_npc.play_anim("Walk")
-	_sync_walk_to_queue.rpc(target)
+	if multiplayer.has_multiplayer_peer():
+		_sync_walk_to_queue.rpc(target)
 
 
 ## Update queue target position (host only). Syncs to clients.
 func update_queue_target(target: Vector3) -> void:
 	_queue_target = target
-	_sync_queue_target.rpc(target)
+	if multiplayer.has_multiplayer_peer():
+		_sync_queue_target.rpc(target)
 
 
 func get_route_continuation() -> Dictionary:
@@ -219,7 +221,8 @@ func _physics_process(delta: float) -> void:
 			_recovering = true
 			_recover_timer = _npc.get_anim_length("Fall")
 			_npc.play_anim_reverse("Fall", 0.3)
-			_sync_recover_start.rpc()
+			if multiplayer.has_multiplayer_peer():
+				_sync_recover_start.rpc()
 		return
 
 	# Recovery: wait for Fall reverse to finish, then resume previous state.
@@ -413,26 +416,36 @@ func resume_route() -> void:
 
 ## Host: NPC was offered a free lemonade and stopped. Synced to clients.
 func sync_offered(player_pos: Vector3) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_offered.rpc(player_pos)
 
 
 ## Host: NPC was served and is now in serving state. Synced to clients.
 func sync_serving() -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_serving.rpc()
 
 
 ## Host: update the feedback/order text on the NPC's bubble for clients.
 func sync_show_order_text(text: String) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_show_order_text.rpc(text)
 
 
 ## Host: NPC resumed walking (after offer timeout or serving done). Synced.
 func sync_resume(waypoint_idx: int) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_resume.rpc(waypoint_idx)
 
 
 ## Host: sync an arbitrary state change + animation to clients.
 func sync_state(new_state: int, anim: String) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_state.rpc(new_state, anim)
 
 
@@ -587,7 +600,8 @@ func stun(_duration: float) -> void:
 		_npc_base_rot = _npc.rotation
 		_npc.play_anim_once("Fall", 0.2)
 	# Sync to clients so they see the fall.
-	_sync_stun.rpc(_STUN_DOWN_DURATION)
+	if multiplayer.has_multiplayer_peer():
+		_sync_stun.rpc(_STUN_DOWN_DURATION)
 
 
 ## Client-side: apply the fall from host sync.

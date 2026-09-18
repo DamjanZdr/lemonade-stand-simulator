@@ -104,6 +104,8 @@ func stun(duration: float) -> void:
 	# authority-to-all, but we use rpc_id to reach the owning peer
 	# even though the host doesn't have authority over that node.
 	var owner_id := get_multiplayer_authority()
+	if not multiplayer.has_multiplayer_peer():
+		return
 	if owner_id != 1:
 		_sync_stun.rpc_id(owner_id, stun_timer)
 	_sync_stun.rpc(stun_timer)

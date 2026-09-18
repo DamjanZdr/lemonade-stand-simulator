@@ -220,7 +220,8 @@ func _physics_process(delta: float) -> void:
 			_recovering = true
 			_recover_timer = _npc.get_anim_length("Fall")
 			_npc.play_anim_reverse("Fall", 0.3)
-			_sync_recover_start.rpc()
+			if multiplayer.has_multiplayer_peer():
+				_sync_recover_start.rpc()
 		return
 
 	# Recovery: wait for Fall reverse to finish, then resume previous state.
@@ -328,7 +329,8 @@ func stun(_duration: float) -> void:
 		_npc_base_rot = _npc.rotation
 		_npc.play_anim_once("Fall", 0.2)
 	# Sync to clients so they see the fall.
-	_sync_stun.rpc(_STUN_DOWN_DURATION)
+	if multiplayer.has_multiplayer_peer():
+		_sync_stun.rpc(_STUN_DOWN_DURATION)
 
 
 ## Client-side: apply the fall from host sync.
@@ -445,6 +447,8 @@ func net_set_target(pos: Vector3, rot: Vector3) -> void:
 ## Host: sync a state change + animation to clients.
 ## Called when the host changes the customer's state (WALKING→WAITING, etc.)
 func sync_state(new_state: int, anim: String) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_state.rpc(new_state, anim)
 
 
@@ -468,6 +472,8 @@ func _sync_recover_start() -> void:
 
 ## Host: sync the engaged (talking + facing) state to clients.
 func sync_engaged(player_pos: Vector3) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_engaged.rpc(player_pos)
 
 
@@ -992,7 +998,8 @@ func sync_patience(ratio: float) -> void:
 		return
 	_last_patience_sync_ratio = ratio
 	_last_patience_sync_ms = now
-	_sync_patience.rpc(ratio)
+	if multiplayer.has_multiplayer_peer():
+		_sync_patience.rpc(ratio)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -1058,6 +1065,8 @@ func _show_order() -> void:
 
 ## Host: sync the order bubble text to clients so they see it too.
 func sync_show_order(text: String) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	_sync_show_order.rpc(text)
 
 
