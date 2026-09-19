@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://djukgdu6j3p67"]
+
+[ext_resource type="PackedScene" uid="uid://k2xf3u6s6t5x" path="res://assets/baby_duck.glb" id="1_ql0qm"]
+[ext_resource type="Script" path="res://scripts/objects/duck.gd" id="2_duck"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_82f87"]
+size = Vector3(0.50756836, 0.56604004, 0.36328125)
+
+[node name="Duck" type="Area3D" unique_id=188349304]
+script = ExtResource("2_duck")
+
+[node name="Sketchfab_Scene" parent="." unique_id=130018740 instance=ExtResource("1_ql0qm")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2031953550]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07604331, 0)
+shape = SubResource("BoxShape3D_82f87")
