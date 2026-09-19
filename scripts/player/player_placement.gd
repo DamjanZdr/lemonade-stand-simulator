@@ -1083,6 +1083,25 @@ func clear_placement_ghost() -> void:
 	_destroy_ghost()
 
 
+## Ensures a container ghost exists at the given snap position and marks
+## it valid, so _try_place_container() can run immediately. The ghost is
+## created at pickup but can be destroyed mid-hold (aiming at a trashcan
+## destroys it); clicking to snap in that window used to crash on a null
+## ghost.
+func ensure_snap_ghost(snap_pos: Vector3) -> bool:
+	var container_type: String = _player.held_item_data.get("container_type", "")
+	if container_type == "":
+		return false
+	if _ghost == null or _ghost.get_meta("container_type", "") != container_type:
+		_create_ghost(container_type)
+	if _ghost == null:
+		return false
+	_ghost.global_position = snap_pos
+	_ghost.visible = true
+	_ghost_valid = true
+	return true
+
+
 func _update_cup_box_ghost() -> void:
 	# Show ghost preview for cup placement when holding cup box.
 	if not _player.ray.is_colliding():
@@ -1492,11 +1511,20 @@ func _update_ghost() -> void:
 	if _player.held_item == HeldItem.SUPPLY_BOX:
 		_update_supply_box_ghost()
 		return
-	if _player.held_item != HeldItem.CONTAINER or _ghost == null:
+	if _player.held_item != HeldItem.CONTAINER:
+		return
+
+	var container_type: String = _player.held_item_data.get("container_type", "")
+	# The ghost is created once at pickup but can be destroyed mid-hold
+	# (e.g. aiming at a trashcan above destroys it). Recreate it here so
+	# the press/dispenser snap previews — and the click-time snap in
+	# primary_interact — always have a live ghost.
+	if _ghost == null or _ghost.get_meta("container_type", "") != container_type:
+		_create_ghost(container_type)
+	if _ghost == null:
 		return
 
 	# Pitcher snapping to press
-	var container_type: String = _player.held_item_data.get("container_type", "")
 	if container_type == "pitcher":
 		var press := _player.interaction.find_looked_at_press() as Press
 		if press != null:

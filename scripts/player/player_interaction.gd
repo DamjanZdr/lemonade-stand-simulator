@@ -404,14 +404,14 @@ func primary_interact() -> void:
 					# all clients. This avoids the client getting null from
 					# WorldSync.request_spawn() and never snapping.
 					if WorldSync.is_host():
-						_player.placement._ghost.global_position = (
-							press.get_snap_global_position()
-						)
-						_player.placement._ghost_valid = true
-						var placed := _player.placement._try_place_container()
-						if placed is Pitcher:
-							press.snap_pitcher(placed as Pitcher)
-							press.sync_snapped_pitcher()
+						# The ghost may have been destroyed mid-hold
+						# (e.g. aiming at a trashcan) — recreate it at
+						# the snap point before placing.
+						if _player.placement.ensure_snap_ghost(press.get_snap_global_position()):
+							var placed := _player.placement._try_place_container()
+							if placed is Pitcher:
+								press.snap_pitcher(placed as Pitcher)
+								press.sync_snapped_pitcher()
 					else:
 						var stand_owner := ""
 						if (
@@ -434,13 +434,11 @@ func primary_interact() -> void:
 					# host which spawns the pitcher, snaps it, and syncs to
 					# all clients.
 					if WorldSync.is_host():
-						_player.placement._ghost.global_position = (
-							dispenser.get_snap_global_position()
-						)
-						_player.placement._ghost_valid = true
-						var placed := _player.placement._try_place_container()
-						if placed is Pitcher:
-							dispenser.snap_pitcher(placed as Pitcher)
+						# Same null-ghost guard as the press path above.
+						if _player.placement.ensure_snap_ghost(dispenser.get_snap_global_position()):
+							var placed := _player.placement._try_place_container()
+							if placed is Pitcher:
+								dispenser.snap_pitcher(placed as Pitcher)
 					else:
 						var stand_owner := ""
 						if (
@@ -619,12 +617,10 @@ func primary_interact() -> void:
 			var collider := _player.ray.get_collider()
 			var equipment_type: String = _player.inventory.held_item_data.get("equipment_type", "")
 			var valid_equipment_surface := (
-				equipment_type == "workstation" and _player.placement.is_table_floor_surface(
-					collider
-				)
-				or equipment_type != "workstation" and _player.placement.is_workstation_surface(
-					collider
-				)
+				equipment_type == "workstation"
+				and _player.placement.is_table_floor_surface(collider)
+				or equipment_type != "workstation"
+				and _player.placement.is_workstation_surface(collider)
 			)
 			if is_equipment and valid_equipment_surface:
 				_player.placement._place_equipment_from_box()
