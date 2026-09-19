@@ -153,6 +153,11 @@ func _sender_id() -> int:
 
 ## Returns the first unclaimed stand index (0 or 1), or -1 if both are taken.
 func _first_free_stand() -> int:
+	# Co-op shares a single stand — a late joiner joins the shared stand
+	# rather than needing a free index. Capacity is per-stand
+	# (MAX_PLAYERS), and roster already includes the joining peer here.
+	if game_mode == GameState.GameMode.COOP:
+		return 0 if roster.size() <= MAX_PLAYERS else -1
 	var used: Array[int] = []
 	for id in roster:
 		if id == _sender_id():

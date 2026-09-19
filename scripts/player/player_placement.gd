@@ -329,9 +329,10 @@ func _update_single_cup_ghost() -> void:
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
 		return
 
-	# Filled cups can't go on ground
+	# Cups can't go on the ground — counters and workstation tops only.
+	# Applies to empty and filled cups alike.
 	var is_ground := is_ground_surface(collider)
-	if _player.held_item == HeldItem.CUP_FILLED and is_ground:
+	if is_ground:
 		_ghost.visible = true
 		_ghost_valid = false
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())

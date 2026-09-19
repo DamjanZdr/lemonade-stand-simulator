@@ -558,6 +558,16 @@ func primary_interact() -> void:
 			return
 		if _player.ray.is_colliding():
 			var collider := _player.ray.get_collider()
+			# Ground/palette takes priority — the ghost shows the unopened
+			# box there, so the click must place the box, not unpack a
+			# single-cup stack onto the floor.
+			if _player.placement.is_ground_surface(collider):
+				if _player.placement.is_box_placeable_surface(collider):
+					_player.placement._place_held_supply_box_on(
+						_player.ray.get_collision_point()
+						+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
+					)
+				return
 			if _player.placement.is_stand_or_workstation_surface(collider):
 				_player.placement._place_cup_stack_from_box()
 				return

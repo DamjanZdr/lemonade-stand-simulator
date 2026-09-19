@@ -57,6 +57,15 @@ func stop() -> void:
 		_truck.stop_delivery()
 
 
+## Push the truck's current transform/visibility to a late joiner. The
+## truck is a static scene node excluded from the world snapshot, so
+## this is the only state a joiner gets until the next drive tick.
+func sync_state_to_peer(peer_id: int) -> void:
+	_ensure_truck()
+	if _truck and is_instance_valid(_truck):
+		_truck.sync_state_to_peer(peer_id)
+
+
 func _ensure_truck() -> void:
 	if _truck != null and is_instance_valid(_truck):
 		return

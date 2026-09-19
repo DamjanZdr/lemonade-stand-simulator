@@ -1373,6 +1373,35 @@ func _push_world_state_to_client(peer_id: int) -> void:
 	# Sync the current day/phase to the late joiner
 	if multiplayer.is_server():
 		DayManager.sync_day_state_to_peer(peer_id)
+	# Trucks are static scene nodes — not part of the world snapshot — so
+	# their transform/visibility must be pushed separately.
+	if delivery and delivery.has_method("sync_state_to_peer"):
+		delivery.sync_state_to_peer(peer_id)
+	if delivery2 and delivery2.has_method("sync_state_to_peer"):
+		delivery2.sync_state_to_peer(peer_id)
+
+
+## Client → host: "my world finished loading — send me the current
+## authoritative state." The join-time push fires ~1 frame after the
+## joiner readies up, which can land before the client's nodes are
+## ready to receive it; this pull guarantees stand money, day time,
+## and truck state are applied on an already-loaded world.
+@rpc("any_peer", "reliable")
+func _request_world_state() -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if sender == 0 or sender == multiplayer.get_unique_id():
+		return
+	if stand_unit:
+		stand_unit.push_state(sender)
+	if stand_unit2:
+		stand_unit2.push_state(sender)
+	DayManager.sync_day_state_to_peer(sender)
+	if delivery and delivery.has_method("sync_state_to_peer"):
+		delivery.sync_state_to_peer(sender)
+	if delivery2 and delivery2.has_method("sync_state_to_peer"):
+		delivery2.sync_state_to_peer(sender)
 
 
 func _on_spawner_spawned(node: Node) -> void:
@@ -1711,6 +1740,12 @@ func _start_late_join_day_transition() -> void:
 
 func _on_world_snapshot_applied() -> void:
 	_late_join_world_ready = true
+	# Pull fresh stand/day/truck state now that the snapshot has been
+	# applied — the host's join-time push can arrive before this client's
+	# nodes are ready, leaving scene defaults (e.g. $150 stand money,
+	# morning sun) in place.
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		_request_world_state.rpc_id(1)
 
 
 ## Host-first readiness: called after the host's local player is ready

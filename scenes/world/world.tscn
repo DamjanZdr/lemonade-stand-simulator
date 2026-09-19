@@ -327,6 +327,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9057007, -0.2495, -16.9583
 shape = SubResource("BoxShape3D_ground")
 
 [node name="PlayableArea" type="Area3D" parent="Ground" unique_id=146113540]
+collision_layer = 0
+collision_mask = 1
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground/PlayableArea" unique_id=635766442]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7931824, 0, -8.432495)

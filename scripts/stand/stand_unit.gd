@@ -120,7 +120,7 @@ func _setup_replication() -> void:
 ## update their local copy + emit signals so UI (HUD, price board, etc.)
 ## refreshes. Only the host calls this; only clients apply it (the host
 ## already has the correct values locally).
-func push_state() -> void:
+func push_state(peer_id: int = 0) -> void:
 	# Guard: if no multiplayer peer is assigned (e.g. loading a save
 	# from the main menu before hosting), skip the RPC entirely.
 	if not multiplayer.has_multiplayer_peer():
@@ -129,7 +129,7 @@ func push_state() -> void:
 		return
 	if multiplayer.get_peers().is_empty():
 		return
-	_apply_state.rpc(
+	var args: Array = [
 		money,
 		popularity,
 		feedback_tier,
@@ -145,7 +145,13 @@ func push_state() -> void:
 		highest_purchase,
 		highest_money,
 		onboarding_progress.duplicate(true),
-	)
+	]
+	# peer_id 0 = broadcast to everyone; otherwise target one peer (e.g.
+	# a late joiner re-pulling state after its world finishes loading).
+	if peer_id == 0:
+		_apply_state.rpc.callv(args)
+	else:
+		_apply_state.rpc_id.callv([peer_id] + args)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -305,7 +311,20 @@ func _ready() -> void:
 	EventBus.upgrade_purchased.connect(_on_global_upgrade_purchased_bridge)
 
 
+## True when this peer is a connected client. Checked inside the bridge
+## callbacks rather than at connect time because _ready() can run at the
+## main menu — before any multiplayer peer exists — so a connect-time
+## guard can't tell "solo" from "client that hasn't joined yet". A client
+## that joined later still has this bridge connected, and its GameState is
+## an unsynced local default ($150) that would clobber the host-pushed
+## stand state on every EventBus emit.
+func _is_remote_client() -> bool:
+	return multiplayer.has_multiplayer_peer() and not is_multiplayer_authority()
+
+
 func _on_global_money_changed_bridge(new_amount: float) -> void:
+	if _is_remote_client():
+		return
 	if is_equal_approx(new_amount, money):
 		return
 	money = new_amount
@@ -316,6 +335,8 @@ func _on_global_money_changed_bridge(new_amount: float) -> void:
 
 
 func _on_global_price_changed_bridge(fruit_type: String, new_price: float) -> void:
+	if _is_remote_client():
+		return
 	if is_equal_approx(prices.get(fruit_type, -1.0), new_price):
 		return
 	prices[fruit_type] = new_price
@@ -324,6 +345,8 @@ func _on_global_price_changed_bridge(fruit_type: String, new_price: float) -> vo
 
 
 func _on_global_popularity_changed_bridge(new_rating: float) -> void:
+	if _is_remote_client():
+		return
 	if is_equal_approx(new_rating, popularity):
 		return
 	popularity = new_rating
@@ -332,6 +355,8 @@ func _on_global_popularity_changed_bridge(new_rating: float) -> void:
 
 
 func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void:
+	if _is_remote_client():
+		return
 	purchased_upgrade_nodes = UpgradeManager.get_purchased_for_stand(name).duplicate()
 
 

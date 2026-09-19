@@ -128,18 +128,47 @@ func _sync_phase_to_clients() -> void:
 
 
 ## Sync the current day/phase to a specific peer (for late joiners).
+## Sends one reliable packet with the full state — phase, day number,
+## exact remaining time, and the day-over flag — so the joiner's sun,
+## HUD clock, and end-day sign are correct immediately. Without the
+## timer the joiner's sun stays at the scene-default morning position
+## until the next unreliable _sync_day_timer broadcast — which never
+## arrives once the day is over (_day_running is false).
 func sync_day_state_to_peer(peer_id: int) -> void:
 	if not multiplayer.multiplayer_peer:
 		return
 	if not multiplayer.is_server():
 		return
-	_sync_day_phase.rpc_id(peer_id, current_phase, day_number)
-	# day_time_over isn't carried by the phase packet and the timer sync
-	# doesn't run while _day_running is false — send the reliable
-	# day-over state so a joiner on a post-6 PM day gets the end-day
-	# sign interactable.
-	if day_time_over:
-		_sync_day_over.rpc_id(peer_id)
+	_sync_day_state.rpc_id(
+		peer_id,
+		current_phase,
+		day_number,
+		_day_timer,
+		_day_duration,
+		day_time_over,
+	)
+
+
+## Reliable full day-state snapshot for a late joiner. Emits both
+## day_phase_changed and day_timer_updated so the sun controller and
+## HUD clock snap to the host's exact time of day.
+@rpc("authority", "call_local", "reliable")
+func _sync_day_state(phase: int, day: int, timer: float, duration: float, is_over: bool) -> void:
+	if multiplayer.is_server():
+		return
+	current_phase = phase as Phase
+	day_number = day
+	_day_timer = timer
+	_day_duration = duration
+	# Same flag rules as _sync_day_phase: a non-DAY phase clears the
+	# carry-over flag; during DAY the host's authoritative flag wins.
+	if phase != Phase.DAY:
+		day_time_over = false
+	elif is_over and not day_time_over:
+		day_time_over = true
+		EventBus.day_time_over.emit()
+	EventBus.day_phase_changed.emit(current_phase, day_number)
+	EventBus.day_timer_updated.emit(_day_timer, _day_duration)
 
 
 @rpc("authority", "call_local", "reliable")

@@ -302,6 +302,30 @@ func net_set_target(pos: Vector3, rot: Vector3) -> void:
 	_net_target_rot = rot
 
 
+## Host → specific peer: full truck state for late joiners. The truck is
+## a static scene node (not spawned via WorldSync), so it isn't in the
+## world snapshot — without this a joiner sees it frozen at the
+## scene-default parked position even if it's mid-delivery or back at
+## the depot. Ongoing sync_transform broadcasts take over from there.
+func sync_state_to_peer(peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	_apply_truck_state.rpc_id(peer_id, global_position, global_rotation, visible)
+
+
+@rpc("authority", "reliable")
+func _apply_truck_state(pos: Vector3, rot: Vector3, is_visible: bool) -> void:
+	if is_multiplayer_authority():
+		return
+	global_position = pos
+	global_rotation = rot
+	# Seed the interpolation target so the truck doesn't slide from the
+	# scene position to the host position.
+	_net_target_pos = pos
+	_net_target_rot = rot
+	visible = is_visible
+
+
 ## Tell clients to show or hide the truck. The truck starts invisible
 ## and only becomes visible when the host starts a delivery.
 @rpc("authority", "call_local", "reliable")
