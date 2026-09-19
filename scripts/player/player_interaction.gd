@@ -407,7 +407,8 @@ func primary_interact() -> void:
 						# The ghost may have been destroyed mid-hold
 						# (e.g. aiming at a trashcan) — recreate it at
 						# the snap point before placing.
-						if _player.placement.ensure_snap_ghost(press.get_snap_global_position()):
+						var snap_pos := press.get_snap_global_position()
+						if _player.placement.ensure_snap_ghost(snap_pos):
 							var placed := _player.placement._try_place_container()
 							if placed is Pitcher:
 								press.snap_pitcher(placed as Pitcher)
@@ -435,7 +436,8 @@ func primary_interact() -> void:
 					# all clients.
 					if WorldSync.is_host():
 						# Same null-ghost guard as the press path above.
-						if _player.placement.ensure_snap_ghost(dispenser.get_snap_global_position()):
+						var snap_pos := dispenser.get_snap_global_position()
+						if _player.placement.ensure_snap_ghost(snap_pos):
 							var placed := _player.placement._try_place_container()
 							if placed is Pitcher:
 								dispenser.snap_pitcher(placed as Pitcher)
