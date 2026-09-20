@@ -48,6 +48,7 @@
 [ext_resource type="PackedScene" uid="uid://b0dr2sv2th8e0" path="res://assets/models/characters/npc_attributes/Male/Mouths/TalkingMouthM.glb" id="43_pcth3"]
 [ext_resource type="Texture2D" uid="uid://dypa6kron6oro" path="res://assets/models/characters/man_Shoes Base Color.png" id="44_7iotn"]
 [ext_resource type="PackedScene" uid="uid://dr4k7li21a5fg" path="res://scenes/objects/cash_pickup.tscn" id="45_i4fc3"]
+[ext_resource type="PackedScene" uid="uid://djukgdu6j3p67" path="res://scenes/duck.tscn" id="46_c4p11"]
 [ext_resource type="Script" uid="uid://e7o24oyy11ah" path="res://scripts/objects/cup.gd" id="46_myl1y"]
 [ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
 [ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
@@ -1806,7 +1807,7 @@ shadow_mesh = SubResource("ArrayMesh_bjeon")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eusxp"]
 resource_name = "Material.059"
 cull_mode = 2
-albedo_color = Color(0.90588236, 0, 0.32941177, 1)
+albedo_color = Color(1, 1, 0.03137255, 1)
 roughness = 0.5
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_5tarc"]
@@ -1846,6 +1847,13 @@ shadow_mesh = SubResource("ArrayMesh_5tarc")
 height = 2.4802856
 radius = 1.0205078
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_db4f4"]
+albedo_color = Color(0.45300204, 0.59435695, 0, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_82f87"]
+material = SubResource("StandardMaterial3D_db4f4")
+size = Vector2(400, 400)
+
 [sub_resource type="MultiMesh" id="MultiMesh_0awr7"]
 transform_format = 1
 instance_count = 700
@@ -1883,9 +1891,15 @@ size = Vector2(10, 2.2)
 script = ExtResource("22_neigh")
 
 [node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=768525041 groups=["grass_surface"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.53274, 0.2921645, -4.223117)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7702942, 0.2921645, -4.223117)
 use_collision = true
-size = Vector3(2047, 1.4, 1477)
+size = Vector3(278.90234, 1.4, 284.01147)
+material = SubResource("StandardMaterial3D_g4v7s")
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="." unique_id=1499774964 groups=["grass_surface"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7702942, -0.617534, -4.223117)
+use_collision = true
+size = Vector3(1551.3477, 1.4, 1817.4971)
 material = SubResource("StandardMaterial3D_g4v7s")
 
 [node name="Houses" type="Node3D" parent="." unique_id=641800392 groups=["grass_blocker"]]
@@ -7931,13 +7945,12 @@ multimesh = SubResource("MultiMesh_r8fkd")
 multimesh = SubResource("MultiMesh_xtpmv")
 
 [node name="NPC" type="Node3D" parent="Grass" unique_id=789160888]
-transform = Transform3D(-0.092079975, 0, 0.03900359, 0, 0.099999994, 0, -0.03900359, 0, -0.092079975, -1050.8588, 2.4642596, 732.38763)
-visible = false
+transform = Transform3D(-0.05403521, 0, 0.084143914, 0, 0.099999994, 0, -0.084143914, 0, -0.05403521, -1050.8588, 6.3410726, 732.38763)
 
 [node name="man" type="Node3D" parent="Grass/NPC" unique_id=1019095832]
 
 [node name="Armature" type="Node3D" parent="Grass/NPC/man" unique_id=741721365]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8318386, 0)
+transform = Transform3D(0.8518714, 0, -0.52375144, 0, 1, 0, 0.52375144, 0, 0.8518714, 11.546875, -0.8318386, -4.890625)
 
 [node name="Skeleton3D" type="Skeleton3D" parent="Grass/NPC/man/Armature" unique_id=1470872072]
 transform = Transform3D(1, 0, -2.9802322e-08, 0, 0.99999994, 0, 2.9802322e-08, 0, 1, 0, -3.615243, 0)
@@ -7953,14 +7966,14 @@ bones/1/parent = 0
 bones/1/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 bones/1/enabled = true
 bones/1/position = Vector3(0, 2, 0)
-bones/1/rotation = Quaternion(-0.0014157974, 0, 0.0021886707, 0.99999666)
+bones/1/rotation = Quaternion(0.153584, 0, 0.002189, 0.999997)
 bones/1/scale = Vector3(1, 1, 1)
 bones/2/name = "UpperBack"
 bones/2/parent = 1
 bones/2/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 bones/2/enabled = true
 bones/2/position = Vector3(0, 3, 0)
-bones/2/rotation = Quaternion(0.032820024, -1.4940167e-10, -0.05073623, 0.99817276)
+bones/2/rotation = Quaternion(-0.09218, -0.18, -0.045736, 1.018173)
 bones/2/scale = Vector3(1, 1, 1)
 bones/3/name = "Neck"
 bones/3/parent = 2
@@ -7974,21 +7987,21 @@ bones/4/parent = 3
 bones/4/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3999996, 0)
 bones/4/enabled = true
 bones/4/position = Vector3(0, 1.3999996, 0)
-bones/4/rotation = Quaternion(-2.0295076e-11, -2.5399715e-12, -4.0629267e-11, 1)
+bones/4/rotation = Quaternion(0.16, 0.05, 0, 1)
 bones/4/scale = Vector3(1, 1, 1)
 bones/5/name = "UpperArm.L"
 bones/5/parent = 2
 bones/5/rest = Transform3D(-0.16990685, 0.98470086, 0.038677797, -0.9854601, -0.16977595, -0.00666844, 1.4156103e-07, -0.039248444, 0.9992295, 2, 1.6999998, 0)
 bones/5/enabled = true
-bones/5/position = Vector3(2, 1.6999998, 0)
-bones/5/rotation = Quaternion(-0.19264057, 0.072524175, -0.9379419, 0.2790964)
+bones/5/position = Vector3(1.805, 1.705, 0)
+bones/5/rotation = Quaternion(-0.147641, -0.617476, -1.302942, 0.279096)
 bones/5/scale = Vector3(0.99999994, 1, 1)
 bones/6/name = "Forearm.L"
 bones/6/parent = 5
 bones/6/rest = Transform3D(0.9988514, 0.047821537, -0.0029970068, -0.04787841, 0.99367094, -0.10161564, -0.001881378, 0.101642415, 0.99481916, -1.5986105e-08, 2.9450574, -1.8626451e-08)
 bones/6/enabled = true
 bones/6/position = Vector3(-1.5986105e-08, 2.9450574, -1.8626451e-08)
-bones/6/rotation = Quaternion(0.6841867, -0.00018308686, -0.32213542, 0.65430677)
+bones/6/rotation = Quaternion(0.199187, 0.134817, -0.322135, 0.654307)
 bones/6/scale = Vector3(1, 1, 0.99999994)
 bones/7/name = "Hand.L"
 bones/7/parent = 6
@@ -8002,14 +8015,14 @@ bones/8/parent = 2
 bones/8/rest = Transform3D(-0.16990685, -0.98470086, -0.038677797, 0.9854601, -0.16977595, -0.00666844, -1.4156103e-07, -0.039248444, 0.9992295, -2, 1.6999998, 0)
 bones/8/enabled = true
 bones/8/position = Vector3(-2, 1.6999998, 0)
-bones/8/rotation = Quaternion(-0.118875794, 0.119487874, 0.95779985, 0.23283166)
+bones/8/rotation = Quaternion(-0.288876, 2.214488, 4.6428, -0.077168)
 bones/8/scale = Vector3(0.99999994, 1, 1)
 bones/9/name = "Forearm.R"
 bones/9/parent = 8
 bones/9/rest = Transform3D(0.9988514, -0.047821537, 0.0029970068, 0.04787841, 0.99367094, -0.10161564, 0.001881378, 0.101642415, 0.99481916, 1.5986105e-08, 2.9450574, -1.8626451e-08)
 bones/9/enabled = true
 bones/9/position = Vector3(1.5986105e-08, 2.9450574, -1.8626451e-08)
-bones/9/rotation = Quaternion(0.6643606, 0.00018983803, 0.31280074, 0.67880833)
+bones/9/rotation = Quaternion(0.179361, -0.08481, 0.177801, 0.678808)
 bones/9/scale = Vector3(1, 1, 0.99999994)
 bones/10/name = "Hand.R"
 bones/10/parent = 9
@@ -8125,7 +8138,7 @@ bones/25/rotation = Quaternion(0.45554727, 0.5408111, -0.5408111, -0.45554727)
 bones/25/scale = Vector3(0.99999994, 1, 0.99999994)
 
 [node name="Head" type="BoneAttachment3D" parent="Grass/NPC/man/Armature/Skeleton3D" unique_id=2048607257]
-transform = Transform3D(0.99528545, 0.08979228, -0.03666154, -0.096940294, 0.90909964, -0.40514252, -0.0030496772, 0.40678647, 0.9135182, 0.3064578, 8.0413475, 0.68642277)
+transform = Transform3D(0.96592903, -0.10407286, -0.2369599, -0.096313134, 0.70527434, -0.7023617, 0.24021852, 0.7012539, 0.6712213, 0.19842456, 7.852475, 1.8318355)
 bone_name = "Head"
 bone_idx = 4
 
@@ -8224,7 +8237,7 @@ transform = Transform3D(3.1524336, -0.90261656, 5.894274, 2.841797, 6.088851, -0
 visible = false
 
 [node name="Cup" type="Node3D" parent="Grass/NPC" unique_id=865630752]
-transform = Transform3D(0.58107686, 0.29443657, -0.13372405, -0.2966553, 0.3758793, -0.46144974, -0.12872708, 0.46286857, 0.4597907, -2.0449219, 0, 4.1621094)
+transform = Transform3D(0.6356671, 0.18566653, -0.06066802, -0.1953271, 0.60438657, -0.19695133, 0.00015002489, 0.20608357, 0.632262, 6.8896484, -0.9739933, -0.49804688)
 script = ExtResource("46_myl1y")
 
 [node name="Model" type="Node3D" parent="Grass/NPC/Cup" unique_id=1665424869]
@@ -8242,35 +8255,25 @@ mesh = SubResource("ArrayMesh_c4p11")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05795288, 0)
 shape = SubResource("CylinderShape3D_cup")
 
-[node name="Cup2" type="Node3D" parent="Grass/NPC" unique_id=1748950028]
-transform = Transform3D(0.6494578, -0.13748851, -0.03907308, 0.08745399, 0.52602756, -0.39733142, 0.11305553, 0.38290635, 0.5318144, 2.8457031, -1.4846859, 2.9345703)
-script = ExtResource("46_myl1y")
-
-[node name="Model" type="Node3D" parent="Grass/NPC/Cup2" unique_id=347795830]
-
-[node name="Cup" type="MeshInstance3D" parent="Grass/NPC/Cup2/Model" unique_id=1925160625]
-mesh = SubResource("ArrayMesh_ux7dx")
-
-[node name="Fill" type="MeshInstance3D" parent="Grass/NPC/Cup2/Model" unique_id=2073979169]
-transform = Transform3D(1.0329157, 0, 0, 0, 1.0329157, 0, 0, 0, 1.0329157, 0, -0.117733896, 0)
-mesh = SubResource("ArrayMesh_c4p11")
-
-[node name="Physics" type="StaticBody3D" parent="Grass/NPC/Cup2" unique_id=1073762249]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Grass/NPC/Cup2/Physics" unique_id=595662692]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05795288, 0)
-shape = SubResource("CylinderShape3D_cup")
+[node name="Duck" parent="Grass/NPC" unique_id=188349304 instance=ExtResource("46_c4p11")]
+transform = Transform3D(-31.046413, -7.5203276, -4.538172, -7.846402, 31.237835, 1.9135201, 3.9476957, 2.944871, -31.886885, -1.139, -11.992, 0.57)
 
 [node name="OmniLight3D" type="OmniLight3D" parent="Grass" unique_id=964510608]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1050.2008, 2.2345312, 729.992)
+omni_range = 4.798807
+
+[node name="MeshInstance3D6" type="MeshInstance3D" parent="Grass" unique_id=391908480]
+transform = Transform3D(-0.08997229, -0.019288015, 0.03915309, -0.038955387, -0.0049697254, -0.091966175, 0.019684222, -0.097996324, -0.0030423375, -1052.1968, 5.589947, 740.08295)
+mesh = SubResource("PlaneMesh_82f87")
 
 [node name="GrassPatchFront18" type="MultiMeshInstance3D" parent="Grass" unique_id=1208437596]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1041.947, 0, 736.1585)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1041.947, 3.876813, 736.1585)
+visible = false
 multimesh = SubResource("MultiMesh_xtpmv")
 
 [node name="Camera3D" type="Camera3D" parent="Grass/GrassPatchFront18" unique_id=932595188]
-transform = Transform3D(-0.95873594, 0.037108343, 0.28186586, 0.028684547, 0.99901164, -0.033955023, -0.2828473, -0.024468701, -0.9588528, -8.142822, 2.0119827, -5.2840576)
-fov = 80.0
+transform = Transform3D(-0.98564947, -0.005581353, 0.16871274, 0.0273993, 0.98091006, 0.19252196, -0.16656657, 0.19438179, -0.9666806, -8.803, 2.362, -5.989)
+fov = 88.5
 
 [node name="GrassPatchThin" type="MultiMeshInstance3D" parent="Grass" unique_id=1559333544]
 multimesh = SubResource("MultiMesh_0awr7")

@@ -11,3 +11,5 @@ category = "equipment"
 effect_per_node = 10.0
 costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
 effects = Array[float]([10.0, 10.0, 10.0, 10.0, 10.0])
+
+

@@ -47,7 +47,7 @@
 [ext_resource type="Script" uid="uid://byhrb8wcm2bo0" path="res://scripts/managers/time_manager.gd" id="69_time"]
 [ext_resource type="Script" uid="uid://okxhat4jeb6k" path="res://scripts/managers/trash_manager.gd" id="71_trash"]
 [ext_resource type="Shader" uid="uid://bacxbwma0dens" path="res://shaders/transition_motion_blur.gdshader" id="72_tblur"]
-[ext_resource type="Script" path="res://scripts/tools/npc_namer.gd" id="73_npcnamer"]
+[ext_resource type="Script" uid="uid://cfqq1eg3qqtvc" path="res://scripts/tools/npc_namer.gd" id="73_npcnamer"]
 
 [sub_resource type="ShaderMaterial" id="TransitionBlurMat"]
 shader = ExtResource("72_tblur")
@@ -109,10 +109,17 @@ convert_chance_at_max_popularity = 0.9
 
 [node name="TimeManager" type="Node" parent="Managers" unique_id=1001413375]
 script = ExtResource("69_time")
-seconds_per_hour = 40.0
+seconds_per_hour = 60.0
 
 [node name="TrashManager" type="Node" parent="Managers" unique_id=1001413376]
 script = ExtResource("71_trash")
+trash_values = {
+"apple": 0.2,
+"banana": 0.2,
+"can": 0.2,
+"cigarettes": 0.2,
+"cup": 0.2
+}
 
 [node name="ColorManager" type="Node" parent="Managers" unique_id=736981231]
 script = ExtResource("46_fqf7g")
@@ -183,5 +190,5 @@ transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -2.6
 [node name="Stand1StartPosition" type="Marker3D" parent="." unique_id=538939789]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.688334, 0.23163146, 11.260717)
 
-[node name="NpcNamer" type="Node" parent="."]
+[node name="NpcNamer" type="Node" parent="." unique_id=156499956]
 script = ExtResource("73_npcnamer")
