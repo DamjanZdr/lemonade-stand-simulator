@@ -15,6 +15,7 @@ const CONTAINER_SCENES: Dictionary = {
 	"press": preload("res://scenes/objects/press.tscn"),
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
 	"cup_stack": preload("res://scenes/objects/cup_stack.tscn"),
+	"cup": preload("res://scenes/objects/cup.tscn"),
 }
 
 # Workstation is loaded at runtime to avoid compile-time preload issues while the
@@ -583,6 +584,11 @@ func _scan_placed_containers() -> Array:
 			entry["ice"] = node.ice
 			entry["pitcher_state"] = int(node.state)
 			entry["cups_poured"] = node.cups_poured
+			entry["serving_recipe"] = _serialize_recipe(node.serving_recipe)
+		elif node is Cup:
+			entry["cup_state"] = int(node.state)
+			entry["cup_recipe"] = _serialize_recipe(node.recipe)
+			entry["fill_color"] = _color_to_array(node.fill_color)
 		elif node is Press:
 			entry["fruit_type"] = node.fruit_type
 			entry["fruit_count"] = node.fruit_count
@@ -603,6 +609,37 @@ func _is_child_of_player(node: Node, player: Node) -> bool:
 			return true
 		parent = parent.get_parent()
 	return false
+
+
+## Recipes contain a Color under "color" which doesn't survive JSON —
+## encode it as an [r,g,b,a] array when writing to the save file.
+func _serialize_recipe(recipe: Dictionary) -> Dictionary:
+	var out := recipe.duplicate(true)
+	if out.get("color") is Color:
+		out["color"] = _color_to_array(out["color"])
+	return out
+
+
+func _deserialize_recipe(data: Dictionary) -> Dictionary:
+	var out := data.duplicate(true)
+	var col: Variant = out.get("color")
+	if col is Array and col.size() >= 4:
+		out["color"] = Color(col[0], col[1], col[2], col[3])
+	elif col != null and not col is Color:
+		out.erase("color")
+	return out
+
+
+func _color_to_array(c: Color) -> Array:
+	return [c.r, c.g, c.b, c.a]
+
+
+func _array_to_color(v: Variant, fallback: Color) -> Color:
+	if v is Array and v.size() >= 4:
+		return Color(v[0], v[1], v[2], v[3])
+	if v is Color:
+		return v
+	return fallback
 
 
 func _dict_to_arrays(dict: Dictionary) -> Array:
@@ -671,6 +708,8 @@ func _get_container_type(node: Node) -> String:
 		return "water_dispenser"
 	if node is CupStack:
 		return "cup_stack"
+	if node is Cup:
+		return "cup"
 	var node_script: Script = node.get_script() as Script
 	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
@@ -816,12 +855,19 @@ func _do_respawn() -> void:
 				instance.ice = entry.get("ice", 0.0)
 				instance.cups_poured = entry.get("cups_poured", 0)
 				instance.state = entry.get("pitcher_state", 0) as Pitcher.PitcherState
+				instance.serving_recipe = _deserialize_recipe(entry.get("serving_recipe", { }))
 				instance.add_to_group("pitcher")
 				instance.set_pitcher_visible(true)
 				instance.sync_fill_display()
 				instance.update_liquid_color()
 				instance.call_deferred("update_label")
 				EventBus.pitcher_state_changed.emit(int(instance.state))
+			elif instance is Cup:
+				instance.state = int(entry.get("cup_state", 0)) as Cup.CupState
+				instance.recipe = _deserialize_recipe(entry.get("cup_recipe", { }))
+				instance.fill_color = _array_to_color(entry.get("fill_color"), instance.fill_color)
+				instance._refresh_fill_visibility()
+				instance.apply_fill_color()
 			else:
 				if "starting_amount" in instance:
 					instance.starting_amount = 0.0

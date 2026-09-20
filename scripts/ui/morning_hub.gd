@@ -1938,6 +1938,11 @@ func _show_morning_hub() -> void:
 	var stand := _get_local_stand()
 	if stand:
 		UpgradeManager.set_active_stand(stand.name)
+	_bind_stand_money()
+	# Re-evaluate cart affordability against current stand money — the
+	# checkout button could be stale if money changed while the hub was
+	# closed (_on_money_changed early-returns when the panel is hidden).
+	_update_cart_ui()
 	# Restore the last-used tab instead of always defaulting to analytics.
 	if not _flow_tabs.has(_active_tab):
 		_active_tab = "analytics"
@@ -1976,7 +1981,31 @@ func _hide_morning_hub() -> void:
 		hud.set_hud_visible(true)
 
 
+## Live money updates come from the local stand's own money_changed signal.
+## StandUnit mutations emit that per-stand signal, and on clients
+## _apply_state() is the only place stand money changes — EventBus.
+## money_changed only fires for the primary stand's GameState bridge,
+## so relying on it alone leaves the PC display stale.
+var _bound_stand: Node = null
+
+
+func _bind_stand_money() -> void:
+	var stand := _get_local_stand()
+	if stand == _bound_stand:
+		return
+	if (
+		_bound_stand != null and is_instance_valid(_bound_stand)
+		and _bound_stand.has_signal("money_changed")
+		and _bound_stand.money_changed.is_connected(_on_money_changed)
+	):
+		_bound_stand.money_changed.disconnect(_on_money_changed)
+	_bound_stand = stand
+	if _bound_stand != null and _bound_stand.has_signal("money_changed"):
+		_bound_stand.money_changed.connect(_on_money_changed)
+
+
 func _on_money_changed(_amount: float) -> void:
+	_bind_stand_money()
 	_hide_tree_tooltip()
 	if not panel.visible:
 		return

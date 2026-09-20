@@ -90,6 +90,15 @@ func _on_day_phase_changed(phase: int, _day: int) -> void:
 	_reserved_slots.clear()
 
 
+## Clears queue bookkeeping when leaving a game. Called from
+## _cleanup_game_session() — the customer nodes themselves are freed by
+## the caller (clients can't despawn via WorldSync once the host left).
+func reset_session() -> void:
+	_queue.fill(null)
+	_leaving_customers.clear()
+	_reserved_slots.clear()
+
+
 func set_queue_spots(spots: Array[Vector3], _step: Vector3 = Vector3.ZERO) -> void:
 	_queue_spots = spots
 	_queue.resize(spots.size())

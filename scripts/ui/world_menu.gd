@@ -443,6 +443,21 @@ func set_status(text: String) -> void:
 	_status_label.visible = text != ""
 
 
+## True while the join panel is open — join failures should show under
+## the input field, not under the main-menu Join button.
+func is_join_panel_open() -> bool:
+	return _join_panel.visible
+
+
+## Show a join failure inline under the lobby code input.
+func set_join_error(text: String) -> void:
+	_join_error_label.text = text
+	_join_error_label.visible = text != ""
+	_join_field.text = ""
+	_join_paste_btn.visible = true
+	_join_clear_btn.visible = false
+
+
 func set_busy(text: String) -> void:
 	set_status(text)
 	for btn in _menu_buttons:

@@ -645,7 +645,10 @@ func _on_menu_session_ready(_arg: Variant = null) -> void:
 ## Called when a connection fails while in the MAIN_MENU state.
 func _on_menu_session_failed(reason: String) -> void:
 	if _world_menu:
-		_world_menu.set_status("Failed: %s" % reason)
+		if _world_menu.is_join_panel_open():
+			_world_menu.set_join_error("Failed: %s" % reason)
+		else:
+			_world_menu.set_status("Failed: %s" % reason)
 		_world_menu.set_enabled(true)
 
 
@@ -739,6 +742,31 @@ func _cleanup_game_session() -> void:
 		delivery.stop()
 	if delivery2 and delivery2.has_method("stop"):
 		delivery2.stop()
+	# Free leftover NPCs locally on every peer. Clients can't rely on
+	# WorldSync despawn RPCs here — the host may have already torn down
+	# the session, so their replicated NPC copies would linger into the
+	# next game and stack on top of freshly spawned ones.
+	for group_name in ["pedestrians", "customers"]:
+		for npc in get_tree().get_nodes_in_group(group_name):
+			if is_instance_valid(npc):
+				npc.queue_free()
+	if ped_spawner and is_instance_valid(ped_spawner):
+		ped_spawner.reset_session()
+	var pm := get_tree().get_first_node_in_group("people_manager")
+	if pm and pm.has_method("reset_session"):
+		pm.reset_session()
+	for cs in [spawner, spawner2]:
+		if cs and is_instance_valid(cs) and cs.has_method("reset_session"):
+			cs.reset_session()
+	# Reset per-session flags so a second game isn't poisoned by leftover
+	# state — a stale _host_ready_notified would skip notify_clients_start
+	# and leave joiners stuck in the lobby; stale stand assignments leak
+	# into the next session's ownership checks.
+	_host_ready_notified = false
+	_late_join_camera_pending = false
+	_late_join_world_ready = true
+	_pending_transition = { }
+	_assigned_stands.clear()
 
 
 ## Smoothly transition from the lobby back to the main menu.
@@ -1649,10 +1677,13 @@ func _on_local_player_ready(p: Player) -> void:
 		# Re-show the HUD panels — the computer/phone/board UIs hide them
 		# via set_hud_visible(false), which persists on the shared HUD
 		# node and would otherwise leave the next session with no UI.
+		hud.visible = true
 		if hud.has_method("set_hud_visible"):
 			hud.set_hud_visible(true)
 		if hud.has_method("set_stand") and p.assigned_stand:
 			hud.set_stand(p.assigned_stand)
+	if _fps_label:
+		_fps_label.visible = _fps_shown
 	# Run the pending fade-to-black + Day X transition if one was stored
 	# by _on_game_starting() or _do_late_join_transition().
 	_complete_pending_local_transition()

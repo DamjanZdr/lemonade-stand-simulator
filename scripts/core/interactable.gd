@@ -38,15 +38,26 @@ func can_player_use(player: Node) -> bool:
 	# requiring the player to have an assigned stand, so that players
 	# whose stand assignment hasn't completed yet can still interact
 	# with shared/unassigned items.
-	if stand_owner == "":
+	var owner := stand_owner
+	if owner == "":
+		# Scene-placed equipment is a child of its StandUnit — inherit
+		# ownership from the ancestor stand so rival-stand gear isn't
+		# usable by the wrong stand just because stand_owner was never set.
+		var node: Node = self
+		while node != null:
+			if node is StandUnit:
+				owner = node.name
+				break
+			node = node.get_parent()
+	if owner == "":
 		return true
 	if player == null or not ("assigned_stand" in player):
 		return false
 	var stand: Node = player.assigned_stand
 	if stand != null and is_instance_valid(stand):
-		return stand.name == stand_owner
+		return stand.name == owner
 	if "assigned_stand_name" in player:
-		return player.assigned_stand_name == stand_owner
+		return player.assigned_stand_name == owner
 	return false
 
 

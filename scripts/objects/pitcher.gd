@@ -194,10 +194,10 @@ func _sync_state_to_peers() -> void:
 
 
 func pour_portion() -> Dictionary:
-	var snap := get_recipe_snapshot()
 	var liquid := get_liquid_volume()
 	if liquid <= 0.0:
-		return snap
+		return { }
+	var snap := get_recipe_snapshot()
 	# Freeze the recipe on the first pour; every later cup serves the same
 	# recipe while the pitcher's remaining volume drains toward empty.
 	if serving_recipe.is_empty():
@@ -292,6 +292,8 @@ func interact(player: Node) -> void:
 			# Fill cup if pitcher has liquid and player holds empty cup
 			if p.held_item == HeldItem.CUP_EMPTY and get_liquid_volume() > 0.0:
 				var recipe := pour_portion()
+				if recipe.is_empty():
+					return
 				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
 				p.inventory.set_held(
 					HeldItem.CUP_FILLED,
@@ -316,7 +318,12 @@ func interact(player: Node) -> void:
 				p.pickup_container(self, "pitcher")
 		PitcherState.SERVING:
 			if p.held_item == HeldItem.CUP_EMPTY:
+				if get_liquid_volume() <= 0.0:
+					EventBus.interaction_hint_changed.emit("Pitcher is empty")
+					return
 				var recipe := pour_portion()
+				if recipe.is_empty():
+					return
 				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
 				p.inventory.set_held(
 					HeldItem.CUP_FILLED,

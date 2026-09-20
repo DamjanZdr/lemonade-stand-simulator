@@ -37,6 +37,7 @@ func _on_day_phase_changed(phase: int, day: int) -> void:
 		day_label.text = "Day %d" % day
 		var temp := GameState.temperature
 		temp_label.text = "Weather: %.0f°C" % temp
+		_bind_stand_money()
 		_update_money_label()
 		_reset_quantities()
 		panel.visible = true
@@ -60,7 +61,30 @@ func set_auto_show(enabled: bool) -> void:
 			EventBus.day_phase_changed.disconnect(_on_day_phase_changed)
 
 
+## Live money updates come from the local stand's own money_changed signal —
+## StandUnit mutations emit that per-stand signal, and on clients _apply_state()
+## is the only place stand money changes (EventBus.money_changed only fires for
+## the primary stand's GameState bridge).
+var _bound_stand: Node = null
+
+
+func _bind_stand_money() -> void:
+	var stand := WorldSync.get_local_stand()
+	if stand == _bound_stand:
+		return
+	if (
+		_bound_stand != null and is_instance_valid(_bound_stand)
+		and _bound_stand.has_signal("money_changed")
+		and _bound_stand.money_changed.is_connected(_on_money_changed)
+	):
+		_bound_stand.money_changed.disconnect(_on_money_changed)
+	_bound_stand = stand
+	if _bound_stand != null and _bound_stand.has_signal("money_changed"):
+		_bound_stand.money_changed.connect(_on_money_changed)
+
+
 func _on_money_changed(_amount: float) -> void:
+	_bind_stand_money()
 	if panel.visible:
 		_update_money_label()
 		_update_buttons()

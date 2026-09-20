@@ -106,8 +106,24 @@ func setup(customer_spawner: Node) -> void:
 
 ## Registers a stand's customer spawner so pedestrians can be routed to it.
 ## Call once per stand (main.gd/world setup does this for each StandUnit).
+## _setup_world_systems() re-runs every game on the persistent scene, so
+## dedup here — a duplicate entry would double-count the stand's routing
+## weight for the rest of the session.
 func register_stand(customer_spawner: Node, stand: StandUnit) -> void:
+	for e in _stand_entries:
+		if e.get("spawner") == customer_spawner and e.get("stand") == stand:
+			return
 	_stand_entries.append({ "spawner": customer_spawner, "stand": stand })
+
+
+## Clears per-session NPC state when leaving a game. Called from
+## _cleanup_game_session() — the nodes themselves are freed by the caller
+## (clients can't despawn via WorldSync once the host has left).
+func reset_session() -> void:
+	_pedestrians.clear()
+	_ped_spawner_map.clear()
+	_stand_entries.clear()
+	_spawn_timer.stop()
 
 
 ## Popularity-weighted random pick among registered stands. Returns an empty

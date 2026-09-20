@@ -282,6 +282,8 @@ func _serialize_container(node: Node) -> Dictionary:
 			scene_path = "res://scenes/objects/water_dispenser.tscn"
 		"workstation":
 			scene_path = "res://scenes/stand/workstation.tscn"
+		"cup":
+			scene_path = "res://scenes/objects/cup.tscn"
 		_:
 			return { }
 	var net_id := _get_net_id(node)
@@ -317,6 +319,12 @@ func _serialize_container(node: Node) -> Dictionary:
 		entry["ice"] = p.ice
 		entry["cups_poured"] = p.cups_poured
 		entry["pitcher_state"] = int(p.state)
+		entry["serving_recipe"] = p.serving_recipe.duplicate(true)
+	elif node is Cup:
+		var c := node as Cup
+		entry["cup_state"] = int(c.state)
+		entry["cup_recipe"] = c.recipe.duplicate(true)
+		entry["fill_color"] = c.fill_color
 	elif node is CupStack:
 		entry["current_count"] = (node as CupStack).current_count
 	elif node is WaterDispenser:
@@ -479,11 +487,19 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 		p.ice = float(entry.get("ice", 0.0))
 		p.cups_poured = int(entry.get("cups_poured", 0))
 		p.state = int(entry.get("pitcher_state", 0)) as Pitcher.PitcherState
+		p.serving_recipe = entry.get("serving_recipe", { }).duplicate(true)
 		p.add_to_group("pitcher")
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.update_liquid_color()
 		p.call_deferred("update_label")
+	elif instance is Cup:
+		var c := instance as Cup
+		c.state = int(entry.get("cup_state", 0)) as Cup.CupState
+		c.recipe = entry.get("cup_recipe", { }).duplicate(true)
+		c.fill_color = entry.get("fill_color", c.fill_color)
+		c._refresh_fill_visibility()
+		c.apply_fill_color()
 	# Cache for fast lookup
 	_node_cache[instance.name] = instance
 
@@ -532,11 +548,19 @@ func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
 		p.ice = float(entry.get("ice", 0.0))
 		p.cups_poured = int(entry.get("cups_poured", 0))
 		p.state = int(entry.get("pitcher_state", 0)) as Pitcher.PitcherState
+		p.serving_recipe = entry.get("serving_recipe", { }).duplicate(true)
 		p.add_to_group("pitcher")
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.update_liquid_color()
 		p.call_deferred("update_label")
+	elif existing is Cup:
+		var c := existing as Cup
+		c.state = int(entry.get("cup_state", 0)) as Cup.CupState
+		c.recipe = entry.get("cup_recipe", { }).duplicate(true)
+		c.fill_color = entry.get("fill_color", c.fill_color)
+		c._refresh_fill_visibility()
+		c.apply_fill_color()
 	elif existing is CupStack:
 		existing.starting_count = int(entry.get("current_count", existing.starting_count))
 	elif existing is WaterDispenser:
@@ -927,6 +951,7 @@ func spawn_networked(
 		p.sugar = net_pitcher_recipe.get("sugar", 0.0)
 		p.ice = net_pitcher_recipe.get("ice", 0.0)
 		p.cups_poured = net_pitcher_recipe.get("cups_poured", 0)
+		p.serving_recipe = net_pitcher_recipe.get("serving_recipe", { }).duplicate(true)
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.call_deferred("update_label")
@@ -1336,6 +1361,7 @@ func _spawn_on_clients(
 		p.sugar = net_pitcher_recipe.get("sugar", 0.0)
 		p.ice = net_pitcher_recipe.get("ice", 0.0)
 		p.cups_poured = net_pitcher_recipe.get("cups_poured", 0)
+		p.serving_recipe = net_pitcher_recipe.get("serving_recipe", { }).duplicate(true)
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.call_deferred("update_label")

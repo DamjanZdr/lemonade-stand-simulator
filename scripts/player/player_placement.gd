@@ -1148,7 +1148,7 @@ func _update_cup_box_ghost() -> void:
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
-		_ghost_valid = is_box_surface
+		_ghost_valid = is_box_surface and not _check_ghost_overlap()
 		_apply_ghost_material(
 			_ghost,
 			_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
@@ -1295,8 +1295,11 @@ func _update_supply_box_ghost() -> void:
 	_stack_target_id = -1
 	_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 	_ghost.visible = true
-	_ghost_valid = true
-	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+	_ghost_valid = not _check_ghost_overlap()
+	_apply_ghost_material(
+		_ghost,
+		_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
+	)
 
 
 func _update_equipment_box_ghost() -> void:
@@ -1387,9 +1390,12 @@ func _update_equipment_box_ghost() -> void:
 		if look_dir.length_squared() > 0.001:
 			_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
 		_ghost.visible = true
-		_ghost_valid = true
+		_ghost_valid = not _check_ghost_overlap()
 		_stack_target_id = -1
-		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+		_apply_ghost_material(
+			_ghost,
+			_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
+		)
 		return
 
 	# Only floor-standing equipment (workstation, water dispenser) may be placed
@@ -1399,9 +1405,12 @@ func _update_equipment_box_ghost() -> void:
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
-		_ghost_valid = true
+		_ghost_valid = not _check_ghost_overlap()
 		_stack_target_id = -1
-		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+		_apply_ghost_material(
+			_ghost,
+			_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
+		)
 		return
 
 	if not on_surface or not is_workstation_surface(collider):
@@ -1422,9 +1431,12 @@ func _update_equipment_box_ghost() -> void:
 	if look_dir.length_squared() > 0.001:
 		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
 	_ghost.visible = true
-	_ghost_valid = true
+	_ghost_valid = not _check_ghost_overlap()
 	_stack_target_id = -1
-	_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+	_apply_ghost_material(
+		_ghost,
+		_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
+	)
 
 
 func _ensure_box_ghost() -> void:
@@ -1782,6 +1794,7 @@ func _try_place_container() -> Node3D:
 		instance.ice = recipe.get("ice", 0.0)
 		instance.water = recipe.get("water", 0.0)
 		instance.cups_poured = recipe.get("cups_poured", 0)
+		instance.serving_recipe = recipe.get("serving_recipe", { }).duplicate(true)
 		# Determine state based on contents and cups poured
 		if instance.cups_poured > 0:
 			# Already serving cups -> SERVING
@@ -1892,6 +1905,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 			"ice": pitcher.ice,
 			"water": pitcher.water,
 			"cups_poured": pitcher.cups_poured,
+			"serving_recipe": pitcher.serving_recipe.duplicate(true),
 		}
 	# Save fruit bin multi-fruit amounts
 	if interactable is FruitBin:
@@ -2265,9 +2279,11 @@ func _check_ghost_overlap() -> bool:
 	var ghost_origin := ghost_transform.origin
 	var max_check_dist := ghost_bounds_radius + 2.0
 
-	# Check against all placed containers
+	# Check against all placed containers and supply boxes
 	var support := _player.ray.get_collider() as Node if _player.ray.is_colliding() else null
-	for node in get_tree().get_nodes_in_group("container"):
+	var checked: Array = get_tree().get_nodes_in_group("container")
+	checked.append_array(get_tree().get_nodes_in_group("supply_box"))
+	for node in checked:
 		if node == _ghost:
 			continue
 		if _is_ancestor_of_node(node, support):
@@ -2313,7 +2329,50 @@ func _check_ghost_overlap() -> bool:
 			if dist < (ghost_radius + other_radius):
 				return true
 
+	# Delivery palettes are static meshes, not containers — reject the
+	# placement if any part of the ghost's footprint touches one.
+	var ghost_aabb := _shape_world_aabb(ghost_shape, ghost_transform)
+	for grid in get_tree().get_nodes_in_group("delivery_grid"):
+		var palette := grid.get_node_or_null("palette")
+		if palette == null:
+			continue
+		var pal_aabb := _node_world_aabb(palette)
+		if pal_aabb.size != Vector3.ZERO and ghost_aabb.intersects(pal_aabb):
+			return true
+
 	return false
+
+
+## World-space AABB of a collision shape at the given transform.
+## Used for ghost-vs-palette checks where the palette has no CollisionShape3D.
+func _shape_world_aabb(shape: Shape3D, t: Transform3D) -> AABB:
+	var s: Vector3 = t.basis.get_scale()
+	if shape is BoxShape3D:
+		var size: Vector3 = (shape as BoxShape3D).size * s
+		return AABB(t.origin - size * 0.5, size)
+	var r := _get_shape_radius(shape) * maxf(s.x, s.z)
+	var h := r * 2.0
+	if shape is CylinderShape3D:
+		h = (shape as CylinderShape3D).height * s.y
+	return AABB(t.origin - Vector3(r, h * 0.5, r), Vector3(r * 2, h, r * 2))
+
+
+## Combined world-space AABB of every MeshInstance3D under a node
+## (e.g. the delivery-grid palette model, which is just a mesh).
+func _node_world_aabb(node: Node) -> AABB:
+	var result := AABB()
+	var found := false
+	for child in node.find_children("*", "MeshInstance3D", true, true):
+		var mi := child as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		var a: AABB = mi.global_transform * mi.get_aabb()
+		if not found:
+			result = a
+			found = true
+		else:
+			result = result.merge(a)
+	return result
 
 
 func _is_ancestor_of_node(ancestor: Node, node: Node) -> bool:

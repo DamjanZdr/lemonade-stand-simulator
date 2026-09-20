@@ -27,6 +27,16 @@ func set_active(active: bool) -> void:
 	_active = active
 
 
+## Clears the day schedule when leaving a game. Called from
+## _cleanup_game_session() so a stale schedule can't dump its backlog of
+## pedestrians all at once when the next day's timer starts emitting.
+func reset_session() -> void:
+	_active = false
+	_schedule.clear()
+	_next_index = 0
+	_day_total_time = 0.0
+
+
 func _ready() -> void:
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.day_timer_updated.connect(_on_day_timer_updated)
