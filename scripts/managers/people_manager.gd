@@ -72,6 +72,10 @@ func _on_day_phase_changed(phase: int, _day: int) -> void:
 func _on_day_timer_updated(time_left: float, total_time: float) -> void:
 	if not _active or _spawner == null:
 		return
+	# A stale timer emission (menu transition, leftover RPC) must not dump
+	# schedule backlog — only spawn while the day is actually running.
+	if DayManager.current_phase != DayManager.Phase.DAY:
+		return
 	if total_time <= 0.0:
 		return
 	if _day_total_time <= 0.0:

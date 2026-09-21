@@ -452,6 +452,11 @@ func _place_held_supply_box_on(
 	place_rot: Vector3 = Vector3.ZERO,
 	extra_state: Dictionary = { },
 ) -> SupplyBox:
+	# The ghost is the source of truth for free placement — if a preview is
+	# showing red (footprint overlaps a palette, another box, etc.) the
+	# click must be rejected, not just recolored.
+	if _ghost != null and not _ghost_valid:
+		return null
 	var state: Dictionary = extra_state.duplicate()
 	if _player.held_item_data.get("is_equipment", false):
 		state["is_equipment"] = true
@@ -563,6 +568,9 @@ func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> v
 	var extra_state := { "_net_delivery_cell_idx": cell_idx, "_net_delivery_grid_path": grid_path }
 	var box := _place_held_supply_box_on(slot["position"], slot["rotation"], extra_state)
 	if box == null:
+		# Ghost rejected the placement — undo the reservation so the cell
+		# doesn't stay taken forever.
+		grid.release_slot_index(cell_idx)
 		return
 	box.set_meta("delivery_cell_idx", cell_idx)
 	box.set_meta("delivery_grid_path", grid.get_path())
@@ -596,6 +604,10 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 			extra_state["_net_delivery_grid_path"] = str(grid.get_path())
 	var box := _place_held_supply_box_on(place_pos, place_rot, extra_state)
 	if box == null:
+		if cell_idx >= 0:
+			var grid2 := _get_delivery_grid()
+			if grid2 != null:
+				grid2.release_slot_index(cell_idx)
 		return
 	if cell_idx >= 0:
 		box.set_meta("delivery_cell_idx", cell_idx)

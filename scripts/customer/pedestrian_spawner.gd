@@ -90,6 +90,13 @@ func _on_day_phase_changed(phase: int, _day: int) -> void:
 
 func _clear_all_pedestrians() -> void:
 	if not WorldSync.is_host():
+		# Clients can't despawn via WorldSync — free the replicated copies
+		# locally so they don't linger into the menu/next game.
+		for ped in get_tree().get_nodes_in_group("pedestrians"):
+			if ped != null and is_instance_valid(ped):
+				ped.queue_free()
+		_pedestrians.clear()
+		_ped_spawner_map.clear()
 		return
 	for ped in get_tree().get_nodes_in_group("pedestrians"):
 		if ped != null and is_instance_valid(ped):
@@ -175,6 +182,11 @@ func start_spawn_timer() -> void:
 func spawn_on_path(path: PedestrianPath) -> void:
 	if _paused:
 		return
+	# NPCs only exist during an active workday — never spawn while in the
+	# menu or lobby, regardless of which caller asked (a stale schedule or
+	# timer must not leak spawns outside DAY).
+	if DayManager.current_phase != DayManager.Phase.DAY:
+		return
 	_pedestrians = _pedestrians.filter(
 		func(p):
 			return is_instance_valid(p),
@@ -187,6 +199,8 @@ func spawn_on_path(path: PedestrianPath) -> void:
 
 func _spawn_pedestrian(path: PedestrianPath) -> void:
 	if not WorldSync.is_host():
+		return
+	if DayManager.current_phase != DayManager.Phase.DAY:
 		return
 	# Generate a deterministic appearance seed so all peers see the same
 	# hair/clothing/gender for this NPC.
@@ -220,6 +234,9 @@ func _spawn_pedestrian(path: PedestrianPath) -> void:
 
 func _try_spawn() -> void:
 	if _managed or _paused:
+		return
+	if DayManager.current_phase != DayManager.Phase.DAY:
+		_spawn_timer.stop()
 		return
 	_update_spawner()
 	_pedestrians = _pedestrians.filter(

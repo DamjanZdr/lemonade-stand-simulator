@@ -961,6 +961,11 @@ func spawn_networked(
 		obj.set_meta("delivery_cell_idx", net_delivery_cell_idx)
 		if net_delivery_grid_path != "":
 			obj.set_meta("delivery_grid_path", NodePath(net_delivery_grid_path))
+	# Apply groups on the host too — client-requested spawns never run the
+	# caller's add_to_group() (request_spawn returns null on clients), so
+	# without this the host's copy is ungrouped and missing from snapshots.
+	for g in net_groups:
+		obj.add_to_group(g)
 	# Capture the object's scale after adding to the parent (parent's
 	# transform may affect it). We'll send this to clients so they
 	# match the host's scale.
@@ -1076,6 +1081,33 @@ func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[D
 		_broadcast(&"reparent_on_clients", [parent_path, item_name, net_id])
 
 
+## Attach any loose container items resting on a workstation's surface
+## to the workstation, so a subsequent move carries them. Runs on every
+## peer that applies the move — mirrors the client-side pickup attach in
+## PlayerPlacement and acts as the safety net when the pickup-time
+## reparent RPC was missed (e.g. the mover is a client and the host's
+## attach request never resolved the items).
+func _attach_surface_items(obj: Node) -> void:
+	if not obj is Workstation:
+		return
+	var table := obj as Node3D
+	var root := get_tree().current_scene
+	for item in get_tree().get_nodes_in_group("container"):
+		if item == obj or obj.is_ancestor_of(item) or not item is Node3D:
+			continue
+		var par := (item as Node).get_parent()
+		if par == null or (par != root and par.name != "WorldObjects"):
+			continue
+		var pos := (item as Node3D).global_position
+		if pos.y < table.global_position.y + 0.8 \
+				or pos.y > table.global_position.y + 1.5:
+			continue
+		if absf(pos.x - table.global_position.x) > 1.0 \
+				or absf(pos.z - table.global_position.z) > 1.0:
+			continue
+		(item as Node3D).reparent(obj, true)
+
+
 ## Move an existing object to a new position/rotation on the host and
 ## sync to all clients. Used when a workstation (table) is picked up
 ## and placed somewhere else — the same node is reused (not destroyed
@@ -1088,6 +1120,7 @@ func sync_move_object(obj: Node, new_pos: Vector3, new_rot: Vector3) -> void:
 	if not is_host():
 		_request_host(&"_rpc_request_move", [obj_name, net_id, new_pos, new_rot])
 		return
+	_attach_surface_items(obj)
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	_broadcast(&"_move_on_clients", [obj_name, net_id, new_pos, new_rot])
@@ -1101,6 +1134,7 @@ func _rpc_request_move(obj_name: String, net_id: int, new_pos: Vector3, new_rot:
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] Host _rpc_request_move: object not found: " + obj_name)
 		return
+	_attach_surface_items(obj)
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	_broadcast(&"_move_on_clients", [obj.name, net_id, new_pos, new_rot])
@@ -1126,6 +1160,7 @@ func sync_move_and_show(
 			[obj_name, net_id, new_pos, new_rot, new_scale, show],
 		)
 		return
+	_attach_surface_items(obj)
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	obj.scale = new_scale
@@ -1152,6 +1187,7 @@ func _rpc_request_move_and_show(
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] Host _rpc_request_move_and_show: object not found: " + obj_name)
 		return
+	_attach_surface_items(obj)
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
 	obj.scale = new_scale
@@ -1185,6 +1221,7 @@ func _move_on_clients(obj_name: String, net_id: int, new_pos: Vector3, new_rot: 
 		return
 	var obj := _find_node("", obj_name, net_id)
 	if obj:
+		_attach_surface_items(obj)
 		obj.global_position = new_pos
 		obj.global_rotation = new_rot
 
@@ -1202,6 +1239,7 @@ func _move_and_show_on_clients(
 		return
 	var obj := _find_node("", obj_name, net_id)
 	if obj:
+		_attach_surface_items(obj)
 		obj.global_position = new_pos
 		obj.global_rotation = new_rot
 		obj.scale = new_scale

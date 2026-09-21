@@ -98,7 +98,7 @@ func _setup_ice_bucket() -> void:
 	_sync_ice_display()
 
 
-func _sync_ice_display(animate_add: bool = false) -> void:
+func _sync_ice_display(animate_add: bool = false, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if _ice_cubes.is_empty():
 		return
 	var target_visible: int = clampi(
@@ -115,6 +115,9 @@ func _sync_ice_display(animate_add: bool = false) -> void:
 		var should_visible := i < target_visible
 		_ice_cubes[i].visible = should_visible
 		if should_visible and not was_visible and animate_add and _ice_origins.size() > i:
+			if from_pos != Vector3.ZERO:
+				_animate_throw_arc(_ice_cubes[i], from_pos, _ice_origins[i])
+				continue
 			_ice_cubes[i].position.y = _ice_origins[i].y + drop_height
 			var tween := create_tween()
 			tween.tween_property(_ice_cubes[i], "position:y", _ice_origins[i].y, 0.25) \
@@ -146,8 +149,18 @@ func add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 
 func _apply_add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if ingredient_type == "ice" and _ice_bucket != null:
+		_last_old_count = clampi(
+			roundi((current_amount / max_capacity) * float(_ice_cubes.size())),
+			0,
+			_ice_cubes.size(),
+		)
 		current_amount = minf(current_amount + qty, max_capacity)
-		_sync_ice_display(true)
+		_last_new_count = clampi(
+			roundi((current_amount / max_capacity) * float(_ice_cubes.size())),
+			0,
+			_ice_cubes.size(),
+		)
+		_sync_ice_display(true, from_pos)
 		EventBus.bin_amount_changed.emit(ingredient_type, current_amount)
 		return
 	var old_count := mini(roundi(current_amount), _item_nodes.size())
@@ -183,10 +196,15 @@ func _sync_state_to_peers(from_pos: Vector3 = Vector3.ZERO) -> void:
 func _play_fly_in(from_pos: Vector3, old_count: int, new_count: int) -> void:
 	if WorldSync.is_host():
 		return
+	if ingredient_type == "ice" and _ice_bucket != null:
+		var ice_end := mini(new_count, _ice_cubes.size())
+		for i in range(maxi(0, old_count), ice_end):
+			if is_instance_valid(_ice_cubes[i]) and _ice_origins.size() > i:
+				_ice_cubes[i].visible = true
+				_animate_throw_arc(_ice_cubes[i], from_pos, _ice_origins[i])
+		return
 	# Always update display first so item nodes are visible.
 	update_display()
-	if ingredient_type == "ice" and _ice_bucket != null:
-		return
 	var start_idx := maxi(0, old_count)
 	var end_idx := mini(new_count, _item_nodes.size())
 	for i in range(start_idx, end_idx):

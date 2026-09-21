@@ -279,6 +279,11 @@ func interact(player: Node) -> void:
 					return
 				var itype: String = p.held_item_data.get("ingredient_type", "")
 				var amount: float = p.held_item_data.get("amount", 0.0)
+				if _is_ingredient_fruit(itype):
+					EventBus.interaction_hint_changed.emit(
+						"%s must be pressed first!" % itype.capitalize()
+					)
+					return
 				if _can_add_ingredient(itype, amount):
 					var start_pos := _get_hand_pos(player)
 					p.inventory.clear_held()
@@ -398,10 +403,10 @@ func get_hint(player: Node) -> String:
 		PitcherState.PREPPING, PitcherState.COMPLETE:
 			if p.held_item == HeldItem.SUPPLY_BOX \
 					and p.held_item_data.get("source") == "bin_scoop":
-				return contents + "Pitcher | LMB: add %s" % p.held_item_data.get(
-					"ingredient_type",
-					"",
-				)
+				var itype: String = p.held_item_data.get("ingredient_type", "")
+				if _is_ingredient_fruit(itype):
+					return contents + "Pitcher | %s must be pressed first" % itype.capitalize()
+				return contents + "Pitcher | LMB: add %s" % itype
 			if get_liquid_volume() <= 0.0:
 				return "Pitcher | LMB: pick up"
 			if p.held_item == HeldItem.CUP_EMPTY:

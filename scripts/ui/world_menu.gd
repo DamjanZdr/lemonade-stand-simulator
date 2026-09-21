@@ -439,6 +439,12 @@ func hide_menu() -> void:
 
 
 func set_status(text: String) -> void:
+	# While the join panel is open, all join-related status (including
+	# "Joining lobby...") belongs under the input field, not under the
+	# main-menu Join button.
+	if _join_panel != null and _join_panel.visible:
+		set_join_status(text)
+		return
 	_status_label.text = text
 	_status_label.visible = text != ""
 
@@ -451,11 +457,19 @@ func is_join_panel_open() -> bool:
 
 ## Show a join failure inline under the lobby code input.
 func set_join_error(text: String) -> void:
+	_join_error_label.add_theme_color_override("font_color", Color(1, 0.4, 0.4, 0.9))
 	_join_error_label.text = text
 	_join_error_label.visible = text != ""
 	_join_field.text = ""
 	_join_paste_btn.visible = true
 	_join_clear_btn.visible = false
+
+
+## Show a neutral (non-error) join status inline under the input field.
+func set_join_status(text: String) -> void:
+	_join_error_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
+	_join_error_label.text = text
+	_join_error_label.visible = text != ""
 
 
 func set_busy(text: String) -> void:
