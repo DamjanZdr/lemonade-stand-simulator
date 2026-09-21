@@ -4,7 +4,7 @@
 [ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
 [ext_resource type="Shader" path="res://shaders/ui_blur.gdshader" id="3_blur"]
 [ext_resource type="Shader" path="res://shaders/ui_dim_fade.gdshader" id="4_dimfade"]
-[ext_resource type="FontFile" path="res://assets/fonts/Grandstander-Regular.ttf" id="5_titlefont"]
+[ext_resource type="FontFile" path="res://assets/fonts/Grandstander-clean.ttf" id="5_titlefont"]
 
 [sub_resource type="ShaderMaterial" id="BlurMat"]
 shader = ExtResource("3_blur")

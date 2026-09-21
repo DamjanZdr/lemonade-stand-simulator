@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://cwppyxdtu5n8b"
-path="res://.godot/imported/Grandstander-Regular.ttf-e6b71c54a6ebc97bb33156ec374926c4.fontdata"
+uid="uid://cs7ipv0dhsp7g"
+path="res://.godot/imported/Grandstander-clean.ttf-b4d36b285f5a04ccc858f44f5182d025.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/Grandstander-Regular.ttf"
-dest_files=["res://.godot/imported/Grandstander-Regular.ttf-e6b71c54a6ebc97bb33156ec374926c4.fontdata"]
+source_file="res://assets/fonts/Grandstander-clean.ttf"
+dest_files=["res://.godot/imported/Grandstander-clean.ttf-b4d36b285f5a04ccc858f44f5182d025.fontdata"]
 
 [params]
 
