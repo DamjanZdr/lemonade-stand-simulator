@@ -863,11 +863,13 @@ func _do_respawn() -> void:
 				instance.call_deferred("update_label")
 				EventBus.pitcher_state_changed.emit(int(instance.state))
 			elif instance is Cup:
-				instance.state = int(entry.get("cup_state", 0)) as Cup.CupState
-				instance.recipe = _deserialize_recipe(entry.get("cup_recipe", { }))
-				instance.fill_color = _array_to_color(entry.get("fill_color"), instance.fill_color)
-				instance._refresh_fill_visibility()
-				instance.apply_fill_color()
+				(
+					instance as Cup
+				).restore_state(
+					int(entry.get("cup_state", 0)),
+					_deserialize_recipe(entry.get("cup_recipe", { })),
+					_array_to_color(entry.get("fill_color"), (instance as Cup).fill_color),
+				)
 			else:
 				if "starting_amount" in instance:
 					instance.starting_amount = 0.0

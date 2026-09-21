@@ -494,12 +494,13 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 		p.update_liquid_color()
 		p.call_deferred("update_label")
 	elif instance is Cup:
-		var c := instance as Cup
-		c.state = int(entry.get("cup_state", 0)) as Cup.CupState
-		c.recipe = entry.get("cup_recipe", { }).duplicate(true)
-		c.fill_color = entry.get("fill_color", c.fill_color)
-		c._refresh_fill_visibility()
-		c.apply_fill_color()
+		(
+			instance as Cup
+		).restore_state(
+			int(entry.get("cup_state", 0)),
+			entry.get("cup_recipe", { }),
+			entry.get("fill_color", (instance as Cup).fill_color),
+		)
 	# Cache for fast lookup
 	_node_cache[instance.name] = instance
 
@@ -555,12 +556,13 @@ func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
 		p.update_liquid_color()
 		p.call_deferred("update_label")
 	elif existing is Cup:
-		var c := existing as Cup
-		c.state = int(entry.get("cup_state", 0)) as Cup.CupState
-		c.recipe = entry.get("cup_recipe", { }).duplicate(true)
-		c.fill_color = entry.get("fill_color", c.fill_color)
-		c._refresh_fill_visibility()
-		c.apply_fill_color()
+		(
+			existing as Cup
+		).restore_state(
+			int(entry.get("cup_state", 0)),
+			entry.get("cup_recipe", { }),
+			entry.get("fill_color", (existing as Cup).fill_color),
+		)
 	elif existing is CupStack:
 		existing.starting_count = int(entry.get("current_count", existing.starting_count))
 	elif existing is WaterDispenser:

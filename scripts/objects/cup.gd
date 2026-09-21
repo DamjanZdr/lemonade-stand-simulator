@@ -55,6 +55,16 @@ func _setup_pickupable() -> void:
 	add_child(pickupable)
 
 
+## Restore full state from a snapshot/save — used by WorldSync and
+## SaveManager so they don't reach into private refresh helpers.
+func restore_state(cup_state: int, cup_recipe: Dictionary, color: Color) -> void:
+	state = cup_state as CupState
+	recipe = cup_recipe.duplicate(true)
+	fill_color = color
+	_refresh_fill_visibility()
+	apply_fill_color()
+
+
 func fill(recipe_snapshot: Dictionary) -> void:
 	state = CupState.FILLED
 	recipe = recipe_snapshot
