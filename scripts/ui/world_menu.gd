@@ -19,6 +19,7 @@ const HOVER_DURATION: float = 0.18
 const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 
 @onready var _play_button: Button = $MenuBox/PlayButton
+@onready var _title_box: VBoxContainer = $MenuBox/TitleBox
 @onready var _title_label: Label = $MenuBox/TitleBox/TitleLabel
 @onready var _subtitle_label: Label = $MenuBox/TitleBox/SubtitleLabel
 @onready var _saves_button: Button = $MenuBox/SavesButton
@@ -356,8 +357,9 @@ func _ready() -> void:
 	_make_flat_button(_new_stand_button)
 	_add_drop_shadow(_new_stand_button)
 	_setup_hover_effect(_new_stand_button)
-	# Size "Simulator" to match the width of "Lemonade Stand".
-	_fit_subtitle_width()
+	# Scale each title row so "When Life" / "Gives You" / "Lemons" all
+	# render at the same width.
+	_fit_title_rows()
 	# Build the music player widget (bottom-right corner).
 	_build_music_player()
 	# Sync to current track.
@@ -493,29 +495,35 @@ func show_name_entry() -> void:
 	_on_new_stand_pressed()
 
 
-## Size the "Simulator" subtitle so its rendered width matches the
-## "Lemonade Stand" title width.
-func _fit_subtitle_width() -> void:
-	if _title_label == null or _subtitle_label == null:
+## Scale every title row so each line renders at the same width —
+## the longest row keeps its font size, shorter rows are scaled up.
+func _fit_title_rows() -> void:
+	if _title_box == null:
 		return
-	var title_font := _title_label.get_theme_font("font")
-	var title_size := _title_label.get_theme_font_size("font_size")
-	var title_width := title_font \
-			.get_string_size(_title_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_size) \
-			.x
-	if title_width <= 0:
+	var rows: Array[Label] = []
+	var natural_widths: Array[float] = []
+	var base_sizes: Array[int] = []
+	var target_width := 0.0
+	for child in _title_box.get_children():
+		var lbl := child as Label
+		if lbl == null or lbl.text == "":
+			continue
+		var font := lbl.get_theme_font("font")
+		var size := lbl.get_theme_font_size("font_size")
+		var w := font \
+				.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size) \
+				.x
+		if w <= 0:
+			continue
+		rows.append(lbl)
+		natural_widths.append(w)
+		base_sizes.append(size)
+		target_width = maxf(target_width, w)
+	if target_width <= 0:
 		return
-	var sub_font := _subtitle_label.get_theme_font("font")
-	# Start from the title font size and increase until we match width.
-	var sub_size := title_size
-	var sub_width := sub_font \
-			.get_string_size(_subtitle_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, sub_size) \
-			.x
-	if sub_width <= 0:
-		return
-	# Scale proportionally to match.
-	sub_size = int(round(title_size * title_width / sub_width))
-	_subtitle_label.add_theme_font_size_override("font_size", sub_size)
+	for i in rows.size():
+		var new_size := int(round(base_sizes[i] * target_width / natural_widths[i]))
+		rows[i].add_theme_font_size_override("font_size", new_size)
 
 
 ## Add a drop shadow to a button's text.
