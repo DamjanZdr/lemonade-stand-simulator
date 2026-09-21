@@ -121,7 +121,7 @@ func _get_container_scene(ctype: String) -> PackedScene:
 	return CONTAINER_SCENES.get(ctype) as PackedScene
 
 
-func _is_known_container_type(ctype: String) -> bool:
+func is_known_container_type(ctype: String) -> bool:
 	return ctype in CONTAINER_SCENES or ctype == "workstation"
 
 
@@ -560,8 +560,8 @@ func _scan_placed_containers() -> Array:
 		# Skip containers currently held by the player
 		if player != null and node.is_ancestor_of(player) or _is_child_of_player(node, player):
 			continue
-		var ctype := _get_container_type(node)
-		if ctype == "" or not _is_known_container_type(ctype):
+		var ctype := get_container_type(node)
+		if ctype == "" or not is_known_container_type(ctype):
 			continue
 		var entry := {
 			"type": ctype,
@@ -684,7 +684,7 @@ func _scan_supply_boxes() -> Array:
 	return result
 
 
-func _get_container_type(node: Node) -> String:
+func get_container_type(node: Node) -> String:
 	if node.has_meta("container_type"):
 		return node.get_meta("container_type")
 	if "container_type" in node:
@@ -745,8 +745,8 @@ func capture_default_containers() -> void:
 			continue
 		if node.is_in_group("ghost"):
 			continue
-		var ctype := _get_container_type(node)
-		if ctype == "" or not _is_known_container_type(ctype):
+		var ctype := get_container_type(node)
+		if ctype == "" or not is_known_container_type(ctype):
 			continue
 		var entry := {
 			"type": ctype,
@@ -790,8 +790,8 @@ func _do_respawn() -> void:
 	# persist when the new save has no placed containers (e.g. a
 	# brand-new game).
 	for node in root.get_tree().get_nodes_in_group("container"):
-		var ctype := _get_container_type(node)
-		if ctype != "" and _is_known_container_type(ctype):
+		var ctype := get_container_type(node)
+		if ctype != "" and is_known_container_type(ctype):
 			node.queue_free()
 	if not cdata.is_empty():
 		for entry in cdata:

@@ -30,7 +30,7 @@ var _ice_bucket: Node3D = null
 var _ice_cubes: Array[MeshInstance3D] = []
 var _ice_origins: Array[Vector3] = []
 var _cubes_per_scoop: int = 0
-# Stashed counts from the last _apply_add_amount for _sync_state_to_peers.
+# Stashed counts from the last apply_add_amount for sync_state_to_peers.
 var _last_old_count: int = 0
 var _last_new_count: int = 0
 
@@ -143,11 +143,11 @@ func add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if not WorldSync.is_host():
 		WorldSync.request_container_action(self, "add", [qty, from_pos])
 		return
-	_apply_add_amount(qty, from_pos)
-	_sync_state_to_peers(from_pos)
+	apply_add_amount(qty, from_pos)
+	sync_state_to_peers(from_pos)
 
 
-func _apply_add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
+func apply_add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	if ingredient_type == "ice" and _ice_bucket != null:
 		_last_old_count = clampi(
 			roundi((current_amount / max_capacity) * float(_ice_cubes.size())),
@@ -170,7 +170,7 @@ func _apply_add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 	for i in range(old_count, new_count):
 		_drop_item(i, from_pos)
 	EventBus.bin_amount_changed.emit(ingredient_type, current_amount)
-	# Stash counts for _sync_state_to_peers.
+	# Stash counts for sync_state_to_peers.
 	_last_old_count = old_count
 	_last_new_count = new_count
 
@@ -179,11 +179,11 @@ func _apply_add_amount(qty: float, from_pos: Vector3 = Vector3.ZERO) -> void:
 func _rpc_request_add_amount(qty: float, from_pos: Vector3) -> void:
 	if not is_multiplayer_authority():
 		return
-	_apply_add_amount(qty, from_pos)
-	_sync_state_to_peers(from_pos)
+	apply_add_amount(qty, from_pos)
+	sync_state_to_peers(from_pos)
 
 
-func _sync_state_to_peers(from_pos: Vector3 = Vector3.ZERO) -> void:
+func sync_state_to_peers(from_pos: Vector3 = Vector3.ZERO) -> void:
 	WorldSync.sync_property(self, "current_amount", current_amount)
 	if from_pos != Vector3.ZERO:
 		WorldSync.sync_call(self, "_play_fly_in", [from_pos, _last_old_count, _last_new_count])
@@ -230,12 +230,12 @@ func take_amount(qty: float) -> float:
 		WorldSync.request_container_action(self, "take", [qty])
 		# Return optimistic value so the client can proceed immediately
 		return minf(qty, current_amount)
-	var taken := _apply_take_amount(qty)
-	_sync_state_to_peers()
+	var taken := apply_take_amount(qty)
+	sync_state_to_peers()
 	return taken
 
 
-func _apply_take_amount(qty: float) -> float:
+func apply_take_amount(qty: float) -> float:
 	var taken := minf(qty, current_amount)
 	current_amount -= taken
 	if ingredient_type == "ice" and _ice_bucket != null:
@@ -250,8 +250,8 @@ func _apply_take_amount(qty: float) -> float:
 func _rpc_request_take_amount(qty: float) -> void:
 	if not is_multiplayer_authority():
 		return
-	_apply_take_amount(qty)
-	_sync_state_to_peers()
+	apply_take_amount(qty)
+	sync_state_to_peers()
 
 
 # Local constants matching Player.HeldItem enum (breaks circular dependency)

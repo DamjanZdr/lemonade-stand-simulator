@@ -261,8 +261,8 @@ func _ensure_default_objects_registered() -> void:
 
 
 func _serialize_container(node: Node) -> Dictionary:
-	var ctype := SaveManager._get_container_type(node)
-	if ctype == "" or not SaveManager._is_known_container_type(ctype):
+	var ctype := SaveManager.get_container_type(node)
+	if ctype == "" or not SaveManager.is_known_container_type(ctype):
 		return { }
 	var scene_path: String = ""
 	match ctype:
@@ -403,8 +403,8 @@ func _clear_client_world_objects() -> void:
 				continue
 			if node.is_in_group("ghost") or removed.has(node.get_instance_id()):
 				continue
-			var ctype := SaveManager._get_container_type(node)
-			if group_name == "container" and not SaveManager._is_known_container_type(ctype):
+			var ctype := SaveManager.get_container_type(node)
+			if group_name == "container" and not SaveManager.is_known_container_type(ctype):
 				continue
 			removed[node.get_instance_id()] = true
 			_node_cache.erase(node.name)
@@ -779,11 +779,11 @@ func _apply_container_action(net_id: int, action: String, args: Array) -> void:
 	var obj := _find_node_by_net_id(net_id)
 	if obj is IngredientBin:
 		if action == "add" and args.size() >= 2:
-			obj._apply_add_amount(float(args[0]), args[1] as Vector3)
-			obj._sync_state_to_peers(args[1] as Vector3)
+			obj.apply_add_amount(float(args[0]), args[1] as Vector3)
+			obj.sync_state_to_peers(args[1] as Vector3)
 		elif action == "take" and not args.is_empty():
-			obj._apply_take_amount(float(args[0]))
-			obj._sync_state_to_peers()
+			obj.apply_take_amount(float(args[0]))
+			obj.sync_state_to_peers()
 	elif obj is FruitBin:
 		if action == "add" and args.size() >= 3:
 			obj.add_amount(str(args[0]), float(args[1]), args[2] as Vector3)
@@ -791,11 +791,11 @@ func _apply_container_action(net_id: int, action: String, args: Array) -> void:
 			obj.take_amount(str(args[0]), float(args[1]))
 	elif obj is WaterDispenser:
 		if action == "refill" and not args.is_empty():
-			obj._apply_refill(int(args[0]))
+			obj.apply_refill(int(args[0]))
 		elif action == "start_fill" and not args.is_empty():
-			obj._start_fill(float(args[0]))
+			obj.start_fill(float(args[0]))
 		elif action == "finish_fill":
-			obj._apply_finish_fill()
+			obj.apply_finish_fill()
 		elif action == "take_pitcher":
 			obj._snapped_pitcher = null
 			obj._pending_snap_pitcher_net_id = -1

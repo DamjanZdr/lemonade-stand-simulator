@@ -37,7 +37,7 @@ func _ready() -> void:
 
 
 ## Host-only: apply a refill and sync to all clients.
-func _apply_refill(to_add: int) -> void:
+func apply_refill(to_add: int) -> void:
 	water_fillings = mini(water_fillings + to_add, max_fillings)
 	_update_water_visual()
 	WorldSync.sync_property(self, "water_fillings", water_fillings)
@@ -45,7 +45,7 @@ func _apply_refill(to_add: int) -> void:
 
 
 ## Host-only: apply finishing a fill and sync to all clients.
-func _apply_finish_fill() -> void:
+func apply_finish_fill() -> void:
 	_is_filling = false
 	_fill_progress = 0.0
 	water_fillings = maxi(water_fillings - 1, 0)
@@ -101,21 +101,21 @@ func _apply_finish_fill() -> void:
 func _rpc_request_refill(to_add: int) -> void:
 	if not is_multiplayer_authority():
 		return
-	_apply_refill(to_add)
+	apply_refill(to_add)
 
 
 @rpc("any_peer", "call_local", "reliable")
 func _rpc_request_start_fill(water_amount: float) -> void:
 	if not is_multiplayer_authority():
 		return
-	_start_fill(water_amount)
+	start_fill(water_amount)
 
 
 @rpc("any_peer", "call_local", "reliable")
 func _rpc_request_finish_fill() -> void:
 	if not is_multiplayer_authority():
 		return
-	_apply_finish_fill()
+	apply_finish_fill()
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -224,7 +224,7 @@ func interact(player: Node) -> void:
 			if not WorldSync.is_host():
 				WorldSync.request_container_action(self, "refill", [to_add])
 			else:
-				_apply_refill(to_add)
+				apply_refill(to_add)
 			return
 
 	# Place pitcher on dispenser — handled by player script ghost placement
@@ -246,7 +246,7 @@ func interact(player: Node) -> void:
 				if not WorldSync.is_host():
 					WorldSync.request_container_action(self, "start_fill", [space])
 				else:
-					_start_fill(space)
+					start_fill(space)
 				return
 			# Pitcher full — pick it up
 			var pitcher := _snapped_pitcher
@@ -422,7 +422,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	return true
 
 
-func _start_fill(water_amount: float) -> void:
+func start_fill(water_amount: float) -> void:
 	if _snapped_pitcher == null or water_fillings <= 0:
 		return
 	_is_filling = true
@@ -460,7 +460,7 @@ func _finish_fill() -> void:
 		_is_filling = false
 		_fill_progress = 0.0
 		return
-	_apply_finish_fill()
+	apply_finish_fill()
 
 
 func _animate_water_drop(start_pos: Vector3, to_add: int) -> void:
