@@ -59,14 +59,14 @@ alignment = 0
 
 [node name="TitleBox" type="VBoxContainer" parent="MenuBox"]
 layout_mode = 2
-theme_override_constants/separation = -16
+theme_override_constants/separation = 4
 
 [node name="TitleLabel" type="Label" parent="MenuBox/TitleBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("5_titlefont")
 theme_override_font_sizes/font_size = 56
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
-theme_override_colors/shadow_color = Color(0, 0, 0, 0.65)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
 theme_override_constants/shadow_offset_x = 4
 theme_override_constants/shadow_offset_y = 5
 theme_override_constants/shadow_outline_size = 8
@@ -77,7 +77,7 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("5_titlefont")
 theme_override_font_sizes/font_size = 56
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
-theme_override_colors/shadow_color = Color(0, 0, 0, 0.65)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
 theme_override_constants/shadow_offset_x = 4
 theme_override_constants/shadow_offset_y = 5
 theme_override_constants/shadow_outline_size = 8
@@ -88,7 +88,7 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("5_titlefont")
 theme_override_font_sizes/font_size = 80
 theme_override_colors/font_color = Color(1, 0.9176, 0.0627, 1)
-theme_override_colors/shadow_color = Color(0, 0, 0, 0.65)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
 theme_override_constants/shadow_offset_x = 4
 theme_override_constants/shadow_offset_y = 5
 theme_override_constants/shadow_outline_size = 8
