@@ -235,8 +235,12 @@ func interact(player: Node) -> void:
 	if p.held_item == HeldItem.NONE:
 		# Start filling if pitcher snapped, has space, and we have water
 		if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling:
+			# Once cups have been poured the recipe is locked — no more
+			# water until the pitcher is emptied.
+			var locked := _snapped_pitcher.cups_poured > 0 \
+					or _snapped_pitcher.state == Pitcher.PitcherState.SERVING
 			var space := Balancing.PITCHER_MAX_LIQUID - _snapped_pitcher.get_liquid_volume()
-			if space > 0.0:
+			if space > 0.0 and not locked:
 				if water_fillings <= 0:
 					EventBus.interaction_hint_changed.emit(
 						"Dispenser empty! Buy water boxes from the shop.",

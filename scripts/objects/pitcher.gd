@@ -103,8 +103,9 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 	if state != PitcherState.PREPPING and state != PitcherState.COMPLETE:
 		return false
 
-	# Once cups are poured, can no longer add sugar or ice
-	if cups_poured > 0 and (ingredient_type == "sugar" or ingredient_type == "ice"):
+	# Once the first cup is poured the recipe is locked — nothing may be
+	# added (fruit, water, sugar, or ice) until the pitcher is emptied.
+	if cups_poured > 0:
 		return false
 
 	# Determine if this ingredient is a fruit by looking for its IngredientData.
@@ -375,7 +376,10 @@ func get_contents_string() -> String:
 	var sg := sugar
 	var ic := ice
 	var ft := fruit_type
-	if not serving_recipe.is_empty():
+	# A fully drained pitcher has no recipe — serving_recipe is only valid
+	# while liquid remains (snapshot restore could otherwise show a stale
+	# recipe on an empty pitcher until it's picked up).
+	if not serving_recipe.is_empty() and not is_fully_empty():
 		fc = float(serving_recipe.get("fruit_count", fc))
 		sg = float(serving_recipe.get("sugar", sg))
 		ic = float(serving_recipe.get("ice", ic))
@@ -532,8 +536,9 @@ func _can_add_ingredient(ingredient_type: String, amount: float) -> bool:
 	if state != PitcherState.PREPPING and state != PitcherState.COMPLETE:
 		return false
 
-	# Once cups are poured, can no longer add sugar or ice
-	if cups_poured > 0 and (ingredient_type == "sugar" or ingredient_type == "ice"):
+	# Once the first cup is poured the recipe is locked — no additions
+	# of any kind until the pitcher is emptied.
+	if cups_poured > 0:
 		return false
 
 	var is_fruit := _is_ingredient_fruit(ingredient_type)

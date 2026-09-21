@@ -150,9 +150,25 @@ func interact(player: Node) -> void:
 				"Cannot mix %s with %s!" % [itype.capitalize(), fruit_type.capitalize()],
 			)
 			return
+		# Cap at what the pitcher can still take — anything beyond would
+		# vanish mid-press once the pitcher hits PITCHER_MAX_LIQUID.
+		var capacity := Balancing.PITCHER_MAX_LIQUID - fruit_count
+		if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
+			capacity = minf(
+				capacity,
+				Balancing.PITCHER_MAX_LIQUID - _snapped_pitcher.get_liquid_volume(),
+			)
+		if capacity <= 0.0:
+			EventBus.interaction_hint_changed.emit("Press is full!")
+			return
 		var start_pos := _get_hand_pos(player)
-		p.inventory.clear_held()
-		_animate_fruit_drop(itype, amount, start_pos)
+		if amount > capacity:
+			# Only load what fits; the rest stays in the scoop.
+			p.inventory.update_held_amount(amount - capacity)
+			_animate_fruit_drop(itype, capacity, start_pos)
+		else:
+			p.inventory.clear_held()
+			_animate_fruit_drop(itype, amount, start_pos)
 		return
 
 	# Start pressing if fruits inside, hands empty, and a valid pitcher is snapped
@@ -520,21 +536,26 @@ func _finish_press() -> void:
 		_pressed_so_far = 0.0
 		return
 
-	# Add any remaining amount that wasn't added during incremental pressing
+	# Add any remaining amount that wasn't added during incremental pressing.
+	# If the pitcher filled early, whatever wouldn't fit stays in the press
+	# so no fruit is silently lost.
+	var leftover := 0.0
 	if _pressed_so_far < fruit_count:
 		var remaining := fruit_count - _pressed_so_far
-		_snapped_pitcher.add_ingredient(fruit_type, remaining)
+		if not _snapped_pitcher.add_ingredient(fruit_type, remaining):
+			leftover = remaining
 
 	EventBus.interaction_hint_changed.emit(
-		"Pressed %.0f %s into pitcher!" % [fruit_count, fruit_type.capitalize()],
+		"Pressed %.0f %s into pitcher!" % [fruit_count - leftover, fruit_type.capitalize()],
 	)
 	OnboardingManager.report(
 		OnboardingManager.stand_for_node(self),
 		"fruit_pressed",
-		{ "type": fruit_type, "amount": fruit_count },
+		{ "type": fruit_type, "amount": fruit_count - leftover },
 	)
-	fruit_count = 0.0
-	fruit_type = ""
+	fruit_count = leftover
+	if leftover <= 0.0:
+		fruit_type = ""
 	_pressed_so_far = 0.0
 
 

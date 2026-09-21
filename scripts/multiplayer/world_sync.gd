@@ -1267,7 +1267,11 @@ func sync_hide_object(obj: Node) -> void:
 		_request_host(&"_rpc_request_set_visible", [obj_name, net_id, false])
 		return
 	# Hide on the host too — the host should see the table disappear
-	# when any player picks it up.
+	# when any player picks it up. Attach loose surface items first so
+	# they hide/move with the table even if the pickup-time reparent RPC
+	# was missed.
+	if obj is Workstation:
+		_attach_surface_items(obj)
 	obj.visible = false
 	for child in obj.find_children("*", "CollisionShape3D", true, false):
 		var col := child as CollisionShape3D
@@ -1307,6 +1311,8 @@ func _rpc_request_set_visible(obj_name: String, net_id: int, show: bool) -> void
 		return
 	# Apply on the host too — the host needs to hide/show the object
 	# just like clients do, not just broadcast.
+	if not show and obj is Workstation:
+		_attach_surface_items(obj)
 	obj.visible = show
 	for child in obj.find_children("*", "CollisionShape3D", true, false):
 		var col := child as CollisionShape3D
@@ -1322,6 +1328,8 @@ func _set_visible_on_clients(obj_name: String, net_id: int, visible: bool) -> vo
 		return
 	var obj := _find_node("", obj_name, net_id)
 	if obj:
+		if not visible and obj is Workstation:
+			_attach_surface_items(obj)
 		obj.visible = visible
 		# Also disable collision so hidden objects don't block the player
 		for child in obj.find_children("*", "CollisionShape3D", true, false):

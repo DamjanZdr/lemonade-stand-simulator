@@ -81,6 +81,12 @@ func _on_day_timer_updated(time_left: float, total_time: float) -> void:
 	if _day_total_time <= 0.0:
 		_day_total_time = total_time
 		_build_schedule(total_time)
+		# A mid-day save resume starts the clock partway through — skip the
+		# schedule entries that already elapsed instead of dumping them all
+		# in one frame (that's what stacked NPCs at route starts).
+		var elapsed_at_build := total_time - time_left
+		while _next_index < _schedule.size() and _schedule[_next_index] <= elapsed_at_build:
+			_next_index += 1
 
 	var elapsed := total_time - time_left
 	while _next_index < _schedule.size() and _schedule[_next_index] <= elapsed:

@@ -369,8 +369,20 @@ func primary_interact() -> void:
 		container_type = _player.inventory.held_item_data.get("container_type", "")
 		if container_type == "pitcher":
 			var recipe: Dictionary = _player.inventory.held_item_data.get("saved_recipe", { })
+			# Once cups have been poured the recipe is locked — no water
+			# top-ups until the pitcher is emptied.
+			var cups_poured: int = int(
+				_player
+				.inventory
+				.held_item_data
+				.get("saved_cups_poured", recipe.get("cups_poured", 0))
+			)
 			var current_water: float = recipe.get("water", 0.0)
-			if current_water <= 0.0:
+			if cups_poured > 0:
+				EventBus.interaction_hint_changed.emit(
+					"Recipe locked — cups already poured from this pitcher"
+				)
+			elif current_water <= 0.0:
 				var current_fruit: float = recipe.get("fruit_count", recipe.get("lemons", 0.0))
 				var liquid_volume: float = current_fruit + current_water
 				var fill: float = Balancing.PITCHER_MAX_LIQUID - liquid_volume

@@ -225,8 +225,8 @@ func _place_cup_stack_from_box() -> void:
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
 	}
-	# Assign stand ownership based on the placing player's stand.
-	var stand_name := _get_assigned_stand_name()
+	# Ownership follows the stand the item lands on, not the placer.
+	var stand_name := _get_placement_stand_name()
 	if stand_name != "":
 		state["stand_owner"] = stand_name
 	var stack := WorldSync.request_spawn(
@@ -379,8 +379,8 @@ func _place_single_cup(_filled: bool) -> void:
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
 	}
-	# Assign stand ownership based on the placing player's stand.
-	var stand_name := _get_assigned_stand_name()
+	# Ownership follows the stand the item lands on, not the placer.
+	var stand_name := _get_placement_stand_name()
 	if stand_name != "":
 		state["stand_owner"] = stand_name
 	var stack := WorldSync.request_spawn(
@@ -464,8 +464,8 @@ func _place_held_supply_box_on(
 	else:
 		state["ingredient_type"] = _player.held_item_data.get("ingredient_type", "lemon")
 		state["quantity"] = _player.held_item_data.get("amount", 1.0)
-	# Transfer box ownership to the placing player's stand.
-	var stand_name := _get_assigned_stand_name()
+	# Box ownership follows the stand's surface it lands on.
+	var stand_name := _get_placement_stand_name()
 	if stand_name != "":
 		state["stand_owner"] = stand_name
 	var box := WorldSync.request_spawn(
@@ -624,8 +624,8 @@ func _drop_held_box() -> void:
 	else:
 		state["ingredient_type"] = _player.held_item_data.get("ingredient_type", "lemon")
 		state["quantity"] = _player.held_item_data.get("amount", 1.0)
-	# Transfer box ownership to the dropping player's stand.
-	var stand_name := _get_assigned_stand_name()
+	# Box ownership follows the stand's surface it lands on.
+	var stand_name := _get_placement_stand_name()
 	if stand_name != "":
 		state["stand_owner"] = stand_name
 	# Drop exactly where the raycast hits, or 0.8 m ahead if not hitting anything.
@@ -817,8 +817,8 @@ func _place_equipment_from_box() -> void:
 	state["starting_count"] = 0
 	state["_net_groups"] = ["container"]
 	state["_net_scale"] = placement_scale
-	# Assign stand ownership based on the placing player's stand.
-	var stand_name := _get_assigned_stand_name()
+	# Ownership follows the stand the item lands on, not the placer.
+	var stand_name := _get_placement_stand_name()
 	if stand_name != "":
 		state["stand_owner"] = stand_name
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
@@ -1698,8 +1698,8 @@ func _try_place_container() -> Node3D:
 			# skips set_highlight(true), leaving the bin without an outline.
 			if _player.interaction != null:
 				_player.interaction.clear_hover()
-			# Update stand ownership to the placing player's stand.
-			var stand_name := _get_assigned_stand_name()
+			# Ownership follows the stand the workstation lands on.
+			var stand_name := _get_placement_stand_name()
 			if stand_name != "":
 				source_node.set("stand_owner", stand_name)
 				WorldSync.sync_property(source_node, "stand_owner", stand_name)
@@ -1749,8 +1749,8 @@ func _try_place_container() -> Node3D:
 			state["_net_pitcher_recipe"] = recipe.duplicate()
 	var place_pos := _ghost.global_position
 	var place_rot := _ghost.global_rotation
-	# Assign stand ownership based on the placing player's stand.
-	var stand_name := _get_assigned_stand_name()
+	# Ownership follows the stand the item lands on, not the placer.
+	var stand_name := _get_placement_stand_name()
 	if stand_name != "":
 		state["stand_owner"] = stand_name
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
@@ -2015,6 +2015,22 @@ func _get_assigned_stand_name() -> String:
 	return _player.assigned_stand_name
 
 
+## Ownership follows the stand the item physically sits on ("the unit owns
+## everything under it"), not the player who placed it. Resolves the stand
+## from the surface the item is being placed on, falling back to the
+## player's assigned stand when the surface is unowned.
+func _get_placement_stand_name() -> String:
+	var surface_owner := ""
+	if _player.ray != null and _player.ray.is_colliding():
+		var collider := _player.ray.get_collider()
+		surface_owner = _get_placement_owner_stand(collider)
+		if surface_owner == "" and is_ground_surface(collider):
+			surface_owner = _get_placement_owner_stand(_resolved_ground_surface)
+	if surface_owner != "":
+		return surface_owner
+	return _get_assigned_stand_name()
+
+
 func _is_placement_allowed_on(collider: Node) -> bool:
 	# Ownership check: is the local player allowed to place on this surface?
 	# This only checks stand ownership, not whether the collider is a valid
@@ -2024,8 +2040,10 @@ func _is_placement_allowed_on(collider: Node) -> bool:
 	if collider == null:
 		return false
 	var mp := _player.get("multiplayer") as MultiplayerAPI
-	if mp == null or mp.multiplayer_peer == null or mp.get_peers().is_empty():
+	if mp == null or mp.multiplayer_peer == null:
 		return true
+	# No get_peers().is_empty() bypass — a lone host must still respect
+	# stand ownership (e.g. rival left mid-game).
 	var surface_owner := _get_placement_owner_stand(collider)
 	if surface_owner == "" and is_ground_surface(collider):
 		surface_owner = _get_placement_owner_stand(_resolved_ground_surface)

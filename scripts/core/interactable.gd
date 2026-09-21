@@ -32,8 +32,9 @@ func can_player_use(player: Node) -> bool:
 	var mp := multiplayer
 	if mp == null or mp.multiplayer_peer == null:
 		return true
-	if mp.get_peers().is_empty():
-		return true
+	# NOTE: deliberately NOT bypassing when get_peers() is empty — a host
+	# alone in a versus session (rival disconnected) must still be blocked
+	# from using the rival stand's equipment.
 	# Unassigned items can be used by anyone — check this BEFORE
 	# requiring the player to have an assigned stand, so that players
 	# whose stand assignment hasn't completed yet can still interact
