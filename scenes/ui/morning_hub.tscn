@@ -313,6 +313,25 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
+[node name="StandNameRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Stand name"
+
+[node name="NameEdit" type="LineEdit" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 32
+placeholder_text = "Stand name"
+
+[node name="SaveButton" type="Button" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow"]
+layout_mode = 2
+text = "Rename"
+
 [node name="TodayLabel" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.72, 0.66, 1)

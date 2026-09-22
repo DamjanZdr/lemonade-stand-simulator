@@ -251,6 +251,7 @@ func _clear_and_return() -> void:
 	update_label()
 	EventBus.pitcher_cleared.emit()
 	EventBus.pitcher_state_changed.emit(int(state))
+	_sync_state_to_peers()
 
 
 func set_pitcher_visible(v: bool) -> void:

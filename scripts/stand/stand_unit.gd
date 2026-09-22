@@ -31,6 +31,7 @@ signal price_changed(fruit_type: String, new_price: float)
 signal recipe_changed(fruit_type: String, recipe: Dictionary)
 signal popularity_changed(new_rating: float)
 signal feedback_tier_changed(new_tier: int)
+signal stand_name_changed(new_name: String)
 
 ## Which peer (network) or debug slot controls this stand. -1 = uncontrolled
 ## (AI/empty). Set by whatever assigns players to stands (lobby, debug
@@ -55,6 +56,7 @@ var recipes: Dictionary = { }
 var ice_degrees_per_scoop: float = 4.0
 ## Synchronized and persisted stand-owned tutorial/mastery state.
 var onboarding_progress: Dictionary = { }
+var stand_display_name: String = ""
 
 ## Mirrors UpgradeManager.purchased_nodes (node_name -> true) for this
 ## stand. The upgrade TREE STRUCTURE (tree_nodes, connections, positions,
@@ -106,6 +108,7 @@ const STATE_PROPS: Array[String] = [
 	"highest_purchase",
 	"highest_money",
 	"onboarding_progress",
+	"stand_display_name",
 ]
 
 
@@ -145,6 +148,7 @@ func push_state(peer_id: int = 0) -> void:
 		highest_purchase,
 		highest_money,
 		onboarding_progress.duplicate(true),
+		stand_display_name,
 	]
 	# peer_id 0 = broadcast to everyone; otherwise target one peer (e.g.
 	# a late joiner re-pulling state after its world finishes loading).
@@ -171,6 +175,7 @@ func _apply_state(
 	new_highest_purchase: float,
 	new_highest_money: float,
 	new_onboarding_progress: Dictionary,
+	new_stand_display_name: String,
 ) -> void:
 	if is_multiplayer_authority():
 		return # Host already has correct values; don't overwrite
@@ -207,6 +212,10 @@ func _apply_state(
 	highest_purchase = new_highest_purchase
 	highest_money = new_highest_money
 	onboarding_progress = new_onboarding_progress.duplicate(true)
+	if stand_display_name != new_stand_display_name:
+		stand_display_name = new_stand_display_name
+		set_stand_name(stand_display_name)
+		stand_name_changed.emit(stand_display_name)
 	OnboardingManager.stand_progress_changed.emit(self, onboarding_progress.duplicate(true))
 	var new_discoveries: Dictionary = onboarding_progress.get("discovered_recipes", { })
 	for fruit in new_discoveries:
@@ -664,15 +673,55 @@ func can_be_served_by(player: Node) -> bool:
 	return player.assigned_stand == self
 
 
+func request_set_stand_name(new_name: String) -> void:
+	var cleaned := new_name.strip_edges().substr(0, 32)
+	if cleaned.is_empty():
+		return
+	if multiplayer.has_multiplayer_peer():
+		_rpc_set_stand_name.rpc_id(1, cleaned)
+	else:
+		_apply_stand_name(cleaned)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_set_stand_name(new_name: String) -> void:
+	if not is_multiplayer_authority():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if sender != 0 and sender != 1:
+		var allowed := false
+		for player in get_tree().get_nodes_in_group("player"):
+			if player.get_multiplayer_authority() == sender and player.assigned_stand == self:
+				allowed = true
+				break
+		if not allowed:
+			return
+	_apply_stand_name(new_name.strip_edges().substr(0, 32))
+	push_state()
+
+
+func _apply_stand_name(new_name: String) -> void:
+	if new_name.is_empty() or stand_display_name == new_name:
+		return
+	set_stand_name(new_name)
+	stand_name_changed.emit(stand_display_name)
+	if is_legacy_primary:
+		GameState.stand_name = stand_display_name
+		SaveManager.rename_current_stand(stand_display_name)
+	else:
+		SaveManager.save_game(true)
+
+
 ## Set the text on the stand's sign (the Label3D above the counter).
 ## Wraps the name in lemon emojis unless it already has them.
 func set_stand_name(name: String) -> void:
+	stand_display_name = name.strip_edges()
 	if not _sign_label:
 		return
-	if name.begins_with("🍋"):
-		_sign_label.text = name
+	if stand_display_name.begins_with("🍋"):
+		_sign_label.text = stand_display_name
 	else:
-		_sign_label.text = "🍋 %s 🍋" % name
+		_sign_label.text = "🍋 %s 🍋" % stand_display_name
 
 
 ## Get the current stand sign text.

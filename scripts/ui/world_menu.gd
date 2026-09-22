@@ -17,6 +17,7 @@ signal load_stand_requested(slot_name: String)
 const HOVER_POP: float = 1.12
 const HOVER_DURATION: float = 0.18
 const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
+const TITLE_FONT: FontFile = preload("res://assets/fonts/Grandstander-clean.ttf")
 
 @onready var _play_button: Button = $MenuBox/PlayButton
 @onready var _title_box: VBoxContainer = $MenuBox/TitleBox
@@ -357,6 +358,11 @@ func _ready() -> void:
 	_make_flat_button(_new_stand_button)
 	_add_drop_shadow(_new_stand_button)
 	_setup_hover_effect(_new_stand_button)
+	# Apply explicitly at runtime as well as in the scene so exported builds
+	# cannot fall back to the menu theme font when loading the title rows.
+	for row in _title_box.get_children():
+		if row is Label:
+			row.add_theme_font_override("font", TITLE_FONT)
 	# Scale each title row so "When Life" / "Gives You" / "Lemons" all
 	# render at the same width.
 	_fit_title_rows()

@@ -87,8 +87,9 @@ static func get_local_player() -> Node:
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null or tree.current_scene == null:
 		return null
+	var has_peer := tree.get_multiplayer().has_multiplayer_peer()
 	for p in tree.current_scene.find_children("*", "Player", true, false):
-		if p.is_multiplayer_authority():
+		if not has_peer or p.is_multiplayer_authority():
 			return p
 	# Fallback: first player (single-player or not yet claimed authority).
 	var players := tree.get_nodes_in_group("player")

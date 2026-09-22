@@ -38,6 +38,12 @@ const BRANCH_COLORS: Array[Color] = [
 
 @onready var _status_lbl: Label = $MainHBox/Panel/VBox/BottomBar/StatusLbl
 @onready var _flow_indicator: HBoxContainer = $MainHBox/Panel/VBox/FlowIndicator
+@onready var _stand_name_edit: LineEdit = (
+	$MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow/NameEdit
+)
+@onready var _stand_name_button: Button = (
+	$MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow/SaveButton
+)
 
 @onready var _cart_list: VBoxContainer = (
 	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll/CartList
@@ -166,6 +172,11 @@ func _ready() -> void:
 		_right_panel.visible = false
 
 	_checkout_btn.pressed.connect(_checkout_cart)
+	_stand_name_button.pressed.connect(_rename_local_stand)
+	_stand_name_edit.text_submitted.connect(
+		func(_text: String):
+			_rename_local_stand(),
+	)
 
 	# Make tab labels clickable
 	for tab in _flow_tabs:
@@ -1243,6 +1254,21 @@ func _on_day_time_over() -> void:
 	_update_closed_overlay()
 
 
+func _rename_local_stand() -> void:
+	var stand := _get_local_stand()
+	var new_name := _stand_name_edit.text.strip_edges()
+	if stand == null or new_name.is_empty():
+		return
+	stand.request_set_stand_name(new_name)
+	_status_lbl.text = "Renaming stand to %s..." % new_name
+
+
+func _refresh_stand_name_editor() -> void:
+	var stand := _get_local_stand()
+	if stand != null and _stand_name_edit != null:
+		_stand_name_edit.text = stand.stand_display_name
+
+
 func _show_tab(tab_name: String) -> void:
 	_active_tab = tab_name
 	var content := $MainHBox/Panel/VBox/Content as MarginContainer
@@ -1256,6 +1282,7 @@ func _show_tab(tab_name: String) -> void:
 				var tween := create_tween()
 				tween.tween_property(child, "modulate", Color(1, 1, 1, 1), 0.2)
 	if tab_name == "analytics":
+		_refresh_stand_name_editor()
 		_refresh_analytics()
 	elif tab_name == "upgrades":
 		_refresh_upgrades()

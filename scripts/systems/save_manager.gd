@@ -258,6 +258,12 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	# Store the stand name and mode so they're available when loaded.
 	GameState.stand_name = stand_name
 	GameState.game_mode = game_mode as GameState.GameMode
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			stand.set_stand_name(
+				stand_name if stand.is_legacy_primary or game_mode != GameState.GameMode.VERSUS \
+						else "Rival Stand"
+			)
 	# Reset GameState to defaults
 	GameState.money = Balancing.STARTING_MONEY
 	GameState.popularity = 0.1
@@ -317,6 +323,28 @@ func clear_current_slot() -> void:
 	auto_save_enabled = false
 
 
+func rename_current_stand(new_name: String) -> bool:
+	var cleaned := new_name.strip_edges().substr(0, 32)
+	if cleaned.is_empty():
+		return false
+	GameState.stand_name = cleaned
+	if current_slot.is_empty() or current_slot == cleaned:
+		return true
+	var old_path := _slot_path(current_slot)
+	var new_path := _slot_path(cleaned)
+	if FileAccess.file_exists(new_path):
+		push_warning("SaveManager: cannot rename stand; save '%s' already exists." % cleaned)
+		return false
+	if FileAccess.file_exists(old_path):
+		var err := DirAccess.rename_absolute(old_path, new_path)
+		if err != OK:
+			push_warning("SaveManager: failed to rename save file (%s)." % error_string(err))
+			return false
+	current_slot = cleaned
+	save_game(true)
+	return true
+
+
 func _slot_path(slot_name: String) -> String:
 	return SAVE_DIR + slot_name + ".json"
 
@@ -354,6 +382,11 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	_pending_container_respawn = data.get("placed_containers", [])
 	_pending_supply_box_respawn = data.get("supply_boxes", [])
 	GameState.stand_name = data.get("stand_name", current_slot)
+	var saved_stand_names: Dictionary = data.get("stand_names", { })
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			var fallback := GameState.stand_name if stand.is_legacy_primary else "Rival Stand"
+			stand.set_stand_name(str(saved_stand_names.get(stand.name, fallback)))
 	GameState.game_mode = data.get("game_mode", GameState.GameMode.SOLO) as GameState.GameMode
 	OnboardingManager.deserialize(data.get("onboarding", { "version": 1, "stands": { } }))
 	GameState.money = data.get("money", Balancing.STARTING_MONEY)
@@ -454,6 +487,14 @@ func _sync_live_stand_recipes(announce: bool) -> void:
 					EventBus.recipe_changed.emit(fruit_type, stand.recipes[fruit_type])
 
 
+func _collect_stand_names() -> Dictionary:
+	var names := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			names[stand.name] = stand.stand_display_name
+	return names
+
+
 func _build_save_dict() -> Dictionary:
 	# For a brand-new game, save the pristine default containers
 	# instead of scanning the (potentially dirty) world. The world
@@ -469,6 +510,7 @@ func _build_save_dict() -> Dictionary:
 		supply_boxes = _scan_supply_boxes()
 	return {
 		"stand_name": GameState.stand_name,
+		"stand_names": _collect_stand_names(),
 		"game_mode": GameState.game_mode,
 		"creator_steam_id": str(NetworkManager.steam_id),
 		"money": GameState.money,

@@ -244,7 +244,7 @@ func _ready() -> void:
 ## In versus mode, it's the rival's stand. In solo/coop, it mirrors
 ## stand 1 (shared stand).
 func _set_stand2_name() -> void:
-	if stand_unit2 == null:
+	if stand_unit2 == null or not stand_unit2.stand_display_name.is_empty():
 		return
 	if LobbyManager.game_mode == GameState.GameMode.VERSUS:
 		stand_unit2.set_stand_name("Rival Stand")

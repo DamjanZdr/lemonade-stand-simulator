@@ -177,7 +177,9 @@ func interact(player: Node) -> void:
 			EventBus.interaction_hint_changed.emit("Snap a pitcher to the press first!")
 			return
 		if not _can_press_into_pitcher(_snapped_pitcher):
-			EventBus.interaction_hint_changed.emit("Pitcher has wrong fruit or already has water!")
+			EventBus.interaction_hint_changed.emit(
+				"Pitcher is locked, incompatible, or has insufficient space!"
+			)
 			return
 		_start_press()
 		return
@@ -473,6 +475,10 @@ func get_snap_global_position() -> Vector3:
 
 
 func _can_press_into_pitcher(pitcher: Pitcher) -> bool:
+	if pitcher.cups_poured > 0 or pitcher.state == Pitcher.PitcherState.SERVING:
+		return false
+	if pitcher.get_liquid_volume() + fruit_count > Balancing.PITCHER_MAX_LIQUID:
+		return false
 	## Empty pitcher is always valid.
 	if (
 		pitcher.fruit_count == 0.0 and pitcher.water == 0.0 \
@@ -481,9 +487,7 @@ func _can_press_into_pitcher(pitcher: Pitcher) -> bool:
 	):
 		return true
 	## Otherwise: no water yet, and same fruit type.
-	if pitcher.water == 0.0 and pitcher.fruit_type == fruit_type:
-		return true
-	return false
+	return pitcher.water == 0.0 and pitcher.fruit_type == fruit_type
 
 
 func _start_press() -> void:
