@@ -1846,7 +1846,8 @@ func _sync_upgrade_node_purchased(node_id: String, stand_name: String) -> void:
 	_status_lbl.text = "Upgrade purchased!"
 	_animate_status()
 	# Animate the purchased node and reveal newly visible children.
-	var node := (_tree_content.get_node_or_null("TreeNode_" + node_id) as CircleNode)
+	var purchased_node_name := "TreeNode_" + node_id
+	var node := _tree_content.get_node_or_null(purchased_node_name) as CircleNode
 	if node != null:
 		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(node_id, { })
 		var uid: String = purchased_data.get("upgrade_id", "")
@@ -1856,7 +1857,8 @@ func _sync_upgrade_node_purchased(node_id: String, stand_name: String) -> void:
 				_build_shop()
 		var newly_visible: Array[String] = []
 		for child_id in UpgradeManager.tree_connections.get(node_id, []):
-			var child_node := _tree_content.get_node_or_null("TreeNode_" + child_id) as CircleNode
+			var child_node_name: String = "TreeNode_" + str(child_id)
+			var child_node := _tree_content.get_node_or_null(child_node_name) as CircleNode
 			if child_node != null and not child_node.visible:
 				newly_visible.append(child_id)
 				_animating_lines[node_id + "|" + child_id] = 0.0
