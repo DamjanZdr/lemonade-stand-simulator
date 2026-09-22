@@ -882,9 +882,10 @@ func _position_lobby_camera(stand_index: int, tween: bool) -> void:
 		var start_pitch: float = start_euler.x
 		var end_pitch: float = end_euler.x
 		var tw := create_tween()
+		var target_position := target_transform.origin
 		tw.set_parallel(true)
 		tw \
-				.tween_property(lobby_camera, "global_position", target_transform.origin, CAMERA_TWEEN_TIME) \
+				.tween_property(lobby_camera, "global_position", target_position, CAMERA_TWEEN_TIME) \
 				.set_trans(Tween.TRANS_SINE) \
 				.set_ease(Tween.EASE_IN_OUT)
 		tw \

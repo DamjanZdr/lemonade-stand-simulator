@@ -318,7 +318,9 @@ func _ready() -> void:
 				if not _tree_laid_out or _tree_content == null:
 					return
 				for from_id in UpgradeManager.tree_connections:
-					var from_node := _tree_content.get_node_or_null("TreeNode_" + from_id) as CircleNode
+					var from_node := (
+						_tree_content.get_node_or_null("TreeNode_" + from_id) as CircleNode
+					)
 					if from_node == null or not from_node.visible:
 						continue
 					var from_center_local := from_node.position + from_node.size / 2.0
@@ -327,7 +329,9 @@ func _ready() -> void:
 					)
 					for to_id in UpgradeManager.tree_connections[from_id]:
 						var line_key: String = from_id + "|" + to_id
-						var to_node := _tree_content.get_node_or_null("TreeNode_" + to_id) as CircleNode
+						var to_node := (
+							_tree_content.get_node_or_null("TreeNode_" + to_id) as CircleNode
+						)
 						if to_node == null:
 							continue
 						var to_center_local := to_node.position + to_node.size / 2.0
@@ -409,7 +413,9 @@ func _ready() -> void:
 
 
 func _build_shop() -> void:
-	var shop_scroll := ($MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2) as ScrollContainer
+	var shop_scroll := (
+		$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2 as ScrollContainer
+	)
 	if shop_scroll == null:
 		return
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -1840,7 +1846,7 @@ func _sync_upgrade_node_purchased(node_id: String, stand_name: String) -> void:
 	_status_lbl.text = "Upgrade purchased!"
 	_animate_status()
 	# Animate the purchased node and reveal newly visible children.
-	var node := _tree_content.get_node_or_null("TreeNode_" + node_id) as CircleNode
+	var node := (_tree_content.get_node_or_null("TreeNode_" + node_id) as CircleNode)
 	if node != null:
 		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(node_id, { })
 		var uid: String = purchased_data.get("upgrade_id", "")
