@@ -206,6 +206,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton or event is InputEventMouseMotion:
 		_forward_mouse_event(event)
 		get_viewport().set_input_as_handled()
+	elif event is InputEventKey:
+		# Keyboard events belong to the main viewport by default. Forward them
+		# to the computer SubViewport so its focused LineEdit can receive text.
+		_screen_ui.push_input(event.duplicate())
+		get_viewport().set_input_as_handled()
 
 
 func _forward_mouse_event(event: InputEvent) -> void:

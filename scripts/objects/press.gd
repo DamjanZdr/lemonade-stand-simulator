@@ -150,16 +150,17 @@ func interact(player: Node) -> void:
 				"Cannot mix %s with %s!" % [itype.capitalize(), fruit_type.capitalize()],
 			)
 			return
-		# Cap at what the pitcher can still take — anything beyond would
-		# vanish mid-press once the pitcher hits PITCHER_MAX_LIQUID.
-		var capacity := Balancing.PITCHER_MAX_LIQUID - fruit_count
-		if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
-			capacity = minf(
-				capacity,
-				Balancing.PITCHER_MAX_LIQUID - _snapped_pitcher.get_liquid_volume(),
-			)
+		if not has_snapped_pitcher():
+			EventBus.interaction_hint_changed.emit("Place a pitcher in the press first!")
+			return
+		if not _pitcher_accepts_fruit_type(itype):
+			EventBus.interaction_hint_changed.emit("Pitcher cannot accept this fruit!")
+			return
+		# Reserve pitcher capacity for fruit already waiting in the press. This
+		# prevents loading 10 more fruit when the pitcher already contains 5.
+		var capacity := _remaining_load_capacity()
 		if capacity <= 0.0:
-			EventBus.interaction_hint_changed.emit("Press is full!")
+			EventBus.interaction_hint_changed.emit("Pitcher has no room for more fruit!")
 			return
 		var start_pos := _get_hand_pos(player)
 		if amount > capacity:
@@ -190,13 +191,7 @@ func interact(player: Node) -> void:
 				and not _pressing
 		and has_snapped_pitcher()
 	):
-		var pitcher := _snapped_pitcher
-		_snapped_pitcher = null
-		_pending_snap_pitcher_net_id = -1
-		WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
-		pitcher.visible = false
-		pitcher.set_pitcher_visible(false)
-		p.pickup_container(pitcher, "pitcher")
+		_take_snapped_pitcher(p)
 		return
 
 	# Pick up the press container (only if empty, no snapped pitcher, and not pressing)
@@ -210,12 +205,23 @@ func interact(player: Node) -> void:
 
 func interact_secondary(player: Node) -> void:
 	var p := player as Player
-	if (
-		p != null and p.held_item == HeldItem.NONE and not _pressing \
-				and fruit_count <= 0.0
-		and not has_snapped_pitcher()
-	):
+	if p == null or p.held_item != HeldItem.NONE or _pressing:
+		return
+	if has_snapped_pitcher():
+		_take_snapped_pitcher(p)
+		return
+	if fruit_count <= 0.0:
 		p.pickup_container(self, "press")
+
+
+func _take_snapped_pitcher(player: Player) -> void:
+	var pitcher := _snapped_pitcher
+	_snapped_pitcher = null
+	_pending_snap_pitcher_net_id = -1
+	WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
+	pitcher.visible = false
+	pitcher.set_pitcher_visible(false)
+	player.pickup_container(pitcher, "pitcher")
 
 
 func _get_pitcher_hint() -> String:
@@ -245,10 +251,13 @@ func get_hint(player: Node) -> String:
 				fruit_count,
 				fruit_type.capitalize(),
 			]
-		return "Press | LMB: add %s (has %.0f %s)" % [
+		if not has_snapped_pitcher():
+			return "Press | place a pitcher first"
+		if not _pitcher_accepts_fruit_type(itype):
+			return "Press | pitcher cannot accept this fruit"
+		return "Press | LMB: add %s (room for %.0f)" % [
 			itype.capitalize(),
-			fruit_count,
-			fruit_type if fruit_count > 0.0 else "",
+			_remaining_load_capacity(),
 		]
 	if fruit_count > 0.0:
 		if not has_snapped_pitcher():
@@ -370,6 +379,26 @@ func set_highlight(on: bool) -> void:
 
 func has_snapped_pitcher() -> bool:
 	return _snapped_pitcher != null and is_instance_valid(_snapped_pitcher)
+
+
+func _pitcher_accepts_fruit_type(itype: String) -> bool:
+	if not has_snapped_pitcher():
+		return false
+	if _snapped_pitcher.cups_poured > 0 \
+			or _snapped_pitcher.state == Pitcher.PitcherState.SERVING:
+		return false
+	if _snapped_pitcher.water > 0.0:
+		return false
+	return _snapped_pitcher.fruit_type.is_empty() or _snapped_pitcher.fruit_type == itype
+
+
+func _remaining_load_capacity() -> float:
+	if not has_snapped_pitcher():
+		return 0.0
+	return maxf(
+		0.0,
+		Balancing.PITCHER_MAX_LIQUID - _snapped_pitcher.get_liquid_volume() - fruit_count,
+	)
 
 
 func snap_pitcher(pitcher: Pitcher, onboarding_stand: StandUnit = null) -> void:

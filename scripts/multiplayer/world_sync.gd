@@ -138,7 +138,7 @@ func _assign_net_id(obj: Node) -> int:
 	var id := _net_id_counter
 	_net_id_counter += 1
 	obj.set_meta(NET_ID_META, id)
-	_net_id_to_node[id] = obj
+	_net_id_to_node[id] = weakref(obj)
 	_node_to_net_id[obj] = id
 	_placed_objects[id] = obj
 	obj.tree_exited.connect(_on_net_object_tree_exited.bind(id))
@@ -160,10 +160,12 @@ func _get_net_id(obj: Node) -> int:
 func _find_node_by_net_id(net_id: int) -> Node:
 	if net_id < 0:
 		return null
-	var node: Node = _net_id_to_node.get(net_id, null)
+	var stored: Variant = _net_id_to_node.get(net_id)
+	var node: Node = stored.get_ref() if stored is WeakRef else null
 	if node != null and is_instance_valid(node):
 		return node
-	# If the node is no longer valid, clean the stale entry.
+	# WeakRef.get_ref() safely returns null after the object is freed, avoiding
+	# assignment of an invalid Object reference during a delayed despawn RPC.
 	_net_id_to_node.erase(net_id)
 	return null
 
@@ -174,13 +176,18 @@ func find_node_by_net_id(net_id: int) -> Node:
 
 
 func _on_net_object_tree_exited(net_id: int) -> void:
-	var node: Node = _net_id_to_node.get(net_id, null)
+	var stored: Variant = _net_id_to_node.get(net_id)
+	var node: Node = stored.get_ref() if stored is WeakRef else null
+	if node == null or not is_instance_valid(node):
+		_net_id_to_node.erase(net_id)
+		_placed_objects.erase(net_id)
+		return
 	# tree_exited also fires on remove_child() during reparenting (delivery
 	# truck arcs, workstation item attachments, client-side pickup
 	# prediction). Only unregister when the node is actually being deleted —
 	# otherwise the surviving node loses its stable id and later despawn /
 	# state RPCs can no longer find it, leaving stale duplicates on peers.
-	if node == null or not is_instance_valid(node) or not node.is_queued_for_deletion():
+	if not node.is_queued_for_deletion():
 		return
 	_node_to_net_id.erase(node)
 	_net_id_to_node.erase(net_id)
@@ -453,7 +460,7 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 	var net_id: int = entry.get("net_id", -1)
 	if net_id >= 0:
 		instance.set_meta(NET_ID_META, net_id)
-		_net_id_to_node[net_id] = instance
+		_net_id_to_node[net_id] = weakref(instance)
 		_node_to_net_id[instance] = net_id
 		instance.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	root.add_child(instance)
@@ -512,7 +519,7 @@ func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
 	var net_id: int = entry.get("net_id", -1)
 	if net_id >= 0 and _get_net_id(existing) < 0:
 		existing.set_meta(NET_ID_META, net_id)
-		_net_id_to_node[net_id] = existing
+		_net_id_to_node[net_id] = weakref(existing)
 		_node_to_net_id[existing] = net_id
 		existing.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	var pos: Array = entry.get("position", [0, 0, 0])
@@ -596,7 +603,7 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 	var net_id: int = entry.get("net_id", -1)
 	if net_id >= 0:
 		box.set_meta(NET_ID_META, net_id)
-		_net_id_to_node[net_id] = box
+		_net_id_to_node[net_id] = weakref(box)
 		_node_to_net_id[box] = net_id
 		box.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	root.add_child(box)
@@ -626,7 +633,7 @@ func _update_supply_box_from_snapshot(existing: SupplyBox, entry: Dictionary) ->
 	var net_id: int = entry.get("net_id", -1)
 	if net_id >= 0 and _get_net_id(existing) < 0:
 		existing.set_meta(NET_ID_META, net_id)
-		_net_id_to_node[net_id] = existing
+		_net_id_to_node[net_id] = weakref(existing)
 		_node_to_net_id[existing] = net_id
 		existing.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	existing.ingredient_type = entry.get("ingredient_type", "lemon")
@@ -1388,7 +1395,7 @@ func _spawn_on_clients(
 	# this object regardless of its name or parent path.
 	if net_id >= 0:
 		obj.set_meta(NET_ID_META, net_id)
-		_net_id_to_node[net_id] = obj
+		_net_id_to_node[net_id] = weakref(obj)
 		_node_to_net_id[obj] = net_id
 		obj.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
 	parent.add_child(obj)
