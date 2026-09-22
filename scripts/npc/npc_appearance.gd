@@ -110,7 +110,7 @@ func _ready() -> void:
 func _flatten_tail_bones() -> void:
 	var skeletons: Array[Skeleton3D] = [_man_skeleton, _woman_skeleton]
 	for skeleton in skeletons:
-		var bone_idx: int = skeleton.find_bone("tail")
+		var bone_idx: int = skeleton.find_bone("Tail")
 		if bone_idx >= 0:
 			skeleton.set_bone_pose_scale(bone_idx, Vector3(1.0, 1.0, 0.01))
 
