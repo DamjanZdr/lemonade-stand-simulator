@@ -77,8 +77,6 @@ const CLOTHING_SURFACES: Array[String] = [
 @onready var _newman: Node3D = $newman
 @onready var _man_mesh: MeshInstance3D = $man/Armature/Skeleton3D/MaleMesh
 @onready var _woman_mesh: MeshInstance3D = $woman/Armature/Skeleton3D/FemaleMesh
-@onready var _man_skeleton: Skeleton3D = $man/Armature/Skeleton3D
-@onready var _woman_skeleton: Skeleton3D = $woman/Armature/Skeleton3D
 @onready var _man_hairs: Node3D = $man/Armature/Skeleton3D/Head/Hairstyles
 @onready var _woman_hairs: Node3D = $woman/Armature/Skeleton3D/Head/Hairstyles
 @onready var _man_anim: AnimationPlayer = $man/AnimationPlayer
@@ -101,18 +99,9 @@ func _ready() -> void:
 	_eye_update_timer = randf() * _EYE_UPDATE_INTERVAL
 	_disable_cast_shadows()
 	_copy_extra_animations()
-	_flatten_tail_bones()
 	# Hide the newman node — it's only used as an animation source.
 	if _newman:
 		_newman.visible = false
-
-
-func _flatten_tail_bones() -> void:
-	var skeletons: Array[Skeleton3D] = [_man_skeleton, _woman_skeleton]
-	for skeleton in skeletons:
-		var bone_idx: int = skeleton.find_bone("Tail")
-		if bone_idx >= 0:
-			skeleton.set_bone_pose_scale(bone_idx, Vector3(1.0, 1.0, 0.01))
 
 
 func _disable_cast_shadows() -> void:
