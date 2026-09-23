@@ -201,7 +201,7 @@ func start_morning() -> void:
 	current_phase = Phase.MORNING
 	day_start_money = GameState.money
 	day_costs = 0.0
-	# Randomize temperature for the day — locked to multiples of 7 so the
+	# Randomize temperature for the day — locked to multiples of 5 °C so the
 	# ideal ice count is always a whole number of scoops.
 	var temp: float = Balancing.DAY_TEMPERATURES[randi() % Balancing.DAY_TEMPERATURES.size()]
 	GameState.temperature = temp

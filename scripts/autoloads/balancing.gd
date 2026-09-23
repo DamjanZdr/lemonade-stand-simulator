@@ -19,12 +19,13 @@ const IDEAL_SUGAR_PER_LIQUID: float = 0.20 # 2 scoops out of 10 liquid = perfect
 
 # === TEMPERATURE RANGE ===
 const TEMP_MIN: float = 10.0
-const TEMP_MAX: float = 42.0
-const PERFECT_ICE_DEGREES_PER_SCOOP: float = 7.0
+const TEMP_MAX: float = 45.0
+const PERFECT_ICE_DEGREES_PER_SCOOP: float = 5.0
 # Daily temperatures are locked to multiples of PERFECT_ICE_DEGREES_PER_SCOOP
-# so the ideal ice count is always a whole number of scoops (3/4/5/6).
-const DAY_TEMPERATURES: Array[float] = [21.0, 28.0, 35.0, 42.0]
-const TEMP_DEFAULT: float = 28.0
+# so the ideal ice count is always a whole number of scoops (4–9). 5 °C per
+# scoop is exactly 9 °F, so the rule is clean in both units.
+const DAY_TEMPERATURES: Array[float] = [20.0, 25.0, 30.0, 35.0, 40.0, 45.0]
+const TEMP_DEFAULT: float = 30.0
 
 
 ## Nearest legal daily temperature — used to migrate saves created while
@@ -63,8 +64,8 @@ const CONTAINER_COST_WATER_DISPENSER: float = 25.0
 const CONTAINER_COST_WORKSTATION: float = 40.0
 
 # === SUPPLY PRICES (per box) ===
-# Baseline economics: an ideal lemon pitcher (3 lemons + 2 sugar + ~2 ice
-# + 1 water fill + 10 cups) costs ~$3.90 and sells 10 cups at $1 = $10.
+# Baseline economics: an ideal lemon pitcher (3 lemons + 2 sugar + 4–9 ice
+# + 1 water fill + 10 cups) costs ~$4.20–$4.95 and sells 10 cups at $1 = $10.
 const SUPPLY_BOX_QTY: float = 10.0
 const SUPPLY_COST_LEMON: float = 4.0
 const SUPPLY_COST_STRAWBERRY: float = 5.0

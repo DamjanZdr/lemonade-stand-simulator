@@ -17,9 +17,9 @@ Upgrades will modify these later — this file is the **baseline** they modify.
 
 From `balancing.gd`: `IDEAL_LEMON_RATIO = 0.30` (3 lemons/pitcher),
 `IDEAL_SUGAR_PER_LIQUID = 0.20` (2 sugar/pitcher), ice = temperature ÷
-`PERFECT_ICE_DEGREES_PER_SCOOP` (7.0). Daily temperature is locked to
-`DAY_TEMPERATURES` = 21/28/35/42 °C, so the ideal ice count is always an exact
-whole number of scoops: 3, 4, 5, or 6.
+`PERFECT_ICE_DEGREES_PER_SCOOP` (5.0 — "one scoop per 5 °C / 9 °F"). Daily
+temperature is locked to `DAY_TEMPERATURES` = 20/25/30/35/40/45 °C, so the
+ideal ice count is always an exact whole number of scoops: 4–9.
 
 ### Proposed box prices (vs current)
 
@@ -37,14 +37,15 @@ whole number of scoops: 3, 4, 5, or 6.
 |-----------|--------|------|
 | Lemons | 3 | $1.20 |
 | Sugar | 2 | $0.40 |
-| Ice | ~2 | $0.30 |
+| Ice | 4–9 (temp-dependent) | $0.60–$1.35 |
 | Water fill | 1 | $1.00 |
 | Cups | 10 | $1.00 |
-| **Total** | | **$3.90** |
+| **Total** | | **$4.20–$4.95** |
 
-**Revenue $10 − cost $3.90 = $6.10 gross profit (~61% margin).**
+**Revenue $10 − cost $4.20–$4.95 = $5.05–$5.80 gross profit (~50–58% margin).**
 
-That is the intended ceiling: a perfect day at $1/cup clears ~60%.
+That is the intended ceiling: a perfect day at $1/cup clears ~50–58%
+(hotter days cost more ice, so the ceiling dips slightly on 45 °C days).
 Sloppy play (dumped pitchers, wrong ratios, unsold stock, spoiled batches) pulls
 the realized margin down fast, which is where the difficulty lives. If playtests
 show it's still too easy, raise lemons to $5/box first ($0.50 each → pitcher cost
