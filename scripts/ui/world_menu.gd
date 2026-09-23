@@ -19,6 +19,7 @@ const HOVER_DURATION: float = 0.18
 const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 
 @onready var _play_button: Button = $MenuBox/PlayButton
+@onready var _title_text: VBoxContainer = $MenuBox/TitleText
 @onready var _saves_button: Button = $MenuBox/SavesButton
 @onready var _join_button: Button = $MenuBox/JoinButton
 @onready var _join_panel: Control = $JoinPanel
@@ -354,6 +355,7 @@ func _ready() -> void:
 	_make_flat_button(_new_stand_button)
 	_add_drop_shadow(_new_stand_button)
 	_setup_hover_effect(_new_stand_button)
+	_fit_title_text_widths()
 	# Build the music player widget (bottom-right corner).
 	_build_music_player()
 	# Sync to current track.
@@ -487,6 +489,28 @@ func show_name_entry() -> void:
 	_saves_panel.visible = true
 	$MenuBox.visible = false
 	_on_new_stand_pressed()
+
+
+func _fit_title_text_widths() -> void:
+	var rows: Array[Label] = []
+	var widths: Array[float] = []
+	var sizes: Array[int] = []
+	var target_width := 0.0
+	for child in _title_text.get_children():
+		var row := child as Label
+		if row == null:
+			continue
+		var size := row.get_theme_font_size("font_size")
+		var width := row.get_theme_font("font").get_string_size(row.text, 0, -1, size).x
+		rows.append(row)
+		widths.append(width)
+		sizes.append(size)
+		target_width = maxf(target_width, width)
+	for i in rows.size():
+		rows[i].add_theme_font_size_override(
+			"font_size",
+			roundi(float(sizes[i]) * target_width / widths[i]),
+		)
 
 
 ## Add a drop shadow to a button's text.

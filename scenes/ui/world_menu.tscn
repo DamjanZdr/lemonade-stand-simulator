@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://cworldmenu01"]
+[gd_scene load_steps=10 format=3 uid="uid://cworldmenu01"]
 
 [ext_resource type="Script" path="res://scripts/ui/world_menu.gd" id="1_script"]
 [ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
@@ -6,6 +6,7 @@
 [ext_resource type="Shader" path="res://shaders/ui_dim_fade.gdshader" id="4_dimfade"]
 [ext_resource type="Texture2D" path="res://assets/textures/ui/Title.png" id="5_title"]
 [ext_resource type="Texture2D" path="res://assets/textures/ui/Titleshadow.png" id="6_shadow"]
+[ext_resource type="FontFile" path="res://assets/fonts/Grandstander-clean.ttf" id="7_titlefont"]
 
 [sub_resource type="ShaderMaterial" id="BlurMat"]
 shader = ExtResource("3_blur")
@@ -63,6 +64,7 @@ theme_override_constants/separation = 4
 alignment = 0
 
 [node name="TitleLayer" type="Control" parent="MenuBox"]
+visible = false
 custom_minimum_size = Vector2(320, 178)
 layout_mode = 2
 mouse_filter = 2
@@ -87,6 +89,43 @@ mouse_filter = 2
 texture = SubResource("TitleAtlas")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="TitleText" type="VBoxContainer" parent="MenuBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Top" type="Label" parent="MenuBox/TitleText"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_titlefont")
+theme_override_font_sizes/font_size = 56
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 4
+theme_override_constants/shadow_offset_y = 5
+theme_override_constants/shadow_outline_size = 8
+text = "WHEN LIFE"
+
+[node name="Middle" type="Label" parent="MenuBox/TitleText"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_titlefont")
+theme_override_font_sizes/font_size = 56
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 4
+theme_override_constants/shadow_offset_y = 5
+theme_override_constants/shadow_outline_size = 8
+text = "GIVES YOU"
+
+[node name="Bottom" type="Label" parent="MenuBox/TitleText"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_titlefont")
+theme_override_font_sizes/font_size = 80
+theme_override_colors/font_color = Color(1, 0.9176, 0.0627, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 4
+theme_override_constants/shadow_offset_y = 5
+theme_override_constants/shadow_outline_size = 8
+text = "LEMONS"
 
 [node name="Spacer" type="Control" parent="MenuBox"]
 custom_minimum_size = Vector2(0, 16)
