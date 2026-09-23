@@ -108,7 +108,7 @@ const TRASH_REFUND_EMPTY_BOX: float = 0.25
 # Fraction of the remaining contents' value refunded for a non-empty
 # supply box, and NPC/world litter value.
 const CONTENTS_REFUND_RATIO: float = 0.5
-const LOOSE_TRASH_VALUE: float = 0.05
+const LOOSE_TRASH_VALUE: float = 0.10
 
 # === WATER DISPENSER ===
 const WATER_COST: float = 5.0

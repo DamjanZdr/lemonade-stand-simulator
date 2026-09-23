@@ -78,7 +78,7 @@ $1 for ANY non-equipment box — a 9/10 lemon box sells for $1 and a 1/10 box
 does too. Per-unit cost can be looked up from the (unified) shop price table.
 | Unopened equipment box | **70% of equipment cost + $0.25 box scrap** | Selling unopened must equal placing the equipment, scrapping the box, then recycling it — otherwise opening first is strictly better. |
 | Placed containers (crate, bowl, bucket, pitcher, press, dispenser, table) | **70% of cost** | Current `_get_container_cost_for_trash` behavior — keep. |
-| Loose world trash (used cups, apple cores, etc.) | **$0.05** (`LOOSE_TRASH_VALUE`) | Pickup is its own reward; cash-for-trash invites farming. |
+| Loose world trash (used cups, apple cores, etc.) | **$0.10** (`LOOSE_TRASH_VALUE`) | Pickup is its own reward; cash-for-trash invites farming. |
 | Held empty cup | **$0.05** (50% of cup unit cost) | Small scrap value for an unused cup. |
 | Held filled cup | **$0** — dump only | Lemonade can't be un-mixed; contents are lost. |
 | Bins with stock (crate, bowl, bucket) | **70% container + 50% of contents value** | Contents still count — same partial rule as supply boxes. |

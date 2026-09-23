@@ -9,8 +9,8 @@ extends Node3D
 const TRASH_Y_OFFSET: float = 0.185
 
 @export var min_interval: float = 10.0
-@export var max_interval: float = 20.0
-@export var max_trash_count: int = 20
+@export var max_interval: float = 30.0
+@export var max_trash_count: int = 10
 @export var horizontal_spread: float = 0.8
 
 var _timer: Timer = null

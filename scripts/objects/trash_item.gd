@@ -4,7 +4,7 @@ extends Interactable
 ## Each trash type has its own scene (trash_apple.tscn, trash_banana.tscn, etc.)
 ## with the model and collision shapes as direct children of the root Area3D.
 
-@export var trash_value: float = 0.05
+@export var trash_value: float = 0.10
 @export var trash_type: String = "trash"
 
 ## Set by WorldSync spawn state before _ready(). When set, the trash uses

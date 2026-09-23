@@ -136,9 +136,17 @@ func _spawn_box_on_truck(box: SupplyBox) -> void:
 		_batched_boxes.append(box)
 
 
+## True when an order/checkout for `stand_name` belongs to this system.
+## A DeliverySystem with no stand configured (DeliverySystem2 in co-op,
+## where stand 2 is unused) must ignore every order — otherwise it
+## spawns a duplicate box on the default truck for each purchase.
+func _handles_stand(stand_name: String) -> bool:
+	return _stand_name != "" and (stand_name == "" or stand_name == _stand_name)
+
+
 func _on_checkout_completed(stand_name: String) -> void:
 	# Only process checkout for our own stand.
-	if stand_name != "" and _stand_name != "" and stand_name != _stand_name:
+	if not _handles_stand(stand_name):
 		return
 	if _batched_boxes.is_empty():
 		return
@@ -167,7 +175,7 @@ func _on_supply_order_placed(
 	if not WorldSync.is_host():
 		return
 	# Only process orders for our own stand.
-	if stand_name != "" and _stand_name != "" and stand_name != _stand_name:
+	if not _handles_stand(stand_name):
 		return
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	box.ingredient_type = ingredient_type
@@ -179,7 +187,7 @@ func _on_equipment_order_placed(container_type: String, stand_name: String) -> v
 	if not WorldSync.is_host():
 		return
 	# Only process orders for our own stand.
-	if stand_name != "" and _stand_name != "" and stand_name != _stand_name:
+	if not _handles_stand(stand_name):
 		return
 	var box: SupplyBox = SUPPLY_BOX_SCENE.instantiate()
 	box.is_equipment = true
