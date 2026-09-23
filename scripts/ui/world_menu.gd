@@ -19,7 +19,7 @@ const HOVER_DURATION: float = 0.18
 const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 
 @onready var _play_button: Button = $MenuBox/PlayButton
-@onready var _title_text: VBoxContainer = $MenuBox/TitleText
+@onready var _title_text: VBoxContainer = $MenuBox/TitleLayer/TitleText
 @onready var _saves_button: Button = $MenuBox/SavesButton
 @onready var _join_button: Button = $MenuBox/JoinButton
 @onready var _join_panel: Control = $JoinPanel
