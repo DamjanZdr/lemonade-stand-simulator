@@ -4,7 +4,7 @@
 [ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
 [ext_resource type="Shader" path="res://shaders/ui_blur.gdshader" id="3_blur"]
 [ext_resource type="Shader" path="res://shaders/ui_dim_fade.gdshader" id="4_dimfade"]
-[ext_resource type="FontFile" path="res://assets/fonts/Grandstander-clean.ttf" id="5_titlefont"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/Title.png" id="5_title"]
 
 [sub_resource type="ShaderMaterial" id="BlurMat"]
 shader = ExtResource("3_blur")
@@ -57,42 +57,13 @@ theme = ExtResource("2_theme")
 theme_override_constants/separation = 4
 alignment = 0
 
-[node name="TitleBox" type="VBoxContainer" parent="MenuBox"]
+[node name="TitleImage" type="TextureRect" parent="MenuBox"]
+custom_minimum_size = Vector2(340, 191)
 layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="TitleLabel" type="Label" parent="MenuBox/TitleBox"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("5_titlefont")
-theme_override_font_sizes/font_size = 56
-theme_override_colors/font_color = Color(1, 1, 1, 0.95)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
-theme_override_constants/shadow_offset_x = 4
-theme_override_constants/shadow_offset_y = 5
-theme_override_constants/shadow_outline_size = 8
-text = "When Life"
-
-[node name="MiddleLabel" type="Label" parent="MenuBox/TitleBox"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("5_titlefont")
-theme_override_font_sizes/font_size = 56
-theme_override_colors/font_color = Color(1, 1, 1, 0.95)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
-theme_override_constants/shadow_offset_x = 4
-theme_override_constants/shadow_offset_y = 5
-theme_override_constants/shadow_outline_size = 8
-text = "Gives You"
-
-[node name="SubtitleLabel" type="Label" parent="MenuBox/TitleBox"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("5_titlefont")
-theme_override_font_sizes/font_size = 80
-theme_override_colors/font_color = Color(1, 0.9176, 0.0627, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
-theme_override_constants/shadow_offset_x = 4
-theme_override_constants/shadow_offset_y = 5
-theme_override_constants/shadow_outline_size = 8
-text = "Lemons"
+mouse_filter = 2
+texture = ExtResource("5_title")
+expand_mode = 3
+stretch_mode = 5
 
 [node name="Spacer" type="Control" parent="MenuBox"]
 custom_minimum_size = Vector2(0, 16)

@@ -17,12 +17,8 @@ signal load_stand_requested(slot_name: String)
 const HOVER_POP: float = 1.12
 const HOVER_DURATION: float = 0.18
 const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
-const TITLE_FONT: FontFile = preload("res://assets/fonts/Grandstander-clean.ttf")
 
 @onready var _play_button: Button = $MenuBox/PlayButton
-@onready var _title_box: VBoxContainer = $MenuBox/TitleBox
-@onready var _title_label: Label = $MenuBox/TitleBox/TitleLabel
-@onready var _subtitle_label: Label = $MenuBox/TitleBox/SubtitleLabel
 @onready var _saves_button: Button = $MenuBox/SavesButton
 @onready var _join_button: Button = $MenuBox/JoinButton
 @onready var _join_panel: Control = $JoinPanel
@@ -358,14 +354,6 @@ func _ready() -> void:
 	_make_flat_button(_new_stand_button)
 	_add_drop_shadow(_new_stand_button)
 	_setup_hover_effect(_new_stand_button)
-	# Apply explicitly at runtime as well as in the scene so exported builds
-	# cannot fall back to the menu theme font when loading the title rows.
-	for row in _title_box.get_children():
-		if row is Label:
-			row.add_theme_font_override("font", TITLE_FONT)
-	# Scale each title row so "When Life" / "Gives You" / "Lemons" all
-	# render at the same width.
-	_fit_title_rows()
 	# Build the music player widget (bottom-right corner).
 	_build_music_player()
 	# Sync to current track.
@@ -499,37 +487,6 @@ func show_name_entry() -> void:
 	_saves_panel.visible = true
 	$MenuBox.visible = false
 	_on_new_stand_pressed()
-
-
-## Scale every title row so each line renders at the same width —
-## the longest row keeps its font size, shorter rows are scaled up.
-func _fit_title_rows() -> void:
-	if _title_box == null:
-		return
-	var rows: Array[Label] = []
-	var natural_widths: Array[float] = []
-	var base_sizes: Array[int] = []
-	var target_width := 0.0
-	for child in _title_box.get_children():
-		var lbl := child as Label
-		if lbl == null or lbl.text == "":
-			continue
-		var font := lbl.get_theme_font("font")
-		var size := lbl.get_theme_font_size("font_size")
-		var w := font \
-				.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size) \
-				.x
-		if w <= 0:
-			continue
-		rows.append(lbl)
-		natural_widths.append(w)
-		base_sizes.append(size)
-		target_width = maxf(target_width, w)
-	if target_width <= 0:
-		return
-	for i in rows.size():
-		var new_size := int(round(base_sizes[i] * target_width / natural_widths[i]))
-		rows[i].add_theme_font_size_override("font_size", new_size)
 
 
 ## Add a drop shadow to a button's text.
