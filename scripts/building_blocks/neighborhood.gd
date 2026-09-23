@@ -15,26 +15,28 @@ const RED_THRESHOLD := 0.35
 const EXCLUDED: Array[StringName] = [&"pickup truck12", &"pickup truck20"]
 const SKIP_RECOLOR_HOUSES: Array[StringName] = [&"player_house", &"player_house2"]
 
-const _FALLBACK_ROOF_DEFAULT: Color = Color(0.15, 0.15, 0.17)
-const _FALLBACK_WALL_DEFAULT: Color = Color.TRANSPARENT
+const _FALLBACK_ROOF_DEFAULT: Color = Color(0.36220014, 0.34826168, 0.34491053)
+const _FALLBACK_WALL_DEFAULT: Color = Color(0.78626776, 0.76280415, 0.6887659)
 
 const HOUSE_LOD_SCENE: PackedScene = preload("res://assets/models/environment/houses/house lod.glb")
 const HOUSE_LOD_DISTANCE: float = 200.0
 const HOUSE_LOD_OVERLAP: float = 2.0
 
+# These must match the ColorManager palette in scenes/main.tscn so editor fallback
+# uses the same runtime colors.
 const _DEFAULT_ROOF_COLORS: Array[Color] = [
-	Color(0.5, 0.25, 0.2),
-	Color(0.42, 0.42, 0.45),
-	Color(0.30, 0.50, 0.30),
-	Color(0.15, 0.30, 0.55),
-	Color(0.70, 0.70, 0.15),
+	Color(0.85490197, 0.69803923, 0.827451),
+	Color(0.42352942, 0.9607843, 0.88235295),
+	Color(0.7254902, 0.8509804, 0.43137255),
+	Color(0.92156863, 0.93333334, 0.19215687),
+	Color(0.85882354, 0.5137255, 0.5764706),
 ]
 const _DEFAULT_WALL_COLORS: Array[Color] = [
-	Color(0.95, 0.85, 0.55),
-	Color(0.85, 0.55, 0.45),
-	Color(0.45, 0.65, 0.85),
-	Color(0.55, 0.75, 0.45),
-	Color(0.75, 0.55, 0.80),
+	Color(0.42265648, 0.96156055, 0.88136154),
+	Color(0.8547164, 0.6989638, 0.8276675),
+	Color(0.7237331, 0.85128987, 0.43169385),
+	Color(0.86031544, 0.51238483, 0.5748986),
+	Color(0.92156863, 0.93333334, 0.19215687),
 ]
 
 
@@ -47,7 +49,10 @@ var _bulb_materials: Array[StandardMaterial3D] = []
 
 
 func _ready() -> void:
-	apply_game_mode(GameState.game_mode)
+	# Autoloads such as GameState may not be initialized when a tool script's
+	# _ready runs in the editor, so apply the mode layout only at runtime.
+	if not Engine.is_editor_hint():
+		apply_game_mode(GameState.game_mode)
 	_apply_colors()
 	_apply_grass_shader()
 	_apply_grass_lod()
