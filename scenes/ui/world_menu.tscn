@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://cworldmenu01"]
+[gd_scene load_steps=8 format=3 uid="uid://cworldmenu01"]
 
 [ext_resource type="Script" path="res://scripts/ui/world_menu.gd" id="1_script"]
 [ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
@@ -15,6 +15,10 @@ shader_parameter/fade_start = 0.35
 shader = ExtResource("4_dimfade")
 shader_parameter/dim_color = Color(0, 0, 0, 0.35)
 shader_parameter/fade_start = 0.35
+
+[sub_resource type="AtlasTexture" id="TitleAtlas"]
+atlas = ExtResource("5_title")
+region = Rect2(15, 15, 390, 230)
 
 [node name="WorldMenu" type="CanvasLayer"]
 layer = 50
@@ -58,10 +62,10 @@ theme_override_constants/separation = 4
 alignment = 0
 
 [node name="TitleImage" type="TextureRect" parent="MenuBox"]
-custom_minimum_size = Vector2(390, 219)
+custom_minimum_size = Vector2(360, 212)
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("5_title")
+texture = SubResource("TitleAtlas")
 expand_mode = 3
 stretch_mode = 5
 
