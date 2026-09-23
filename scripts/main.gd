@@ -245,14 +245,18 @@ func _ready() -> void:
 ## In versus mode, it's the rival's stand. In solo/coop, it mirrors
 ## stand 1 (shared stand).
 func _is_versus_mode() -> bool:
-	return LobbyManager.game_mode == GameState.GameMode.VERSUS
+	return (
+		GameState.game_mode == GameState.GameMode.VERSUS
+		or LobbyManager.game_mode == GameState.GameMode.VERSUS
+	)
 
 
 func _apply_game_mode_layout() -> void:
 	var versus := _is_versus_mode()
+	var effective_mode := (GameState.GameMode.VERSUS if versus else GameState.GameMode.COOP)
 	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
 	if neighborhood != null and neighborhood.has_method("apply_game_mode"):
-		neighborhood.apply_game_mode(LobbyManager.game_mode)
+		neighborhood.apply_game_mode(effective_mode)
 	if stand_unit2 != null:
 		stand_unit2.visible = versus
 		stand_unit2.process_mode = (
