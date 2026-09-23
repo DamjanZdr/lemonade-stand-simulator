@@ -9,6 +9,7 @@ uniform float noiseScale = 10.0;
 uniform float wind_speed = 1.5;
 uniform float sway_strength = 0.3;
 uniform float wind_frequency = 0.5;
+uniform float density : hint_range(0.0, 1.0) = 0.85;
 
 varying vec3 localPos;
 
@@ -25,6 +26,8 @@ void vertex() {
 	float sway_factor = clamp(VERTEX.y, 0.0, 1.0) * sway_strength;
 	VERTEX.x += wind_wave * sway_factor;
 	VERTEX.z += wind_wave * sway_factor * 0.5;
+	float visible = step(hash, density);
+	VERTEX *= visible;
 }
 
 void fragment() {

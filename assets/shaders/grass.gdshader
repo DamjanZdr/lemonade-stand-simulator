@@ -7,6 +7,7 @@ uniform vec4 color_bottom : source_color = vec4(0.05, 0.2, 0.05, 1.0);
 uniform float wind_speed = 1.5;
 uniform float sway_strength = 0.3;
 uniform float wind_frequency = 0.5;
+uniform float density : hint_range(0.0, 1.0) = 0.85;
 
 void vertex() {
 	// --- KROK 1: EFEKT Y-BILLBOARD DLA MULTIMESH ---
@@ -35,6 +36,8 @@ void vertex() {
 	// Aplikujemy ruch wiatru (tutaj bezpośrednio w lokalnych współrzędnych wierzchołka)
 	VERTEX.x += wind_wave * sway_factor;
 	VERTEX.z += wind_wave * sway_factor * 0.5;
+	float visible = step(hash, density);
+	VERTEX *= visible;
 }
 
 void fragment() {

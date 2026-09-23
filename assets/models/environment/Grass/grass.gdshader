@@ -11,6 +11,7 @@ uniform float wind_frequency = 0.5;
 uniform float sway_strength = 0.1;
 uniform float fade_start = 60.0;
 uniform float fade_end = 100.0;
+uniform float density : hint_range(0.0, 1.0) = 0.85;
 
 varying vec3 worldPos;
 
@@ -27,7 +28,8 @@ void vertex() {
 	float bend = wave * height * sway_strength;
 	VERTEX.x += bend;
 	VERTEX.z += bend * 0.5;
-	VERTEX *= fade;
+	float visible = step(hash, density);
+	VERTEX *= fade * visible;
 }
 
 void fragment() {
