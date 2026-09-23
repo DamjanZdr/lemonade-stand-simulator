@@ -20,6 +20,7 @@ const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 
 @onready var _play_button: Button = $MenuBox/PlayButton
 @onready var _title_text: VBoxContainer = $MenuBox/TitleLayer/TitleText
+@onready var _title_shadow: TextureRect = $MenuBox/TitleLayer/Shadow
 @onready var _saves_button: Button = $MenuBox/SavesButton
 @onready var _join_button: Button = $MenuBox/JoinButton
 @onready var _join_panel: Control = $JoinPanel
@@ -511,6 +512,14 @@ func _fit_title_text_widths() -> void:
 			"font_size",
 			roundi(float(sizes[i]) * target_width / widths[i]),
 		)
+	call_deferred("_center_title_shadow")
+
+
+func _center_title_shadow() -> void:
+	var text_size := _title_text.get_combined_minimum_size()
+	var shadow_size := text_size * 1.2
+	_title_shadow.position = _title_text.position + (text_size - shadow_size) * 0.5
+	_title_shadow.size = shadow_size
 
 
 ## Add a drop shadow to a button's text.
