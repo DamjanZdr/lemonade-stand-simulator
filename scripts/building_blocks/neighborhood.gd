@@ -239,23 +239,29 @@ func _apply_vehicle_colors() -> void:
 func apply_runtime_house_colors_for_bake() -> void:
 	var cm := _get_color_manager()
 	print(
-		"Neighborhood: applying bake house colors (cm=%s, roofs=%s, walls=%s)"
-		% [cm != null, GameState.color_roofs, GameState.color_walls]
+		"Neighborhood: applying bake house colors (cm=%s, color_roofs=false, color_walls=true)"
+		% [cm != null]
 	)
-	var previous_roofs := GameState.color_roofs
-	var previous_walls := GameState.color_walls
-	GameState.color_roofs = false
-	GameState.color_walls = true
-	_apply_house_colors(true)
-	GameState.color_roofs = previous_roofs
-	GameState.color_walls = previous_walls
+	_apply_house_colors(true, false, true)
 
 
-func _apply_house_colors(use_runtime_settings: bool = false) -> void:
+func _apply_house_colors(
+	use_runtime_settings: bool = false,
+	explicit_color_roofs: bool = false,
+	explicit_color_walls: bool = false,
+) -> void:
 	# In the editor we don't have GameState defaults, so match the in-game defaults.
 	var runtime_colors := use_runtime_settings or not Engine.is_editor_hint()
-	var color_roofs := GameState.color_roofs if runtime_colors else true
-	var color_walls := GameState.color_walls if runtime_colors else false
+	var color_roofs := (
+		explicit_color_roofs
+		if use_runtime_settings
+		else (GameState.color_roofs if runtime_colors else true)
+	)
+	var color_walls := (
+		explicit_color_walls
+		if use_runtime_settings
+		else (GameState.color_walls if runtime_colors else false)
+	)
 
 	var houses_groups: Array[Node] = []
 	var local_houses := get_node_or_null("Houses")

@@ -104,13 +104,12 @@ static func _ensure_color_manager(root: Node) -> Node:
 	if script == null:
 		main_inst.queue_free()
 		return null
-	var cm := Node.new()
+	var cm := script.new()
 	cm.name = "ColorManager"
-	cm.set_script(script)
-	cm.set("roof_default_color", source_cm.get("roof_default_color"))
-	cm.set("wall_default_color", source_cm.get("wall_default_color"))
-	cm.set("roof_colors", source_cm.get("roof_colors"))
-	cm.set("wall_colors", source_cm.get("wall_colors"))
+	cm.roof_default_color = source_cm.roof_default_color
+	cm.wall_default_color = source_cm.wall_default_color
+	cm.roof_colors = source_cm.roof_colors
+	cm.wall_colors = source_cm.wall_colors
 	cm.add_to_group("color_manager")
 	root.add_child(cm)
 	cm.owner = root
