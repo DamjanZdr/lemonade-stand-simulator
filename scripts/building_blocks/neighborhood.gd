@@ -237,7 +237,18 @@ func _apply_vehicle_colors() -> void:
 
 
 func apply_runtime_house_colors_for_bake() -> void:
+	var cm := _get_color_manager()
+	print(
+		"Neighborhood: applying bake house colors (cm=%s, roofs=%s, walls=%s)"
+		% [cm != null, GameState.color_roofs, GameState.color_walls]
+	)
+	var previous_roofs := GameState.color_roofs
+	var previous_walls := GameState.color_walls
+	GameState.color_roofs = false
+	GameState.color_walls = true
 	_apply_house_colors(true)
+	GameState.color_roofs = previous_roofs
+	GameState.color_walls = previous_walls
 
 
 func _apply_house_colors(use_runtime_settings: bool = false) -> void:

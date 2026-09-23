@@ -12,8 +12,20 @@ static func prepare(root: Node, versus: bool) -> void:
 	var counts := { "static": 0, "dynamic": 0, "disabled": 0 }
 	_set_radius_gi(root, counts)
 	var neighborhood := root.find_child("Neighborhood", true, false)
-	if neighborhood != null and neighborhood.has_method("apply_runtime_house_colors_for_bake"):
-		neighborhood.apply_runtime_house_colors_for_bake()
+	if neighborhood == null or not neighborhood.has_method("apply_runtime_house_colors_for_bake"):
+		push_error("LightmapBakePrep: Neighborhood color preparation is unavailable.")
+		return
+	var temp_cm := _ensure_color_manager(root)
+	if temp_cm == null and root.get_tree().get_first_node_in_group("color_manager") == null:
+		push_error("LightmapBakePrep: could not provide a ColorManager for bake colors.")
+		return
+	neighborhood.apply_runtime_house_colors_for_bake()
+	if temp_cm != null:
+		temp_cm.queue_free()
+	var material_overrides := _count_material_overrides(neighborhood)
+	if material_overrides <= 0:
+		push_error("LightmapBakePrep: runtime house materials were not applied.")
+		return
 	var single_house := root.find_child("single_stand_house2", true, false)
 	var player_house2 := root.find_child("player_house2", true, false)
 	if single_house == null or player_house2 == null:
@@ -35,13 +47,14 @@ static func prepare(root: Node, versus: bool) -> void:
 	print(
 		(
 			"Lightmap bake prepared: %s, single_visible=%s, player2_visible=%s, "
-			+ "radius=%.0f, static=%d, dynamic=%d, disabled=%d"
+			+ "radius=%.0f, material_overrides=%d, static=%d, dynamic=%d, disabled=%d"
 		)
 		% [
 			"VERSUS" if versus else "CO-OP",
 			single_visible,
 			player_visible,
 			BAKE_RADIUS,
+			material_overrides,
 			counts.static,
 			counts.dynamic,
 			counts.disabled,
@@ -67,6 +80,62 @@ static func _set_radius_gi(node: Node, counts: Dictionary) -> void:
 				counts.dynamic += 1
 	for child in node.get_children():
 		_set_radius_gi(child, counts)
+
+
+static func _ensure_color_manager(root: Node) -> Node:
+	var tree := root.get_tree()
+	if tree != null:
+		var existing := tree.get_first_node_in_group("color_manager")
+		if existing != null:
+			return existing
+	var main_ps := load("res://scenes/main.tscn") as PackedScene
+	if main_ps == null:
+		push_error("LightmapBakePrep: failed to load res://scenes/main.tscn")
+		return null
+	var main_inst := main_ps.instantiate()
+	var source_cm := main_inst.get_node_or_null("Managers/ColorManager")
+	if source_cm == null:
+		source_cm = _find_node_by_script(main_inst, "res://scripts/managers/color_manager.gd")
+	if source_cm == null:
+		push_error("LightmapBakePrep: ColorManager not found in main.tscn")
+		main_inst.queue_free()
+		return null
+	var script := load("res://scripts/managers/color_manager.gd") as Script
+	if script == null:
+		main_inst.queue_free()
+		return null
+	var cm := Node.new()
+	cm.name = "ColorManager"
+	cm.set_script(script)
+	cm.set("roof_default_color", source_cm.get("roof_default_color"))
+	cm.set("wall_default_color", source_cm.get("wall_default_color"))
+	cm.set("roof_colors", source_cm.get("roof_colors"))
+	cm.set("wall_colors", source_cm.get("wall_colors"))
+	cm.add_to_group("color_manager")
+	root.add_child(cm)
+	cm.owner = root
+	main_inst.queue_free()
+	return cm
+
+
+static func _find_node_by_script(root: Node, script_path: String) -> Node:
+	for node in root.get_children():
+		if node.get_script() != null and node.get_script().resource_path == script_path:
+			return node
+		var found := _find_node_by_script(node, script_path)
+		if found != null:
+			return found
+	return null
+
+
+static func _count_material_overrides(root: Node) -> int:
+	var count := 0
+	for node in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		for surface in range(mesh.get_surface_override_material_count()):
+			if mesh.get_surface_override_material(surface) != null:
+				count += 1
+	return count
 
 
 static func _set_variant(house: Node, active: bool) -> void:
