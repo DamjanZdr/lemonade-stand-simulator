@@ -6,9 +6,21 @@ const STAND_POSITIONS := [Vector3(2.0, 0.0, -2.0), Vector3(-8.1, 0.0, -24.0)]
 
 
 static func prepare(root: Node, versus: bool) -> void:
-	if root.name != "World" or root.find_child("LightmapGI", true, false) == null:
+	var lightmap_gi := root.find_child("LightmapGI", true, false) as LightmapGI
+	if root.name != "World" or lightmap_gi == null:
 		push_error("LightmapBakePrep: open scenes/world/world.tscn before running this script.")
 		return
+	print(
+		"LightmapBakePrep: GI settings quality=%d, bounces=%d, directional=%s, light_data=%s"
+		% [
+			lightmap_gi.quality,
+			lightmap_gi.bounces,
+			lightmap_gi.directional,
+			lightmap_gi.light_data,
+		]
+	)
+	# Clear any stale baked data so the bake does not try to remap missing nodes.
+	lightmap_gi.light_data = null
 	var counts := { "static": 0, "dynamic": 0, "disabled": 0 }
 	_set_radius_gi(root, counts)
 	var neighborhood := root.find_child("Neighborhood", true, false)
