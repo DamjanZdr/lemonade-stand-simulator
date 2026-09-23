@@ -6,6 +6,8 @@ const OUTLINE_SCENE: PackedScene = preload("res://scenes/ui/outline_overlay.tscn
 const DAY_SUMMARY_SCENE: PackedScene = preload("res://scenes/ui/day_summary.tscn")
 const WORLD_MENU_SCENE: PackedScene = preload("res://scenes/ui/world_menu.tscn")
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
+const COOP_LIGHTMAP_PATH := "res://scenes/world/world_coop.lmbake"
+const VERSUS_LIGHTMAP_PATH := "res://scenes/world/world_versus.lmbake"
 const DeliveryGrid := preload("res://scripts/systems/delivery_grid.gd")
 const DIM_SHADER: Shader = preload("res://shaders/radial_dim_fade.gdshader")
 const MENU_FONT: FontFile = preload("res://assets/fonts/AmaticSC-Bold.ttf")
@@ -262,9 +264,20 @@ func _set_mode_node_active(node: Node, active: bool) -> void:
 		(area as Area3D).set_deferred("monitorable", active)
 
 
+func _apply_mode_lightmap(versus: bool) -> void:
+	var path := VERSUS_LIGHTMAP_PATH if versus else COOP_LIGHTMAP_PATH
+	if not ResourceLoader.exists(path):
+		return
+	var lightmap := world.find_child("LightmapGI", true, false) as LightmapGI
+	var data := ResourceLoader.load(path, "LightmapGIData") as LightmapGIData
+	if lightmap != null and data != null:
+		lightmap.light_data = data
+
+
 func _apply_game_mode_layout() -> void:
 	var versus := _is_versus_mode()
 	var effective_mode := (GameState.GameMode.VERSUS if versus else GameState.GameMode.COOP)
+	_apply_mode_lightmap(versus)
 	var single_house := world.find_child("single_stand_house2", true, false)
 	var player_house2 := world.find_child("player_house2", true, false)
 	if single_house == null or player_house2 == null:
