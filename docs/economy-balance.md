@@ -69,7 +69,14 @@ loose enough that it can't fund free contents.
 | Item | Refund | Rationale |
 |------|--------|-----------|
 | Empty/opened supply box | **$0.25** flat scrap | Below cheapest box ($1 cups). Kills the exploit while still rewarding cleanup. |
-| Unopened supply box | **50% of its purchase cost** | Cost is already passed to `supply_order_placed` — store it in box data and refund half. Never profitable, still softens over-ordering. |
+| Unopened supply box (`amount` untouched) | **50% of purchase cost** | Softens over-ordering, never profitable. |
+| **Partially-emptied box** (e.g. ice with 3/10 left) | **$0.25 scrap + 50% of remaining contents' value** | `refund = 0.25 + 0.5 × per_unit_cost × amount`. 3 ice left at $0.15 → ~$0.47. Never exceeds half of what the remaining stock cost, so dumping is always a loss vs. using it. |
+
+Partial boxes are a real state — `held_item_data["amount"]` decrements per
+cup/scoop deposited and only becomes `empty_box` at 0 (`player_placement.gd`).
+The trashcan must read `amount`, not just the box type. Today it pays the flat
+$1 for ANY non-equipment box — a 9/10 lemon box sells for $1 and a 1/10 box
+does too. Per-unit cost can be looked up from the (unified) shop price table.
 | Unopened equipment box | **70% of equipment cost** | Current behavior — keep. |
 | Placed containers (crate, bowl, bucket, pitcher, press, dispenser, table) | **70% of cost** | Current `_get_container_cost_for_trash` behavior — keep. |
 | Loose world trash (used cups, apple cores, etc.) | **$0** (or $0.05 flavor) | Pickup is its own reward; cash-for-trash invites farming. |
