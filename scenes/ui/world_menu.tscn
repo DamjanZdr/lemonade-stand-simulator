@@ -99,21 +99,21 @@ theme_override_constants/separation = 4
 [node name="Top" type="Label" parent="MenuBox/TitleLayer/TitleText"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("7_titlefont")
-theme_override_font_sizes/font_size = 56
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
 text = "WHEN LIFE"
 
 [node name="Middle" type="Label" parent="MenuBox/TitleLayer/TitleText"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("7_titlefont")
-theme_override_font_sizes/font_size = 56
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
 text = "GIVES YOU"
 
 [node name="Bottom" type="Label" parent="MenuBox/TitleLayer/TitleText"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("7_titlefont")
-theme_override_font_sizes/font_size = 80
+theme_override_font_sizes/font_size = 68
 theme_override_colors/font_color = Color(1, 0.9176, 0.0627, 1)
 text = "LEMONS"
 
