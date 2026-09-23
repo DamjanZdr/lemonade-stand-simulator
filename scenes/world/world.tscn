@@ -622,8 +622,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 10.422926, 2)
 script = ExtResource("10_preview")
 
 [node name="LightmapGI" type="LightmapGI" parent="." unique_id=1827849850]
-quality = 3
-bounces = 8
+quality = 2
+bounces = 4
 bounce_indirect_energy = 0.4
 directional = true
 light_data = ExtResource("6_j0rhc")
