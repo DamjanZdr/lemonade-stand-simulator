@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://4qck5bt7eg4j" path="res://assets/models/environment/houses/house -col.glb" id="9_r8fkd"]
 [ext_resource type="PackedScene" uid="uid://c1ec1lgbu0i6b" path="res://assets/models/environment/houses/playerhouse -col.glb" id="10_0awr7"]
 [ext_resource type="PackedScene" uid="uid://5fxsdj5uosl6" path="res://assets/models/environment/surroundings/mailboxes/1.glb" id="10_orp42"]
+[ext_resource type="PackedScene" uid="uid://iqmd78a8cij" path="res://scenes/props/led_light.tscn" id="11_c4dtt"]
 [ext_resource type="PackedScene" uid="uid://dv6drbmpr30j6" path="res://assets/models/environment/surroundings/mailboxes/2.glb" id="11_wkue0"]
 [ext_resource type="PackedScene" uid="uid://dkx11ohjkeqm6" path="res://assets/models/environment/surroundings/mailboxes/3.glb" id="12_kyhvj"]
 [ext_resource type="PackedScene" uid="uid://bdg73i2gbjkue" path="res://assets/models/environment/surroundings/mailboxes/4.glb" id="13_uvpv4"]
@@ -2023,6 +2024,9 @@ shape = SubResource("BoxShape3D_yf5fn")
 [node name="playerhouse -col" parent="Houses/player_house" unique_id=528387326 instance=ExtResource("10_0awr7")]
 visible = false
 
+[node name="LED Light" parent="Houses/player_house" unique_id=1164034614 instance=ExtResource("11_c4dtt")]
+transform = Transform3D(-4.371139e-09, 0, 0.1, 0, 0.1, 0, -0.1, 0, -4.371139e-09, -5.512087, 2.0045946, 1.679718)
+
 [node name="player_house2" parent="Houses" unique_id=942529271 instance=ExtResource("2_wlhmk")]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 29.953249, 3.1774137, -4.620962)
 metadata/house_color_index = 2
@@ -2072,6 +2076,9 @@ mesh = SubResource("ArrayMesh_qtpgo")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Houses/player_house2/playerhouse -col/house /StaticBody3D" unique_id=952108344]
 shape = SubResource("ConcavePolygonShape3D_pky1k")
+
+[node name="LED Light" parent="Houses/player_house2" unique_id=1208519416 instance=ExtResource("11_c4dtt")]
+transform = Transform3D(1.3113417e-08, 0, -0.1, 0, 0.1, 0, 0.1, 0, 1.3113417e-08, -5.3669515, 1.9888508, 2.273531)
 
 [node name="Streets" type="Node3D" parent="." unique_id=1338897075 groups=["grass_blocker"]]
 
