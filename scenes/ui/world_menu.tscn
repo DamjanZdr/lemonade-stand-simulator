@@ -58,7 +58,7 @@ theme_override_constants/separation = 4
 alignment = 0
 
 [node name="TitleImage" type="TextureRect" parent="MenuBox"]
-custom_minimum_size = Vector2(340, 191)
+custom_minimum_size = Vector2(390, 219)
 layout_mode = 2
 mouse_filter = 2
 texture = ExtResource("5_title")
