@@ -70,7 +70,7 @@ loose enough that it can't fund free contents.
 |------|--------|-----------|
 | Empty/opened supply box | **$0.25** flat scrap | Below cheapest box ($1 cups). Kills the exploit while still rewarding cleanup. |
 | Unopened supply box (`amount` untouched) | **50% of purchase cost** | Softens over-ordering, never profitable. |
-| **Partially-emptied box** (e.g. ice with 3/10 left) | **$0.25 scrap + 50% of remaining contents' value** | `refund = 0.25 + 0.5 × per_unit_cost × amount`. 3 ice left at $0.15 → ~$0.47. Never exceeds half of what the remaining stock cost, so dumping is always a loss vs. using it. |
+| **Partially-emptied box** (e.g. ice with 3/10 left) | **$0.25 scrap + 50% of remaining contents' value** | `refund = 0.25 + 0.5 × per_unit_cost × amount`. 3 ice left at $0.15 → `0.25 + 0.5 × 0.45 = $0.475`. Never exceeds half of what the remaining stock cost, so dumping is always a loss vs. using it. |
 
 Partial boxes are a real state — `held_item_data["amount"]` decrements per
 cup/scoop deposited and only becomes `empty_box` at 0 (`player_placement.gd`).
