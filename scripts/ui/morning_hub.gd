@@ -1876,9 +1876,8 @@ func _sync_upgrade_node_purchased(node_id: String, stand_name: String) -> void:
 		node.pivot_offset = node.size / 2.0
 		var tween := create_tween()
 		tween.tween_property(node, "scale", Vector2(1.3, 1.3), 0.1)
-		tween.tween_property(node, "scale", Vector2(1.0, 1.0), 0.3).set_ease(Tween.EASE_OUT).set_trans(
-			Tween.TRANS_ELASTIC
-		)
+		tween.tween_property(node, "scale", Vector2(1.0, 1.0), 0.3) \
+				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
 		_animate_next_node_unlock(node_id, newly_visible)
 	EventBus.upgrade_purchased.emit(0, 0.0)
 

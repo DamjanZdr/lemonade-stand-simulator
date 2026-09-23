@@ -12,7 +12,7 @@ extends CanvasLayer
 var _quantities: Dictionary = { }
 var _items: Array[Dictionary] = []
 
-static var SHOP_ITEMS: Array[Dictionary] = [
+static var shop_items: Array[Dictionary] = [
 	{ "id": "lemon", "name": "Lemons", "cost": Balancing.SUPPLY_COST_LEMON, "qty": 10 },
 	{
 		"id": "strawberry",
@@ -113,7 +113,7 @@ func _get_local_money() -> float:
 
 
 func _build_grid() -> void:
-	_items = SHOP_ITEMS.duplicate(true)
+	_items = shop_items.duplicate(true)
 	for item in _items:
 		var id: String = item["id"]
 		_quantities[id] = 0
