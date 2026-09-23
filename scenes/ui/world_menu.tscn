@@ -5,6 +5,7 @@
 [ext_resource type="Shader" path="res://shaders/ui_blur.gdshader" id="3_blur"]
 [ext_resource type="Shader" path="res://shaders/ui_dim_fade.gdshader" id="4_dimfade"]
 [ext_resource type="Texture2D" path="res://assets/textures/ui/Title.png" id="5_title"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/Titleshadow.png" id="6_shadow"]
 
 [sub_resource type="ShaderMaterial" id="BlurMat"]
 shader = ExtResource("3_blur")
@@ -15,10 +16,6 @@ shader_parameter/fade_start = 0.35
 shader = ExtResource("4_dimfade")
 shader_parameter/dim_color = Color(0, 0, 0, 0.35)
 shader_parameter/fade_start = 0.35
-
-[sub_resource type="AtlasTexture" id="TitleAtlas"]
-atlas = ExtResource("5_title")
-region = Rect2(15, 15, 390, 230)
 
 [node name="WorldMenu" type="CanvasLayer"]
 layer = 50
@@ -61,12 +58,33 @@ theme = ExtResource("2_theme")
 theme_override_constants/separation = 4
 alignment = 0
 
-[node name="TitleImage" type="TextureRect" parent="MenuBox"]
-custom_minimum_size = Vector2(360, 212)
+[node name="TitleLayer" type="Control" parent="MenuBox"]
+custom_minimum_size = Vector2(320, 178)
 layout_mode = 2
 mouse_filter = 2
-texture = SubResource("TitleAtlas")
-expand_mode = 3
+
+[node name="Shadow" type="TextureRect" parent="MenuBox/TitleLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("6_shadow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="TextureRect" parent="MenuBox/TitleLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_title")
+expand_mode = 1
 stretch_mode = 5
 
 [node name="Spacer" type="Control" parent="MenuBox"]
