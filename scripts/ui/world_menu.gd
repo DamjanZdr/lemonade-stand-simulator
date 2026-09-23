@@ -1314,7 +1314,11 @@ func _refresh_saves() -> void:
 				dict["hour"],
 				dict["minute"],
 			]
-		var is_active := save_idx == 0
+		var is_active := false
+		if not SaveManager.current_slot.is_empty():
+			is_active = slot_name == SaveManager.current_slot
+		else:
+			is_active = save_idx == 0
 		var row := _build_save_row(
 			slot_name,
 			stand_name,

@@ -454,6 +454,15 @@ func _set_systems_paused(paused: bool) -> void:
 ## Play button: load the most recent save and go to lobby, or if no
 ## saves exist, prompt the player to name their first stand.
 func _on_menu_play() -> void:
+	# If the player already selected a save in the saves panel, host that one.
+	# Otherwise fall back to the most recently saved slot.
+	if SaveManager.has_save():
+		SaveManager.load_existing_game(SaveManager.current_slot)
+		LobbyManager.game_mode = GameState.game_mode
+		_apply_game_mode_layout()
+		NetworkManager.host_game()
+		_world_menu.hide_menu()
+		return
 	var saves := SaveManager.list_saves()
 	if not saves.is_empty():
 		var latest: Dictionary = saves[0]
