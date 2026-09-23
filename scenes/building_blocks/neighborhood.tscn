@@ -1976,7 +1976,7 @@ metadata/house_color_index = 1
 
 [node name="single_stand_house2" parent="Houses" unique_id=1132182983 instance=ExtResource("5_wlhmk")]
 transform = Transform3D(1.2457745e-07, 0, -0.95, 0, 0.95, 0, 0.95, 0, 1.2457745e-07, 29.7573, 3.1371675, -4.946823)
-metadata/house_color_index = 3
+metadata/house_color_index = 2
 
 [node name="house_row7_house14" parent="Houses" unique_id=179011523 instance=ExtResource("5_wlhmk")]
 transform = Transform3D(1.2457745e-07, 0, -0.95, 0, 0.95, 0, 0.95, 0, 1.2457745e-07, 29.3573, 3.0934663, 23.610765)
