@@ -76,7 +76,7 @@ cup/scoop deposited and only becomes `empty_box` at 0 (`player_placement.gd`).
 The trashcan must read `amount`, not just the box type. Today it pays the flat
 $1 for ANY non-equipment box — a 9/10 lemon box sells for $1 and a 1/10 box
 does too. Per-unit cost can be looked up from the (unified) shop price table.
-| Unopened equipment box | **70% of equipment cost** | Current behavior — keep. |
+| Unopened equipment box | **70% of equipment cost + $0.25 box scrap** | Selling unopened must equal placing the equipment, scrapping the box, then recycling it — otherwise opening first is strictly better. |
 | Placed containers (crate, bowl, bucket, pitcher, press, dispenser, table) | **70% of cost** | Current `_get_container_cost_for_trash` behavior — keep. |
 | Loose world trash (used cups, apple cores, etc.) | **$0.05** (`LOOSE_TRASH_VALUE`) | Pickup is its own reward; cash-for-trash invites farming. |
 | Partially-used bins/pitchers | Container 70% **only if empty**; contents lost | Prevents dumping stock for cash. |

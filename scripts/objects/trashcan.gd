@@ -35,7 +35,7 @@ func get_hint(player: Node) -> String:
 		var box_data: Dictionary = p.held_item_data
 		if box_data.get("is_equipment", false):
 			var eq_type: String = box_data.get("equipment_type", "")
-			var cost := _get_container_cost_for_trash(eq_type)
+			var cost := _get_container_cost_for_trash(eq_type) + empty_box_refund
 			return "Trashcan | LMB: recycle for $%.2f" % cost
 		return "Trashcan | LMB: sell for $%.2f" % _get_supply_box_refund(box_data)
 	return "Trashcan"
@@ -95,7 +95,7 @@ func interact(player: Node) -> void:
 		var stand_name := _get_player_stand_name(p)
 		if box_data.get("is_equipment", false):
 			var eq_type: String = box_data.get("equipment_type", "")
-			var refund := _get_container_cost_for_trash(eq_type)
+			var refund := _get_container_cost_for_trash(eq_type) + empty_box_refund
 			if WorldSync.is_host():
 				apply_trash_disposal(eq_type, refund, stand_name)
 			else:
@@ -127,9 +127,9 @@ func _finish_held_disposal(player: Player) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	# Fly along a quadratic bezier arc (start -> mid -> target).
-	tween.tween_method(
-		_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_method(_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
+		Tween.EASE_IN_OUT
+	)
 	tween.tween_property(mesh, "scale", Vector3.ZERO, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
 		Tween.EASE_IN
 	)
