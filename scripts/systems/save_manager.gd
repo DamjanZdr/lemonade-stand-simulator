@@ -229,7 +229,9 @@ func list_saves() -> Array:
 					{
 						"slot": slot_name,
 						"stand_name": data.get("stand_name", slot_name),
-						"game_mode": data.get("game_mode", GameState.GameMode.SOLO)
+						"game_mode": GameState.normalize_game_mode(
+							data.get("game_mode", GameState.GameMode.COOP)
+						)
 						as GameState.GameMode,
 						"day": data.get("day_number", 1),
 						"money": data.get("money", 0.0),
@@ -249,7 +251,8 @@ func list_saves() -> Array:
 ## Start a new game with a fresh save slot. The stand_name becomes both
 ## the save file name and the text on the stand sign in-game.
 ## game_mode determines the lobby layout (solo/coop/versus).
-func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode.SOLO) -> void:
+func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode.COOP) -> void:
+	game_mode = GameState.normalize_game_mode(game_mode)
 	if stand_name == "":
 		stand_name = "Lemonade Stand"
 	# Use the stand name as the slot (file) name.
@@ -387,7 +390,9 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		if stand is StandUnit:
 			var fallback := GameState.stand_name if stand.is_legacy_primary else "Rival Stand"
 			stand.set_stand_name(str(saved_stand_names.get(stand.name, fallback)))
-	GameState.game_mode = data.get("game_mode", GameState.GameMode.SOLO) as GameState.GameMode
+	GameState.game_mode = GameState.normalize_game_mode(
+		data.get("game_mode", GameState.GameMode.COOP)
+	) as GameState.GameMode
 	OnboardingManager.deserialize(data.get("onboarding", { "version": 1, "stands": { } }))
 	GameState.money = data.get("money", Balancing.STARTING_MONEY)
 	GameState.popularity = data.get("popularity", 0.1)
@@ -495,6 +500,28 @@ func _collect_stand_names() -> Dictionary:
 	return names
 
 
+func _container_stand_owner(node: Node) -> String:
+	if "stand_owner" in node and not str(node.get("stand_owner")).is_empty():
+		return str(node.get("stand_owner"))
+	var ancestor := node.get_parent()
+	while ancestor != null:
+		if ancestor is StandUnit:
+			return ancestor.name
+		ancestor = ancestor.get_parent()
+	return ""
+
+
+func _stand_owner_is_active(owner: String) -> bool:
+	return GameState.game_mode == GameState.GameMode.VERSUS or owner != "StandUnit2"
+
+
+func _active_container_entries(entries: Array) -> Array:
+	return entries.filter(
+		func(entry: Dictionary):
+			return _stand_owner_is_active(str(entry.get("stand_owner", ""))),
+	)
+
+
 func _build_save_dict() -> Dictionary:
 	# For a brand-new game, save the pristine default containers
 	# instead of scanning the (potentially dirty) world. The world
@@ -503,7 +530,7 @@ func _build_save_dict() -> Dictionary:
 	var placed_containers: Array
 	var supply_boxes: Array
 	if _save_use_defaults:
-		placed_containers = _default_container_positions.duplicate(true)
+		placed_containers = _active_container_entries(_default_container_positions.duplicate(true))
 		supply_boxes = []
 	else:
 		placed_containers = _scan_placed_containers()
@@ -605,12 +632,15 @@ func _scan_placed_containers() -> Array:
 		var ctype := get_container_type(node)
 		if ctype == "" or not is_known_container_type(ctype):
 			continue
+		var stand_owner := _container_stand_owner(node)
+		if not _stand_owner_is_active(stand_owner):
+			continue
 		var entry := {
 			"type": ctype,
 			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
 			"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
 			"scale": [node.scale.x, node.scale.y, node.scale.z],
-			"stand_owner": node.get("stand_owner") if "stand_owner" in node else "",
+			"stand_owner": _container_stand_owner(node),
 		}
 		# Capture container contents
 		if node is FruitBin:
@@ -709,7 +739,7 @@ func _scan_supply_boxes() -> Array:
 		if node.is_in_group("ghost"):
 			continue
 		var box := node as SupplyBox
-		if box == null:
+		if box == null or not _stand_owner_is_active(box.stand_owner):
 			continue
 		result.append(
 			{
@@ -795,7 +825,7 @@ func capture_default_containers() -> void:
 			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
 			"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
 			"scale": [node.scale.x, node.scale.y, node.scale.z],
-			"stand_owner": node.get("stand_owner") if "stand_owner" in node else "",
+			"stand_owner": _container_stand_owner(node),
 		}
 		if node is WaterDispenser:
 			entry["water_fillings"] = (node as WaterDispenser).max_fillings
@@ -827,6 +857,7 @@ func _do_respawn() -> void:
 	# here, capture_default_containers() has run, so use the defaults.
 	if cdata.is_empty() and not _default_container_positions.is_empty():
 		cdata = _default_container_positions.duplicate(true)
+	cdata = _active_container_entries(cdata)
 	# Always remove existing containers of known types so the world is
 	# reset cleanly. Without this, containers from a previous game
 	# persist when the new save has no placed containers (e.g. a
@@ -938,7 +969,7 @@ func _do_respawn() -> void:
 					break
 
 	# --- Respawn supply boxes ---
-	var sdata: Array = _pending_supply_box_respawn
+	var sdata: Array = _active_container_entries(_pending_supply_box_respawn)
 	_pending_supply_box_respawn = []
 	# Always remove existing supply boxes so the world is reset cleanly.
 	for node in root.get_tree().get_nodes_in_group("supply_box"):

@@ -47,6 +47,7 @@ var _bulb_materials: Array[StandardMaterial3D] = []
 
 
 func _ready() -> void:
+	apply_game_mode(GameState.game_mode)
 	_apply_colors()
 	_apply_grass_shader()
 	_apply_grass_lod()
@@ -65,6 +66,25 @@ func _ready() -> void:
 				_apply_house_colors(),
 		)
 		EventBus.debug_house_palette_changed.connect(_apply_house_colors)
+
+
+func apply_game_mode(mode: int) -> void:
+	var versus := mode == GameState.GameMode.VERSUS
+	_set_house_active(get_node_or_null("Houses/single_stand_house2"), not versus)
+	_set_house_active(get_node_or_null("Houses/player_house2"), versus)
+
+
+func _set_house_active(house: Node, active: bool) -> void:
+	if house == null:
+		return
+	if house is Node3D:
+		house.visible = active
+	house.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
+	for shape in house.find_children("*", "CollisionShape3D", true, false):
+		(shape as CollisionShape3D).set_deferred("disabled", not active)
+	for area in house.find_children("*", "Area3D", true, false):
+		(area as Area3D).set_deferred("monitoring", active)
+		(area as Area3D).set_deferred("monitorable", active)
 
 
 func _disable_street_light_gi() -> void:

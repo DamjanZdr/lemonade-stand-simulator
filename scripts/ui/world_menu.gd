@@ -41,7 +41,9 @@ var _join_error_label: Label = null
 @onready var _sfx_value: Label = $SettingsPanel/SettingsList/SFXRow/SFXValue
 @onready var _music_slider: HSlider = $SettingsPanel/SettingsList/MusicRow/MusicSlider
 @onready var _music_value: Label = $SettingsPanel/SettingsList/MusicRow/MusicValue
-@onready var _fullscreen_check: CheckBox = $SettingsPanel/SettingsList/FullscreenRow/FullscreenCheck
+@onready var _fullscreen_check: CheckBox = (
+	$SettingsPanel/SettingsList/FullscreenRow/FullscreenCheck
+)
 @onready var _vsync_check: CheckBox = $SettingsPanel/SettingsList/VSyncRow/VSyncCheck
 @onready var _lighting_check: CheckBox = $SettingsPanel/SettingsList/LightingRow/LightingCheck
 @onready var _fps_check: CheckBox = $SettingsPanel/SettingsList/FPSRow/FPSCheck
@@ -958,16 +960,14 @@ func _show_mode_select() -> void:
 
 	# Use an Array to hold the selected mode so lambdas can modify it
 	# (GDScript lambdas capture local ints by value, not reference).
-	var selected_mode: Array[int] = [GameState.GameMode.SOLO]
+	var selected_mode: Array[int] = [GameState.GameMode.COOP]
 	var mode_cards: Dictionary = { } # mode -> PanelContainer
 	var mode_styles: Dictionary = { } # mode -> StyleBoxFlat (for border tweening)
 	var mode_descs: Dictionary = {
-		GameState.GameMode.SOLO: "One player runs their own lemonade stand.",
-		GameState.GameMode.COOP: "Up to 4 players share a stand and work together.",
+		GameState.GameMode.COOP: "Play alone or invite up to 3 friends to share one stand.",
 		GameState.GameMode.VERSUS: "Run 2 stands against each other with up to 4 friends.",
 	}
 	var mode_names: Dictionary = {
-		GameState.GameMode.SOLO: "Solo",
 		GameState.GameMode.COOP: "Co-op",
 		GameState.GameMode.VERSUS: "Versus",
 	}
@@ -982,10 +982,9 @@ func _show_mode_select() -> void:
 	desc_label.add_theme_font_size_override("font_size", 18)
 	desc_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc_label.text = mode_descs[GameState.GameMode.SOLO]
+	desc_label.text = mode_descs[GameState.GameMode.COOP]
 
 	for mode_info in [
-		{ "mode": GameState.GameMode.SOLO, "count": 1, "vs": false },
 		{ "mode": GameState.GameMode.COOP, "count": 4, "vs": false },
 		{ "mode": GameState.GameMode.VERSUS, "count": 2, "vs": true },
 	]:
@@ -1174,8 +1173,8 @@ func _show_mode_select() -> void:
 	btn_row.add_child(create_btn)
 	cards_wrap.add_child(btn_row)
 
-	# Default: Solo selected.
-	_update_mode_card_selection(mode_cards, mode_styles, GameState.GameMode.SOLO)
+	# Default: Co-op selected.
+	_update_mode_card_selection(mode_cards, mode_styles, GameState.GameMode.COOP)
 
 	var idx := _new_stand_button.get_index()
 	_saves_list.add_child(vbox)
@@ -1302,7 +1301,7 @@ func _refresh_saves() -> void:
 	for save in _saves_data:
 		var slot_name: String = save.get("slot", "")
 		var stand_name: String = save.get("stand_name", slot_name)
-		var game_mode: int = save.get("game_mode", GameState.GameMode.SOLO)
+		var game_mode: int = save.get("game_mode", GameState.GameMode.COOP)
 		var day: int = save.get("day", 1)
 		var money: float = save.get("money", 0.0)
 		var saved_at: float = save.get("saved_at", 0.0)

@@ -295,7 +295,6 @@ func _apply_menu_style() -> void:
 func apply_mode_layout() -> void:
 	var mode: int = LobbyManager.game_mode
 	var is_versus := mode == GameState.GameMode.VERSUS
-	var is_solo := mode == GameState.GameMode.SOLO
 	# Stand 2 column + header + separator.
 	var stand2_col: VBoxContainer = $LeftContainer/LobbyPanel/VBox/PlayersRow/Stand2Col
 	var stand2_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand2Header
@@ -305,10 +304,9 @@ func apply_mode_layout() -> void:
 	stand_sep.visible = is_versus
 	# Switch button only makes sense in Versus.
 	_switch_button.visible = is_versus
-	# Invite button + separator hidden in Solo (no friends needed).
-	_invite_button.visible = not is_solo
+	_invite_button.visible = true
 	var copy_invite_sep: Label = $LeftContainer/LobbyPanel/VBox/RoomRow/CopyInviteSep
-	copy_invite_sep.visible = not is_solo
+	copy_invite_sep.visible = true
 	# Stand 1 header: always show the stand/save name.
 	var stand1_header: Label = $LeftContainer/LobbyPanel/VBox/SwitchRow/Stand1Header
 	stand1_header.text = GameState.stand_name

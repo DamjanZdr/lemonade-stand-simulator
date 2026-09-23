@@ -26,7 +26,7 @@ var game_started: bool = false
 ## The game mode for this lobby (Solo/Coop/Versus). Set by the host when
 ## creating/loading a save. Determines how many stands are available and
 ## how players are assigned.
-var game_mode: int = GameState.GameMode.SOLO
+var game_mode: int = GameState.GameMode.COOP
 
 ## Maximum total players across all stands.
 const MAX_PLAYERS: int = 4
@@ -34,28 +34,14 @@ const MAX_PLAYERS: int = 4
 
 ## Returns the number of stands for the current game mode.
 func stand_count() -> int:
-	match game_mode:
-		GameState.GameMode.SOLO:
-			return 1
-		GameState.GameMode.COOP:
-			return 1
-		GameState.GameMode.VERSUS:
-			return 2
-		_:
-			return 1
+	return 2 if game_mode == GameState.GameMode.VERSUS else 1
 
 
 ## Returns the maximum players per stand for the current game mode.
 func max_players_per_stand() -> int:
-	match game_mode:
-		GameState.GameMode.SOLO:
-			return 1
-		GameState.GameMode.COOP:
-			return MAX_PLAYERS
-		GameState.GameMode.VERSUS:
-			return MAX_PLAYERS / 2 # 2 per stand (2v2)
-		_:
-			return 1
+	if game_mode == GameState.GameMode.VERSUS:
+		return MAX_PLAYERS / 2
+	return MAX_PLAYERS
 
 
 func _ready() -> void:
@@ -99,7 +85,7 @@ func _local_display_name() -> String:
 func reset() -> void:
 	roster.clear()
 	game_started = false
-	game_mode = GameState.GameMode.SOLO
+	game_mode = GameState.GameMode.COOP
 
 
 ## Re-emits the current roster so a newly-loaded scene (e.g. the Lobby)
@@ -156,7 +142,7 @@ func _first_free_stand() -> int:
 	# Co-op shares a single stand — a late joiner joins the shared stand
 	# rather than needing a free index. Capacity is per-stand
 	# (MAX_PLAYERS), and roster already includes the joining peer here.
-	if game_mode == GameState.GameMode.COOP:
+	if game_mode != GameState.GameMode.VERSUS:
 		return 0 if roster.size() <= MAX_PLAYERS else -1
 	var used: Array[int] = []
 	for id in roster:
@@ -198,7 +184,8 @@ func _sync_game_started(is_started: bool) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _sync_game_mode(mode: int) -> void:
-	game_mode = mode
+	game_mode = GameState.normalize_game_mode(mode)
+	GameState.game_mode = game_mode as GameState.GameMode
 	roster_changed.emit() # trigger lobby UI to re-apply mode layout
 
 

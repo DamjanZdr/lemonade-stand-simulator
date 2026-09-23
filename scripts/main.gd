@@ -243,6 +243,31 @@ func _ready() -> void:
 ## Set stand 2's sign name based on the game mode.
 ## In versus mode, it's the rival's stand. In solo/coop, it mirrors
 ## stand 1 (shared stand).
+func _is_versus_mode() -> bool:
+	return LobbyManager.game_mode == GameState.GameMode.VERSUS
+
+
+func _apply_game_mode_layout() -> void:
+	var versus := _is_versus_mode()
+	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
+	if neighborhood != null and neighborhood.has_method("apply_game_mode"):
+		neighborhood.apply_game_mode(LobbyManager.game_mode)
+	if stand_unit2 != null:
+		stand_unit2.visible = versus
+		stand_unit2.process_mode = (
+			Node.PROCESS_MODE_INHERIT if versus else Node.PROCESS_MODE_DISABLED
+		)
+		for shape in stand_unit2.find_children("*", "CollisionShape3D", true, false):
+			(shape as CollisionShape3D).set_deferred("disabled", not versus)
+	for node in [spawner2, delivery2]:
+		if node != null:
+			node.process_mode = (
+				Node.PROCESS_MODE_INHERIT if versus else Node.PROCESS_MODE_DISABLED
+			)
+	if not versus and delivery2 != null and delivery2.has_method("stop"):
+		delivery2.stop()
+
+
 func _set_stand2_name() -> void:
 	if stand_unit2 == null or not stand_unit2.stand_display_name.is_empty():
 		return
@@ -381,7 +406,12 @@ func _set_systems_paused(paused: bool) -> void:
 	var process_mode_val := Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
 	for node in [spawner, spawner2, ped_spawner, delivery, delivery2]:
 		if node:
-			node.process_mode = process_mode_val
+			var secondary: bool = node == spawner2 or node == delivery2
+			node.process_mode = (
+				Node.PROCESS_MODE_DISABLED
+				if secondary and not _is_versus_mode()
+				else process_mode_val
+			)
 	if DayManager:
 		DayManager.process_mode = process_mode_val
 
@@ -1234,6 +1264,7 @@ func _setup_world_systems() -> void:
 	if _world_setup_done:
 		return
 	_world_setup_done = true
+	_apply_game_mode_layout()
 	# Update stand signs with the loaded stand name.
 	if stand_unit:
 		stand_unit.set_stand_name(GameState.stand_name)
@@ -1243,11 +1274,11 @@ func _setup_world_systems() -> void:
 	if stand_unit:
 		spawner.set_queue_spots(stand_unit.get_queue_spots(), stand_unit.get_queue_step())
 		spawner.set_stand(stand_unit)
-	if stand_unit2:
+	if stand_unit2 and _is_versus_mode():
 		spawner2.set_queue_spots(stand_unit2.get_queue_spots(), stand_unit2.get_queue_step())
 		spawner2.set_stand(stand_unit2)
 	ped_spawner.register_stand(spawner, stand_unit)
-	if stand_unit2:
+	if stand_unit2 and _is_versus_mode():
 		ped_spawner.register_stand(spawner2, stand_unit2)
 	# Wire delivery grid.
 	if stand_unit:
@@ -1257,7 +1288,7 @@ func _setup_world_systems() -> void:
 			delivery.set_delivery_zone(stand_unit.get_delivery_marker_position())
 		else:
 			delivery.set_grid(dgrid)
-	if stand_unit2:
+	if stand_unit2 and _is_versus_mode():
 		delivery2.set_truck_name("DeliveryTruck2")
 		delivery2.set_stand_name(stand_unit2.name)
 		var dgrid2 := stand_unit2.get_delivery_grid()
@@ -1380,7 +1411,7 @@ func _push_initial_stand_state() -> void:
 	# money, prices, etc. from the start (not just 0).
 	if stand_unit:
 		stand_unit.push_state()
-	if stand_unit2:
+	if stand_unit2 and _is_versus_mode():
 		stand_unit2.push_state()
 
 
@@ -1397,7 +1428,7 @@ func _push_world_state_to_client(peer_id: int) -> void:
 	# Static StandUnit nodes use their own RPC payload instead of the world snapshot.
 	if stand_unit:
 		stand_unit.push_state()
-	if stand_unit2:
+	if stand_unit2 and _is_versus_mode():
 		stand_unit2.push_state()
 	# Sync the current day/phase to the late joiner
 	if multiplayer.is_server():
@@ -1424,12 +1455,12 @@ func _request_world_state() -> void:
 		return
 	if stand_unit:
 		stand_unit.push_state(sender)
-	if stand_unit2:
+	if stand_unit2 and _is_versus_mode():
 		stand_unit2.push_state(sender)
 	DayManager.sync_day_state_to_peer(sender)
 	if delivery and delivery.has_method("sync_state_to_peer"):
 		delivery.sync_state_to_peer(sender)
-	if delivery2 and delivery2.has_method("sync_state_to_peer"):
+	if delivery2 and _is_versus_mode() and delivery2.has_method("sync_state_to_peer"):
 		delivery2.sync_state_to_peer(sender)
 
 

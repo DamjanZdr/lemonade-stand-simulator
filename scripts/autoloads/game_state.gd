@@ -12,7 +12,12 @@ enum GameMode {
 }
 
 ## The current game mode. Set when creating/loading a save.
-var game_mode: GameMode = GameMode.SOLO
+var game_mode: GameMode = GameMode.COOP
+
+
+func normalize_game_mode(mode: int) -> GameMode:
+	return GameMode.COOP if mode == GameMode.SOLO else mode as GameMode
+
 
 var money: float
 var popularity: float
