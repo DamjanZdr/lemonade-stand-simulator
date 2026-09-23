@@ -28,9 +28,14 @@ func get_hint(player: Node) -> String:
 		return "Trashcan | LMB: trash for $%.2f" % refund
 	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
-		var cost := _get_container_cost_for_trash(ctype)
-		var warn := " (contents lost!)" if _container_has_contents(p.held_item_data) else ""
-		return "Trashcan | LMB: recycle for $%.2f%s" % [cost, warn]
+		if ctype == "pitcher" and p.held_item_data.get("has_liquid", false):
+			return "Trashcan | empty the pitcher first!"
+		var cost := _get_container_refund(p.held_item_data)
+		return "Trashcan | LMB: recycle for $%.2f" % cost
+	if p.held_item == HeldItem.CUP_EMPTY:
+		return "Trashcan | LMB: trash cup for $%.2f" % _get_cup_refund()
+	if p.held_item == HeldItem.CUP_FILLED:
+		return "Trashcan | LMB: dump cup (no refund)"
 	if p.held_item == HeldItem.SUPPLY_BOX:
 		var box_data: Dictionary = p.held_item_data
 		if box_data.get("is_equipment", false):
@@ -53,13 +58,39 @@ func _get_supply_box_refund(box_data: Dictionary) -> float:
 	return empty_box_refund + Balancing.CONTENTS_REFUND_RATIO * unit * amount
 
 
-## True when a held container still has stock or liquid inside. Contents
-## are never refunded — recycling always pays for the container only.
-func _container_has_contents(data: Dictionary) -> bool:
-	return (
-		data.get("has_liquid", false) or float(data.get("saved_amount", 0.0)) > 0.0
-		or int(data.get("saved_count", 0)) > 0
-	)
+## Refund for a held container: 70% of the container cost plus 50% of
+## any stock still inside (bins/bowls/buckets). Pitcher contents are
+## liquid — those must be emptied before recycling, checked upstream.
+func _get_container_refund(data: Dictionary) -> float:
+	var ctype: String = data.get("container_type", "")
+	var refund := _get_container_cost_for_trash(ctype)
+	return refund + Balancing.CONTENTS_REFUND_RATIO * _container_contents_value(data)
+
+
+## Resale value of whatever stock is left inside a held container.
+func _container_contents_value(data: Dictionary) -> float:
+	match data.get("container_type", ""):
+		"sugar_bin":
+			return float(data.get("saved_amount", 0.0)) \
+					* Balancing.supply_unit_cost("sugar")
+		"ice_bin":
+			return float(data.get("saved_amount", 0.0)) \
+					* Balancing.supply_unit_cost("ice")
+		"cup_stack":
+			return float(data.get("saved_count", 0)) \
+					* Balancing.supply_unit_cost("cups")
+		"fruit_bin":
+			var total := 0.0
+			var amounts: Dictionary = data.get("saved_recipe", { }).get("fruit_amounts", { })
+			for ftype in amounts:
+				total += float(amounts[ftype]) * Balancing.supply_unit_cost(ftype)
+			return total
+	return 0.0
+
+
+## Resale value of one clean, empty cup.
+func _get_cup_refund() -> float:
+	return Balancing.CONTENTS_REFUND_RATIO * Balancing.supply_unit_cost("cups")
 
 
 func interact(player: Node) -> void:
@@ -81,12 +112,32 @@ func interact(player: Node) -> void:
 		return
 	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
-		var refund := _get_container_cost_for_trash(ctype)
+		if ctype == "pitcher" and p.held_item_data.get("has_liquid", false):
+			EventBus.interaction_hint_changed.emit("Empty the pitcher first!")
+			return
+		var refund := _get_container_refund(p.held_item_data)
 		var stand_name := _get_player_stand_name(p)
 		if WorldSync.is_host():
 			apply_trash_disposal(ctype, refund, stand_name)
 		else:
 			_request_trash_disposal.rpc_id(1, ctype, refund, stand_name)
+		_finish_held_disposal(p)
+		return
+	if p.held_item == HeldItem.CUP_EMPTY:
+		var refund := _get_cup_refund()
+		var stand_name := _get_player_stand_name(p)
+		if WorldSync.is_host():
+			apply_trash_disposal("cup", refund, stand_name)
+		else:
+			_request_trash_disposal.rpc_id(1, "cup", refund, stand_name)
+		_finish_held_disposal(p)
+		return
+	if p.held_item == HeldItem.CUP_FILLED:
+		var stand_name := _get_player_stand_name(p)
+		if WorldSync.is_host():
+			apply_trash_disposal("cup", 0.0, stand_name)
+		else:
+			_request_trash_disposal.rpc_id(1, "cup", 0.0, stand_name)
 		_finish_held_disposal(p)
 		return
 	if p.held_item == HeldItem.SUPPLY_BOX:
