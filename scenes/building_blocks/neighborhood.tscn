@@ -53,10 +53,12 @@
 [ext_resource type="Script" uid="uid://e7o24oyy11ah" path="res://scripts/objects/cup.gd" id="46_myl1y"]
 [ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
 [ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
+[ext_resource type="Texture2D" uid="uid://b7w77s43dcra5" path="res://assets/textures/Cartoon_green_texture_grass.jpg" id="51_cartoon"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g4v7s"]
 albedo_color = Color(0.7921569, 1, 0.19607843, 1)
-albedo_texture = ExtResource("7_cc7c0")
+albedo_texture = ExtResource("51_cartoon")
+uv1_scale = Vector3(50, 50, 50)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
 size = Vector3(0.8, 3.0921874, 1.9)
