@@ -139,20 +139,30 @@ class CircleNode extends Control:
 
 
 var shop_items: Array[Dictionary] = [
-	{ "id": "lemon", "name": "Lemons", "cost": 2.0, "qty": 10 },
-	{ "id": "strawberry", "name": "Strawberry", "cost": 3.0, "qty": 10 },
-	{ "id": "blueberry", "name": "Blueberry", "cost": 3.5, "qty": 10 },
-	{ "id": "peach", "name": "Peach", "cost": 4.0, "qty": 10 },
-	{ "id": "watermelon", "name": "Watermelon", "cost": 5.0, "qty": 10 },
-	{ "id": "sugar", "name": "Sugar", "cost": 1.5, "qty": 10 },
-	{ "id": "ice", "name": "Ice", "cost": 1.0, "qty": 10 },
+	{ "id": "lemon", "name": "Lemons", "cost": Balancing.SUPPLY_COST_LEMON, "qty": 10 },
+	{
+		"id": "strawberry",
+		"name": "Strawberry",
+		"cost": Balancing.SUPPLY_COST_STRAWBERRY,
+		"qty": 10,
+	},
+	{ "id": "blueberry", "name": "Blueberry", "cost": Balancing.SUPPLY_COST_BLUEBERRY, "qty": 10 },
+	{ "id": "peach", "name": "Peach", "cost": Balancing.SUPPLY_COST_PEACH, "qty": 10 },
+	{
+		"id": "watermelon",
+		"name": "Watermelon",
+		"cost": Balancing.SUPPLY_COST_WATERMELON,
+		"qty": 10,
+	},
+	{ "id": "sugar", "name": "Sugar", "cost": Balancing.SUPPLY_COST_SUGAR, "qty": 10 },
+	{ "id": "ice", "name": "Ice", "cost": Balancing.SUPPLY_COST_ICE, "qty": 10 },
 	{
 		"id": "water",
 		"name": "Water",
 		"cost": Balancing.WATER_COST,
 		"qty": Balancing.WATER_BOX_FILLINGS,
 	},
-	{ "id": "cups", "name": "Cups", "cost": 0.5, "qty": 10 },
+	{ "id": "cups", "name": "Cups", "cost": Balancing.SUPPLY_COST_CUPS, "qty": 10 },
 ]
 
 var container_items: Array[Dictionary] = [

@@ -2,7 +2,7 @@
 extends Interactable
 ## Interactable trashcan. Accepts held items marked as trash and refunds money.
 
-@export var empty_box_refund: float = 1.0
+@export var empty_box_refund: float = 0.25
 
 const _VARIANT_SCENES: Dictionary = {
 	"apple": "res://scenes/objects/trash_apple.tscn",
@@ -29,15 +29,37 @@ func get_hint(player: Node) -> String:
 	if p.held_item == HeldItem.CONTAINER:
 		var ctype: String = p.held_item_data.get("container_type", "")
 		var cost := _get_container_cost_for_trash(ctype)
-		return "Trashcan | LMB: recycle for $%.2f" % cost
+		var warn := " (contents lost!)" if _container_has_contents(p.held_item_data) else ""
+		return "Trashcan | LMB: recycle for $%.2f%s" % [cost, warn]
 	if p.held_item == HeldItem.SUPPLY_BOX:
 		var box_data: Dictionary = p.held_item_data
 		if box_data.get("is_equipment", false):
 			var eq_type: String = box_data.get("equipment_type", "")
 			var cost := _get_container_cost_for_trash(eq_type)
 			return "Trashcan | LMB: recycle for $%.2f" % cost
-		return "Trashcan | LMB: trash for $%.2f" % empty_box_refund
+		return "Trashcan | LMB: sell for $%.2f" % _get_supply_box_refund(box_data)
 	return "Trashcan"
+
+
+## Refund for a supply box: flat scrap value plus half the value of any
+## contents still inside. Never exceeds what the remaining stock cost,
+## so dumping ingredients for cash is always a loss.
+func _get_supply_box_refund(box_data: Dictionary) -> float:
+	var amount: float = float(box_data.get("amount", 0.0))
+	if amount <= 0.0:
+		return empty_box_refund
+	var itype: String = box_data.get("ingredient_type", "")
+	var unit := Balancing.supply_unit_cost(itype)
+	return empty_box_refund + Balancing.CONTENTS_REFUND_RATIO * unit * amount
+
+
+## True when a held container still has stock or liquid inside. Contents
+## are never refunded — recycling always pays for the container only.
+func _container_has_contents(data: Dictionary) -> bool:
+	return (
+		data.get("has_liquid", false) or float(data.get("saved_amount", 0.0)) > 0.0
+		or int(data.get("saved_count", 0)) > 0
+	)
 
 
 func interact(player: Node) -> void:
@@ -80,7 +102,7 @@ func interact(player: Node) -> void:
 				_request_trash_disposal.rpc_id(1, eq_type, refund, stand_name)
 		else:
 			var trash_type: String = box_data.get("ingredient_type", "empty_box")
-			var refund := empty_box_refund
+			var refund := _get_supply_box_refund(box_data)
 			if WorldSync.is_host():
 				apply_trash_disposal(trash_type, refund, stand_name)
 			else:
@@ -105,9 +127,9 @@ func _finish_held_disposal(player: Player) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	# Fly along a quadratic bezier arc (start -> mid -> target).
-	tween.tween_method(
-		_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_method(_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
+		Tween.EASE_IN_OUT
+	)
 	tween.tween_property(mesh, "scale", Vector3.ZERO, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
 		Tween.EASE_IN
 	)

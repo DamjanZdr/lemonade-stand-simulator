@@ -83,7 +83,11 @@ func _drop_trash_with_physics(variant: String, drop_pos: Vector3, source_npc: No
 	var parent := WorldSync.get_world_objects()
 	if parent == null:
 		return
-	var state: Dictionary = { "trash_type": variant, "trash_value": 1.0, "is_npc_drop": true }
+	var state: Dictionary = {
+		"trash_type": variant,
+		"trash_value": Balancing.LOOSE_TRASH_VALUE,
+		"is_npc_drop": true,
+	}
 	var body := WorldSync.spawn_networked(
 		"res://scenes/objects/thrown_trash.tscn",
 		parent,

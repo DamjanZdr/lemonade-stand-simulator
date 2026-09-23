@@ -114,11 +114,11 @@ seconds_per_hour = 60.0
 [node name="TrashManager" type="Node" parent="Managers" unique_id=1001413376]
 script = ExtResource("71_trash")
 trash_values = {
-"apple": 0.2,
-"banana": 0.2,
-"can": 0.2,
-"cigarettes": 0.2,
-"cup": 0.2
+"apple": 0.05,
+"banana": 0.05,
+"can": 0.05,
+"cigarettes": 0.05,
+"cup": 0.05
 }
 
 [node name="ColorManager" type="Node" parent="Managers" unique_id=736981231]

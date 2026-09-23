@@ -82,7 +82,7 @@ func _build_order_buttons() -> void:
 	for itype in types:
 		var btn := Button.new()
 		var qty := _get_delivery_quantity()
-		var cost := _get_delivery_cost(qty)
+		var cost := _get_delivery_cost(itype, qty)
 		btn.text = "Order %s  ($%.0f)" % [itype.capitalize(), cost]
 		btn.pressed.connect(
 			func():
@@ -176,11 +176,12 @@ func _get_delivery_quantity() -> float:
 	return Balancing.DELIVERY_QUANTITY + bonus
 
 
-func _get_delivery_cost(qty: float) -> float:
+func _get_delivery_cost(itype: String, qty: float) -> float:
 	var bulk: float = UpgradeManager.get_effect_total("bulk_buy")
 	var haggle: float = UpgradeManager.get_effect_total("negotiation")
 	var discount: float = clampf(bulk + haggle, 0.0, 0.9)
-	return Balancing.DELIVERY_COST_PER_UNIT * qty * (1.0 - discount)
+	var goods := Balancing.supply_unit_cost(itype) * qty
+	return goods * (1.0 - discount) + Balancing.DELIVERY_FLAT_FEE
 
 
 func _order(itype: String) -> void:
@@ -188,7 +189,7 @@ func _order(itype: String) -> void:
 		EventBus.interaction_hint_changed.emit("Shop is closed for today")
 		return
 	var qty := _get_delivery_quantity()
-	var cost := _get_delivery_cost(qty)
+	var cost := _get_delivery_cost(itype, qty)
 	# Route purchases through the host. The host spends the money and
 	# emits the supply_order_placed signal locally, which triggers the
 	# delivery system. Clients send an RPC to the host instead.

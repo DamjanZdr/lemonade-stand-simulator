@@ -69,8 +69,7 @@ loose enough that it can't fund free contents.
 | Item | Refund | Rationale |
 |------|--------|-----------|
 | Empty/opened supply box | **$0.25** flat scrap | Below cheapest box ($1 cups). Kills the exploit while still rewarding cleanup. |
-| Unopened supply box (`amount` untouched) | **50% of purchase cost** | Softens over-ordering, never profitable. |
-| **Partially-emptied box** (e.g. ice with 3/10 left) | **$0.25 scrap + 50% of remaining contents' value** | `refund = 0.25 + 0.5 × per_unit_cost × amount`. 3 ice left at $0.15 → `0.25 + 0.5 × 0.45 = $0.475`. Never exceeds half of what the remaining stock cost, so dumping is always a loss vs. using it. |
+| **Any supply box with contents** (partial or unopened) | **$0.25 scrap + 50% of remaining contents' value** | `refund = 0.25 + 0.5 × per_unit_cost × amount`. One formula covers both cases — an unopened lemon box → `0.25 + 0.5 × 4.00 = $2.25` (56% of cost). 3 ice left at $0.15 → `0.25 + 0.5 × 0.45 = $0.475`. Never exceeds half of what the remaining stock cost, so dumping is always a loss vs. using it. |
 
 Partial boxes are a real state — `held_item_data["amount"]` decrements per
 cup/scoop deposited and only becomes `empty_box` at 0 (`player_placement.gd`).
@@ -79,7 +78,7 @@ $1 for ANY non-equipment box — a 9/10 lemon box sells for $1 and a 1/10 box
 does too. Per-unit cost can be looked up from the (unified) shop price table.
 | Unopened equipment box | **70% of equipment cost** | Current behavior — keep. |
 | Placed containers (crate, bowl, bucket, pitcher, press, dispenser, table) | **70% of cost** | Current `_get_container_cost_for_trash` behavior — keep. |
-| Loose world trash (used cups, apple cores, etc.) | **$0** (or $0.05 flavor) | Pickup is its own reward; cash-for-trash invites farming. |
+| Loose world trash (used cups, apple cores, etc.) | **$0.05** (`LOOSE_TRASH_VALUE`) | Pickup is its own reward; cash-for-trash invites farming. |
 | Partially-used bins/pitchers | Container 70% **only if empty**; contents lost | Prevents dumping stock for cash. |
 | Bad/spoiled lemonade | **$0** — pour out | A mistake should cost ingredients, not refund them. |
 
@@ -90,17 +89,20 @@ does too. Per-unit cost can be looked up from the (unified) shop price table.
 - Opened boxes' contents (once scooped, ingredients are spent).
 - One-shot consumables after partial use.
 
-## Known structural issues to fix alongside the numbers
+## Implementation notes (done)
 
-1. **Shop prices are duplicated** in `shop_ui.gd` (`SHOP_ITEMS`) and
-   `morning_hub.gd` (`shop_items`). Move both to `Balancing` so this doc maps
-   1:1 to code.
-2. **Phone ordering uses a different pricing model** —
-   `DELIVERY_COST_PER_UNIT ($0.20) × qty` = $2/box regardless of item, versus
-   morning-hub item prices. Decide: phone = item cost + flat delivery fee
-   (e.g. $2/order) so it's never cheaper than walking to the shop.
-3. `empty_box_refund` is an exported per-instance value AND
-   `TRASH_REFUND_EMPTY_BOX` — unify to one constant.
+1. **Shop prices live in `Balancing`** — `SUPPLY_COST_*` constants with
+   `supply_box_cost()` / `supply_box_qty()` / `supply_unit_cost()` helpers.
+   `shop_ui.gd` and `morning_hub.gd` read them directly.
+2. **Phone ordering = goods + flat fee** — `supply_unit_cost() × qty`
+   (upgrade discounts apply) plus `DELIVERY_FLAT_FEE = $2`. Never cheaper
+   than the shop per unit.
+3. `TRASH_REFUND_EMPTY_BOX` is the single source for scrap value;
+   `trashcan.gd`'s `empty_box_refund` matches it.
+4. **Partial-box refund needs no new metadata** — `held_item_data` already
+   carries `ingredient_type` + `amount`, and placed boxes store them as
+   `ingredient_type` + `quantity`, so `Balancing.supply_unit_cost()` covers
+   pickup, placement, stacking, and snapshots for free.
 
 ## Sanity check — day 1
 

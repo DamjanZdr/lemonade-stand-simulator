@@ -44,13 +44,71 @@ const CONTAINER_COST_PRESS: float = 30.0
 const CONTAINER_COST_WATER_DISPENSER: float = 25.0
 const CONTAINER_COST_WORKSTATION: float = 40.0
 
+# === SUPPLY PRICES (per box) ===
+# Baseline economics: an ideal lemon pitcher (3 lemons + 2 sugar + ~2 ice
+# + 1 water fill + 10 cups) costs ~$3.90 and sells 10 cups at $1 = $10.
+const SUPPLY_BOX_QTY: float = 10.0
+const SUPPLY_COST_LEMON: float = 4.0
+const SUPPLY_COST_STRAWBERRY: float = 5.0
+const SUPPLY_COST_BLUEBERRY: float = 5.5
+const SUPPLY_COST_PEACH: float = 6.0
+const SUPPLY_COST_WATERMELON: float = 7.0
+const SUPPLY_COST_SUGAR: float = 2.0
+const SUPPLY_COST_ICE: float = 1.5
+const SUPPLY_COST_CUPS: float = 1.0
+
+
+## Price of one full box of the given supply id.
+static func supply_box_cost(item_id: String) -> float:
+	match item_id:
+		"lemon":
+			return SUPPLY_COST_LEMON
+		"strawberry":
+			return SUPPLY_COST_STRAWBERRY
+		"blueberry":
+			return SUPPLY_COST_BLUEBERRY
+		"peach":
+			return SUPPLY_COST_PEACH
+		"watermelon":
+			return SUPPLY_COST_WATERMELON
+		"sugar":
+			return SUPPLY_COST_SUGAR
+		"ice":
+			return SUPPLY_COST_ICE
+		"cups":
+			return SUPPLY_COST_CUPS
+		"water":
+			return WATER_COST
+	return 0.0
+
+
+## Units per box for the given supply id (water sells in fills, not scoops).
+static func supply_box_qty(item_id: String) -> float:
+	if item_id == "water":
+		return WATER_BOX_FILLINGS
+	return SUPPLY_BOX_QTY
+
+
+## Cost of a single unit (scoop/cup/fill) of the given supply id.
+static func supply_unit_cost(item_id: String) -> float:
+	return supply_box_cost(item_id) / supply_box_qty(item_id)
+
+
 # === DELIVERY ===
-const DELIVERY_COST_PER_UNIT: float = 0.20
+# Phone orders cost the goods at their normal per-unit rate plus a flat
+# delivery fee — never cheaper than buying at the morning shop.
+const DELIVERY_FLAT_FEE: float = 2.0
 const DELIVERY_QUANTITY: float = 10.0
 const DELIVERY_DROP_HEIGHT: float = 4.0
 
 # === TRASH ===
-const TRASH_REFUND_EMPTY_BOX: float = 1.0
+# An empty box refunds less than the cheapest box so box-cycling can
+# never be profitable.
+const TRASH_REFUND_EMPTY_BOX: float = 0.25
+# Fraction of the remaining contents' value refunded for a non-empty
+# supply box, and NPC/world litter value.
+const CONTENTS_REFUND_RATIO: float = 0.5
+const LOOSE_TRASH_VALUE: float = 0.05
 
 # === WATER DISPENSER ===
 const WATER_COST: float = 5.0
