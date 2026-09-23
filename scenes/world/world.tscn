@@ -61,8 +61,8 @@ background_mode = 2
 sky = SubResource("Sky_main")
 ambient_light_source = 3
 ambient_light_color = Color(0.75, 0.73, 0.65, 1)
-ambient_light_energy = 0.5
 ambient_light_sky_contribution = 0.6
+ambient_light_energy = 0.5
 tonemap_mode = 2
 tonemap_exposure = 1.1
 tonemap_white = 8.0
@@ -120,9 +120,8 @@ script = ExtResource("70_neigh")
 
 [node name="DirectionalLight" type="DirectionalLight3D" parent="Environment" unique_id=285599754]
 transform = Transform3D(0.81629366, -0.46448538, -0.34339193, 0.33309382, -0.10717513, 0.9367827, -0.47192508, -0.8790716, 0.06723085, 0, 10, 0)
-shadow_enabled = true
 light_angular_distance = 0.3
-shadow_blur = 1.0
+shadow_enabled = true
 directional_shadow_blend_splits = true
 script = ExtResource("37_sun")
 start_rotation_deg = Vector3(-50, 60, -80)
@@ -132,7 +131,6 @@ end_rotation_deg = Vector3(-20, -70, 67)
 transform = Transform3D(-0.866, -0.25, -0.433, 0, 0.866, -0.5, 0.5, -0.433, -0.75, 0, 8, 0)
 light_color = Color(0.85, 0.82, 0.75, 1)
 light_energy = 0.6
-shadow_enabled = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=305494689]
 environment = SubResource("Environment_main")
@@ -147,11 +145,6 @@ material = SubResource("FogMaterial_g4v7s")
 transform = Transform3D(1, 0, 0, 0, 0.16174394, 0, 0, 0, 1, 264.77563, -15.186977, 31)
 size = Vector3(166, 111.47754, 343)
 material = SubResource("FogMaterial_g4v7s")
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Environment" unique_id=1079704992]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5780778, 3.4851818, 12.612837)
-light_energy = 0.6
-omni_range = 10.620017
 
 [node name="Stands" type="Node3D" parent="." unique_id=1765668174]
 
@@ -328,7 +321,6 @@ shape = SubResource("BoxShape3D_ground")
 
 [node name="PlayableArea" type="Area3D" parent="Ground" unique_id=146113540]
 collision_layer = 0
-collision_mask = 1
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground/PlayableArea" unique_id=635766442]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7931824, 0, -8.432495)

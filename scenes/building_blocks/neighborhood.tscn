@@ -1952,18 +1952,6 @@ metadata/house_color_index = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.029556274, -0.074386835, 0.00683403)
 visible = false
 
-[node name="house -col4" parent="Houses/house_row6_house12" unique_id=369189445 instance=ExtResource("9_r8fkd")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 1.3979874, -0.074386835, -21.887903)
-visible = false
-
-[node name="house -col5" parent="Houses/house_row6_house12" unique_id=1499667166 instance=ExtResource("9_r8fkd")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -28.075695, -0.074386835, -21.887907)
-visible = false
-
-[node name="house -col6" parent="Houses/house_row6_house12" unique_id=651617416 instance=ExtResource("9_r8fkd")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -57.549377, -0.074386835, -21.887907)
-visible = false
-
 [node name="house_row6_house13" parent="Houses" unique_id=1960856164 instance=ExtResource("5_wlhmk")]
 transform = Transform3D(-4.152582e-08, 0, 0.95, 0, 0.95, 0, -0.95, 0, -4.152582e-08, -21.642702, 3.0934663, 24.464134)
 metadata/house_color_index = 2
@@ -1976,13 +1964,25 @@ visible = false
 transform = Transform3D(1.2457745e-07, 0, -0.95, 0, 0.95, 0, 0.95, 0, 1.2457745e-07, 29.3573, 3.0934663, -32.389236)
 metadata/house_color_index = 1
 
+[node name="house -col4" parent="Houses/house_row7_house12" unique_id=1013119327 instance=ExtResource("9_r8fkd")]
+transform = Transform3D(1, 0, 1.748456e-07, 0, 1, 0, -1.748456e-07, 0, 1, -0.075717926, -0.074386835, 0.0051784515)
+visible = false
+
 [node name="single_stand_house2" parent="Houses" unique_id=1132182983 instance=ExtResource("5_wlhmk")]
 transform = Transform3D(1.2457745e-07, 0, -0.95, 0, 0.95, 0, 0.95, 0, 1.2457745e-07, 29.7573, 3.1371675, -4.946823)
 metadata/house_color_index = 2
 
+[node name="house -col6" parent="Houses/single_stand_house2" unique_id=195437753 instance=ExtResource("9_r8fkd")]
+transform = Transform3D(1, 0, 1.748456e-07, 0, 1, 0, -1.748456e-07, 0, 1, 0.060786247, -0.12038803, 0.16720772)
+visible = false
+
 [node name="house_row7_house14" parent="Houses" unique_id=179011523 instance=ExtResource("5_wlhmk")]
 transform = Transform3D(1.2457745e-07, 0, -0.95, 0, 0.95, 0, 0.95, 0, 1.2457745e-07, 29.3573, 3.0934663, 23.610765)
 metadata/house_color_index = 3
+
+[node name="house -col5" parent="Houses/house_row7_house14" unique_id=667834002 instance=ExtResource("9_r8fkd")]
+transform = Transform3D(1, 0, 1.748456e-07, 0, 1, 0, -1.748456e-07, 0, 1, -0.07572174, -0.074386835, 0.005176544)
+visible = false
 
 [node name="player_house" parent="Houses" unique_id=942529270 instance=ExtResource("2_wlhmk")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -22, 3.16167, -3.7)
@@ -2027,6 +2027,10 @@ visible = false
 
 [node name="LED Light" parent="Houses/player_house" unique_id=1164034614 instance=ExtResource("11_c4dtt")]
 transform = Transform3D(-4.371139e-09, 0, 0.1, 0, 0.1, 0, -0.1, 0, -4.371139e-09, -5.512087, 2.0045946, 1.679718)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Houses/player_house/LED Light" unique_id=96629331]
+transform = Transform3D(10, 0, 5.684342e-14, 0, 10, 0, -5.684342e-14, 0, 10, 0, -19.999998, 0)
+light_energy = 0.2
 
 [node name="player_house2" parent="Houses" unique_id=942529271 instance=ExtResource("2_wlhmk")]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 29.953249, 3.1774137, -4.620962)
@@ -2080,6 +2084,10 @@ shape = SubResource("ConcavePolygonShape3D_pky1k")
 
 [node name="LED Light" parent="Houses/player_house2" unique_id=1208519416 instance=ExtResource("11_c4dtt")]
 transform = Transform3D(1.3113417e-08, 0, -0.1, 0, 0.1, 0, 0.1, 0, 1.3113417e-08, -5.3669515, 1.9888508, 2.273531)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Houses/player_house2/LED Light" unique_id=1200459184]
+transform = Transform3D(10, 0, 5.684342e-14, 0, 10, 0, -5.684342e-14, 0, 10, 0, -19.999998, 0)
+light_energy = 0.2
 
 [node name="Streets" type="Node3D" parent="." unique_id=1338897075 groups=["grass_blocker"]]
 
@@ -8512,7 +8520,7 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.04
 multimesh = SubResource("MultiMesh_7lc8q")
 
 [node name="GrassPatchFront7" type="MultiMeshInstance3D" parent="Grass" unique_id=389812352]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.040299, 0, -36.19999)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 7.9620934, 0, -35.75031)
 multimesh = SubResource("MultiMesh_xtpmv")
 
 [node name="GrassPatchThin7" type="MultiMeshInstance3D" parent="Grass" unique_id=1895990580]
@@ -8532,23 +8540,23 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.04
 multimesh = SubResource("MultiMesh_7lc8q")
 
 [node name="GrassPatchFront8" type="MultiMeshInstance3D" parent="Grass" unique_id=1315157345]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.040299, 0, -7.7999897)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 7.980445, 0, -7.9197)
 multimesh = SubResource("MultiMesh_xtpmv")
 
 [node name="GrassPatchThin8" type="MultiMeshInstance3D" parent="Grass" unique_id=1480908930]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.040299, 0, -7.7999897)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.040299, 0, -8.212515)
 multimesh = SubResource("MultiMesh_0awr7")
 
 [node name="GrassPatchThinRight8" type="MultiMeshInstance3D" parent="Grass" unique_id=1826487317]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.0403, 0, 5.700018)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.0403, 0, 5.261547)
 multimesh = SubResource("MultiMesh_0awr7")
 
 [node name="GrassPatchWindow8" type="MultiMeshInstance3D" parent="Grass" unique_id=1631520077]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.040299, 0, -7.7999897)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.040299, 0, -8.290045)
 multimesh = SubResource("MultiMesh_t3nbc")
 
 [node name="GrassPatchLeft8" type="MultiMeshInstance3D" parent="Grass" unique_id=1004274768]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.040299, 0, -7.7999897)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 8.040299, 0, -8.20086)
 multimesh = SubResource("MultiMesh_7lc8q")
 
 [node name="GrassPatchFront9" type="MultiMeshInstance3D" parent="Grass" unique_id=78831710]
