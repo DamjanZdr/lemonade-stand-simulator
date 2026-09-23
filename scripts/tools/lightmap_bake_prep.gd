@@ -2,10 +2,7 @@ class_name LightmapBakePrep
 extends RefCounted
 
 const BAKE_RADIUS := 70.0
-const STAND_POSITIONS := [
-	Vector3(2.0, 0.0, -2.0),
-	Vector3(-8.1, 0.0, -24.0),
-]
+const STAND_POSITIONS := [Vector3(2.0, 0.0, -2.0), Vector3(-8.1, 0.0, -24.0)]
 
 
 static func prepare(root: Node, versus: bool) -> void:
@@ -23,7 +20,13 @@ static func prepare(root: Node, versus: bool) -> void:
 	_set_variant(player_house2, versus)
 	print(
 		"Lightmap bake prepared: %s, radius=%.0f, static=%d, dynamic=%d, disabled=%d"
-		% ["VERSUS" if versus else "CO-OP", BAKE_RADIUS, counts.static, counts.dynamic, counts.disabled]
+		% [
+			"VERSUS" if versus else "CO-OP",
+			BAKE_RADIUS,
+			counts.static,
+			counts.dynamic,
+			counts.disabled,
+		]
 	)
 
 
@@ -36,10 +39,7 @@ static func _set_radius_gi(node: Node, counts: Dictionary) -> void:
 		else:
 			var min_distance := INF
 			for stand_position in STAND_POSITIONS:
-				min_distance = minf(
-					min_distance,
-					mesh.global_position.distance_to(stand_position),
-				)
+				min_distance = minf(min_distance, mesh.global_position.distance_to(stand_position))
 			if min_distance <= BAKE_RADIUS:
 				mesh.gi_mode = GeometryInstance3D.GI_MODE_STATIC
 				counts.static += 1
