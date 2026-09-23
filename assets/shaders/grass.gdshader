@@ -7,7 +7,7 @@ uniform vec4 color_bottom : source_color = vec4(0.05, 0.2, 0.05, 1.0);
 uniform float wind_speed = 1.5;
 uniform float sway_strength = 0.3;
 uniform float wind_frequency = 0.5;
-uniform float density : hint_range(0.0, 1.0) = 0.85;
+uniform float density : hint_range(0.0, 1.0) = 0.65;
 
 void vertex() {
 	// --- KROK 1: EFEKT Y-BILLBOARD DLA MULTIMESH ---
