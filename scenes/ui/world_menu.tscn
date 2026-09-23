@@ -64,11 +64,12 @@ theme_override_constants/separation = 4
 alignment = 0
 
 [node name="TitleLayer" type="Control" parent="MenuBox"]
-custom_minimum_size = Vector2(320, 220)
+custom_minimum_size = Vector2(320, 185)
 layout_mode = 2
 mouse_filter = 2
 
 [node name="Shadow" type="TextureRect" parent="MenuBox/TitleLayer"]
+visible = false
 layout_mode = 0
 offset_left = -24.0
 offset_top = -16.0
@@ -118,14 +119,14 @@ theme_override_colors/font_color = Color(1, 0.9176, 0.0627, 1)
 text = "LEMONS"
 
 [node name="Spacer" type="Control" parent="MenuBox"]
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 52)
-theme_override_font_sizes/font_size = 45
+custom_minimum_size = Vector2(0, 50)
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
@@ -134,8 +135,8 @@ text = "Play"
 [node name="SavesButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 52)
-theme_override_font_sizes/font_size = 45
+custom_minimum_size = Vector2(0, 50)
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
@@ -144,8 +145,8 @@ text = "Stands"
 [node name="JoinButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 52)
-theme_override_font_sizes/font_size = 45
+custom_minimum_size = Vector2(0, 50)
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
@@ -167,8 +168,8 @@ text = ""
 [node name="SettingsButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 52)
-theme_override_font_sizes/font_size = 45
+custom_minimum_size = Vector2(0, 50)
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
@@ -177,8 +178,8 @@ text = "Settings"
 [node name="QuitButton" type="Button" parent="MenuBox"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 52)
-theme_override_font_sizes/font_size = 45
+custom_minimum_size = Vector2(0, 50)
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
 alignment = 0
