@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cworldmenu01"]
+[gd_scene load_steps=9 format=3 uid="uid://cworldmenu01"]
 
 [ext_resource type="Script" path="res://scripts/ui/world_menu.gd" id="1_script"]
 [ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
@@ -16,6 +16,10 @@ shader_parameter/fade_start = 0.35
 shader = ExtResource("4_dimfade")
 shader_parameter/dim_color = Color(0, 0, 0, 0.35)
 shader_parameter/fade_start = 0.35
+
+[sub_resource type="AtlasTexture" id="TitleAtlas"]
+atlas = ExtResource("5_title")
+region = Rect2(15, 15, 392, 229)
 
 [node name="WorldMenu" type="CanvasLayer"]
 layer = 50
@@ -65,8 +69,10 @@ mouse_filter = 2
 
 [node name="Shadow" type="TextureRect" parent="MenuBox/TitleLayer"]
 layout_mode = 0
-offset_right = 300.0
-offset_bottom = 178.0
+offset_left = -15.0
+offset_top = -10.0
+offset_right = 285.0
+offset_bottom = 168.0
 mouse_filter = 2
 texture = ExtResource("6_shadow")
 expand_mode = 1
@@ -74,10 +80,10 @@ stretch_mode = 5
 
 [node name="Title" type="TextureRect" parent="MenuBox/TitleLayer"]
 layout_mode = 0
-offset_right = 300.0
-offset_bottom = 178.0
+offset_right = 270.0
+offset_bottom = 158.0
 mouse_filter = 2
-texture = ExtResource("5_title")
+texture = SubResource("TitleAtlas")
 expand_mode = 1
 stretch_mode = 5
 
