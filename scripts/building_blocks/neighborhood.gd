@@ -236,10 +236,15 @@ func _apply_vehicle_colors() -> void:
 			index += 1
 
 
-func _apply_house_colors() -> void:
+func apply_runtime_house_colors_for_bake() -> void:
+	_apply_house_colors(true)
+
+
+func _apply_house_colors(use_runtime_settings: bool = false) -> void:
 	# In the editor we don't have GameState defaults, so match the in-game defaults.
-	var color_roofs := GameState.color_roofs if not Engine.is_editor_hint() else true
-	var color_walls := GameState.color_walls if not Engine.is_editor_hint() else false
+	var runtime_colors := use_runtime_settings or not Engine.is_editor_hint()
+	var color_roofs := GameState.color_roofs if runtime_colors else true
+	var color_walls := GameState.color_walls if runtime_colors else false
 
 	var houses_groups: Array[Node] = []
 	var local_houses := get_node_or_null("Houses")
