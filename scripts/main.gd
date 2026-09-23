@@ -251,12 +251,29 @@ func _is_versus_mode() -> bool:
 	)
 
 
+func _set_mode_node_active(node: Node, active: bool) -> void:
+	if node is Node3D:
+		node.visible = active
+	node.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
+	for shape in node.find_children("*", "CollisionShape3D", true, false):
+		(shape as CollisionShape3D).set_deferred("disabled", not active)
+	for area in node.find_children("*", "Area3D", true, false):
+		(area as Area3D).set_deferred("monitoring", active)
+		(area as Area3D).set_deferred("monitorable", active)
+
+
 func _apply_game_mode_layout() -> void:
 	var versus := _is_versus_mode()
 	var effective_mode := (GameState.GameMode.VERSUS if versus else GameState.GameMode.COOP)
-	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
-	if neighborhood != null and neighborhood.has_method("apply_game_mode"):
-		neighborhood.apply_game_mode(effective_mode)
+	var single_house := world.find_child("single_stand_house2", true, false)
+	var player_house2 := world.find_child("player_house2", true, false)
+	if single_house == null or player_house2 == null:
+		push_error(
+			"Main: missing mode house nodes (single=%s, player2=%s)" % [single_house, player_house2]
+		)
+	else:
+		_set_mode_node_active(single_house, effective_mode != GameState.GameMode.VERSUS)
+		_set_mode_node_active(player_house2, effective_mode == GameState.GameMode.VERSUS)
 	if stand_unit2 != null:
 		stand_unit2.visible = versus
 		stand_unit2.process_mode = (
