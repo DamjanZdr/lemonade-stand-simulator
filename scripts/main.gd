@@ -210,6 +210,7 @@ func _ready() -> void:
 	# Connect to game_starting signal — when the host starts the game,
 	# transition from lobby to game phase (camera tween, hide UI, start systems).
 	LobbyManager.game_starting.connect(_on_game_starting)
+	LobbyManager.roster_changed.connect(_apply_game_mode_layout)
 	LobbyManager.late_join_starting.connect(_on_late_join_starting)
 	LobbyManager.late_join_denied.connect(_on_late_join_denied)
 	WorldSync.world_snapshot_applied.connect(_on_world_snapshot_applied)
@@ -426,6 +427,7 @@ func _on_menu_play() -> void:
 		if slot != "":
 			SaveManager.load_existing_game(slot)
 			LobbyManager.game_mode = GameState.game_mode
+			_apply_game_mode_layout()
 			NetworkManager.host_game()
 			_world_menu.hide_menu()
 			return
@@ -436,7 +438,8 @@ func _on_menu_play() -> void:
 ## New stand created from the saves panel name dialog.
 func _on_menu_new_stand(stand_name: String, game_mode: int) -> void:
 	SaveManager.start_new_game(stand_name, game_mode)
-	LobbyManager.game_mode = game_mode
+	LobbyManager.game_mode = GameState.normalize_game_mode(game_mode)
+	_apply_game_mode_layout()
 	# Use the same whip loading transition as _on_menu_load_stand so
 	# the player sees the "Loading..." feedback instead of an instant
 	# menu hide. host_game() is deferred to _finish_transition so the
@@ -455,6 +458,7 @@ func _on_menu_load_stand(slot_name: String) -> void:
 			break
 	SaveManager.load_existing_game(slot_name)
 	LobbyManager.game_mode = GameState.game_mode
+	_apply_game_mode_layout()
 	_start_stand_transition(slot_name, stand_name)
 
 
