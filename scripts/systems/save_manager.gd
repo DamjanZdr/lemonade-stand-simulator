@@ -270,7 +270,7 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	# Reset GameState to defaults
 	GameState.money = Balancing.STARTING_MONEY
 	GameState.popularity = 0.1
-	GameState.temperature = 25.0
+	GameState.temperature = Balancing.TEMP_DEFAULT
 	GameState.init_default_prices()
 	GameState.init_default_recipes()
 	_sync_live_stand_recipes(false)
@@ -396,7 +396,9 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	OnboardingManager.deserialize(data.get("onboarding", { "version": 1, "stands": { } }))
 	GameState.money = data.get("money", Balancing.STARTING_MONEY)
 	GameState.popularity = data.get("popularity", 0.1)
-	GameState.temperature = data.get("temperature", 25.0)
+	GameState.temperature = Balancing.snap_temperature(
+		data.get("temperature", Balancing.TEMP_DEFAULT)
+	)
 	var saved_prices = data.get("prices", { })
 	if saved_prices is Dictionary and not saved_prices.is_empty():
 		for ft in GameState.FRUIT_TYPES:

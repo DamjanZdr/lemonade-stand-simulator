@@ -124,7 +124,7 @@ func _sync_phase_to_clients() -> void:
 	if not multiplayer.is_server():
 		return
 	if multiplayer.get_peers().size() > 0:
-		_sync_day_phase.rpc(current_phase, day_number)
+		_sync_day_phase.rpc(current_phase, day_number, GameState.temperature)
 
 
 ## Sync the current day/phase to a specific peer (for late joiners).
@@ -146,6 +146,7 @@ func sync_day_state_to_peer(peer_id: int) -> void:
 		_day_timer,
 		_day_duration,
 		day_time_over,
+		GameState.temperature,
 	)
 
 
@@ -153,13 +154,22 @@ func sync_day_state_to_peer(peer_id: int) -> void:
 ## day_phase_changed and day_timer_updated so the sun controller and
 ## HUD clock snap to the host's exact time of day.
 @rpc("authority", "call_local", "reliable")
-func _sync_day_state(phase: int, day: int, timer: float, duration: float, is_over: bool) -> void:
+func _sync_day_state(
+	phase: int,
+	day: int,
+	timer: float,
+	duration: float,
+	is_over: bool,
+	temperature: float,
+) -> void:
 	if multiplayer.is_server():
 		return
 	current_phase = phase as Phase
 	day_number = day
 	_day_timer = timer
 	_day_duration = duration
+	GameState.temperature = temperature
+	EventBus.weather_changed.emit(temperature)
 	# Same flag rules as _sync_day_phase: a non-DAY phase clears the
 	# carry-over flag; during DAY the host's authoritative flag wins.
 	if phase != Phase.DAY:
@@ -172,11 +182,13 @@ func _sync_day_state(phase: int, day: int, timer: float, duration: float, is_ove
 
 
 @rpc("authority", "call_local", "reliable")
-func _sync_day_phase(phase: int, day: int) -> void:
+func _sync_day_phase(phase: int, day: int, temperature: float) -> void:
 	if multiplayer.is_server():
 		return
 	current_phase = phase as Phase
 	day_number = day
+	GameState.temperature = temperature
+	EventBus.weather_changed.emit(temperature)
 	# Reset the day-over flag when a new day/night phase begins — the flag
 	# is only cleared host-side, so without this a client keeps
 	# day_time_over=true into the next day.
@@ -189,8 +201,9 @@ func start_morning() -> void:
 	current_phase = Phase.MORNING
 	day_start_money = GameState.money
 	day_costs = 0.0
-	# Randomize temperature for the day
-	var temp := randf_range(Balancing.TEMP_MIN + 5.0, Balancing.TEMP_MAX - 5.0)
+	# Randomize temperature for the day — locked to multiples of 7 so the
+	# ideal ice count is always a whole number of scoops.
+	var temp: float = Balancing.DAY_TEMPERATURES[randi() % Balancing.DAY_TEMPERATURES.size()]
 	GameState.temperature = temp
 	EventBus.weather_changed.emit(temp)
 	EventBus.day_phase_changed.emit(Phase.MORNING, day_number)

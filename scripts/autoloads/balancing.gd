@@ -19,8 +19,26 @@ const IDEAL_SUGAR_PER_LIQUID: float = 0.20 # 2 scoops out of 10 liquid = perfect
 
 # === TEMPERATURE RANGE ===
 const TEMP_MIN: float = 10.0
-const TEMP_MAX: float = 40.0
+const TEMP_MAX: float = 42.0
 const PERFECT_ICE_DEGREES_PER_SCOOP: float = 7.0
+# Daily temperatures are locked to multiples of PERFECT_ICE_DEGREES_PER_SCOOP
+# so the ideal ice count is always a whole number of scoops (3/4/5/6).
+const DAY_TEMPERATURES: Array[float] = [21.0, 28.0, 35.0, 42.0]
+const TEMP_DEFAULT: float = 28.0
+
+
+## Nearest legal daily temperature — used to migrate saves created while
+## temperature was a continuous random roll.
+static func snap_temperature(temp: float) -> float:
+	var best: float = DAY_TEMPERATURES[0]
+	var best_dist: float = INF
+	for t in DAY_TEMPERATURES:
+		var d: float = absf(t - temp)
+		if d < best_dist:
+			best_dist = d
+			best = t
+	return best
+
 
 # === PITCHER ===
 const PITCHER_MAX_LIQUID: float = 10.0

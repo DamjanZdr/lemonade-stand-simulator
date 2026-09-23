@@ -2,7 +2,7 @@ extends Node3D
 ## Maps live weather temperature to a 3D thermometer visual.
 
 const MIN_TEMP_C: float = 10.0
-const MAX_TEMP_C: float = 40.0
+const MAX_TEMP_C: float = 42.0
 
 const ERASER_Y_EMPTY: float = 0.170
 const ERASER_Y_FULL: float = 5.8

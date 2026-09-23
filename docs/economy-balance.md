@@ -16,8 +16,10 @@ Upgrades will modify these later — this file is the **baseline** they modify.
 ## Ideal lemon pitcher (recipe math)
 
 From `balancing.gd`: `IDEAL_LEMON_RATIO = 0.30` (3 lemons/pitcher),
-`IDEAL_SUGAR_PER_LIQUID = 0.20` (2 sugar/pitcher), ice ~1–3 scoops depending on
-temperature (`PERFECT_ICE_DEGREES_PER_SCOOP = 7.0`, temp range 10–40 °C).
+`IDEAL_SUGAR_PER_LIQUID = 0.20` (2 sugar/pitcher), ice = temperature ÷
+`PERFECT_ICE_DEGREES_PER_SCOOP` (7.0). Daily temperature is locked to
+`DAY_TEMPERATURES` = 21/28/35/42 °C, so the ideal ice count is always an exact
+whole number of scoops: 3, 4, 5, or 6.
 
 ### Proposed box prices (vs current)
 

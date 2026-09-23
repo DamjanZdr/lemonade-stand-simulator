@@ -51,7 +51,7 @@ func _ready() -> void:
 	# receive state from the host via RPCs. Do NOT auto-load here.
 	money = Balancing.STARTING_MONEY
 	popularity = 0.1
-	temperature = 25.0
+	temperature = Balancing.TEMP_DEFAULT
 	init_default_prices()
 	init_default_recipes()
 	feedback_tier = 0
