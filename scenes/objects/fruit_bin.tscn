@@ -174,7 +174,7 @@ transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.9925528, -0.835908
 [node name="ItemGrid_Raspberry" type="Node3D" parent="." unique_id=524961904]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.77031827, 0)
 script = ExtResource("3_gkbo6")
-capacity = 12
+capacity = 5
 starting_amount = 0.0
 drop_height = 2.0
 
@@ -193,35 +193,15 @@ transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 1.384816, -0.8359089
 [node name="raspberry5" parent="ItemGrid_Raspberry" unique_id=191501161 instance=ExtResource("9_rasp")]
 transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.9925528, -0.83590895, -1.6987594)
 
-[node name="raspberry6" parent="ItemGrid_Raspberry" unique_id=136592796 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -3.4396374, -0.83590895, 0.101240635)
 
-[node name="raspberry7" parent="ItemGrid_Raspberry" unique_id=759761631 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -1.8408782, -0.83590895, 0.101240635)
 
-[node name="raspberry8" parent="ItemGrid_Raspberry" unique_id=860475236 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -0.1972282, -0.83590895, 0.101240635)
 
-[node name="raspberry9" parent="ItemGrid_Raspberry" unique_id=701604994 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 1.384816, -0.83590895, 0.101240635)
 
-[node name="raspberry10" parent="ItemGrid_Raspberry" unique_id=602253788 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.9925528, -0.83590895, 0.101240635)
 
-[node name="raspberry11" parent="ItemGrid_Raspberry" unique_id=278037034 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -3.4396374, -0.83590895, 1.9012407)
 
-[node name="raspberry12" parent="ItemGrid_Raspberry" unique_id=542159591 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -1.8408782, -0.83590895, 1.9012407)
 
-[node name="raspberry13" parent="ItemGrid_Raspberry" unique_id=331445392 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -0.1972282, -0.83590895, 1.9012407)
 
-[node name="raspberry14" parent="ItemGrid_Raspberry" unique_id=831717926 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 1.384816, -0.83590895, 1.9012407)
 
-[node name="raspberry15" parent="ItemGrid_Raspberry" unique_id=331848422 instance=ExtResource("9_rasp")]
-transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2.9925528, -0.83590895, 1.9012407)
 
 [node name="ItemGrid_Blueberry" type="Node3D" parent="." unique_id=97532183]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6857164, 0.31758022)

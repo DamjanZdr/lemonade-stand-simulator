@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://raspberryunlock01"]
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3 uid="uid://cnsvf54r0eqn1"]
 
 [ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://xtsesr8jw5vw" path="res://assets/textures/ui/upgrades/fruitunlock.png" id="icon"]
