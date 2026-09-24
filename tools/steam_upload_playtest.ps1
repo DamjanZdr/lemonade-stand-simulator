@@ -84,14 +84,19 @@ if (-not (Test-Path $dll)) {
 }
 
 Write-Host "Uploading build to App $AppId branch '$Branch'..." -ForegroundColor Cyan
-$arguments = @( "+login", $SteamUser, "+app_build_update", $AppId, $AppBuildVdf, "+quit" )
-# Launch in a new console window so SteamCMD's password/Steam Guard prompts
-# work properly. PowerShell's call operator sometimes swallows interactive input.
+$buildVdfPath = (Resolve-Path $AppBuildVdf).Path
+$arguments = @( "+login", $SteamUser, "+app_build_update", $AppId, $buildVdfPath, "+quit" )
+# Run SteamCMD in the same window and capture output to a log. Credentials
+# should already be cached from the first manual login.
+$logPath = Join-Path $projectRoot "tools/steam_upload.log"
+$errPath = Join-Path $projectRoot "tools/steam_upload.err"
 $process = Start-Process -FilePath $SteamCmd -ArgumentList $arguments `
-	-Wait -PassThru -WorkingDirectory $projectRoot
+	-Wait -PassThru -WorkingDirectory $projectRoot -NoNewWindow `
+	-RedirectStandardOutput $logPath -RedirectStandardError $errPath
 if ($process.ExitCode -ne 0) {
-	throw "Steam upload failed (exit code $($process.ExitCode))."
+	throw "Steam upload failed (exit code $($process.ExitCode)). See tools/steam_upload.log and tools/steam_upload.err."
 }
+Write-Host "SteamCMD output saved to $logPath" -ForegroundColor DarkGray
 
 Write-Host "Upload complete. Build should be live on '$Branch' branch of App $AppId." -ForegroundColor Green
 Write-Host "Add testers in Steamworks -> App Admin for App $AppId."
