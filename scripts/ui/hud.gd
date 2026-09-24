@@ -629,13 +629,8 @@ func _render_onboarding(
 			for part in parts:
 				placed = maxi(placed, int(counts.get(part, 0)))
 		text += "\nProgress: %d / %d" % [mini(placed, required), required]
-	if task_id in ["demo_master_lemon", "demo_master_second_fruit"]:
-		var fruit: String = (
-			"lemon"
-			if task_id == "demo_master_lemon"
-			else str(progress.get("selected_demo_fruit", ""))
-		)
-		var candidate: Dictionary = progress.get("active_recipe_candidates", { }).get(fruit, { })
+	if task_id == "demo_master_lemon":
+		var candidate: Dictionary = progress.get("active_recipe_candidates", { }).get("lemon", { })
 		text += "\nValidation: %d / 5 customers" % int(candidate.get("streak", 0))
 	elif task_id == "demo_master_ice":
 		var candidate: Dictionary = progress.get("active_ice_candidate", { })

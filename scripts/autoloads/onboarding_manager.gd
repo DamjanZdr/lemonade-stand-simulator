@@ -12,8 +12,8 @@ const EVENT_HISTORY_CAP := 256
 const FRUIT_COMPLAINTS := ["too_strong", "not_enough_fruit", "too_sweet", "not_sweet_enough"]
 const ICE_COMPLAINTS := ["too_cold", "not_cold_enough"]
 const LEMON_MASTERY_TEXT := (
-	"Make more lemonade with different amounts of lemon until 5 customers in a row "
-	+ "are happy with the recipe"
+	"Make 5 customers in a row happy. Listen to the feedback from the unhappy ones "
+	+ "and adjust your recipe when you make your next batches."
 )
 const CLIENT_REPORTED_EVENTS := [
 	"equipment_placed",
@@ -114,7 +114,10 @@ const TASKS: Array[Dictionary] = [
 	},
 	{
 		"id": "demo_add_sugar_ice",
-		"text": "Add at least one scoop each of {sugar} and {ice} to the pitcher.",
+		"text": (
+			"Add at least one scoop each of {sugar} and {ice} to the pitcher. "
+			+ "The ideal ice amount depends on the temperature: use 1 ice cube per 5C / 9F."
+		),
 		"event": "pitcher_ingredient",
 		"parts": { "sugar": "sugar", "ice": "ice" },
 	},
@@ -189,16 +192,8 @@ const TASKS: Array[Dictionary] = [
 		"parts": { "lemons": "fruit_count", "sugar": "sugar" },
 	},
 	{
-		"id": "demo_set_ice_ratio",
-		"text": "{Set how many degrees the temperature must rise before adding another ice cube}.",
-		"event": "ice_changed",
-		"parts": {
-			"Set how many degrees the temperature must rise before adding another ice cube": "ice"
-		},
-	},
-	{
 		"id": "demo_master_lemon",
-		"text": "{%s}." % LEMON_MASTERY_TEXT,
+		"text": LEMON_MASTERY_TEXT,
 		"event": "recipe_discovered",
 		"parts": { LEMON_MASTERY_TEXT: "lemon" },
 	},
@@ -215,34 +210,19 @@ const TASKS: Array[Dictionary] = [
 		"parts": { "Use customer feedback to perfect your ice setting": "ice" },
 	},
 	{
-		"id": "demo_set_perfect_ice",
-		"text": "{Set your perfected ice ratio on the recipe board}.",
-		"event": "perfect_ice_set",
-		"parts": { "Set your perfected ice ratio on the recipe board": "ice" },
-	},
-	{
-		"id": "demo_research_second_fruit",
-		"text": "{Research and unlock a second fruit}.",
-		"event": "fruit_unlocked",
-		"parts": { "Research and unlock a second fruit": "fruit" },
-	},
-	{
-		"id": "demo_prepare_second_fruit",
-		"text": "{Order}, {prepare}, and {serve} lemonade made with your new fruit.",
-		"event": "second_fruit",
-		"parts": { "Order": "ordered", "prepare": "prepared", "serve": "served" },
-	},
-	{
-		"id": "demo_master_second_fruit",
-		"text": "{Use customer feedback to perfect your new fruit recipe}.",
-		"event": "recipe_discovered",
-		"parts": { "Use customer feedback to perfect your new fruit recipe": "selected" },
-	},
-	{
 		"id": "demo_set_second_recipe",
-		"text": "{Save your perfected new fruit recipe on the recipe board}.",
+		"text": "{Set your perfected new fruit recipe on the recipe board}.",
 		"event": "perfect_recipe_set",
-		"parts": { "Save your perfected new fruit recipe on the recipe board": "selected" },
+		"parts": { "Set your perfected new fruit recipe on the recipe board": "selected" },
+	},
+	{
+		"id": "demo_keep_running",
+		"text": (
+			"Keep the stand running: serve happy customers, earn money, and grow your "
+			+ "popularity to bring even more visitors to your stand!"
+		),
+		"event": "demo_completed",
+		"parts": { "Keep the stand running": "ongoing" },
 	},
 ]
 
@@ -578,15 +558,6 @@ func _advance_satisfied_tasks(stand: StandUnit) -> void:
 				satisfied = not found.is_empty() and stand.get_recipe("lemon") == found
 			"demo_master_ice":
 				satisfied = p.discovered_ice_ratio != null
-			"demo_set_perfect_ice":
-				satisfied = (
-					p.discovered_ice_ratio != null
-					and is_equal_approx(stand.ice_degrees_per_scoop, float(p.discovered_ice_ratio))
-				)
-			"demo_research_second_fruit":
-				satisfied = p.selected_demo_fruit != ""
-			"demo_master_second_fruit":
-				satisfied = p.discovered_recipes.has(p.selected_demo_fruit)
 			"demo_set_second_recipe":
 				var found: Dictionary = p.discovered_recipes.get(p.selected_demo_fruit, { })
 				satisfied = (
@@ -652,7 +623,7 @@ func _part_matches(
 		var recipe_in: Dictionary = data.get("recipe", { })
 		var val: float = float(recipe_in.get(expected, 0.0))
 		return data.get("fruit_type") == "lemon" and val > 0.0
-	if task.id in ["demo_master_second_fruit", "demo_set_second_recipe"]:
+	if task.id == "demo_set_second_recipe":
 		return data.get("fruit_type") == p.selected_demo_fruit
 	return data.get("type", data.get("fruit_type", data.get("part", ""))) == expected
 
