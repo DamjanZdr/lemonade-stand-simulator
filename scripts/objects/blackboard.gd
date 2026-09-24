@@ -160,7 +160,8 @@ func _scan_labels() -> void:
 			continue
 		var fruit_id := label.name.to_lower()
 		var is_locked := (
-			fruit_id in StandUnit.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(fruit_id)
+			fruit_id in StandUnit.FRUIT_TYPES
+			and (_stand == null or not _stand.is_fruit_unlocked(fruit_id))
 		)
 		_label_nodes.append(label)
 		var lines := label.text.split("\n")
@@ -358,7 +359,14 @@ func _store_buffer() -> void:
 		return
 	if _edit_buffer == "":
 		return
-	_label_data[_label_index]["value%d" % (_field_index + 1)] = _edit_buffer
+	var key := "value%d" % (_field_index + 1)
+	# Don't spam the host if the value hasn't changed.
+	if _label_data[_label_index].get(key, "") == _edit_buffer:
+		return
+	_label_data[_label_index][key] = _edit_buffer
+	# Apply the field the moment it is left (arrow key, click, Enter, Esc),
+	# so the player does not have to press Enter explicitly on the last value.
+	_apply_current_fruit_recipe()
 
 
 func _append_char(c: String) -> void:
@@ -392,6 +400,7 @@ func _on_label_clicked(
 
 
 func _finish_edit() -> void:
+	_store_buffer() # Commit any pending field before exiting.
 	_label_index = -1
 	_field_index = 0
 	_edit_buffer = ""
@@ -503,7 +512,7 @@ func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 		var fruit_id: String = data.get("name", "").to_lower()
 		if fruit_id in StandUnit.FRUIT_TYPES:
 			var was_locked: bool = data.get("locked", false)
-			var now_locked := not UpgradeManager.is_fruit_unlocked(fruit_id)
+			var now_locked := _stand == null or not _stand.is_fruit_unlocked(fruit_id)
 			data["locked"] = now_locked
 			if was_locked != now_locked:
 				var label: Label3D = _label_nodes[i]

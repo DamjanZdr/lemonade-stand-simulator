@@ -149,6 +149,7 @@ func push_state(peer_id: int = 0) -> void:
 		highest_money,
 		onboarding_progress.duplicate(true),
 		stand_display_name,
+		purchased_upgrade_nodes.duplicate(true),
 	]
 	# peer_id 0 = broadcast to everyone; otherwise target one peer (e.g.
 	# a late joiner re-pulling state after its world finishes loading).
@@ -176,6 +177,7 @@ func _apply_state(
 	new_highest_money: float,
 	new_onboarding_progress: Dictionary,
 	new_stand_display_name: String,
+	new_purchased_upgrade_nodes: Dictionary,
 ) -> void:
 	if is_multiplayer_authority():
 		return # Host already has correct values; don't overwrite
@@ -212,6 +214,11 @@ func _apply_state(
 	highest_purchase = new_highest_purchase
 	highest_money = new_highest_money
 	onboarding_progress = new_onboarding_progress.duplicate(true)
+	# Sync per-stand unlocks. Notify local UI (price/recipe boards) if they changed.
+	var old_unlocks: Dictionary = purchased_upgrade_nodes.duplicate(true)
+	purchased_upgrade_nodes = new_purchased_upgrade_nodes.duplicate(true)
+	if not old_unlocks.is_empty() and not old_unlocks == purchased_upgrade_nodes:
+		EventBus.upgrade_purchased.emit(0, 0.0)
 	if stand_display_name != new_stand_display_name:
 		stand_display_name = new_stand_display_name
 		set_stand_name(stand_display_name)
@@ -227,9 +234,9 @@ func _apply_state(
 			"Perfect %s Recipe Found" % str(fruit).capitalize(),
 			"%s %s · %s sugar"
 			% [
-				str(float(found.get("fruit_count", 0.0))),
+				str(int(found.get("fruit_count", 0.0))),
 				str(fruit).capitalize(),
-				str(float(found.get("sugar", 0.0))),
+				str(int(found.get("sugar", 0.0))),
 			],
 		)
 	var new_ice_discovery = onboarding_progress.get("discovered_ice_ratio")
@@ -237,7 +244,7 @@ func _apply_state(
 		OnboardingManager.discovery_announced.emit(
 			self,
 			"Perfect Ice Ratio Found",
-			"1 cube every %s degrees" % str(float(new_ice_discovery)),
+			"1 cube every %s degrees" % str(int(new_ice_discovery)),
 		)
 	if changed_money:
 		money_changed.emit(money)
@@ -375,6 +382,16 @@ func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void
 	if _is_remote_client():
 		return
 	purchased_upgrade_nodes = UpgradeManager.get_purchased_for_stand(name).duplicate()
+	push_state()
+
+
+## Whether a fruit is unlocked for *this* stand. Boards/UI near this stand
+## should use this instead of the global UpgradeManager active set, which
+## can temporarily belong to another stand during a remote purchase.
+func is_fruit_unlocked(fruit: String) -> bool:
+	if fruit == "lemon":
+		return true
+	return purchased_upgrade_nodes.has(fruit + "_unlock")
 
 
 func init_default_prices() -> void:

@@ -121,15 +121,15 @@ func _get_looked_at_trashcan() -> Trashcan:
 ## Format a cup's recipe for the held-item hint ("3 Lemon · 2 sugar · 5 ice").
 func _recipe_hint_string(recipe: Dictionary) -> String:
 	var parts: Array[String] = []
-	var fc := float(recipe.get("fruit_count", 0.0))
+	var fc := int(recipe.get("fruit_count", 0.0))
 	var ft := str(recipe.get("fruit_type", ""))
-	var sg := float(recipe.get("sugar", 0.0))
-	var ic := float(recipe.get("ice", 0.0))
-	if fc > 0.0 and ft != "":
+	var sg := int(recipe.get("sugar", 0.0))
+	var ic := int(recipe.get("ice", 0.0))
+	if fc > 0 and ft != "":
 		parts.append("%s %s" % [str(fc), ft.capitalize()])
-	if sg > 0.0:
+	if sg > 0:
 		parts.append("%s sugar" % str(sg))
-	if ic > 0.0:
+	if ic > 0:
 		parts.append("%s ice" % str(ic))
 	return "unknown recipe" if parts.is_empty() else " · ".join(parts)
 
@@ -253,7 +253,7 @@ func poll_hint() -> void:
 			hint = "Empty Cup | LMB: add to stack"
 	elif _player.inventory.held_item == HeldItem.CUP_FILLED:
 		var held_recipe: Dictionary = _player.inventory.held_item_data.get("recipe", { })
-		hint = "Filled Cup | %s | LMB: place filled cup" % _recipe_hint_string(held_recipe)
+		hint = "[%s]\nFilled Cup | LMB: place filled cup" % _recipe_hint_string(held_recipe)
 		if _player.ray.is_colliding():
 			var hit_node: Node = _player.ray.get_collider() as Node
 			var has_customer := _player.find_customer_in_ancestors(hit_node) != null

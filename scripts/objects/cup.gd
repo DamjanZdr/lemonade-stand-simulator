@@ -120,22 +120,23 @@ func get_hint(player: Node) -> String:
 		return ""
 	if state == CupState.FILLED:
 		# Show the pitcher recipe this cup was poured from so cups from
-		# different batches aren't mixed up.
-		return "Cup | %s | LMB: pick up" % _recipe_string()
+		# different batches aren't mixed up. Recipe is shown above the
+		# action line in brackets, matching the pitcher tooltip style.
+		return "[%s]\nCup | LMB: pick up" % _recipe_string()
 	return "Cup | LMB: pick up empty cup"
 
 
 func _recipe_string() -> String:
 	var parts: Array[String] = []
-	var fc := float(recipe.get("fruit_count", 0.0))
+	var fc := int(recipe.get("fruit_count", 0.0))
 	var ft := str(recipe.get("fruit_type", ""))
-	var sg := float(recipe.get("sugar", 0.0))
-	var ic := float(recipe.get("ice", 0.0))
-	if fc > 0.0 and ft != "":
+	var sg := int(recipe.get("sugar", 0.0))
+	var ic := int(recipe.get("ice", 0.0))
+	if fc > 0 and ft != "":
 		parts.append("%s %s" % [str(fc), ft.capitalize()])
-	if sg > 0.0:
+	if sg > 0:
 		parts.append("%s sugar" % str(sg))
-	if ic > 0.0:
+	if ic > 0:
 		parts.append("%s ice" % str(ic))
 	return "unknown" if parts.is_empty() else " · ".join(parts)
 

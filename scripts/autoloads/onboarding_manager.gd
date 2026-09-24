@@ -157,9 +157,11 @@ const TASKS: Array[Dictionary] = [
 	},
 	{
 		"id": "demo_ask_customer",
-		"text": "{Ask a customer what they would like}.",
+		"text": "{Wait for a customer to come to your stand and ask them what they would like}.",
 		"event": "customer_asked",
-		"parts": { "Ask a customer what they would like": "asked" },
+		"parts": {
+			"Wait for a customer to come to your stand and ask them what they would like": "asked"
+		},
 	},
 	{
 		"id": "demo_serve_customer",
@@ -688,9 +690,9 @@ func _evaluate_mastery(stand: StandUnit, data: Dictionary) -> void:
 				"Perfect %s Recipe Found" % fruit.capitalize(),
 				"%s %s · %s sugar"
 				% [
-					str(float(candidate.get("fruit_count", 0.0))),
+					str(int(candidate.get("fruit_count", 0.0))),
 					fruit.capitalize(),
-					str(float(candidate.get("sugar", 0.0))),
+					str(int(candidate.get("sugar", 0.0))),
 				],
 			)
 			_match_task(stand, "recipe_discovered", { "fruit_type": fruit })
@@ -714,7 +716,7 @@ func _evaluate_mastery(stand: StandUnit, data: Dictionary) -> void:
 			discovery_announced.emit(
 				stand,
 				"Perfect Ice Ratio Found",
-				"1 cube every %s degrees" % str(ratio),
+				"1 cube every %s degrees" % str(int(ratio)),
 			)
 			_match_task(stand, "ice_discovered", { "type": "ice" })
 			if is_equal_approx(stand.ice_degrees_per_scoop, ratio):

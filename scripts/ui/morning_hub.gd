@@ -459,7 +459,7 @@ func _build_shop() -> void:
 	var unlocked_items: Array[Dictionary] = []
 	var locked_items: Array[Dictionary] = []
 	for item in shop_items:
-		if item["id"] in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(item["id"]):
+		if item["id"] in GameState.FRUIT_TYPES and not _is_local_fruit_unlocked(item["id"]):
 			locked_items.append(item)
 		else:
 			unlocked_items.append(item)
@@ -1092,9 +1092,7 @@ func _create_item_card(
 	border: Color,
 ) -> PanelContainer:
 	var id: String = item["id"]
-	var is_locked_fruit: bool = (
-		id in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(id)
-	)
+	var is_locked_fruit: bool = (id in GameState.FRUIT_TYPES and not _is_local_fruit_unlocked(id))
 	var card := PanelContainer.new()
 	card.name = name_prefix + id
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1391,7 +1389,7 @@ func _build_prices_page() -> void:
 	for child in container.get_children():
 		child.queue_free()
 	for ft in GameState.FRUIT_TYPES:
-		if not UpgradeManager.is_fruit_unlocked(ft):
+		if not _is_local_fruit_unlocked(ft):
 			continue
 		var row := HBoxContainer.new()
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1961,6 +1959,15 @@ func _get_local_money() -> float:
 	return GameState.money
 
 
+## Use the local stand's unlock set so a remote stand's research does not
+## leak into this player's shop/recipe/price pages.
+func _is_local_fruit_unlocked(fruit: String) -> bool:
+	var stand := _get_local_stand()
+	if stand != null and is_instance_valid(stand) and stand.has_method("is_fruit_unlocked"):
+		return stand.is_fruit_unlocked(fruit)
+	return UpgradeManager.is_fruit_unlocked(fruit)
+
+
 func _on_day_phase_changed(phase: int, day: int) -> void:
 	if phase == DayManager.Phase.MORNING:
 		_update_morning_data(day)
@@ -2328,7 +2335,7 @@ func _build_recipes_page() -> void:
 	_update_ice_display.call()
 
 	for ft in GameState.FRUIT_TYPES:
-		var locked := not UpgradeManager.is_fruit_unlocked(ft)
+		var locked := not _is_local_fruit_unlocked(ft)
 		var accent: Color = fruit_colors.get(ft, Color(0.92, 0.78, 0.25, 1))
 		if locked:
 			accent = Color(0.40, 0.40, 0.40, 1)

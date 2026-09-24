@@ -398,11 +398,11 @@ func get_contents_string() -> String:
 		ft = str(serving_recipe.get("fruit_type", ft))
 	var parts: Array[String] = []
 	if fc > 0.0 and ft != "":
-		parts.append("%.0f %s" % [fc, ft])
+		parts.append("%d %s" % [roundi(fc), ft])
 	if sg > 0.0:
-		parts.append("%.0f sugar" % sg)
+		parts.append("%d sugar" % roundi(sg))
 	if ic > 0.0:
-		parts.append("%.0f ice" % ic)
+		parts.append("%d ice" % roundi(ic))
 	if parts.is_empty():
 		return "empty"
 	return " ".join(parts)

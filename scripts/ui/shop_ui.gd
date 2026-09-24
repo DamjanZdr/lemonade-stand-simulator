@@ -112,14 +112,21 @@ func _get_local_money() -> float:
 	return GameState.money
 
 
+## Use the local stand's unlock set instead of the global active set so remote
+## research does not leak into this player's shop.
+func _is_fruit_unlocked(fruit: String) -> bool:
+	var stand := WorldSync.get_local_stand()
+	if stand != null and is_instance_valid(stand) and stand.has_method("is_fruit_unlocked"):
+		return stand.is_fruit_unlocked(fruit)
+	return UpgradeManager.is_fruit_unlocked(fruit)
+
+
 func _build_grid() -> void:
 	_items = shop_items.duplicate(true)
 	for item in _items:
 		var id: String = item["id"]
 		_quantities[id] = 0
-		var is_locked_fruit := (
-			id in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(id)
-		)
+		var is_locked_fruit := (id in GameState.FRUIT_TYPES and not _is_fruit_unlocked(id))
 
 		# Name label
 		var name_lbl := Label.new()
@@ -186,9 +193,7 @@ func _on_qty_changed(id: String, value: float) -> void:
 func _update_buttons() -> void:
 	for item in _items:
 		var id: String = item["id"]
-		var is_locked_fruit := (
-			id in GameState.FRUIT_TYPES and not UpgradeManager.is_fruit_unlocked(id)
-		)
+		var is_locked_fruit := (id in GameState.FRUIT_TYPES and not _is_fruit_unlocked(id))
 		var qty: int = _quantities.get(id, 0)
 		var total: float = qty * item["cost"]
 		var btn := grid.get_node_or_null("Btn_" + id) as Button

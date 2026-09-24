@@ -154,7 +154,7 @@ func _confirm_and_next() -> void:
 	_commit_current_price()
 	var next := -1
 	for idx in range(_editing_index + 1, StandUnit.FRUIT_TYPES.size()):
-		if UpgradeManager.is_fruit_unlocked(StandUnit.FRUIT_TYPES[idx]):
+		if _stand != null and _stand.is_fruit_unlocked(StandUnit.FRUIT_TYPES[idx]):
 			next = idx
 			break
 	if next < 0:
@@ -211,7 +211,7 @@ func _refresh_label() -> void:
 	var txt := ""
 	for i in range(StandUnit.FRUIT_TYPES.size()):
 		var ft: String = StandUnit.FRUIT_TYPES[i]
-		if not UpgradeManager.is_fruit_unlocked(ft):
+		if _stand == null or not _stand.is_fruit_unlocked(ft):
 			continue
 		var label: String = FRUIT_LABELS.get(ft, ft.capitalize())
 		var prefix: String = _price_prefix.get(ft, label + ".....")
@@ -239,7 +239,7 @@ func _next_editable_index(from: int, direction: int) -> int:
 	for _i in range(count):
 		idx = wrapi(idx + direction, 0, count)
 		var ft: String = StandUnit.FRUIT_TYPES[idx]
-		if UpgradeManager.is_fruit_unlocked(ft):
+		if _stand != null and _stand.is_fruit_unlocked(ft):
 			return idx
 	return -1
 
