@@ -183,6 +183,7 @@ transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, -0.9506968,
 pixel_size = 0.003
 double_sided = false
 modulate = Color(0, 0, 0, 1)
+metadata/no_depth_override = true
 text = "25°C"
 font_size = 150
 
@@ -191,5 +192,6 @@ transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 0.9832872, 
 pixel_size = 0.003
 double_sided = false
 modulate = Color(0, 0, 0, 1)
+metadata/no_depth_override = true
 text = "77°F"
 font_size = 150

@@ -51,11 +51,16 @@ func get_hint(player: Node) -> String:
 ## so dumping ingredients for cash is always a loss.
 func _get_supply_box_refund(box_data: Dictionary) -> float:
 	var amount: float = float(box_data.get("amount", 0.0))
+	var itype: String = box_data.get("ingredient_type", "")
+	var contents := Balancing.CONTENTS_REFUND_RATIO * Balancing.supply_unit_cost(itype) * amount
+	# A loose scoop taken from a bin is also held as SUPPLY_BOX
+	# (source == "bin_scoop") but carries no box — paying scrap on top
+	# made one lemon refund $0.45 against a $0.40 unit cost.
+	if box_data.get("source", "") == "bin_scoop":
+		return contents
 	if amount <= 0.0:
 		return empty_box_refund
-	var itype: String = box_data.get("ingredient_type", "")
-	var unit := Balancing.supply_unit_cost(itype)
-	return empty_box_refund + Balancing.CONTENTS_REFUND_RATIO * unit * amount
+	return empty_box_refund + contents
 
 
 ## Refund for a held container: 70% of the container cost plus 50% of
@@ -178,9 +183,9 @@ func _finish_held_disposal(player: Player) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	# Fly along a quadratic bezier arc (start -> mid -> target).
-	tween.tween_method(
-		_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_method(_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
+		Tween.EASE_IN_OUT
+	)
 	tween.tween_property(mesh, "scale", Vector3.ZERO, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
 		Tween.EASE_IN
 	)

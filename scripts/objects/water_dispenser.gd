@@ -304,9 +304,8 @@ func get_hint(player: Node) -> String:
 			if _snapped_pitcher != null:
 				return "Water Dispenser | already has a pitcher"
 			var recipe: Dictionary = p.held_item_data.get("saved_recipe", { })
-			if recipe.get("water", 0.0) > 0.0:
-				return "Water Dispenser | pitcher already has water"
-			var liquid: float = recipe.get("fruit_count", recipe.get("lemons", 0.0))
+			var liquid: float = recipe.get("fruit_count", recipe.get("lemons", 0.0)) \
+					+ recipe.get("water", 0.0)
 			if liquid >= Balancing.PITCHER_MAX_LIQUID:
 				return "Water Dispenser | pitcher is full"
 			return "Water Dispenser | LMB: place pitcher"
@@ -341,7 +340,7 @@ func snap_pitcher(pitcher: Pitcher, onboarding_stand: StandUnit = null) -> void:
 func can_snap_pitcher(pitcher: Pitcher) -> bool:
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
 		return false
-	if pitcher.water > 0.0:
+	if pitcher.cups_poured > 0 or pitcher.state == Pitcher.PitcherState.SERVING:
 		return false
 	var liquid := pitcher.get_liquid_volume()
 	if liquid >= Balancing.PITCHER_MAX_LIQUID:
@@ -352,7 +351,7 @@ func can_snap_pitcher(pitcher: Pitcher) -> bool:
 func can_snap_pitcher_from_recipe(recipe: Dictionary) -> bool:
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
 		return false
-	if recipe.get("water", 0.0) > 0.0:
+	if int(recipe.get("cups_poured", 0)) > 0:
 		return false
 	var liquid: float = recipe.get("fruit_count", recipe.get("lemons", 0.0)) + recipe.get(
 		"water",

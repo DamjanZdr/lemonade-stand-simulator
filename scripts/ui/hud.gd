@@ -479,7 +479,9 @@ func _build_onboarding_panel() -> void:
 	_onboarding_text.add_theme_font_size_override("normal_font_size", 20)
 	_onboarding_text.add_theme_color_override("default_color", Color(0.96, 0.96, 0.92))
 	box.add_child(_onboarding_text)
-	_discovery_label = _make_label("", 30, AMATIC_FONT, Color(1.0, 0.85, 0.25))
+	# Success green — a "Perfect Recipe Found" toast reads as an
+	# achievement; yellow only happened to look thematic for lemon.
+	_discovery_label = _make_label("", 30, AMATIC_FONT, Color(0.4, 0.9, 0.45))
 	_discovery_label.visible = false
 	_discovery_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_discovery_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -621,10 +623,11 @@ func _render_onboarding(
 	# Show count progress for tasks that require N occurrences (e.g. 3 cups).
 	var required: int = int(task.get("required_count", 0))
 	if required > 1:
-		var counts: Dictionary = progress.get("part_counts", { })
-		var placed: int = 0
-		for part in parts:
-			placed = maxi(placed, int(counts.get(part, 0)))
+		var placed := required if whole_task_complete else 0
+		if not whole_task_complete:
+			var counts: Dictionary = progress.get("part_counts", { })
+			for part in parts:
+				placed = maxi(placed, int(counts.get(part, 0)))
 		text += "\nProgress: %d / %d" % [mini(placed, required), required]
 	if task_id in ["demo_master_lemon", "demo_master_second_fruit"]:
 		var fruit: String = (
@@ -738,9 +741,10 @@ func set_hud_visible(vis: bool) -> void:
 	if _onboarding_panel:
 		_onboarding_panel.visible = (
 			vis and _stand != null
-			and not (_stand.onboarding_progress.get("completed", false) or _stand
-				.onboarding_progress
-				.get("skipped", false))
+			and not (
+				_stand.onboarding_progress.get("completed", false)
+				or _stand.onboarding_progress.get("skipped", false)
+			)
 		)
 
 # ─── Throw Charge Bar ───

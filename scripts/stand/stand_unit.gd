@@ -225,7 +225,12 @@ func _apply_state(
 		OnboardingManager.discovery_announced.emit(
 			self,
 			"Perfect %s Recipe Found" % str(fruit).capitalize(),
-			"%g %s · %g scoops of sugar" % [found.fruit_count, fruit, found.sugar],
+			"%g %s · %g sugar"
+			% [
+				float(found.get("fruit_count", 0.0)),
+				str(fruit).capitalize(),
+				float(found.get("sugar", 0.0)),
+			],
 		)
 	var new_ice_discovery = onboarding_progress.get("discovered_ice_ratio")
 	if had_onboarding_state and old_ice_discovery == null and new_ice_discovery != null:
@@ -245,8 +250,11 @@ func _apply_state(
 	for ft in changed_recipes:
 		recipe_changed.emit(ft, recipes[ft])
 		# Keep the global GameState in sync so other systems (morning hub,
-		# save manager, etc.) see the new recipe on clients too.
-		GameState.set_recipe(ft, recipes[ft])
+		# save manager, etc.) see the new recipe on clients too — but only
+		# for the legacy primary stand; a versus rival's recipes must not
+		# leak into the global view.
+		if is_legacy_primary:
+			GameState.set_recipe(ft, recipes[ft])
 
 
 func _ready() -> void:
@@ -372,19 +380,24 @@ func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void
 func init_default_prices() -> void:
 	for ft in FRUIT_TYPES:
 		var res := load("res://resources/data/" + ft + ".tres") as IngredientData
-		prices[ft] = res.default_price if res else 1.50
+		if res == null:
+			prices[ft] = 1.50
+			continue
+		# start_price is the price the stand opens with; when unset (0) the
+		# ideal default_price is used so non-tutorial fruits start fairly.
+		prices[ft] = res.start_price if res.start_price > 0.0 else res.default_price
 
 
 func init_default_recipes() -> void:
+	# Recipes start unconfigured ({}) — the board shows "?" until the player
+	# writes values, and recipe discovery only triggers on a recipe the
+	# player actually set (an empty dict never equals a discovered recipe).
 	for ft in FRUIT_TYPES:
-		recipes[ft] = _default_recipe_for(ft)
+		recipes[ft] = { }
 
 
-func _default_recipe_for(fruit_type: String) -> Dictionary:
-	var res := load("res://resources/data/" + fruit_type + ".tres") as IngredientData
-	if res:
-		return { "fruit_count": float(res.ideal_fruit_count), "sugar": res.ideal_sugar }
-	return { "fruit_count": 3.0, "sugar": 2.0 }
+func _default_recipe_for(_fruit_type: String) -> Dictionary:
+	return { }
 
 ## --- Economy API (mirrors GameState's public methods) ---
 

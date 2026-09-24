@@ -34,7 +34,9 @@ func _ready() -> void:
 		# Assign stand ownership based on parent StandUnit.
 		stand_owner = _stand.name
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
-	_refresh_label()
+	# Defer: children _ready() before their parent StandUnit, so prices
+	# aren't populated yet and get_price() would hit the 1.50 fallback.
+	call_deferred("_refresh_label")
 
 
 func get_hint(_player: Node) -> String:
@@ -204,6 +206,8 @@ func _append_char(c: String) -> void:
 
 
 func _refresh_label() -> void:
+	if _stand == null:
+		return
 	var txt := ""
 	for i in range(StandUnit.FRUIT_TYPES.size()):
 		var ft: String = StandUnit.FRUIT_TYPES[i]

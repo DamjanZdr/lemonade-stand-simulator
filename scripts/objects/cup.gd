@@ -118,7 +118,26 @@ func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null or p.held_item != HeldItem.NONE:
 		return ""
-	return "Cup | LMB: pick up %s cup" % ("filled" if state == CupState.FILLED else "empty")
+	if state == CupState.FILLED:
+		# Show the pitcher recipe this cup was poured from so cups from
+		# different batches aren't mixed up.
+		return "Cup | %s | LMB: pick up" % _recipe_string()
+	return "Cup | LMB: pick up empty cup"
+
+
+func _recipe_string() -> String:
+	var parts: Array[String] = []
+	var fc := float(recipe.get("fruit_count", 0.0))
+	var ft := str(recipe.get("fruit_type", ""))
+	var sg := float(recipe.get("sugar", 0.0))
+	var ic := float(recipe.get("ice", 0.0))
+	if fc > 0.0 and ft != "":
+		parts.append("%g %s" % [fc, ft.capitalize()])
+	if sg > 0.0:
+		parts.append("%g sugar" % sg)
+	if ic > 0.0:
+		parts.append("%g ice" % ic)
+	return "unknown" if parts.is_empty() else " · ".join(parts)
 
 
 func _refresh_fill_visibility() -> void:

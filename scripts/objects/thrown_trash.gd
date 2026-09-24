@@ -410,9 +410,11 @@ func pickup_by(player: Node) -> void:
 		if child is Node3D and not child is CollisionShape3D:
 			visual = (child as Node3D).duplicate()
 			break
-	# Give trash to the player.
-	var inv := player.get_node_or_null("Inventory") as PlayerInventory
-	if inv:
-		inv.make_held_trash(trash_value, trash_type, visual)
+	# Give trash to the player. The node is named "PlayerInventory" (not
+	# "Inventory") — use the exposed property like TrashItem does; the
+	# wrong lookup used to despawn the trash without ever granting it.
+	var p := player as Player
+	if p != null:
+		p.inventory.make_held_trash(trash_value, trash_type, visual)
 	# Despawn via WorldSync so all clients remove it.
 	WorldSync.despawn_networked(self)

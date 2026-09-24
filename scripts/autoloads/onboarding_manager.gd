@@ -6,6 +6,9 @@ signal discovery_announced(stand: StandUnit, title: String, detail: String)
 
 const VERSION := 1
 const TRACK_DEMO := "DEMO"
+## Max recorded events per stand — replayed against newly-arrived tasks so
+## purchases/placements done early still count (see _retro_satisfy_current_task).
+const EVENT_HISTORY_CAP := 256
 const FRUIT_COMPLAINTS := ["too_strong", "not_enough_fruit", "too_sweet", "not_sweet_enough"]
 const ICE_COMPLAINTS := ["too_cold", "not_cold_enough"]
 const LEMON_MASTERY_TEXT := (
@@ -318,6 +321,7 @@ func default_progress() -> Dictionary:
 		"current_task_id": TASKS[0].id,
 		"completed_task_ids": [],
 		"completed_parts": { },
+		"event_history": [],
 		"suspended_task_state": { },
 		"active_recipe_candidates": { },
 		"active_ice_candidate": { },
@@ -345,13 +349,13 @@ func initialize_stand(stand: StandUnit) -> void:
 		if not WorldSync.is_host():
 			return
 		stand.onboarding_progress = default_progress()
-	stand.ice_degrees_per_scoop = float(stand.onboarding_progress.get(
-			"ice_degrees_per_scoop",
-			stand.ice_degrees_per_scoop,
-		))
+	stand.ice_degrees_per_scoop = float(
+		stand.onboarding_progress.get("ice_degrees_per_scoop", stand.ice_degrees_per_scoop)
+	)
 	if stand.is_legacy_primary:
 		GameState.ice_degrees_per_scoop = stand.ice_degrees_per_scoop
 	_advance_satisfied_tasks(stand)
+	_retro_satisfy_current_task(stand)
 	stand_progress_changed.emit(stand, stand.onboarding_progress.duplicate(true))
 
 
@@ -381,6 +385,12 @@ func _request_report(stand_name: String, event_name: String, data: Dictionary) -
 
 func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> void:
 	initialize_stand(stand)
+	# Record every gameplay event so work done before its task arrives can
+	# still count (see _retro_satisfy_current_task). customer_feedback is
+	# excluded — it's mastery input, not task input, and carries a bulky
+	# recipe snapshot.
+	if event_name != "customer_feedback":
+		_record_event(stand, event_name, data)
 	if (
 		event_name in ["pitcher_prepared", "cup_filled"]
 		or (event_name == "equipment_placed" and data.get("type", "") == "pitcher")
@@ -413,15 +423,20 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 				event_name == "pitcher_prepared"
 				and fruit == (stand.onboarding_progress.selected_demo_fruit)
 			):
-				_match_task(stand, "second_fruit_prepared", { "fruit_type": fruit })
+				var d := { "fruit_type": fruit }
+				_record_event(stand, "second_fruit_prepared", d)
+				_match_task(stand, "second_fruit_prepared", d)
 	if (
 		event_name == "supply_ordered"
 		and data.get("type", "") == stand.onboarding_progress.selected_demo_fruit
 	):
-		_match_task(stand, "second_fruit_ordered", { "fruit_type": data.type })
+		var d2 := { "fruit_type": data.type }
+		_record_event(stand, "second_fruit_ordered", d2)
+		_match_task(stand, "second_fruit_ordered", d2)
 	if event_name == "customer_feedback":
 		_evaluate_mastery(stand, data)
 	_match_task(stand, event_name, data)
+	_retro_satisfy_current_task(stand)
 
 
 func _match_task(stand: StandUnit, event_name: String, data: Dictionary) -> void:
@@ -470,12 +485,88 @@ func _match_task(stand: StandUnit, event_name: String, data: Dictionary) -> void
 	_touch(stand)
 
 
+func _record_event(stand: StandUnit, event_name: String, data: Dictionary) -> void:
+	var p := stand.onboarding_progress
+	var history: Array = p.get("event_history", [])
+	history.append({ "event": event_name, "data": data.duplicate(true) })
+	if history.size() > EVENT_HISTORY_CAP:
+		history.pop_front()
+	p["event_history"] = history
+
+
+## After a task completes, actions the player already took may satisfy the
+## NEXT task's parts (e.g. they ordered equipment before being asked).
+## Replay recorded events through the same _part_matches rules so nothing
+## done early has to be repeated.
+func _retro_satisfy_current_task(stand: StandUnit) -> void:
+	var p := stand.onboarding_progress
+	var history: Array = p.get("event_history", [])
+	var changed_any := false
+	while not (p.completed or p.skipped or p.day_end_active):
+		if history.is_empty():
+			break
+		var idx := _task_index(p.current_task_id)
+		if idx < 0:
+			break
+		var task := TASKS[idx]
+		var required: int = int(task.get("required_count", 1))
+		var completed_parts: Dictionary = p.completed_parts
+		var changed := false
+		for part in task.parts:
+			if completed_parts.get(part, false):
+				continue
+			var matches := 0
+			for entry in history:
+				if _part_matches(task, part, entry.get("event", ""), entry.get("data", { }), p):
+					matches += 1
+			if matches <= 0:
+				continue
+			if required > 1:
+				var counts: Dictionary = p.get("part_counts", { })
+				var n := mini(maxi(int(counts.get(part, 0)), matches), required)
+				counts[part] = n
+				p["part_counts"] = counts
+				if n < required:
+					changed = true
+					continue
+			completed_parts[part] = true
+			changed = true
+		if not changed:
+			break
+		changed_any = true
+		p.completed_parts = completed_parts
+		if completed_parts.size() < task.parts.size():
+			break
+		p.completed_task_ids.append(task.id)
+		p.completed_parts = { }
+		p["part_counts"] = { }
+		if idx + 1 >= TASKS.size():
+			p.completed = true
+			p.current_task_id = ""
+		else:
+			p.current_task_id = TASKS[idx + 1].id
+		_advance_satisfied_tasks(stand)
+	if changed_any:
+		_touch(stand)
+
+
 func _advance_satisfied_tasks(stand: StandUnit) -> void:
 	var p := stand.onboarding_progress
 	while not p.completed:
 		var id: String = p.current_task_id
 		var satisfied := false
 		match id:
+			"demo_set_price":
+				# If the player already set the target price before the
+				# task arrived, count it — don't make them toggle it off
+				# and on again.
+				satisfied = is_equal_approx(
+					stand.get_price("lemon"),
+					float(TASKS[_task_index(id)].get("value", 1.0)),
+				)
+			"demo_record_recipe":
+				# A recipe already written on the board counts.
+				satisfied = not stand.get_recipe("lemon").is_empty()
 			"demo_master_lemon":
 				satisfied = p.discovered_recipes.has("lemon")
 			"demo_set_perfect_lemon":
@@ -521,7 +612,10 @@ func _part_matches(
 	var expected: String = task.parts[part]
 	if task.event == "cups":
 		return (
-			(event_name == "supply_ordered" and expected == "ordered" and data.get("type") == "cups")
+			(
+				event_name == "supply_ordered" and expected == "ordered"
+				and data.get("type") == "cups"
+			)
 			or (
 				event_name == "equipment_placed" and expected == "placed"
 				and data.get("type") == "cup_stack"
@@ -590,7 +684,12 @@ func _evaluate_mastery(stand: StandUnit, data: Dictionary) -> void:
 			discovery_announced.emit(
 				stand,
 				"Perfect %s Recipe Found" % fruit.capitalize(),
-				"%g %s · %g scoops of sugar" % [candidate.fruit_count, fruit, candidate.sugar],
+				"%g %s · %g sugar"
+				% [
+					float(candidate.get("fruit_count", 0.0)),
+					fruit.capitalize(),
+					float(candidate.get("sugar", 0.0)),
+				],
 			)
 			_match_task(stand, "recipe_discovered", { "fruit_type": fruit })
 			if stand.get_recipe(fruit) == candidate:
@@ -683,7 +782,8 @@ func enforce_guaranteed_feedback(
 		var state: Dictionary = p.active_recipe_candidates.get(fruit, { })
 		if (
 			state.get("value", { }) == candidate and not _fruit_is_perfect(fruit, candidate)
-			and int(state.get("silent", 0)) >= 3 and not result.complaints.any(
+			and int(state.get("silent", 0)) >= 3
+			and not result.complaints.any(
 				func(c):
 					return c in FRUIT_COMPLAINTS,
 			)
@@ -707,7 +807,8 @@ func enforce_guaranteed_feedback(
 		if (
 			ice_state.get("value", { }) == { "ratio": ratio }
 			and not is_equal_approx(ratio, Balancing.PERFECT_ICE_DEGREES_PER_SCOOP)
-			and int(ice_state.get("silent", 0)) >= 3 and not result.complaints.any(
+			and int(ice_state.get("silent", 0)) >= 3
+			and not result.complaints.any(
 				func(c):
 					return c in ICE_COMPLAINTS,
 			)
@@ -759,6 +860,7 @@ func _set_day_end_active(active: bool) -> void:
 			p.suspended_task_state = { }
 			p.day_end_active = false
 			_advance_satisfied_tasks(stand)
+			_retro_satisfy_current_task(stand)
 			_touch(stand)
 
 

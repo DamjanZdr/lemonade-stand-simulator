@@ -118,6 +118,22 @@ func _get_looked_at_trashcan() -> Trashcan:
 	return null
 
 
+## Format a cup's recipe for the held-item hint ("3 Lemon · 2 sugar · 5 ice").
+func _recipe_hint_string(recipe: Dictionary) -> String:
+	var parts: Array[String] = []
+	var fc := float(recipe.get("fruit_count", 0.0))
+	var ft := str(recipe.get("fruit_type", ""))
+	var sg := float(recipe.get("sugar", 0.0))
+	var ic := float(recipe.get("ice", 0.0))
+	if fc > 0.0 and ft != "":
+		parts.append("%g %s" % [fc, ft.capitalize()])
+	if sg > 0.0:
+		parts.append("%g sugar" % sg)
+	if ic > 0.0:
+		parts.append("%g ice" % ic)
+	return "unknown recipe" if parts.is_empty() else " · ".join(parts)
+
+
 func poll_hint() -> void:
 	var interactable := get_looked_at_interactable()
 	# Check for thrown trash body (works mid-air or after landing).
@@ -236,7 +252,8 @@ func poll_hint() -> void:
 		if interactable is CupStack:
 			hint = "Empty Cup | LMB: add to stack"
 	elif _player.inventory.held_item == HeldItem.CUP_FILLED:
-		hint = "Filled Cup | LMB: place filled cup"
+		var held_recipe: Dictionary = _player.inventory.held_item_data.get("recipe", { })
+		hint = "Filled Cup | %s | LMB: place filled cup" % _recipe_hint_string(held_recipe)
 		if _player.ray.is_colliding():
 			var hit_node: Node = _player.ray.get_collider() as Node
 			var has_customer := _player.find_customer_in_ancestors(hit_node) != null
@@ -382,7 +399,7 @@ func primary_interact() -> void:
 				EventBus.interaction_hint_changed.emit(
 					"Recipe locked — cups already poured from this pitcher"
 				)
-			elif current_water <= 0.0:
+			else:
 				var current_fruit: float = recipe.get("fruit_count", recipe.get("lemons", 0.0))
 				var liquid_volume: float = current_fruit + current_water
 				var fill: float = Balancing.PITCHER_MAX_LIQUID - liquid_volume
@@ -395,9 +412,9 @@ func primary_interact() -> void:
 					var hand_mesh := _player.inventory.get_hand_mesh()
 					if hand_mesh is Pitcher:
 						(hand_mesh as Pitcher).fill_water_slow(fill, 4.0)
-				EventBus.interaction_hint_changed.emit("Pitcher filled with water!")
-			else:
-				EventBus.interaction_hint_changed.emit("Pitcher already has water!")
+					EventBus.interaction_hint_changed.emit("Pitcher filled with water!")
+				else:
+					EventBus.interaction_hint_changed.emit("Pitcher is already full!")
 			return
 
 	if _player.inventory.held_item == HeldItem.CONTAINER:

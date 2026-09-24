@@ -178,9 +178,14 @@ func interact(player: Node) -> void:
 			EventBus.interaction_hint_changed.emit("Snap a pitcher to the press first!")
 			return
 		if not _can_press_into_pitcher(_snapped_pitcher):
+			# Pressing is impossible in this state, so the only useful LMB
+			# action is ejecting the pitcher — the take-pitcher branch below
+			# only runs when the press has no fruit, which used to leave a
+			# loaded press + bad pitcher permanently stuck.
 			EventBus.interaction_hint_changed.emit(
-				"Pitcher is locked, incompatible, or has insufficient space!"
+				"Pitcher is locked, incompatible, or has insufficient space — removing it!"
 			)
+			_take_snapped_pitcher(p)
 			return
 		_start_press()
 		return
@@ -484,7 +489,10 @@ func can_snap_pitcher(recipe: Dictionary) -> bool:
 	if fcount == 0.0 and water == 0.0 and sugar == 0.0 and ice == 0.0:
 		return true
 	var ftype: String = recipe.get("fruit_type", "")
-	if water == 0.0 and ftype == fruit_type:
+	# A pitcher with sugar/ice but no fruit juice can never accept pressed
+	# fruit — its fruit_type is "" so it would snap fine but then fail
+	# _can_press_into_pitcher() forever, wedging the press. Reject it.
+	if water == 0.0 and ftype != "" and ftype == fruit_type:
 		return true
 	return false
 

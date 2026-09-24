@@ -965,11 +965,11 @@ func _buy_tree_upgrade(
 		return
 	if _shop_closed():
 		_status_lbl.text = "Shop is closed for today"
-		_animate_status()
+		_animate_status(true)
 		return
 	if not data.get("can_buy", false):
 		_status_lbl.text = "Not enough money!"
-		_animate_status()
+		_animate_status(true)
 		var tween := create_tween()
 		var orig := node.position
 		tween.tween_property(node, "position", orig + Vector2(4, 0), 0.05)
@@ -1673,7 +1673,7 @@ func _update_cart_ui() -> void:
 func _checkout_cart() -> void:
 	if _shop_closed():
 		_status_lbl.text = "Shop is closed for today"
-		_animate_status()
+		_animate_status(true)
 		return
 	AudioManager.play_sfx_ui("coins")
 	var counts: Dictionary = { }
@@ -1721,8 +1721,12 @@ func _is_ingredient(item: Dictionary) -> bool:
 	return item in shop_items
 
 
-func _animate_status_text(msg: String) -> void:
+func _animate_status_text(msg: String, error := false) -> void:
 	_status_lbl.text = msg
+	_status_lbl.add_theme_color_override(
+		"font_color",
+		Color(0.95, 0.4, 0.35) if error else Color(0.4, 0.85, 0.4),
+	)
 	var tween := create_tween()
 	_status_lbl.modulate = Color(1, 1, 1, 0)
 	tween.tween_property(_status_lbl, "modulate", Color(1, 1, 1, 1), 0.15)
@@ -1733,7 +1737,7 @@ func _animate_status_text(msg: String) -> void:
 func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
 	if _shop_closed():
 		_status_lbl.text = "Shop is closed for today"
-		_animate_status()
+		_animate_status(true)
 		return
 	var total: float = qty * item["cost"]
 	# Route purchases through the host. Clients send an RPC; the host
@@ -1760,12 +1764,12 @@ func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
 func _buy_container(container_type: String, cost: float) -> void:
 	if _shop_closed():
 		_status_lbl.text = "Shop is closed for today"
-		_animate_status()
+		_animate_status(true)
 		return
 	if WorldSync.is_host():
 		if not WorldSync.spend_local_money(cost):
 			_status_lbl.text = "Not enough money!"
-			_animate_status()
+			_animate_status(true)
 			return
 		EventBus.equipment_order_placed.emit(container_type, WorldSync.get_local_stand_name())
 	else:
@@ -1900,7 +1904,11 @@ func _spend_from_stand(stand: Node, amount: float) -> bool:
 	return GameState.spend_money(amount)
 
 
-func _animate_status() -> void:
+func _animate_status(error := false) -> void:
+	_status_lbl.add_theme_color_override(
+		"font_color",
+		Color(0.95, 0.4, 0.35) if error else Color(0.4, 0.85, 0.4),
+	)
 	var tween := create_tween()
 	_status_lbl.modulate = Color(1, 1, 1, 0)
 	tween.tween_property(_status_lbl, "modulate", Color(1, 1, 1, 1), 0.15)

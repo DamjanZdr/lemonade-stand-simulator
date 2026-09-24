@@ -193,11 +193,11 @@ func _on_day_phase_changed(phase: int, _day: int) -> void:
 		customers_lost = 0
 
 
-func _default_recipe_for(fruit_type: String) -> Dictionary:
-	var res := load("res://resources/data/" + fruit_type + ".tres") as IngredientData
-	if res:
-		return { "fruit_count": float(res.ideal_fruit_count), "sugar": res.ideal_sugar }
-	return { "fruit_count": 3.0, "sugar": 2.0 }
+func _default_recipe_for(_fruit_type: String) -> Dictionary:
+	# Unconfigured — recipes only exist once the player writes them on the
+	# board. Returning the ideal values here made every board show the
+	# perfect recipe from day one and poisoned the discovery comparison.
+	return { }
 
 
 func get_recipe(fruit_type: String) -> Dictionary:
@@ -213,7 +213,9 @@ func init_default_prices() -> void:
 	for ft in FRUIT_TYPES:
 		var res := load("res://resources/data/" + ft + ".tres") as IngredientData
 		if res:
-			prices[ft] = res.default_price
+			# start_price (when set) is the opening price; default_price
+			# stays the ideal anchor customers compare against.
+			prices[ft] = (res.start_price if res.start_price > 0.0 else res.default_price)
 		else:
 			prices[ft] = 1.50
 

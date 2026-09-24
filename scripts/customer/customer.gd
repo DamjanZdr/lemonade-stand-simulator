@@ -1,4 +1,4 @@
-﻿class_name Customer
+class_name Customer
 extends CharacterBody3D
 ## Runtime-spawned NPC. Walks to queue spot, waits, receives/rejects lemonade, leaves.
 
@@ -458,6 +458,12 @@ func _sync_state(new_state: int, anim: String) -> void:
 		return
 	state = new_state as CustomerState
 	_npc.play_anim(anim)
+	# The patience meter is only meaningful while waiting — hide it once
+	# the customer has been resolved or is walking away. RECEIVING still
+	# counts as waiting (wrong-item rejection), so it stays visible there.
+	if state == CustomerState.REACTING or state == CustomerState.LEAVING:
+		if _patience_circle != null:
+			_patience_circle.visible = false
 
 
 ## Host: start the recovery (Fall in reverse) on clients.
@@ -642,6 +648,8 @@ func force_timeout() -> void:
 func _resolve(outcome: String) -> void:
 	_outcome = outcome
 	state = CustomerState.REACTING
+	if _patience_circle != null:
+		_patience_circle.visible = false
 	_npc.play_anim("Talk")
 	sync_state(CustomerState.REACTING, "Talk")
 	# Explicitly route popularity/stats to whichever stand this customer
@@ -685,8 +693,15 @@ func _resolve(outcome: String) -> void:
 				stand.request_add_money(price)
 			else:
 				GameState.add_money(price)
-			_start_leaving()
+			# Still show feedback + report evaluations — exact payers are
+			# mastery-eligible transactions just like change-makers.
+			_show_feedback_then_leave()
 	else:
+		# Non-paying outcome (timeout, priced out). Still show their
+		# feedback line while the Talk anim plays so they don't mime
+		# silently.
+		if _feedback_text != "":
+			_set_order_text(_feedback_text)
 		var serve_bonus: float = UpgradeManager.get_effect_total("speed_serve")
 		var interval: float = 1.8 * (1.0 - serve_bonus)
 		var tween := create_tween()
@@ -766,7 +781,9 @@ func _leave_after_change() -> void:
 		EventBus.change_tendered_updated.disconnect(_forward_change_tendered)
 	if EventBus.change_finalized.is_connected(_forward_change_finalized):
 		EventBus.change_finalized.disconnect(_forward_change_finalized)
-	# Only linger with feedback if the player actually completed the change.
+	# Only count correct change when the player tendered exactly what was
+	# due — overpaying is still a completed sale (with a thank-you) but not
+	# a "correct change" for the onboarding task.
 	if _last_tendered_cents == _change_due_cents and _change_due_cents >= 0:
 		OnboardingManager.report(
 			stand,
@@ -777,15 +794,22 @@ func _leave_after_change() -> void:
 				"due_cents": _change_due_cents,
 			},
 		)
-		_show_feedback_then_leave()
-	else:
-		_start_leaving()
+	elif _last_tendered_cents > _change_due_cents:
+		var extra := float(_last_tendered_cents - _change_due_cents) / 100.0
+		if _feedback_text != "":
+			_feedback_text += "\n"
+		_feedback_text += "And thanks for the extra $%.2f!" % extra
+	# Every completed sale shows feedback (and reports evaluations for
+	# mastery) — previously only exact-change customers lingered to talk.
+	_show_feedback_then_leave()
 
 
 func _start_leaving() -> void:
 	state = CustomerState.LEAVING
 	_engaged_with_player = false
 	_engaged_player = null
+	if _patience_circle != null:
+		_patience_circle.visible = false
 	_hide_order_bubble()
 	_npc.stop_payment_pose()
 	_npc.play_anim("Walk")
@@ -878,6 +902,8 @@ func _feedback_for_outcome(outcome: String) -> String:
 			return "Too expensive."
 		"wrong_order":
 			return "That's not what I ordered."
+		"timeout":
+			return "This takes too long — I have places to be!"
 		_:
 			return ""
 
@@ -1058,8 +1084,8 @@ func _show_order() -> void:
 	var parts: Array[String] = []
 	for fruit_type: String in order.keys():
 		var qty: int = order[fruit_type]
-		parts.append("%d %s" % [qty, fruit_type.capitalize()])
-	var text := ", ".join(parts)
+		parts.append("%d of %s lemonade" % [qty, fruit_type.capitalize()])
+	var text := "Can I please have %s?" % " and ".join(parts)
 	_set_order_text(text)
 
 

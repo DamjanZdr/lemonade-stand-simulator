@@ -145,10 +145,13 @@ func add_ingredient(ingredient_type: String, amount: float) -> bool:
 			if fruit_count > 0.0 and water > 0.0:
 				state = PitcherState.COMPLETE
 				EventBus.pitcher_state_changed.emit(int(state))
-		"sugar":
-			sugar += amount
-		"ice":
-			ice += amount
+		"sugar", "ice":
+			if is_fully_empty():
+				return false
+			if ingredient_type == "sugar":
+				sugar += amount
+			else:
+				ice += amount
 		_:
 			return false
 	update_label()
@@ -296,8 +299,16 @@ func interact(player: Node) -> void:
 						% [itype, str(state), cups_poured],
 					)
 				return
-			# Fill cup if pitcher has liquid and player holds empty cup
+			# Fill cup if pitcher has liquid and player holds empty cup.
+			# The pitcher must be topped up to max volume first — pouring
+			# from a half-prepped pitcher serves a broken recipe.
 			if p.held_item == HeldItem.CUP_EMPTY and get_liquid_volume() > 0.0:
+				if get_liquid_volume() < Balancing.PITCHER_MAX_LIQUID - 0.01:
+					EventBus.interaction_hint_changed.emit(
+						"Fill the pitcher with fruit/water first! (%.1f/%.0f)"
+						% [get_liquid_volume(), Balancing.PITCHER_MAX_LIQUID]
+					)
+					return
 				var recipe := pour_portion()
 				if recipe.is_empty():
 					return
@@ -415,6 +426,11 @@ func get_hint(player: Node) -> String:
 			if get_liquid_volume() <= 0.0:
 				return "Pitcher | LMB: pick up"
 			if p.held_item == HeldItem.CUP_EMPTY:
+				if get_liquid_volume() < Balancing.PITCHER_MAX_LIQUID - 0.01:
+					return contents + (
+						"Pitcher | fill to %.0f first (%.1f)"
+						% [Balancing.PITCHER_MAX_LIQUID, get_liquid_volume()]
+					)
 				return contents + (
 					"Pitcher | LMB: fill cup  |  RMB: pick up (%.1f liq)" % get_liquid_volume()
 				)
@@ -555,7 +571,10 @@ func _can_add_ingredient(ingredient_type: String, amount: float) -> bool:
 				return false
 			return get_liquid_volume() + amount <= Balancing.PITCHER_MAX_LIQUID
 		"sugar", "ice":
-			return true
+			# Sugar/ice dissolve INTO a drink — on a completely empty
+			# pitcher they'd create a fruit-less body that can't snap to
+			# the press and wedges the prep flow.
+			return not is_fully_empty()
 		_:
 			return false
 

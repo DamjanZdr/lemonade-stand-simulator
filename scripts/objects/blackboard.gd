@@ -29,6 +29,10 @@ func _ready() -> void:
 	# sync when another player edits the same recipes.
 	EventBus.recipe_changed.connect(_on_recipe_changed)
 	EventBus.game_reset.connect(_on_game_reset)
+	# Refresh when onboarding progress changes so the golden "perfect
+	# recipe" check-mark appears the moment discovery lands — previously
+	# labels only repainted when the board itself was edited.
+	OnboardingManager.stand_progress_changed.connect(_on_stand_progress_changed)
 	# Assign stand ownership based on parent StandUnit so rival players can't
 	# edit this stand's recipes.
 	if _stand != null:
@@ -78,8 +82,9 @@ func _sync_label_values_from_stand() -> void:
 			continue
 		if stand != null:
 			var recipe: Dictionary = stand.get_recipe(label_name)
-			data["value1"] = str(int(recipe.get("fruit_count", 0)))
-			data["value2"] = str(int(recipe.get("sugar", 0)))
+			# Unconfigured recipes are {} — keep "?" instead of showing 0.
+			data["value1"] = "" if recipe.is_empty() else str(int(recipe.get("fruit_count", 0)))
+			data["value2"] = "" if recipe.is_empty() else str(int(recipe.get("sugar", 0)))
 		else:
 			data["value1"] = ""
 			data["value2"] = ""
@@ -104,7 +109,10 @@ func _input(event: InputEvent) -> void:
 		KEY_ESCAPE:
 			_finish_edit()
 		KEY_BACKSPACE:
-			_edit_buffer = ""
+			if _edit_buffer.length() > 0:
+				_edit_buffer = _edit_buffer.substr(0, _edit_buffer.length() - 1)
+			else:
+				_label_data[_label_index]["value%d" % (_field_index + 1)] = ""
 			_refresh_label(_label_index)
 		KEY_0, KEY_KP_0:
 			_append_char("0")
@@ -354,9 +362,13 @@ func _store_buffer() -> void:
 
 
 func _append_char(c: String) -> void:
-	_edit_buffer = c
-	_store_buffer()
-	_confirm_and_next()
+	# Append like PriceBoard does — typing commits on Enter/navigation,
+	# not per keystroke (the old version replaced the buffer and
+	# auto-confirmed, making two-digit values impossible to type).
+	if _edit_buffer.length() >= 3:
+		return
+	_edit_buffer += c
+	_refresh_label(_label_index)
 
 
 func _on_label_clicked(
@@ -497,6 +509,12 @@ func _on_game_reset() -> void:
 	for data in _label_data:
 		data["value1"] = ""
 		data["value2"] = ""
+	_refresh_all_labels()
+
+
+func _on_stand_progress_changed(stand: StandUnit, _progress: Dictionary) -> void:
+	if stand != _find_nearest_stand():
+		return
 	_refresh_all_labels()
 
 

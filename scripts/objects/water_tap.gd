@@ -23,14 +23,13 @@ func interact(player: Node) -> void:
 	if pitcher == null:
 		EventBus.interaction_hint_changed.emit("No pitcher nearby to fill!")
 		return
-	if pitcher.water > 0.0:
-		EventBus.interaction_hint_changed.emit("Pitcher is already filled with water!")
-		return
 	# Fill with water (adds water and transitions to COMPLETE if lemons present)
 	var fill := Balancing.PITCHER_MAX_LIQUID - pitcher.get_liquid_volume()
-	if fill > 0.0:
-		pitcher.fill_water_slow(fill, 4.0)
-		EventBus.pitcher_ingredient_added.emit("water", fill)
+	if fill <= 0.0:
+		EventBus.interaction_hint_changed.emit("Pitcher is already full!")
+		return
+	pitcher.fill_water_slow(fill, 4.0)
+	EventBus.pitcher_ingredient_added.emit("water", fill)
 
 
 func _find_nearby_pitcher() -> Pitcher:
@@ -40,10 +39,8 @@ func _find_nearby_pitcher() -> Pitcher:
 		var pitcher := node as Pitcher
 		if pitcher == null:
 			continue
-		# Only fill pitchers that don't have water yet
-		if pitcher.water > 0.0:
-			continue
-		# Can fill in PREPPING or COMPLETE state (has lemons but needs water)
+		# Can top up pitchers in PREPPING or COMPLETE state — partial
+		# water is fine, we just fill the remaining space to 10.
 		if pitcher.state != Pitcher.PitcherState.PREPPING \
 				and pitcher.state != Pitcher.PitcherState.COMPLETE:
 			continue
@@ -62,13 +59,15 @@ func get_hint(player: Node) -> String:
 	# Check if player is holding a pitcher — hint handled by player script
 	if p.held_item == HeldItem.CONTAINER and p.held_item_data.get("container_type") == "pitcher":
 		var recipe: Dictionary = p.held_item_data.get("saved_recipe", { })
-		if recipe.get("water", 0.0) > 0.0:
-			return "Water Tap | pitcher already filled"
+		var held_liquid: float = recipe.get("fruit_count", recipe.get("lemons", 0.0)) \
+				+ recipe.get("water", 0.0)
+		if held_liquid >= Balancing.PITCHER_MAX_LIQUID:
+			return "Water Tap | pitcher already full"
 		return "Water Tap | LMB: fill pitcher with water"
 
 	var pitcher := _find_nearby_pitcher()
 	if pitcher == null:
 		return "Water Tap | place pitcher nearby"
-	if pitcher.water > 0.0:
-		return "Water Tap | pitcher already filled"
+	if pitcher.get_liquid_volume() >= Balancing.PITCHER_MAX_LIQUID:
+		return "Water Tap | pitcher already full"
 	return "Water Tap | LMB: fill pitcher with water"
