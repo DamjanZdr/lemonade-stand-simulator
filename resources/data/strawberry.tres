@@ -13,5 +13,4 @@ fruit_unhappy_chance = 0.3
 sugar_unhappy_chance = 0.3
 press_time_per_fruit = 1.2
 ideal_price = 1.75
-price_min = 0.25
 price_max = 5.00

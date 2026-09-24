@@ -35,7 +35,6 @@ extends Resource
 ## below ideal_price when the tutorial should ask the player to raise
 ## it (e.g. lemon: start 0.80, ideal 1.00).
 @export var start_price: float = 0.0
-@export var price_min: float = 0.25
 @export var price_max: float = 5.00
 
 
