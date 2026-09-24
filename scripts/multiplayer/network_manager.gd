@@ -33,24 +33,23 @@ func _ready() -> void:
 	_connect_signals()
 
 
-## Pick the Steam app ID at runtime: steam_appid.txt takes priority for
-## local development, then fall back to the SteamAppID environment variable
-## (set when the game is launched through Steam), then 480 as a last resort.
+## Pick the Steam app ID at runtime: SteamAppID environment variable takes
+## priority (set when launched through Steam), then steam_appid.txt for local
+## development, then 480 as a last resort.
 func _load_steam_app_id() -> int:
-	var fallback := 480
+	var env: String = OS.get_environment("SteamAppID")
+	if env.is_valid_int():
+		return int(env)
 	var file := FileAccess.open("res://steam_appid.txt", FileAccess.READ)
 	if file:
 		var txt := file.get_as_text().strip_edges()
 		if txt.is_valid_int():
 			return int(txt)
-	var env: String = OS.get_environment("SteamAppID")
-	if env.is_valid_int():
-		return int(env)
 	push_warning(
-		"[NetworkManager] No steam_appid.txt or SteamAppID env found; "
+		"[NetworkManager] No SteamAppID env or steam_appid.txt found; "
 		+ "falling back to Spacewar (480). This will NOT work on your Steam page."
 	)
-	return fallback
+	return 480
 
 
 func _initialize_steam() -> void:
