@@ -1,0 +1,21 @@
+"AppBuild"
+{
+	"AppID" "5329010"
+	"Desc" "Private playtest build - When Life Gives You Lemons Playtest"
+	"BuildOutput" "tools/steam-build-output"
+	"ContentRoot" "export"
+	"SetLive" "default"
+
+	"Depots"
+	{
+		"5329011" "DepotBuildConfig"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+	}
+}

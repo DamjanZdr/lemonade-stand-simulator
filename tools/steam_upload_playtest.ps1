@@ -1,14 +1,17 @@
 # Steam playtest upload script for Lemonade Stand Simulator
-# App ID: 5000810
+# Default target: playtest app 5329010 / depot 5329011
 #
 # Usage:
 #   .\tools\steam_upload_playtest.ps1 -SteamUser your_steam_user [-SteamCmd path\steamcmd.exe]
 #
+# To upload to the main app (5000810) instead:
+#   .\tools\steam_upload_playtest.ps1 -SteamUser your_steam_user -AppId 5000810 -AppBuildVdf tools/app_build_5000810.vdf -Branch playtest
+#
 # Requires:
 #   - GodotSteam editor in tools/godotsteam-editor
 #   - steamcmd.exe installed (https://partner.steamgames.com/doc/sdk/uploading)
-#   - A "playtest" branch configured in Steamworks App Admin
-#   - Depot ID updated in tools/app_build_5000810.vdf if yours is not 5000811
+#   - A branch configured in Steamworks App Admin for the target App ID
+#   - Depot IDs matching the app_build_*.vdf files
 #
 # The script removes steam_appid.txt from the exported build so Steam's
 # SteamAppID environment variable is used instead of Spacewar (480).
@@ -16,10 +19,11 @@
 param(
 	[string]$SteamUser = $env:STEAM_USER,
 	[string]$SteamCmd = $env:STEAMCMD,
-	[string]$AppBuildVdf = "tools/app_build_5000810.vdf",
+	[string]$AppId = "5329010",
+	[string]$AppBuildVdf = "tools/app_build_5329010.vdf",
 	[string]$ExportPreset = "Windows Desktop",
 	[string]$ExportPath = "export/LemonadeStand.exe",
-	[string]$Branch = "playtest"
+	[string]$Branch = "default"
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,6 +38,9 @@ if (-not $SteamCmd) {
 }
 if (-not (Test-Path $SteamCmd)) {
 	throw "steamcmd.exe not found at: $SteamCmd. Install SteamCMD or set STEAMCMD env variable."
+}
+if (-not (Test-Path $AppBuildVdf)) {
+	throw "App build config not found at: $AppBuildVdf"
 }
 
 $godot = "tools/godotsteam-editor/godotsteam.471.editor.win64.console.exe"
@@ -72,11 +79,11 @@ if (-not (Test-Path $dll)) {
 	}
 }
 
-Write-Host "Uploading build to Steam branch '$Branch'..." -ForegroundColor Cyan
-& $SteamCmd +login $SteamUser +app_build_update 5000810 "$AppBuildVdf" +quit
+Write-Host "Uploading build to App $AppId branch '$Branch'..." -ForegroundColor Cyan
+& $SteamCmd +login $SteamUser +app_build_update $AppId "$AppBuildVdf" +quit
 if ($LASTEXITCODE -ne 0) {
 	throw "Steam upload failed."
 }
 
-Write-Host "Upload complete. Build should be live on '$Branch' branch." -ForegroundColor Green
-Write-Host "Add testers in Steamworks -> App Admin -> Steam Playtest (or Branches)."
+Write-Host "Upload complete. Build should be live on '$Branch' branch of App $AppId." -ForegroundColor Green
+Write-Host "Add testers in Steamworks -> App Admin for App $AppId."
