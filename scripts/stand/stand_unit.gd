@@ -398,7 +398,12 @@ func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void
 func is_fruit_unlocked(fruit: String) -> bool:
 	if fruit == "lemon":
 		return true
-	return purchased_upgrade_nodes.has(fruit + "_unlock")
+	var unlock_id := fruit + "_unlock"
+	for node_name in purchased_upgrade_nodes.keys():
+		var data: Dictionary = UpgradeManager.tree_nodes.get(node_name, { })
+		if data.get("upgrade_id", "") == unlock_id:
+			return true
+	return false
 
 
 func init_default_prices() -> void:
