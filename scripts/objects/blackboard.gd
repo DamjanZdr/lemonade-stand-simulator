@@ -518,7 +518,8 @@ func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 				var label: Label3D = _label_nodes[i]
 				var parent_title := label.get_parent() as Label3D
 				if parent_title != null:
-					var locked_lbl := parent_title.get_node_or_null(label.name + "Locked") as Label3D
+					var locked_name := label.name + "Locked"
+					var locked_lbl := parent_title.get_node_or_null(locked_name) as Label3D
 					if locked_lbl != null:
 						locked_lbl.visible = now_locked
 	_refresh_all_labels()
