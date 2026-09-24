@@ -85,7 +85,7 @@ if (-not (Test-Path $dll)) {
 
 Write-Host "Uploading build to App $AppId branch '$Branch'..." -ForegroundColor Cyan
 $buildVdfPath = (Resolve-Path $AppBuildVdf).Path
-$arguments = @( "+login", $SteamUser, "+app_build_update", $AppId, $buildVdfPath, "+quit" )
+$arguments = @( "+login", $SteamUser, "+app_build", $buildVdfPath, "+quit" )
 # Run SteamCMD in the same window and capture output to a log. Credentials
 # should already be cached from the first manual login.
 $logPath = Join-Path $projectRoot "tools/steam_upload.log"
