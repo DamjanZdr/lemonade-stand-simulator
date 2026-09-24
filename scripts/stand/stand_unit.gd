@@ -413,8 +413,8 @@ func init_default_prices() -> void:
 			prices[ft] = 1.50
 			continue
 		# start_price is the price the stand opens with; when unset (0) the
-		# ideal default_price is used so non-tutorial fruits start fairly.
-		prices[ft] = res.start_price if res.start_price > 0.0 else res.default_price
+		# ideal_price is used so non-tutorial fruits start fairly.
+		prices[ft] = res.start_price if res.start_price > 0.0 else res.ideal_price
 
 
 func init_default_recipes() -> void:

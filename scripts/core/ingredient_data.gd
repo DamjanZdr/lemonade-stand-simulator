@@ -30,9 +30,9 @@ extends Resource
 @export_group("Pricing")
 ## The ideal/fair price customers compare against — deviation from this
 ## drives "too expensive" / "so cheap" reactions.
-@export var default_price: float = 1.50
-## The price a stand opens with. 0 means "open at default_price". Set
-## below default_price when the tutorial should ask the player to raise
+@export var ideal_price: float = 1.50
+## The price a stand opens with. 0 means "open at ideal_price". Set
+## below ideal_price when the tutorial should ask the player to raise
 ## it (e.g. lemon: start 0.80, ideal 1.00).
 @export var start_price: float = 0.0
 @export var price_min: float = 0.25

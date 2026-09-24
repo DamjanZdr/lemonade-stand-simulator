@@ -36,7 +36,23 @@ func get_base_price(fruit_type: String) -> float:
 	var data: IngredientData = mgr.get_ingredient_data(fruit_type)
 	if data == null:
 		return 1.5
-	return data.default_price
+	return data.ideal_price
+
+
+func get_price_max(fruit_type: String) -> float:
+	## Maximum acceptable price before every customer rejects the drink as
+	## too expensive. Falls back to the global ceiling if data is missing.
+	var mgr := _get_manager()
+	if mgr == null:
+		return Balancing.PRICE_MAX
+	var data: IngredientData = mgr.get_ingredient_data(fruit_type)
+	if data == null:
+		return Balancing.PRICE_MAX
+	var maxp: float = data.price_max
+	var ideal: float = data.ideal_price
+	if maxp <= ideal:
+		maxp = Balancing.PRICE_MAX
+	return maxp
 
 
 func evaluate(
@@ -49,7 +65,8 @@ func evaluate(
 	## Main entry point. Returns a single string outcome for the customer flow.
 	if wait_ratio <= 0.0:
 		return "timeout"
-	if price > Balancing.PRICE_TOO_EXPENSIVE:
+	var fruit_type: String = recipe.get("fruit_type", expected_fruit_type)
+	if price > get_price_max(fruit_type):
 		return "too_expensive"
 
 	var result := evaluate_detailed(recipe, temperature, expected_fruit_type)

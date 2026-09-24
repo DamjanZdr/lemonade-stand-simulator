@@ -220,9 +220,9 @@ func init_default_prices() -> void:
 	for ft in FRUIT_TYPES:
 		var res := load("res://resources/data/" + ft + ".tres") as IngredientData
 		if res:
-			# start_price (when set) is the opening price; default_price
+			# start_price (when set) is the opening price; ideal_price
 			# stays the ideal anchor customers compare against.
-			prices[ft] = (res.start_price if res.start_price > 0.0 else res.default_price)
+			prices[ft] = (res.start_price if res.start_price > 0.0 else res.ideal_price)
 		else:
 			prices[ft] = 1.50
 

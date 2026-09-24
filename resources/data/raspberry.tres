@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="IngredientData" format=3 uid="uid://b08hsjbe5q8ng"]
 
-[ext_resource type="Script" path="res://scripts/core/ingredient_data.gd" id="1_ingredient_data"]
+[ext_resource type="Script" uid="uid://bx8ql2bcj8v5" path="res://scripts/core/ingredient_data.gd" id="1_ingredient_data"]
 
 [resource]
 script = ExtResource("1_ingredient_data")
@@ -8,11 +8,4 @@ id = &"raspberry"
 display_name = "Raspberry"
 ideal_fruit_count = 4
 ideal_water = 5.0
-ideal_sugar = 2.0
-fruit_unhappy_chance = 0.3
-sugar_unhappy_chance = 0.3
-press_time_per_fruit = 1.0
-default_price = 1.85
-start_price = 0.0
-price_min = 0.25
-price_max = 5.00
+ideal_price = 1.85

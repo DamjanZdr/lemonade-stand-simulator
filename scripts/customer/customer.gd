@@ -1139,16 +1139,22 @@ func _run_price_check_and_show_order() -> void:
 		# Lock the price the customer is reacting to — they pay what they
 		# agreed to even if the board changes while they're waiting.
 		_locked_prices[fruit_type] = price
-		var base := RecipeEvaluator.get_base_price(fruit_type)
-		if base <= 0.0:
+		var ideal := RecipeEvaluator.get_base_price(fruit_type)
+		var max_price := RecipeEvaluator.get_price_max(fruit_type)
+		if ideal <= 0.0:
 			continue
-		var deviation := (price - base) / base
-		if deviation > 0.0:
-			if randf() < clampf(deviation, 0.0, 1.0):
+		if price > max_price:
+			messages.append("The %s is too expensive!" % fruit_type.capitalize())
+			order.erase(fruit_type)
+		elif price > ideal:
+			var price_range := max_price - ideal
+			var chance := 1.0 if price_range <= 0.0 else (price - ideal) / price_range
+			if randf() < clampf(chance, 0.0, 1.0):
 				messages.append("The %s is too expensive!" % fruit_type.capitalize())
 				order.erase(fruit_type)
-		elif deviation < 0.0:
-			if randf() < clampf(-deviation, 0.0, 1.0):
+		elif price < ideal:
+			var cheap_chance := clampf((ideal - price) / ideal, 0.0, 1.0)
+			if randf() < cheap_chance:
 				messages.append("Wow, %s is so cheap!" % fruit_type.capitalize())
 
 	for msg: String in messages:
