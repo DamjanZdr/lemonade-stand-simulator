@@ -21,6 +21,7 @@ const FRAME_OPEN_END: float = 20.0
 # Fruit juice colors (absolute, no water blend)
 const FRUIT_COLORS: Dictionary = {
 	"lemon": Color(1.0, 0.9, 0.3, 1.0),
+	"raspberry": Color(0.85, 0.15, 0.35, 1.0),
 	"strawberry": Color(1.0, 0.2, 0.4, 1.0),
 	"blueberry": Color(0.3, 0.1, 0.6, 1.0),
 	"peach": Color(1.0, 0.7, 0.5, 1.0),

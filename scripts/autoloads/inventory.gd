@@ -3,10 +3,12 @@ extends Node
 ## pitchers, cup stacks, and unopened supply boxes.
 ## This is a read-only view of the physical world state.
 
+
 func get_inventory() -> Dictionary:
 	## Returns a dictionary of item_type -> total_count across the entire stand.
 	var result := {
 		"lemon": 0,
+		"raspberry": 0,
 		"strawberry": 0,
 		"blueberry": 0,
 		"peach": 0,

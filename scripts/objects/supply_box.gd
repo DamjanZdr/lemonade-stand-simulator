@@ -53,6 +53,7 @@ const DEFAULT_STACK_HEIGHT: float = 0.487
 # --- Icon system ---
 const INGREDIENT_ICONS: Dictionary = {
 	"lemon": "res://assets/textures/ui/products/lemon.png",
+	"raspberry": "res://assets/textures/ui/products/raspberry.png",
 	"strawberry": "res://assets/textures/ui/products/strawberry.png",
 	"blueberry": "res://assets/textures/ui/products/blueberry.png",
 	"peach": "res://assets/textures/ui/products/peach.png",
@@ -470,6 +471,8 @@ func _tint_for_type(itype: String) -> Color:
 	match itype:
 		"lemon":
 			return Color(1.0, 0.95, 0.1)
+		"raspberry":
+			return Color(0.9, 0.15, 0.35)
 		"water":
 			return Color(0.4, 0.7, 1.0)
 		"sugar":

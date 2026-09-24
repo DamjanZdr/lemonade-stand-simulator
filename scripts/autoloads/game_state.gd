@@ -1,7 +1,14 @@
 extends Node
 ## Holds all live game data. Updated via EventBus signals only.
 
-const FRUIT_TYPES: Array[String] = ["lemon", "strawberry", "blueberry", "peach", "watermelon"]
+const FRUIT_TYPES: Array[String] = [
+	"lemon",
+	"raspberry",
+	"strawberry",
+	"blueberry",
+	"peach",
+	"watermelon",
+]
 
 ## Game mode enum. Stored in save data and read by the lobby to determine
 ## how many stands to show and how players are assigned.

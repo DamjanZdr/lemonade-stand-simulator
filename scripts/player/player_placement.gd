@@ -1015,9 +1015,9 @@ func _hide_ghost_container_contents(node: Node) -> void:
 		node.visible = false
 		return
 	if (
-		n.begins_with("ice cube") or n.begins_with("sugar cube")
-		or n.begins_with("lemon") or n.begins_with("strawberry") or n.begins_with("blueberry")
-		or n.begins_with("peach") or n.begins_with("watermelon")
+		n.begins_with("ice cube") or n.begins_with("sugar cube") or n.begins_with("lemon")
+		or n.begins_with("raspberry") or n.begins_with("strawberry")
+		or n.begins_with("blueberry") or n.begins_with("peach") or n.begins_with("watermelon")
 	):
 		node.visible = false
 		return

@@ -24,7 +24,14 @@ extends Node3D
 ## etc.) to use a specific StandUnit instead of the globals is future work,
 ## tracked in the plan file.
 
-const FRUIT_TYPES: Array[String] = ["lemon", "strawberry", "blueberry", "peach", "watermelon"]
+const FRUIT_TYPES: Array[String] = [
+	"lemon",
+	"raspberry",
+	"strawberry",
+	"blueberry",
+	"peach",
+	"watermelon",
+]
 
 signal money_changed(new_amount: float)
 signal price_changed(fruit_type: String, new_price: float)

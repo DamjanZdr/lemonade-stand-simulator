@@ -129,7 +129,14 @@ func get_effect_total_for_stand(upgrade_id: String, stand_name: String) -> float
 	return total
 
 
-const RECIPE_ORDER: Array[String] = ["lemon", "strawberry", "blueberry", "peach", "watermelon"]
+const RECIPE_ORDER: Array[String] = [
+	"lemon",
+	"raspberry",
+	"strawberry",
+	"blueberry",
+	"peach",
+	"watermelon",
+]
 
 
 func _load_tree() -> void:

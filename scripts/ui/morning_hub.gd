@@ -3,6 +3,7 @@ extends CanvasLayer
 
 const PRODUCT_IMAGES: Dictionary = {
 	"lemon": "res://assets/textures/ui/products/lemon.png",
+	"raspberry": "res://assets/textures/ui/products/raspberry.png",
 	"strawberry": "res://assets/textures/ui/products/strawberry.png",
 	"blueberry": "res://assets/textures/ui/products/blueberry.png",
 	"peach": "res://assets/textures/ui/products/peach.png",
@@ -140,6 +141,7 @@ class CircleNode extends Control:
 
 var shop_items: Array[Dictionary] = [
 	{ "id": "lemon", "name": "Lemons", "cost": Balancing.SUPPLY_COST_LEMON, "qty": 10 },
+	{ "id": "raspberry", "name": "Raspberry", "cost": Balancing.SUPPLY_COST_RASPBERRY, "qty": 10 },
 	{
 		"id": "strawberry",
 		"name": "Strawberry",
@@ -861,6 +863,8 @@ func _get_node_symbol(data: Dictionary) -> String:
 		return "☀"
 	if "lemon" in name:
 		return "🍋"
+	if "raspberry" in name:
+		return "🍒"
 	if "strawberry" in name:
 		return "🍓"
 	if "blueberry" in name:
@@ -2249,6 +2253,7 @@ func _build_recipes_page() -> void:
 
 	var fruit_colors: Dictionary = {
 		"lemon": Color(0.95, 0.85, 0.15, 1),
+		"raspberry": Color(0.92, 0.15, 0.40, 1),
 		"strawberry": Color(0.92, 0.25, 0.35, 1),
 		"blueberry": Color(0.35, 0.55, 0.95, 1),
 		"peach": Color(0.95, 0.65, 0.45, 1),

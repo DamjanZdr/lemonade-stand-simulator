@@ -68,6 +68,7 @@ const CONTAINER_COST_WORKSTATION: float = 40.0
 # + 1 water fill + 10 cups) costs ~$4.20–$4.95 and sells 10 cups at $1 = $10.
 const SUPPLY_BOX_QTY: float = 10.0
 const SUPPLY_COST_LEMON: float = 4.0
+const SUPPLY_COST_RASPBERRY: float = 5.0
 const SUPPLY_COST_STRAWBERRY: float = 5.0
 const SUPPLY_COST_BLUEBERRY: float = 5.5
 const SUPPLY_COST_PEACH: float = 6.0
@@ -82,6 +83,8 @@ static func supply_box_cost(item_id: String) -> float:
 	match item_id:
 		"lemon":
 			return SUPPLY_COST_LEMON
+		"raspberry":
+			return SUPPLY_COST_RASPBERRY
 		"strawberry":
 			return SUPPLY_COST_STRAWBERRY
 		"blueberry":

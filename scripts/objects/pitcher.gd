@@ -48,6 +48,7 @@ const MAX_FILL_VOLUME: float = 10.0
 @export_group("Liquid Colors")
 @export var water_color: Color = Color(1.0, 1.0, 1.0, 1.0)
 @export var lemon_color: Color = Color(1.0, 0.9, 0.3, 1.0)
+@export var raspberry_color: Color = Color(0.85, 0.15, 0.35, 1.0)
 @export var strawberry_color: Color = Color(1.0, 0.2, 0.4, 1.0)
 @export var blueberry_color: Color = Color(0.3, 0.1, 0.6, 1.0)
 @export var peach_color: Color = Color(1.0, 0.7, 0.5, 1.0)
@@ -691,6 +692,8 @@ func _get_fruit_color(ftype: String) -> Color:
 	match ftype:
 		"lemon":
 			return lemon_color
+		"raspberry":
+			return raspberry_color
 		"strawberry":
 			return strawberry_color
 		"blueberry":

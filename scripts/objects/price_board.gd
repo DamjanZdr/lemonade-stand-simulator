@@ -3,6 +3,7 @@ extends Interactable
 
 const FRUIT_LABELS: Dictionary = {
 	"lemon": "Lemon",
+	"raspberry": "Raspberry",
 	"strawberry": "Strawberry",
 	"blueberry": "Blueberry",
 	"peach": "Peach",

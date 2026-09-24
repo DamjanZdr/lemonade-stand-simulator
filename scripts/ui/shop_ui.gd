@@ -14,6 +14,7 @@ var _items: Array[Dictionary] = []
 
 static var shop_items: Array[Dictionary] = [
 	{ "id": "lemon", "name": "Lemons", "cost": Balancing.SUPPLY_COST_LEMON, "qty": 10 },
+	{ "id": "raspberry", "name": "Raspberry", "cost": Balancing.SUPPLY_COST_RASPBERRY, "qty": 10 },
 	{
 		"id": "strawberry",
 		"name": "Strawberry",

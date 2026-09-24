@@ -8,6 +8,7 @@
 [ext_resource type="Resource" uid="uid://bu46xbgvvx2ri" path="res://resources/upgrades/blueberry_unlock.tres" id="6_blueberry_unlock"]
 [ext_resource type="Resource" uid="uid://btcdwa0mln6e5" path="res://resources/upgrades/peach_unlock.tres" id="7_peach_unlock"]
 [ext_resource type="Resource" uid="uid://d1hk0gkktg6me" path="res://resources/upgrades/watermelon_unlock.tres" id="8_watermelon_unlock"]
+[ext_resource type="Resource" path="res://resources/upgrades/raspberry_unlock.tres" id="9_raspunl"]
 [ext_resource type="Resource" uid="uid://d4ea6ugq701fu" path="res://resources/upgrades/demand.tres" id="9_demand"]
 [ext_resource type="Resource" uid="uid://c325y2n2u6ova" path="res://resources/upgrades/nimbleness.tres" id="10_nimbleness"]
 [ext_resource type="Resource" uid="uid://c1q6tyk5uur8a" path="res://resources/upgrades/water_dispenser.tres" id="11_water_dispenser"]
@@ -227,6 +228,36 @@ position = Vector2(-566.3, -411.4)
 script = ExtResource("1_node")
 upgrade = ExtResource("8_watermelon_unlock")
 cost = 130.0
+
+[node name="RaspberryUnlock1" type="Node2D" parent="." unique_id=5619668713]
+position = Vector2(0, 140)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_raspunl")
+cost = 35.0
+
+[node name="RaspberryUnlock2" type="Node2D" parent="." unique_id=5538420354]
+position = Vector2(0, 280)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_raspunl")
+
+[node name="RaspberryUnlock3" type="Node2D" parent="." unique_id=3130370117]
+position = Vector2(0, 420)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_raspunl")
+cost = 75.0
+
+[node name="RaspberryUnlock4" type="Node2D" parent="." unique_id=7011527944]
+position = Vector2(0, 560)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_raspunl")
+cost = 95.0
+
+[node name="RaspberryUnlock5" type="Node2D" parent="." unique_id=2780918111]
+position = Vector2(0, 700)
+script = ExtResource("1_node")
+upgrade = ExtResource("9_raspunl")
+cost = 115.0
+
 
 [node name="Demand1" type="Node2D" parent="." unique_id=136919658]
 position = Vector2(-43.3, -133.1)
