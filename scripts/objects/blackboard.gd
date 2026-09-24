@@ -159,6 +159,13 @@ func _scan_labels() -> void:
 		if label.text.find(EMPTY_VALUE) < 0:
 			continue
 		var fruit_id := label.name.to_lower()
+		# Ice has been moved off the recipe board; hide its title/label.
+		if fruit_id == "ice":
+			label.visible = false
+			var ice_title := label.get_parent() as Label3D
+			if ice_title != null:
+				ice_title.visible = false
+			continue
 		var is_locked := (
 			fruit_id in StandUnit.FRUIT_TYPES
 			and (_stand == null or not _stand.is_fruit_unlocked(fruit_id))
