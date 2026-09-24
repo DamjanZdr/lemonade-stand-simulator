@@ -1,0 +1,21 @@
+"AppBuild"
+{
+	"AppID" "5000810"
+	"Desc" "Private playtest build - lemonade-stand-simulator"
+	"BuildOutput" "tools/steam-build-output"
+	"ContentRoot" "export"
+	"SetLive" "playtest"
+
+	"Depots"
+	{
+		"5000811" "DepotBuildConfig"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+	}
+}
