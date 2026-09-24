@@ -22,7 +22,7 @@ param(
 	[string]$AppId = "5329010",
 	[string]$AppBuildVdf = "tools/app_build_5329010.vdf",
 	[string]$ExportPreset = "Windows Desktop",
-	[string]$ExportPath = "export/LemonadeStand.exe",
+	[string]$ExportPath = "export/WhenLifeGivesYouLemons.exe",
 	[string]$Branch = "default"
 )
 
@@ -59,7 +59,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $exportDir = Split-Path $ExportPath -Parent
-$expectedFiles = @("LemonadeStand.exe", "LemonadeStand.pck")
+$expectedFiles = @("WhenLifeGivesYouLemons.exe", "WhenLifeGivesYouLemons.pck")
 foreach ($file in $expectedFiles) {
 	if (-not (Test-Path (Join-Path $exportDir $file))) {
 		throw "Expected exported file missing: $file"
