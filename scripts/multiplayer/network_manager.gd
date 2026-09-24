@@ -2,7 +2,7 @@ extends Node
 ## Steam multiplayer initialization, lobby management, and peer connection.
 ##
 ## Autoload singleton that handles:
-## - Steam API initialization (app ID 480 for testing)
+## - Steam API initialization (app ID from steam_appid.txt, SteamAppID env, or 480)
 ## - Lobby creation (host) and joining (client)
 ## - SteamMultiplayerPeer setup for P2P connections
 ## - Connection state tracking and signals
@@ -17,7 +17,7 @@ signal server_disconnected()
 signal lobby_list_received(lobbies: Array)
 
 ## The Steam app ID. 480 = Valve's Spacewar (test app).
-const STEAM_APP_ID: int = 480
+var steam_app_id: int = 480
 
 var steam_id: int = 0
 var lobby_id: int = 0
@@ -28,12 +28,29 @@ var _steam_initialized: bool = false
 
 
 func _ready() -> void:
+	steam_app_id = _load_steam_app_id()
 	_initialize_steam()
 	_connect_signals()
 
 
+## Pick the Steam app ID at runtime: steam_appid.txt takes priority for
+## local development, then fall back to the SteamAppID environment variable
+## (set when the game is launched through Steam), then 480 as a last resort.
+func _load_steam_app_id() -> int:
+	var fallback := 480
+	var file := FileAccess.open("res://steam_appid.txt", FileAccess.READ)
+	if file:
+		var txt := file.get_as_text().strip_edges()
+		if txt.is_valid_int():
+			return int(txt)
+	var env: String = OS.get_environment("SteamAppID")
+	if env.is_valid_int():
+		return int(env)
+	return fallback
+
+
 func _initialize_steam() -> void:
-	var response: Dictionary = Steam.steamInitEx(STEAM_APP_ID, true)
+	var response: Dictionary = Steam.steamInitEx(steam_app_id, true)
 	print("[NetworkManager] Steam init response: ", response)
 	var status: int = response.get("status", 1)
 	if status != 0:
@@ -57,7 +74,7 @@ func _retry_steam_init() -> void:
 		return
 	# Wait a bit before retrying to give Steam time to initialize.
 	await get_tree().create_timer(1.0).timeout
-	var response: Dictionary = Steam.steamInitEx(STEAM_APP_ID, true)
+	var response: Dictionary = Steam.steamInitEx(steam_app_id, true)
 	print("[NetworkManager] Steam retry init response: ", response)
 	var status: int = response.get("status", 1)
 	if status == 0:
