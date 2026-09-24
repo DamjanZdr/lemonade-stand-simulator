@@ -52,13 +52,19 @@ if (-not (Test-Path $godot)) {
 	throw "Godot editor not found at $godot."
 }
 
+# Clean stale exports so old filenames (LemonadeStand.*) don't get uploaded.
+$exportDir = Split-Path $ExportPath -Parent
+if (Test-Path $exportDir) {
+	Get-ChildItem -Path $exportDir -Include @("*.exe", "*.pck", "steam_api64.dll") -Recurse -ErrorAction SilentlyContinue `
+		| Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
 Write-Host "Exporting release build..." -ForegroundColor Cyan
 & $godot --headless --path $projectRoot --export-release $ExportPreset $ExportPath
 if ($LASTEXITCODE -ne 0) {
 	throw "Godot export failed."
 }
 
-$exportDir = Split-Path $ExportPath -Parent
 $expectedFiles = @("WhenLifeGivesYouLemons.exe", "WhenLifeGivesYouLemons.pck")
 foreach ($file in $expectedFiles) {
 	if (-not (Test-Path (Join-Path $exportDir $file))) {
@@ -84,8 +90,9 @@ if (-not (Test-Path $dll)) {
 }
 
 Write-Host "Uploading build to App $AppId branch '$Branch'..." -ForegroundColor Cyan
-$buildVdfPath = (Resolve-Path $AppBuildVdf).Path
-$arguments = @( "+login", $SteamUser, "+run_app_build", $buildVdfPath, "+quit" )
+# Pass the VDF path relative to the project root so Steam resolves
+# ContentRoot="export" against the project folder, not the VDF folder.
+$arguments = @( "+login", $SteamUser, "+run_app_build", $AppBuildVdf, "+quit" )
 # Run SteamCMD in the same window and capture output to a log. Credentials
 # should already be cached from the first manual login.
 $logPath = Join-Path $projectRoot "tools/steam_upload.log"
