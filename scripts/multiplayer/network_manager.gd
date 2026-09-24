@@ -46,6 +46,10 @@ func _load_steam_app_id() -> int:
 	var env: String = OS.get_environment("SteamAppID")
 	if env.is_valid_int():
 		return int(env)
+	push_warning(
+		"[NetworkManager] No steam_appid.txt or SteamAppID env found; "
+		+ "falling back to Spacewar (480). This will NOT work on your Steam page."
+	)
 	return fallback
 
 
