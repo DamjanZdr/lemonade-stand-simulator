@@ -126,11 +126,11 @@ func _recipe_hint_string(recipe: Dictionary) -> String:
 	var sg := float(recipe.get("sugar", 0.0))
 	var ic := float(recipe.get("ice", 0.0))
 	if fc > 0.0 and ft != "":
-		parts.append("%g %s" % [fc, ft.capitalize()])
+		parts.append("%s %s" % [str(fc), ft.capitalize()])
 	if sg > 0.0:
-		parts.append("%g sugar" % sg)
+		parts.append("%s sugar" % str(sg))
 	if ic > 0.0:
-		parts.append("%g ice" % ic)
+		parts.append("%s ice" % str(ic))
 	return "unknown recipe" if parts.is_empty() else " · ".join(parts)
 
 

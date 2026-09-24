@@ -225,11 +225,11 @@ func _apply_state(
 		OnboardingManager.discovery_announced.emit(
 			self,
 			"Perfect %s Recipe Found" % str(fruit).capitalize(),
-			"%g %s · %g sugar"
+			"%s %s · %s sugar"
 			% [
-				float(found.get("fruit_count", 0.0)),
+				str(float(found.get("fruit_count", 0.0))),
 				str(fruit).capitalize(),
-				float(found.get("sugar", 0.0)),
+				str(float(found.get("sugar", 0.0))),
 			],
 		)
 	var new_ice_discovery = onboarding_progress.get("discovered_ice_ratio")
@@ -237,7 +237,7 @@ func _apply_state(
 		OnboardingManager.discovery_announced.emit(
 			self,
 			"Perfect Ice Ratio Found",
-			"1 cube every %g degrees" % float(new_ice_discovery),
+			"1 cube every %s degrees" % str(float(new_ice_discovery)),
 		)
 	if changed_money:
 		money_changed.emit(money)

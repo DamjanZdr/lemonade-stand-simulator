@@ -44,10 +44,12 @@ var order: Dictionary = { }
 var stand: StandUnit = null
 
 
-## Price for a fruit type, from this customer's own stand if known,
-## falling back to the global GameState price otherwise (e.g. for
-## debug-spawned customers with no stand assigned).
+## Price for a fruit type. Once the customer has seen and agreed to the
+## order's prices (price check ran), the price they saw is locked in —
+## a priceboard change afterwards must not change what they pay.
 func _get_price(fruit_type: String) -> float:
+	if _locked_prices.has(fruit_type):
+		return _locked_prices[fruit_type]
 	if stand:
 		return stand.get_price(fruit_type)
 	return GameState.get_price(fruit_type)
@@ -60,6 +62,10 @@ var _price_checked: bool = false
 var _price_checking: bool = false
 ## Sum of the price paid for each correctly-matched cup served so far.
 var _accumulated_price: float = 0.0
+## Per-fruit prices snapshotted at the moment the customer saw and
+## accepted the order. The priceboard only affects customers whose
+## price check hasn't run yet.
+var _locked_prices: Dictionary = { }
 ## First quality complaint hit across all correctly-served cups (e.g.
 ## too_sweet); empty string means everything served was spot-on so far.
 var _best_complaint: String = ""
@@ -903,7 +909,7 @@ func _feedback_for_outcome(outcome: String) -> String:
 		"wrong_order":
 			return "That's not what I ordered."
 		"timeout":
-			return "This takes too long — I have places to be!"
+			return "This takes too long, I have places to be!"
 		_:
 			return ""
 
@@ -1084,7 +1090,10 @@ func _show_order() -> void:
 	var parts: Array[String] = []
 	for fruit_type: String in order.keys():
 		var qty: int = order[fruit_type]
-		parts.append("%d of %s lemonade" % [qty, fruit_type.capitalize()])
+		if qty == 1:
+			parts.append("1 %s lemonade" % fruit_type.capitalize())
+		else:
+			parts.append("%d of %s lemonade" % [qty, fruit_type.capitalize()])
 	var text := "Can I please have %s?" % " and ".join(parts)
 	_set_order_text(text)
 
@@ -1127,6 +1136,9 @@ func _run_price_check_and_show_order() -> void:
 	var messages: Array[String] = []
 	for fruit_type: String in order.keys().duplicate():
 		var price := _get_price(fruit_type)
+		# Lock the price the customer is reacting to — they pay what they
+		# agreed to even if the board changes while they're waiting.
+		_locked_prices[fruit_type] = price
 		var base := RecipeEvaluator.get_base_price(fruit_type)
 		if base <= 0.0:
 			continue

@@ -430,12 +430,13 @@ func _build_shop() -> void:
 		return
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	shop_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	var old_list := shop_scroll.get_node_or_null("ShopList") as VBoxContainer
-	if old_list:
-		old_list.queue_free()
-	var old_grid := shop_scroll.get_node_or_null("ShopGrid") as GridContainer
-	if old_grid:
-		old_grid.queue_free()
+	# Detach before freeing: queue_free() leaves the node in the tree until
+	# end of frame, so a second _build_shop in the same frame (e.g. a
+	# joiner receiving several fruit-unlock syncs at once) would add a
+	# new list while the old one still renders — duplicating headers.
+	for child in shop_scroll.get_children():
+		shop_scroll.remove_child(child)
+		child.queue_free()
 	var shop_vbox := VBoxContainer.new()
 	shop_vbox.name = "ShopList"
 	shop_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL

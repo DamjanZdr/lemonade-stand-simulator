@@ -182,9 +182,20 @@ func get_route_continuation() -> Dictionary:
 	return { "waypoints": _waypoints, "next_index": _waypoint_idx + 1 }
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _ui_label != null and _ui_label.visible:
 		_update_bubble_screen_pos()
+	# Clients early-return from _physics_process (host-authoritative sim),
+	# so the OFFERED countdown never runs for joiners and the patience
+	# circle stays full. Tick a visual-only estimate here — the real
+	# timeout stays host-side; when it fires the host syncs the state
+	# change and the circle hides.
+	if (
+		multiplayer.has_multiplayer_peer() and not multiplayer.is_server()
+		and _state == PedestrianState.OFFERED
+	):
+		_offer_patience = maxf(_offer_patience - delta, 0.0)
+		_refresh_patience_bar(_offer_patience / _offer_patience_max)
 
 
 func _physics_process(delta: float) -> void:
@@ -495,6 +506,7 @@ func _sync_offered(player_pos: Vector3) -> void:
 	_facing_target = Basis.looking_at(player_pos - global_position, Vector3.UP)
 	_is_rotating_to_face = true
 	_show_order_text(_OFFER_TEXT)
+	_offer_patience = _offer_patience_max
 	if _patience_circle:
 		_patience_circle.visible = true
 		_refresh_patience_bar(1.0)

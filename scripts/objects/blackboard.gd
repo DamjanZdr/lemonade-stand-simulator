@@ -306,7 +306,7 @@ func _apply_current_fruit_recipe() -> void:
 	if v1 == "" and v2 == "":
 		return
 	if label_name == "ice":
-		_apply_ice_to_stand(stand, v1, v2)
+		_apply_ice_to_stand(stand, v1, v2, _field_index == 1)
 		return
 	if label_name == "" or not label_name in StandUnit.FRUIT_TYPES:
 		return
@@ -365,7 +365,12 @@ func _append_char(c: String) -> void:
 	# Append like PriceBoard does — typing commits on Enter/navigation,
 	# not per keystroke (the old version replaced the buffer and
 	# auto-confirmed, making two-digit values impossible to type).
-	if _edit_buffer.length() >= 3:
+	if _label_index < 0:
+		return
+	# Ice fields are temperatures (two digits, e.g. 45°/99°F); fruit and
+	# sugar counts are single digits.
+	var cap := 2 if _label_data[_label_index].get("name", "").to_lower() == "ice" else 1
+	if _edit_buffer.length() >= cap:
 		return
 	_edit_buffer += c
 	_refresh_label(_label_index)
@@ -437,13 +442,20 @@ func _apply_recipes_to_stand() -> void:
 
 
 ## Apply ice degrees to the stand. v1 is Celsius, v2 is Fahrenheit.
-## If both are provided, Celsius takes priority. If only Fahrenheit is
-## provided, it's converted to Celsius (divide by 1.8).
-## After applying, auto-fills the other field with the converted value
-## so the user only needs to set one field.
-func _apply_ice_to_stand(stand: StandUnit, v1: String, v2: String) -> void:
+## prefer_fahrenheit is true when the F field was the one just edited —
+## otherwise Celsius would always win (it auto-fills on first edit, so
+## it's never empty on later edits) and the typed F value would snap
+## back to C×1.8. Auto-fills the OTHER unit with the converted value.
+func _apply_ice_to_stand(
+	stand: StandUnit,
+	v1: String,
+	v2: String,
+	prefer_fahrenheit: bool = false,
+) -> void:
 	var c_val: float = -1.0
-	if v1 != "" and v1.is_valid_float():
+	if prefer_fahrenheit and v2 != "" and v2.is_valid_float():
+		c_val = float(v2) / 1.8
+	elif v1 != "" and v1.is_valid_float():
 		c_val = float(v1)
 	elif v2 != "" and v2.is_valid_float():
 		c_val = float(v2) / 1.8
@@ -453,12 +465,10 @@ func _apply_ice_to_stand(stand: StandUnit, v1: String, v2: String) -> void:
 	# Auto-convert and fill the other field
 	if _label_index >= 0 and _label_index < _label_data.size():
 		var data: Dictionary = _label_data[_label_index]
-		if v1 != "" and v1.is_valid_float():
-			# Celsius was set → fill Fahrenheit
-			data["value2"] = str(int(float(v1) * 1.8))
-		elif v2 != "" and v2.is_valid_float():
-			# Fahrenheit was set → fill Celsius
-			data["value1"] = str(int(float(v2) / 1.8))
+		if prefer_fahrenheit:
+			data["value1"] = str(int(c_val))
+		else:
+			data["value2"] = str(int(c_val * 1.8))
 		_refresh_label(_label_index)
 
 

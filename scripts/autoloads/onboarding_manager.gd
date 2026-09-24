@@ -684,11 +684,11 @@ func _evaluate_mastery(stand: StandUnit, data: Dictionary) -> void:
 			discovery_announced.emit(
 				stand,
 				"Perfect %s Recipe Found" % fruit.capitalize(),
-				"%g %s · %g sugar"
+				"%s %s · %s sugar"
 				% [
-					float(candidate.get("fruit_count", 0.0)),
+					str(float(candidate.get("fruit_count", 0.0))),
 					fruit.capitalize(),
-					float(candidate.get("sugar", 0.0)),
+					str(float(candidate.get("sugar", 0.0))),
 				],
 			)
 			_match_task(stand, "recipe_discovered", { "fruit_type": fruit })
@@ -712,7 +712,7 @@ func _evaluate_mastery(stand: StandUnit, data: Dictionary) -> void:
 			discovery_announced.emit(
 				stand,
 				"Perfect Ice Ratio Found",
-				"1 cube every %g degrees" % ratio,
+				"1 cube every %s degrees" % str(ratio),
 			)
 			_match_task(stand, "ice_discovered", { "type": "ice" })
 			if is_equal_approx(stand.ice_degrees_per_scoop, ratio):
