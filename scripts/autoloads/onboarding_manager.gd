@@ -377,7 +377,9 @@ func _request_report(stand_name: String, event_name: String, data: Dictionary) -
 	var stand := find_stand(stand_name)
 	var sender := multiplayer.get_remote_sender_id()
 	var players := get_tree().current_scene.get_node_or_null("Players")
-	var player: Player = players.get_node_or_null(str(sender)) as Player if players != null else null
+	var player: Player = (
+		players.get_node_or_null(str(sender)) as Player if players != null else null
+	)
 	if stand == null or player == null or player.assigned_stand != stand:
 		return
 	_apply_report(stand, event_name, data)
@@ -794,7 +796,11 @@ func enforce_guaranteed_feedback(
 				and not is_equal_approx(candidate.fruit_count, float(res.ideal_fruit_count))
 			):
 				result.complaints.push_front(
-					"too_strong" if candidate.fruit_count > res.ideal_fruit_count else "not_enough_fruit"
+					(
+						"too_strong"
+						if candidate.fruit_count > res.ideal_fruit_count
+						else "not_enough_fruit"
+					)
 				)
 			elif res != null:
 				var ideal_sugar := res.get_ideal_sugar_for(candidate.fruit_count)
