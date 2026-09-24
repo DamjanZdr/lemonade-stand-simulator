@@ -410,6 +410,10 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	var saved_recipes = data.get("recipes", { })
 	if saved_recipes is Dictionary and not saved_recipes.is_empty():
 		GameState.recipes = saved_recipes.duplicate(true)
+		# Migrate older saves created before a new fruit was added.
+		for ft in GameState.FRUIT_TYPES:
+			if not GameState.recipes.has(ft):
+				GameState.recipes[ft] = { }
 	else:
 		GameState.recipes.clear()
 		GameState.init_default_recipes()
