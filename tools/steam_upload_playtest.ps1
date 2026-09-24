@@ -36,6 +36,10 @@ if (-not $SteamUser) {
 if (-not $SteamCmd) {
 	$SteamCmd = "C:\Program Files (x86)\Steam\steamcmd\steamcmd.exe"
 }
+# Accept the path with or without the .exe extension.
+if ($SteamCmd -notlike "*.exe") {
+	$SteamCmd = "$SteamCmd.exe"
+}
 if (-not (Test-Path $SteamCmd)) {
 	throw "steamcmd.exe not found at: $SteamCmd. Install SteamCMD or set STEAMCMD env variable."
 }
@@ -80,9 +84,13 @@ if (-not (Test-Path $dll)) {
 }
 
 Write-Host "Uploading build to App $AppId branch '$Branch'..." -ForegroundColor Cyan
-& $SteamCmd +login $SteamUser +app_build_update $AppId "$AppBuildVdf" +quit
-if ($LASTEXITCODE -ne 0) {
-	throw "Steam upload failed."
+$arguments = @( "+login", $SteamUser, "+app_build_update", $AppId, $AppBuildVdf, "+quit" )
+# Launch in a new console window so SteamCMD's password/Steam Guard prompts
+# work properly. PowerShell's call operator sometimes swallows interactive input.
+$process = Start-Process -FilePath $SteamCmd -ArgumentList $arguments `
+	-Wait -PassThru -WorkingDirectory $projectRoot
+if ($process.ExitCode -ne 0) {
+	throw "Steam upload failed (exit code $($process.ExitCode))."
 }
 
 Write-Host "Upload complete. Build should be live on '$Branch' branch of App $AppId." -ForegroundColor Green
