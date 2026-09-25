@@ -144,3 +144,20 @@ func make_held_trash(
 			phys.collision_mask = 0
 		hand_mesh = box_inst
 	set_held(HeldItem.TRASH, data, hand_mesh)
+
+
+func _process(_delta: float) -> void:
+	# Safety net: if the inventory thinks the hand is empty but a mesh is still
+	# attached, something leaked (often from a desynced pickup). Clean it up so
+	# other players don't see a phantom held item.
+	# Only run for the player we actually control; remote players' meshes are
+	# replicated by the multiplayer spawner, and the owning peer must clear them.
+	if _player == null or not _player.is_multiplayer_authority():
+		return
+	if held_item != HeldItem.NONE or _held_mesh != null:
+		return
+	var slot := _player.hand_slot
+	if slot == null:
+		return
+	for child in slot.get_children():
+		child.queue_free()

@@ -119,7 +119,6 @@ const TASKS: Array[Dictionary] = [
 		"event": "equipment_placed",
 		"parts": { "pitcher out of the press and place it on the table": "pitcher" },
 		"requires_workstation": true,
-		"retroactive": true,
 	},
 	{
 		"id": "demo_add_sugar_ice",

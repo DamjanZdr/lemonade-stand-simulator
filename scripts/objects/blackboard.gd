@@ -498,8 +498,12 @@ func _apply_ice_to_stand(
 		_refresh_label(_label_index)
 
 
-## Find the closest StandUnit in the scene to this blackboard.
+## Find the StandUnit this blackboard belongs to. We already know our
+## parent from _ready, so prefer that. Only fall back to distance search
+## if the parent wasn't a StandUnit (e.g., a dev/test scene layout).
 func _find_nearest_stand() -> StandUnit:
+	if _stand != null and is_instance_valid(_stand):
+		return _stand
 	var best: StandUnit = null
 	var best_dist := INF
 	for node in get_tree().get_nodes_in_group("stand"):

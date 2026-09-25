@@ -43,6 +43,12 @@ var _node_to_net_id: Dictionary = { }
 ## stale/duplicate entries on client join.
 var _placed_objects: Dictionary = { }
 
+## Net IDs that have just been despawned and should be ignored by snapshots
+## and client spawn RPCs for a short window. Prevents in-flight world
+## snapshots from resurrecting a freshly-picked-up object as a duplicate.
+const PENDING_DESPAWN_MS := 2000
+var _pending_despawns: Dictionary[int, int] = { }
+
 
 func setup(_world_objects: Node, _spawner: MultiplayerSpawner) -> void:
 	# Currently unused (we use RPC-based spawning instead of MultiplayerSpawner),
@@ -233,8 +239,11 @@ func _collect_world_snapshot() -> Dictionary:
 	if get_tree() == null or get_tree().current_scene == null:
 		return { }
 	_ensure_default_objects_registered()
+	_cleanup_expired_despawns()
 	var to_remove: Array[int] = []
 	for net_id in _placed_objects.keys():
+		if _is_despawn_pending(int(net_id)):
+			continue
 		var node: Node = _placed_objects[net_id]
 		if not is_instance_valid(node) or node.is_queued_for_deletion():
 			to_remove.append(net_id)
@@ -266,6 +275,34 @@ func _ensure_default_objects_registered() -> void:
 			if net_id < 0:
 				net_id = _assign_net_id(node)
 			_placed_objects[net_id] = node
+
+
+func _mark_despawn_pending(net_id: int) -> void:
+	if net_id < 0:
+		return
+	_pending_despawns[net_id] = Time.get_ticks_msec() + PENDING_DESPAWN_MS
+
+
+func _is_despawn_pending(net_id: int) -> bool:
+	if net_id < 0:
+		return false
+	var expire: int = _pending_despawns.get(net_id, 0)
+	if expire == 0:
+		return false
+	if Time.get_ticks_msec() >= expire:
+		_pending_despawns.erase(net_id)
+		return false
+	return true
+
+
+func _cleanup_expired_despawns() -> void:
+	var now := Time.get_ticks_msec()
+	var expired: Array[int] = []
+	for net_id in _pending_despawns.keys():
+		if now >= _pending_despawns[net_id]:
+			expired.append(net_id)
+	for net_id in expired:
+		_pending_despawns.erase(net_id)
 
 
 func _serialize_container(node: Node) -> Dictionary:
@@ -831,6 +868,7 @@ func request_despawn(obj: Node, confirm_pickup: bool = false) -> void:
 	if is_host():
 		despawn_networked(obj)
 		return
+	_mark_despawn_pending(net_id)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	GameLog.log(
 		"[WorldSync] Client sending despawn RPC to host: parent=%s name=%s net_id=%d"
@@ -1004,9 +1042,15 @@ func despawn_networked(obj: Node) -> void:
 		return
 	if obj == null or not is_instance_valid(obj):
 		return
+	# Make sure default scene objects have a net_id before we broadcast the
+	# despawn, so every peer can locate and remove the same object.
+	var net_id := _get_net_id(obj)
+	if net_id < 0:
+		_ensure_default_objects_registered()
+		net_id = _get_net_id(obj)
+	_mark_despawn_pending(net_id)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	var obj_name := obj.name
-	var net_id := _get_net_id(obj)
 	# If this is a supply box, release any delivery-grid slot it occupies
 	# (host-authoritative) and make boxes above fall on the host AND clients.
 	if obj is SupplyBox:
@@ -1366,6 +1410,13 @@ func _spawn_on_clients(
 ) -> void:
 	if is_host():
 		return # Host already spawned it locally
+	# Ignore spawns for objects that were just despawned locally. This closes
+	# the race where a snapshot was collected before the host processed a
+	# despawn request and then arrives at the client after the local copy
+	# was already removed.
+	if _is_despawn_pending(net_id):
+		GameLog.log("[WorldSync] Client ignoring spawn for pending-despawn net_id=%d" % net_id)
+		return
 	GameLog.log(
 		"[WorldSync] Client received spawn: %s name=%s net_id=%d parent=%s"
 		% [scene_path, obj_name, net_id, parent_path_str]

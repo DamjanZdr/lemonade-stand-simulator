@@ -940,6 +940,7 @@ func step_forward(new_pos: Vector3) -> void:
 		queue_position = new_pos
 		state = CustomerState.WALKING
 		_npc.play_anim("Walk")
+		sync_state(CustomerState.WALKING, "Walk")
 
 
 ## Called by CustomerSpawner when spawning a pedestrian-converted customer.
