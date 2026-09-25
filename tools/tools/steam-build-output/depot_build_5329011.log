@@ -1,0 +1,14 @@
+[2026-09-25 02:03:08]: Starting build for depot 5329011, content path is "D:\User\Desktop\Godot Projects\lemonade-stand-simulator\export\", build flags 0x0
+[2026-09-25 02:03:08]: Building file listing for depot 5329011 ...
+[2026-09-25 02:03:08]: Found 3 files for mapping: D:\User\Desktop\Godot Projects\lemonade-stand-simulator\export * -> .
+[2026-09-25 02:03:08]: Found 3 files (566 MB) for depot 5329011
+[2026-09-25 02:03:08]: Building depot 5329011, no baseline manifest
+[2026-09-25 02:03:17]: Found 556 new chunks ( 0 used previously ) for depot 5329011, took 0 minutes, 8 seconds
+[2026-09-25 02:03:17]: Changes to baseline manifest 0 :
+[2026-09-25 02:03:17]: Added  : "steam_api64.dll" 312 KB 
+[2026-09-25 02:03:17]: Added  : "WhenLifeGivesYouLemons.exe" 108222 KB 
+[2026-09-25 02:03:17]: Added  : "WhenLifeGivesYouLemons.pck" 471523 KB 
+[2026-09-25 02:03:17]: Summary: 3 files added (566.46 MB), 0 files changed (0 bytes), 0 files removed (0 bytes)
+[2026-09-25 02:03:17]: Uploading new manifest to depot-ingest.discovery.steamserver.net (handle 4884469224342627188, 17483 bytes).
+[2026-09-25 02:03:18]: Uploading 556 out of 556 missing chunks.
+[2026-09-25 02:04:25]: Success! New manifestID 5728214594794303396 created and 556 new chunks uploaded.
