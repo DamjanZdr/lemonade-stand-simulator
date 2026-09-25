@@ -151,7 +151,9 @@ func _strip_neck_head_rotation_tracks(anim_player: AnimationPlayer) -> void:
 		var i := anim.get_track_count() - 1
 		while i >= 0:
 			var path: NodePath = anim.track_get_path(i)
-			var bone_name: String = String(path.get_subname(0)) if path.get_subname_count() > 0 else ""
+			var bone_name: String = ""
+			if path.get_subname_count() > 0:
+				bone_name = String(path.get_subname(0))
 			if (
 				bone_name in ["Neck", "Head"]
 				and anim.track_get_type(i) == Animation.TYPE_ROTATION_3D
@@ -502,12 +504,11 @@ func _skin_color_from_slider(value: float) -> Color:
 	var darkest := Color(0.25, 0.16, 0.12, 1.0)
 	if value < 0.25:
 		return light.lerp(tan, value / 0.25)
-	elif value < 0.5:
+	if value < 0.5:
 		return tan.lerp(medium, (value - 0.25) / 0.25)
-	elif value < 0.75:
+	if value < 0.75:
 		return medium.lerp(dark, (value - 0.5) / 0.25)
-	else:
-		return dark.lerp(darkest, (value - 0.75) / 0.25)
+	return dark.lerp(darkest, (value - 0.75) / 0.25)
 
 
 func set_clothing_colors(colors: Dictionary) -> void:
@@ -956,7 +957,8 @@ func _target_eye_rot(
 	var ang := rest_fwd.angle_to(want_fwd)
 	if ang < 0.001:
 		return Quaternion.IDENTITY
-	var clamped_fwd := rest_fwd.slerp(want_fwd, minf(deg_to_rad(eye_look_max_deg) / ang, 1.0)).normalized()
+	var look_ratio := minf(deg_to_rad(eye_look_max_deg) / ang, 1.0)
+	var clamped_fwd := rest_fwd.slerp(want_fwd, look_ratio).normalized()
 	var clamped_ang := rest_fwd.angle_to(clamped_fwd)
 	if clamped_ang < 0.001:
 		return Quaternion.IDENTITY
@@ -971,9 +973,9 @@ func _apply_eye(eye: MeshInstance3D, world_rot: Quaternion) -> void:
 	var par := eye.get_parent() as Node3D
 	if par == null:
 		return
-	var P := par.global_transform.basis
+	var par_basis := par.global_transform.basis
 	# Convert world-space rotation to parent-local: L = P⁻¹ · Rw · P
-	var local_rot := P.inverse() * Basis(world_rot) * P
+	var local_rot := par_basis.inverse() * Basis(world_rot) * par_basis
 	eye.transform = Transform3D(
 		local_rot * Basis.from_scale(Vector3.ONE * _EYE_SCALE),
 		eye.transform.origin,

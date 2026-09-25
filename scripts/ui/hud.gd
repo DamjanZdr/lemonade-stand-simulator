@@ -599,14 +599,16 @@ func _animate_task_exit() -> void:
 	if _onboarding_panel == null or not is_instance_valid(_onboarding_panel):
 		return
 	var tw := create_tween()
+	var left := _onboarding_panel.offset_left
+	var right := _onboarding_panel.offset_right
 	# Slide left a bit (nudge 25px left).
 	tw \
-			.tween_property(_onboarding_panel, "offset_left", _onboarding_panel.offset_left - 25.0, 0.15) \
+			.tween_property(_onboarding_panel, "offset_left", left - 25.0, 0.15) \
 			.set_trans(Tween.TRANS_QUAD) \
 			.set_ease(Tween.EASE_OUT)
 	tw \
 			.parallel() \
-			.tween_property(_onboarding_panel, "offset_right", _onboarding_panel.offset_right - 25.0, 0.15) \
+			.tween_property(_onboarding_panel, "offset_right", right - 25.0, 0.15) \
 			.set_trans(Tween.TRANS_QUAD) \
 			.set_ease(Tween.EASE_OUT)
 	# Then slide off-screen to the right.
@@ -745,9 +747,10 @@ func _show_money_gain(amount: float, new_total: float) -> void:
 	var gt := create_tween()
 	gt.set_parallel(true)
 	gt.tween_property(_gain_label, "modulate:a", 1.0, 0.1)
-	gt.tween_property(_gain_label, "scale", Vector2(1.3, 1.3), 0.15).set_trans(Tween.TRANS_BACK).set_ease(
-		Tween.EASE_OUT
-	)
+	gt \
+			.tween_property(_gain_label, "scale", Vector2(1.3, 1.3), 0.15) \
+			.set_trans(Tween.TRANS_BACK) \
+			.set_ease(Tween.EASE_OUT)
 	gt \
 			.chain() \
 			.tween_property(_gain_label, "scale", Vector2.ONE, 0.1) \
