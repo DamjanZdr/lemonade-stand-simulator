@@ -48,15 +48,18 @@ text = "Debug Console (F12 to toggle)"
 
 [node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="RichLabel" type="RichTextLabel" parent="Panel/Margin/VBox/Scroll"]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_font_sizes/normal_font_size = 10
 bbcode_enabled = true
 text = ""
 scroll_following = true
+fit_content = true
 
 [node name="Buttons" type="HBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
@@ -65,20 +68,24 @@ alignment = 1
 
 [node name="CopyButton" type="Button" parent="Panel/Margin/Buttons"]
 layout_mode = 2
+size_flags_vertical = 0
 custom_minimum_size = Vector2(80, 30)
 text = "Copy"
 
 [node name="ClearButton" type="Button" parent="Panel/Margin/Buttons"]
 layout_mode = 2
+size_flags_vertical = 0
 custom_minimum_size = Vector2(80, 30)
 text = "Clear"
 
 [node name="CloseButton" type="Button" parent="Panel/Margin/Buttons"]
 layout_mode = 2
+size_flags_vertical = 0
 custom_minimum_size = Vector2(80, 30)
 text = "Close"
 
 [node name="ResetAchievementsButton" type="Button" parent="Panel/Margin/Buttons"]
 layout_mode = 2
+size_flags_vertical = 0
 custom_minimum_size = Vector2(120, 30)
 text = "Reset Achievements"

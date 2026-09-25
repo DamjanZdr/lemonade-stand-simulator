@@ -11,6 +11,7 @@ extends Control
 @onready var _reset_achievements_button: Button = $Panel/Margin/Buttons/ResetAchievementsButton
 
 var _visible: bool = false
+var _previous_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 
 
 func _enter_tree() -> void:
@@ -33,13 +34,24 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_F12:
-			_visible = not _visible
-			visible = _visible
-			_panel.visible = _visible
-			if _visible:
-				# Scroll to bottom
-				await get_tree().process_frame
-				_rich_label.scroll_to_line(_rich_label.get_line_count() - 1)
+			if event.shift_pressed:
+				AchievementManager.reset_all_achievements()
+				return
+			_toggle()
+
+
+func _toggle() -> void:
+	_visible = not _visible
+	visible = _visible
+	_panel.visible = _visible
+	if _visible:
+		_previous_mouse_mode = Input.mouse_mode
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		# Scroll to bottom
+		await get_tree().process_frame
+		_rich_label.scroll_to_line(_rich_label.get_line_count() - 1)
+	else:
+		Input.mouse_mode = _previous_mouse_mode
 
 
 func _on_log_added(_msg: String) -> void:
@@ -64,6 +76,7 @@ func _on_close() -> void:
 	_visible = false
 	visible = false
 	_panel.visible = false
+	Input.mouse_mode = _previous_mouse_mode
 
 
 func _on_reset_achievements() -> void:
