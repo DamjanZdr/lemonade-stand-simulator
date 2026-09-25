@@ -240,27 +240,19 @@ func configure_local_player() -> void:
 
 
 ## Set up the PlayerVisuals: apply customization from the lobby roster,
-## scale the head bone, hide the model for the local player (first-person),
-## and start the idle animation.
+## hide the model for the local player (first-person), and start the idle
+## animation. If no customization has arrived yet, the empty dictionary
+## applies the default appearance so it matches the lobby defaults.
 func _setup_visuals() -> void:
 	if visuals == null:
 		return
 	# Mark as player visual so eye look-at targets other players, not "Player"
 	visuals.is_player_visual = true
-	# Apply customization from the lobby roster
+	# Apply customization from the lobby roster (empty = default appearance).
 	var peer_id := int(name)
 	var entry: Dictionary = LobbyManager.roster.get(peer_id, { })
 	var custom: Dictionary = entry.get("customization", { })
-	if not custom.is_empty():
-		visuals.apply_customization(custom)
-	else:
-		# No customization data ΓÇö use a deterministic seed based on peer ID
-		# so all peers see the same random appearance for this player
-		visuals.appearance_seed = peer_id * 2654435761
-		visuals.randomize_appearance()
-	# Scale the head bone for cartoony proportions (from customization or default)
-	var head_size: float = custom.get("head_size", 1.3)
-	visuals.scale_head_bone(head_size)
+	visuals.apply_customization(custom)
 	# Hide visuals for the local player (first-person camera)
 	# Remote players see the full character model
 	visuals.visible = not is_multiplayer_authority()
@@ -278,10 +270,7 @@ func _on_roster_changed() -> void:
 	var peer_id := int(name)
 	var entry: Dictionary = LobbyManager.roster.get(peer_id, { })
 	var custom: Dictionary = entry.get("customization", { })
-	if not custom.is_empty():
-		visuals.apply_customization(custom)
-		var head_size: float = custom.get("head_size", 1.3)
-		visuals.scale_head_bone(head_size)
+	visuals.apply_customization(custom)
 
 # ---------------------------------------------------------------------------
 #  Placement delegation wrappers

@@ -271,6 +271,41 @@ func _apply_state(
 			GameState.set_recipe(ft, recipes[ft])
 
 
+## Reset this stand to its pristine starting state. Called when starting a
+## brand-new game so a previous session's money/recipes don't carry over.
+func reset_to_starting_state() -> void:
+	money = Balancing.STARTING_MONEY
+	popularity = 0.1
+	feedback_tier = 0
+	customers_served_happy = 0
+	customers_lost = 0
+	total_customers_served = 0
+	total_cups_sold = 0
+	total_money_earned = 0.0
+	total_money_spent = 0.0
+	highest_purchase = 0.0
+	highest_money = money
+	init_default_prices()
+	init_default_recipes()
+	purchased_upgrade_nodes.clear()
+	if is_legacy_primary:
+		GameState.money = money
+		GameState.popularity = popularity
+		GameState.init_default_prices()
+		GameState.init_default_recipes()
+		GameState.feedback_tier = feedback_tier
+		GameState.customers_served_happy = customers_served_happy
+		GameState.customers_lost = customers_lost
+		GameState.total_customers_served = total_customers_served
+		GameState.total_cups_sold = total_cups_sold
+		GameState.total_money_earned = total_money_earned
+		GameState.total_money_spent = total_money_spent
+		GameState.highest_purchase = highest_purchase
+		GameState.highest_money = highest_money
+	money_changed.emit(money)
+	popularity_changed.emit(popularity)
+
+
 func _ready() -> void:
 	add_to_group("stand")
 	_setup_replication()

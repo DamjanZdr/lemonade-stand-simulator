@@ -495,22 +495,18 @@ func _build_discovery_overlay() -> void:
 	_discovery_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_discovery_overlay.visible = false
 
-	var vignette := TextureRect.new()
+	# Use the same radial dim shader as the Day X / menu transition:
+	# dark in the center, fading to transparent at the edges, fitted to
+	# the full screen via UVs (no square gradient texture).
+	var vignette := ColorRect.new()
 	vignette.name = "Vignette"
 	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var grad := GradientTexture2D.new()
-	grad.gradient = Gradient.new()
-	grad.gradient.add_point(0.0, Color(0, 0, 0, 0.5))
-	grad.gradient.add_point(0.5, Color(0, 0, 0, 0.2))
-	grad.gradient.add_point(1.0, Color(0, 0, 0, 0.0))
-	grad.fill = GradientTexture2D.FILL_RADIAL
-	grad.fill_from = Vector2(0.5, 0.5)
-	grad.fill_to = Vector2(1.0, 0.5)
-	grad.width = 1024
-	grad.height = 1024
-	vignette.texture = grad
-	vignette.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	vignette.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var dim_mat := ShaderMaterial.new()
+	dim_mat.shader = load("res://shaders/radial_dim_fade.gdshader")
+	dim_mat.set_shader_parameter("dim_color", Color(0.0, 0.0, 0.0, 0.5))
+	dim_mat.set_shader_parameter("fade_radius", 0.0)
+	vignette.material = dim_mat
 	_discovery_overlay.add_child(vignette)
 
 	var center := CenterContainer.new()
@@ -522,7 +518,7 @@ func _build_discovery_overlay() -> void:
 	vbox.add_theme_constant_override("separation", 16)
 	center.add_child(vbox)
 
-	_discovery_title = _make_label("", 56, TITLE_FONT, Color(1.0, 0.95, 0.7))
+	_discovery_title = _make_label("", 56, TITLE_FONT, Color(1.0, 0.9, 0.3))
 	_discovery_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_discovery_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	_discovery_title.add_theme_constant_override("shadow_offset_x", 2)

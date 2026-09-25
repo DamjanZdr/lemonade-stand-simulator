@@ -274,6 +274,14 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	GameState.init_default_prices()
 	GameState.init_default_recipes()
 	_sync_live_stand_recipes(false)
+	# Reset each live stand so authoritative stand state matches the fresh
+	# GameState. Without this, StandUnit.money can still hold the previous
+	# session's value and get pushed to joining clients.
+	var scene := get_tree().current_scene
+	if scene != null:
+		for node in scene.get_tree().get_nodes_in_group("stand"):
+			if node.has_method("reset_to_starting_state"):
+				node.reset_to_starting_state()
 	EventBus.game_reset.emit()
 	GameState.feedback_tier = 0
 	GameState.highest_money = GameState.money

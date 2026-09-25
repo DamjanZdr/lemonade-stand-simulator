@@ -1878,28 +1878,34 @@ func _on_host_left() -> void:
 	# Avoid stacking multiple overlays
 	if has_node("HostLeftOverlay"):
 		return
+	# Suppress any connection-failed popup that might fire during the
+	# transition back to the main menu.
+	if NetworkManager.connection_failed.is_connected(_on_menu_session_failed):
+		NetworkManager.connection_failed.disconnect(_on_menu_session_failed)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var overlay := CanvasLayer.new()
 	overlay.name = "HostLeftOverlay"
-	overlay.layer = 100
+	overlay.layer = 200
 	var black := ColorRect.new()
 	black.name = "Black"
 	black.color = Color(0, 0, 0, 0)
-	black.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var label := Label.new()
 	label.text = "Host has left the game"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	label.add_theme_font_size_override("font_size", 48)
 	label.add_theme_color_override("font_color", Color.WHITE)
+	center.add_child(label)
 	overlay.add_child(black)
-	overlay.add_child(label)
+	overlay.add_child(center)
 	add_child(overlay)
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(black, "color:a", 1.0, 0.5)
-	tween.tween_interval(2.0)
+	tween.tween_property(black, "color:a", 1.0, 0.4)
+	tween.tween_interval(1.5)
 	tween.tween_callback(_go_to_main_menu)
 
 

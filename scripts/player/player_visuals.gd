@@ -545,6 +545,8 @@ func apply_customization(data: Dictionary) -> void:
 	set_hair(hair_idx, hair_color)
 	var eb_idx: int = data.get("eyebrow_index", 0)
 	set_eyebrow(eb_idx)
+	var eb_color: Color = data.get("eyebrow_color", hair_color)
+	set_eyebrow_color(eb_color)
 	var clothing: Dictionary = data.get("clothing_colors", { })
 	if clothing.is_empty():
 		_tint_clothing(_man_mesh if male else _woman_mesh)
@@ -556,6 +558,8 @@ func apply_customization(data: Dictionary) -> void:
 		set_skin_color_value(skin_val)
 	elif float(skin_val) > 0.0:
 		set_skin_color(float(skin_val))
+	var head_size: float = data.get("head_size", 1.3)
+	scale_head_bone(head_size)
 
 
 ## Get the current customization as a dictionary (for storing in roster).

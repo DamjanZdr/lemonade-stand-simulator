@@ -195,7 +195,6 @@ func _sync_state_to_peers() -> void:
 			"serving_recipe": serving_recipe,
 		},
 	)
-	WorldSync.sync_call(self, "sync_fill_display")
 	WorldSync.sync_call(self, "update_label")
 
 
@@ -233,8 +232,8 @@ func pour_portion() -> Dictionary:
 		ice = 0.0
 	update_label()
 	update_liquid_color()
-	AudioManager.play_sfx("fill_up_cup", global_position)
 	_sync_state_to_peers()
+	WorldSync.sync_call(self, "play_fill_effects")
 	return snap
 
 
@@ -716,6 +715,15 @@ func sync_fill_display() -> void:
 	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
 	if _lemonade_eraser != null:
 		_lemonade_eraser.position.y = target_y
+	update_liquid_color()
+
+
+## Called on every peer (including the host) when a cup is filled from this
+## pitcher. Plays the fill sound and animates the lemonade level smoothly
+## instead of snapping instantly.
+func play_fill_effects() -> void:
+	AudioManager.play_sfx("fill_up_cup", global_position)
+	_update_eraser_position(0.25)
 	update_liquid_color()
 
 
