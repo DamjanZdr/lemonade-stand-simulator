@@ -40,12 +40,14 @@ const TASKS: Array[Dictionary] = [
 		"text": "Place the {table} on the ground near your stand.",
 		"event": "equipment_placed",
 		"parts": { "table": "workstation" },
+		"retroactive": true,
 	},
 	{
 		"id": "demo_trash_workstation_box",
 		"text": "Throw the {empty table box} in the trashcan.",
 		"event": "trash_disposed",
 		"parts": { "empty table box": "empty_box" },
+		"retroactive": true,
 	},
 	{
 		"id": "demo_order_equipment",
@@ -72,6 +74,7 @@ const TASKS: Array[Dictionary] = [
 			"pitcher": "pitcher",
 		},
 		"requires_workstation": true,
+		"retroactive": true,
 	},
 	{
 		"id": "demo_order_ingredients",
@@ -89,12 +92,14 @@ const TASKS: Array[Dictionary] = [
 			"sugar in the bowl": "sugar",
 			"ice in the bucket": "ice",
 		},
+		"retroactive": true,
 	},
 	{
 		"id": "demo_place_pitcher_press",
 		"text": "Place the {pitcher beneath the press}.",
 		"event": "pitcher_placed",
 		"parts": { "pitcher beneath the press": "press" },
+		"retroactive": true,
 	},
 	{
 		"id": "demo_load_press",
@@ -114,6 +119,7 @@ const TASKS: Array[Dictionary] = [
 		"event": "equipment_placed",
 		"parts": { "pitcher out of the press and place it on the table": "pitcher" },
 		"requires_workstation": true,
+		"retroactive": true,
 	},
 	{
 		"id": "demo_add_sugar_ice",
@@ -129,6 +135,7 @@ const TASKS: Array[Dictionary] = [
 		"text": "Place the {pitcher on the water dispenser}.",
 		"event": "pitcher_placed",
 		"parts": { "pitcher on the water dispenser": "water_dispenser" },
+		"retroactive": true,
 	},
 	{
 		"id": "demo_fill_water",
@@ -141,6 +148,7 @@ const TASKS: Array[Dictionary] = [
 		"text": "Place the {finished pitcher on your stand}.",
 		"event": "equipment_placed",
 		"parts": { "finished pitcher on your stand": "pitcher" },
+		"retroactive": true,
 	},
 	{
 		"id": "demo_order_place_cups",
@@ -161,6 +169,7 @@ const TASKS: Array[Dictionary] = [
 		"event": "cup_placed_stand",
 		"parts": { "3 filled cups": "filled_cup" },
 		"required_count": 3,
+		"retroactive": true,
 	},
 	{
 		"id": "demo_ask_customer",

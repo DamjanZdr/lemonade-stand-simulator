@@ -205,6 +205,10 @@ func _ready() -> void:
 						"[Player] Remote player %s pos after 3s=%s" % [name, str(global_position)]
 					),
 		)
+	# Customization may arrive after the player node has already spawned
+	# (especially on late-joining clients), so re-apply it whenever the
+	# host broadcasts an updated roster.
+	LobbyManager.roster_changed.connect(_on_roster_changed)
 
 
 ## Applies local-player-only setup: mouse capture, camera, audio, and physics.
@@ -263,6 +267,21 @@ func _setup_visuals() -> void:
 	# Start idle animation
 	visuals.play_anim("Idle")
 	controller.set_current_animation("Idle")
+
+
+## Re-apply customization whenever the host broadcasts a roster update.
+## The initial spawn may happen before the client's roster entry for this
+## peer has arrived, so this fixes remote players appearing random.
+func _on_roster_changed() -> void:
+	if visuals == null:
+		return
+	var peer_id := int(name)
+	var entry: Dictionary = LobbyManager.roster.get(peer_id, { })
+	var custom: Dictionary = entry.get("customization", { })
+	if not custom.is_empty():
+		visuals.apply_customization(custom)
+		var head_size: float = custom.get("head_size", 1.3)
+		visuals.scale_head_bone(head_size)
 
 # ---------------------------------------------------------------------------
 #  Placement delegation wrappers

@@ -1869,24 +1869,38 @@ func _notify_clients_ready() -> void:
 	LobbyManager.notify_clients_start()
 
 
-## Called when the server (host) disconnects. Shows a popup so the
-## client knows what happened instead of getting stuck.
+## Called when the server (host) disconnects. Fades to black with a
+## centered message, then returns the client to the main menu.
 func _on_host_left() -> void:
 	# Only show this for clients (not the host themselves)
 	if multiplayer.is_server():
 		return
-	# Avoid showing multiple popups
-	if has_node("HostLeftDialog"):
+	# Avoid stacking multiple overlays
+	if has_node("HostLeftOverlay"):
 		return
-	var dialog := AcceptDialog.new()
-	dialog.name = "HostLeftDialog"
-	dialog.title = "Host Left"
-	dialog.dialog_text = "The host has left the game."
-	dialog.ok_button_text = "Back to Menu"
-	dialog.confirmed.connect(_go_to_main_menu)
-	dialog.canceled.connect(_go_to_main_menu)
-	add_child(dialog)
-	dialog.popup_centered()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var overlay := CanvasLayer.new()
+	overlay.name = "HostLeftOverlay"
+	overlay.layer = 100
+	var black := ColorRect.new()
+	black.name = "Black"
+	black.color = Color(0, 0, 0, 0)
+	black.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var label := Label.new()
+	label.text = "Host has left the game"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_color", Color.WHITE)
+	overlay.add_child(black)
+	overlay.add_child(label)
+	add_child(overlay)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(black, "color:a", 1.0, 0.5)
+	tween.tween_interval(2.0)
+	tween.tween_callback(_go_to_main_menu)
 
 
 func _go_to_main_menu() -> void:

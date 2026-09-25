@@ -500,8 +500,9 @@ func _build_discovery_overlay() -> void:
 	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var grad := GradientTexture2D.new()
 	grad.gradient = Gradient.new()
-	grad.gradient.add_point(0.0, Color(0, 0, 0, 0))
-	grad.gradient.add_point(1.0, Color(0, 0, 0, 0.75))
+	grad.gradient.add_point(0.0, Color(0, 0, 0, 0.5))
+	grad.gradient.add_point(0.5, Color(0, 0, 0, 0.2))
+	grad.gradient.add_point(1.0, Color(0, 0, 0, 0.0))
 	grad.fill = GradientTexture2D.FILL_RADIAL
 	grad.fill_from = Vector2(0.5, 0.5)
 	grad.fill_to = Vector2(1.0, 0.5)

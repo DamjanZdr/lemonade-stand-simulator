@@ -40,6 +40,7 @@ var _press_eraser_tween: Tween = null
 var _suppress_eraser_updates: bool = false
 var _last_liquid_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 var _last_eraser_target_y: float = -1000.0
+var _fill_request_pending: bool = false
 
 const ERASER_Y_EMPTY: float = 1.752
 const ERASER_Y_FULL: float = 5.245
@@ -304,69 +305,122 @@ func interact(player: Node) -> void:
 			# The pitcher must be topped up to max volume first — pouring
 			# from a half-prepped pitcher serves a broken recipe.
 			if p.held_item == HeldItem.CUP_EMPTY and get_liquid_volume() > 0.0:
-				if get_liquid_volume() < Balancing.PITCHER_MAX_LIQUID - 0.01:
-					EventBus.interaction_hint_changed.emit(
-						"Fill the pitcher with fruit/water first! (%.1f/%.0f)"
-						% [get_liquid_volume(), Balancing.PITCHER_MAX_LIQUID]
-					)
-					return
-				var recipe := pour_portion()
-				if recipe.is_empty():
-					return
-				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
-				p.inventory.set_held(
-					HeldItem.CUP_FILLED,
-					{ "recipe": recipe },
-					_make_filled_cup_mesh(cup_color),
-				)
-				EventBus.pitcher_cup_filled.emit(recipe)
-				OnboardingManager.report(
-					OnboardingManager.stand_for_node(self),
-					"cup_filled",
-					{
-						"type": "cup",
-						"snapshot": recipe.duplicate(true),
-						"cups_poured": cups_poured,
-					},
-				)
-				if is_fully_empty():
-					_clear_and_return()
+				request_fill_cup(p)
 				return
 			# Pick up: always use container system now
 			if p.held_item == HeldItem.NONE:
 				p.pickup_container(self, "pitcher")
 		PitcherState.SERVING:
 			if p.held_item == HeldItem.CUP_EMPTY:
-				if get_liquid_volume() <= 0.0:
-					EventBus.interaction_hint_changed.emit("Pitcher is empty")
-					return
-				var recipe := pour_portion()
-				if recipe.is_empty():
-					return
-				var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
-				p.inventory.set_held(
-					HeldItem.CUP_FILLED,
-					{ "recipe": recipe },
-					_make_filled_cup_mesh(cup_color),
-				)
-				EventBus.pitcher_cup_filled.emit(recipe)
-				OnboardingManager.report(
-					OnboardingManager.stand_for_node(self),
-					"cup_filled",
-					{
-						"type": "cup",
-						"snapshot": recipe.duplicate(true),
-						"cups_poured": cups_poured,
-					},
-				)
-				if is_fully_empty():
-					_clear_and_return()
+				request_fill_cup(p)
 				return
 			# Pick up: a pitcher that's still serving (not full, cups already
 			# poured from it) should still be pick-up-able with an empty hand,
 			# same as a fresh one in PREPPING/COMPLETE.
 			if p.held_item == HeldItem.NONE:
 				p.pickup_container(self, "pitcher")
+
+
+## Find the player node that belongs to a given peer ID.
+func _find_player_by_peer(peer_id: int) -> Player:
+	var players := get_tree().current_scene.get_node_or_null("Players")
+	if players == null:
+		return null
+	return players.get_node_or_null(str(peer_id)) as Player
+
+
+## Public request to fill a cup from this pitcher. In single-player or on the
+## host, the fill happens immediately; clients send an RPC to the host and
+## wait for the authoritative result.
+func request_fill_cup(player: Player) -> void:
+	if _fill_request_pending:
+		return
+	if not can_player_use(player):
+		return
+	if player.held_item != HeldItem.CUP_EMPTY:
+		return
+	var vol := get_liquid_volume()
+	match state:
+		PitcherState.PREPPING, PitcherState.COMPLETE:
+			if vol <= 0.0:
+				EventBus.interaction_hint_changed.emit("Fill the pitcher with fruit/water first!")
+				return
+			if vol < Balancing.PITCHER_MAX_LIQUID - 0.01:
+				EventBus.interaction_hint_changed.emit(
+					"Fill the pitcher with fruit/water first! (%.1f/%.0f)"
+					% [vol, Balancing.PITCHER_MAX_LIQUID]
+				)
+				return
+		PitcherState.SERVING:
+			if vol <= 0.0:
+				EventBus.interaction_hint_changed.emit("Pitcher is empty")
+				return
+		_:
+			return
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		_fill_cup_for_player(player)
+	else:
+		_fill_request_pending = true
+		var peer_id := player.get_multiplayer_authority()
+		var net_id := WorldSync.get_net_id(self)
+		_rpc_request_fill_cup.rpc_id(1, peer_id, net_id)
+
+
+## Host-only fill. Validates nothing; caller must have already checked state.
+func _fill_cup_for_player(player: Player) -> void:
+	var recipe := pour_portion()
+	if recipe.is_empty():
+		return
+	var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
+	player.inventory.set_held(
+		HeldItem.CUP_FILLED,
+		{ "recipe": recipe },
+		_make_filled_cup_mesh(cup_color),
+	)
+	EventBus.pitcher_cup_filled.emit(recipe)
+	OnboardingManager.report(
+		OnboardingManager.stand_for_node(self),
+		"cup_filled",
+		{ "type": "cup", "snapshot": recipe.duplicate(true), "cups_poured": cups_poured },
+	)
+	if is_fully_empty():
+		_clear_and_return()
+	# If the player is not on this machine, tell their owning peer they now
+	# hold a filled cup.
+	if multiplayer.has_multiplayer_peer() and not player.is_multiplayer_authority():
+		_rpc_fill_cup_result.rpc_id(player.get_multiplayer_authority(), recipe)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_fill_cup(peer_id: int, pitcher_net_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if sender != peer_id:
+		return
+	var player := _find_player_by_peer(peer_id)
+	var pitcher := WorldSync.find_node_by_net_id(pitcher_net_id)
+	if player == null or pitcher == null or pitcher != self:
+		return
+	_fill_cup_for_player(player)
+
+
+@rpc("authority", "reliable")
+func _rpc_fill_cup_result(recipe: Dictionary) -> void:
+	_fill_request_pending = false
+	if recipe.is_empty():
+		return
+	var local := WorldSync.get_local_player() as Player
+	if local == null:
+		local = _find_player_by_peer(multiplayer.get_unique_id())
+	if local == null:
+		return
+	var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
+	local.inventory.set_held(
+		HeldItem.CUP_FILLED,
+		{ "recipe": recipe },
+		_make_filled_cup_mesh(cup_color),
+	)
 
 
 func try_add_ingredient(ingredient_type: String, amount: float) -> bool:
