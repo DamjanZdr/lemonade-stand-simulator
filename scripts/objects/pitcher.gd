@@ -65,7 +65,16 @@ const MAX_FILL_VOLUME: float = 10.0
 func _ready() -> void:
 	add_to_group("pitcher")
 	add_to_group("container")
-	Pickupable.setup_for_container(self, "pitcher")
+	var pickupable := Pickupable.setup_for_container(self, "pitcher")
+	# Wrap the default container pickup check so a pitcher that is locked
+	# to a water dispenser cannot be pulled out mid-fill by clicking the
+	# pitcher itself (which would bypass the dispenser's own lock check).
+	var base_can_pickup := pickupable.can_pickup_callback
+	pickupable.can_pickup_callback = func(player: Node) -> bool:
+		if locked_by_dispenser:
+			EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
+			return false
+		return base_can_pickup.call(player) as bool
 	prep_position = global_position
 	_prep_scale = scale
 	EventBus.debug_empty_pitcher.connect(_on_debug_empty_pitcher)
@@ -479,6 +488,8 @@ func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null:
 		return ""
+	if locked_by_dispenser:
+		return "Pitcher | wait for fill to finish"
 	var contents := ""
 	if not get_contents_string() == "empty":
 		contents = "[%s]\n" % get_contents_string()

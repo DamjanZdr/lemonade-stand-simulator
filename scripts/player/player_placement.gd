@@ -920,11 +920,23 @@ func _create_container_hand_mesh(
 	# correctly displays the right item count and formats the label.
 	_set_container_starting_state(inst, container_type, saved_amount, saved_count, saved_recipe)
 
-	# Force the fruit-bin hand mesh to render the correct visible fruits
-	# BEFORE we strip its script. Otherwise the disabled script leaves the
-	# default scene meshes (all fruits visible) in place.
+	# The FruitBin script populates its fruit_grids in _ready(). We need
+	# those grids before we can call update_display(), so add it to the
+	# tree momentarily, refresh the visible fruit count, then detach it.
 	if container_type == "fruit_bin" and inst is FruitBin:
-		(inst as FruitBin).update_display()
+		var fbin := inst as FruitBin
+		var temp := Node.new()
+		temp.name = "FruitBinHandTemp"
+		_player.add_child(temp)
+		temp.add_child(fbin)
+		fbin.update_display()
+		# Remove the Pickupable component so the hand mesh doesn't behave
+		# like a real placed container once we disable the script.
+		var pickupable := fbin.get_node_or_null("Pickupable")
+		if pickupable != null:
+			pickupable.queue_free()
+		temp.remove_child(fbin)
+		temp.queue_free()
 
 	# Apply hand scale for containers (smaller than placed version)
 	var hand_scale: Vector3 = CONTAINER_HAND_SCALE.get(container_type, Vector3.ONE * 0.1)

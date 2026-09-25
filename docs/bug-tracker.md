@@ -56,18 +56,21 @@
 ### 6. Pitcher can be pulled off the water dispenser mid-fill
 - **Reported:** current batch
 - **Symptom:** Player can take the pitcher off the dispenser while it is actively filling.
-- **Root cause:** `_is_filling` was the only guard. There is a small window between requesting a fill and the sync arriving where another peer (or the same peer via a different input path) could grab the pitcher. The pitcher lock (`locked_by_dispenser`) was not set early enough.
+- **Root cause (updated):** Two holes:
+  1. `WaterDispenser` only checked `_is_filling`; the `locked_by_dispenser` flag was not set early enough and was not synced to peers.
+  2. The pitcher itself has a `Pickupable` component that handles direct clicks on the pitcher mesh. That callback did not check `locked_by_dispenser`, so clicking the pitcher (rather than the dispenser) could steal it mid-fill.
 - **Fix:**
-  - Set `_snapped_pitcher.locked_by_dispenser = true` immediately when a fill is requested, before the host RPC.
-  - Both `interact()` and `interact_secondary()` now refuse to take the pitcher while `_is_filling` OR `locked_by_dispenser` is true.
+  - Set and sync `locked_by_dispenser = true` immediately on fill request; sync `locked_by_dispenser = false` in the finish-fill state broadcast.
+  - `WaterDispenser.interact()` and `interact_secondary()` refuse to take the pitcher while filling or locked.
+  - `Pitcher._ready()` now wraps the `Pickupable.can_pickup_callback` so the pitcher cannot be picked up directly while `locked_by_dispenser` is true.
 - **Status:** fixed in code — needs playtest verification
-- **Files:** `scripts/objects/water_dispenser.gd`
+- **Files:** `scripts/objects/water_dispenser.gd`, `scripts/objects/pitcher.gd`
 
 ### 7. Fruit crate held in hand shows all fruits instead of actual contents
 - **Reported:** current batch
 - **Symptom:** A picked-up fruit bin renders every fruit type at once while held; after placing it, the display is correct.
-- **Root cause:** `_create_container_hand_mesh()` stripped the FruitBin script before calling `update_display()`, so the default scene visibility (all fruit meshes visible) remained.
-- **Fix:** Call `(inst as FruitBin).update_display()` immediately after restoring `fruit_amounts` and before `_disable_scripts()`.
+- **Root cause:** `FruitBin.update_display()` needs `fruit_grids`, which are only populated in `_ready()`. `_create_container_hand_mesh()` was calling `update_display()` on a node that had never entered the tree, so `fruit_grids` was empty and the default scene visibility stayed.
+- **Fix:** Add the FruitBin hand mesh to a temporary tree node so `_ready()` runs and builds `fruit_grids`, then call `update_display()` before detaching it for the hand slot. Also remove the leftover `Pickupable` component from the hand mesh.
 - **Status:** fixed in code — needs playtest verification
 - **Files:** `scripts/player/player_placement.gd`
 

@@ -85,6 +85,7 @@ func apply_finish_fill() -> void:
 				"ice": _snapped_pitcher.ice,
 				"cups_poured": _snapped_pitcher.cups_poured,
 				"state": _snapped_pitcher.state,
+				"locked_by_dispenser": _snapped_pitcher.locked_by_dispenser,
 			},
 		)
 		WorldSync.sync_call(_snapped_pitcher, "sync_fill_display")
@@ -247,7 +248,10 @@ func interact(player: Node) -> void:
 	# Empty hands interactions
 	if p.held_item == HeldItem.NONE:
 		# Start filling if pitcher snapped, has space, and we have water
-		if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling and not _snapped_pitcher.locked_by_dispenser:
+		if (
+			_snapped_pitcher != null and is_instance_valid(_snapped_pitcher)
+			and not _is_filling and not _snapped_pitcher.locked_by_dispenser
+		):
 			# Once cups have been poured the recipe is locked — no more
 			# water until the pitcher is emptied.
 			var locked := _snapped_pitcher.cups_poured > 0 \
@@ -292,7 +296,10 @@ func interact_secondary(player: Node) -> void:
 	if p == null:
 		return
 	# Take pitcher from dispenser
-	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling and not _snapped_pitcher.locked_by_dispenser:
+	if (
+		_snapped_pitcher != null and is_instance_valid(_snapped_pitcher)
+		and not _is_filling and not _snapped_pitcher.locked_by_dispenser
+	):
 		var pitcher := _snapped_pitcher
 		pitcher.locked_by_dispenser = false
 		_snapped_pitcher = null
@@ -461,6 +468,7 @@ func start_fill(water_amount: float) -> void:
 	_fill_amount = water_amount
 	if _snapped_pitcher != null:
 		_snapped_pitcher.locked_by_dispenser = true
+		WorldSync.sync_property(_snapped_pitcher, "locked_by_dispenser", true)
 	_play_fill_visual(water_amount)
 	WorldSync.sync_call(self, "_play_fill_visual", [water_amount])
 
