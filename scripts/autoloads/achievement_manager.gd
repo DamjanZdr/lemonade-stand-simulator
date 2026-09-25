@@ -115,3 +115,29 @@ func _unlock(id: String) -> void:
 	var set_ok: bool = Steam.setAchievement(id)
 	var store_ok: bool = Steam.storeStats()
 	GameLog.log("[Ach] %s set=%s store=%s" % [id, set_ok, store_ok])
+
+
+## Clears every tracked achievement on the local Steam account. Useful for testing.
+func reset_all_achievements() -> void:
+	var ids: Array = [
+		ACH_START_SPENDING,
+		ACH_SQUEEZE_EM,
+		ACH_FIRST_CUSTOMER,
+		ACH_DOUBLE_DIGITS,
+		ACH_SALES_EXPERT,
+		ACH_ENTREPRENEUR,
+		ACH_POCKET_CHANGE,
+		ACH_SPARE_MONEY,
+		ACH_DO_YOU_HAVE_A_PERMIT,
+		ACH_HAPPY_BEGINNING,
+		ACH_GOLDEN_SHOWER,
+	]
+	_unlocked.clear()
+	if not Steam.isSteamRunning():
+		GameLog.log("[Ach] Steam not running; achievements only cleared locally.")
+		return
+	for id in ids:
+		var ok: bool = Steam.clearAchievement(id)
+		GameLog.log("[Ach] cleared %s: %s" % [id, ok])
+	var store_ok: bool = Steam.storeStats()
+	GameLog.log("[Ach] reset storeStats: %s" % store_ok)

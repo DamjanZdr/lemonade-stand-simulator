@@ -77,3 +77,8 @@ text = "Clear"
 layout_mode = 2
 custom_minimum_size = Vector2(80, 30)
 text = "Close"
+
+[node name="ResetAchievementsButton" type="Button" parent="Panel/Margin/Buttons"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 30)
+text = "Reset Achievements"

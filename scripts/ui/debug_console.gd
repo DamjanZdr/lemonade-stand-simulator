@@ -8,6 +8,7 @@ extends Control
 @onready var _copy_button: Button = $Panel/Margin/Buttons/CopyButton
 @onready var _clear_button: Button = $Panel/Margin/Buttons/ClearButton
 @onready var _close_button: Button = $Panel/Margin/Buttons/CloseButton
+@onready var _reset_achievements_button: Button = $Panel/Margin/Buttons/ResetAchievementsButton
 
 var _visible: bool = false
 
@@ -23,6 +24,7 @@ func _ready() -> void:
 	_copy_button.pressed.connect(_on_copy)
 	_clear_button.pressed.connect(_on_clear)
 	_close_button.pressed.connect(_on_close)
+	_reset_achievements_button.pressed.connect(_on_reset_achievements)
 	GameLog.log_added.connect(_on_log_added)
 	# Pre-fill with existing buffer
 	_rich_label.text = GameLog.get_buffer_text()
@@ -62,3 +64,7 @@ func _on_close() -> void:
 	_visible = false
 	visible = false
 	_panel.visible = false
+
+
+func _on_reset_achievements() -> void:
+	AchievementManager.reset_all_achievements()
