@@ -232,6 +232,7 @@ func pour_portion() -> Dictionary:
 		ice = 0.0
 	update_label()
 	update_liquid_color()
+	AudioManager.play_sfx("fill_up_cup", global_position)
 	_sync_state_to_peers()
 	WorldSync.sync_call(self, "play_fill_effects")
 	return snap
@@ -721,8 +722,12 @@ func sync_fill_display() -> void:
 ## Called on every peer (including the host) when a cup is filled from this
 ## pitcher. Plays the fill sound and animates the lemonade level smoothly
 ## instead of snapping instantly.
+## Called on every peer when a cup is filled from this pitcher. Plays the
+## fill sound and animates the lemonade level smoothly on clients; the host
+## already plays the sound locally in pour_portion().
 func play_fill_effects() -> void:
-	AudioManager.play_sfx("fill_up_cup", global_position)
+	if not WorldSync.is_host():
+		AudioManager.play_sfx("fill_up_cup", global_position)
 	_update_eraser_position(0.25)
 	update_liquid_color()
 

@@ -134,6 +134,10 @@ const CAMERA_TWEEN_TIME: float = 1.0
 var _transition_active: bool = false
 var _transition_loaded: bool = false
 var _world_setup_done: bool = false
+
+## True while the Day X intro fade is running. Blocks ESC so pausing can't
+## freeze the tween and leave the screen darker than intended.
+var _day_intro_active: bool = false
 # When true, _finish_transition will host a new game after the whip
 # transition completes. Used by _on_menu_new_stand so the loading
 # transition plays before the lobby is created.
@@ -994,6 +998,7 @@ func _on_game_starting() -> void:
 	print("[Main] _on_game_starting called, _in_lobby=%s" % _in_lobby)
 	if not _in_lobby:
 		return
+	_day_intro_active = true
 	_in_lobby = false
 	_game_state = MenuState.PLAYING
 
@@ -1141,7 +1146,8 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: C
 				day_label.queue_free()
 			if dim_panel:
 				dim_panel.queue_free()
-			_transition_overlay.visible = false,
+			_transition_overlay.visible = false
+			_day_intro_active = false,
 	)
 
 
@@ -1896,7 +1902,8 @@ func _on_host_left() -> void:
 	label.text = "Host has left the game"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_font_override("font", MENU_FONT)
+	label.add_theme_font_size_override("font_size", 64)
 	label.add_theme_color_override("font_color", Color.WHITE)
 	center.add_child(label)
 	overlay.add_child(black)
@@ -1992,8 +1999,11 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed:
 		if _game_state == MenuState.PLAYING:
-			# Don't open the ESC menu while the local player is in a priceboard
-			# or recipe-board view; let those UI handles consume ESC instead.
+			# Don't open the ESC menu while the Day X intro is fading, or while
+			# the local player is in a priceboard/recipe-board view.
+			if _day_intro_active:
+				get_viewport().set_input_as_handled()
+				return
 			if (
 				_local_player != null and is_instance_valid(_local_player)
 				and _local_player.is_in_priceboard_mode()

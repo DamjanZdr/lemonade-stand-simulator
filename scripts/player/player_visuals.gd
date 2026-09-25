@@ -58,6 +58,14 @@ const CLOTHING_COLORS: Array[Color] = [
 	Color(0.40, 0.70, 0.30), # lime green
 ]
 
+## Default colors that match the lobby's untouched customization preview.
+const DEFAULT_SHIRT_COLOR := Color(0.80, 0.20, 0.20)
+const DEFAULT_PANTS_COLOR := Color(0.20, 0.30, 0.80)
+const DEFAULT_SHOES_COLOR := Color(0.20, 0.50, 0.30)
+const DEFAULT_SKIN_COLOR := Color(0.98, 0.87, 0.75)
+const DEFAULT_HAIR_COLOR := Color(0.42, 0.25, 0.08)
+const DEFAULT_EYEBROW_COLOR := Color(0.05, 0.03, 0.02)
+
 ## Mesh surface names that represent individual clothing pieces.
 ## Each matching surface gets its own independently-picked random color.
 const CLOTHING_SURFACES: Array[String] = [
@@ -542,19 +550,24 @@ func apply_customization(data: Dictionary) -> void:
 	var male: bool = data.get("male", true)
 	set_gender(male)
 	var hair_idx: int = data.get("hair_index", 0)
-	var hair_color: Color = data.get("hair_color", HAIR_COLORS[2])
+	var hair_color: Color = data.get("hair_color", DEFAULT_HAIR_COLOR)
 	set_hair(hair_idx, hair_color)
 	var eb_idx: int = data.get("eyebrow_index", 0)
 	set_eyebrow(eb_idx)
-	var eb_color: Color = data.get("eyebrow_color", hair_color)
+	var eb_color: Color = data.get("eyebrow_color", DEFAULT_EYEBROW_COLOR)
 	set_eyebrow_color(eb_color)
 	var clothing: Dictionary = data.get("clothing_colors", { })
 	if clothing.is_empty():
-		_tint_clothing(_man_mesh if male else _woman_mesh)
-	else:
-		set_clothing_colors(clothing)
+		clothing = {
+			"shirt": DEFAULT_SHIRT_COLOR,
+			"top": DEFAULT_SHIRT_COLOR,
+			"pants": DEFAULT_PANTS_COLOR,
+			"trousers": DEFAULT_PANTS_COLOR,
+			"shoes": DEFAULT_SHOES_COLOR,
+		}
+	set_clothing_colors(clothing)
 	# Skin color — can be a Color (new format) or float (legacy).
-	var skin_val = data.get("skin_color", 0.0)
+	var skin_val = data.get("skin_color", DEFAULT_SKIN_COLOR)
 	if skin_val is Color:
 		set_skin_color_value(skin_val)
 	elif float(skin_val) > 0.0:

@@ -57,11 +57,15 @@ func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 		_held_mesh = null
 	held_item = item_type
 	held_item_data = data
-	if mesh and _player != null:
-		_held_mesh = mesh
-		_player.hand_slot.add_child(mesh)
-		_player.remove_placement_groups(mesh)
-		_apply_hand_offset(item_type, data)
+	if _player != null:
+		# Clear any stale meshes that may have been left behind by desyncs.
+		for child in _player.hand_slot.get_children():
+			child.queue_free()
+		if mesh:
+			_held_mesh = mesh
+			_player.hand_slot.add_child(mesh)
+			_player.remove_placement_groups(mesh)
+			_apply_hand_offset(item_type, data)
 	if _player != null:
 		_player.held_item = held_item
 		_player.held_item_data = held_item_data

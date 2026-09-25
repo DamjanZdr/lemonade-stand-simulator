@@ -736,18 +736,9 @@ func _set_node_visible(path: String, visible: bool) -> void:
 
 
 func _on_server_disconnected() -> void:
-	# Don't silently kick — show a popup so the player knows what happened.
-	if has_node("HostLeftDialog"):
-		return
-	var dialog := AcceptDialog.new()
-	dialog.name = "HostLeftDialog"
-	dialog.title = "Host Left"
-	dialog.dialog_text = "The host has left the lobby."
-	dialog.ok_button_text = "Back to Menu"
-	dialog.confirmed.connect(_go_to_main_menu)
-	dialog.canceled.connect(_go_to_main_menu)
-	add_child(dialog)
-	dialog.popup_centered()
+	# main.gd already handles the blackout + return-to-menu transition, so
+	# don't show a duplicate AcceptDialog here.
+	pass
 
 
 func _go_to_main_menu() -> void:
