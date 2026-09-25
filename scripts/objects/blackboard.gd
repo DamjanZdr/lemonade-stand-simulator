@@ -225,38 +225,48 @@ func _refresh_label(index: int) -> void:
 	if data.get("locked", false):
 		label.text = ""
 		return
-	var line1 := _build_line(data["prefix1"], data["value1"], 0, index)
-	var line2 := _build_line(data["prefix2"], data["value2"], 1, index)
-	label.text = line1 + "\n" + line2
-	label.modulate = Color.WHITE
 	var stand := _find_nearest_stand()
 	var fruit_id: String = data.get("name", "").to_lower()
-	if stand == null:
-		return
-	var found: Dictionary = stand.onboarding_progress.get("discovered_recipes", { }).get(
-		fruit_id,
-		{ },
-	)
-	var shown := {
-		"fruit_count": float(data.value1) if str(data.value1).is_valid_float() else -1.0,
-		"sugar": float(data.value2) if str(data.value2).is_valid_float() else -1.0,
-	}
-	if not found.is_empty() and shown == found:
-		label.modulate = Press.FRUIT_COLORS.get(fruit_id, Color.WHITE)
-		label.text += "  ✓"
+	var is_perfect := false
+	if stand != null and fruit_id in StandUnit.FRUIT_TYPES:
+		var found: Dictionary = stand.onboarding_progress.get("discovered_recipes", { }).get(
+			fruit_id,
+			{ },
+		)
+		var shown := {
+			"fruit_count": float(data.value1) if str(data.value1).is_valid_float() else -1.0,
+			"sugar": float(data.value2) if str(data.value2).is_valid_float() else -1.0,
+		}
+		is_perfect = not found.is_empty() and shown == found
+	var line1 := _build_line(data["prefix1"], data["value1"], 0, index, is_perfect)
+	var line2 := _build_line(data["prefix2"], data["value2"], 1, index, is_perfect)
+	label.text = line1 + "\n" + line2
+	label.modulate = Press.FRUIT_COLORS.get(fruit_id, Color.WHITE) if is_perfect else Color.WHITE
 
 
-func _build_line(prefix: String, value: String, field: int, index: int) -> String:
+func _build_line(
+	prefix: String,
+	value: String,
+	field: int,
+	index: int,
+	is_perfect: bool = false,
+) -> String:
 	var data: Dictionary = _label_data[index]
 	if data.get("locked", false):
 		return prefix + "Locked"
 	var is_active := index == _label_index and field == _field_index
 	var display := value if value != "" else EMPTY_VALUE
+	var line := ""
 	if is_active:
 		if _edit_buffer == "":
-			return "> " + prefix + display
-		return "> " + prefix + _edit_buffer
-	return prefix + display
+			line = "> " + prefix + display
+		else:
+			line = "> " + prefix + _edit_buffer
+	else:
+		line = prefix + display
+	if is_perfect:
+		line = "✓ " + line
+	return line
 
 
 func _start_edit(label_idx: int, field_idx: int) -> void:

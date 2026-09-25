@@ -408,6 +408,8 @@ func is_fruit_unlocked(fruit: String) -> bool:
 
 func init_default_prices() -> void:
 	for ft in FRUIT_TYPES:
+		if prices.has(ft) and prices[ft] != 0.0:
+			continue
 		var res := load("res://resources/data/" + ft + ".tres") as IngredientData
 		if res == null:
 			prices[ft] = 1.50
@@ -422,7 +424,8 @@ func init_default_recipes() -> void:
 	# writes values, and recipe discovery only triggers on a recipe the
 	# player actually set (an empty dict never equals a discovered recipe).
 	for ft in FRUIT_TYPES:
-		recipes[ft] = { }
+		if not recipes.has(ft) or recipes[ft].is_empty():
+			recipes[ft] = { }
 
 
 func _default_recipe_for(_fruit_type: String) -> Dictionary:

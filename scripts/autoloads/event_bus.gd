@@ -5,6 +5,9 @@ extends Node
 ## True when the in-game ESC menu is open. Player movement checks this.
 static var esc_menu_open: bool = false
 
+## True while a discovery announcement is showing. Freezes player movement.
+static var announcement_open: bool = false
+
 # --- Player ---
 signal held_item_changed(item_type: int, item_data: Dictionary)
 signal interaction_hint_changed(hint: String)

@@ -33,6 +33,7 @@ const TASKS: Array[Dictionary] = [
 		"text": "Order a {table} from your computer.",
 		"event": "equipment_ordered",
 		"parts": { "table": "workstation" },
+		"retroactive": true,
 	},
 	{
 		"id": "demo_place_workstation",
@@ -50,6 +51,7 @@ const TASKS: Array[Dictionary] = [
 		"id": "demo_order_equipment",
 		"text": "Order a {crate}, {press}, {bucket}, {bowl}, and {pitcher}.",
 		"event": "equipment_ordered",
+		"retroactive": true,
 		"parts": {
 			"crate": "fruit_bin",
 			"press": "press",
@@ -76,6 +78,7 @@ const TASKS: Array[Dictionary] = [
 		"text": "Order {a box of lemons}, {a box of sugar}, and {a box of ice}.",
 		"event": "supply_ordered",
 		"parts": { "a box of lemons": "lemon", "a box of sugar": "sugar", "a box of ice": "ice" },
+		"retroactive": true,
 	},
 	{
 		"id": "demo_stock_ingredients",
@@ -144,6 +147,7 @@ const TASKS: Array[Dictionary] = [
 		"text": "{Order cups} and {place them on your stand}.",
 		"event": "cups",
 		"parts": { "Order cups": "ordered", "place them on your stand": "placed" },
+		"retroactive": true,
 	},
 	{
 		"id": "demo_fill_cup",
@@ -487,6 +491,11 @@ func _retro_satisfy_current_task(stand: StandUnit) -> void:
 		if idx < 0:
 			break
 		var task := TASKS[idx]
+		# Only purchase/order tasks auto-complete from history. Tasks like
+		# asking/serving a customer must be performed while active so the
+		# tutorial moment is not skipped.
+		if not task.get("retroactive", false):
+			break
 		var required: int = int(task.get("required_count", 1))
 		var completed_parts: Dictionary = p.completed_parts
 		var changed := false

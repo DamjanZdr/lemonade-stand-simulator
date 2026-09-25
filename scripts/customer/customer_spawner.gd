@@ -13,7 +13,7 @@ var _queue_max_override: int = 0 # 0 = use Balancing.QUEUE_MAX
 
 ## Which stand this spawner's customers belong to. Set once at startup
 ## (main.gd) so every customer spawned here can be tagged with the correct
-## stand — needed so payment can be credited to the right stand's money
+## stand â€” needed so payment can be credited to the right stand's money
 ## instead of a single shared pot once there's more than one stand.
 var stand: StandUnit = null
 
@@ -91,7 +91,7 @@ func _on_day_phase_changed(phase: int, _day: int) -> void:
 
 
 ## Clears queue bookkeeping when leaving a game. Called from
-## _cleanup_game_session() — the customer nodes themselves are freed by
+## _cleanup_game_session() â€” the customer nodes themselves are freed by
 ## the caller (clients can't despawn via WorldSync once the host left).
 func reset_session() -> void:
 	_queue.fill(null)
@@ -123,7 +123,7 @@ func _spawn_at_slot(slot_index: int) -> void:
 	) as Customer
 	if spawned == null:
 		return
-	# Customers never litter — only free-roaming pedestrians drop trash.
+	# Customers never litter â€” only free-roaming pedestrians drop trash.
 	spawned.collision_layer = 16
 	spawned.collision_mask = 0
 	spawned.stand = stand
@@ -163,37 +163,75 @@ func _on_customer_left(customer: Node, _outcome: String) -> void:
 	_compact_queue()
 
 
-func _compact_queue() -> void:
-	# Collect customers that are still waiting in line (not being served or leaving).
-	# RECEIVING/REACTING stay at slot 0; they're included so the slot stays occupied.
-	var packed: Array = []
-	for c: Customer in _queue:
+func _compact_queue(new_pedestrian: Pedestrian = null) -> void:
+	# Remember where each in-flight pedestrian was heading so we can reroute
+	# only the ones whose slot actually changes.
+	var old_map := _reserved_slots.duplicate()
+
+	# Collect in-flight pedestrians (existing + an optional newcomer).
+	var in_flight: Array[Pedestrian] = []
+	for ped in _reserved_slots.values():
+		if is_instance_valid(ped):
+			in_flight.append(ped)
+	if new_pedestrian != null and is_instance_valid(new_pedestrian):
+		in_flight.append(new_pedestrian)
+	_reserved_slots.clear()
+
+	# Pack actual waiting customers to the front. RECEIVING/REACTING at slot 0
+	# stay in the queue so the active slot remains occupied.
+	var packed: Array[Customer] = []
+	for c in _queue:
 		if c != null and is_instance_valid(c):
 			var cust := c as Customer
-			if cust == null or cust.state != Customer.CustomerState.LEAVING:
-				packed.append(c)
+			if cust != null and cust.state != Customer.CustomerState.LEAVING:
+				packed.append(cust)
 
-	# Build a new queue that respects reserved slots — never move a customer
-	# into a slot a pedestrian is currently walking toward.
+	var cap := _get_queue_cap()
+	var slot_count := mini(cap, _queue.size())
 	var new_queue: Array = []
 	new_queue.resize(_queue.size())
 	new_queue.fill(null)
+	for i in range(mini(packed.size(), slot_count)):
+		new_queue[i] = packed[i]
 
-	var packed_idx := 0
-	for i in range(new_queue.size()):
-		if _reserved_slots.has(i):
-			continue # leave reserved slots empty
-		if packed_idx < packed.size():
-			new_queue[i] = packed[packed_idx]
-			packed_idx += 1
+	# Update moved customers and make them walk to their new slot.
+	for i in range(slot_count):
+		var c := new_queue[i] as Customer
+		_queue[i] = c
+		if c == null:
+			continue
+		c.queue_slot = i
+		if c.queue_position != _queue_spots[i]:
+			c.step_forward(_queue_spots[i])
 
-	for i in range(new_queue.size()):
-		_queue[i] = new_queue[i]
-		if _queue[i] != null:
-			var c := _queue[i] as Customer
-			c.queue_slot = i
-			if c.queue_position != _queue_spots[i]:
-				c.step_forward(_queue_spots[i])
+	# Assign in-flight pedestrians to whatever free slots remain, front-to-back.
+	var free_slots: Array[int] = []
+	for i in range(slot_count):
+		if _queue[i] == null or not is_instance_valid(_queue[i]):
+			free_slots.append(i)
+
+	var remaining := in_flight.duplicate()
+	for slot: int in free_slots:
+		if remaining.is_empty():
+			break
+		var closest: Pedestrian = null
+		var best_dist := INF
+		for ped in remaining:
+			var d: float = ped.global_position.distance_to(_queue_spots[slot])
+			if d < best_dist:
+				best_dist = d
+				closest = ped
+		if closest == null:
+			continue
+		remaining.erase(closest)
+		_reserved_slots[slot] = closest
+		var old_slot: int = -1
+		for s in old_map.keys():
+			if old_map[s] == closest:
+				old_slot = s
+				break
+		if old_slot != -1 and old_slot != slot:
+			closest.update_queue_target(_queue_spots[slot])
 
 
 func _on_debug_set_queue_max(max_size: int) -> void:
@@ -213,72 +251,14 @@ func _on_debug_force_spawn() -> void:
 
 
 ## Called by PedestrianSpawner when a pedestrian wants to join.
-## Gathers every pedestrian already walking to a slot plus the new one,
-## then greedily reassigns slots front-to-back so the closest pedestrian
-## to each slot claims it. Existing pedestrians are rerouted if their
-## assignment changes. Returns the slot given to [pedestrian], or -1.
+## Compacts waiting customers to the front first, then assigns the newcomer and
+## any already-in-flight pedestrians to the remaining free slots. Existing
+## pedestrians are rerouted if their assignment changes.
+## Returns the slot given to [pedestrian], or -1.
 func claim_free_slot(pedestrian: Pedestrian) -> int:
-	_compact_queue()
-
-	# Gather in-flight pedestrians
-	var in_flight: Array[Pedestrian] = []
-	for ped: Pedestrian in _reserved_slots.values():
-		if is_instance_valid(ped):
-			in_flight.append(ped)
-
-	# Collect slots that are not occupied by actual customers
-	var available_slots: Array[int] = []
-	var cap := _get_queue_cap()
-	for i in range(mini(cap, _queue.size())):
-		if _queue[i] != null and is_instance_valid(_queue[i]):
-			continue
-		available_slots.append(i)
-
-	# No room for another pedestrian?
-	if in_flight.size() + 1 > available_slots.size():
-		return -1
-
-	# Build the full pool: existing + newcomer
-	var all_peds := in_flight.duplicate()
-	all_peds.append(pedestrian)
-	available_slots.sort()
-
-	# Greedy assignment: for each slot, closest remaining pedestrian wins it
-	var assigned: Dictionary = { } # slot_index -> Pedestrian
-	var remaining := all_peds.duplicate()
-	for slot: int in available_slots:
-		if remaining.is_empty():
-			break
-		var closest: Pedestrian = null
-		var best_dist := INF
-		for ped: Pedestrian in remaining:
-			var d: float = ped.global_position.distance_to(_queue_spots[slot])
-			if d < best_dist:
-				best_dist = d
-				closest = ped
-		assigned[slot] = closest
-		remaining.erase(closest)
-
-	# Remember old assignments so we can reroute changed pedestrians
-	var old_map := _reserved_slots.duplicate()
-	_reserved_slots.clear()
-	for slot: int in assigned.keys():
-		var ped = assigned[slot]
-		_reserved_slots[slot] = ped
-		# Reroute if this pedestrian was already reserved for a different slot
-		var had_old := false
-		var old_slot := -1
-		for s: int in old_map.keys():
-			if old_map[s] == ped:
-				had_old = true
-				old_slot = s
-				break
-		if had_old and old_slot != slot:
-			ped.update_queue_target(_queue_spots[slot])
-
-	# Return whichever slot the newcomer received
-	for slot: int in assigned.keys():
-		if assigned[slot] == pedestrian:
+	_compact_queue(pedestrian)
+	for slot: int in _reserved_slots.keys():
+		if _reserved_slots[slot] == pedestrian:
 			return slot
 	return -1
 
@@ -342,7 +322,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	if not WorldSync.is_host():
 		return
 	# Get the appearance seed from the source pedestrian so the customer
-	# looks identical on all peers (no NPCBody transfer needed — the seed
+	# looks identical on all peers (no NPCBody transfer needed â€” the seed
 	# produces the same appearance deterministically).
 	var seed := 0
 	if source_pedestrian != null and is_instance_valid(source_pedestrian):
@@ -359,7 +339,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 		spawn_pos.z = source_pedestrian.global_position.z
 		route_continuation = source_pedestrian.get_route_continuation()
 
-	# Build spawn state for WorldSync — clients get appearance_seed + queue data
+	# Build spawn state for WorldSync â€” clients get appearance_seed + queue data
 	var state: Dictionary = {
 		"appearance_seed": seed,
 		"queue_slot": slot_index,
@@ -374,7 +354,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	) as Customer
 	if spawned == null:
 		return
-	# Customers never litter — only free-roaming pedestrians drop trash.
+	# Customers never litter â€” only free-roaming pedestrians drop trash.
 	spawned.collision_layer = 16
 	spawned.collision_mask = 0
 	spawned.stand = stand

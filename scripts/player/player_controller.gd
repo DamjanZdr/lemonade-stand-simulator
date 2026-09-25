@@ -344,6 +344,15 @@ func _physics_process(delta: float) -> void:
 		_update_anim()
 		return
 
+	# Discovery announcement: freeze movement and don't apply look input.
+	if EventBus.announcement_open:
+		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
+		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)
+		_player.move_and_slide()
+		_update_anim()
+		_pending_look = Vector2.ZERO
+		return
+
 	if _player.stun_recover_timer > 0.0:
 		_player.velocity.x = move_toward(_player.velocity.x, 0, 20.0 * delta)
 		_player.velocity.z = move_toward(_player.velocity.z, 0, 20.0 * delta)

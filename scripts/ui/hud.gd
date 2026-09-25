@@ -2,6 +2,8 @@ extends CanvasLayer
 ## Shop-manager style HUD: money, day, time, popularity, and customers.
 
 const AMATIC_FONT := preload("res://assets/fonts/AmaticSC-Bold.ttf")
+const TITLE_FONT := preload("res://assets/fonts/Grandstander-clean.ttf")
+const DISCOVERY_SOUND := preload("res://assets/audio/sfx/perfect recipe.mp3")
 const MOUSE_ICON := preload("res://assets/textures/ui/upgrades/mouse indicator.png")
 
 const CIRCLE_SIZE := 120
@@ -44,7 +46,10 @@ var _onboarding_text: RichTextLabel
 var _displayed_task_id := ""
 var _displayed_parts: Dictionary = { }
 var _onboarding_revision := -1
-var _discovery_label: Label
+var _discovery_overlay: Control
+var _discovery_title: Label
+var _discovery_detail: Label
+var _discovery_player: AudioStreamPlayer
 
 ## Which stand's economy this HUD displays. Assigned by whatever wires up
 ## the player-to-stand relationship (main.gd in Stage A; later, whichever
@@ -61,6 +66,7 @@ func _ready() -> void:
 	_build_styles()
 	_build_ui()
 	_build_onboarding_panel()
+	_build_discovery_overlay()
 	_build_version_label()
 	_remove_legacy()
 	_connect_signals()
@@ -479,16 +485,62 @@ func _build_onboarding_panel() -> void:
 	_onboarding_text.add_theme_font_size_override("normal_font_size", 20)
 	_onboarding_text.add_theme_color_override("default_color", Color(0.96, 0.96, 0.92))
 	box.add_child(_onboarding_text)
-	# Success green — a "Perfect Recipe Found" toast reads as an
-	# achievement; yellow only happened to look thematic for lemon.
-	_discovery_label = _make_label("", 30, AMATIC_FONT, Color(0.4, 0.9, 0.45))
-	_discovery_label.visible = false
-	_discovery_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_discovery_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_discovery_label.position = Vector2(-220, 70)
-	_discovery_label.custom_minimum_size.x = 440
-	add_child(_discovery_label)
 	add_child(_onboarding_panel)
+
+
+func _build_discovery_overlay() -> void:
+	_discovery_overlay = Control.new()
+	_discovery_overlay.name = "DiscoveryOverlay"
+	_discovery_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_discovery_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_discovery_overlay.visible = false
+
+	var vignette := TextureRect.new()
+	vignette.name = "Vignette"
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var grad := GradientTexture2D.new()
+	grad.gradient = Gradient.new()
+	grad.gradient.add_point(0.0, Color(0, 0, 0, 0))
+	grad.gradient.add_point(1.0, Color(0, 0, 0, 0.75))
+	grad.fill = GradientTexture2D.FILL_RADIAL
+	grad.fill_from = Vector2(0.5, 0.5)
+	grad.fill_to = Vector2(1.0, 0.5)
+	grad.width = 1024
+	grad.height = 1024
+	vignette.texture = grad
+	vignette.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	vignette.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_discovery_overlay.add_child(vignette)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_discovery_overlay.add_child(center)
+
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 16)
+	center.add_child(vbox)
+
+	_discovery_title = _make_label("", 56, TITLE_FONT, Color(1.0, 0.95, 0.7))
+	_discovery_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_discovery_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_discovery_title.add_theme_constant_override("shadow_offset_x", 2)
+	_discovery_title.add_theme_constant_override("shadow_offset_y", 2)
+	vbox.add_child(_discovery_title)
+
+	_discovery_detail = _make_label("", 32, TITLE_FONT, Color(0.95, 0.95, 0.95))
+	_discovery_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_discovery_detail.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_discovery_detail.add_theme_constant_override("shadow_offset_x", 1)
+	_discovery_detail.add_theme_constant_override("shadow_offset_y", 1)
+	vbox.add_child(_discovery_detail)
+
+	_discovery_player = AudioStreamPlayer.new()
+	_discovery_player.bus = "SFX"
+	_discovery_player.stream = DISCOVERY_SOUND
+	_discovery_overlay.add_child(_discovery_player)
+
+	add_child(_discovery_overlay)
 
 
 func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
@@ -654,17 +706,26 @@ func _resize_onboarding_panel() -> void:
 
 
 func _on_discovery(stand: StandUnit, title: String, detail: String) -> void:
-	if stand != _stand:
+	if stand != _stand or _discovery_overlay == null:
 		return
-	_discovery_label.text = title + "\n" + detail
-	_discovery_label.visible = true
+	_discovery_title.text = title
+	_discovery_detail.text = detail
+	_discovery_overlay.visible = true
+	_discovery_overlay.modulate.a = 1.0
+	EventBus.announcement_open = true
+
+	var duration := 4.0
+	if _discovery_player.stream != null:
+		duration = _discovery_player.stream.get_length()
+	_discovery_player.play()
+
 	var tween := create_tween()
-	tween.tween_interval(4.0)
-	tween.tween_property(_discovery_label, "modulate:a", 0.0, 0.5)
+	tween.tween_interval(duration)
+	tween.tween_property(_discovery_overlay, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(
 		func():
-			_discovery_label.visible = false
-			_discovery_label.modulate.a = 1.0,
+			_discovery_overlay.visible = false
+			EventBus.announcement_open = false,
 	)
 
 
