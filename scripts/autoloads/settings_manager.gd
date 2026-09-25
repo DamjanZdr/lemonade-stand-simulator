@@ -11,7 +11,7 @@ const DEFAULT_MASTER_VOLUME := 0.5
 const DEFAULT_SFX_VOLUME := 0.5
 const DEFAULT_MUSIC_VOLUME := 0.5
 const DEFAULT_FULLSCREEN := false
-const DEFAULT_VSYNC := true
+const DEFAULT_VSYNC := false
 const DEFAULT_ENHANCED_LIGHTING := true
 const DEFAULT_FPS_COUNTER := false
 const DEFAULT_AUTOSAVE_MINUTES := 5.0
@@ -51,6 +51,10 @@ func load_settings() -> void:
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
 	)
+	# Remove any hard FPS cap so the game can run above the monitor refresh
+	# rate when VSync is off. The default is unlimited, but force it here
+	# in case project settings or an old config changed it.
+	Engine.max_fps = 0
 	settings_loaded.emit()
 
 
