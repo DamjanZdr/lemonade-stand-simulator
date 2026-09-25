@@ -86,10 +86,16 @@
 
 ### 9. Pitcher yields ~19+ cups and doesn't visibly drain (versus, both stands)
 - **Reported:** current batch
-- **Symptom:** Pitcher appears full for many cups; starts visibly lowering around the 10th cup; a full pitcher yields ~19 cups instead of 10.
-- **Root cause:** `pour_portion()` computed `portion_ratio = PORTION_SIZE / current_volume` from the *remaining* volume each pour. That drains exponentially (each cup removes 10% of what is left), so the level barely moves for the first several cups and the pitcher never reaches empty within its real capacity.
-- **Fix:** The recipe snapshot now stores `_initial_volume` (the volume at first pour), and each cup removes a fixed fraction of the *initial* amounts. A full 10-unit pitcher now empties in exactly 10 cups and the fill level drops visibly every cup.
+- **Symptom:** Pitcher appears full for ~9 cups; starts visibly lowering around the 9th–10th cup; a "full" pitcher yields ~19 cups instead of 10.
+- **Root cause (updated):** Two separate problems:
+  1. `pour_portion()` computed `portion_ratio = PORTION_SIZE / current_volume` from the *remaining* volume each pour — exponential drain, so the level barely moved early on and the pitcher never emptied in its real capacity.
+  2. `WaterDispenser` trusted the requesting peer's `space` argument, computed on a possibly-stale local liquid view. A stale-low view sent `start_fill(≈8-10)` on an already-fuller pitcher, overfilling it to ~18-19 liquid. `t = vol/10` then clamps at full for the first ~9 pours (stays "10/10") and the pitcher serves ~19 cups.
+  3. Bonus: `_play_fill_visual` ran `start_press_eraser_animation` on all peers but `end_press_eraser_animation` (which clears `_suppress_eraser_updates`) was only called on the host — client fill visuals could stay frozen.
+- **Fix:**
+  - `get_recipe_snapshot()` stores `_initial_volume`; each cup removes a fixed fraction of the *initial* amounts → exactly 10 cups from a full pitcher.
+  - `start_fill()` recomputes the fill amount from the host-authoritative pitcher liquid, ignoring the client's stale `space` arg.
+  - `apply_finish_fill()` broadcasts `end_press_eraser_animation` so every peer unsuppresses eraser updates.
 - **Status:** fixed in code — needs playtest verification
-- **Files:** `scripts/objects/pitcher.gd`
+- **Files:** `scripts/objects/pitcher.gd`, `scripts/objects/water_dispenser.gd`
 
 *(None verified in a live playtest yet.)*

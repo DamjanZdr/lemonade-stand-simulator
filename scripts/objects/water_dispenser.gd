@@ -88,6 +88,11 @@ func apply_finish_fill() -> void:
 				"locked_by_dispenser": _snapped_pitcher.locked_by_dispenser,
 			},
 		)
+		# Unsuppress eraser updates on all peers — _play_fill_visual set
+		# _suppress_eraser_updates via start_press_eraser_animation on every
+		# peer, but only the host cleared it, leaving client fill visuals
+		# permanently frozen at whatever level the eraser last animated to.
+		WorldSync.sync_call(_snapped_pitcher, "end_press_eraser_animation")
 		WorldSync.sync_call(_snapped_pitcher, "sync_fill_display")
 		WorldSync.sync_call(_snapped_pitcher, "update_label")
 	# Return tap to closed
@@ -462,6 +467,13 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 @warning_ignore("unused_parameter")
 func start_fill(water_amount: float) -> void:
 	if _snapped_pitcher == null or water_fillings <= 0:
+		return
+	# Recompute the fill amount from the authoritative pitcher state.
+	# A client's `space` arg is based on its own (possibly stale) liquid
+	# view — trusting it can overfill the pitcher past PITCHER_MAX_LIQUID,
+	# which clamps the fill visual at full and yields far too many cups.
+	water_amount = Balancing.PITCHER_MAX_LIQUID - _snapped_pitcher.get_liquid_volume()
+	if water_amount <= 0.0:
 		return
 	_is_filling = true
 	_fill_progress = 0.0
