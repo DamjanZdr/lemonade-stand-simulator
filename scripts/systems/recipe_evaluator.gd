@@ -171,6 +171,9 @@ func get_verdict_string(recipe: Dictionary, temperature: float) -> String:
 	if liquid <= 0.0:
 		return "FAIL: empty pitcher"
 
+	if fruit_count <= 0.0 and water > 0.0:
+		return "Just water"
+
 	var mgr := _get_manager()
 	if mgr == null:
 		return "FAIL: RecipeManager not found"

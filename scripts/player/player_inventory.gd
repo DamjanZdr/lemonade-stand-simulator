@@ -77,6 +77,18 @@ func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 		_player.held_item_data = held_item_data
 		_player.held_mesh = _held_mesh
 	EventBus.held_item_changed.emit(int(item_type), data)
+	_sync_held_to_host(item_type, data)
+
+
+## Mirror this player's held state to the host so the remote-player copy's
+## hand slot shows/clears the same item (e.g. the filled cup the host gave
+## this player must disappear from its hand when the cup is dropped).
+func _sync_held_to_host(item_type: int, data: Dictionary) -> void:
+	if _player == null or not _player.is_multiplayer_authority():
+		return
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		return
+	WorldSync.request_held_item_sync(item_type, data)
 
 
 func _apply_hand_offset(item_type: int, data: Dictionary) -> void:

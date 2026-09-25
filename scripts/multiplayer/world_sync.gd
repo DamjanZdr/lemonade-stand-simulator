@@ -739,6 +739,117 @@ func _rpc_request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: D
 	spawn_networked(scene_path, get_world_objects(), pos, rot, authoritative_state)
 
 
+## Client→host request to fill a cup from a pitcher. Routed through this
+## autoload (stable path on every peer) because a pitcher-node RPC resolves
+## by node path, which can differ between peers — e.g. a snapshot-restored
+## pitcher sits at the scene root on the client while the host's copy is
+## snapped under a press/dispenser — so the request would silently drop.
+func request_pitcher_fill_cup(peer_id: int, pitcher_net_id: int) -> void:
+	_request_host(&"_rpc_request_pitcher_fill_cup", [peer_id, pitcher_net_id])
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_pitcher_fill_cup(peer_id: int, pitcher_net_id: int) -> void:
+	if not is_host():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if sender != peer_id:
+		return
+	var root := get_tree().current_scene
+	var player := (root.get_node_or_null("Players/" + str(peer_id)) as Player if root else null)
+	var pitcher := find_node_by_net_id(pitcher_net_id) as Pitcher
+	if player == null or pitcher == null:
+		GameLog.log(
+			"[WorldSync] pitcher fill dropped: player=%s pitcher=%s net_id=%d peer=%d"
+			% [str(player), str(pitcher), pitcher_net_id, peer_id]
+		)
+		return
+	pitcher._fill_cup_for_player(player)
+
+
+## Host→owning-client fill result. Carries the pitcher net_id so the
+## client's copy clears its _fill_request_pending flag.
+func deliver_pitcher_fill_result(peer_id: int, pitcher_net_id: int, recipe: Dictionary) -> void:
+	if multiplayer.multiplayer_peer == null:
+		return
+	_rpc_pitcher_fill_result.rpc_id(peer_id, pitcher_net_id, recipe)
+
+
+@rpc("authority", "reliable")
+func _rpc_pitcher_fill_result(pitcher_net_id: int, recipe: Dictionary) -> void:
+	var pitcher := find_node_by_net_id(pitcher_net_id) as Pitcher
+	if pitcher != null:
+		pitcher.apply_fill_cup_result(recipe)
+		return
+	# Pitcher gone (despawned mid-request) — still deliver the cup so the
+	# player isn't left empty-handed after the host already poured it.
+	if recipe.is_empty():
+		return
+	var local := get_local_player() as Player
+	if local == null or local.inventory == null:
+		return
+	var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
+	local.inventory.set_held(
+		HeldItem.CUP_FILLED,
+		{ "recipe": recipe },
+		Cup.make_hand_mesh(true, cup_color),
+	)
+
+
+## Mirror the local player's held-item state to the host so the remote
+## player node's hand slot shows/clears the same item. Without this the
+## host's copy of a remote player kept showing e.g. the filled cup mesh
+## forever after the owner dropped it (a host-side sale was the only path
+## that ever cleared it).
+func request_held_item_sync(item_type: int, data: Dictionary) -> void:
+	_request_host(&"_rpc_held_item_sync", [item_type, _rpc_safe_dict(data)])
+
+
+## Strip values Godot can't encode over RPC (node refs, callables, RIDs)
+## so held-item mirroring never errors on ad-hoc data like source_node.
+func _rpc_safe_dict(data: Dictionary) -> Dictionary:
+	var out := { }
+	for key in data:
+		var v: Variant = data[key]
+		if v is Object or v is Callable or v is Signal or v is RID:
+			continue
+		if v is Dictionary:
+			out[key] = _rpc_safe_dict(v)
+		elif v is Array:
+			var arr: Array = []
+			var clean := true
+			for item in v:
+				if item is Object or item is Callable or item is Signal or item is RID:
+					clean = false
+					break
+				arr.append(item)
+			if clean:
+				out[key] = arr
+		else:
+			out[key] = v
+	return out
+
+
+@rpc("any_peer", "reliable")
+func _rpc_held_item_sync(item_type: int, data: Dictionary) -> void:
+	if not is_host():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	var root := get_tree().current_scene
+	var player := (root.get_node_or_null("Players/" + str(sender)) as Player if root else null)
+	if player == null or player.inventory == null:
+		return
+	var mesh: Node3D = null
+	match item_type:
+		HeldItem.CUP_FILLED:
+			var recipe: Dictionary = data.get("recipe", { })
+			var color: Color = recipe.get("color", Color(1.0, 0.9, 0.3, 1.0))
+			mesh = Cup.make_hand_mesh(true, color)
+		HeldItem.CUP_EMPTY:
+			mesh = Cup.make_hand_mesh(false)
+	player.inventory.set_held(item_type, data, mesh)
+
+
 func request_pitcher_snap(target: Node, recipe: Dictionary, stand_owner: String) -> void:
 	if target == null or not is_instance_valid(target):
 		return

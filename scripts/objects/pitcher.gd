@@ -41,6 +41,7 @@ var _suppress_eraser_updates: bool = false
 var _last_liquid_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 var _last_eraser_target_y: float = -1000.0
 var _fill_request_pending: bool = false
+var _fill_request_msec: int = 0
 
 ## Set by WaterDispenser while this pitcher is snapped and being filled,
 ## so the player can't pick it up mid-pour on any peer.
@@ -378,8 +379,13 @@ func _find_player_by_peer(peer_id: int) -> Player:
 ## host, the fill happens immediately; clients send an RPC to the host and
 ## wait for the authoritative result.
 func request_fill_cup(player: Player) -> void:
+	# A fill request that never got a result (dropped RPC, e.g. the node
+	# path differed on the host) must not wedge the pitcher forever —
+	# allow a retry after a short timeout.
 	if _fill_request_pending:
-		return
+		if Time.get_ticks_msec() - _fill_request_msec < 3000:
+			return
+		_fill_request_pending = false
 	if not can_player_use(player):
 		return
 	if player.held_item != HeldItem.CUP_EMPTY:
@@ -406,9 +412,10 @@ func request_fill_cup(player: Player) -> void:
 		_fill_cup_for_player(player)
 	else:
 		_fill_request_pending = true
+		_fill_request_msec = Time.get_ticks_msec()
 		var peer_id := player.get_multiplayer_authority()
 		var net_id := WorldSync.get_net_id(self)
-		_rpc_request_fill_cup.rpc_id(1, peer_id, net_id)
+		WorldSync.request_pitcher_fill_cup(peer_id, net_id)
 
 
 ## Host-only fill. Validates nothing; caller must have already checked state.
@@ -435,27 +442,21 @@ func _fill_cup_for_player(player: Player) -> void:
 	if is_fully_empty():
 		_clear_and_return()
 	# If the player is not on this machine, tell their owning peer they now
-	# hold a filled cup.
+	# hold a filled cup. Routed through WorldSync (an autoload with a stable
+	# path on every peer) — a node-path RPC on this pitcher can silently
+	# drop when the pitcher's parent differs between peers, e.g. a client
+	# snapshot-restored copy sitting at the scene root while the host's
+	# pitcher is snapped under a press.
 	if multiplayer.has_multiplayer_peer() and not player.is_multiplayer_authority():
-		_rpc_fill_cup_result.rpc_id(player.get_multiplayer_authority(), recipe)
+		WorldSync.deliver_pitcher_fill_result(
+			player.get_multiplayer_authority(),
+			WorldSync.get_net_id(self),
+			recipe,
+		)
 
 
-@rpc("any_peer", "reliable")
-func _rpc_request_fill_cup(peer_id: int, pitcher_net_id: int) -> void:
-	if not multiplayer.is_server():
-		return
-	var sender := multiplayer.get_remote_sender_id()
-	if sender != peer_id:
-		return
-	var player := _find_player_by_peer(peer_id)
-	var pitcher := WorldSync.find_node_by_net_id(pitcher_net_id)
-	if player == null or pitcher == null or pitcher != self:
-		return
-	_fill_cup_for_player(player)
-
-
-@rpc("authority", "reliable")
-func _rpc_fill_cup_result(recipe: Dictionary) -> void:
+## Called on the owning client when the host's fill result arrives.
+func apply_fill_cup_result(recipe: Dictionary) -> void:
 	_fill_request_pending = false
 	if recipe.is_empty():
 		return
@@ -509,7 +510,7 @@ func get_contents_string() -> String:
 		parts.append("%d ice" % roundi(ic))
 	if parts.is_empty():
 		if water > 0.0:
-			return "just water"
+			return "Just water"
 		return "empty"
 	return " ".join(parts)
 

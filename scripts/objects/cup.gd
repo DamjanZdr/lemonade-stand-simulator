@@ -23,6 +23,9 @@ var _cup_fill_mesh: Node = null
 func _ready() -> void:
 	_cup_fill_mesh = model.find_child("Fill", true, false)
 	_refresh_fill_visibility()
+	# fill_color may already have been set via spawn state before _ready —
+	# without this the Fill mesh keeps the GLB's default yellow material.
+	apply_fill_color()
 	_setup_pickupable()
 
 
@@ -138,7 +141,9 @@ func _recipe_string() -> String:
 		parts.append("%s sugar" % str(sg))
 	if ic > 0:
 		parts.append("%s ice" % str(ic))
-	return "unknown" if parts.is_empty() else " · ".join(parts)
+	if parts.is_empty():
+		return "Just water" if float(recipe.get("water", 0.0)) > 0.0 else "unknown"
+	return " · ".join(parts)
 
 
 func _refresh_fill_visibility() -> void:

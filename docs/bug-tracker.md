@@ -5,6 +5,38 @@
 
 ## Active Issues
 
+### 10. Floating filled cup stuck near joiner's head (host's view)
+- **Reported:** playtest batch (post d91584d)
+- **Symptom:** Host watches joiner. Joiner fills a cup from the pitcher → a floating filled cup appears near the joiner's head (only on the host's view; joiner doesn't see it). Dropping the cup doesn't remove it. It disappears the moment the joiner sells a cup, then reappears on the next fill.
+- **Root cause:** `Pitcher._fill_cup_for_player` runs on the host and calls `inventory.set_held(CUP_FILLED, ..., cup_mesh)` on the joiner's *remote player node*, attaching a cup mesh to its hand slot. But when the joiner drops/places the cup, their local `clear_held()` never propagated to the host — no held-state sync existed. The mesh only cleared when a host-side code path (customer sale) called `clear_held()` on the remote node itself.
+- **Fix:** `PlayerInventory.set_held()` now mirrors the local player's held state to the host via `WorldSync.request_held_item_sync()`. The host's `_rpc_held_item_sync` finds `Players/<sender>` and calls `set_held()` on the remote node, rebuilding cup meshes from the recipe color. Payloads are sanitized (`_rpc_safe_dict`) so non-RPC-serializable entries like `source_node` can't error the send.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/player/player_inventory.gd`, `scripts/multiplayer/world_sync.gd`
+
+### 11. Water-only pitcher/cup shows "Unknown" instead of "Just water"
+- **Reported:** playtest batch (post d91584d)
+- **Symptom:** A pitcher or cup containing only water displays "Unknown" instead of "Just water".
+- **Root cause:** Three display paths treated a water-only recipe (no fruit/sugar/ice keys > 0) as unknown: `Cup._recipe_string()` and `PlayerInteraction._recipe_hint_string()` returned "unknown"/"unknown recipe" for empty parts lists, and `RecipeEvaluator.get_verdict_string()` returned "FAIL: unknown fruit type" on the debug panel for `fruit_type == ""` with only water.
+- **Fix:** All three now return "Just water" when the recipe has water but no other displayed ingredients. `Pitcher.get_contents_string()` also capitalized to "Just water" for consistency.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/objects/cup.gd`, `scripts/player/player_interaction.gd`, `scripts/systems/recipe_evaluator.gd`, `scripts/objects/pitcher.gd`
+
+### 12. Water cups appear yellow when placed on the stand
+- **Reported:** playtest batch (post d91584d)
+- **Symptom:** A water-only cup shows the correct water color while held, but appears yellow once placed on the stand.
+- **Root cause:** `Cup._ready()` called `_refresh_fill_visibility()` but never `apply_fill_color()`. Spawned cups get `fill_color` set via spawn state before `_ready`, so the property was correct but the Fill mesh kept the GLB's default yellow material. Held cups go through `Cup.make_hand_mesh()` which applies the color — hence the held/placed mismatch.
+- **Fix:** `_ready()` now calls `apply_fill_color()` after `_refresh_fill_visibility()`.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/objects/cup.gd`
+
+### 13. Joiner can't fill cups from pre-existing pitchers until re-picked
+- **Reported:** playtest batch (post d91584d)
+- **Symptom:** When a player joins mid-game, pitchers that already contained lemonade exist in the world, but the joiner can't fill a cup from them until they pick the pitcher up and place it down again.
+- **Root cause:** Cup fill used node-path RPCs on the `Pitcher` itself (`_rpc_request_fill_cup`, `_rpc_fill_cup_result`). A snapshot-restored pitcher on the joiner is parented to the scene root, while the host's copy can be parented elsewhere (snapped under a press/dispenser) — so the RPC resolves to a different path on the remote peer and silently drops. Worse, `_fill_request_pending` stayed `true` forever after a dropped request, so every subsequent interact early-returned. Re-picking respawned the pitcher under matching parents and reset the flag — which is why that "fixed" it.
+- **Fix:** Fill request and result now route through `WorldSync` (autoload, identical path on every peer) keyed by `net_id`: `request_pitcher_fill_cup` → `_rpc_request_pitcher_fill_cup` on host → `pitcher._fill_cup_for_player()`, then `deliver_pitcher_fill_result` → `_rpc_pitcher_fill_result` → `pitcher.apply_fill_cup_result()` (clears pending flag + sets the local player's held cup). A 3-second stale-timeout also clears a wedged pending flag as a safety net.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/objects/pitcher.gd`, `scripts/multiplayer/world_sync.gd`
+
 ### 1. Missing task: "Take pitcher out of press and place it on the table"
 - **Reported:** current batch
 - **Symptom:** After squeezing lemons dry, there is no task prompting the player to move the pitcher to the table.

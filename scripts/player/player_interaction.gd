@@ -131,7 +131,9 @@ func _recipe_hint_string(recipe: Dictionary) -> String:
 		parts.append("%s sugar" % str(sg))
 	if ic > 0:
 		parts.append("%s ice" % str(ic))
-	return "unknown recipe" if parts.is_empty() else " · ".join(parts)
+	if parts.is_empty():
+		return "Just water" if float(recipe.get("water", 0.0)) > 0.0 else "unknown recipe"
+	return " · ".join(parts)
 
 
 func poll_hint() -> void:
