@@ -90,9 +90,10 @@ if (-not (Test-Path $dll)) {
 }
 
 Write-Host "Uploading build to App $AppId branch '$Branch'..." -ForegroundColor Cyan
-# Pass the VDF path relative to the project root so Steam resolves
-# ContentRoot="export" against the project folder, not the VDF folder.
-$arguments = @( "+login", $SteamUser, "+run_app_build", $AppBuildVdf, "+quit" )
+# Use the absolute VDF path. ContentRoot inside the VDF is also absolute,
+# so SteamCMD's own working directory does not matter.
+$buildVdfPath = (Resolve-Path $AppBuildVdf).Path
+$arguments = @( "+login", $SteamUser, "+run_app_build", $buildVdfPath, "+quit" )
 # Run SteamCMD in the same window and capture output to a log. Credentials
 # should already be cached from the first manual login.
 $logPath = Join-Path $projectRoot "tools/steam_upload.log"

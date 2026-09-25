@@ -3,7 +3,7 @@
 	"AppID" "5000810"
 	"Desc" "Private playtest build - lemonade-stand-simulator"
 	"BuildOutput" "tools/steam-build-output"
-	"ContentRoot" "export"
+	"ContentRoot" "D:/User/Desktop/Godot Projects/lemonade-stand-simulator/export"
 	"SetLive" "playtest"
 
 	"Depots"
