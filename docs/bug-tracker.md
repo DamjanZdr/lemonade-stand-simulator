@@ -84,4 +84,12 @@
 
 ## Fixed / Closed Issues
 
+### 9. Pitcher yields ~19+ cups and doesn't visibly drain (versus, both stands)
+- **Reported:** current batch
+- **Symptom:** Pitcher appears full for many cups; starts visibly lowering around the 10th cup; a full pitcher yields ~19 cups instead of 10.
+- **Root cause:** `pour_portion()` computed `portion_ratio = PORTION_SIZE / current_volume` from the *remaining* volume each pour. That drains exponentially (each cup removes 10% of what is left), so the level barely moves for the first several cups and the pitcher never reaches empty within its real capacity.
+- **Fix:** The recipe snapshot now stores `_initial_volume` (the volume at first pour), and each cup removes a fixed fraction of the *initial* amounts. A full 10-unit pitcher now empties in exactly 10 cups and the fill level drops visibly every cup.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/objects/pitcher.gd`
+
 *(None verified in a live playtest yet.)*

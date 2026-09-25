@@ -189,6 +189,7 @@ func get_recipe_snapshot() -> Dictionary:
 		"sugar": sugar,
 		"ice": ice,
 		"color": color,
+		"_initial_volume": get_liquid_volume(),
 	}
 
 
@@ -222,11 +223,17 @@ func pour_portion() -> Dictionary:
 		serving_recipe = snap.duplicate(true)
 	else:
 		snap = serving_recipe.duplicate(true)
-	var portion_ratio := minf(Balancing.PORTION_SIZE / liquid, 1.0)
-	fruit_count -= fruit_count * portion_ratio
-	water -= water * portion_ratio
-	sugar -= sugar * portion_ratio
-	ice -= ice * portion_ratio
+	# Each cup removes a fixed portion of the FIRST pour's volume, so a
+	# full pitcher (PITCHER_MAX_LIQUID) always yields exactly
+	# PITCHER_MAX_LIQUID / PORTION_SIZE cups. Using the remaining volume
+	# here was incorrect: it made the pitcher drain exponentially and
+	# never visibly empty within its real capacity.
+	var initial_volume: float = float(serving_recipe.get("_initial_volume", liquid))
+	var portion_ratio := minf(Balancing.PORTION_SIZE / initial_volume, 1.0)
+	fruit_count -= float(serving_recipe.get("fruit_count", fruit_count)) * portion_ratio
+	water -= float(serving_recipe.get("water", water)) * portion_ratio
+	sugar -= float(serving_recipe.get("sugar", sugar)) * portion_ratio
+	ice -= float(serving_recipe.get("ice", ice)) * portion_ratio
 	cups_poured += 1 # Track that a cup was poured
 	# Pouring a cup means the pitcher is now actively serving, wherever it is.
 	# Without this, a pitcher poured from while still in the COMPLETE state
