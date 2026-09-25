@@ -29,3 +29,8 @@ export.zip
 scripts/blahblah.gd
 scripts/blahblah.gd.uid
 *.uid
+
+# SteamPipe build output and upload logs
+tools/steam-build-output/
+tools/steam_upload.log
+tools/steam_upload.err

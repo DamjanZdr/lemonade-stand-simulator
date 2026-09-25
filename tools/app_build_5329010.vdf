@@ -2,7 +2,7 @@
 {
 	"AppID" "5329010"
 	"Desc" "Private playtest build - When Life Gives You Lemons Playtest"
-	"BuildOutput" "tools/steam-build-output"
+	"BuildOutput" "D:/User/Desktop/Godot Projects/lemonade-stand-simulator/tools/steam-build-output"
 	"ContentRoot" "D:/User/Desktop/Godot Projects/lemonade-stand-simulator/export"
 
 	"Depots"
