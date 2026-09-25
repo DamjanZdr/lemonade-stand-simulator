@@ -27,26 +27,25 @@ func _ready() -> void:
 
 func check_stand_thresholds(stand: StandUnit) -> void:
 	if stand == null:
-		print("[Ach] check skipped: stand is null")
+		GameLog.log("[Ach] check skipped: stand is null")
 		return
 	var local_stand: Node = WorldSync.get_local_stand()
-	print("[Ach] local_stand=", local_stand, " stand=", stand, " match=", local_stand == stand)
+	GameLog.log(
+		"[Ach] local_stand=%s stand=%s match=%s" % [local_stand, stand, local_stand == stand]
+	)
 	if local_stand == null or local_stand != stand:
 		return
 
-	print(
-		"[Ach] cups=",
-		stand.total_cups_sold,
-		" sales=$",
-		stand.total_money_earned_from_sales,
-		" spent=$",
-		stand.total_money_spent,
-		" happy=",
-		stand.customers_served_happy,
-		" pressed=",
-		stand.total_fruit_pressed,
-		" perfect=",
-		stand.perfect_recipes_set,
+	GameLog.log(
+		"[Ach] cups=%d sales=$%.2f spent=$%.2f happy=%d pressed=%d perfect=%s"
+		% [
+			stand.total_cups_sold,
+			stand.total_money_earned_from_sales,
+			stand.total_money_spent,
+			stand.customers_served_happy,
+			stand.total_fruit_pressed,
+			str(stand.perfect_recipes_set.keys()),
+		]
 	)
 
 	if stand.total_money_spent >= 10.0:
@@ -78,12 +77,9 @@ func _unlock(id: String) -> void:
 		return
 	_unlocked[id] = true
 
-	# Steam.isSteamRunning() is available on the Steam singleton. If it isn't
-	# running (editor without Steam, non-Steam build), just log locally.
-	if not Steam.isSteamRunning():
-		print("[Ach][Offline] Would unlock: ", id)
-		return
+	var running: bool = Steam.isSteamRunning()
+	GameLog.log("[Ach] attempting %s, Steam running=%s" % [id, running])
 
-	Steam.setAchievement(id)
-	Steam.storeStats()
-	print("[Ach] Unlocked: ", id)
+	var set_ok: bool = Steam.setAchievement(id)
+	var store_ok: bool = Steam.storeStats()
+	GameLog.log("[Ach] %s set=%s store=%s" % [id, set_ok, store_ok])

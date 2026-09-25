@@ -33,6 +33,11 @@ func _ready() -> void:
 	_connect_signals()
 
 
+func _process(_delta: float) -> void:
+	if _steam_initialized:
+		Steam.run_callbacks()
+
+
 ## Pick the Steam app ID at runtime: SteamAppId/SteamAppID environment variable
 ## takes priority (set when launched through Steam), then steam_appid.txt for
 ## local development, then 480 as a last resort.
