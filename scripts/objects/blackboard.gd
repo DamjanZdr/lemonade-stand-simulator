@@ -25,9 +25,13 @@ func _ready() -> void:
 	_scan_labels()
 	_refresh_all_labels()
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
-	# Listen to global recipe changes so the blackboard labels stay in
-	# sync when another player edits the same recipes.
-	EventBus.recipe_changed.connect(_on_recipe_changed)
+	# Listen to THIS STAND's recipe changes so rival stands' recipes don't
+	# leak onto this board. Fall back to the global event only in test scenes
+	# that aren't parented to a StandUnit.
+	if _stand != null:
+		_stand.recipe_changed.connect(_on_recipe_changed)
+	else:
+		EventBus.recipe_changed.connect(_on_recipe_changed)
 	EventBus.game_reset.connect(_on_game_reset)
 	# Refresh when onboarding progress changes so the golden "perfect
 	# recipe" check-mark appears the moment discovery lands — previously

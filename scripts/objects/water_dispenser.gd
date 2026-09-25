@@ -246,7 +246,7 @@ func interact(player: Node) -> void:
 	# Empty hands interactions
 	if p.held_item == HeldItem.NONE:
 		# Start filling if pitcher snapped, has space, and we have water
-		if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling:
+		if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling and not _snapped_pitcher.locked_by_dispenser:
 			# Once cups have been poured the recipe is locked — no more
 			# water until the pitcher is emptied.
 			var locked := _snapped_pitcher.cups_poured > 0 \
@@ -258,27 +258,29 @@ func interact(player: Node) -> void:
 						"Dispenser empty! Buy water boxes from the shop.",
 					)
 					return
-				# Route through host for authoritative state.
+				# Lock immediately so no peer can yank the pitcher
+				# before the host sync arrives.
+				_snapped_pitcher.locked_by_dispenser = true
 				if not WorldSync.is_host():
 					WorldSync.request_container_action(self, "start_fill", [space])
 				else:
 					start_fill(space)
 				return
-			# Pitcher full — pick it up (but never while filling)
-			if _is_filling:
-				EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
-				return
-			var pitcher := _snapped_pitcher
-			if pitcher != null:
-				pitcher.locked_by_dispenser = false
-			_snapped_pitcher = null
-			_pending_snap_pitcher_net_id = -1
-			WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
-			if not WorldSync.is_host():
-				WorldSync.request_container_action(self, "take_pitcher", [])
-			p.pickup_container(pitcher, "pitcher")
-			return
 
+		# Pitcher full or otherwise take it
+		if _is_filling or _snapped_pitcher.locked_by_dispenser:
+			EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
+			return
+		var pitcher := _snapped_pitcher
+		if pitcher != null:
+			pitcher.locked_by_dispenser = false
+		_snapped_pitcher = null
+		_pending_snap_pitcher_net_id = -1
+		WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
+		if not WorldSync.is_host():
+			WorldSync.request_container_action(self, "take_pitcher", [])
+		p.pickup_container(pitcher, "pitcher")
+		return
 		# The dispenser itself is a fixed appliance — it can't be picked up
 		# or moved, only pitchers snapped to it can be taken.
 
@@ -288,7 +290,7 @@ func interact_secondary(player: Node) -> void:
 	if p == null:
 		return
 	# Take pitcher from dispenser
-	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling:
+	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling and not _snapped_pitcher.locked_by_dispenser:
 		var pitcher := _snapped_pitcher
 		pitcher.locked_by_dispenser = false
 		_snapped_pitcher = null

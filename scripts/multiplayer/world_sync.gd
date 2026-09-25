@@ -265,8 +265,11 @@ func _collect_world_snapshot() -> Dictionary:
 
 ## Ensure default-scene objects (not spawned through WorldSync) are in the
 ## host registry so they are included in snapshots and can be looked up by
-## net_id. Called once per snapshot.
+## net_id. Called once per snapshot. Only the host may assign net IDs;
+## clients receive IDs from host snapshots/spawns so IDs stay consistent.
 func _ensure_default_objects_registered() -> void:
+	if not is_host():
+		return
 	for group in ["container", "supply_box"]:
 		for node in get_tree().get_nodes_in_group(group):
 			if not is_instance_valid(node) or node.is_queued_for_deletion():
@@ -855,25 +858,23 @@ func request_despawn(obj: Node, confirm_pickup: bool = false) -> void:
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] request_despawn: obj is null/invalid")
 		return
-	# Default scene objects are only registered lazily during snapshots.
-	# If a client picks one up before that, give it a net_id now so the
-	# host can reliably despawn it instead of leaving a duplicate.
+	# Default-scene objects get their net ID from the host (via snapshots
+	# or spawns). If we don't have one yet, fall back to parent+name and
+	# let the host locate it by path.
 	var net_id := _get_net_id(obj)
-	if net_id < 0:
-		_ensure_default_objects_registered()
-		net_id = _get_net_id(obj)
 	GameLog.log(
 		"[WorldSync] request_despawn name=%s net_id=%d is_host=%s" % [obj.name, net_id, is_host()]
 	)
 	if is_host():
 		despawn_networked(obj)
 		return
-	_mark_despawn_pending(net_id)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	GameLog.log(
 		"[WorldSync] Client sending despawn RPC to host: parent=%s name=%s net_id=%d"
 		% [parent_path, obj.name, net_id]
 	)
+	if net_id >= 0:
+		_mark_despawn_pending(net_id)
 	_request_host(&"_rpc_request_despawn", [parent_path, obj.name, net_id, confirm_pickup])
 
 
@@ -897,6 +898,10 @@ func _rpc_request_despawn(
 		var parent := _string_to_node(parent_path_str)
 		if parent != null:
 			obj = parent.get_node_or_null(obj_name)
+	if obj == null:
+		# Last-ditch global search by name in case the client's parent path
+		# doesn't match the host's tree layout.
+		obj = _find_node_by_name_only(obj_name)
 	if obj:
 		despawn_networked(obj)
 	else:

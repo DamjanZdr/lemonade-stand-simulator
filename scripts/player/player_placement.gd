@@ -920,6 +920,12 @@ func _create_container_hand_mesh(
 	# correctly displays the right item count and formats the label.
 	_set_container_starting_state(inst, container_type, saved_amount, saved_count, saved_recipe)
 
+	# Force the fruit-bin hand mesh to render the correct visible fruits
+	# BEFORE we strip its script. Otherwise the disabled script leaves the
+	# default scene meshes (all fruits visible) in place.
+	if container_type == "fruit_bin" and inst is FruitBin:
+		(inst as FruitBin).update_display()
+
 	# Apply hand scale for containers (smaller than placed version)
 	var hand_scale: Vector3 = CONTAINER_HAND_SCALE.get(container_type, Vector3.ONE * 0.1)
 	inst.scale = hand_scale
