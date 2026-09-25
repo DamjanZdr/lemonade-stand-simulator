@@ -18,23 +18,36 @@ const ACH_GOLDEN_SHOWER := "ACH_GOLDEN_SHOWER"
 
 ## Achievements already unlocked this session so we don't spam Steam.
 var _unlocked: Dictionary = { }
-## Steam singleton reference, if the extension is loaded.
-var _steam: Variant = null
 
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
-	if Engine.has_singleton("Steam"):
-		_steam = Engine.get_singleton("Steam")
 
 
 func check_stand_thresholds(stand: StandUnit) -> void:
 	if stand == null:
+		print("[Ach] check skipped: stand is null")
 		return
 	var local_stand: Node = WorldSync.get_local_stand()
+	print("[Ach] local_stand=", local_stand, " stand=", stand, " match=", local_stand == stand)
 	if local_stand == null or local_stand != stand:
 		return
+
+	print(
+		"[Ach] cups=",
+		stand.total_cups_sold,
+		" sales=$",
+		stand.total_money_earned_from_sales,
+		" spent=$",
+		stand.total_money_spent,
+		" happy=",
+		stand.customers_served_happy,
+		" pressed=",
+		stand.total_fruit_pressed,
+		" perfect=",
+		stand.perfect_recipes_set,
+	)
 
 	if stand.total_money_spent >= 10.0:
 		_unlock(ACH_START_SPENDING)
@@ -64,12 +77,13 @@ func _unlock(id: String) -> void:
 	if id in _unlocked:
 		return
 	_unlocked[id] = true
-	if _steam == null or not _steam.isSteamRunning():
-		print("[Offline] Achievement would unlock: ", id)
+
+	# Steam.isSteamRunning() is available on the Steam singleton. If it isn't
+	# running (editor without Steam, non-Steam build), just log locally.
+	if not Steam.isSteamRunning():
+		print("[Ach][Offline] Would unlock: ", id)
 		return
-	var result: Dictionary = _steam.getAchievement(id)
-	if result.get("achieved", false):
-		return
-	_steam.setAchievement(id)
-	_steam.storeStats()
-	print("Achievement unlocked: ", id)
+
+	Steam.setAchievement(id)
+	Steam.storeStats()
+	print("[Ach] Unlocked: ", id)

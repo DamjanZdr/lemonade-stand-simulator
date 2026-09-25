@@ -504,9 +504,9 @@ func _build_discovery_overlay() -> void:
 	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var dim_mat := ShaderMaterial.new()
 	dim_mat.shader = load("res://shaders/radial_dim_fade.gdshader")
-	dim_mat.set_shader_parameter("dim_color", Color(0.0, 0.0, 0.0, 0.65))
+	dim_mat.set_shader_parameter("dim_color", Color(0.0, 0.0, 0.0, 1.0))
 	dim_mat.set_shader_parameter("fade_radius", 0.0)
-	dim_mat.set_shader_parameter("blur_amount", 2.5)
+	dim_mat.set_shader_parameter("blur_amount", 5.0)
 	vignette.material = dim_mat
 	_discovery_overlay.add_child(vignette)
 

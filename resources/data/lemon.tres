@@ -4,5 +4,6 @@
 
 [resource]
 script = ExtResource("1_ingredient_data")
+ideal_sugar = 4.0
 ideal_price = 1.0
 start_price = 0.8
