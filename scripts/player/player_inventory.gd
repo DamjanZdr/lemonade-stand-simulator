@@ -65,6 +65,12 @@ func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 			_held_mesh = mesh
 			_player.hand_slot.add_child(mesh)
 			_player.remove_placement_groups(mesh)
+			# Hand meshes must never block the player's own raycast.
+			for child in mesh.find_children("*", "CollisionShape3D", true, false):
+				(child as CollisionShape3D).disabled = true
+			for child in mesh.find_children("*", "StaticBody3D", true, false):
+				(child as StaticBody3D).collision_layer = 0
+				(child as StaticBody3D).collision_mask = 0
 			_apply_hand_offset(item_type, data)
 	if _player != null:
 		_player.held_item = held_item

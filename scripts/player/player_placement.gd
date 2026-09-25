@@ -923,6 +923,9 @@ func _create_container_hand_mesh(
 	# Apply hand scale for containers (smaller than placed version)
 	var hand_scale: Vector3 = CONTAINER_HAND_SCALE.get(container_type, Vector3.ONE * 0.1)
 	inst.scale = hand_scale
+	# Hand meshes must never block the player's raycast or collide with the world.
+	_disable_physics(inst)
+	_disable_scripts(inst)
 
 	# Disable collision on hand mesh to prevent pushing player
 	_disable_hand_collision(inst)

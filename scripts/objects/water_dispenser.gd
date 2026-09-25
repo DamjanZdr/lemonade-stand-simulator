@@ -460,6 +460,9 @@ func _play_fill_visual(water_amount: float) -> void:
 		_snapped_pitcher = WorldSync.find_node_by_net_id(_pending_snap_pitcher_net_id) as Pitcher
 	if _snapped_pitcher == null or not is_instance_valid(_snapped_pitcher):
 		return
+	# Lock the pitcher on every peer so no one can yank it out mid-pour.
+	_snapped_pitcher.locked_by_dispenser = true
+	_is_filling = true
 	AudioManager.play_sfx("water_pour_in_pitcher", global_position, fill_time_per_pitcher)
 	# Animate tap to open
 	if _tap_mesh:
@@ -476,6 +479,9 @@ func _play_fill_visual(water_amount: float) -> void:
 
 
 func _finish_fill() -> void:
+	# Unlock the pitcher on every peer once the pour ends.
+	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
+		_snapped_pitcher.locked_by_dispenser = false
 	# Route through host for authoritative state.
 	if not WorldSync.is_host():
 		WorldSync.request_container_action(self, "finish_fill", [])

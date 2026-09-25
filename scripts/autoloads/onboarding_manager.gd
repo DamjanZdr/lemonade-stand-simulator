@@ -569,6 +569,11 @@ func _advance_satisfied_tasks(stand: StandUnit) -> void:
 				var found: Dictionary = p.discovered_recipes.get("lemon", { })
 				satisfied = not found.is_empty() and stand.get_recipe("lemon") == found
 			"demo_set_second_recipe":
+				if p.selected_demo_fruit == "":
+					for ft in StandUnit.FRUIT_TYPES:
+						if ft != "lemon":
+							p.selected_demo_fruit = ft
+							break
 				var found: Dictionary = p.discovered_recipes.get(p.selected_demo_fruit, { })
 				satisfied = (
 					not found.is_empty() and stand.get_recipe(p.selected_demo_fruit) == found
