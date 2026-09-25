@@ -4,7 +4,7 @@ uniform vec4 dim_color : source_color = vec4(0.0, 0.0, 0.0, 0.25);
 // How far from center the fade starts (0=center, 1=edges).
 uniform float fade_radius : hint_range(0.0, 1.0) = 0.3;
 // 0 = no blur; higher = stronger radial blur sampled from the screen.
-uniform float blur_amount : hint_range(0.0, 8.0) = 0.0;
+uniform float blur_amount : hint_range(0.0, 16.0) = 0.0;
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
 
 void fragment() {
@@ -21,7 +21,7 @@ void fragment() {
 		vec2 dir = normalize(centered + vec2(0.0001));
 		vec4 sample_sum = vec4(0.0);
 		float total = 0.0;
-		int samples = 8;
+		int samples = 16;
 		vec2 texel = 1.0 / vec2(textureSize(screen_texture, 0));
 		for (int i = -samples; i <= samples; i++) {
 			float w = 1.0 / (abs(float(i)) + 1.0);
