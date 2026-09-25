@@ -697,10 +697,11 @@ func set_feedback_tier(tier: int) -> void:
 
 func on_customer_served(outcome: String) -> void:
 	total_customers_served += 1
+	if outcome != "timeout":
+		total_cups_sold += 1
 	match outcome:
 		"happy":
 			customers_served_happy += 1
-			total_cups_sold += 1
 			set_popularity(popularity + Balancing.POPULARITY_GAIN_HAPPY)
 		"timeout":
 			customers_lost += 1

@@ -183,10 +183,11 @@ func _on_weather_changed(temp: float) -> void:
 ## to EventBus.customer_served globally — see the note above _ready().
 func on_customer_served(_customer: Node, outcome: String) -> void:
 	total_customers_served += 1
+	if outcome != "timeout":
+		total_cups_sold += 1
 	match outcome:
 		"happy":
 			customers_served_happy += 1
-			total_cups_sold += 1
 			set_popularity(popularity + Balancing.POPULARITY_GAIN_HAPPY)
 		"timeout":
 			customers_lost += 1
