@@ -48,6 +48,8 @@ func apply_refill(to_add: int) -> void:
 func apply_finish_fill() -> void:
 	_is_filling = false
 	_fill_progress = 0.0
+	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
+		_snapped_pitcher.locked_by_dispenser = false
 	water_fillings = maxi(water_fillings - 1, 0)
 	_update_water_visual()
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
@@ -125,6 +127,8 @@ func _rpc_request_take_pitcher() -> void:
 	# Host doesn't take the pitcher for the client — just clears the snap
 	# reference so the host knows it's gone. The client picks it up locally.
 	if _snapped_pitcher != null:
+		if is_instance_valid(_snapped_pitcher):
+			_snapped_pitcher.locked_by_dispenser = false
 		_snapped_pitcher = null
 		_is_filling = false
 		_fill_progress = 0.0
@@ -152,9 +156,17 @@ func _process(delta: float) -> void:
 func _update_snap() -> void:
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
 		if not _snapped_pitcher.global_position.is_equal_approx(_snap_point.global_position):
-			_snapped_pitcher.global_position = _snap_point.global_position
+			_snapped_pitcher.locked_by_dispenser = false
+			_snapped_pitcher = null
+			if _is_filling:
+				_is_filling = false
+				_fill_progress = 0.0
+				_reset_tap()
+			return
 		return
 	if _snapped_pitcher != null:
+		if is_instance_valid(_snapped_pitcher):
+			_snapped_pitcher.locked_by_dispenser = false
 		_snapped_pitcher = null
 		if _is_filling:
 			_is_filling = false
@@ -252,8 +264,13 @@ func interact(player: Node) -> void:
 				else:
 					start_fill(space)
 				return
-			# Pitcher full — pick it up
+			# Pitcher full — pick it up (but never while filling)
+			if _is_filling:
+				EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
+				return
 			var pitcher := _snapped_pitcher
+			if pitcher != null:
+				pitcher.locked_by_dispenser = false
 			_snapped_pitcher = null
 			_pending_snap_pitcher_net_id = -1
 			WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
@@ -273,6 +290,7 @@ func interact_secondary(player: Node) -> void:
 	# Take pitcher from dispenser
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher) and not _is_filling:
 		var pitcher := _snapped_pitcher
+		pitcher.locked_by_dispenser = false
 		_snapped_pitcher = null
 		_pending_snap_pitcher_net_id = -1
 		WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)
@@ -431,6 +449,8 @@ func start_fill(water_amount: float) -> void:
 	_is_filling = true
 	_fill_progress = 0.0
 	_fill_amount = water_amount
+	if _snapped_pitcher != null:
+		_snapped_pitcher.locked_by_dispenser = true
 	_play_fill_visual(water_amount)
 	WorldSync.sync_call(self, "_play_fill_visual", [water_amount])
 

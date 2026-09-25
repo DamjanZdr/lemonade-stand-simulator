@@ -78,7 +78,9 @@ var _playable_snapped: bool = false
 var _people_manager: Node = null
 
 var _ui_anchor: Node3D = null
-var _order_label: Label3D = null
+var _ui_layer: CanvasLayer = null
+var _ui_label: Label = null
+var _ui_panel: Panel = null
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
 var _last_patience_percent: int = -1
@@ -181,6 +183,8 @@ func get_route_continuation() -> Dictionary:
 
 
 func _process(delta: float) -> void:
+	if _ui_label != null and _ui_label.visible:
+		_update_bubble_screen_pos()
 	# Clients early-return from _physics_process (host-authoritative sim),
 	# so the OFFERED countdown never runs for joiners and the patience
 	# circle stays full. Tick a visual-only estimate here — the real
@@ -764,10 +768,35 @@ func _resume_walking() -> void:
 
 
 func _show_order_text(text: String) -> void:
-	if _order_label == null:
+	if _ui_label == null:
 		return
-	_order_label.text = text
-	_order_label.visible = true
+	_ui_label.text = text
+	_ui_label.visible = true
+	if _ui_panel:
+		_ui_panel.visible = false
+		call_deferred("_resize_order_panel")
+
+
+func _update_bubble_screen_pos() -> void:
+	if _ui_panel == null or _ui_anchor == null:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	# Position the order bubble at chest height.
+	var bubble_pos := global_position + Vector3(0, 1.1, 0)
+	if cam.is_position_behind(bubble_pos):
+		_ui_panel.visible = false
+		return
+	_ui_panel.visible = true
+	var screen_pos := cam.unproject_position(bubble_pos)
+	# Scale the screen-space bubble with distance so it doesn't look
+	# huge when the NPC is far away.
+	var dist := cam.global_position.distance_to(bubble_pos)
+	var ui_scale := clampf(4.0 / dist, 0.25, 1.3)
+	_ui_panel.scale = Vector2(ui_scale, ui_scale)
+	var panel_size := _ui_panel.size * ui_scale
+	_ui_panel.position = screen_pos - panel_size * 0.5
 
 
 func _feedback_text(result: EvaluationResult) -> String:
@@ -798,21 +827,34 @@ func _complaint_word(complaint: String) -> String:
 
 
 func _build_order_bubble() -> void:
-	# Use a Label3D attached to the chest anchor so it respects depth and
-	# is occluded by world geometry instead of drawing through walls.
-	_order_label = Label3D.new()
-	_order_label.name = "OrderLabel"
-	_order_label.visible = false
-	_order_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_order_label.no_depth_test = false
-	_order_label.double_sided = true
-	_order_label.font_size = 48
-	_order_label.outline_size = 8
-	_order_label.outline_color = Color.BLACK
-	_order_label.modulate = Color.WHITE
-	_order_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_order_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_ui_anchor.add_child(_order_label)
+	_ui_layer = CanvasLayer.new()
+	_ui_layer.name = "OrderBubbleLayer"
+	_ui_layer.layer = 101
+	add_child(_ui_layer)
+
+	_ui_panel = Panel.new()
+	_ui_panel.name = "OrderPanel"
+	_ui_panel.visible = false
+	_ui_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.05, 0.05, 0.8)
+	sb.corner_radius_top_left = 5
+	sb.corner_radius_top_right = 5
+	sb.corner_radius_bottom_left = 5
+	sb.corner_radius_bottom_right = 5
+	_ui_panel.add_theme_stylebox_override("panel", sb)
+	_ui_layer.add_child(_ui_panel)
+
+	_ui_label = Label.new()
+	_ui_label.name = "OrderLabel"
+	_ui_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ui_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_ui_label.add_theme_font_size_override("font_size", 12)
+	_ui_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_ui_label.add_theme_constant_override("outline_size", 2)
+	_ui_label.visible = false
+	_ui_panel.add_child(_ui_label)
 
 
 func _build_patience_circle() -> void:
@@ -842,7 +884,7 @@ func _build_patience_circle() -> void:
 	_patience_circle.name = "PatienceCircle"
 	_patience_circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_patience_circle.double_sided = true
-	_patience_circle.no_depth_test = false
+	_patience_circle.no_depth_test = true
 	_patience_circle.shaded = false
 	_patience_circle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_patience_circle.pixel_size = 0.0012
@@ -865,9 +907,22 @@ func _apply_ui_tonemap_comp(sprite: Sprite3D, exposure: float = 1.0) -> void:
 	sprite.material_override = mat
 
 
+func _resize_order_panel() -> void:
+	if _ui_panel == null or _ui_label == null:
+		return
+	var label_size := _ui_label.get_combined_minimum_size()
+	var pad := Vector2(8, 4)
+	_ui_panel.size = label_size + pad * 2
+	_ui_label.position = pad
+	_ui_label.size = label_size
+	_ui_panel.visible = true
+
+
 func _hide_order_bubble() -> void:
-	if _order_label:
-		_order_label.visible = false
+	if _ui_panel:
+		_ui_panel.visible = false
+	if _ui_label:
+		_ui_label.visible = false
 
 
 func _refresh_patience_bar(ratio: float) -> void:
@@ -920,4 +975,25 @@ func _create_ring_texture(size: int = 128, inner_ratio: float = 0.15) -> ImageTe
 			var d_sq := dx_sq + (y - center) * (y - center)
 			if d_sq <= outer_sq and d_sq >= inner_sq:
 				img.set_pixel(x, y, Color.WHITE)
+	return ImageTexture.create_from_image(img)
+
+
+func _create_rounded_panel_texture(
+	width: int,
+	height: int,
+	color: Color,
+	corner: int,
+) -> ImageTexture:
+	var img := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var r := clampi(corner, 0, int(mini(width, height) / 2.0))
+	for x in range(width):
+		var nx := clampi(x, r, width - r - 1)
+		var dx := x - nx
+		var dx_sq := dx * dx
+		for y in range(height):
+			var ny := clampi(y, r, height - r - 1)
+			var dy := y - ny
+			if dx_sq + dy * dy <= r * r:
+				img.set_pixel(x, y, color)
 	return ImageTexture.create_from_image(img)

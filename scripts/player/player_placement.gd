@@ -1807,6 +1807,11 @@ func _try_place_container() -> Node3D:
 		instance.water = recipe.get("water", 0.0)
 		instance.cups_poured = recipe.get("cups_poured", 0)
 		instance.serving_recipe = recipe.get("serving_recipe", { }).duplicate(true)
+		var restored_state: int = recipe.get("state", int(Pitcher.PitcherState.PREPPING))
+		instance.state = restored_state
+		EventBus.pitcher_state_changed.emit(restored_state)
+		instance.update_label()
+		instance.update_liquid_color()
 		# Determine state based on contents and cups poured
 		if instance.cups_poured > 0:
 			# Already serving cups -> SERVING
@@ -1918,6 +1923,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 			"water": pitcher.water,
 			"cups_poured": pitcher.cups_poured,
 			"serving_recipe": pitcher.serving_recipe.duplicate(true),
+			"state": pitcher.state,
 		}
 	# Save fruit bin multi-fruit amounts
 	if interactable is FruitBin:

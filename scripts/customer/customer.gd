@@ -100,6 +100,10 @@ var _talk_anim_playing: bool = false
 @onready var order_label: Label3D = $EmojiAnchor/OrderLabel
 @onready var _npc: Node3D = $NPCBody
 
+var _ui_layer: CanvasLayer = null
+var _ui_label: Label = null
+var _ui_panel: Panel = null
+
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
 var _last_patience_percent: int = -1
@@ -188,7 +192,8 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
-	pass
+	if _ui_label != null and _ui_label.visible:
+		_update_bubble_screen_pos()
 
 
 func _physics_process(delta: float) -> void:
@@ -591,6 +596,12 @@ func try_serve(player: Node) -> void:
 
 	var recipe: Dictionary = p.held_item_data.get("recipe", { })
 	var fruit_type: String = recipe.get("fruit_type", "")
+
+	# Water-only cups are a scam — the customer refuses to pay and leaves.
+	if fruit_type == "" or recipe.get("fruit_count", 0.0) <= 0.0:
+		p.inventory.clear_held()
+		_reject_water_scam()
+		return
 
 	if not order.has(fruit_type) or order[fruit_type] <= 0:
 		# Wrong item: doesn't count toward the order, and the cup is wasted.
@@ -1039,11 +1050,43 @@ func _sync_patience(ratio: float) -> void:
 
 
 func _set_order_text(text: String) -> void:
-	order_label.text = text
-	order_label.visible = text != ""
+	if _ui_label == null:
+		return
+	_ui_label.text = text
+	_ui_label.visible = true
+	if _ui_panel:
+		# Resize synchronously rather than deferring: _process() runs
+		# _update_bubble_screen_pos() every frame while the label is visible,
+		# and it forces the panel visible again using whatever size it has
+		# *right now* — deferring the resize left a 1-frame window where that
+		# happened with the stale (pre-update) size, which also contributed
+		# to the panel/text looking misaligned right after the text changed.
+		_resize_order_panel()
 	# Sync any bubble text change to clients so they see change/feedback/wrong-item messages.
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		sync_show_order(text)
+
+
+func _update_bubble_screen_pos() -> void:
+	if _ui_panel == null or emoji_anchor == null:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	# Position the order bubble at chest height.
+	var bubble_pos := global_position + Vector3(0, 1.1, 0)
+	if cam.is_position_behind(bubble_pos):
+		_ui_panel.visible = false
+		return
+	_ui_panel.visible = true
+	var screen_pos := cam.unproject_position(bubble_pos)
+	# Scale the screen-space bubble with distance so it doesn't look
+	# huge when the NPC is far away.
+	var dist := cam.global_position.distance_to(bubble_pos)
+	var ui_scale := clampf(4.0 / dist, 0.25, 1.3)
+	_ui_panel.scale = Vector2(ui_scale, ui_scale)
+	var panel_size := _ui_panel.size * ui_scale
+	_ui_panel.position = screen_pos - panel_size * 0.5
 
 
 func _show_order() -> void:
@@ -1072,10 +1115,15 @@ func sync_show_order(text: String) -> void:
 func _sync_show_order(text: String) -> void:
 	if multiplayer.is_server():
 		return
-	# Hide directly — do NOT call _hide_order_bubble() because that
-	# would call sync_show_order("") again → infinite recursion.
-	order_label.text = text
-	order_label.visible = text != ""
+	if text == "":
+		# Hide directly — do NOT call _hide_order_bubble() because that
+		# would call sync_show_order("") again → infinite recursion
+		if _ui_panel:
+			_ui_panel.visible = false
+		if _ui_label:
+			_ui_label.visible = false
+	else:
+		_set_order_text(text)
 
 
 func _run_price_check_and_show_order() -> void:
@@ -1150,24 +1198,98 @@ func _reject_wrong_item(fruit_type: String) -> void:
 	_show_order()
 
 
+func _reject_water_scam() -> void:
+	## The player served plain water — refuse to pay and leave.
+	state = CustomerState.RECEIVING
+	_npc.play_anim("Talk")
+	sync_state(CustomerState.RECEIVING, "Talk")
+	_set_order_text("This is not lemonade, it's stale water. Why are you trying to scam me?")
+	await get_tree().create_timer(3.0).timeout
+	if not is_inside_tree():
+		return
+	_engaged_with_player = false
+	_engaged_player = null
+	_hide_order_bubble()
+	_resolve("scam")
+
+
+func _resize_order_panel() -> void:
+	if _ui_panel == null or _ui_label == null:
+		return
+	var label_size := _ui_label.get_combined_minimum_size()
+	var pad := Vector2(8, 4)
+	_ui_panel.size = label_size + pad * 2
+	_ui_label.position = pad
+	# The label's own size never got updated here, so as the text got shorter
+	# (e.g. an item removed from the order) it kept centering within its old,
+	# stale bounds instead of the new (smaller) panel — causing the text to
+	# drift out of alignment with the panel around it.
+	_ui_label.size = label_size
+	_ui_panel.visible = true
+
+
+func _create_rounded_panel_texture(
+	width: int,
+	height: int,
+	color: Color,
+	corner: int,
+) -> ImageTexture:
+	var img := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var r := clampi(corner, 0, int(mini(width, height) / 2.0))
+	for x in range(width):
+		var nx := clampi(x, r, width - r - 1)
+		var dx := x - nx
+		var dx_sq := dx * dx
+		for y in range(height):
+			var ny := clampi(y, r, height - r - 1)
+			var dy := y - ny
+			if dx_sq + dy * dy <= r * r:
+				img.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(img)
+
+
 func _hide_order_bubble() -> void:
-	order_label.visible = false
+	if _ui_panel:
+		_ui_panel.visible = false
+	if _ui_label:
+		_ui_label.visible = false
 	sync_show_order("")
 
 
 func _build_order_bubble() -> void:
-	# Use the scene's Label3D so the order text respects depth and is
-	# occluded by world geometry instead of drawing through walls.
+	# Hide the scene's Label3D — we use a CanvasLayer-based label instead
+	# so the text renders above the outline overlay (CanvasLayer layer=100).
 	order_label.visible = false
-	order_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	order_label.no_depth_test = false
-	order_label.double_sided = true
-	order_label.font_size = 48
-	order_label.outline_size = 8
-	order_label.outline_color = Color.BLACK
-	order_label.modulate = Color.WHITE
-	order_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	order_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+	_ui_layer = CanvasLayer.new()
+	_ui_layer.name = "OrderBubbleLayer"
+	_ui_layer.layer = 101
+	add_child(_ui_layer)
+
+	_ui_panel = Panel.new()
+	_ui_panel.name = "OrderPanel"
+	_ui_panel.visible = false
+	_ui_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.05, 0.05, 0.8)
+	sb.corner_radius_top_left = 5
+	sb.corner_radius_top_right = 5
+	sb.corner_radius_bottom_left = 5
+	sb.corner_radius_bottom_right = 5
+	_ui_panel.add_theme_stylebox_override("panel", sb)
+	_ui_layer.add_child(_ui_panel)
+
+	_ui_label = Label.new()
+	_ui_label.name = "OrderLabel"
+	_ui_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ui_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_ui_label.add_theme_font_size_override("font_size", 12)
+	_ui_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_ui_label.add_theme_constant_override("outline_size", 2)
+	_ui_label.visible = false
+	_ui_panel.add_child(_ui_label)
 
 
 func _build_patience_circle() -> void:
@@ -1197,7 +1319,7 @@ func _build_patience_circle() -> void:
 	_patience_circle.name = "PatienceCircle"
 	_patience_circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_patience_circle.double_sided = true
-	_patience_circle.no_depth_test = false
+	_patience_circle.no_depth_test = true
 	_patience_circle.shaded = false
 	_patience_circle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_patience_circle.pixel_size = 0.0012

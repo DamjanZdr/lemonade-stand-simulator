@@ -1888,6 +1888,10 @@ func _on_host_left() -> void:
 	# transition back to the main menu.
 	if NetworkManager.connection_failed.is_connected(_on_menu_session_failed):
 		NetworkManager.connection_failed.disconnect(_on_menu_session_failed)
+	# Snap out of any priceboard/custom camera so the fade happens from a
+	# normal view instead of a stuck price-board angle.
+	if main_menu_camera != null and is_instance_valid(main_menu_camera):
+		main_menu_camera.current = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var overlay := CanvasLayer.new()
 	overlay.name = "HostLeftOverlay"

@@ -538,7 +538,13 @@ func _build_discovery_overlay() -> void:
 	_discovery_player.stream = DISCOVERY_SOUND
 	_discovery_overlay.add_child(_discovery_player)
 
-	add_child(_discovery_overlay)
+	# Put the discovery overlay on its own high CanvasLayer so it renders
+	# above customer order bubbles (layer 101) and the outline overlay.
+	var discovery_layer := CanvasLayer.new()
+	discovery_layer.name = "DiscoveryLayer"
+	discovery_layer.layer = 200
+	discovery_layer.add_child(_discovery_overlay)
+	add_child(discovery_layer)
 
 
 func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:

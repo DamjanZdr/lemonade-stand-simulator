@@ -42,6 +42,10 @@ var _last_liquid_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 var _last_eraser_target_y: float = -1000.0
 var _fill_request_pending: bool = false
 
+## Set by WaterDispenser while this pitcher is snapped and being filled,
+## so the player can't pick it up mid-pour on any peer.
+var locked_by_dispenser: bool = false
+
 const ERASER_Y_EMPTY: float = 1.752
 const ERASER_Y_FULL: float = 5.245
 const MAX_FILL_VOLUME: float = 10.0
@@ -309,6 +313,9 @@ func interact(player: Node) -> void:
 				return
 			# Pick up: always use container system now
 			if p.held_item == HeldItem.NONE:
+				if locked_by_dispenser:
+					EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
+					return
 				p.pickup_container(self, "pitcher")
 		PitcherState.SERVING:
 			if p.held_item == HeldItem.CUP_EMPTY:
@@ -318,6 +325,9 @@ func interact(player: Node) -> void:
 			# poured from it) should still be pick-up-able with an empty hand,
 			# same as a fresh one in PREPPING/COMPLETE.
 			if p.held_item == HeldItem.NONE:
+				if locked_by_dispenser:
+					EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
+					return
 				p.pickup_container(self, "pitcher")
 
 
@@ -459,6 +469,8 @@ func get_contents_string() -> String:
 	if ic > 0.0:
 		parts.append("%d ice" % roundi(ic))
 	if parts.is_empty():
+		if water > 0.0:
+			return "just water"
 		return "empty"
 	return " ".join(parts)
 

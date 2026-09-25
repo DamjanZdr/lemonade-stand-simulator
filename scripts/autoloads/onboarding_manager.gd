@@ -205,16 +205,16 @@ const TASKS: Array[Dictionary] = [
 		"parts": { "lemons": "fruit_count", "sugar": "sugar" },
 	},
 	{
-		"id": "demo_set_perfect_lemon",
-		"text": "{Set your perfected lemon recipe on the recipe board}.",
-		"event": "perfect_recipe_set",
-		"parts": { "Set your perfected lemon recipe on the recipe board": "lemon" },
-	},
-	{
 		"id": "demo_master_lemon",
 		"text": LEMON_MASTERY_TEXT,
 		"event": "recipe_discovered",
 		"parts": { LEMON_MASTERY_TEXT: "lemon" },
+	},
+	{
+		"id": "demo_set_perfect_lemon",
+		"text": "{Set your perfected lemon recipe on the recipe board}.",
+		"event": "perfect_recipe_set",
+		"parts": { "Set your perfected lemon recipe on the recipe board": "lemon" },
 	},
 	{
 		"id": "demo_set_second_recipe",
