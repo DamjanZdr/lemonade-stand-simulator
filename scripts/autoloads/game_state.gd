@@ -109,12 +109,14 @@ func add_money(amount: float) -> void:
 	total_money_earned += amount
 	if money > highest_money:
 		highest_money = money
+	AchievementManager.check_game_state_thresholds()
 	EventBus.money_changed.emit(money)
 
 
 func add_money_from_sale(amount: float) -> void:
 	add_money(amount)
 	total_money_earned_from_sales += amount
+	AchievementManager.check_game_state_thresholds()
 
 
 func spend_money(amount: float) -> bool:
@@ -124,6 +126,7 @@ func spend_money(amount: float) -> bool:
 	total_money_spent += amount
 	if amount > highest_purchase:
 		highest_purchase = amount
+	AchievementManager.check_game_state_thresholds()
 	EventBus.money_changed.emit(money)
 	return true
 
@@ -195,6 +198,7 @@ func on_customer_served(_customer: Node, outcome: String) -> void:
 			# Any quality complaint (too sweet, too strong, too cold, etc.)
 			customers_lost += 1
 			set_popularity(popularity - Balancing.POPULARITY_LOSS_BAD)
+	AchievementManager.check_game_state_thresholds()
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:

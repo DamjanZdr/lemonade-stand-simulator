@@ -37,7 +37,7 @@ func check_stand_thresholds(stand: StandUnit) -> void:
 		return
 
 	GameLog.log(
-		"[Ach] cups=%d sales=$%.2f spent=$%.2f happy=%d pressed=%d perfect=%s"
+		"[Ach] stand cups=%d sales=$%.2f spent=$%.2f happy=%d pressed=%d perfect=%s"
 		% [
 			stand.total_cups_sold,
 			stand.total_money_earned_from_sales,
@@ -70,6 +70,38 @@ func check_stand_thresholds(stand: StandUnit) -> void:
 		_unlock(ACH_HAPPY_BEGINNING)
 	if stand.perfect_recipes_set.has("lemon"):
 		_unlock(ACH_GOLDEN_SHOWER)
+
+
+## Legacy primary stand: GameState is the source of truth for single-player / the host's primary stand.
+func check_game_state_thresholds() -> void:
+	GameLog.log(
+		"[Ach] GameState cups=%d sales=$%.2f spent=$%.2f happy=%d"
+		% [
+			GameState.total_cups_sold,
+			GameState.total_money_earned_from_sales,
+			GameState.total_money_spent,
+			GameState.customers_served_happy,
+		]
+	)
+
+	if GameState.total_money_spent >= 10.0:
+		_unlock(ACH_START_SPENDING)
+	if GameState.total_cups_sold >= 1:
+		_unlock(ACH_FIRST_CUSTOMER)
+	if GameState.total_cups_sold >= 10:
+		_unlock(ACH_DOUBLE_DIGITS)
+	if GameState.total_cups_sold >= 30:
+		_unlock(ACH_SALES_EXPERT)
+	if GameState.total_cups_sold >= 100:
+		_unlock(ACH_ENTREPRENEUR)
+	if GameState.total_money_earned_from_sales >= 20.0:
+		_unlock(ACH_POCKET_CHANGE)
+	if GameState.total_money_earned_from_sales >= 50.0:
+		_unlock(ACH_SPARE_MONEY)
+	if GameState.total_money_earned_from_sales >= 200.0:
+		_unlock(ACH_DO_YOU_HAVE_A_PERMIT)
+	if GameState.customers_served_happy >= 1:
+		_unlock(ACH_HAPPY_BEGINNING)
 
 
 func _unlock(id: String) -> void:
