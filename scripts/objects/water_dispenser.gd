@@ -196,6 +196,7 @@ func _reset_tap() -> void:
 		_tap_mesh.rotation_degrees.y = TAP_Y_CLOSED
 
 
+@warning_ignore("unused_parameter")
 func interact(player: Node) -> void:
 	var p := player as Player
 	if p == null:
@@ -285,6 +286,7 @@ func interact(player: Node) -> void:
 		# or moved, only pitchers snapped to it can be taken.
 
 
+@warning_ignore("unused_parameter")
 func interact_secondary(player: Node) -> void:
 	var p := player as Player
 	if p == null:
@@ -303,6 +305,7 @@ func interact_secondary(player: Node) -> void:
 	# The dispenser itself is fixed in place — no pickup on RMB either.
 
 
+@warning_ignore("unused_parameter")
 func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p == null:
@@ -345,6 +348,7 @@ func get_hint(player: Node) -> String:
 	return "Water Dispenser | fixed in place"
 
 
+@warning_ignore("unused_parameter")
 func snap_pitcher(pitcher: Pitcher, onboarding_stand: StandUnit = null) -> void:
 	_snapped_pitcher = pitcher
 	_pending_snap_pitcher_net_id = WorldSync.get_net_id(pitcher)
@@ -357,6 +361,7 @@ func snap_pitcher(pitcher: Pitcher, onboarding_stand: StandUnit = null) -> void:
 		_snapped_pitcher.global_position = _snap_point.global_position
 
 
+@warning_ignore("unused_parameter")
 func can_snap_pitcher(pitcher: Pitcher) -> bool:
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
 		return false
@@ -368,6 +373,7 @@ func can_snap_pitcher(pitcher: Pitcher) -> bool:
 	return true
 
 
+@warning_ignore("unused_parameter")
 func can_snap_pitcher_from_recipe(recipe: Dictionary) -> bool:
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
 		return false
@@ -393,6 +399,7 @@ func get_snap_global_position() -> Vector3:
 ## snaps it, and syncs to all clients. This is the authoritative path —
 ## clients never snap locally because WorldSync.request_spawn() returns
 ## null on clients.
+@warning_ignore("unused_parameter")
 func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool:
 	if not is_multiplayer_authority():
 		return false
@@ -445,6 +452,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	return true
 
 
+@warning_ignore("unused_parameter")
 func start_fill(water_amount: float) -> void:
 	if _snapped_pitcher == null or water_fillings <= 0:
 		return
@@ -457,6 +465,7 @@ func start_fill(water_amount: float) -> void:
 	WorldSync.sync_call(self, "_play_fill_visual", [water_amount])
 
 
+@warning_ignore("unused_parameter")
 func _play_fill_visual(water_amount: float) -> void:
 	if _snapped_pitcher == null and _pending_snap_pitcher_net_id != -1:
 		_snapped_pitcher = WorldSync.find_node_by_net_id(_pending_snap_pitcher_net_id) as Pitcher
