@@ -818,7 +818,13 @@ func request_despawn(obj: Node, confirm_pickup: bool = false) -> void:
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] request_despawn: obj is null/invalid")
 		return
+	# Default scene objects are only registered lazily during snapshots.
+	# If a client picks one up before that, give it a net_id now so the
+	# host can reliably despawn it instead of leaving a duplicate.
 	var net_id := _get_net_id(obj)
+	if net_id < 0:
+		_ensure_default_objects_registered()
+		net_id = _get_net_id(obj)
 	GameLog.log(
 		"[WorldSync] request_despawn name=%s net_id=%d is_host=%s" % [obj.name, net_id, is_host()]
 	)

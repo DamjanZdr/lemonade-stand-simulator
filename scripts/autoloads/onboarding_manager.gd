@@ -217,12 +217,6 @@ const TASKS: Array[Dictionary] = [
 		"parts": { "Set your perfected lemon recipe on the recipe board": "lemon" },
 	},
 	{
-		"id": "demo_set_second_recipe",
-		"text": "{Set your perfected new fruit recipe on the recipe board}.",
-		"event": "perfect_recipe_set",
-		"parts": { "Set your perfected new fruit recipe on the recipe board": "selected" },
-	},
-	{
 		"id": "demo_keep_running",
 		"text": (
 			"Keep the stand running: serve happy customers, earn money, and grow your "
@@ -568,16 +562,6 @@ func _advance_satisfied_tasks(stand: StandUnit) -> void:
 			"demo_set_perfect_lemon":
 				var found: Dictionary = p.discovered_recipes.get("lemon", { })
 				satisfied = not found.is_empty() and stand.get_recipe("lemon") == found
-			"demo_set_second_recipe":
-				if p.selected_demo_fruit == "":
-					for ft in StandUnit.FRUIT_TYPES:
-						if ft != "lemon":
-							p.selected_demo_fruit = ft
-							break
-				var found: Dictionary = p.discovered_recipes.get(p.selected_demo_fruit, { })
-				satisfied = (
-					not found.is_empty() and stand.get_recipe(p.selected_demo_fruit) == found
-				)
 		if not satisfied:
 			return
 		var idx := _task_index(id)
@@ -638,8 +622,6 @@ func _part_matches(
 		var recipe_in: Dictionary = data.get("recipe", { })
 		var val: float = float(recipe_in.get(expected, 0.0))
 		return data.get("fruit_type") == "lemon" and val > 0.0
-	if task.id == "demo_set_second_recipe":
-		return data.get("fruit_type") == p.selected_demo_fruit
 	return data.get("type", data.get("fruit_type", data.get("part", ""))) == expected
 
 
