@@ -18,7 +18,7 @@
 
 param(
 	[string]$SteamUser = $env:STEAM_USER,
-	[string]$SteamCmd = $env:STEAMCMD,
+	[string]$SteamCmd = "D:\User\Desktop\SteamworksSDK\sdk\tools\ContentBuilder\builder\steamcmd.exe",
 	[string]$AppId = "5329010",
 	[string]$AppBuildVdf = "tools/app_build_5329010.vdf",
 	[string]$ExportPreset = "Windows Desktop",
@@ -93,7 +93,9 @@ Write-Host "Uploading build to App $AppId branch '$Branch'..." -ForegroundColor 
 # Use the absolute VDF path. ContentRoot inside the VDF is also absolute,
 # so SteamCMD's own working directory does not matter.
 $buildVdfPath = (Resolve-Path $AppBuildVdf).Path
-$arguments = @( "+login", $SteamUser, "+run_app_build", $buildVdfPath, "+quit" )
+# Quote the path because it contains spaces; otherwise SteamCMD splits it.
+$quotedVdfPath = '"{0}"' -f $buildVdfPath
+$arguments = @( "+login", $SteamUser, "+run_app_build", $quotedVdfPath, "+quit" )
 # Run SteamCMD in the same window and capture output to a log. Credentials
 # should already be cached from the first manual login.
 $logPath = Join-Path $projectRoot "tools/steam_upload.log"
