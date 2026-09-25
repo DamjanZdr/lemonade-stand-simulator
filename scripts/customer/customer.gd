@@ -664,13 +664,11 @@ func _resolve(outcome: String) -> void:
 		_patience_circle.visible = false
 	_npc.play_anim("Talk")
 	sync_state(CustomerState.REACTING, "Talk")
-	# Explicitly route popularity/stats to whichever stand this customer
-	# actually belongs to (see the money routing note below for why
-	# GameState no longer listens to this signal globally).
-	if stand != null and not stand.is_legacy_primary:
-		stand.request_customer_served(outcome)
-	else:
-		GameState.on_customer_served(self, outcome)
+	# Record non-paying outcomes immediately. For paying outcomes, defer the
+	# cup/sale stats until after the player has given change so achievements
+	# trigger at the end of the interaction.
+	if outcome == "timeout" or _accumulated_price <= 0.0:
+		_record_customer_served(outcome)
 	EventBus.customer_served.emit(self, outcome)
 	_feedback_text = _feedback_for_outcome(outcome)
 	# Only pay for cups actually received — a customer who never got a single
@@ -705,6 +703,7 @@ func _resolve(outcome: String) -> void:
 				stand.request_add_money_from_sale(price)
 			else:
 				GameState.add_money_from_sale(price)
+			_record_customer_served(outcome)
 			# Still show feedback + report evaluations — exact payers are
 			# mastery-eligible transactions just like change-makers.
 			_show_feedback_then_leave()
@@ -719,6 +718,14 @@ func _resolve(outcome: String) -> void:
 		var tween := create_tween()
 		tween.tween_interval(interval)
 		tween.tween_callback(_start_leaving)
+
+
+func _record_customer_served(outcome: String) -> void:
+	## Route popularity/cup/sale stats to the correct stand/GameState.
+	if stand != null and not stand.is_legacy_primary:
+		stand.request_customer_served(outcome)
+	else:
+		GameState.on_customer_served(self, outcome)
 
 
 @rpc("authority", "reliable")
@@ -773,6 +780,7 @@ func _receive_change_finalized(tendered_cents: int) -> void:
 		stand.request_add_money_from_sale(earned)
 	else:
 		GameState.add_money_from_sale(earned)
+	_record_customer_served(_outcome)
 	_leave_after_change()
 
 
