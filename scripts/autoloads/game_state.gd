@@ -47,6 +47,7 @@ var customers_lost: int = 0
 var total_customers_served: int = 0
 var total_cups_sold: int = 0
 var total_money_earned: float = 0.0
+var total_money_earned_from_sales: float = 0.0
 var total_money_spent: float = 0.0
 var highest_purchase: float = 0.0
 var highest_money: float = 0.0
@@ -109,6 +110,11 @@ func add_money(amount: float) -> void:
 	if money > highest_money:
 		highest_money = money
 	EventBus.money_changed.emit(money)
+
+
+func add_money_from_sale(amount: float) -> void:
+	add_money(amount)
+	total_money_earned_from_sales += amount
 
 
 func spend_money(amount: float) -> bool:

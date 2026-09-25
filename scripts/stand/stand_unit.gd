@@ -77,9 +77,15 @@ var customers_lost: int = 0
 var total_customers_served: int = 0
 var total_cups_sold: int = 0
 var total_money_earned: float = 0.0
+var total_money_earned_from_sales: float = 0.0
 var total_money_spent: float = 0.0
 var highest_purchase: float = 0.0
 var highest_money: float = 0.0
+
+## Achievement / mastery counters (synced via STATE_PROPS).
+var total_fruit_pressed: int = 0
+## fruit_type -> true for every perfected recipe that has been set on the board.
+var perfect_recipes_set: Dictionary = { }
 
 @onready var delivery_grid: DeliveryGrid = $DeliveryGrid as DeliveryGrid
 @onready var delivery_marker: Marker3D = $DeliveryMarker
@@ -111,9 +117,12 @@ const STATE_PROPS: Array[String] = [
 	"total_customers_served",
 	"total_cups_sold",
 	"total_money_earned",
+	"total_money_earned_from_sales",
 	"total_money_spent",
 	"highest_purchase",
 	"highest_money",
+	"total_fruit_pressed",
+	"perfect_recipes_set",
 	"onboarding_progress",
 	"stand_display_name",
 ]
@@ -151,9 +160,12 @@ func push_state(peer_id: int = 0) -> void:
 		total_customers_served,
 		total_cups_sold,
 		total_money_earned,
+		total_money_earned_from_sales,
 		total_money_spent,
 		highest_purchase,
 		highest_money,
+		total_fruit_pressed,
+		perfect_recipes_set.duplicate(true),
 		onboarding_progress.duplicate(true),
 		stand_display_name,
 		purchased_upgrade_nodes.duplicate(true),
@@ -179,9 +191,12 @@ func _apply_state(
 	new_total_customers_served: int,
 	new_total_cups_sold: int,
 	new_total_money_earned: float,
+	new_total_money_earned_from_sales: float,
 	new_total_money_spent: float,
 	new_highest_purchase: float,
 	new_highest_money: float,
+	new_total_fruit_pressed: int,
+	new_perfect_recipes_set: Dictionary,
 	new_onboarding_progress: Dictionary,
 	new_stand_display_name: String,
 	new_purchased_upgrade_nodes: Dictionary,
@@ -217,9 +232,12 @@ func _apply_state(
 	total_customers_served = new_total_customers_served
 	total_cups_sold = new_total_cups_sold
 	total_money_earned = new_total_money_earned
+	total_money_earned_from_sales = new_total_money_earned_from_sales
 	total_money_spent = new_total_money_spent
 	highest_purchase = new_highest_purchase
 	highest_money = new_highest_money
+	total_fruit_pressed = new_total_fruit_pressed
+	perfect_recipes_set = new_perfect_recipes_set.duplicate(true)
 	onboarding_progress = new_onboarding_progress.duplicate(true)
 	# Sync per-stand unlocks. Notify local UI (price/recipe boards) if they changed.
 	var old_unlocks: Dictionary = purchased_upgrade_nodes.duplicate(true)
@@ -282,9 +300,12 @@ func reset_to_starting_state() -> void:
 	total_customers_served = 0
 	total_cups_sold = 0
 	total_money_earned = 0.0
+	total_money_earned_from_sales = 0.0
 	total_money_spent = 0.0
 	highest_purchase = 0.0
 	highest_money = money
+	total_fruit_pressed = 0
+	perfect_recipes_set.clear()
 	init_default_prices()
 	init_default_recipes()
 	purchased_upgrade_nodes.clear()
@@ -299,9 +320,11 @@ func reset_to_starting_state() -> void:
 		GameState.total_customers_served = total_customers_served
 		GameState.total_cups_sold = total_cups_sold
 		GameState.total_money_earned = total_money_earned
+		GameState.total_money_earned_from_sales = total_money_earned_from_sales
 		GameState.total_money_spent = total_money_spent
 		GameState.highest_purchase = highest_purchase
 		GameState.highest_money = highest_money
+	AchievementManager.check_stand_thresholds(self)
 	money_changed.emit(money)
 	popularity_changed.emit(popularity)
 
@@ -485,6 +508,15 @@ func add_money(amount: float) -> void:
 	push_state()
 
 
+func add_money_from_sale(amount: float) -> void:
+	add_money(amount)
+	total_money_earned_from_sales += amount
+	if is_legacy_primary:
+		GameState.total_money_earned_from_sales += amount
+	AchievementManager.check_stand_thresholds(self)
+	push_state()
+
+
 func spend_money(amount: float) -> bool:
 	if money < amount:
 		return false
@@ -496,6 +528,7 @@ func spend_money(amount: float) -> bool:
 	if is_legacy_primary:
 		GameState.spend_money(amount)
 	push_state()
+	AchievementManager.check_stand_thresholds(self)
 	return true
 
 
@@ -544,11 +577,38 @@ func request_add_money(amount: float) -> void:
 		add_money(amount)
 
 
+func request_add_money_from_sale(amount: float) -> void:
+	if multiplayer.has_multiplayer_peer():
+		_rpc_add_money_from_sale.rpc_id(1, amount)
+	else:
+		add_money_from_sale(amount)
+
+
 @rpc("any_peer", "call_local", "reliable")
 func _rpc_add_money(amount: float) -> void:
 	if not is_multiplayer_authority():
 		return
 	add_money(amount)
+	push_state()
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_add_money_from_sale(amount: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	add_money_from_sale(amount)
+	push_state()
+
+
+func record_fruit_pressed() -> void:
+	total_fruit_pressed += 1
+	AchievementManager.check_stand_thresholds(self)
+	push_state()
+
+
+func record_perfect_recipe_set(fruit_type: String) -> void:
+	perfect_recipes_set[fruit_type] = true
+	AchievementManager.check_stand_thresholds(self)
 	push_state()
 
 
@@ -651,6 +711,7 @@ func on_customer_served(outcome: String) -> void:
 		_:
 			customers_lost += 1
 			set_popularity(popularity - Balancing.POPULARITY_LOSS_BAD)
+	AchievementManager.check_stand_thresholds(self)
 
 
 func reset_daily_stats() -> void:

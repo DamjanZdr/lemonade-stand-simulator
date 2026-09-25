@@ -290,6 +290,7 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	GameState.total_customers_served = 0
 	GameState.total_cups_sold = 0
 	GameState.total_money_earned = 0.0
+	GameState.total_money_earned_from_sales = 0.0
 	GameState.total_money_spent = 0.0
 	GameState.highest_purchase = 0.0
 	DayManager.reset_cycle()
@@ -433,6 +434,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	GameState.total_customers_served = data.get("total_customers_served", 0)
 	GameState.total_cups_sold = data.get("total_cups_sold", 0)
 	GameState.total_money_earned = data.get("total_money_earned", 0.0)
+	GameState.total_money_earned_from_sales = data.get("total_money_earned_from_sales", 0.0)
 	GameState.total_money_spent = data.get("total_money_spent", 0.0)
 	GameState.highest_purchase = data.get("highest_purchase", 0.0)
 	GameState.highest_money = data.get("highest_money", GameState.money)
@@ -566,6 +568,7 @@ func _build_save_dict() -> Dictionary:
 		"total_customers_served": GameState.total_customers_served,
 		"total_cups_sold": GameState.total_cups_sold,
 		"total_money_earned": GameState.total_money_earned,
+		"total_money_earned_from_sales": GameState.total_money_earned_from_sales,
 		"total_money_spent": GameState.total_money_spent,
 		"highest_purchase": GameState.highest_purchase,
 		"highest_money": GameState.highest_money,

@@ -702,9 +702,9 @@ func _resolve(outcome: String) -> void:
 			# Exact payment — no change owed (payment == price). The stand
 			# earns the full price; payment - price would credit $0.
 			if stand != null and not stand.is_legacy_primary:
-				stand.request_add_money(price)
+				stand.request_add_money_from_sale(price)
 			else:
-				GameState.add_money(price)
+				GameState.add_money_from_sale(price)
 			# Still show feedback + report evaluations — exact payers are
 			# mastery-eligible transactions just like change-makers.
 			_show_feedback_then_leave()
@@ -770,9 +770,9 @@ func _receive_change_finalized(tendered_cents: int) -> void:
 	_last_tendered_cents = tendered_cents
 	var earned := float(roundi(_payment_amount * 100.0) - tendered_cents) / 100.0
 	if stand != null and not stand.is_legacy_primary:
-		stand.request_add_money(earned)
+		stand.request_add_money_from_sale(earned)
 	else:
-		GameState.add_money(earned)
+		GameState.add_money_from_sale(earned)
 	_leave_after_change()
 
 

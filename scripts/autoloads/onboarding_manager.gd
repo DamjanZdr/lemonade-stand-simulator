@@ -375,6 +375,10 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 	# recipe snapshot.
 	if event_name != "customer_feedback":
 		_record_event(stand, event_name, data)
+	if event_name == "fruit_pressed":
+		stand.record_fruit_pressed()
+	if event_name == "perfect_recipe_set":
+		stand.record_perfect_recipe_set(data.get("fruit_type", ""))
 	if (
 		event_name in ["pitcher_prepared", "cup_filled"]
 		or (event_name == "equipment_placed" and data.get("type", "") == "pitcher")
