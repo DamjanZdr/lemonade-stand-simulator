@@ -74,6 +74,14 @@
 - **Status:** fixed in code — needs playtest verification
 - **Files:** `scripts/player/player_placement.gd`
 
+### 8. Held pitcher looks empty even when full
+- **Reported:** current batch
+- **Symptom:** A pitcher that shows liquid when placed on a surface appears empty while held in first-person.
+- **Root cause:** `_create_container_hand_mesh()` instantiated the pitcher scene and immediately stripped its script, so `Pitcher._ready()` never ran. `_ready()` is what hides the legacy GLB lemonade cylinders, sets the CSG fill eraser position, and applies the liquid color.
+- **Fix:** Briefly add the pitcher hand mesh to a hidden temp node so `_ready()` executes. Keep the script active (the held pitcher must still respond to water refills and emptying), but remove the `Pickupable` component and disable physics/groups so it doesn't behave like a placed object.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/player/player_placement.gd`
+
 ## Fixed / Closed Issues
 
 *(None verified in a live playtest yet.)*

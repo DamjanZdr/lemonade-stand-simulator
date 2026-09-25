@@ -920,9 +920,10 @@ func _create_container_hand_mesh(
 	# correctly displays the right item count and formats the label.
 	_set_container_starting_state(inst, container_type, saved_amount, saved_count, saved_recipe)
 
-	# The FruitBin script populates its fruit_grids in _ready(). We need
-	# those grids before we can call update_display(), so add it to the
-	# tree momentarily, refresh the visible fruit count, then detach it.
+	# Some containers need their _ready() to run so visual state is correct
+	# (fruit grids, pitcher fill level/color, label). We briefly add them to a
+	# hidden temp node, let _ready() fire, then detach them.
+	var disable_script := true
 	if container_type == "fruit_bin" and inst is FruitBin:
 		var fbin := inst as FruitBin
 		var temp := Node.new()
@@ -937,13 +938,30 @@ func _create_container_hand_mesh(
 			pickupable.queue_free()
 		temp.remove_child(fbin)
 		temp.queue_free()
+	elif container_type == "pitcher" and inst is Pitcher:
+		var pitcher := inst as Pitcher
+		var temp := Node.new()
+		temp.name = "PitcherHandTemp"
+		temp.visible = false
+		_player.add_child(temp)
+		temp.add_child(pitcher)
+		# Pitcher._ready() sets the fill level, liquid color and label.
+		# We keep the script on the hand mesh because the held pitcher needs
+		# to react to water refills and emptying while held.
+		var pickupable := pitcher.get_node_or_null("Pickupable")
+		if pickupable != null:
+			pickupable.queue_free()
+		temp.remove_child(pitcher)
+		temp.queue_free()
+		disable_script = false
 
 	# Apply hand scale for containers (smaller than placed version)
 	var hand_scale: Vector3 = CONTAINER_HAND_SCALE.get(container_type, Vector3.ONE * 0.1)
 	inst.scale = hand_scale
 	# Hand meshes must never block the player's raycast or collide with the world.
 	_disable_physics(inst)
-	_disable_scripts(inst)
+	if disable_script:
+		_disable_scripts(inst)
 
 	# Disable collision on hand mesh to prevent pushing player
 	_disable_hand_collision(inst)
