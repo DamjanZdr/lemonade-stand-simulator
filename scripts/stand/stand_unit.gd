@@ -288,6 +288,11 @@ func _apply_state(
 		if is_legacy_primary:
 			GameState.set_recipe(ft, recipes[ft])
 
+	# Every peer checks achievements for its own stand when authoritative
+	# state arrives. This lets joiners unlock achievements for actions the
+	# host performed on their behalf (spending, sales, etc.).
+	AchievementManager.check_stand_thresholds(self)
+
 
 ## Reset this stand to its pristine starting state. Called when starting a
 ## brand-new game so a previous session's money/recipes don't carry over.
