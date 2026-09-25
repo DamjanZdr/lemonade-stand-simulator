@@ -106,25 +106,17 @@ func _on_change_finalized(_earned: float) -> void:
 	play_sfx("transaction_complete", pos, -1.0, 0.1)
 
 
-## Preload music tracks from the music directory.
+## Preload music tracks. The list is explicit because directory scanning
+## does not work reliably in exported PCK builds.
 func _preload_music() -> void:
-	var dir := DirAccess.open(MUSIC_DIR)
-	if dir == null:
-		push_warning("AudioManager: could not open music dir '%s'" % MUSIC_DIR)
-		return
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".mp3"):
-			var key := file_name.get_basename()
-			var path := MUSIC_DIR + file_name
-			var stream := load(path) as AudioStreamMP3
-			if stream:
-				stream.loop = false
-				_streams["music_" + key] = stream
-				_music_tracks.append(key)
-		file_name = dir.get_next()
-	dir.list_dir_end()
+	var tracks: Array[String] = ["Clear Air", "Crinoline Dreams", "Easy Lemon"]
+	for key in tracks:
+		var path: String = MUSIC_DIR + key + ".mp3"
+		var stream := load(path) as AudioStreamMP3
+		if stream:
+			stream.loop = false
+			_streams["music_" + key] = stream
+			_music_tracks.append(key)
 	_music_tracks.sort()
 
 

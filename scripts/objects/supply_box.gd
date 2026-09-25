@@ -78,7 +78,7 @@ static func pre_render_all() -> void:
 	for itype in INGREDIENT_ICONS.keys():
 		if not texture_cache.has(itype):
 			var path: String = INGREDIENT_ICONS[itype]
-			if FileAccess.file_exists(path):
+			if ResourceLoader.exists(path):
 				texture_cache[itype] = load(path) as Texture2D
 
 
@@ -236,9 +236,9 @@ static func _make_icon_texture(itype: String) -> Texture2D:
 		"' path='",
 		path,
 		"' exists=",
-		FileAccess.file_exists(path),
+		ResourceLoader.exists(path),
 	)
-	if path != "" and FileAccess.file_exists(path):
+	if path != "" and ResourceLoader.exists(path):
 		var tex := load(path) as Texture2D
 		print("[SupplyBox] loaded texture: ", tex)
 		texture_cache[itype] = tex

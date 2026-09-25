@@ -850,7 +850,7 @@ func _get_node_icon(data: Dictionary) -> Texture2D:
 	else:
 		icon_name = id.replace("_", "")
 	var path := "res://assets/textures/ui/upgrades/" + icon_name + ".png"
-	if FileAccess.file_exists(path):
+	if ResourceLoader.exists(path):
 		return load(path) as Texture2D
 	return null
 
@@ -1151,7 +1151,7 @@ func _create_item_card(
 		q_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		q_lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		preview_holder.add_child(q_lbl)
-	elif img_path != "" and FileAccess.file_exists(img_path):
+	elif img_path != "" and ResourceLoader.exists(img_path):
 		var preview := TextureRect.new()
 		preview.texture = load(img_path) as Texture2D
 		preview.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL

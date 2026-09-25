@@ -632,9 +632,6 @@ func _render_onboarding(
 	if task_id == "demo_master_lemon":
 		var candidate: Dictionary = progress.get("active_recipe_candidates", { }).get("lemon", { })
 		text += "\nValidation: %d / 5 customers" % int(candidate.get("streak", 0))
-	elif task_id == "demo_master_ice":
-		var candidate: Dictionary = progress.get("active_ice_candidate", { })
-		text += "\nValidation: %d / 5 customers" % int(candidate.get("streak", 0))
 	_onboarding_text.text = text
 	# Size the panel to the text content instead of a fixed height. The
 	# RichTextLabel with fit_content reports its required height after the

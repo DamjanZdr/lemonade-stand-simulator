@@ -204,12 +204,6 @@ const TASKS: Array[Dictionary] = [
 		"parts": { "Set your perfected lemon recipe on the recipe board": "lemon" },
 	},
 	{
-		"id": "demo_master_ice",
-		"text": "{Use customer feedback to perfect your ice setting}.",
-		"event": "ice_discovered",
-		"parts": { "Use customer feedback to perfect your ice setting": "ice" },
-	},
-	{
 		"id": "demo_set_second_recipe",
 		"text": "{Set your perfected new fruit recipe on the recipe board}.",
 		"event": "perfect_recipe_set",
@@ -556,8 +550,6 @@ func _advance_satisfied_tasks(stand: StandUnit) -> void:
 			"demo_set_perfect_lemon":
 				var found: Dictionary = p.discovered_recipes.get("lemon", { })
 				satisfied = not found.is_empty() and stand.get_recipe("lemon") == found
-			"demo_master_ice":
-				satisfied = p.discovered_ice_ratio != null
 			"demo_set_second_recipe":
 				var found: Dictionary = p.discovered_recipes.get(p.selected_demo_fruit, { })
 				satisfied = (
