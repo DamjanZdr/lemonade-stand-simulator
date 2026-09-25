@@ -44,7 +44,7 @@ layout_mode = 2
 [node name="TitleLabel" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = "Debug Console (F12 to toggle)"
+text = "Debug Console (F10 to toggle, Shift+F10 = reset achievements)"
 
 [node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
 layout_mode = 2
@@ -60,6 +60,8 @@ bbcode_enabled = true
 text = ""
 scroll_following = true
 fit_content = true
+selection_enabled = true
+context_menu_enabled = true
 
 [node name="Buttons" type="HBoxContainer" parent="Panel/Margin"]
 layout_mode = 2

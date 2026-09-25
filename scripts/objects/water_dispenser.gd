@@ -45,7 +45,12 @@ func apply_refill(to_add: int) -> void:
 
 
 ## Host-only: apply finishing a fill and sync to all clients.
+## Idempotent: every peer's _process can trigger a finish, and clients
+## relay it to the host via request_container_action("finish_fill"), so a
+## second invocation would double-add water. Guard on _is_filling.
 func apply_finish_fill() -> void:
+	if not _is_filling:
+		return
 	_is_filling = false
 	_fill_progress = 0.0
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
@@ -53,7 +58,18 @@ func apply_finish_fill() -> void:
 	water_fillings = maxi(water_fillings - 1, 0)
 	_update_water_visual()
 	if _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
+		var water_before := _snapped_pitcher.water
 		_snapped_pitcher.water += _fill_amount
+		GameLog.log(
+			"[Dispenser] finish_fill %s: water %.2f->%.2f liq=%.2f amount=%.2f"
+			% [
+				str(_snapped_pitcher.name),
+				water_before,
+				_snapped_pitcher.water,
+				_snapped_pitcher.get_liquid_volume(),
+				_fill_amount,
+			]
+		)
 		_snapped_pitcher.update_label()
 		_snapped_pitcher.end_press_eraser_animation()
 		_snapped_pitcher.update_liquid_color()
@@ -466,15 +482,26 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 
 @warning_ignore("unused_parameter")
 func start_fill(water_amount: float) -> void:
-	if _snapped_pitcher == null or water_fillings <= 0:
+	if _snapped_pitcher == null or water_fillings <= 0 or _is_filling:
 		return
 	# Recompute the fill amount from the authoritative pitcher state.
 	# A client's `space` arg is based on its own (possibly stale) liquid
 	# view — trusting it can overfill the pitcher past PITCHER_MAX_LIQUID,
 	# which clamps the fill visual at full and yields far too many cups.
+	var requested := water_amount
 	water_amount = Balancing.PITCHER_MAX_LIQUID - _snapped_pitcher.get_liquid_volume()
 	if water_amount <= 0.0:
 		return
+	GameLog.log(
+		"[Dispenser] start_fill %s: liq=%.2f water=%.2f requested=%.2f actual=%.2f"
+		% [
+			str(_snapped_pitcher.name),
+			_snapped_pitcher.get_liquid_volume(),
+			_snapped_pitcher.water,
+			requested,
+			water_amount,
+		]
+	)
 	_is_filling = true
 	_fill_progress = 0.0
 	_fill_amount = water_amount

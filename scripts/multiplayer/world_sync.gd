@@ -1680,6 +1680,20 @@ func _rpc_request_properties(
 		return
 	for key in props:
 		obj.set(key, props[key])
+	if obj is Pitcher:
+		GameLog.log(
+			"[WorldSync] client props applied to %s from peer %d: water=%.2f fruit=%.2f sugar=%.2f ice=%.2f liq=%.2f cups=%d"
+			% [
+				str(obj.name),
+				multiplayer.get_remote_sender_id(),
+				float(obj.water),
+				float(obj.fruit_count),
+				float(obj.sugar),
+				float(obj.ice),
+				obj.get_liquid_volume(),
+				int(obj.cups_poured),
+			]
+		)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
 	_broadcast(&"_apply_properties", [parent_path, obj_name, net_id, props])
 

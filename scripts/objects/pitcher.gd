@@ -235,6 +235,21 @@ func pour_portion() -> Dictionary:
 	sugar -= float(serving_recipe.get("sugar", sugar)) * portion_ratio
 	ice -= float(serving_recipe.get("ice", ice)) * portion_ratio
 	cups_poured += 1 # Track that a cup was poured
+	GameLog.log(
+		"[Pitcher] pour %s: liq %.2f->%.2f cups=%d init_vol=%.2f fruit=%.2f water=%.2f sugar=%.2f ice=%.2f host=%s"
+		% [
+			str(name),
+			liquid,
+			get_liquid_volume(),
+			cups_poured,
+			initial_volume,
+			fruit_count,
+			water,
+			sugar,
+			ice,
+			str(WorldSync.is_host()),
+		]
+	)
 	# Pouring a cup means the pitcher is now actively serving, wherever it is.
 	# Without this, a pitcher poured from while still in the COMPLETE state
 	# (i.e. placed but never explicitly marked SERVING) would be treated as
@@ -261,6 +276,10 @@ func pour_portion() -> Dictionary:
 func _clear_and_return() -> void:
 	# Save current state before clearing
 	var was_serving := (state == PitcherState.SERVING)
+	GameLog.log(
+		"[Pitcher] cleared %s after %d cups (liq %.2f)"
+		% [str(name), cups_poured, get_liquid_volume()]
+	)
 	fruit_type = ""
 	fruit_count = 0.0
 	water = 0.0
@@ -396,6 +415,10 @@ func request_fill_cup(player: Player) -> void:
 func _fill_cup_for_player(player: Player) -> void:
 	var recipe := pour_portion()
 	if recipe.is_empty():
+		GameLog.log(
+			"[Pitcher] pour blocked %s: empty recipe (liq=%.2f, state=%s)"
+			% [str(name), get_liquid_volume(), str(state)]
+		)
 		return
 	var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
 	player.inventory.set_held(
@@ -600,6 +623,10 @@ func end_press_eraser_animation() -> void:
 
 func fill_water_slow(amount: float, duration: float = 2.0) -> void:
 	var start_color := _get_current_liquid_color()
+	GameLog.log(
+		"[Pitcher] fill_water_slow %s: water %.2f->%.2f liq->%.2f host=%s"
+		% [str(name), water, water + amount, get_liquid_volume() + amount, str(WorldSync.is_host())]
+	)
 	water += amount
 	var end_color := _get_current_liquid_color()
 	_update_eraser_position(duration)

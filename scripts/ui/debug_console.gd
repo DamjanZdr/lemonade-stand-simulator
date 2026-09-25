@@ -1,6 +1,7 @@
 extends Control
 ## In-game debug console panel. Shows live log output from GameLog.
-## Toggle with F12. Has a Copy button to copy all logs to clipboard.
+## Toggle with F10 (Shift+F10 resets achievements). Has a Copy button to
+## copy all logs to clipboard.
 ## Has a Clear button to clear the buffer.
 
 @onready var _panel: Panel = $Panel
@@ -33,7 +34,7 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F12:
+		if event.keycode == KEY_F10:
 			if event.shift_pressed:
 				AchievementManager.reset_all_achievements()
 				return

@@ -87,14 +87,16 @@
 ### 9. Pitcher yields ~19+ cups and doesn't visibly drain (versus, both stands)
 - **Reported:** current batch
 - **Symptom:** Pitcher appears full for ~9 cups; starts visibly lowering around the 9th–10th cup; a "full" pitcher yields ~19 cups instead of 10.
-- **Root cause (updated):** Two separate problems:
-  1. `pour_portion()` computed `portion_ratio = PORTION_SIZE / current_volume` from the *remaining* volume each pour — exponential drain, so the level barely moved early on and the pitcher never emptied in its real capacity.
-  2. `WaterDispenser` trusted the requesting peer's `space` argument, computed on a possibly-stale local liquid view. A stale-low view sent `start_fill(≈8-10)` on an already-fuller pitcher, overfilling it to ~18-19 liquid. `t = vol/10` then clamps at full for the first ~9 pours (stays "10/10") and the pitcher serves ~19 cups.
-  3. Bonus: `_play_fill_visual` ran `start_press_eraser_animation` on all peers but `end_press_eraser_animation` (which clears `_suppress_eraser_updates`) was only called on the host — client fill visuals could stay frozen.
+- **Root cause (updated):** Three compounding problems:
+  1. `pour_portion()` computed `portion_ratio = PORTION_SIZE / current_volume` from the *remaining* volume each pour — exponential drain.
+  2. `WaterDispenser._process` advances `_fill_progress` on **every** peer (set by the broadcast `_play_fill_visual`). When the timer completes, each client calls `_finish_fill()` → `request_container_action("finish_fill")` → host's `apply_finish_fill()` runs a **second time**, adding the water twice. Every multiplayer fill therefore pushed the pitcher to ~18-19 liquid — `vol/10` stays clamped at full for ~9 pours ("10/10") and yields ~19 cups. Explains both stands: any fill with another peer connected double-adds.
+  3. `start_fill()` also trusted the client's stale `space` arg (now recomputed on host), and `end_press_eraser_animation` was only called on the host, leaving `_suppress_eraser_updates` stuck on clients.
 - **Fix:**
   - `get_recipe_snapshot()` stores `_initial_volume`; each cup removes a fixed fraction of the *initial* amounts → exactly 10 cups from a full pitcher.
-  - `start_fill()` recomputes the fill amount from the host-authoritative pitcher liquid, ignoring the client's stale `space` arg.
+  - `apply_finish_fill()` is now idempotent (no-ops if `_is_filling` is already false), and `start_fill()` ignores requests while filling.
+  - `start_fill()` recomputes fill amount from host-authoritative pitcher liquid.
   - `apply_finish_fill()` broadcasts `end_press_eraser_animation` so every peer unsuppresses eraser updates.
+  - Added GameLog lines on pour/fill/clear so pitcher volume history can be inspected via the F10 debug console or `game_log.txt`.
 - **Status:** fixed in code — needs playtest verification
 - **Files:** `scripts/objects/pitcher.gd`, `scripts/objects/water_dispenser.gd`
 
