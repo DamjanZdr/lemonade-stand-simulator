@@ -266,6 +266,11 @@ func _build_ui() -> void:
 	_temp_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	time_vbox.add_child(_temp_label)
 
+	_pop_label = _make_label("Pop: 10%", 14, font, Color(0.95, 0.95, 0.45))
+	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pop_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	time_vbox.add_child(_pop_label)
+
 	# Spacer between the circle and the money
 	var left_spacer := Control.new()
 	left_spacer.custom_minimum_size = Vector2(MONEY_GAP, 0)
@@ -284,10 +289,6 @@ func _build_ui() -> void:
 	_money_label = _make_label("$%.2f" % 0.0, 32, font, Color(0.25, 0.95, 0.35))
 	_money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_info_col.add_child(_money_label)
-
-	_pop_label = _make_label("Pop: 10%", 18, font, Color(0.95, 0.95, 0.45))
-	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_info_col.add_child(_pop_label)
 
 	# Small right padding that stays fixed while the money area grows
 	var tail := Control.new()

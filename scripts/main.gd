@@ -135,9 +135,14 @@ var _transition_active: bool = false
 var _transition_loaded: bool = false
 var _world_setup_done: bool = false
 
-## True while the Day X intro fade is running. Blocks ESC so pausing can't
-## freeze the tween and leave the screen darker than intended.
+## True while the Day X intro fade is running. Blocks normal ESC so the
+## opening tween isn't frozen partway through. ESC during the intro skips
+## it and opens the menu instead.
 var _day_intro_active: bool = false
+var _day_intro_tween: Tween = null
+var _day_intro_fade_rect: ColorRect = null
+var _day_intro_day_label: Label = null
+var _day_intro_dim_panel: ColorRect = null
 # When true, _finish_transition will host a new game after the whip
 # transition completes. Used by _on_menu_new_stand so the loading
 # transition plays before the lobby is created.
@@ -1016,7 +1021,8 @@ func _on_game_starting() -> void:
 	# Create the fade overlay immediately so it's on top of the lobby.
 	# Start fully black so the game world is hidden from the very first frame;
 	# this prevents the joiner "flash of gameworld" before the Day X overlay.
-	var fade_rect := ColorRect.new()
+	_day_intro_fade_rect = ColorRect.new()
+	var fade_rect := _day_intro_fade_rect
 	fade_rect.color = Color(0, 0, 0, 1)
 	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1026,7 +1032,8 @@ func _on_game_starting() -> void:
 	# Create a radial dim panel behind the "Day X" text (dark in center,
 	# fading to transparent at edges — like the menu's dim layer).
 	var dim_shader := DIM_SHADER
-	var dim_panel := ColorRect.new()
+	_day_intro_dim_panel = ColorRect.new()
+	var dim_panel := _day_intro_dim_panel
 	dim_panel.color = Color(1, 1, 1, 1)
 	dim_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1037,7 +1044,8 @@ func _on_game_starting() -> void:
 	_transition_overlay.add_child(dim_panel)
 
 	# Create the "Day X" label with the theme font, drop shadow, bigger size.
-	var day_label := Label.new()
+	_day_intro_day_label = Label.new()
+	var day_label := _day_intro_day_label
 	var day_num := DayManager.day_number
 	day_label.text = "Day %d" % day_num
 	day_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1121,33 +1129,40 @@ func _snap_to_player_camera(fade_rect: ColorRect, day_label: Label, dim_panel: C
 			DayManager.start_day()
 	# Sequential timeline:
 	# 1. Fade in from black (eyes opening) — 0.5s (Day X already visible)
-	# 2. Hold for 5 seconds (Day X stays on screen)
-	# 3. Fade out Day X label + dim panel — 1.0s
+	# 2. Hold for 1.5 seconds (Day X stays on screen)
+	# 3. Fade out Day X label + dim panel — 0.5s
 	# 4. Cleanup
-	var tw := create_tween()
+	_day_intro_tween = create_tween()
+	var tw := _day_intro_tween
 	# Step 1: Fade in from black (eyes opening). Day X is already visible.
-	tw.tween_property(fade_rect, "color:a", 0.0, 1.5) \
+	tw.tween_property(fade_rect, "color:a", 0.0, 0.5) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	# Step 2: Hold for 5 seconds.
-	tw.tween_interval(5.0)
-	# Step 3: Fade out label + dim panel (parallel) over 1 second.
+	# Step 2: Hold for a short moment.
+	tw.tween_interval(1.5)
+	# Step 3: Fade out label + dim panel (parallel) over 0.5 seconds.
 	tw.set_parallel(true)
 	if day_label:
-		tw.tween_property(day_label, "modulate:a", 0.0, 1.0) \
+		tw.tween_property(day_label, "modulate:a", 0.0, 0.5) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	if dim_panel:
-		tw.tween_property(dim_panel, "modulate:a", 0.0, 1.0) \
+		tw.tween_property(dim_panel, "modulate:a", 0.0, 0.5) \
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	# Step 4: Cleanup.
 	tw.chain().tween_callback(
 		func():
-			fade_rect.queue_free()
-			if day_label:
+			if fade_rect != null and is_instance_valid(fade_rect):
+				fade_rect.queue_free()
+			if day_label != null and is_instance_valid(day_label):
 				day_label.queue_free()
-			if dim_panel:
+			if dim_panel != null and is_instance_valid(dim_panel):
 				dim_panel.queue_free()
-			_transition_overlay.visible = false
-			_day_intro_active = false,
+			if _transition_overlay != null and is_instance_valid(_transition_overlay):
+				_transition_overlay.visible = false
+			_day_intro_active = false
+			_day_intro_tween = null
+			_day_intro_fade_rect = null
+			_day_intro_day_label = null
+			_day_intro_dim_panel = null,
 	)
 
 
@@ -2003,9 +2018,10 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed:
 		if _game_state == MenuState.PLAYING:
-			# Don't open the ESC menu while the Day X intro is fading, or while
-			# the local player is in a priceboard/recipe-board view.
+			# ESC during the Day X intro skips it and opens the menu.
 			if _day_intro_active:
+				_skip_day_intro()
+				_toggle_esc_menu()
 				get_viewport().set_input_as_handled()
 				return
 			if (
@@ -2048,6 +2064,25 @@ func _toggle_esc_menu() -> void:
 		EventBus.esc_menu_open = true
 		# Free the mouse.
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## Skip the Day X intro and clean up its overlay/tween immediately.
+func _skip_day_intro() -> void:
+	_day_intro_active = false
+	if _day_intro_tween != null and _day_intro_tween.is_valid():
+		_day_intro_tween.kill()
+		_day_intro_tween = null
+	if _day_intro_fade_rect != null and is_instance_valid(_day_intro_fade_rect):
+		_day_intro_fade_rect.queue_free()
+		_day_intro_fade_rect = null
+	if _day_intro_day_label != null and is_instance_valid(_day_intro_day_label):
+		_day_intro_day_label.queue_free()
+		_day_intro_day_label = null
+	if _day_intro_dim_panel != null and is_instance_valid(_day_intro_dim_panel):
+		_day_intro_dim_panel.queue_free()
+		_day_intro_dim_panel = null
+	if _transition_overlay != null and is_instance_valid(_transition_overlay):
+		_transition_overlay.visible = false
 
 
 ## ESC menu: Back to Game.

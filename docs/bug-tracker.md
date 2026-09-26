@@ -5,6 +5,22 @@
 
 ## Active Issues
 
+### 16. HUD popularity label not visible
+- **Reported:** playtest feedback
+- **Symptom:** The popularity readout added under the money label was not visible in-game.
+- **Root cause:** The label was placed in the right-hand info column, but the existing HUD layout only gave that column room for the money value; the new label was effectively clipped/overflowed. The exact dynamic sizing caused it not to render.
+- **Fix:** Moved the popularity label into the circular clock face panel (below temperature) so it is clearly visible and uses a stable, centered area.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/ui/hud.gd`
+
+### 17. ESC menu blocked during Day X intro
+- **Reported:** playtest feedback
+- **Symptom:** ESC does nothing for the first ~7 seconds after starting a game (the Day X intro blocks it).
+- **Root cause:** `_day_intro_active` stayed true during a long fade + 5-second hold + fade-out sequence in `_snap_to_player_camera()`, and `_input()` explicitly ignored ESC while it was active.
+- **Fix:** ESC during the intro now skips it immediately (kills the tween, frees the overlay, and opens the menu). Also shortened the intro from ~7.5s total to ~2.5s so it is less intrusive if the player doesn't press ESC.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/main.gd`
+
 ### 15. Implement per-stand popularity conversion and HUD display
 - **Reported:** design request
 - **Symptom:** Popularity was not fully wired into gameplay — NPC conversion used global GameState.popularity (the legacy primary stand), and there was no visible popularity meter.
