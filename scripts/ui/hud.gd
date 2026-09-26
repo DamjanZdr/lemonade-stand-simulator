@@ -12,7 +12,7 @@ const MONEY_GAP := 12.0
 const RIGHT_PAD := 12.0
 const MONEY_MIN_WIDTH := 80.0
 const ICON_SIZE := 24
-const POP_BAR_HEIGHT := 22.0
+const POP_BAR_HEIGHT := 28.0
 const POP_MARGIN := 4.0
 
 @onready var _hint_label: Label = $HintLabel
@@ -28,7 +28,7 @@ var _day_label: Label
 var _time_label: Label
 var _temp_label: Label
 var _pop_panel: Panel
-var _pop_fill: ColorRect
+var _pop_fill: Panel
 var _pop_label: Label
 var _pop_value: float = Balancing.STARTING_POPULARITY
 var _day_progress: TextureProgressBar
@@ -144,7 +144,6 @@ func _layout_pop_panel() -> void:
 	var fill_width := maxf(0.0, width * _pop_value)
 	_pop_fill.position = Vector2(0.0, 0.0)
 	_pop_fill.size = Vector2(fill_width, height)
-	_pop_fill.color = Color(0.95, 0.25, 0.95, 1.0)
 
 	_pop_label.offset_left = 0.0
 	_pop_label.offset_right = width
@@ -161,7 +160,6 @@ func _refresh_pop_bar() -> void:
 		return
 	var fill_width := maxf(0.0, width * _pop_value)
 	_pop_fill.size = Vector2(fill_width, height)
-	_pop_fill.color = Color(0.95, 0.25, 0.95, 1.0)
 
 
 func _on_hint(hint: String) -> void:
@@ -259,7 +257,6 @@ func _build_ui() -> void:
 	# Popularity / reputation panel to the right of the money bar.
 	_pop_panel = Panel.new()
 	_pop_panel.name = "PopularityPanel"
-	_pop_panel.z_index = 1
 	_pop_panel.anchors_preset = Control.PRESET_TOP_LEFT
 	_pop_panel.anchor_left = 0.0
 	_pop_panel.anchor_right = 0.0
@@ -274,9 +271,20 @@ func _build_ui() -> void:
 	_pop_panel.add_theme_stylebox_override("panel", pop_bg)
 	_main_panel.add_child(_pop_panel)
 
-	_pop_fill = ColorRect.new()
+	_pop_fill = Panel.new()
 	_pop_fill.name = "PopBarFill"
-	_pop_fill.color = Color(0.95, 0.25, 0.95, 1.0)
+	var pop_fill_style := StyleBoxFlat.new()
+	pop_fill_style.bg_color = Color(0.95, 0.25, 0.95, 1.0)
+	pop_fill_style.border_color = Color(1.0, 0.5, 1.0, 1.0)
+	pop_fill_style.border_width_left = 1
+	pop_fill_style.border_width_top = 1
+	pop_fill_style.border_width_right = 1
+	pop_fill_style.border_width_bottom = 1
+	pop_fill_style.corner_radius_top_left = 0
+	pop_fill_style.corner_radius_top_right = 0
+	pop_fill_style.corner_radius_bottom_left = 0
+	pop_fill_style.corner_radius_bottom_right = 4
+	_pop_fill.add_theme_stylebox_override("panel", pop_fill_style)
 	_pop_panel.add_child(_pop_fill)
 
 	_pop_label = _make_label("POPULARITY", 14, font, Color(1.0, 1.0, 1.0, 0.95))
