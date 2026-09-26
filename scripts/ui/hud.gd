@@ -12,9 +12,7 @@ const MONEY_GAP := 12.0
 const RIGHT_PAD := 12.0
 const MONEY_MIN_WIDTH := 80.0
 const ICON_SIZE := 24
-const POP_PANEL_WIDTH := 40.0
-const POP_BAR_WIDTH := 14.0
-const POP_TEXT_WIDTH := 12.0
+const POP_BAR_HEIGHT := 22.0
 const POP_MARGIN := 4.0
 
 @onready var _hint_label: Label = $HintLabel
@@ -30,9 +28,8 @@ var _day_label: Label
 var _time_label: Label
 var _temp_label: Label
 var _pop_panel: Panel
-var _pop_bar_bg: Panel
 var _pop_fill: ColorRect
-var _pop_letters: VBoxContainer
+var _pop_label: Label
 var _pop_value: float = Balancing.STARTING_POPULARITY
 var _day_progress: TextureProgressBar
 
@@ -107,22 +104,21 @@ func _update_hud_size() -> void:
 	_info_col.custom_minimum_size = Vector2(info_w, 0)
 	var hbox_w := CIRCLE_SIZE + MONEY_GAP + info_w + RIGHT_PAD
 	var hbox_h := float(CIRCLE_SIZE)
-	# Popularity panel sits on the far left, full clock height; shift the
-	# rest of the HUD to the right so nothing overlaps.
-	_hbox.offset_left = POP_PANEL_WIDTH
-	_hbox.offset_right = POP_PANEL_WIDTH + hbox_w
+	_hbox.offset_left = 0.0
+	_hbox.offset_right = hbox_w
 	_hbox.offset_bottom = hbox_h
-	_bar.offset_left = POP_PANEL_WIDTH + float(CIRCLE_SIZE) / 2.0
+	_bar.offset_left = float(CIRCLE_SIZE) / 2.0
 	_bar.offset_top = (hbox_h - float(BAR_HEIGHT)) * 0.5
-	_bar.offset_right = POP_PANEL_WIDTH + hbox_w
+	_bar.offset_right = hbox_w
 	_bar.offset_bottom = _bar.offset_top + float(BAR_HEIGHT)
+	# Popularity bar panel directly under the money bar, touching its bottom edge.
 	if _pop_panel != null:
-		_pop_panel.offset_left = 0.0
-		_pop_panel.offset_right = POP_PANEL_WIDTH
-		_pop_panel.offset_top = 0.0
-		_pop_panel.offset_bottom = hbox_h
+		_pop_panel.offset_left = _bar.offset_left
+		_pop_panel.offset_right = hbox_w
+		_pop_panel.offset_top = _bar.offset_bottom
+		_pop_panel.offset_bottom = _bar.offset_bottom + POP_BAR_HEIGHT
 		_layout_pop_panel()
-	_main_panel.offset_right = 10.0 + POP_PANEL_WIDTH + hbox_w
+	_main_panel.offset_right = 10.0 + hbox_w
 	_main_panel.offset_bottom = 10.0 + hbox_h
 
 
@@ -136,51 +132,35 @@ func _on_popularity(value: float) -> void:
 	_refresh_pop_bar()
 
 
-## Arrange the vertical popularity bar and letter stack inside the panel.
+## Arrange the horizontal popularity fill and overlaid label.
 func _layout_pop_panel() -> void:
-	if _pop_panel == null or _pop_bar_bg == null or _pop_fill == null or _pop_letters == null:
+	if _pop_panel == null or _pop_fill == null or _pop_label == null:
 		return
 	var width := _pop_panel.offset_right - _pop_panel.offset_left
 	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
 	if width <= 0.0 or height <= 0.0:
 		return
 
-	var bar_left := POP_MARGIN
-	var bar_right := POP_MARGIN + POP_BAR_WIDTH
-	var bar_top := POP_MARGIN
-	var bar_bottom := height - POP_MARGIN
-	_pop_bar_bg.offset_left = bar_left
-	_pop_bar_bg.offset_right = bar_right
-	_pop_bar_bg.offset_top = bar_top
-	_pop_bar_bg.offset_bottom = bar_bottom
-
-	var fill_height := maxf(0.0, (bar_bottom - bar_top) * _pop_value)
-	_pop_fill.position = Vector2(bar_left, bar_bottom - fill_height)
-	_pop_fill.size = Vector2(POP_BAR_WIDTH, fill_height)
+	var fill_width := maxf(0.0, width * _pop_value)
+	_pop_fill.position = Vector2(0.0, 0.0)
+	_pop_fill.size = Vector2(fill_width, height)
 	_pop_fill.color = Color(0.95, 0.25, 0.95, 1.0)
 
-	var text_left := width - POP_MARGIN - POP_TEXT_WIDTH
-	var text_right := width - POP_MARGIN
-	_pop_letters.offset_left = text_left
-	_pop_letters.offset_right = text_right
-	_pop_letters.offset_top = POP_MARGIN
-	_pop_letters.offset_bottom = height - POP_MARGIN
-
-	_refresh_pop_bar()
+	_pop_label.offset_left = 0.0
+	_pop_label.offset_right = width
+	_pop_label.offset_top = 0.0
+	_pop_label.offset_bottom = height
 
 
 func _refresh_pop_bar() -> void:
-	if _pop_panel == null or _pop_bar_bg == null or _pop_fill == null:
+	if _pop_panel == null or _pop_fill == null:
 		return
+	var width := _pop_panel.offset_right - _pop_panel.offset_left
 	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
-	if height <= 0.0:
+	if width <= 0.0 or height <= 0.0:
 		return
-	var bar_bottom := height - POP_MARGIN
-	var bar_top := POP_MARGIN
-	var fill_height := maxf(0.0, (bar_bottom - bar_top) * _pop_value)
-	_pop_fill.position = Vector2(POP_MARGIN, bar_bottom - fill_height)
-	_pop_fill.size = Vector2(POP_BAR_WIDTH, fill_height)
-	# Magenta/purple popularity fill.
+	var fill_width := maxf(0.0, width * _pop_value)
+	_pop_fill.size = Vector2(fill_width, height)
 	_pop_fill.color = Color(0.95, 0.25, 0.95, 1.0)
 
 
@@ -238,7 +218,7 @@ func _build_styles() -> void:
 	_main_style.corner_radius_top_left = 0
 	_main_style.corner_radius_top_right = 8
 	_main_style.corner_radius_bottom_left = 0
-	_main_style.corner_radius_bottom_right = 8
+	_main_style.corner_radius_bottom_right = 0
 
 	_circle_style = StyleBoxFlat.new()
 	_circle_style.bg_color = Color(0.08, 0.08, 0.12, 1.0)
@@ -287,42 +267,25 @@ func _build_ui() -> void:
 	_pop_panel.anchor_bottom = 0.0
 	var pop_bg := StyleBoxFlat.new()
 	pop_bg.bg_color = Color(0.08, 0.08, 0.12, 0.92)
-	pop_bg.corner_radius_top_left = 6
-	pop_bg.corner_radius_top_right = 6
+	pop_bg.corner_radius_top_left = 0
+	pop_bg.corner_radius_top_right = 0
 	pop_bg.corner_radius_bottom_left = 6
 	pop_bg.corner_radius_bottom_right = 6
 	_pop_panel.add_theme_stylebox_override("panel", pop_bg)
 	_main_panel.add_child(_pop_panel)
-
-	_pop_bar_bg = Panel.new()
-	_pop_bar_bg.name = "PopBarBg"
-	var pop_bar_bg_style := StyleBoxFlat.new()
-	pop_bar_bg_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
-	pop_bar_bg_style.corner_radius_top_left = 3
-	pop_bar_bg_style.corner_radius_top_right = 3
-	pop_bar_bg_style.corner_radius_bottom_left = 3
-	pop_bar_bg_style.corner_radius_bottom_right = 3
-	_pop_bar_bg.add_theme_stylebox_override("panel", pop_bar_bg_style)
-	_pop_panel.add_child(_pop_bar_bg)
 
 	_pop_fill = ColorRect.new()
 	_pop_fill.name = "PopBarFill"
 	_pop_fill.color = Color(0.95, 0.25, 0.95, 1.0)
 	_pop_panel.add_child(_pop_fill)
 
-	_pop_letters = VBoxContainer.new()
-	_pop_letters.name = "PopLetters"
-	_pop_letters.alignment = BoxContainer.ALIGNMENT_CENTER
-	_pop_letters.add_theme_constant_override("separation", -3)
-	for letter in "POPULARITY":
-		var lbl := _make_label(letter, 11, font, Color(1.0, 1.0, 1.0, 0.95))
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.size_flags_horizontal = Control.SIZE_FILL
-		lbl.add_theme_constant_override("outline_size", 1)
-		lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-		_pop_letters.add_child(lbl)
-	_pop_panel.add_child(_pop_letters)
+	_pop_label = _make_label("POPULARITY", 14, font, Color(1.0, 1.0, 1.0, 0.95))
+	_pop_label.name = "PopularityLabel"
+	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pop_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_pop_label.add_theme_constant_override("outline_size", 2)
+	_pop_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_pop_panel.add_child(_pop_label)
 
 	# Content row: circle on the left, money on the right
 	_hbox = HBoxContainer.new()

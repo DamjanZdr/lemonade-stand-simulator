@@ -9,12 +9,11 @@
 - **Reported:** playtest feedback
 - **Symptom:** The popularity percentage text was not the desired UI style, and the temperature readout was too small.
 - **Fix:**
-  - Moved the popularity panel to the far left of the HUD as a full-height vertical sidebar.
-  - Thickened the popularity bar and changed its fill to purple/magenta.
-  - The word "POPULARITY" is spelled top-to-bottom one letter at a time; font size increased to fit the taller panel.
-  - Fixed the popularity bar fill so it reflects the actual popularity value (starting at 30%).
+  - Moved the popularity panel to a horizontal bar directly under the money bar, touching its bottom edge.
+  - Money bar's bottom-right corner is unrounded so the popularity bar sits flush; top-right stays rounded.
+  - Popularity fill is horizontal, purple/magenta, and the "POPULARITY" text is overlaid on top of the bar.
+  - Starting popularity remains 30%.
   - Temperature still shows both Celsius and Fahrenheit.
-  - Money bar's outer right corners are rounded again now that nothing attaches there.
 - **Status:** fixed in code — needs playtest verification
 - **Files:** `scripts/ui/hud.gd`
 
