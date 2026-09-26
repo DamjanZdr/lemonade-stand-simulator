@@ -5,6 +5,14 @@
 
 ## Active Issues
 
+### 14. Secondary stand gets $150 after host quits and rehosts
+- **Reported:** playtest batch (post a54d8c4)
+- **Symptom:** In versus, if the host quits the game entirely, reopens it, and invites the same friend to Stand 2, Stand 2 starts with $150 again even if the friend had already spent it during the previous session. Going to the menu and restarting the same save (without quitting the application) did not reproduce it.
+- **Root cause:** Saves only stored `GameState.money` (the legacy primary-stand balance). `StandUnit.money` for non-primary stands was never persisted, so on a fresh application start the secondary stand's `_ready()` reset it to `Balancing.STARTING_MONEY` ($150). In-session menu restarts didn't trigger the same full scene-reload + default-reset path, which is why the bug appeared only after a full quit.
+- **Fix:** `SaveManager._build_save_dict()` now collects per-stand money (`stand_money`, keyed by node name), and `apply_save_to_game_state()` restores each `StandUnit.money` from the saved map with a sensible legacy fallback for older saves.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/systems/save_manager.gd`
+
 ### 10. Floating filled cup stuck near joiner's head (host's view)
 - **Reported:** playtest batch (post d91584d)
 - **Symptom:** Host watches joiner. Joiner fills a cup from the pitcher → a floating filled cup appears near the joiner's head (only on the host's view; joiner doesn't see it). Dropping the cup doesn't remove it. It disappears the moment the joiner sells a cup, then reappears on the next fill.

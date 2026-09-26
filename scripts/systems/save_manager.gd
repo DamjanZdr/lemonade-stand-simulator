@@ -404,6 +404,16 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	) as GameState.GameMode
 	OnboardingManager.deserialize(data.get("onboarding", { "version": 1, "stands": { } }))
 	GameState.money = data.get("money", Balancing.STARTING_MONEY)
+	# Per-stand money (and legacy fallback): in versus each StandUnit has its
+	# own economy, but older saves only stored the primary stand's money in
+	# GameState.money. Restore the secondary stand's saved balance so it
+	# doesn't reset to $150 every time the host reopens the game.
+	var saved_stand_money: Dictionary = data.get("stand_money", { })
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			var fallback := GameState.money if stand.is_legacy_primary else Balancing.STARTING_MONEY
+			stand.money = float(saved_stand_money.get(stand.name, fallback))
+			stand.highest_money = maxf(stand.money, data.get("highest_money", stand.money) as float)
 	GameState.popularity = data.get("popularity", 0.1)
 	GameState.temperature = Balancing.snap_temperature(
 		data.get("temperature", Balancing.TEMP_DEFAULT)
@@ -516,6 +526,14 @@ func _collect_stand_names() -> Dictionary:
 	return names
 
 
+func _collect_stand_money() -> Dictionary:
+	var amounts := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			amounts[stand.name] = stand.money
+	return amounts
+
+
 func _container_stand_owner(node: Node) -> String:
 	if "stand_owner" in node and not str(node.get("stand_owner")).is_empty():
 		return str(node.get("stand_owner"))
@@ -554,6 +572,7 @@ func _build_save_dict() -> Dictionary:
 	return {
 		"stand_name": GameState.stand_name,
 		"stand_names": _collect_stand_names(),
+		"stand_money": _collect_stand_money(),
 		"game_mode": GameState.game_mode,
 		"creator_steam_id": str(NetworkManager.steam_id),
 		"money": GameState.money,
