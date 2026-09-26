@@ -27,7 +27,6 @@ var _money_label: Label
 var _day_label: Label
 var _time_label: Label
 var _temp_label: Label
-var _temp_panel: Panel
 var _pop_panel: Panel
 var _pop_fill: Panel
 var _pop_label: Label
@@ -112,12 +111,6 @@ func _update_hud_size() -> void:
 	_bar.offset_top = (hbox_h - float(MONEY_BAR_HEIGHT)) * 0.5
 	_bar.offset_right = hbox_w
 	_bar.offset_bottom = _bar.offset_top + float(MONEY_BAR_HEIGHT)
-	# Temperature panel directly above the money bar.
-	if _temp_panel != null:
-		_temp_panel.offset_left = _bar.offset_left
-		_temp_panel.offset_right = hbox_w
-		_temp_panel.offset_top = 0.0
-		_temp_panel.offset_bottom = _bar.offset_top
 	# Popularity bar panel directly under the money bar, touching its bottom edge.
 	if _pop_panel != null:
 		_pop_panel.offset_left = _bar.offset_left
@@ -154,7 +147,7 @@ func _layout_pop_panel() -> void:
 	_pop_fill.size = Vector2(fill_width, height - POP_MARGIN * 2.0)
 
 	_pop_label.offset_left = POP_MARGIN
-	_pop_label.offset_right = width - 8.0
+	_pop_label.offset_right = width - 24.0
 	_pop_label.offset_top = POP_MARGIN
 	_pop_label.offset_bottom = height - POP_MARGIN
 	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -224,7 +217,7 @@ func _build_styles() -> void:
 	_main_style = StyleBoxFlat.new()
 	_main_style.bg_color = Color(0.08, 0.08, 0.12, 0.92)
 	_main_style.corner_radius_top_left = 0
-	_main_style.corner_radius_top_right = 0
+	_main_style.corner_radius_top_right = 8
 	_main_style.corner_radius_bottom_left = 0
 	_main_style.corner_radius_bottom_right = 0
 
@@ -257,41 +250,6 @@ func _build_ui() -> void:
 	_main_panel.grow_horizontal = Control.GROW_DIRECTION_END
 	_main_panel.grow_vertical = Control.GROW_DIRECTION_END
 	add_child(_main_panel)
-
-	# Temperature panel above the money bar.
-	_temp_panel = Panel.new()
-	_temp_panel.name = "TemperaturePanel"
-	_temp_panel.anchors_preset = Control.PRESET_TOP_LEFT
-	_temp_panel.anchor_left = 0.0
-	_temp_panel.anchor_right = 0.0
-	_temp_panel.anchor_top = 0.0
-	_temp_panel.anchor_bottom = 0.0
-	var temp_bg := StyleBoxFlat.new()
-	temp_bg.bg_color = Color(0.08, 0.08, 0.12, 0.92)
-	temp_bg.border_color = Color(0.12, 0.12, 0.16, 1.0)
-	temp_bg.border_width_left = 2
-	temp_bg.border_width_top = 2
-	temp_bg.border_width_right = 2
-	temp_bg.border_width_bottom = 2
-	temp_bg.corner_radius_top_left = 0
-	temp_bg.corner_radius_top_right = 6
-	temp_bg.corner_radius_bottom_left = 0
-	temp_bg.corner_radius_bottom_right = 0
-	_temp_panel.add_theme_stylebox_override("panel", temp_bg)
-	_main_panel.add_child(_temp_panel)
-
-	_temp_label = _make_label("25°C / 77°F", 18, font, Color(0.65, 0.85, 1.0))
-	_temp_label.name = "TemperatureLabel"
-	_temp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_temp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_temp_label.set_anchors_and_offsets_preset(
-		Control.PRESET_FULL_RECT,
-		Control.PRESET_MODE_MINSIZE,
-		0,
-	)
-	_temp_label.add_theme_constant_override("outline_size", 2)
-	_temp_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	_temp_panel.add_child(_temp_label)
 
 	# Shorter bar behind the circle, centered vertically (money panel)
 	_bar = Panel.new()
@@ -332,9 +290,9 @@ func _build_ui() -> void:
 	_pop_fill.add_theme_stylebox_override("panel", pop_fill_style)
 	_pop_panel.add_child(_pop_fill)
 
-	_pop_label = _make_label("POPULARITY", 16, font, Color(1.0, 1.0, 1.0, 0.7))
+	_pop_label = _make_label("POPULARITY", 18, font, Color(1.0, 1.0, 1.0, 0.7))
 	_pop_label.name = "PopularityLabel"
-	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_pop_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_pop_label.add_theme_constant_override("outline_size", 2)
 	_pop_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
@@ -393,6 +351,14 @@ func _build_ui() -> void:
 			.get_string_size("12:59 PM", HORIZONTAL_ALIGNMENT_LEFT, 26) \
 			.x + 8.0
 	time_vbox.add_child(_time_label)
+
+	_temp_label = _make_label("25°C / 77°F", 18, font, Color(0.65, 0.85, 1.0))
+	_temp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_temp_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_temp_label.custom_minimum_size.x = font \
+			.get_string_size("100°C / 212°F", HORIZONTAL_ALIGNMENT_LEFT, 18) \
+			.x + 4.0
+	time_vbox.add_child(_temp_label)
 
 	# Spacer between the circle and the money
 	var left_spacer := Control.new()

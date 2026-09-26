@@ -16,8 +16,8 @@
   - Fill is purple/magenta at ~70% opacity.
   - "POPULARITY" text is right-aligned with a small right padding and uses 70% opacity.
   - Starting popularity remains 30%.
-  - Temperature moved from the clock into its own panel above the money bar (reaching the top of the circle).
-  - Popularity panel border lightened.
+  - Temperature returned to the clock panel.
+  - Popularity text is slightly larger, right-aligned, and has triple the previous right padding.
 - **Status:** fixed in code — needs playtest verification
 - **Files:** `scripts/ui/hud.gd`
 
