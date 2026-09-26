@@ -147,12 +147,14 @@ const CUSTOMER_SPAWN_Z: float = -15.0 # debug-spawn only; behind the queue line
 const CUSTOMER_DESPAWN_Z: float = -27.0
 
 # === POPULARITY ===
-# Per-cup: start from this amount and subtract total recipe deviation.
-const POPULARITY_GAIN_PER_CUP: float = 10.0
 # Customer walked away / was priced out / got wrong order.
 const POPULARITY_LOSS_NO_SERVICE: float = 5.0
 # Served a water-only cup (scam).
 const POPULARITY_LOSS_SCAM: float = 10.0
+# Per-axis popularity when a customer complains. Index = units away from ideal.
+const POPULARITY_FRUIT_SCORES: Array[float] = [4.0, 2.0, 0.0, -2.0, -4.0]
+const POPULARITY_SUGAR_SCORES: Array[float] = [3.0, 1.0, 0.0, -1.0, -3.0]
+const POPULARITY_ICE_SCORES: Array[float] = [3.0, 1.0, 0.0, -1.0, -3.0]
 const POPULARITY_HIT_PENALTY: float = 1.0
 const POPULARITY_TRASH_DISPOSED_BONUS: float = 1.0
 const POPULARITY_TRASH_LEFT_PENALTY: float = 1.0

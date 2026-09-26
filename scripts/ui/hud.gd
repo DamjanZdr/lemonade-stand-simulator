@@ -39,6 +39,7 @@ var _main_style: StyleBoxFlat
 var _circle_style: StyleBoxFlat
 var _time_ring_under: ImageTexture
 var _time_ring_progress: ImageTexture
+var _pop_fill_tween: Tween = null
 
 var _main_panel: Control
 var _bar: Panel
@@ -147,16 +148,15 @@ func _layout_pop_panel() -> void:
 	if width <= 0.0 or height <= 0.0:
 		return
 
-	var inner_w := maxf(0.0, width - POP_MARGIN * 2.0)
-	var fill_width := maxf(0.0, inner_w * _pop_value)
 	_pop_fill.position = Vector2(POP_MARGIN, POP_MARGIN)
-	_pop_fill.size = Vector2(fill_width, height - POP_MARGIN * 2.0)
+	_pop_fill.size.y = height - POP_MARGIN * 2.0
 
 	_pop_label.offset_left = POP_MARGIN
 	_pop_label.offset_right = width - 24.0
 	_pop_label.offset_top = POP_MARGIN
 	_pop_label.offset_bottom = height - POP_MARGIN
 	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_refresh_pop_bar()
 
 
 func _refresh_pop_bar() -> void:
@@ -167,8 +167,15 @@ func _refresh_pop_bar() -> void:
 	if width <= 0.0 or height <= 0.0:
 		return
 	var inner_w := maxf(0.0, width - POP_MARGIN * 2.0)
-	var fill_width := maxf(0.0, inner_w * _pop_value)
-	_pop_fill.size = Vector2(fill_width, height - POP_MARGIN * 2.0)
+	var target_width := maxf(0.0, inner_w * _pop_value)
+	if _pop_fill_tween != null and _pop_fill_tween.is_valid():
+		_pop_fill_tween.kill()
+	_pop_fill_tween = create_tween()
+	_pop_fill_tween \
+			.tween_property(_pop_fill, "size:x", target_width, 0.25) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_OUT)
+	_pop_fill.size.y = height - POP_MARGIN * 2.0
 
 
 func _on_hint(hint: String) -> void:

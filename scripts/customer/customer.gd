@@ -31,6 +31,43 @@ var _recover_timer: float = 0.0
 var _pre_stun_state: CustomerState = CustomerState.WALKING
 var _pre_stun_anim: String = "Walk"
 
+const _FRUIT_HIGH_LINES: Array[String] = [
+	"A touch too fruity.",
+	"A bit too strong.",
+	"Way too much fruit!",
+	"Way, way too strong!",
+]
+const _FRUIT_LOW_LINES: Array[String] = [
+	"Could use a bit more fruit.",
+	"Needs more fruit.",
+	"Way too little fruit.",
+	"Barely any fruit!",
+]
+const _SUGAR_HIGH_LINES: Array[String] = [
+	"A touch too sweet.",
+	"Too sweet.",
+	"Way too sweet!",
+	"Syrupy sweet!",
+]
+const _SUGAR_LOW_LINES: Array[String] = [
+	"Could use a bit more sugar.",
+	"Needs more sugar.",
+	"Not sweet enough.",
+	"Barely any sugar!",
+]
+const _ICE_HIGH_LINES: Array[String] = [
+	"A touch too cold.",
+	"Too cold.",
+	"Way too cold!",
+	"Freezing!",
+]
+const _ICE_LOW_LINES: Array[String] = [
+	"Could use a bit more ice.",
+	"Could be colder.",
+	"Not cold enough.",
+	"Barely any ice!",
+]
+
 ## Upright rotation of NPCBody (saved before Fall animation).
 var _npc_base_rot: Vector3 = Vector3.ZERO
 ## Remaining order: fruit_type -> cups still needed. Set by the spawner
@@ -627,6 +664,9 @@ func try_serve(player: Node) -> void:
 			"fruit_delta": result.fruit_delta,
 			"sugar_delta": result.sugar_delta,
 			"ice_delta": result.ice_delta,
+			"fruit_high": result.fruit_high,
+			"sugar_high": result.sugar_high,
+			"ice_high": result.ice_high,
 		}
 	)
 	OnboardingManager.report(
@@ -740,15 +780,37 @@ func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:
 		"scam":
 			return -Balancing.POPULARITY_LOSS_SCAM
 
-	## Paying customers: each cup gives up to +10, minus total recipe deviation.
+	## Paying customers: sum per-axis scores. If a metric did not generate a
+	## complaint this cup, it scores as if it were perfect.
 	var delta := 0.0
 	for eval in evaluations:
-		var total_dev := (
-			float(eval.get("fruit_delta", 0.0)) + float(eval.get("sugar_delta", 0.0))
-			+ float(eval.get("ice_delta", 0.0))
+		var complaints: Array = eval.get("complaints", [])
+		var fruit_complained := "too_strong" in complaints or "not_enough_fruit" in complaints
+		var sugar_complained := "too_sweet" in complaints or "not_sweet_enough" in complaints
+		var ice_complained := "too_cold" in complaints or "not_cold_enough" in complaints
+		delta += _axis_popularity_score(
+			float(eval.get("fruit_delta", 0.0)),
+			fruit_complained,
+			Balancing.POPULARITY_FRUIT_SCORES,
 		)
-		delta += Balancing.POPULARITY_GAIN_PER_CUP - total_dev
+		delta += _axis_popularity_score(
+			float(eval.get("sugar_delta", 0.0)),
+			sugar_complained,
+			Balancing.POPULARITY_SUGAR_SCORES,
+		)
+		delta += _axis_popularity_score(
+			float(eval.get("ice_delta", 0.0)),
+			ice_complained,
+			Balancing.POPULARITY_ICE_SCORES,
+		)
 	return delta
+
+
+func _axis_popularity_score(delta: float, complained: bool, table: Array[float]) -> float:
+	var idx := 0
+	if complained:
+		idx = clampi(roundi(delta), 0, table.size() - 1)
+	return table[idx]
 
 
 @rpc("authority", "reliable")
@@ -926,21 +988,31 @@ func _show_feedback_then_leave() -> void:
 
 
 func _feedback_for_outcome(outcome: String) -> String:
+	## Specific feedback for quality complaints is based on how far the drink
+	## was from the ideal recipe on the relevant axis.
+	var lines: Array[String] = []
+	var delta_key := ""
 	match outcome:
 		"happy":
 			return "Delicious!"
 		"too_strong":
-			return "Too strong."
+			lines = _FRUIT_HIGH_LINES
+			delta_key = "fruit_delta"
 		"not_enough_fruit":
-			return "Not enough fruit."
+			lines = _FRUIT_LOW_LINES
+			delta_key = "fruit_delta"
 		"too_sweet":
-			return "Too sweet."
+			lines = _SUGAR_HIGH_LINES
+			delta_key = "sugar_delta"
 		"not_sweet_enough":
-			return "Not sweet enough."
+			lines = _SUGAR_LOW_LINES
+			delta_key = "sugar_delta"
 		"too_cold":
-			return "Too cold."
+			lines = _ICE_HIGH_LINES
+			delta_key = "ice_delta"
 		"not_cold_enough":
-			return "Not cold enough."
+			lines = _ICE_LOW_LINES
+			delta_key = "ice_delta"
 		"too_expensive":
 			return "Too expensive."
 		"wrong_order":
@@ -949,6 +1021,13 @@ func _feedback_for_outcome(outcome: String) -> String:
 			return "This takes too long, I have places to be!"
 		_:
 			return ""
+
+	if delta_key != "":
+		for eval in _served_evaluations:
+			if outcome in eval.get("complaints", []):
+				var dist := clampi(roundi(float(eval.get(delta_key, 1.0))), 1, 4)
+				return lines[dist - 1]
+	return lines[0]
 
 
 func _on_debug_force_happy() -> void:

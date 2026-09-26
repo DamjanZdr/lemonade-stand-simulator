@@ -18,12 +18,13 @@
   - Internal popularity scale changed from 0.0-1.0 to 0-1000 for easier readability; UI and conversion math normalize it back when needed.
   - Old 0-1 popularity saves are auto-migrated to the 0-1000 scale on load.
   - Starting popularity is 300/1000 (30%).
-  - Popularity is now per-cup: each served cup gives +10 minus total recipe deviation (fruit + sugar + ice); non-paying outcomes (timeout/too expensive/wrong order) lose 5; scamming loses 10.
+  - Popularity uses per-ingredient scoring: each non-complaint metric scores as perfect; complaints score by distance from ideal (fruit: 4/2/0/-2/-4; sugar/ice: 3/1/0/-1/-3).
   - Trash behavior affects popularity: -1 per NPC/player stunned by thrown trash, +1 per regular trash item disposed, -1 per litter left on the street at end of day.
   - Floating +/- popularity change label appears to the right of the popularity bar, using the same magenta as the bar fill; drifts up for gains and down for losses with a slowed pop-in/hold/fade animation that matches the money gain label.
+  - Popularity bar fill now smoothly tweens to the new width instead of snapping.
   - Temperature returned to the clock panel.
 - **Status:** fixed in code — needs playtest verification
-- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/managers/trash_manager.gd`, `scripts/objects/thrown_trash.gd`, `scripts/objects/trashcan.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`, `scripts/customer/customer.gd`
+- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/managers/trash_manager.gd`, `scripts/objects/thrown_trash.gd`, `scripts/objects/trashcan.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`, `scripts/customer/customer.gd`, `scripts/core/evaluation_result.gd`, `scripts/systems/recipe_evaluator.gd`
 
 ### 17. ESC menu blocked during Day X intro
 - **Reported:** playtest feedback

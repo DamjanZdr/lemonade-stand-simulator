@@ -122,6 +122,9 @@ func evaluate_detailed(
 	result.fruit_delta = absf(fruit_count - data.ideal_fruit_count)
 	result.sugar_delta = absf(sugar - ideal_sugar)
 	result.ice_delta = absf(ice - ideal_ice)
+	result.fruit_high = fruit_count > data.ideal_fruit_count
+	result.sugar_high = sugar > ideal_sugar
+	result.ice_high = ice > ideal_ice
 
 	var fruit_unhappy: float = mgr.get_unhappy_chance_fruit(fruit_type, fruit_count)
 	var sugar_unhappy: float = mgr.get_unhappy_chance_sugar(fruit_type, sugar, fruit_count)

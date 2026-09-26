@@ -15,6 +15,11 @@ var fruit_delta: float = 0.0
 var sugar_delta: float = 0.0
 var ice_delta: float = 0.0
 
+## Direction of deviation for each axis (true = too much, false = too little).
+var fruit_high: bool = false
+var sugar_high: bool = false
+var ice_high: bool = false
+
 ## Ordered list of specific complaints, e.g., ["too_sweet", "not_cold_enough"].
 ## Empty if the drink is perfect.
 var complaints: Array[String] = []
