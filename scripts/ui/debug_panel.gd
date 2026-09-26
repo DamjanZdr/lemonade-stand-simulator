@@ -92,8 +92,8 @@ func _ready() -> void:
 	vbox.add_child(pop_label)
 	var pop_slider := HSlider.new()
 	pop_slider.min_value = 0.0
-	pop_slider.max_value = 1.0
-	pop_slider.step = 0.01
+	pop_slider.max_value = Balancing.MAX_POPULARITY
+	pop_slider.step = 1.0
 	pop_slider.value = GameState.popularity
 	pop_slider.custom_minimum_size = Vector2(0, 12)
 	pop_slider.value_changed.connect(
@@ -153,7 +153,7 @@ func _ready() -> void:
 			EventBus.game_reset.emit()
 			# Also reset GameState to defaults
 			GameState.money = Balancing.STARTING_MONEY
-			GameState.popularity = 0.1
+			GameState.popularity = Balancing.STARTING_POPULARITY
 			GameState.temperature = 25.0
 			for ft in GameState.FRUIT_TYPES:
 				GameState.prices[ft] = 1.50
@@ -212,7 +212,7 @@ func _refresh() -> void:
 		"Money: $%.2f\nPop: %d%%\nTemp: %.0fC\nTier: %d\nPrice: $%.2f (lemon)"
 		% [
 			GameState.money,
-			int(GameState.popularity * 100),
+			int(GameState.popularity / 10.0),
 			GameState.temperature,
 			GameState.feedback_tier,
 			GameState.get_price("lemon"),

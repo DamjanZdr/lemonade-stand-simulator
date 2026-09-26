@@ -361,6 +361,14 @@ func _slot_path(slot_name: String) -> String:
 	return SAVE_DIR + slot_name + ".json"
 
 
+## Old saves stored popularity on a 0-1 scale; current scale is 0-1000.
+func _migrate_popularity(value: Variant) -> float:
+	var v := float(value)
+	if v <= 1.5:
+		v *= Balancing.MAX_POPULARITY
+	return clampf(v, 0.0, Balancing.MAX_POPULARITY)
+
+
 func _migrate_legacy_save() -> void:
 	# If the old single-save file exists and the new saves dir doesn't,
 	# migrate it to a slot called "Legacy Save".
@@ -415,10 +423,15 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 			var fallback := GameState.money if stand.is_legacy_primary else Balancing.STARTING_MONEY
 			stand.money = float(saved_stand_money.get(stand.name, fallback))
 			stand.highest_money = maxf(stand.money, data.get("highest_money", stand.money) as float)
-			stand.popularity = float(
-				saved_stand_popularity.get(stand.name, data.get("popularity", 0.1))
+			stand.popularity = _migrate_popularity(
+				saved_stand_popularity.get(
+					stand.name,
+					data.get("popularity", Balancing.STARTING_POPULARITY),
+				)
 			)
-	GameState.popularity = data.get("popularity", Balancing.STARTING_POPULARITY)
+	GameState.popularity = _migrate_popularity(
+		data.get("popularity", Balancing.STARTING_POPULARITY)
+	)
 	GameState.temperature = Balancing.snap_temperature(
 		data.get("temperature", Balancing.TEMP_DEFAULT)
 	)

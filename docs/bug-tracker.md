@@ -15,11 +15,12 @@
   - Popularity container matches the money panel color and has a darker border instead of a white one.
   - Fill is purple/magenta at ~70% opacity.
   - "POPULARITY" text is right-aligned with a small right padding and uses 70% opacity.
-  - Starting popularity remains 30%.
+  - Internal popularity scale changed from 0.0-1.0 to 0-1000 for easier readability; UI and conversion math normalize it back when needed.
+  - Old 0-1 popularity saves are auto-migrated to the 0-1000 scale on load.
+  - Starting popularity is 300/1000 (30%).
   - Temperature returned to the clock panel.
-  - Popularity text is slightly larger, right-aligned, and has triple the previous right padding.
 - **Status:** fixed in code — needs playtest verification
-- **Files:** `scripts/ui/hud.gd`
+- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`
 
 ### 17. ESC menu blocked during Day X intro
 - **Reported:** playtest feedback

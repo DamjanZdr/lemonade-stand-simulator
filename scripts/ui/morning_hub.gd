@@ -1441,7 +1441,7 @@ func _refresh_prices_page() -> void:
 		temp_info.text = "Temperature: %.0fC  |  1 ice cube per 5C / 8F" % GameState.temperature
 	var pop_info := prices_page.get_node_or_null("WeatherRow/PopInfo") as Label
 	if pop_info:
-		pop_info.text = "Popularity: %.0f%%" % (GameState.popularity * 100.0)
+		pop_info.text = "Popularity: %.0f%%" % (GameState.popularity / 10.0)
 
 
 func _add_analytics_row(container: VBoxContainer, label: String, value: String) -> void:
@@ -1466,7 +1466,7 @@ func _refresh_analytics() -> void:
 		today.text = "Day %d  |  $%.2f  |  %.0f%% pop  |  %.0fC" % [
 			DayManager.day_number,
 			_get_local_money(),
-			GameState.popularity * 100.0,
+			GameState.popularity / 10.0,
 			GameState.temperature,
 		]
 	var ybox := $MainHBox/Panel/VBox/Content/AnalyticsPage/YesterdayBox as VBoxContainer
@@ -2210,7 +2210,7 @@ func _refresh_stats() -> void:
 func _on_dev_reset() -> void:
 	SaveManager.delete_save()
 	GameState.money = Balancing.STARTING_MONEY
-	GameState.popularity = 0.1
+	GameState.popularity = Balancing.STARTING_POPULARITY
 	GameState.temperature = 25.0
 	for ft in GameState.FRUIT_TYPES:
 		GameState.prices[ft] = 1.50

@@ -128,7 +128,7 @@ func _on_weather(temp: float) -> void:
 
 
 func _on_popularity(value: float) -> void:
-	_pop_value = clampf(value, 0.0, 1.0)
+	_pop_value = clampf(value / Balancing.MAX_POPULARITY, 0.0, 1.0)
 	_refresh_pop_bar()
 
 

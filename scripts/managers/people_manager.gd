@@ -55,7 +55,7 @@ func _find_spawner() -> void:
 
 
 func get_pedestrian_convert_chance(popularity: float) -> float:
-	var t := clampf(popularity, 0.0, 1.0)
+	var t := clampf(popularity, 0.0, Balancing.MAX_POPULARITY) / Balancing.MAX_POPULARITY
 	return lerpf(convert_chance_at_zero_popularity, convert_chance_at_max_popularity, t)
 
 

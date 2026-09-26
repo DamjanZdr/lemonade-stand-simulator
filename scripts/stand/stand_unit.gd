@@ -539,7 +539,7 @@ func spend_money(amount: float) -> bool:
 
 
 func set_popularity(value: float) -> void:
-	popularity = clampf(value, 0.0, 1.0)
+	popularity = clampf(value, 0.0, Balancing.MAX_POPULARITY)
 	popularity_changed.emit(popularity)
 
 

@@ -3,7 +3,8 @@ extends Node
 
 # === ECONOMY ===
 const STARTING_MONEY: float = 150.0
-const STARTING_POPULARITY: float = 0.3
+const STARTING_POPULARITY: float = 300.0
+const MAX_POPULARITY: float = 1000.0
 const PRICE_FAIR_MAX: float = 2.00
 const PRICE_TOO_EXPENSIVE: float = 2.75
 const PRICE_MIN: float = 0.25
@@ -146,10 +147,10 @@ const CUSTOMER_SPAWN_Z: float = -15.0 # debug-spawn only; behind the queue line
 const CUSTOMER_DESPAWN_Z: float = -27.0
 
 # === POPULARITY ===
-const POPULARITY_GAIN_HAPPY: float = 0.05
-const POPULARITY_LOSS_BAD: float = 0.03
-const POPULARITY_LOSS_EXPENSIVE: float = 0.02
-const POPULARITY_LOSS_TIMEOUT: float = 0.04
+const POPULARITY_GAIN_HAPPY: float = 50.0
+const POPULARITY_LOSS_BAD: float = 30.0
+const POPULARITY_LOSS_EXPENSIVE: float = 20.0
+const POPULARITY_LOSS_TIMEOUT: float = 40.0
 
 # === UPGRADES ===
 const UPGRADE_TIER1_COST: float = 25.0
@@ -157,7 +158,11 @@ const UPGRADE_TIER2_COST: float = 75.0
 
 
 static func spawn_interval_for_popularity(popularity: float) -> float:
-	return lerpf(SPAWN_RATE_MAX, SPAWN_RATE_MIN, popularity)
+	return lerpf(
+		SPAWN_RATE_MAX,
+		SPAWN_RATE_MIN,
+		clampf(popularity, 0.0, MAX_POPULARITY) / MAX_POPULARITY,
+	)
 
 
 # === PEDESTRIANS ===
@@ -168,4 +173,8 @@ const PEDESTRIAN_CONVERT_MAX: float = 1.0
 
 
 static func pedestrian_convert_chance(popularity: float) -> float:
-	return lerpf(PEDESTRIAN_CONVERT_MIN, PEDESTRIAN_CONVERT_MAX, popularity)
+	return lerpf(
+		PEDESTRIAN_CONVERT_MIN,
+		PEDESTRIAN_CONVERT_MAX,
+		clampf(popularity, 0.0, MAX_POPULARITY) / MAX_POPULARITY,
+	)
