@@ -9,13 +9,13 @@
 - **Reported:** playtest feedback
 - **Symptom:** The popularity percentage text was not the desired UI style, and the temperature readout was too small.
 - **Fix:**
-  - Replaced the overlapping ProgressBar with a custom popularity panel.
-  - Panel now spans from the top of the clock down to the top edge of the money bar, and the money bar's top-right corner is no longer rounded so the two panels meet cleanly.
-  - The panel shows "POPULARITY" in its upper portion and a colored fill bar underneath; fill color tints from red to green.
-  - Clock day/time/temp labels now have fixed widths based on their longest possible text, so centered text no longer shifts when numbers change.
-  - Temperature font size increased from 14 to 18.
+  - Replaced the overlapping popularity panel with a vertical popularity meter attached to the right of the money bar. The money bar's right-side corners are now unrounded so they meet cleanly.
+  - The vertical panel has two columns: a colored vertical bar on the left that fills upward with popularity, and the word "POPULARITY" spelled top-to-bottom one letter at a time on the right.
+  - Temperature now shows both Celsius and Fahrenheit (e.g. "30°C / 86°F").
+  - Clock day/time/temp labels keep fixed widths so centered text doesn't shift when numbers change.
+  - Default starting popularity raised from 10% to 30% (`Balancing.STARTING_POPULARITY`) so new stands have buffer before hitting zero.
 - **Status:** fixed in code — needs playtest verification
-- **Files:** `scripts/ui/hud.gd`
+- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`
 
 ### 17. ESC menu blocked during Day X intro
 - **Reported:** playtest feedback

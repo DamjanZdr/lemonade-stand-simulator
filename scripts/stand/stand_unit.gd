@@ -56,7 +56,7 @@ var controller_id: int = -1
 @export var is_legacy_primary: bool = false
 
 var money: float = 0.0
-var popularity: float = 0.1
+var popularity: float = Balancing.STARTING_POPULARITY
 var feedback_tier: int = 0
 var prices: Dictionary = { }
 var recipes: Dictionary = { }
@@ -298,7 +298,7 @@ func _apply_state(
 ## brand-new game so a previous session's money/recipes don't carry over.
 func reset_to_starting_state() -> void:
 	money = Balancing.STARTING_MONEY
-	popularity = 0.1
+	popularity = Balancing.STARTING_POPULARITY
 	feedback_tier = 0
 	customers_served_happy = 0
 	customers_lost = 0
@@ -343,8 +343,9 @@ func _ready() -> void:
 
 	if not is_legacy_primary:
 		# Clean, fully independent stand — no legacy bridge, no GameState
-		# involvement at all. Give it starting money from Balancing.
+		# involvement at all. Give it starting money and popularity from Balancing.
 		money = Balancing.STARTING_MONEY
+		popularity = Balancing.STARTING_POPULARITY
 		highest_money = money
 		return
 

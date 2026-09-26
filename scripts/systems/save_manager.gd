@@ -269,7 +269,7 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 			)
 	# Reset GameState to defaults
 	GameState.money = Balancing.STARTING_MONEY
-	GameState.popularity = 0.1
+	GameState.popularity = Balancing.STARTING_POPULARITY
 	GameState.temperature = Balancing.TEMP_DEFAULT
 	GameState.init_default_prices()
 	GameState.init_default_recipes()
@@ -418,7 +418,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 			stand.popularity = float(
 				saved_stand_popularity.get(stand.name, data.get("popularity", 0.1))
 			)
-	GameState.popularity = data.get("popularity", 0.1)
+	GameState.popularity = data.get("popularity", Balancing.STARTING_POPULARITY)
 	GameState.temperature = Balancing.snap_temperature(
 		data.get("temperature", Balancing.TEMP_DEFAULT)
 	)

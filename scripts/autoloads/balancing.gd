@@ -3,6 +3,7 @@ extends Node
 
 # === ECONOMY ===
 const STARTING_MONEY: float = 150.0
+const STARTING_POPULARITY: float = 0.3
 const PRICE_FAIR_MAX: float = 2.00
 const PRICE_TOO_EXPENSIVE: float = 2.75
 const PRICE_MIN: float = 0.25

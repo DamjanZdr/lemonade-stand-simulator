@@ -58,7 +58,7 @@ func _ready() -> void:
 	# (start_new_game or load_existing_game) from the Host menu. Clients
 	# receive state from the host via RPCs. Do NOT auto-load here.
 	money = Balancing.STARTING_MONEY
-	popularity = 0.1
+	popularity = Balancing.STARTING_POPULARITY
 	temperature = Balancing.TEMP_DEFAULT
 	init_default_prices()
 	init_default_recipes()

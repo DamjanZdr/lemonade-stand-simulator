@@ -12,7 +12,11 @@ const MONEY_GAP := 12.0
 const RIGHT_PAD := 12.0
 const MONEY_MIN_WIDTH := 80.0
 const ICON_SIZE := 24
-const POP_BAR_HEIGHT := 12.0
+const POP_PANEL_WIDTH := 38.0
+const POP_BAR_WIDTH := 10.0
+const POP_TEXT_WIDTH := 14.0
+const POP_MARGIN := 4.0
+const POP_BAR_TEXT_GAP := 2.0
 
 @onready var _hint_label: Label = $HintLabel
 @onready var _crosshair: CenterContainer = $Crosshair
@@ -27,9 +31,10 @@ var _day_label: Label
 var _time_label: Label
 var _temp_label: Label
 var _pop_panel: Panel
+var _pop_bar_bg: Panel
 var _pop_fill: ColorRect
-var _pop_label: Label
-var _pop_value: float = 0.1
+var _pop_letters: VBoxContainer
+var _pop_value: float = Balancing.STARTING_POPULARITY
 var _day_progress: TextureProgressBar
 
 var _main_style: StyleBoxFlat
@@ -109,19 +114,20 @@ func _update_hud_size() -> void:
 	_bar.offset_top = (hbox_h - float(BAR_HEIGHT)) * 0.5
 	_bar.offset_right = hbox_w
 	_bar.offset_bottom = _bar.offset_top + float(BAR_HEIGHT)
-	# Popularity bar panel above the money bar, top aligned with the clock.
+	# Popularity panel to the right of the money bar, same height.
 	if _pop_panel != null:
-		_pop_panel.offset_left = _bar.offset_left
-		_pop_panel.offset_right = hbox_w
-		_pop_panel.offset_top = 0.0
-		_pop_panel.offset_bottom = _bar.offset_top
+		_pop_panel.offset_left = hbox_w
+		_pop_panel.offset_right = hbox_w + POP_PANEL_WIDTH
+		_pop_panel.offset_top = _bar.offset_top
+		_pop_panel.offset_bottom = _bar.offset_bottom
 		_layout_pop_panel()
-	_main_panel.offset_right = 10.0 + hbox_w
+	_main_panel.offset_right = 10.0 + hbox_w + POP_PANEL_WIDTH
 	_main_panel.offset_bottom = 10.0 + hbox_h
 
 
 func _on_weather(temp: float) -> void:
-	_temp_label.text = "%.0f°C" % temp
+	var f := temp * 9.0 / 5.0 + 32.0
+	_temp_label.text = "%.0f°C / %.0f°F" % [temp, f]
 
 
 func _on_popularity(value: float) -> void:
@@ -129,36 +135,50 @@ func _on_popularity(value: float) -> void:
 	_refresh_pop_bar()
 
 
-## Arrange the label and fill inside the popularity panel.
+## Arrange the vertical popularity bar and letter stack inside the panel.
 func _layout_pop_panel() -> void:
-	if _pop_panel == null or _pop_fill == null or _pop_label == null:
+	if _pop_panel == null or _pop_bar_bg == null or _pop_fill == null or _pop_letters == null:
 		return
 	var width := _pop_panel.offset_right - _pop_panel.offset_left
 	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
 	if width <= 0.0 or height <= 0.0:
 		return
-	var label_h := height * 0.45
-	_pop_label.offset_left = 0.0
-	_pop_label.offset_right = width
-	_pop_label.offset_top = 0.0
-	_pop_label.offset_bottom = label_h
-	var margin := 4.0
-	var bar_top := label_h + 2.0
-	var bar_h := maxf(4.0, height - bar_top - margin)
-	_pop_fill.position = Vector2(margin, bar_top)
-	_pop_fill.size = Vector2((width - margin * 2.0) * _pop_value, bar_h)
-	# Warm/cool the fill color by popularity.
-	var t := _pop_value
-	_pop_fill.color = Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0)
+
+	var bar_left := POP_MARGIN
+	var bar_right := POP_MARGIN + POP_BAR_WIDTH
+	var bar_top := POP_MARGIN
+	var bar_bottom := height - POP_MARGIN
+	_pop_bar_bg.offset_left = bar_left
+	_pop_bar_bg.offset_right = bar_right
+	_pop_bar_bg.offset_top = bar_top
+	_pop_bar_bg.offset_bottom = bar_bottom
+
+	var fill_height := maxf(0.0, (bar_bottom - bar_top) * _pop_value)
+	_pop_fill.position = Vector2(bar_left, bar_bottom - fill_height)
+	_pop_fill.size = Vector2(POP_BAR_WIDTH, fill_height)
+
+	var text_left := width - POP_MARGIN - POP_TEXT_WIDTH
+	var text_right := width - POP_MARGIN
+	_pop_letters.offset_left = text_left
+	_pop_letters.offset_right = text_right
+	_pop_letters.offset_top = POP_MARGIN
+	_pop_letters.offset_bottom = height - POP_MARGIN
+
+	_refresh_pop_bar()
 
 
 func _refresh_pop_bar() -> void:
-	if _pop_panel == null or _pop_fill == null:
+	if _pop_panel == null or _pop_bar_bg == null or _pop_fill == null:
 		return
-	var width := _pop_panel.offset_right - _pop_panel.offset_left
-	var bar_top := _pop_fill.position.y
-	var margin := 4.0
-	_pop_fill.size = Vector2(maxf(0.0, width - margin * 2.0) * _pop_value, _pop_fill.size.y)
+	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
+	if height <= 0.0:
+		return
+	var bar_bottom := height - POP_MARGIN
+	var bar_top := POP_MARGIN
+	var fill_height := maxf(0.0, (bar_bottom - bar_top) * _pop_value)
+	_pop_fill.position = Vector2(POP_MARGIN, bar_bottom - fill_height)
+	_pop_fill.size = Vector2(POP_BAR_WIDTH, fill_height)
+	# Warm/cool the fill color by popularity.
 	var t := _pop_value
 	_pop_fill.color = Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0)
 
@@ -217,7 +237,7 @@ func _build_styles() -> void:
 	_main_style.corner_radius_top_left = 0
 	_main_style.corner_radius_top_right = 0
 	_main_style.corner_radius_bottom_left = 0
-	_main_style.corner_radius_bottom_right = 10
+	_main_style.corner_radius_bottom_right = 0
 
 	_circle_style = StyleBoxFlat.new()
 	_circle_style.bg_color = Color(0.08, 0.08, 0.12, 1.0)
@@ -249,7 +269,13 @@ func _build_ui() -> void:
 	_main_panel.grow_vertical = Control.GROW_DIRECTION_END
 	add_child(_main_panel)
 
-	# Popularity / reputation bar panel sitting directly above the money bar.
+	# Shorter bar behind the circle, centered vertically
+	_bar = Panel.new()
+	_bar.name = "Bar"
+	_bar.add_theme_stylebox_override("panel", _main_style)
+	_main_panel.add_child(_bar)
+
+	# Popularity / reputation panel to the right of the money bar.
 	_pop_panel = Panel.new()
 	_pop_panel.name = "PopularityPanel"
 	_pop_panel.z_index = 1
@@ -259,35 +285,43 @@ func _build_ui() -> void:
 	_pop_panel.anchor_top = 0.0
 	_pop_panel.anchor_bottom = 0.0
 	var pop_bg := StyleBoxFlat.new()
-	pop_bg.bg_color = Color(0.12, 0.12, 0.15, 1.0)
-	pop_bg.corner_radius_top_left = 4
-	pop_bg.corner_radius_top_right = 4
+	pop_bg.bg_color = Color(0.08, 0.08, 0.12, 0.92)
+	pop_bg.corner_radius_top_left = 0
+	pop_bg.corner_radius_top_right = 6
+	pop_bg.corner_radius_bottom_left = 0
+	pop_bg.corner_radius_bottom_right = 6
 	_pop_panel.add_theme_stylebox_override("panel", pop_bg)
 	_main_panel.add_child(_pop_panel)
 
+	_pop_bar_bg = Panel.new()
+	_pop_bar_bg.name = "PopBarBg"
+	var pop_bar_bg_style := StyleBoxFlat.new()
+	pop_bar_bg_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	pop_bar_bg_style.corner_radius_top_left = 3
+	pop_bar_bg_style.corner_radius_top_right = 3
+	pop_bar_bg_style.corner_radius_bottom_left = 3
+	pop_bar_bg_style.corner_radius_bottom_right = 3
+	_pop_bar_bg.add_theme_stylebox_override("panel", pop_bar_bg_style)
+	_pop_panel.add_child(_pop_bar_bg)
+
 	_pop_fill = ColorRect.new()
-	_pop_fill.name = "PopularityFill"
+	_pop_fill.name = "PopBarFill"
 	_pop_fill.color = Color(1.0, 0.9, 0.45, 1.0)
 	_pop_panel.add_child(_pop_fill)
 
-	_pop_label = _make_label("POPULARITY", 14, font, Color(1.0, 1.0, 1.0, 0.95))
-	_pop_label.name = "PopularityLabel"
-	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_pop_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_pop_label.set_anchors_and_offsets_preset(
-		Control.PRESET_FULL_RECT,
-		Control.PRESET_MODE_MINSIZE,
-		0,
-	)
-	_pop_label.add_theme_constant_override("outline_size", 2)
-	_pop_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	_pop_panel.add_child(_pop_label)
-
-	# Shorter bar behind the circle, centered vertically
-	_bar = Panel.new()
-	_bar.name = "Bar"
-	_bar.add_theme_stylebox_override("panel", _main_style)
-	_main_panel.add_child(_bar)
+	_pop_letters = VBoxContainer.new()
+	_pop_letters.name = "PopLetters"
+	_pop_letters.alignment = BoxContainer.ALIGNMENT_CENTER
+	_pop_letters.add_theme_constant_override("separation", -3)
+	for letter in "POPULARITY":
+		var lbl := _make_label(letter, 8, font, Color(1.0, 1.0, 1.0, 0.95))
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.size_flags_horizontal = Control.SIZE_FILL
+		lbl.add_theme_constant_override("outline_size", 1)
+		lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		_pop_letters.add_child(lbl)
+	_pop_panel.add_child(_pop_letters)
 
 	# Content row: circle on the left, money on the right
 	_hbox = HBoxContainer.new()
@@ -343,11 +377,11 @@ func _build_ui() -> void:
 			.x + 8.0
 	time_vbox.add_child(_time_label)
 
-	_temp_label = _make_label("25°C", 18, font, Color(0.65, 0.85, 1.0))
+	_temp_label = _make_label("25°C / 77°F", 18, font, Color(0.65, 0.85, 1.0))
 	_temp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_temp_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_temp_label.custom_minimum_size.x = font \
-			.get_string_size("100°C", HORIZONTAL_ALIGNMENT_LEFT, 18) \
+			.get_string_size("100°C / 212°F", HORIZONTAL_ALIGNMENT_LEFT, 18) \
 			.x + 4.0
 	time_vbox.add_child(_temp_label)
 
