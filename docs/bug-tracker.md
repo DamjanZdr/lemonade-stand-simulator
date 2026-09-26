@@ -5,6 +5,19 @@
 
 ## Active Issues
 
+### 15. Implement per-stand popularity conversion and HUD display
+- **Reported:** design request
+- **Symptom:** Popularity was not fully wired into gameplay — NPC conversion used global GameState.popularity (the legacy primary stand), and there was no visible popularity meter.
+- **Root cause:** The code already tracked per-stand `StandUnit.popularity`, but `Pedestrian._get_convert_chance()` read `GameState.popularity` regardless of which stand an NPC was approaching. `PedestrianSpawner` only used popularity for stand *selection* after a generic conversion decision, so a versus stand's popularity didn't affect its own foot traffic. Additionally, popularity was not shown in the HUD, and per-stand popularity was not saved/restored.
+- **Fix:**
+  - `PedestrianWaypoint` now resolves a target `StandUnit` (manual override or nearest at runtime).
+  - `Pedestrian._arrive()` converts based on that waypoint's stand popularity, and stores `target_stand` for the spawner.
+  - `PedestrianSpawner._on_wants_to_join()` routes the NPC directly to the chosen stand if `target_stand` is set, falling back to the old weighted pick otherwise.
+  - HUD now shows `Pop: X%` under the money label, colored from red to green by value.
+  - `SaveManager` persists and restores `stand_popularity` so versus stand reputation survives quit/rehost.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/customer/pedestrian_waypoint.gd`, `scripts/customer/pedestrian.gd`, `scripts/customer/pedestrian_spawner.gd`, `scripts/ui/hud.gd`, `scripts/systems/save_manager.gd`
+
 ### 14. Secondary stand gets $150 after host quits and rehosts
 - **Reported:** playtest batch (post a54d8c4)
 - **Symptom:** In versus, if the host quits the game entirely, reopens it, and invites the same friend to Stand 2, Stand 2 starts with $150 again even if the friend had already spent it during the previous session. Going to the menu and restarting the same save (without quitting the application) did not reproduce it.

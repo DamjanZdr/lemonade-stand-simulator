@@ -25,6 +25,7 @@ var _money_label: Label
 var _day_label: Label
 var _time_label: Label
 var _temp_label: Label
+var _pop_label: Label
 var _day_progress: TextureProgressBar
 
 var _main_style: StyleBoxFlat
@@ -110,6 +111,16 @@ func _update_hud_size() -> void:
 
 func _on_weather(temp: float) -> void:
 	_temp_label.text = "%.0f°C" % temp
+
+
+func _on_popularity(value: float) -> void:
+	if _pop_label == null:
+		return
+	var pct := int(roundf(clampf(value, 0.0, 1.0) * 100.0))
+	_pop_label.text = "Pop: %d%%" % pct
+	# Slightly warm/cool the color by popularity.
+	var t := clampf(value, 0.0, 1.0)
+	_pop_label.add_theme_color_override("font_color", Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0))
 
 
 func _on_hint(hint: String) -> void:
@@ -274,6 +285,10 @@ func _build_ui() -> void:
 	_money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_info_col.add_child(_money_label)
 
+	_pop_label = _make_label("Pop: 10%", 18, font, Color(0.95, 0.95, 0.45))
+	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_info_col.add_child(_pop_label)
+
 	# Small right padding that stays fixed while the money area grows
 	var tail := Control.new()
 	tail.custom_minimum_size = Vector2(RIGHT_PAD, 0)
@@ -432,16 +447,21 @@ func _connect_signals() -> void:
 ## signal. Call this once the local player's controlled stand is known
 ## (main.gd does this right after finding/creating the StandUnit).
 func set_stand(stand: StandUnit) -> void:
-	if _stand and _stand.money_changed.is_connected(_on_money):
-		_stand.money_changed.disconnect(_on_money)
+	if _stand:
+		if _stand.money_changed.is_connected(_on_money):
+			_stand.money_changed.disconnect(_on_money)
+		if _stand.popularity_changed.is_connected(_on_popularity):
+			_stand.popularity_changed.disconnect(_on_popularity)
 	_stand = stand
 	_displayed_task_id = ""
 	_displayed_parts = { }
 	if _stand == null:
 		return
 	_stand.money_changed.connect(_on_money)
+	_stand.popularity_changed.connect(_on_popularity)
 	_prev_money = _stand.money
 	_on_money(_stand.money)
+	_on_popularity(_stand.popularity)
 	_on_onboarding_progress(_stand, _stand.onboarding_progress)
 
 

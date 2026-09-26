@@ -409,11 +409,15 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	# GameState.money. Restore the secondary stand's saved balance so it
 	# doesn't reset to $150 every time the host reopens the game.
 	var saved_stand_money: Dictionary = data.get("stand_money", { })
+	var saved_stand_popularity: Dictionary = data.get("stand_popularity", { })
 	for stand in get_tree().get_nodes_in_group("stand"):
 		if stand is StandUnit:
 			var fallback := GameState.money if stand.is_legacy_primary else Balancing.STARTING_MONEY
 			stand.money = float(saved_stand_money.get(stand.name, fallback))
 			stand.highest_money = maxf(stand.money, data.get("highest_money", stand.money) as float)
+			stand.popularity = float(
+				saved_stand_popularity.get(stand.name, data.get("popularity", 0.1))
+			)
 	GameState.popularity = data.get("popularity", 0.1)
 	GameState.temperature = Balancing.snap_temperature(
 		data.get("temperature", Balancing.TEMP_DEFAULT)
@@ -534,6 +538,14 @@ func _collect_stand_money() -> Dictionary:
 	return amounts
 
 
+func _collect_stand_popularity() -> Dictionary:
+	var pops := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			pops[stand.name] = stand.popularity
+	return pops
+
+
 func _container_stand_owner(node: Node) -> String:
 	if "stand_owner" in node and not str(node.get("stand_owner")).is_empty():
 		return str(node.get("stand_owner"))
@@ -573,6 +585,7 @@ func _build_save_dict() -> Dictionary:
 		"stand_name": GameState.stand_name,
 		"stand_names": _collect_stand_names(),
 		"stand_money": _collect_stand_money(),
+		"stand_popularity": _collect_stand_popularity(),
 		"game_mode": GameState.game_mode,
 		"creator_steam_id": str(NetworkManager.steam_id),
 		"money": GameState.money,

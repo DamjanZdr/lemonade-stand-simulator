@@ -271,7 +271,17 @@ func _try_spawn() -> void:
 
 
 func _on_wants_to_join(ped: Pedestrian) -> void:
-	var entry := _pick_stand_entry()
+	var entry: Dictionary
+	# If the pedestrian already picked a stand at the waypoint (per-stand
+	# popularity), use that stand's registered entry directly instead of
+	# running another weighted selection.
+	if ped.target_stand != null and is_instance_valid(ped.target_stand):
+		for e in _stand_entries:
+			if e.get("stand") == ped.target_stand:
+				entry = e
+				break
+	if entry.is_empty():
+		entry = _pick_stand_entry()
 	var spawner: Node = entry.get("spawner")
 	if spawner == null:
 		_resume(ped)

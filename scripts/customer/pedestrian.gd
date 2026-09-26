@@ -25,6 +25,11 @@ var _waypoint_positions: Array[Vector3] = []
 ## When true the pedestrian has diverted to a queue slot and ignores waypoints.
 var _routing_to_queue: bool = false
 var _queue_target: Vector3 = Vector3.ZERO
+
+## The StandUnit this pedestrian has committed to at a convertable waypoint.
+## Set by the host on a successful conversion roll; used by the spawner to
+## route the NPC to the correct stand.
+var target_stand: StandUnit = null
 var _queue_arrived_cb: Callable = Callable() # called once the pedestrian reaches the slot
 
 @onready var _npc: Node3D = $NPCBody
@@ -554,10 +559,11 @@ func _ensure_people_manager() -> bool:
 	return _people_manager != null
 
 
-func _get_convert_chance() -> float:
+func _get_convert_chance(for_stand: StandUnit = null) -> float:
+	var popularity := GameState.popularity if for_stand == null else for_stand.popularity
 	if _ensure_people_manager():
-		return _people_manager.call("get_pedestrian_convert_chance", GameState.popularity)
-	return Balancing.pedestrian_convert_chance(GameState.popularity)
+		return _people_manager.call("get_pedestrian_convert_chance", popularity)
+	return Balancing.pedestrian_convert_chance(popularity)
 
 
 func _arrive() -> void:
@@ -569,14 +575,21 @@ func _arrive() -> void:
 		return
 	var wp := _waypoints[_waypoint_idx]
 
-	var convert_chance: float = _get_convert_chance()
+	if not wp.convertable:
+		_advance_waypoint()
+		return
+
+	var stand: StandUnit = wp.get_target_stand()
+	var convert_chance: float = _get_convert_chance(stand)
 	var marketing_bonus: float = UpgradeManager.get_effect_total("marketing")
 	if marketing_bonus > 0.0:
 		convert_chance = clampf(convert_chance + marketing_bonus, 0.0, 1.0)
-	if wp.convertable and randf() <= convert_chance:
+	if randf() <= convert_chance:
+		target_stand = stand
 		wants_to_join.emit(self)
 		return # spawner will call walk_to_queue() or _resume(); don't advance yet
 
+	target_stand = null
 	_advance_waypoint()
 
 
