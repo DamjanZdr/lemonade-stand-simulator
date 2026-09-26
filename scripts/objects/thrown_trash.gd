@@ -265,18 +265,21 @@ func _try_stun(body: Node) -> bool:
 			_hit_someone = true
 			p.stun(2.0)
 			GameLog.log("[ThrownTrash] Stunned player %s for 2s" % p.name)
+			Balancing.adjust_popularity_for_stand(stand_name, -Balancing.POPULARITY_HIT_PENALTY)
 			return true
 		if node is Pedestrian:
 			var ped := node as Pedestrian
 			_hit_someone = true
 			ped.stun(2.0)
 			GameLog.log("[ThrownTrash] Stunned pedestrian for 2s")
+			Balancing.adjust_popularity_for_stand(stand_name, -Balancing.POPULARITY_HIT_PENALTY)
 			return true
 		if node is Customer:
 			var cust := node as Customer
 			_hit_someone = true
 			cust.stun(2.0)
 			GameLog.log("[ThrownTrash] Stunned customer for 2s")
+			Balancing.adjust_popularity_for_stand(stand_name, -Balancing.POPULARITY_HIT_PENALTY)
 			return true
 		node = node.get_parent()
 	return false

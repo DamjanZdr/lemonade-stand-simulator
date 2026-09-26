@@ -153,6 +153,10 @@ const POPULARITY_GAIN_PER_CUP: float = 10.0
 const POPULARITY_LOSS_NO_SERVICE: float = 5.0
 # Served a water-only cup (scam).
 const POPULARITY_LOSS_SCAM: float = 10.0
+const POPULARITY_HIT_PENALTY: float = 1.0
+const POPULARITY_TRASH_DISPOSED_BONUS: float = 1.0
+const POPULARITY_TRASH_LEFT_PENALTY: float = 1.0
+const REGULAR_TRASH_TYPES: Array[String] = ["apple", "banana", "can", "cigarettes", "cup"]
 
 # === UPGRADES ===
 const UPGRADE_TIER1_COST: float = 25.0
@@ -180,3 +184,20 @@ static func pedestrian_convert_chance(popularity: float) -> float:
 		PEDESTRIAN_CONVERT_MAX,
 		clampf(popularity, 0.0, MAX_POPULARITY) / MAX_POPULARITY,
 	)
+
+
+static func is_regular_trash_type(trash_type: String) -> bool:
+	return trash_type in REGULAR_TRASH_TYPES
+
+
+static func adjust_popularity_for_stand(stand_name: String, delta: float) -> void:
+	if not WorldSync.is_host():
+		return
+	if stand_name != "":
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree != null and tree.current_scene != null:
+			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
+				if s.name == stand_name and s.has_method("set_popularity"):
+					s.set_popularity(s.popularity + delta)
+					return
+	GameState.set_popularity(GameState.popularity + delta)

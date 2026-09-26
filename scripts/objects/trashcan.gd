@@ -210,6 +210,8 @@ func apply_trash_disposal(trash_type: String, refund: float, stand_name: String 
 		return
 	if refund > 0.0:
 		_add_money_to_stand(refund, stand_name)
+	if Balancing.is_regular_trash_type(trash_type):
+		Balancing.adjust_popularity_for_stand(stand_name, Balancing.POPULARITY_TRASH_DISPOSED_BONUS)
 	EventBus.trash_disposed.emit(trash_type, refund, stand_name)
 
 
