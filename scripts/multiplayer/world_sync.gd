@@ -839,15 +839,11 @@ func _rpc_held_item_sync(item_type: int, data: Dictionary) -> void:
 	var player := (root.get_node_or_null("Players/" + str(sender)) as Player if root else null)
 	if player == null or player.inventory == null:
 		return
-	var mesh: Node3D = null
-	match item_type:
-		HeldItem.CUP_FILLED:
-			var recipe: Dictionary = data.get("recipe", { })
-			var color: Color = recipe.get("color", Color(1.0, 0.9, 0.3, 1.0))
-			mesh = Cup.make_hand_mesh(true, color)
-		HeldItem.CUP_EMPTY:
-			mesh = Cup.make_hand_mesh(false)
-	player.inventory.set_held(item_type, data, mesh)
+	# No mesh — held items are first-person only and never rendered on
+	# remote player nodes (set_held refuses to attach on non-authority
+	# peers anyway). The state sync matters so host-side logic (e.g.
+	# customer serve checks) sees the correct held_item/data.
+	player.inventory.set_held(item_type, data)
 
 
 func request_pitcher_snap(target: Node, recipe: Dictionary, stand_owner: String) -> void:

@@ -61,7 +61,11 @@ func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 		# Clear any stale meshes that may have been left behind by desyncs.
 		for child in _player.hand_slot.get_children():
 			child.queue_free()
-		if mesh:
+		# Hand meshes are first-person only — other players never see what
+		# someone is holding, so a remote player node must never attach one
+		# (a host-side set_held on a remote node otherwise leaks a floating
+		# mesh near that player's head until something clears it).
+		if mesh and _player.is_multiplayer_authority():
 			_held_mesh = mesh
 			_player.hand_slot.add_child(mesh)
 			_player.remove_placement_groups(mesh)
@@ -72,6 +76,8 @@ func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 				(child as StaticBody3D).collision_layer = 0
 				(child as StaticBody3D).collision_mask = 0
 			_apply_hand_offset(item_type, data)
+		elif mesh != null:
+			mesh.queue_free()
 	if _player != null:
 		_player.held_item = held_item
 		_player.held_item_data = held_item_data
