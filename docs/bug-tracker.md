@@ -10,7 +10,7 @@
 - **Symptom:** The popularity percentage text was not the desired UI style, and the temperature readout was too small.
 - **Fix:**
   - Removed the popularity percentage label from the clock panel.
-  - Added a popularity progress bar as a header directly above the money value in the right-hand panel. It fills 0–100% and tints from red to green by popularity.
+  - Added a popularity progress bar as a separate panel positioned directly above the money bar, touching its top edge.
   - Increased the temperature font size in the clock panel from 14 to 18.
 - **Status:** fixed in code — needs playtest verification
 - **Files:** `scripts/ui/hud.gd`

@@ -12,6 +12,7 @@ const MONEY_GAP := 12.0
 const RIGHT_PAD := 12.0
 const MONEY_MIN_WIDTH := 80.0
 const ICON_SIZE := 24
+const POP_BAR_HEIGHT := 12.0
 
 @onready var _hint_label: Label = $HintLabel
 @onready var _crosshair: CenterContainer = $Crosshair
@@ -105,6 +106,12 @@ func _update_hud_size() -> void:
 	_bar.offset_top = (hbox_h - float(BAR_HEIGHT)) * 0.5
 	_bar.offset_right = hbox_w
 	_bar.offset_bottom = _bar.offset_top + float(BAR_HEIGHT)
+	# Popularity bar as a separate panel touching the top edge of the money bar.
+	if _pop_bar != null:
+		_pop_bar.offset_left = _bar.offset_left
+		_pop_bar.offset_right = hbox_w
+		_pop_bar.offset_bottom = _bar.offset_top
+		_pop_bar.offset_top = _bar.offset_top - POP_BAR_HEIGHT
 	_main_panel.offset_right = 10.0 + hbox_w
 	_main_panel.offset_bottom = 10.0 + hbox_h
 
@@ -210,6 +217,31 @@ func _build_ui() -> void:
 	_main_panel.grow_vertical = Control.GROW_DIRECTION_END
 	add_child(_main_panel)
 
+	# Popularity bar panel sitting directly above the money bar.
+	_pop_bar = ProgressBar.new()
+	_pop_bar.name = "PopularityBar"
+	_pop_bar.min_value = 0.0
+	_pop_bar.max_value = 1.0
+	_pop_bar.value = 0.1
+	_pop_bar.step = 0.001
+	_pop_bar.show_percentage = false
+	_pop_bar.anchors_preset = Control.PRESET_TOP_LEFT
+	_pop_bar.anchor_left = 0.0
+	_pop_bar.anchor_right = 0.0
+	_pop_bar.anchor_top = 0.0
+	_pop_bar.anchor_bottom = 0.0
+	var pop_bg := StyleBoxFlat.new()
+	pop_bg.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	pop_bg.corner_radius_top_left = 4
+	pop_bg.corner_radius_top_right = 4
+	_pop_bar.add_theme_stylebox_override("background", pop_bg)
+	var pop_fill := StyleBoxFlat.new()
+	pop_fill.bg_color = Color(1.0, 0.9, 0.45, 1.0)
+	pop_fill.corner_radius_top_left = 4
+	pop_fill.corner_radius_top_right = 4
+	_pop_bar.add_theme_stylebox_override("fill", pop_fill)
+	_main_panel.add_child(_pop_bar)
+
 	# Shorter bar behind the circle, centered vertically
 	_bar = Panel.new()
 	_bar.name = "Bar"
@@ -280,27 +312,6 @@ func _build_ui() -> void:
 	_info_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_info_col.custom_minimum_size = Vector2(MONEY_MIN_WIDTH, 0)
 	_hbox.add_child(_info_col)
-
-	# Popularity bar header above the money value.
-	_pop_bar = ProgressBar.new()
-	_pop_bar.min_value = 0.0
-	_pop_bar.max_value = 1.0
-	_pop_bar.value = 0.1
-	_pop_bar.step = 0.001
-	_pop_bar.show_percentage = false
-	_pop_bar.custom_minimum_size = Vector2(0, 8)
-	_pop_bar.size_flags_horizontal = Control.SIZE_FILL
-	var pop_bg := StyleBoxFlat.new()
-	pop_bg.bg_color = Color(0.12, 0.12, 0.15, 1.0)
-	pop_bg.corner_radius_top_left = 4
-	pop_bg.corner_radius_top_right = 4
-	_pop_bar.add_theme_stylebox_override("background", pop_bg)
-	var pop_fill := StyleBoxFlat.new()
-	pop_fill.bg_color = Color(1.0, 0.9, 0.45, 1.0)
-	pop_fill.corner_radius_top_left = 4
-	pop_fill.corner_radius_top_right = 4
-	_pop_bar.add_theme_stylebox_override("fill", pop_fill)
-	_info_col.add_child(_pop_bar)
 
 	# Placeholder until set_stand() assigns a real stand and refreshes this.
 	_money_label = _make_label("$%.2f" % 0.0, 32, font, Color(0.25, 0.95, 0.35))
