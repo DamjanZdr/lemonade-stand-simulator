@@ -181,24 +181,15 @@ func _on_weather_changed(temp: float) -> void:
 ## Public (unlike the other _on_* handlers here) because customer.gd now
 ## calls this directly for the primary stand instead of GameState listening
 ## to EventBus.customer_served globally — see the note above _ready().
-func on_customer_served(_customer: Node, outcome: String) -> void:
+func on_customer_served(_customer: Node, outcome: String, pop_delta: float) -> void:
 	total_customers_served += 1
 	if outcome != "timeout":
 		total_cups_sold += 1
-	match outcome:
-		"happy":
-			customers_served_happy += 1
-			set_popularity(popularity + Balancing.POPULARITY_GAIN_HAPPY)
-		"timeout":
-			customers_lost += 1
-			set_popularity(popularity - Balancing.POPULARITY_LOSS_TIMEOUT)
-		"too_expensive", "wrong_order":
-			customers_lost += 1
-			set_popularity(popularity - Balancing.POPULARITY_LOSS_EXPENSIVE)
-		_:
-			# Any quality complaint (too sweet, too strong, too cold, etc.)
-			customers_lost += 1
-			set_popularity(popularity - Balancing.POPULARITY_LOSS_BAD)
+	if outcome == "happy":
+		customers_served_happy += 1
+	else:
+		customers_lost += 1
+	set_popularity(popularity + pop_delta)
 	AchievementManager.check_game_state_thresholds()
 
 

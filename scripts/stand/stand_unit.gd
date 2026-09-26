@@ -670,18 +670,18 @@ func _apply_set_ice_degrees(value: float) -> void:
 	OnboardingManager.notify_ice_changed(self, ice_degrees_per_scoop)
 
 
-func request_customer_served(outcome: String) -> void:
+func request_customer_served(outcome: String, pop_delta: float) -> void:
 	if multiplayer.has_multiplayer_peer():
-		_rpc_on_customer_served.rpc_id(1, outcome)
+		_rpc_on_customer_served.rpc_id(1, outcome, pop_delta)
 	else:
-		on_customer_served(outcome)
+		on_customer_served(outcome, pop_delta)
 
 
 @rpc("any_peer", "call_local", "reliable")
-func _rpc_on_customer_served(outcome: String) -> void:
+func _rpc_on_customer_served(outcome: String, pop_delta: float) -> void:
 	if not is_multiplayer_authority():
 		return
-	on_customer_served(outcome)
+	on_customer_served(outcome, pop_delta)
 	push_state()
 
 
@@ -701,23 +701,15 @@ func set_feedback_tier(tier: int) -> void:
 	feedback_tier_changed.emit(feedback_tier)
 
 
-func on_customer_served(outcome: String) -> void:
+func on_customer_served(outcome: String, pop_delta: float) -> void:
 	total_customers_served += 1
 	if outcome != "timeout":
 		total_cups_sold += 1
-	match outcome:
-		"happy":
-			customers_served_happy += 1
-			set_popularity(popularity + Balancing.POPULARITY_GAIN_HAPPY)
-		"timeout":
-			customers_lost += 1
-			set_popularity(popularity - Balancing.POPULARITY_LOSS_TIMEOUT)
-		"too_expensive", "wrong_order":
-			customers_lost += 1
-			set_popularity(popularity - Balancing.POPULARITY_LOSS_EXPENSIVE)
-		_:
-			customers_lost += 1
-			set_popularity(popularity - Balancing.POPULARITY_LOSS_BAD)
+	if outcome == "happy":
+		customers_served_happy += 1
+	else:
+		customers_lost += 1
+	set_popularity(popularity + pop_delta)
 	AchievementManager.check_stand_thresholds(self)
 
 

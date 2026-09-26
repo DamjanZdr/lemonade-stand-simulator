@@ -18,9 +18,10 @@
   - Internal popularity scale changed from 0.0-1.0 to 0-1000 for easier readability; UI and conversion math normalize it back when needed.
   - Old 0-1 popularity saves are auto-migrated to the 0-1000 scale on load.
   - Starting popularity is 300/1000 (30%).
+  - Popularity is now per-cup: each served cup gives +10 minus total recipe deviation (fruit + sugar + ice); non-paying outcomes (timeout/too expensive/wrong order) lose 5; scamming loses 10.
   - Temperature returned to the clock panel.
 - **Status:** fixed in code — needs playtest verification
-- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`
+- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`, `scripts/customer/customer.gd`
 
 ### 17. ESC menu blocked during Day X intro
 - **Reported:** playtest feedback

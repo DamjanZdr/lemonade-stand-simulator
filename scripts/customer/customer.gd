@@ -624,6 +624,9 @@ func try_serve(player: Node) -> void:
 				if stand != null
 				else GameState.ice_degrees_per_scoop
 			),
+			"fruit_delta": result.fruit_delta,
+			"sugar_delta": result.sugar_delta,
+			"ice_delta": result.ice_delta,
 		}
 	)
 	OnboardingManager.report(
@@ -722,10 +725,30 @@ func _resolve(outcome: String) -> void:
 
 func _record_customer_served(outcome: String) -> void:
 	## Route popularity/cup/sale stats to the correct stand/GameState.
+	var pop_delta := _compute_popularity_delta(outcome, _served_evaluations)
 	if stand != null and not stand.is_legacy_primary:
-		stand.request_customer_served(outcome)
+		stand.request_customer_served(outcome, pop_delta)
 	else:
-		GameState.on_customer_served(self, outcome)
+		GameState.on_customer_served(self, outcome, pop_delta)
+
+
+func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:
+	## Flat penalties when the customer never got (or refused) a paid drink.
+	match outcome:
+		"timeout", "too_expensive", "wrong_order":
+			return -Balancing.POPULARITY_LOSS_NO_SERVICE
+		"scam":
+			return -Balancing.POPULARITY_LOSS_SCAM
+
+	## Paying customers: each cup gives up to +10, minus total recipe deviation.
+	var delta := 0.0
+	for eval in evaluations:
+		var total_dev := (
+			float(eval.get("fruit_delta", 0.0)) + float(eval.get("sugar_delta", 0.0))
+			+ float(eval.get("ice_delta", 0.0))
+		)
+		delta += Balancing.POPULARITY_GAIN_PER_CUP - total_dev
+	return delta
 
 
 @rpc("authority", "reliable")
