@@ -271,17 +271,39 @@ func _try_spawn() -> void:
 
 
 func _on_wants_to_join(ped: Pedestrian) -> void:
-	var entry: Dictionary
-	# If the pedestrian already picked a stand at the waypoint (per-stand
-	# popularity), use that stand's registered entry directly instead of
-	# running another weighted selection.
-	if ped.target_stand != null and is_instance_valid(ped.target_stand):
-		for e in _stand_entries:
-			if e.get("stand") == ped.target_stand:
-				entry = e
+	# Each stand rolls its own popularity at this shared conversion point.
+	# If one stand succeeds, it wins the customer; if several succeed, the
+	# winners are weighted by their popularity (40 vs 40 → 50/50, etc.).
+	# If nobody succeeds, the pedestrian keeps walking.
+	var candidates: Array[Dictionary] = []
+	for entry in _stand_entries:
+		var stand: StandUnit = entry.get("stand") as StandUnit
+		if stand == null or not is_instance_valid(stand):
+			continue
+		var chance := _convert_chance_for(stand)
+		if randf() <= chance:
+			candidates.append(entry)
+
+	var entry: Dictionary = { }
+	if candidates.is_empty():
+		_resume(ped)
+		return
+	elif candidates.size() == 1:
+		entry = candidates[0]
+	else:
+		# Weighted popularity contest among the successful stands.
+		var total := 0.0
+		for c in candidates:
+			total += maxf((c.get("stand") as StandUnit).popularity, 0.001)
+		var roll := randf() * total
+		for c in candidates:
+			roll -= maxf((c.get("stand") as StandUnit).popularity, 0.001)
+			if roll <= 0.0:
+				entry = c
 				break
-	if entry.is_empty():
-		entry = _pick_stand_entry()
+		if entry.is_empty():
+			entry = candidates[-1]
+
 	var spawner: Node = entry.get("spawner")
 	if spawner == null:
 		_resume(ped)
@@ -304,6 +326,28 @@ func _on_wants_to_join(ped: Pedestrian) -> void:
 		func():
 			_finalize_conversion(ped),
 	)
+
+
+func _convert_chance_for(stand: StandUnit) -> float:
+	var chance := Balancing.pedestrian_convert_chance(stand.popularity)
+	if _ensure_people_manager():
+		chance = _people_manager.call("get_pedestrian_convert_chance", stand.popularity)
+	var marketing_bonus: float = UpgradeManager.get_effect_total("marketing")
+	if marketing_bonus > 0.0:
+		chance = clampf(chance + marketing_bonus, 0.0, 1.0)
+	return chance
+
+
+var _people_manager: Node = null
+
+
+func _ensure_people_manager() -> bool:
+	if _people_manager != null and is_instance_valid(_people_manager):
+		return true
+	if get_tree() == null or get_tree().current_scene == null:
+		return false
+	_people_manager = get_tree().current_scene.find_child("PeopleManager", true, false)
+	return _people_manager != null
 
 
 func _finalize_conversion(ped: Pedestrian) -> void:
