@@ -9,11 +9,11 @@
 - **Reported:** playtest feedback
 - **Symptom:** The popularity percentage text was not the desired UI style, and the temperature readout was too small.
 - **Fix:**
-  - Removed the popularity percentage label from the clock panel.
-  - Replaced the invisible ProgressBar with a custom labeled popularity panel: a dark panel with a colored fill rectangle that resizes with popularity and a centered "POPULARITY" label drawn on top.
-  - The panel is positioned directly above the money bar, touching its top edge.
-  - Fill color tints from red to green by popularity.
-  - Increased the temperature font size in the clock panel from 14 to 18.
+  - Replaced the overlapping ProgressBar with a custom popularity panel.
+  - Panel now spans from the top of the clock down to the top edge of the money bar, and the money bar's top-right corner is no longer rounded so the two panels meet cleanly.
+  - The panel shows "POPULARITY" in its upper portion and a colored fill bar underneath; fill color tints from red to green.
+  - Clock day/time/temp labels now have fixed widths based on their longest possible text, so centered text no longer shifts when numbers change.
+  - Temperature font size increased from 14 to 18.
 - **Status:** fixed in code — needs playtest verification
 - **Files:** `scripts/ui/hud.gd`
 

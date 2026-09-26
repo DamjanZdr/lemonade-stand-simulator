@@ -109,13 +109,13 @@ func _update_hud_size() -> void:
 	_bar.offset_top = (hbox_h - float(BAR_HEIGHT)) * 0.5
 	_bar.offset_right = hbox_w
 	_bar.offset_bottom = _bar.offset_top + float(BAR_HEIGHT)
-	# Popularity bar panel touching the top edge of the money bar.
+	# Popularity bar panel above the money bar, top aligned with the clock.
 	if _pop_panel != null:
 		_pop_panel.offset_left = _bar.offset_left
 		_pop_panel.offset_right = hbox_w
+		_pop_panel.offset_top = 0.0
 		_pop_panel.offset_bottom = _bar.offset_top
-		_pop_panel.offset_top = _bar.offset_top - POP_BAR_HEIGHT
-		_refresh_pop_bar()
+		_layout_pop_panel()
 	_main_panel.offset_right = 10.0 + hbox_w
 	_main_panel.offset_bottom = 10.0 + hbox_h
 
@@ -129,13 +129,36 @@ func _on_popularity(value: float) -> void:
 	_refresh_pop_bar()
 
 
+## Arrange the label and fill inside the popularity panel.
+func _layout_pop_panel() -> void:
+	if _pop_panel == null or _pop_fill == null or _pop_label == null:
+		return
+	var width := _pop_panel.offset_right - _pop_panel.offset_left
+	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
+	if width <= 0.0 or height <= 0.0:
+		return
+	var label_h := height * 0.45
+	_pop_label.offset_left = 0.0
+	_pop_label.offset_right = width
+	_pop_label.offset_top = 0.0
+	_pop_label.offset_bottom = label_h
+	var margin := 4.0
+	var bar_top := label_h + 2.0
+	var bar_h := maxf(4.0, height - bar_top - margin)
+	_pop_fill.position = Vector2(margin, bar_top)
+	_pop_fill.size = Vector2((width - margin * 2.0) * _pop_value, bar_h)
+	# Warm/cool the fill color by popularity.
+	var t := _pop_value
+	_pop_fill.color = Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0)
+
+
 func _refresh_pop_bar() -> void:
 	if _pop_panel == null or _pop_fill == null:
 		return
 	var width := _pop_panel.offset_right - _pop_panel.offset_left
-	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
-	_pop_fill.size = Vector2(width * _pop_value, height)
-	# Warm/cool the fill color by popularity.
+	var bar_top := _pop_fill.position.y
+	var margin := 4.0
+	_pop_fill.size = Vector2(maxf(0.0, width - margin * 2.0) * _pop_value, _pop_fill.size.y)
 	var t := _pop_value
 	_pop_fill.color = Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0)
 
@@ -192,7 +215,7 @@ func _build_styles() -> void:
 	_main_style = StyleBoxFlat.new()
 	_main_style.bg_color = Color(0.08, 0.08, 0.12, 0.92)
 	_main_style.corner_radius_top_left = 0
-	_main_style.corner_radius_top_right = 10
+	_main_style.corner_radius_top_right = 0
 	_main_style.corner_radius_bottom_left = 0
 	_main_style.corner_radius_bottom_right = 10
 
@@ -305,16 +328,27 @@ func _build_ui() -> void:
 	_day_label = _make_label("Day 1", 14, font)
 	_day_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_day_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# Fix each label's width to its widest possible text so the centered text
+	# doesn't shift left/right when numbers change.
+	_day_label.custom_minimum_size.x = font \
+			.get_string_size("Day 9", HORIZONTAL_ALIGNMENT_LEFT, 14) \
+			.x + 4.0
 	time_vbox.add_child(_day_label)
 
 	_time_label = _make_label("9:00 AM", 26, font, Color(1.0, 0.95, 0.7))
 	_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_time_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_time_label.custom_minimum_size.x = font \
+			.get_string_size("12:59 PM", HORIZONTAL_ALIGNMENT_LEFT, 26) \
+			.x + 8.0
 	time_vbox.add_child(_time_label)
 
 	_temp_label = _make_label("25°C", 18, font, Color(0.65, 0.85, 1.0))
 	_temp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_temp_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_temp_label.custom_minimum_size.x = font \
+			.get_string_size("100°C", HORIZONTAL_ALIGNMENT_LEFT, 18) \
+			.x + 4.0
 	time_vbox.add_child(_temp_label)
 
 	# Spacer between the circle and the money
