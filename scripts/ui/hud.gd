@@ -852,48 +852,55 @@ func _on_discovery(stand: StandUnit, title: String, detail: String) -> void:
 	)
 
 
+func _animate_floating_label(label: Label, start_pos: Vector2, drift_y: float) -> void:
+	## Shared "pop in, hold, drift, fade out" animation for money/popularity
+	## change labels. Matches the same pacing on both.
+	label.position = start_pos
+	label.modulate.a = 0.0
+	label.scale = Vector2(0.5, 0.5)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(label, "modulate:a", 1.0, 0.15)
+	tw \
+			.tween_property(label, "scale", Vector2(1.2, 1.2), 0.25) \
+			.set_trans(Tween.TRANS_BACK) \
+			.set_ease(Tween.EASE_OUT)
+	tw \
+			.chain() \
+			.tween_property(label, "scale", Vector2.ONE, 0.15) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_OUT)
+	tw.chain().tween_interval(0.4)
+	tw.chain().tween_property(label, "modulate:a", 0.0, 0.6)
+	tw.parallel().tween_property(label, "position:y", start_pos.y + drift_y, 0.6)
+	tw.chain().tween_callback(label.queue_free)
+
+
 func _show_money_gain(amount: float, new_total: float) -> void:
 	if _main_panel == null:
 		return
 	# Replace existing gain label if a new income event comes in.
 	if _gain_label != null and is_instance_valid(_gain_label):
 		_gain_label.queue_free()
-	# +$X.XX pops in to the right of the money, holds, then fades.
-	# Matches the money label's font size and style.
+	# +$X.XX pops in to the right of the money, holds, drifts up, then fades.
 	_gain_label = _make_label("+$%.2f" % amount, 32, AMATIC_FONT, Color(0.3, 1.0, 0.4))
 	_gain_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_gain_label.modulate.a = 0.0
-	_gain_label.scale = Vector2.ZERO
 	# Position right after the money panel edge, same vertical position.
 	var money_pos := _money_label.global_position - _main_panel.global_position
-	_gain_label.position = Vector2(_main_panel.size.x + 12.0, money_pos.y)
+	var start_pos := Vector2(_main_panel.size.x + 12.0, money_pos.y)
 	_main_panel.add_child(_gain_label)
-	var gt := create_tween()
-	gt.set_parallel(true)
-	gt.tween_property(_gain_label, "modulate:a", 1.0, 0.1)
-	gt \
-			.tween_property(_gain_label, "scale", Vector2(1.3, 1.3), 0.15) \
-			.set_trans(Tween.TRANS_BACK) \
-			.set_ease(Tween.EASE_OUT)
-	gt \
-			.chain() \
-			.tween_property(_gain_label, "scale", Vector2.ONE, 0.1) \
-			.set_trans(Tween.TRANS_QUAD) \
-			.set_ease(Tween.EASE_OUT)
-	gt.chain().tween_interval(0.3)
-	gt.chain().tween_property(_gain_label, "modulate:a", 0.0, 0.4)
-	gt.chain().tween_callback(_gain_label.queue_free)
-	# Money label: count up after +x fades, no zoom.
+	_animate_floating_label(_gain_label, start_pos, -20.0)
+	# Money label: count up after +x appears.
 	var old_val := _prev_money
 	_money_label.text = "$%.2f" % old_val
 	var mt := create_tween()
-	mt.tween_interval(0.5)
+	mt.tween_interval(0.4)
 	mt.tween_method(
 		func(t: float) -> void:
 			_money_label.text = "$%.2f" % lerpf(old_val, new_total, t),
 		0.0,
 		1.0,
-		0.4,
+		0.5,
 	)
 	mt.tween_callback(
 		func() -> void:
@@ -908,21 +915,16 @@ func _show_popularity_change(delta: float) -> void:
 	if _pop_delta_label != null and is_instance_valid(_pop_delta_label):
 		_pop_delta_label.queue_free()
 	var text := "+%.0f" % delta if delta > 0.0 else "%.0f" % delta
-	var color := Color(0.3, 1.0, 0.4) if delta > 0.0 else Color(1.0, 0.35, 0.35)
+	var color := Color(0.95, 0.25, 0.95) if delta > 0.0 else Color(1.0, 0.35, 0.35)
 	_pop_delta_label = _make_label(text, 18, AMATIC_FONT, color)
 	_pop_delta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_pop_delta_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_pop_delta_label.modulate.a = 1.0
 	var start_x := _pop_panel.offset_right + 6.0
 	var start_y := _pop_panel.offset_top + (POP_BAR_HEIGHT - 18.0) * 0.5
-	_pop_delta_label.position = Vector2(start_x, start_y)
+	var start_pos := Vector2(start_x, start_y)
+	var drift := -20.0 if delta > 0.0 else 20.0
 	_main_panel.add_child(_pop_delta_label)
-	var tw := create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(_pop_delta_label, "modulate:a", 0.0, 1.0)
-	var end_y := start_y - 18.0 if delta > 0.0 else start_y + 18.0
-	tw.tween_property(_pop_delta_label, "position:y", end_y, 1.0)
-	tw.chain().tween_callback(_pop_delta_label.queue_free)
+	_animate_floating_label(_pop_delta_label, start_pos, drift)
 
 
 func _refresh() -> void:

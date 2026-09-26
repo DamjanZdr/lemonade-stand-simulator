@@ -70,8 +70,7 @@ func _ready() -> void:
 	EventBus.debug_set_feedback_tier.connect(_on_debug_set_feedback_tier)
 	EventBus.debug_set_popularity.connect(
 		func(v: float):
-			_debug_popularity = clampf(v, 0.0, Balancing.MAX_POPULARITY)
-			set_popularity(_debug_popularity),
+			set_popularity(clampf(v, 0.0, Balancing.MAX_POPULARITY)),
 	)
 	# NOTE: change_finalized and customer_served are deliberately NOT
 	# connected here anymore. With more than one StandUnit in the world,
@@ -132,10 +131,7 @@ func spend_money(amount: float) -> bool:
 
 
 func set_popularity(value: float) -> void:
-	if _debug_popularity >= 0.0:
-		popularity = _debug_popularity
-	else:
-		popularity = clampf(value, 0.0, Balancing.MAX_POPULARITY)
+	popularity = clampf(value, 0.0, Balancing.MAX_POPULARITY)
 	EventBus.popularity_changed.emit(popularity)
 
 

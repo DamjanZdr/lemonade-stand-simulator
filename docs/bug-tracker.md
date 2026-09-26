@@ -20,7 +20,7 @@
   - Starting popularity is 300/1000 (30%).
   - Popularity is now per-cup: each served cup gives +10 minus total recipe deviation (fruit + sugar + ice); non-paying outcomes (timeout/too expensive/wrong order) lose 5; scamming loses 10.
   - Trash behavior affects popularity: -1 per NPC/player stunned by thrown trash, +1 per regular trash item disposed, -1 per litter left on the street at end of day.
-  - Floating +/- popularity change label appears to the right of the popularity bar, drifting up for gains and down for losses, then fades.
+  - Floating +/- popularity change label appears to the right of the popularity bar, using the same magenta as the bar fill; drifts up for gains and down for losses with a slowed pop-in/hold/fade animation that matches the money gain label.
   - Temperature returned to the clock panel.
 - **Status:** fixed in code — needs playtest verification
 - **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/managers/trash_manager.gd`, `scripts/objects/thrown_trash.gd`, `scripts/objects/trashcan.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`, `scripts/customer/customer.gd`
