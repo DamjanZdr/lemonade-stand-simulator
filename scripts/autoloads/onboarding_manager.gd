@@ -124,7 +124,7 @@ const TASKS: Array[Dictionary] = [
 		"id": "demo_add_sugar_ice",
 		"text": (
 			"Add at least one scoop each of {sugar} and {ice} to the pitcher. "
-			+ "The ideal ice amount depends on the temperature: use 1 ice cube per 5C / 9F."
+			+ "The ideal ice amount depends on the temperature: use 1 ice cube per 10C / 18F."
 		),
 		"event": "pitcher_ingredient",
 		"parts": { "sugar": "sugar", "ice": "ice" },

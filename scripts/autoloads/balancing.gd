@@ -22,11 +22,11 @@ const IDEAL_SUGAR_PER_LIQUID: float = 0.20 # 2 scoops out of 10 liquid = perfect
 # === TEMPERATURE RANGE ===
 const TEMP_MIN: float = 10.0
 const TEMP_MAX: float = 45.0
-const PERFECT_ICE_DEGREES_PER_SCOOP: float = 5.0
+const PERFECT_ICE_DEGREES_PER_SCOOP: float = 10.0
 # Daily temperatures are locked to multiples of PERFECT_ICE_DEGREES_PER_SCOOP
-# so the ideal ice count is always a whole number of scoops (4–9). 5 °C per
-# scoop is exactly 9 °F, so the rule is clean in both units.
-const DAY_TEMPERATURES: Array[float] = [20.0, 25.0, 30.0, 35.0, 40.0, 45.0]
+# so the ideal ice count is always a whole number of scoops (1–4). 10 °C per
+# scoop is exactly 18 °F, so the rule is clean in both units.
+const DAY_TEMPERATURES: Array[float] = [10.0, 20.0, 30.0, 40.0]
 const TEMP_DEFAULT: float = 30.0
 
 

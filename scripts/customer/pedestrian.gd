@@ -735,6 +735,17 @@ func try_serve(player: Node) -> void:
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "")
 	var feedback := _feedback_text(result)
 	_show_order_text(feedback)
+
+	# Free lemonade samples give a small popularity boost for any real drink;
+	# plain water gives nothing.
+	var fruit_count := float(recipe.get("fruit_count", recipe.get("lemons", 0.0)))
+	var fruit_type := str(recipe.get("fruit_type", ""))
+	if fruit_count > 0.0 and fruit_type != "":
+		var stand_name := ""
+		if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
+			stand_name = p.assigned_stand.name
+		Balancing.adjust_popularity_for_stand(stand_name, 2.0)
+
 	# Sync to clients — serving first so its hide doesn't clobber the feedback text
 	sync_serving()
 	sync_show_order_text(feedback)

@@ -923,11 +923,13 @@ func _show_popularity_change(delta: float) -> void:
 		_pop_delta_label.queue_free()
 	var text := "+%.0f" % delta if delta > 0.0 else "%.0f" % delta
 	var color := Color(0.95, 0.25, 0.95) if delta > 0.0 else Color(1.0, 0.35, 0.35)
-	_pop_delta_label = _make_label(text, 18, AMATIC_FONT, color)
+	_pop_delta_label = _make_label(text, 26, AMATIC_FONT, color)
 	_pop_delta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_pop_delta_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var start_x := _pop_panel.offset_right + 6.0
-	var start_y := _pop_panel.offset_top + (POP_BAR_HEIGHT - 18.0) * 0.5
+	# Same horizontal placement as the money gain label: just outside the
+	# right edge of the main panel.
+	var start_x := _main_panel.size.x + 12.0
+	var start_y := _pop_panel.offset_top + (POP_BAR_HEIGHT - 26.0) * 0.5
 	var start_pos := Vector2(start_x, start_y)
 	var drift := -20.0 if delta > 0.0 else 20.0
 	_main_panel.add_child(_pop_delta_label)

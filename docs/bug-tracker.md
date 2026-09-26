@@ -20,11 +20,13 @@
   - Starting popularity is 300/1000 (30%).
   - Popularity uses per-ingredient scoring: each non-complaint metric scores as perfect; complaints score by distance from ideal (fruit: 4/2/0/-2/-4; sugar/ice: 3/1/0/-1/-3).
   - Trash behavior affects popularity: -1 per NPC/player stunned by thrown trash, +1 per regular trash item disposed, -1 per litter left on the street at end of day.
-  - Floating +/- popularity change label appears to the right of the popularity bar, using the same magenta as the bar fill; drifts up for gains and down for losses with a slowed pop-in/hold/fade animation that matches the money gain label.
+  - Free lemonade samples to pedestrians give +2 popularity for any real drink (water-only gives nothing).
+  - Floating +/- popularity change label appears to the right of the popularity bar, using the same magenta as the bar fill, sized and horizontally aligned with the money gain label; drifts up for gains and down for losses with a slowed pop-in/hold/fade animation.
   - Popularity bar fill now smoothly tweens to the new width instead of snapping.
+  - Ice ratio changed to 1 cube per 10°C (18°F); daily temperatures now fall on multiples of 10°C.
   - Temperature returned to the clock panel.
 - **Status:** fixed in code — needs playtest verification
-- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/managers/trash_manager.gd`, `scripts/objects/thrown_trash.gd`, `scripts/objects/trashcan.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`, `scripts/customer/customer.gd`, `scripts/core/evaluation_result.gd`, `scripts/systems/recipe_evaluator.gd`
+- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/autoloads/onboarding_manager.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/managers/trash_manager.gd`, `scripts/objects/thrown_trash.gd`, `scripts/objects/trashcan.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`, `scripts/customer/customer.gd`, `scripts/customer/pedestrian.gd`, `scripts/core/evaluation_result.gd`, `scripts/systems/recipe_evaluator.gd`
 
 ### 17. ESC menu blocked during Day X intro
 - **Reported:** playtest feedback
