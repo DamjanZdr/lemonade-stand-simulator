@@ -147,9 +147,10 @@ func _layout_pop_panel() -> void:
 	_pop_fill.size = Vector2(fill_width, height - POP_MARGIN * 2.0)
 
 	_pop_label.offset_left = POP_MARGIN
-	_pop_label.offset_right = width - POP_MARGIN
+	_pop_label.offset_right = width - 8.0
 	_pop_label.offset_top = POP_MARGIN
 	_pop_label.offset_bottom = height - POP_MARGIN
+	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 
 func _refresh_pop_bar() -> void:
@@ -265,8 +266,8 @@ func _build_ui() -> void:
 	_pop_panel.anchor_top = 0.0
 	_pop_panel.anchor_bottom = 0.0
 	var pop_bg := StyleBoxFlat.new()
-	pop_bg.bg_color = Color(0.08, 0.08, 0.12, 0.65)
-	pop_bg.border_color = Color(1.0, 1.0, 1.0, 0.6)
+	pop_bg.bg_color = Color(0.08, 0.08, 0.12, 0.92)
+	pop_bg.border_color = Color(0.03, 0.03, 0.04, 1.0)
 	pop_bg.border_width_left = 2
 	pop_bg.border_width_top = 2
 	pop_bg.border_width_right = 2
@@ -289,7 +290,7 @@ func _build_ui() -> void:
 	_pop_fill.add_theme_stylebox_override("panel", pop_fill_style)
 	_pop_panel.add_child(_pop_fill)
 
-	_pop_label = _make_label("POPULARITY", 16, font, Color(1.0, 1.0, 1.0, 0.9))
+	_pop_label = _make_label("POPULARITY", 16, font, Color(1.0, 1.0, 1.0, 0.7))
 	_pop_label.name = "PopularityLabel"
 	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pop_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

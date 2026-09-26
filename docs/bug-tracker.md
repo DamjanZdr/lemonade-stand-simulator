@@ -12,9 +12,9 @@
   - Popularity panel is a larger horizontal bar directly under the money bar, touching its bottom edge and ending at the same bottom line as the clock circle.
   - Money bar's bottom-right corner is unrounded for a flush seam; top-right stays rounded.
   - The bar goes behind the circle (drawn under it, not on top).
-  - The popularity container now has a visible border/outline; the fill sits inside it without its own border.
-  - Fill is purple/magenta at ~70% opacity so it's less distracting.
-  - "POPULARITY" text is overlaid and centered on the bar.
+  - Popularity container matches the money panel color and has a darker border instead of a white one.
+  - Fill is purple/magenta at ~70% opacity.
+  - "POPULARITY" text is right-aligned with a small right padding and uses 70% opacity.
   - Starting popularity remains 30%.
   - Temperature still shows both Celsius and Fahrenheit.
 - **Status:** fixed in code — needs playtest verification
