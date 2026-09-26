@@ -26,7 +26,10 @@ var _money_label: Label
 var _day_label: Label
 var _time_label: Label
 var _temp_label: Label
-var _pop_bar: ProgressBar
+var _pop_panel: Panel
+var _pop_fill: ColorRect
+var _pop_label: Label
+var _pop_value: float = 0.1
 var _day_progress: TextureProgressBar
 
 var _main_style: StyleBoxFlat
@@ -106,12 +109,13 @@ func _update_hud_size() -> void:
 	_bar.offset_top = (hbox_h - float(BAR_HEIGHT)) * 0.5
 	_bar.offset_right = hbox_w
 	_bar.offset_bottom = _bar.offset_top + float(BAR_HEIGHT)
-	# Popularity bar as a separate panel touching the top edge of the money bar.
-	if _pop_bar != null:
-		_pop_bar.offset_left = _bar.offset_left
-		_pop_bar.offset_right = hbox_w
-		_pop_bar.offset_bottom = _bar.offset_top
-		_pop_bar.offset_top = _bar.offset_top - POP_BAR_HEIGHT
+	# Popularity bar panel touching the top edge of the money bar.
+	if _pop_panel != null:
+		_pop_panel.offset_left = _bar.offset_left
+		_pop_panel.offset_right = hbox_w
+		_pop_panel.offset_bottom = _bar.offset_top
+		_pop_panel.offset_top = _bar.offset_top - POP_BAR_HEIGHT
+		_refresh_pop_bar()
 	_main_panel.offset_right = 10.0 + hbox_w
 	_main_panel.offset_bottom = 10.0 + hbox_h
 
@@ -121,14 +125,19 @@ func _on_weather(temp: float) -> void:
 
 
 func _on_popularity(value: float) -> void:
-	if _pop_bar == null:
+	_pop_value = clampf(value, 0.0, 1.0)
+	_refresh_pop_bar()
+
+
+func _refresh_pop_bar() -> void:
+	if _pop_panel == null or _pop_fill == null:
 		return
-	var t := clampf(value, 0.0, 1.0)
-	_pop_bar.value = t
+	var width := _pop_panel.offset_right - _pop_panel.offset_left
+	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
+	_pop_fill.size = Vector2(width * _pop_value, height)
 	# Warm/cool the fill color by popularity.
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0)
-	_pop_bar.add_theme_stylebox_override("fill", fill)
+	var t := _pop_value
+	_pop_fill.color = Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0)
 
 
 func _on_hint(hint: String) -> void:
@@ -217,30 +226,39 @@ func _build_ui() -> void:
 	_main_panel.grow_vertical = Control.GROW_DIRECTION_END
 	add_child(_main_panel)
 
-	# Popularity bar panel sitting directly above the money bar.
-	_pop_bar = ProgressBar.new()
-	_pop_bar.name = "PopularityBar"
-	_pop_bar.min_value = 0.0
-	_pop_bar.max_value = 1.0
-	_pop_bar.value = 0.1
-	_pop_bar.step = 0.001
-	_pop_bar.show_percentage = false
-	_pop_bar.anchors_preset = Control.PRESET_TOP_LEFT
-	_pop_bar.anchor_left = 0.0
-	_pop_bar.anchor_right = 0.0
-	_pop_bar.anchor_top = 0.0
-	_pop_bar.anchor_bottom = 0.0
+	# Popularity / reputation bar panel sitting directly above the money bar.
+	_pop_panel = Panel.new()
+	_pop_panel.name = "PopularityPanel"
+	_pop_panel.z_index = 1
+	_pop_panel.anchors_preset = Control.PRESET_TOP_LEFT
+	_pop_panel.anchor_left = 0.0
+	_pop_panel.anchor_right = 0.0
+	_pop_panel.anchor_top = 0.0
+	_pop_panel.anchor_bottom = 0.0
 	var pop_bg := StyleBoxFlat.new()
 	pop_bg.bg_color = Color(0.12, 0.12, 0.15, 1.0)
 	pop_bg.corner_radius_top_left = 4
 	pop_bg.corner_radius_top_right = 4
-	_pop_bar.add_theme_stylebox_override("background", pop_bg)
-	var pop_fill := StyleBoxFlat.new()
-	pop_fill.bg_color = Color(1.0, 0.9, 0.45, 1.0)
-	pop_fill.corner_radius_top_left = 4
-	pop_fill.corner_radius_top_right = 4
-	_pop_bar.add_theme_stylebox_override("fill", pop_fill)
-	_main_panel.add_child(_pop_bar)
+	_pop_panel.add_theme_stylebox_override("panel", pop_bg)
+	_main_panel.add_child(_pop_panel)
+
+	_pop_fill = ColorRect.new()
+	_pop_fill.name = "PopularityFill"
+	_pop_fill.color = Color(1.0, 0.9, 0.45, 1.0)
+	_pop_panel.add_child(_pop_fill)
+
+	_pop_label = _make_label("POPULARITY", 14, font, Color(1.0, 1.0, 1.0, 0.95))
+	_pop_label.name = "PopularityLabel"
+	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pop_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_pop_label.set_anchors_and_offsets_preset(
+		Control.PRESET_FULL_RECT,
+		Control.PRESET_MODE_MINSIZE,
+		0,
+	)
+	_pop_label.add_theme_constant_override("outline_size", 2)
+	_pop_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_pop_panel.add_child(_pop_label)
 
 	# Shorter bar behind the circle, centered vertically
 	_bar = Panel.new()
