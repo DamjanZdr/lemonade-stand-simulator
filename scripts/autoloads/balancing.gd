@@ -20,14 +20,27 @@ const IDEAL_LEMON_RATIO: float = 0.30 # 3 lemon scoops out of 10 total liquid
 const IDEAL_SUGAR_PER_LIQUID: float = 0.20 # 2 scoops out of 10 liquid = perfect
 
 # === TEMPERATURE RANGE ===
-const TEMP_MIN: float = 10.0
+const TEMP_MIN: float = 15.0
 const TEMP_MAX: float = 45.0
 const PERFECT_ICE_DEGREES_PER_SCOOP: float = 10.0
-# Daily temperatures are locked to multiples of PERFECT_ICE_DEGREES_PER_SCOOP
-# so the ideal ice count is always a whole number of scoops (1–4). 10 °C per
-# scoop is exactly 18 °F, so the rule is clean in both units.
-const DAY_TEMPERATURES: Array[float] = [10.0, 20.0, 30.0, 40.0]
+# Daily temperatures use 5 °C steps from 15 to 45. Ice is added in whole
+# scoops: 1 scoop covers 0–10 °C, 2 covers 11–20 °C, ..., 5 covers 41–50 °C.
+const DAY_TEMPERATURES: Array[float] = [15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0]
+const DAY_TEMPERATURE_WEIGHTS: Array[float] = [1.0, 2.0, 4.0, 4.0, 4.0, 2.0, 1.0]
 const TEMP_DEFAULT: float = 30.0
+
+
+## Pick a daily temperature weighted toward the 25–35 °C range.
+static func random_day_temperature() -> float:
+	var total := 0.0
+	for w in DAY_TEMPERATURE_WEIGHTS:
+		total += w
+	var roll := randf() * total
+	for i in DAY_TEMPERATURES.size():
+		roll -= DAY_TEMPERATURE_WEIGHTS[i]
+		if roll <= 0.0:
+			return DAY_TEMPERATURES[i]
+	return DAY_TEMPERATURES[-1]
 
 
 ## Nearest legal daily temperature — used to migrate saves created while

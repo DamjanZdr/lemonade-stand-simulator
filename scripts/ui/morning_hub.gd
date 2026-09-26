@@ -1438,7 +1438,7 @@ func _refresh_prices_page() -> void:
 		return
 	var temp_info := prices_page.get_node_or_null("WeatherRow/TempInfo") as Label
 	if temp_info:
-		temp_info.text = "Temperature: %.0fC  |  1 ice cube per 10C / 18F" % GameState.temperature
+		temp_info.text = "Temperature: %.0fC  |  1 ice per 10C / 18F" % GameState.temperature
 	var pop_info := prices_page.get_node_or_null("WeatherRow/PopInfo") as Label
 	if pop_info:
 		pop_info.text = "Popularity: %.0f%%" % (GameState.popularity / 10.0)

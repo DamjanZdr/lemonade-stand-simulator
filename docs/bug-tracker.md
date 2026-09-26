@@ -23,10 +23,11 @@
   - Free lemonade samples to pedestrians give +2 popularity for any real drink (water-only gives nothing).
   - Floating +/- popularity change label appears to the right of the popularity bar, using the same magenta as the bar fill, sized and horizontally aligned with the money gain label; drifts up for gains and down for losses with a slowed pop-in/hold/fade animation.
   - Popularity bar fill now smoothly tweens to the new width instead of snapping.
-  - Ice ratio changed to 1 cube per 10°C (18°F); daily temperatures now fall on multiples of 10°C.
+  - Ice ratio uses whole-scoop buckets: 1 ice for 0–10 °C, 2 for 11–20 °C, 3 for 21–30 °C, 4 for 31–40 °C, 5 for 41–50 °C; onboarding task says "Ideally, add 1 ice for every 10C/18F."
+  - Daily temperatures range 15–45 °C and are weighted toward 25–35 °C with less frequent tails.
   - Temperature returned to the clock panel.
 - **Status:** fixed in code — needs playtest verification
-- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/autoloads/onboarding_manager.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/managers/trash_manager.gd`, `scripts/objects/thrown_trash.gd`, `scripts/objects/trashcan.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`, `scripts/customer/customer.gd`, `scripts/customer/pedestrian.gd`, `scripts/core/evaluation_result.gd`, `scripts/systems/recipe_evaluator.gd`
+- **Files:** `scripts/ui/hud.gd`, `scripts/autoloads/balancing.gd`, `scripts/autoloads/game_state.gd`, `scripts/autoloads/onboarding_manager.gd`, `scripts/systems/day_manager.gd`, `scripts/systems/recipe_manager.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/save_manager.gd`, `scripts/managers/people_manager.gd`, `scripts/managers/trash_manager.gd`, `scripts/objects/thrown_trash.gd`, `scripts/objects/trashcan.gd`, `scripts/ui/debug_panel.gd`, `scripts/ui/morning_hub.gd`, `scripts/customer/customer.gd`, `scripts/customer/pedestrian.gd`, `scripts/core/evaluation_result.gd`, `scripts/systems/recipe_evaluator.gd`
 
 ### 17. ESC menu blocked during Day X intro
 - **Reported:** playtest feedback
