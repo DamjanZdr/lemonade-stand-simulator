@@ -25,7 +25,7 @@ var _money_label: Label
 var _day_label: Label
 var _time_label: Label
 var _temp_label: Label
-var _pop_label: Label
+var _pop_bar: ProgressBar
 var _day_progress: TextureProgressBar
 
 var _main_style: StyleBoxFlat
@@ -114,13 +114,14 @@ func _on_weather(temp: float) -> void:
 
 
 func _on_popularity(value: float) -> void:
-	if _pop_label == null:
+	if _pop_bar == null:
 		return
-	var pct := int(roundf(clampf(value, 0.0, 1.0) * 100.0))
-	_pop_label.text = "Pop: %d%%" % pct
-	# Slightly warm/cool the color by popularity.
 	var t := clampf(value, 0.0, 1.0)
-	_pop_label.add_theme_color_override("font_color", Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0))
+	_pop_bar.value = t
+	# Warm/cool the fill color by popularity.
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color(1.0, 0.35 + 0.6 * t, 0.35, 1.0)
+	_pop_bar.add_theme_stylebox_override("fill", fill)
 
 
 func _on_hint(hint: String) -> void:
@@ -261,15 +262,10 @@ func _build_ui() -> void:
 	_time_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	time_vbox.add_child(_time_label)
 
-	_temp_label = _make_label("25°C", 14, font, Color(0.65, 0.85, 1.0))
+	_temp_label = _make_label("25°C", 18, font, Color(0.65, 0.85, 1.0))
 	_temp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_temp_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	time_vbox.add_child(_temp_label)
-
-	_pop_label = _make_label("Pop: 10%", 14, font, Color(0.95, 0.95, 0.45))
-	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_pop_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	time_vbox.add_child(_pop_label)
 
 	# Spacer between the circle and the money
 	var left_spacer := Control.new()
@@ -284,6 +280,27 @@ func _build_ui() -> void:
 	_info_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_info_col.custom_minimum_size = Vector2(MONEY_MIN_WIDTH, 0)
 	_hbox.add_child(_info_col)
+
+	# Popularity bar header above the money value.
+	_pop_bar = ProgressBar.new()
+	_pop_bar.min_value = 0.0
+	_pop_bar.max_value = 1.0
+	_pop_bar.value = 0.1
+	_pop_bar.step = 0.001
+	_pop_bar.show_percentage = false
+	_pop_bar.custom_minimum_size = Vector2(0, 8)
+	_pop_bar.size_flags_horizontal = Control.SIZE_FILL
+	var pop_bg := StyleBoxFlat.new()
+	pop_bg.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	pop_bg.corner_radius_top_left = 4
+	pop_bg.corner_radius_top_right = 4
+	_pop_bar.add_theme_stylebox_override("background", pop_bg)
+	var pop_fill := StyleBoxFlat.new()
+	pop_fill.bg_color = Color(1.0, 0.9, 0.45, 1.0)
+	pop_fill.corner_radius_top_left = 4
+	pop_fill.corner_radius_top_right = 4
+	_pop_bar.add_theme_stylebox_override("fill", pop_fill)
+	_info_col.add_child(_pop_bar)
 
 	# Placeholder until set_stand() assigns a real stand and refreshes this.
 	_money_label = _make_label("$%.2f" % 0.0, 32, font, Color(0.25, 0.95, 0.35))
