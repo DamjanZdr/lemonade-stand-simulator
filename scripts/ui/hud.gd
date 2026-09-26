@@ -31,6 +31,8 @@ var _pop_panel: Panel
 var _pop_fill: Panel
 var _pop_label: Label
 var _pop_value: float = Balancing.STARTING_POPULARITY
+var _last_popularity: float = 0.0
+var _pop_delta_label: Label = null
 var _day_progress: TextureProgressBar
 
 var _main_style: StyleBoxFlat
@@ -128,6 +130,10 @@ func _on_weather(temp: float) -> void:
 
 
 func _on_popularity(value: float) -> void:
+	var delta := value - _last_popularity
+	if absf(delta) >= 0.5:
+		_show_popularity_change(delta)
+	_last_popularity = value
 	_pop_value = clampf(value / Balancing.MAX_POPULARITY, 0.0, 1.0)
 	_refresh_pop_bar()
 
@@ -550,6 +556,7 @@ func set_stand(stand: StandUnit) -> void:
 	_stand.money_changed.connect(_on_money)
 	_stand.popularity_changed.connect(_on_popularity)
 	_prev_money = _stand.money
+	_last_popularity = _stand.popularity
 	_on_money(_stand.money)
 	_on_popularity(_stand.popularity)
 	_on_onboarding_progress(_stand, _stand.onboarding_progress)
@@ -893,6 +900,29 @@ func _show_money_gain(amount: float, new_total: float) -> void:
 			_money_label.text = "$%.2f" % new_total
 			_update_hud_size(),
 	)
+
+
+func _show_popularity_change(delta: float) -> void:
+	if _main_panel == null or _pop_panel == null:
+		return
+	if _pop_delta_label != null and is_instance_valid(_pop_delta_label):
+		_pop_delta_label.queue_free()
+	var text := "+%.0f" % delta if delta > 0.0 else "%.0f" % delta
+	var color := Color(0.3, 1.0, 0.4) if delta > 0.0 else Color(1.0, 0.35, 0.35)
+	_pop_delta_label = _make_label(text, 18, AMATIC_FONT, color)
+	_pop_delta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_pop_delta_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_pop_delta_label.modulate.a = 1.0
+	var start_x := _pop_panel.offset_right + 6.0
+	var start_y := _pop_panel.offset_top + (POP_BAR_HEIGHT - 18.0) * 0.5
+	_pop_delta_label.position = Vector2(start_x, start_y)
+	_main_panel.add_child(_pop_delta_label)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(_pop_delta_label, "modulate:a", 0.0, 1.0)
+	var end_y := start_y - 18.0 if delta > 0.0 else start_y + 18.0
+	tw.tween_property(_pop_delta_label, "position:y", end_y, 1.0)
+	tw.chain().tween_callback(_pop_delta_label.queue_free)
 
 
 func _refresh() -> void:
