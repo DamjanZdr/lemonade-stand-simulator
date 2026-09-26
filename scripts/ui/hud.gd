@@ -7,13 +7,13 @@ const DISCOVERY_SOUND := preload("res://assets/audio/sfx/perfect recipe.mp3")
 const MOUSE_ICON := preload("res://assets/textures/ui/upgrades/mouse indicator.png")
 
 const CIRCLE_SIZE := 120
-const BAR_HEIGHT := 64
+const MONEY_BAR_HEIGHT := 52
 const MONEY_GAP := 12.0
 const RIGHT_PAD := 12.0
 const MONEY_MIN_WIDTH := 80.0
 const ICON_SIZE := 24
-const POP_BAR_HEIGHT := 28.0
-const POP_MARGIN := 4.0
+const POP_BAR_HEIGHT := 34.0
+const POP_MARGIN := 3.0
 
 @onready var _hint_label: Label = $HintLabel
 @onready var _crosshair: CenterContainer = $Crosshair
@@ -108,9 +108,9 @@ func _update_hud_size() -> void:
 	_hbox.offset_right = hbox_w
 	_hbox.offset_bottom = hbox_h
 	_bar.offset_left = float(CIRCLE_SIZE) / 2.0
-	_bar.offset_top = (hbox_h - float(BAR_HEIGHT)) * 0.5
+	_bar.offset_top = (hbox_h - float(MONEY_BAR_HEIGHT)) * 0.5
 	_bar.offset_right = hbox_w
-	_bar.offset_bottom = _bar.offset_top + float(BAR_HEIGHT)
+	_bar.offset_bottom = _bar.offset_top + float(MONEY_BAR_HEIGHT)
 	# Popularity bar panel directly under the money bar, touching its bottom edge.
 	if _pop_panel != null:
 		_pop_panel.offset_left = _bar.offset_left
@@ -141,14 +141,15 @@ func _layout_pop_panel() -> void:
 	if width <= 0.0 or height <= 0.0:
 		return
 
-	var fill_width := maxf(0.0, width * _pop_value)
-	_pop_fill.position = Vector2(0.0, 0.0)
-	_pop_fill.size = Vector2(fill_width, height)
+	var inner_w := maxf(0.0, width - POP_MARGIN * 2.0)
+	var fill_width := maxf(0.0, inner_w * _pop_value)
+	_pop_fill.position = Vector2(POP_MARGIN, POP_MARGIN)
+	_pop_fill.size = Vector2(fill_width, height - POP_MARGIN * 2.0)
 
-	_pop_label.offset_left = 0.0
-	_pop_label.offset_right = width
-	_pop_label.offset_top = 0.0
-	_pop_label.offset_bottom = height
+	_pop_label.offset_left = POP_MARGIN
+	_pop_label.offset_right = width - POP_MARGIN
+	_pop_label.offset_top = POP_MARGIN
+	_pop_label.offset_bottom = height - POP_MARGIN
 
 
 func _refresh_pop_bar() -> void:
@@ -158,8 +159,9 @@ func _refresh_pop_bar() -> void:
 	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
 	if width <= 0.0 or height <= 0.0:
 		return
-	var fill_width := maxf(0.0, width * _pop_value)
-	_pop_fill.size = Vector2(fill_width, height)
+	var inner_w := maxf(0.0, width - POP_MARGIN * 2.0)
+	var fill_width := maxf(0.0, inner_w * _pop_value)
+	_pop_fill.size = Vector2(fill_width, height - POP_MARGIN * 2.0)
 
 
 func _on_hint(hint: String) -> void:
@@ -254,7 +256,7 @@ func _build_ui() -> void:
 	_bar.add_theme_stylebox_override("panel", _main_style)
 	_main_panel.add_child(_bar)
 
-	# Popularity / reputation panel to the right of the money bar.
+	# Popularity / reputation panel directly under the money bar.
 	_pop_panel = Panel.new()
 	_pop_panel.name = "PopularityPanel"
 	_pop_panel.anchors_preset = Control.PRESET_TOP_LEFT
@@ -263,7 +265,12 @@ func _build_ui() -> void:
 	_pop_panel.anchor_top = 0.0
 	_pop_panel.anchor_bottom = 0.0
 	var pop_bg := StyleBoxFlat.new()
-	pop_bg.bg_color = Color(0.08, 0.08, 0.12, 0.92)
+	pop_bg.bg_color = Color(0.08, 0.08, 0.12, 0.65)
+	pop_bg.border_color = Color(1.0, 1.0, 1.0, 0.6)
+	pop_bg.border_width_left = 2
+	pop_bg.border_width_top = 2
+	pop_bg.border_width_right = 2
+	pop_bg.border_width_bottom = 2
 	pop_bg.corner_radius_top_left = 0
 	pop_bg.corner_radius_top_right = 0
 	pop_bg.corner_radius_bottom_left = 6
@@ -274,12 +281,7 @@ func _build_ui() -> void:
 	_pop_fill = Panel.new()
 	_pop_fill.name = "PopBarFill"
 	var pop_fill_style := StyleBoxFlat.new()
-	pop_fill_style.bg_color = Color(0.95, 0.25, 0.95, 1.0)
-	pop_fill_style.border_color = Color(1.0, 0.5, 1.0, 1.0)
-	pop_fill_style.border_width_left = 1
-	pop_fill_style.border_width_top = 1
-	pop_fill_style.border_width_right = 1
-	pop_fill_style.border_width_bottom = 1
+	pop_fill_style.bg_color = Color(0.95, 0.25, 0.95, 0.7)
 	pop_fill_style.corner_radius_top_left = 0
 	pop_fill_style.corner_radius_top_right = 0
 	pop_fill_style.corner_radius_bottom_left = 0
@@ -287,7 +289,7 @@ func _build_ui() -> void:
 	_pop_fill.add_theme_stylebox_override("panel", pop_fill_style)
 	_pop_panel.add_child(_pop_fill)
 
-	_pop_label = _make_label("POPULARITY", 14, font, Color(1.0, 1.0, 1.0, 0.95))
+	_pop_label = _make_label("POPULARITY", 16, font, Color(1.0, 1.0, 1.0, 0.9))
 	_pop_label.name = "PopularityLabel"
 	_pop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pop_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

@@ -9,11 +9,12 @@
 - **Reported:** playtest feedback
 - **Symptom:** The popularity percentage text was not the desired UI style, and the temperature readout was too small.
 - **Fix:**
-  - Popularity panel is a horizontal bar directly under the money bar, touching its bottom edge and ending at the same bottom line as the clock circle.
+  - Popularity panel is a larger horizontal bar directly under the money bar, touching its bottom edge and ending at the same bottom line as the clock circle.
   - Money bar's bottom-right corner is unrounded for a flush seam; top-right stays rounded.
   - The bar goes behind the circle (drawn under it, not on top).
-  - Popularity fill is horizontal, purple/magenta, with a styled outline/border and rounded right edge.
-  - "POPULARITY" text is overlaid on top of the bar.
+  - The popularity container now has a visible border/outline; the fill sits inside it without its own border.
+  - Fill is purple/magenta at ~70% opacity so it's less distracting.
+  - "POPULARITY" text is overlaid and centered on the bar.
   - Starting popularity remains 30%.
   - Temperature still shows both Celsius and Fahrenheit.
 - **Status:** fixed in code — needs playtest verification
