@@ -275,7 +275,6 @@ func _build_gameplay_tab() -> Control:
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	tab.add_child(row)
 
 	var label := Label.new()
@@ -407,7 +406,6 @@ func sync_state() -> void:
 func _add_slider_row(parent: Node, label_text: String) -> Array:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	parent.add_child(row)
 
 	var label := Label.new()

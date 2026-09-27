@@ -99,6 +99,8 @@ var day_scams: int = 0
 var day_costs: float = 0.0
 var day_start_popularity: float = Balancing.STARTING_POPULARITY
 var last_day_stats: Dictionary = { }
+## All-time stats accumulated in finish_day() (same keys as last_day_stats).
+var lifetime_stats: Dictionary = { }
 
 ## Achievement / mastery counters (synced via STATE_PROPS).
 var total_fruit_pressed: int = 0
@@ -144,6 +146,7 @@ const STATE_PROPS: Array[String] = [
 	"onboarding_progress",
 	"stand_display_name",
 	"last_day_stats",
+	"lifetime_stats",
 ]
 
 
@@ -189,6 +192,7 @@ func push_state(peer_id: int = 0) -> void:
 		stand_display_name,
 		purchased_upgrade_nodes.duplicate(true),
 		last_day_stats.duplicate(true),
+		lifetime_stats.duplicate(true),
 	]
 	# peer_id 0 = broadcast to everyone; otherwise target one peer (e.g.
 	# a late joiner re-pulling state after its world finishes loading).
@@ -221,6 +225,7 @@ func _apply_state(
 	new_stand_display_name: String,
 	new_purchased_upgrade_nodes: Dictionary,
 	new_last_day_stats: Dictionary,
+	new_lifetime_stats: Dictionary,
 ) -> void:
 	if is_multiplayer_authority():
 		return # Host already has correct values; don't overwrite
@@ -261,6 +266,7 @@ func _apply_state(
 	perfect_recipes_set = new_perfect_recipes_set.duplicate(true)
 	onboarding_progress = new_onboarding_progress.duplicate(true)
 	last_day_stats = new_last_day_stats.duplicate(true)
+	lifetime_stats = new_lifetime_stats.duplicate(true)
 	# Sync per-stand unlocks. Notify local UI (price/recipe boards) if they changed.
 	var old_unlocks: Dictionary = purchased_upgrade_nodes.duplicate(true)
 	purchased_upgrade_nodes = new_purchased_upgrade_nodes.duplicate(true)
@@ -334,6 +340,7 @@ func reset_to_starting_state() -> void:
 	total_fruit_pressed = 0
 	perfect_recipes_set.clear()
 	last_day_stats = { }
+	lifetime_stats = { }
 	reset_daily_stats()
 	init_default_prices()
 	init_default_recipes()
@@ -589,6 +596,13 @@ func finish_day() -> void:
 		"popularity": popularity,
 		"popularity_delta": popularity - day_start_popularity,
 	}
+	# Accumulate into lifetime totals (all keys except identity/popularity).
+	for k in last_day_stats:
+		if k in ["day", "stand_name", "popularity", "popularity_delta"]:
+			continue
+		lifetime_stats[k] = float(lifetime_stats.get(k, 0)) + float(last_day_stats[k])
+	lifetime_stats["days_completed"] = int(lifetime_stats.get("days_completed", 0)) + 1
+	lifetime_stats["popularity"] = popularity
 	push_state()
 
 

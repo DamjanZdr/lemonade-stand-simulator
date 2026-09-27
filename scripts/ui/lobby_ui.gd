@@ -1019,26 +1019,6 @@ func _build_avatar_options_row() -> void:
 			_on_customization_changed(),
 	)
 
-	# -- House Walls: [color picker] --
-	_add_color_section(
-		vbox,
-		"House Walls",
-		_wall_color,
-		func(color):
-			_wall_color = color
-			_on_customization_changed(),
-	)
-
-	# -- House Roof: [color picker] --
-	_add_color_section(
-		vbox,
-		"House Roof",
-		_roof_color,
-		func(color):
-			_roof_color = color
-			_on_customization_changed(),
-	)
-
 	# -- Head: [slider] --
 	var head_row := HBoxContainer.new()
 	head_row.add_theme_constant_override("separation", ROW_SEPARATION)
@@ -1332,12 +1312,6 @@ func _on_randomize() -> void:
 	_shoes_color = Color(randf(), randf(), randf())
 	_head_size_index = randi() % HEAD_SIZE_STEPS
 	_skin_color = Color(randf_range(0.3, 0.95), randf_range(0.2, 0.8), randf_range(0.15, 0.7))
-	var wc := _get_wall_colors()
-	if not wc.is_empty():
-		_wall_color = wc[randi() % wc.size()]
-	var rc := _get_roof_colors()
-	if not rc.is_empty():
-		_roof_color = rc[randi() % rc.size()]
 	if _head_slider:
 		_head_slider.value = _head_size_index
 	# Update the color picker buttons to reflect new colors.
@@ -1362,8 +1336,6 @@ func _sync_color_picker_buttons() -> void:
 		_pants_color,
 		_shoes_color,
 		_skin_color,
-		_wall_color,
-		_roof_color,
 	]
 	for i in mini(swatches.size(), colors.size()):
 		swatches[i].color = colors[i]

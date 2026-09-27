@@ -444,6 +444,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	var saved_stand_money: Dictionary = data.get("stand_money", { })
 	var saved_stand_popularity: Dictionary = data.get("stand_popularity", { })
 	var saved_last_day: Dictionary = data.get("stand_last_day_stats", { })
+	var saved_stand_lifetime: Dictionary = data.get("stand_lifetime_stats", { })
 	for stand in get_tree().get_nodes_in_group("stand"):
 		if stand is StandUnit:
 			var fallback := GameState.money if stand.is_legacy_primary else Balancing.STARTING_MONEY
@@ -452,6 +453,9 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 			var saved_stats: Variant = saved_last_day.get(stand.name, { })
 			if saved_stats is Dictionary:
 				stand.last_day_stats = saved_stats
+			var saved_lifetime: Variant = saved_stand_lifetime.get(stand.name, { })
+			if saved_lifetime is Dictionary:
+				stand.lifetime_stats = saved_lifetime
 			stand.popularity = _migrate_popularity(
 				saved_stand_popularity.get(
 					stand.name,
@@ -596,6 +600,14 @@ func _collect_stand_last_day_stats() -> Dictionary:
 	return stats
 
 
+func _collect_stand_lifetime_stats() -> Dictionary:
+	var stats := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit and not stand.lifetime_stats.is_empty():
+			stats[stand.name] = stand.lifetime_stats.duplicate(true)
+	return stats
+
+
 func _container_stand_owner(node: Node) -> String:
 	if "stand_owner" in node and not str(node.get("stand_owner")).is_empty():
 		return str(node.get("stand_owner"))
@@ -637,6 +649,7 @@ func _build_save_dict() -> Dictionary:
 		"stand_money": _collect_stand_money(),
 		"stand_popularity": _collect_stand_popularity(),
 		"stand_last_day_stats": _collect_stand_last_day_stats(),
+		"stand_lifetime_stats": _collect_stand_lifetime_stats(),
 		"game_mode": GameState.game_mode,
 		"creator_steam_id": str(NetworkManager.steam_id),
 		"money": GameState.money,

@@ -40,10 +40,16 @@ const BRANCH_COLORS: Array[Color] = [
 @onready var _status_lbl: Label = $MainHBox/Panel/VBox/BottomBar/StatusLbl
 @onready var _flow_indicator: HBoxContainer = $MainHBox/Panel/VBox/FlowIndicator
 @onready var _stand_name_edit: LineEdit = (
-	$MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow/NameEdit
+	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/StandNameRow/NameEdit
 )
 @onready var _stand_name_button: Button = (
-	$MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow/SaveButton
+	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/StandNameRow/SaveButton
+)
+@onready var _wall_color_btn: ColorPickerButton = (
+	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/WallColorRow/WallColorBtn
+)
+@onready var _roof_color_btn: ColorPickerButton = (
+	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/RoofColorRow/RoofColorBtn
 )
 
 @onready var _cart_list: VBoxContainer = (
@@ -193,6 +199,16 @@ func _ready() -> void:
 		func(_text: String):
 			_rename_local_stand(),
 	)
+	if _wall_color_btn:
+		_wall_color_btn.color_changed.connect(
+			func(c: Color):
+				_set_house_color("wall_color", c),
+		)
+	if _roof_color_btn:
+		_roof_color_btn.color_changed.connect(
+			func(c: Color):
+				_set_house_color("roof_color", c),
+		)
 
 	# Make tab labels clickable
 	for tab in _flow_tabs:
@@ -1303,6 +1319,35 @@ func _refresh_stand_name_editor() -> void:
 	var stand := _get_local_stand()
 	if stand != null and _stand_name_edit != null:
 		_stand_name_edit.text = stand.stand_display_name
+	# Sync house color pickers to the local player's customization.
+	var custom: Dictionary = LobbyManager.get_my_customization()
+	if _wall_color_btn != null and custom.get("wall_color") is Color:
+		_wall_color_btn.color = custom["wall_color"]
+	if _roof_color_btn != null and custom.get("roof_color") is Color:
+		_roof_color_btn.color = custom["roof_color"]
+
+
+## Store a house color choice in the local player's roster customization.
+## Broadcasting the roster triggers _apply_player_house_colors() in main.gd
+## on every peer, recoloring the house attached to this stand.
+func _set_house_color(key: String, color: Color) -> void:
+	var custom := LobbyManager.get_my_customization().duplicate(true)
+	custom[key] = color
+	LobbyManager.set_my_customization(custom)
+	SaveManager.set_last_local_customization(custom)
+	# Apply immediately locally too — the roster round-trip may lag a frame.
+	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
+	if neighborhood != null and neighborhood.has_method("apply_player_house_colors"):
+		var entry := LobbyManager.get_my_entry()
+		var stand_idx: int = entry.get("stand_index", 0)
+		var house_name := StringName("player_house" if stand_idx == 0 else "player_house2")
+		var wall = custom.get("wall_color", Color.TRANSPARENT)
+		var roof = custom.get("roof_color", Color.TRANSPARENT)
+		neighborhood.apply_player_house_colors(
+			house_name,
+			wall if wall is Color else Color.TRANSPARENT,
+			roof if roof is Color else Color.TRANSPARENT,
+		)
 
 
 func _show_tab(tab_name: String) -> void:
@@ -1471,10 +1516,110 @@ func _refresh_prices_page() -> void:
 		pop_info.text = "Popularity: %.0f%%" % (GameState.popularity / 10.0)
 
 
-func _add_analytics_row(container: VBoxContainer, label: String, value: String) -> void:
+## Populate the Stand tab's left column with all-time stats, mirroring the
+## daily mail report's layout (People / Money sections).
+func _refresh_analytics() -> void:
+	var col := (
+		$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCol as VBoxContainer
+	)
+	if col == null:
+		return
+	while col.get_child_count() > 0:
+		var c := col.get_child(0)
+		col.remove_child(c)
+		c.queue_free()
+
+	var stand := _get_local_stand()
+	var stats: Dictionary = stand.lifetime_stats if stand else { }
+	var days: int = int(stats.get("days_completed", 0))
+
+	var head := Label.new()
+	head.text = "All-Time Stats%s" % ("  (day %d)" % DayManager.day_number)
+	head.add_theme_font_size_override("font_size", 20)
+	head.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
+	col.add_child(head)
+	col.add_child(HSeparator.new())
+	if days == 0:
+		var none := Label.new()
+		none.text = "Finish your first day to see stats."
+		none.add_theme_font_size_override("font_size", 16)
+		none.add_theme_color_override("font_color", Color(0.6, 0.58, 0.52))
+		col.add_child(none)
+	else:
+		_add_stat_section(col, "People")
+		_add_stat_row(col, "Total Pedestrians", "%d" % int(stats.get("pedestrians", 0)))
+		_add_stat_row(col, "Came to Buy", "%d" % int(stats.get("customers_arrived", 0)))
+		_add_stat_row(col, "Bought", "%d" % int(stats.get("customers_bought", 0)))
+		_add_stat_row(col, "Happy", "%d" % int(stats.get("happy", 0)), Color(0.4, 0.85, 0.4))
+		var soft_red := Color(0.9, 0.55, 0.55)
+		_add_stat_row(
+			col,
+			"Fruit Complaints",
+			"%d" % int(stats.get("complaints_fruit", 0)),
+			soft_red,
+		)
+		_add_stat_row(
+			col,
+			"Sugar Complaints",
+			"%d" % int(stats.get("complaints_sugar", 0)),
+			soft_red,
+		)
+		_add_stat_row(col, "Ice Complaints", "%d" % int(stats.get("complaints_ice", 0)), soft_red)
+		_add_stat_row(col, "Patience Ran Out", "%d" % int(stats.get("timeouts", 0)), soft_red)
+		_add_stat_row(col, "Too Expensive", "%d" % int(stats.get("too_expensive", 0)), soft_red)
+		_add_stat_row(col, "Wrong Order", "%d" % int(stats.get("wrong_order", 0)), soft_red)
+		_add_stat_row(col, "Scammed", "%d" % int(stats.get("scams", 0)), soft_red)
+		_add_stat_section(col, "Money")
+		_add_stat_row(
+			col,
+			"Income",
+			"$%.2f" % float(stats.get("income", 0.0)),
+			Color(0.4, 0.85, 0.4),
+		)
+		_add_stat_row(col, "Sales", "$%.2f" % float(stats.get("sales", 0.0)))
+		_add_stat_row(col, "Recycling", "$%.2f" % float(stats.get("recycling", 0.0)))
+		_add_stat_row(col, "Trash", "$%.2f" % float(stats.get("trash", 0.0)))
+		_add_stat_row(
+			col,
+			"Costs",
+			"-$%.2f" % float(stats.get("costs", 0.0)),
+			Color(0.9, 0.45, 0.45),
+		)
+		var profit := float(stats.get("profit", 0.0))
+		_add_stat_row(
+			col,
+			"Profit",
+			"%s$%.2f" % ["+" if profit >= 0.0 else "-", absf(profit)],
+			Color(0.4, 0.85, 0.4) if profit >= 0.0 else Color(0.9, 0.3, 0.3),
+		)
+		var highest_money: float = stand.highest_money if stand else GameState.highest_money
+		var highest_purchase: float = (
+			stand.highest_purchase if stand else GameState.highest_purchase
+		)
+		_add_stat_row(col, "Highest Balance", "$%.2f" % highest_money)
+		_add_stat_row(col, "Highest Purchase", "$%.2f" % highest_purchase)
+
+
+func _add_stat_section(parent: VBoxContainer, title: String) -> void:
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 6)
+	parent.add_child(spacer)
+	var lbl := Label.new()
+	lbl.text = title
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
+	parent.add_child(lbl)
+
+
+func _add_stat_row(
+	parent: VBoxContainer,
+	label: String,
+	value: String,
+	color: Color = Color(0.75, 0.72, 0.66),
+) -> void:
 	var row := HBoxContainer.new()
 	var name_lbl := Label.new()
-	name_lbl.text = label + ":"
+	name_lbl.text = label
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.add_theme_font_size_override("font_size", 16)
 	name_lbl.add_theme_color_override("font_color", Color(0.75, 0.72, 0.66))
@@ -1482,79 +1627,9 @@ func _add_analytics_row(container: VBoxContainer, label: String, value: String) 
 	var val_lbl := Label.new()
 	val_lbl.text = value
 	val_lbl.add_theme_font_size_override("font_size", 16)
-	val_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
+	val_lbl.add_theme_color_override("font_color", color)
 	row.add_child(val_lbl)
-	container.add_child(row)
-
-
-func _refresh_analytics() -> void:
-	var today := $MainHBox/Panel/VBox/Content/AnalyticsPage/TodayLabel as Label
-	if today:
-		today.text = "Day %d  |  $%.2f  |  %.0f%% pop  |  %.0fC" % [
-			DayManager.day_number,
-			_get_local_money(),
-			GameState.popularity / 10.0,
-			GameState.temperature,
-		]
-	var ybox := $MainHBox/Panel/VBox/Content/AnalyticsPage/YesterdayBox as VBoxContainer
-	if ybox:
-		while ybox.get_child_count() > 0:
-			var c := ybox.get_child(0)
-			ybox.remove_child(c)
-			c.queue_free()
-		if DayManager.day_number > 1:
-			var h := Label.new()
-			h.text = "Day %d Results" % (DayManager.day_number - 1)
-			h.add_theme_font_size_override("font_size", 20)
-			h.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
-			h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			ybox.add_child(h)
-			var sep := HSeparator.new()
-			ybox.add_child(sep)
-			var rev := Label.new()
-			rev.text = "Revenue: $%.2f" % DayManager.day_revenue
-			rev.add_theme_font_size_override("font_size", 18)
-			rev.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
-			rev.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			ybox.add_child(rev)
-			var s := Label.new()
-			s.text = "Served: %d  |  Happy: %d" % [
-				DayManager.day_serves,
-				DayManager.day_happy_serves,
-			]
-			s.add_theme_font_size_override("font_size", 16)
-			s.add_theme_color_override("font_color", Color(0.7, 0.68, 0.6))
-			s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			ybox.add_child(s)
-
-	# Lifetime / all-time analytics
-	var a_page := $MainHBox/Panel/VBox/Content/AnalyticsPage as VBoxContainer
-	var lifetime := a_page.get_node_or_null("LifetimeBox") as VBoxContainer
-	if lifetime == null:
-		lifetime = VBoxContainer.new()
-		lifetime.name = "LifetimeBox"
-		lifetime.size_flags_vertical = 0
-		lifetime.add_theme_constant_override("separation", 8)
-		a_page.add_child(lifetime)
-	while lifetime.get_child_count() > 0:
-		var c := lifetime.get_child(0)
-		lifetime.remove_child(c)
-		c.queue_free()
-	var h2 := Label.new()
-	h2.text = "All-Time Stats"
-	h2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	h2.add_theme_font_size_override("font_size", 20)
-	h2.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
-	lifetime.add_child(h2)
-	lifetime.add_child(HSeparator.new())
-	_add_analytics_row(lifetime, "Customers Served", "%d" % GameState.total_customers_served)
-	_add_analytics_row(lifetime, "Cups Sold", "%d" % GameState.total_cups_sold)
-	_add_analytics_row(lifetime, "Money Made", "$%.2f" % GameState.total_money_earned)
-	_add_analytics_row(lifetime, "Money Spent", "$%.2f" % GameState.total_money_spent)
-	var total_profit: float = GameState.total_money_earned - GameState.total_money_spent
-	_add_analytics_row(lifetime, "Total Profit", "$%.2f" % total_profit)
-	_add_analytics_row(lifetime, "Highest Purchase", "$%.2f" % GameState.highest_purchase)
-	_add_analytics_row(lifetime, "Highest Balance", "$%.2f" % GameState.highest_money)
+	parent.add_child(row)
 
 
 func _refresh_upgrades() -> void:
@@ -2183,7 +2258,12 @@ func _scan_stand_state() -> void:
 			_bin_amounts["ice"] = (_bin_amounts.get("ice", 0.0) + node.ice)
 	for node in root.get_tree().get_nodes_in_group("supply_box"):
 		var box := node as SupplyBox
-		if box == null or box.is_equipment:
+		if box == null:
+			continue
+		if box.is_equipment:
+			var etype: String = box.equipment_type
+			if etype != "":
+				_equipment_counts[etype] = _equipment_counts.get(etype, 0) + 1
 			continue
 		var btype: String = box.ingredient_type
 		_bin_amounts[btype] = _bin_amounts.get(btype, 0.0) + box.quantity
@@ -2213,25 +2293,56 @@ func _refresh_stats() -> void:
 		var c := _stats_vbox.get_child(0)
 		_stats_vbox.remove_child(c)
 		c.queue_free()
+	# Status lines: day / money / temperature.
+	var day_lbl := Label.new()
+	day_lbl.text = "Day: %d" % DayManager.day_number
+	day_lbl.add_theme_font_size_override("font_size", 16)
+	day_lbl.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
+	_stats_vbox.add_child(day_lbl)
 	var money_lbl := Label.new()
 	money_lbl.text = "Money: $%.2f" % _get_local_money()
 	money_lbl.add_theme_font_size_override("font_size", 16)
 	money_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	_stats_vbox.add_child(money_lbl)
-	for itype in _bin_amounts:
-		var amt: float = _bin_amounts[itype]
-		var line := Label.new()
-		line.text = "%s: %.0f" % [itype.capitalize(), amt]
-		line.add_theme_font_size_override("font_size", 15)
-		line.add_theme_color_override("font_color", Color(0.6, 0.75, 0.88))
-		_stats_vbox.add_child(line)
+	var temp_lbl := Label.new()
+	temp_lbl.text = "Temp: %.0fC" % GameState.temperature
+	temp_lbl.add_theme_font_size_override("font_size", 16)
+	temp_lbl.add_theme_color_override("font_color", Color(0.7, 0.8, 0.95))
+	_stats_vbox.add_child(temp_lbl)
+
+	var equip_hdr := Label.new()
+	equip_hdr.text = "Equipment"
+	equip_hdr.add_theme_font_size_override("font_size", 15)
+	equip_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
+	_stats_vbox.add_child(equip_hdr)
+	if _equipment_counts.is_empty():
+		_stats_vbox.add_child(_stats_line("(none)", Color(0.5, 0.5, 0.48)))
 	for etype in _equipment_counts:
 		var cnt: int = _equipment_counts[etype]
-		var line := Label.new()
-		line.text = "%s: %d" % [HeldItem.container_name(etype), cnt]
-		line.add_theme_font_size_override("font_size", 15)
-		line.add_theme_color_override("font_color", Color(0.6, 0.58, 0.52))
-		_stats_vbox.add_child(line)
+		_stats_vbox.add_child(
+			_stats_line("%s x%d" % [HeldItem.container_name(etype), cnt], Color(0.6, 0.58, 0.52))
+		)
+
+	var cons_hdr := Label.new()
+	cons_hdr.text = "Consumables"
+	cons_hdr.add_theme_font_size_override("font_size", 15)
+	cons_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
+	_stats_vbox.add_child(cons_hdr)
+	if _bin_amounts.is_empty():
+		_stats_vbox.add_child(_stats_line("(none)", Color(0.5, 0.5, 0.48)))
+	for itype in _bin_amounts:
+		var amt: float = _bin_amounts[itype]
+		_stats_vbox.add_child(
+			_stats_line("%s: %.0f" % [itype.capitalize(), amt], Color(0.6, 0.75, 0.88))
+		)
+
+
+func _stats_line(text: String, color: Color) -> Label:
+	var line := Label.new()
+	line.text = text
+	line.add_theme_font_size_override("font_size", 15)
+	line.add_theme_color_override("font_color", color)
+	return line
 
 
 func _on_dev_reset() -> void:

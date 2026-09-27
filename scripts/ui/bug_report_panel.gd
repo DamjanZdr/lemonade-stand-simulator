@@ -128,9 +128,12 @@ func _build() -> void:
 	_severity_option = OptionButton.new()
 	_severity_option.custom_minimum_size = Vector2(200, 0)
 	_severity_option.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_severity_option.add_item("Pick one")
 	for s in SEVERITIES:
 		_severity_option.add_item(s)
-	_severity_option.selected = 1 # "Minor" default
+	# Disabled placeholder item — shows as the label until a real pick.
+	_severity_option.set_item_disabled(0, true)
+	_severity_option.selected = 0
 	_style_option(_severity_option)
 	sev_row.add_child(_severity_option)
 
@@ -235,6 +238,9 @@ func close() -> void:
 func _submit() -> void:
 	if _sending:
 		return
+	if _severity_option.selected <= 0:
+		_status_label.text = "Please pick a severity."
+		return
 	var desc := _desc_edit.text.strip_edges()
 	if desc.length() < 5:
 		_status_label.text = "Please describe the bug first."
@@ -244,7 +250,7 @@ func _submit() -> void:
 	_status_label.text = "Sending…"
 	_status_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 
-	var severity := SEVERITIES[_severity_option.selected]
+	var severity := SEVERITIES[_severity_option.selected - 1]
 	var steps := _steps_edit.text.strip_edges()
 	var fields: Array = [
 		{ "name": "Description", "value": desc.left(FIELD_LIMIT) },
@@ -264,7 +270,7 @@ func _submit() -> void:
 		"embeds": [
 			{
 				"title": "Bug Report — %s" % severity,
-				"color": SEVERITY_COLORS[_severity_option.selected],
+				"color": SEVERITY_COLORS[_severity_option.selected - 1],
 				"fields": fields,
 				"timestamp": Time.get_datetime_string_from_system(true, true),
 			},
