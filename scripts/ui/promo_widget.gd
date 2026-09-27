@@ -47,26 +47,34 @@ func _build() -> void:
 	offset_bottom = -(music_h + margin)
 	custom_minimum_size = Vector2(WIDGET_W, WIDGET_H)
 
-	# "Report a Bug" button above the widget frame.
+	# "Report a Bug" bar above the widget frame — same width as the widget.
 	var report_btn := Button.new()
 	report_btn.name = "ReportBug"
 	report_btn.text = "Report a Bug"
-	report_btn.flat = true
 	report_btn.anchor_left = 0.0
 	report_btn.anchor_top = 0.0
 	report_btn.anchor_right = 1.0
 	report_btn.anchor_bottom = 0.0
 	report_btn.offset_left = 0.0
-	report_btn.offset_top = -44.0
+	report_btn.offset_top = -48.0
 	report_btn.offset_right = 0.0
-	report_btn.offset_bottom = -10.0
+	report_btn.offset_bottom = -12.0
 	report_btn.add_theme_font_override("font", FONT_GRANDSTANDER)
 	report_btn.add_theme_font_size_override("font_size", 20)
-	report_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	report_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-	var empty_style := StyleBoxEmpty.new()
-	for state in ["normal", "hover", "pressed", "focus"]:
-		report_btn.add_theme_stylebox_override(state, empty_style)
+	report_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
+	report_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 1))
+	var rb_normal := StyleBoxFlat.new()
+	rb_normal.bg_color = Color(0.15, 0.22, 0.32, 0.92)
+	rb_normal.set_corner_radius_all(8)
+	rb_normal.set_border_width_all(0)
+	report_btn.add_theme_stylebox_override("normal", rb_normal)
+	var rb_hover := StyleBoxFlat.new()
+	rb_hover.bg_color = Color(0.22, 0.30, 0.42, 0.95)
+	rb_hover.set_corner_radius_all(8)
+	rb_hover.set_border_width_all(0)
+	report_btn.add_theme_stylebox_override("hover", rb_hover)
+	report_btn.add_theme_stylebox_override("pressed", rb_normal)
+	report_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	report_btn.pressed.connect(_on_report_bug)
 	add_child(report_btn)
 

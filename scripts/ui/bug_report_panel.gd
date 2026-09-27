@@ -39,9 +39,17 @@ func _build() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	theme = MENU_THEME
 
+	# Full-screen blur + dim backdrop. Blocks all clicks to anything below.
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	var blur_mat := ShaderMaterial.new()
+	blur_mat.shader = preload("res://shaders/promo_panel_blur.gdshader")
+	blur_mat.set_shader_parameter("overlay_color", Color(0, 0, 0, 0.45))
+	blur_mat.set_shader_parameter("blur_radius", 10.0)
+	blur_mat.set_shader_parameter("corner_radius", 0.0)
+	blur_mat.set_shader_parameter("size_pixels", Vector2(4096, 4096))
+	dim.material = blur_mat
 	add_child(dim)
 
 	var center := CenterContainer.new()
@@ -83,11 +91,18 @@ func _build() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "×"
 	close_btn.flat = true
-	close_btn.add_theme_font_size_override("font_size", 30)
+	close_btn.custom_minimum_size = Vector2(44, 44)
+	close_btn.add_theme_font_size_override("font_size", 40)
 	close_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	close_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	close_btn.pressed.connect(close)
 	header.add_child(close_btn)
+
+	var subtitle := Label.new()
+	subtitle.text = "Found a bug? Tell us what happened — no account needed."
+	subtitle.add_theme_font_size_override("font_size", 15)
+	subtitle.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
+	vbox.add_child(subtitle)
 
 	# Severity row.
 	var sev_row := HBoxContainer.new()
