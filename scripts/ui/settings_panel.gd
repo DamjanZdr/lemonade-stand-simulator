@@ -9,7 +9,7 @@ signal vsync_toggled(enabled: bool)
 signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
 
-const _TAB_NAMES: Array[String] = ["Audio", "Graphics", "Gameplay"]
+const _TAB_NAMES: Array[String] = ["Gameplay", "Graphics", "Audio"]
 
 var _tab_buttons: Array[Button] = []
 var _tab_contents: Array[Control] = []
@@ -42,10 +42,10 @@ func _build_ui() -> void:
 
 	var list := VBoxContainer.new()
 	list.name = "SettingsList"
-	list.set_anchors_preset(Control.PRESET_FULL_RECT)
+	list.set_anchors_preset(Control.PRESET_LEFT_WIDE)
 	list.offset_left = 60.0
 	list.offset_top = 80.0
-	list.offset_right = 500.0
+	list.offset_right = 400.0
 	list.offset_bottom = -80.0
 	list.grow_vertical = Control.GROW_DIRECTION_BOTH
 	list.theme = MENU_THEME
@@ -63,7 +63,7 @@ func _build_ui() -> void:
 	spacer.custom_minimum_size = Vector2(0, 8)
 	list.add_child(spacer)
 
-	# Tabs row like the lobby (Audio | Graphics | Gameplay).
+	# Tabs row like the lobby (Gameplay | Graphics | Audio).
 	var tabs_row := HBoxContainer.new()
 	tabs_row.name = "TabsRow"
 	tabs_row.add_theme_constant_override("separation", 8)
@@ -105,17 +105,17 @@ func _build_ui() -> void:
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list.add_child(content)
 
-	var audio_tab := _build_audio_tab()
-	content.add_child(audio_tab)
-	_tab_contents.append(audio_tab)
+	var gameplay_tab := _build_gameplay_tab()
+	content.add_child(gameplay_tab)
+	_tab_contents.append(gameplay_tab)
 
 	var graphics_tab := _build_graphics_tab()
 	content.add_child(graphics_tab)
 	_tab_contents.append(graphics_tab)
 
-	var gameplay_tab := _build_gameplay_tab()
-	content.add_child(gameplay_tab)
-	_tab_contents.append(gameplay_tab)
+	var audio_tab := _build_audio_tab()
+	content.add_child(audio_tab)
+	_tab_contents.append(audio_tab)
 
 	var back := Button.new()
 	back.name = "Back"

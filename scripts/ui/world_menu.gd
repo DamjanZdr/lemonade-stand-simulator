@@ -72,6 +72,7 @@ var _promo_hover: ColorRect = null
 var _promo_click_btn: Button = null
 var _promo_timer: Timer = null
 var _promo_index: int = 0
+var _promo_tween: Tween = null
 
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
@@ -1474,6 +1475,13 @@ func _build_promo_widget() -> void:
 	_promo_widget.custom_minimum_size = Vector2(PROMO_WIDGET_W, PROMO_WIDGET_H)
 	add_child(_promo_widget)
 
+	var clip_frame := Control.new()
+	clip_frame.name = "ClipFrame"
+	clip_frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	clip_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip_frame.clip_contents = true
+	_promo_widget.add_child(clip_frame)
+
 	var textures: Array[Texture2D] = [
 		load(PROMO_DISCORD_PATH) as Texture2D,
 		load(PROMO_WISHLIST_PATH) as Texture2D,
@@ -1487,7 +1495,7 @@ func _build_promo_widget() -> void:
 		slide.offset_left = start_offset
 		slide.offset_right = start_offset
 		slide.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_promo_widget.add_child(slide)
+		clip_frame.add_child(slide)
 		_promo_slides.append(slide)
 
 		var tr := TextureRect.new()
@@ -1549,7 +1557,7 @@ func _build_promo_widget() -> void:
 	hover_mat.set_shader_parameter("overlay_alpha", 0.0)
 	hover.material = hover_mat
 	hover.color = Color.TRANSPARENT
-	_promo_widget.add_child(hover)
+	clip_frame.add_child(hover)
 	_promo_hover = hover
 
 	# Invisible click target over the whole widget.
@@ -1561,7 +1569,7 @@ func _build_promo_widget() -> void:
 	for state in ["normal", "hover", "pressed", "focus"]:
 		btn.add_theme_stylebox_override(state, style)
 	btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
-	_promo_widget.add_child(btn)
+	clip_frame.add_child(btn)
 	_promo_click_btn = btn
 	btn.mouse_entered.connect(
 		func():
@@ -1653,7 +1661,10 @@ func _show_promo_slide(index: int) -> void:
 	nxt.offset_left = PROMO_WIDGET_W
 	nxt.offset_right = PROMO_WIDGET_W
 
-	var tw := create_tween().set_parallel(true)
+	if _promo_tween != null and _promo_tween.is_running():
+		_promo_tween.kill()
+	_promo_tween = create_tween().set_parallel(true)
+	var tw := _promo_tween
 	tw.tween_property(cur, "offset_left", -PROMO_WIDGET_W, duration)
 	tw.tween_property(cur, "offset_right", -PROMO_WIDGET_W, duration)
 	tw.tween_property(nxt, "offset_left", 0.0, duration)
