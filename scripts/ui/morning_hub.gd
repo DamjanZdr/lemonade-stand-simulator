@@ -45,12 +45,14 @@ const BRANCH_COLORS: Array[Color] = [
 @onready var _stand_name_button: Button = (
 	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/StandNameRow/SaveButton
 )
-@onready var _wall_color_btn: ColorPickerButton = (
+@onready var _wall_color_btn: Button = (
 	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/WallColorRow/WallColorBtn
 )
-@onready var _roof_color_btn: ColorPickerButton = (
+@onready var _roof_color_btn: Button = (
 	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/RoofColorRow/RoofColorBtn
 )
+var _wall_swatch: ColorRect = null
+var _roof_swatch: ColorRect = null
 
 @onready var _cart_list: VBoxContainer = (
 	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll/CartList
@@ -200,12 +202,14 @@ func _ready() -> void:
 			_rename_local_stand(),
 	)
 	if _wall_color_btn:
-		_wall_color_btn.color_changed.connect(
+		_wall_swatch = _make_swatch_picker(
+			_wall_color_btn,
 			func(c: Color):
 				_set_house_color("wall_color", c),
 		)
 	if _roof_color_btn:
-		_roof_color_btn.color_changed.connect(
+		_roof_swatch = _make_swatch_picker(
+			_roof_color_btn,
 			func(c: Color):
 				_set_house_color("roof_color", c),
 		)
@@ -1319,12 +1323,65 @@ func _refresh_stand_name_editor() -> void:
 	var stand := _get_local_stand()
 	if stand != null and _stand_name_edit != null:
 		_stand_name_edit.text = stand.stand_display_name
-	# Sync house color pickers to the local player's customization.
+	# Sync house color swatches to the local player's customization,
+	# falling back to the house palettes' defaults so the current color
+	# is always shown even if it was never customized.
 	var custom: Dictionary = LobbyManager.get_my_customization()
-	if _wall_color_btn != null and custom.get("wall_color") is Color:
-		_wall_color_btn.color = custom["wall_color"]
-	if _roof_color_btn != null and custom.get("roof_color") is Color:
-		_roof_color_btn.color = custom["roof_color"]
+	var cm := get_tree().get_first_node_in_group("color_manager")
+	var wall_default := Color(0.95, 0.85, 0.55)
+	var roof_default := Color(0.5, 0.25, 0.2)
+	if cm != null:
+		var wc: Array = cm.get("wall_colors")
+		if not wc.is_empty():
+			wall_default = wc[0]
+		var rc: Array = cm.get("roof_colors")
+		if not rc.is_empty():
+			roof_default = rc[0]
+	if _wall_swatch != null:
+		var wc_val = custom.get("wall_color", null)
+		_wall_swatch.color = wc_val if wc_val is Color else wall_default
+	if _roof_swatch != null:
+		var rc_val = custom.get("roof_color", null)
+		_roof_swatch.color = rc_val if rc_val is Color else roof_default
+
+
+## Turn a plain Button into a lobby-style color picker: a flat rounded
+## swatch that opens a minimal ColorPicker popup directly above the button.
+## Returns the swatch ColorRect so callers can update the shown color.
+func _make_swatch_picker(btn: Button, on_color: Callable) -> ColorRect:
+	btn.text = ""
+	btn.flat = true
+	var swatch := ColorRect.new()
+	swatch.color = Color(0.5, 0.5, 0.5)
+	swatch.set_anchors_preset(Control.PRESET_FULL_RECT)
+	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(swatch)
+
+	var popup := PopupPanel.new()
+	var picker := ColorPicker.new()
+	picker.sampler_visible = false
+	picker.color_modes_visible = false
+	picker.sliders_visible = false
+	picker.hex_visible = false
+	picker.presets_visible = false
+	popup.add_child(picker)
+	btn.add_child(popup)
+	picker.color_changed.connect(
+		func(c: Color):
+			on_color.call(c)
+			swatch.color = c,
+	)
+	btn.pressed.connect(
+		func():
+			picker.color = swatch.color
+			popup.popup()
+			# Open directly above the button, right edge aligned.
+			popup.position = Vector2i(
+				int(btn.global_position.x + btn.size.x - popup.size.x),
+				int(btn.global_position.y - popup.size.y - 4),
+			),
+	)
+	return swatch
 
 
 ## Store a house color choice in the local player's roster customization.

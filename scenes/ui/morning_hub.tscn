@@ -392,7 +392,7 @@ theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
 text = "Walls"
 vertical_alignment = 1
 
-[node name="WallColorBtn" type="ColorPickerButton" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/WallColorRow"]
+[node name="WallColorBtn" type="Button" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/WallColorRow"]
 custom_minimum_size = Vector2(60, 30)
 layout_mode = 2
 
@@ -408,7 +408,7 @@ theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
 text = "Roof"
 vertical_alignment = 1
 
-[node name="RoofColorBtn" type="ColorPickerButton" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/RoofColorRow"]
+[node name="RoofColorBtn" type="Button" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/RoofColorRow"]
 custom_minimum_size = Vector2(60, 30)
 layout_mode = 2
 
