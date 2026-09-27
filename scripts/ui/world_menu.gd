@@ -65,14 +65,15 @@ var _music_time_total: Label = null
 # Promo slideshow widget (Discord / Wishlist)
 var _promo_widget: Control = null
 var _promo_slides: Array[TextureRect] = []
-var _promo_panels: Array[ColorRect] = []
-var _promo_labels: Array[Label] = []
+var _promo_labels: Array[String] = ["Join the Discord", "Wishlist on Steam"]
+var _promo_urls: Array[String] = [PROMO_DISCORD_URL, PROMO_WISHLIST_URL]
+var _promo_panel: Panel = null
+var _promo_label: Label = null
 var _promo_dots: Array[Button] = []
 var _promo_hover: ColorRect = null
 var _promo_click_btn: Button = null
 var _promo_timer: Timer = null
 var _promo_index: int = 0
-var _promo_current_url: String = ""
 
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
@@ -1480,8 +1481,6 @@ func _build_promo_widget() -> void:
 		load(PROMO_DISCORD_PATH) as Texture2D,
 		load(PROMO_WISHLIST_PATH) as Texture2D,
 	]
-	var labels: Array[String] = ["Join the Discord", "Wishlist on Steam"]
-	var urls: Array[String] = [PROMO_DISCORD_URL, PROMO_WISHLIST_URL]
 	for i in range(textures.size()):
 		var tr := TextureRect.new()
 		tr.name = "Slide%d" % i
@@ -1500,39 +1499,40 @@ func _build_promo_widget() -> void:
 		_promo_widget.add_child(tr)
 		_promo_slides.append(tr)
 
-		# Bottom overlay panel with blur + text (sibling of slide, not child).
-		var panel := ColorRect.new()
-		panel.name = "Panel%d" % i
-		panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		panel.offset_top = -40.0
-		panel.offset_bottom = 0.0
-		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_promo_widget.add_child(panel)
+	# Single bottom text panel (no blur, just a solid tinted overlay).
+	var panel := Panel.new()
+	panel.name = "TextPanel"
+	panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	panel.offset_top = -40.0
+	panel.offset_bottom = 0.0
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.15, 0.22, 0.32, 0.92)
+	panel_style.set_border_width_all(0)
+	panel_style.corner_radius_top_left = 0
+	panel_style.corner_radius_top_right = 0
+	panel_style.corner_radius_bottom_left = 8
+	panel_style.corner_radius_bottom_right = 8
+	panel.add_theme_stylebox_override("panel", panel_style)
+	_promo_widget.add_child(panel)
+	_promo_panel = panel
 
-		var blur_mat := ShaderMaterial.new()
-		blur_mat.shader = PROMO_BLUR_SHADER
-		blur_mat.set_shader_parameter("blur_radius", 6.0)
-		blur_mat.set_shader_parameter("overlay_color", Color(0.15, 0.22, 0.32, 0.85))
-		blur_mat.set_shader_parameter("size_pixels", Vector2(PROMO_WIDGET_W, 40.0))
-		blur_mat.set_shader_parameter("corner_radius", 8.0)
-		panel.material = blur_mat
-
-		var label := Label.new()
-		label.name = "Label%d" % i
-		label.text = labels[i].to_upper()
-		label.set_anchors_preset(Control.PRESET_FULL_RECT)
-		label.offset_left = 16.0
-		label.offset_right = -16.0
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.add_theme_font_override("font", FONT_GRANDSTANDER)
-		label.add_theme_font_size_override("font_size", 18)
-		label.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
-		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(label)
-		label.visible = (i == _promo_index)
-		_promo_panels.append(panel)
-		_promo_labels.append(label)
+	var label := Label.new()
+	label.name = "TextLabel"
+	label.text = _promo_labels[_promo_index].to_upper()
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.offset_left = 8.0
+	label.offset_right = -8.0
+	label.offset_top = 2.0
+	label.offset_bottom = -2.0
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_override("font", FONT_GRANDSTANDER)
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(label)
+	_promo_label = label
 
 	# Hover overlay (rounded to match the image).
 	var hover := ColorRect.new()
@@ -1634,12 +1634,11 @@ func _build_promo_widget() -> void:
 	_promo_timer.timeout.connect(_advance_promo_slide)
 	_promo_widget.add_child(_promo_timer)
 
-	_promo_current_url = urls[_promo_index]
-
 
 func _on_promo_clicked() -> void:
-	if _promo_current_url != "":
-		OS.shell_open(_promo_current_url)
+	var url := _promo_urls[_promo_index]
+	if url != "":
+		OS.shell_open(url)
 
 
 func _show_promo_slide(index: int) -> void:
@@ -1654,15 +1653,12 @@ func _show_promo_slide(index: int) -> void:
 	tw.tween_property(nxt, "modulate:a", 1.0, duration)
 
 	_promo_index = index
-	for i in range(_promo_slides.size()):
-		_promo_labels[i].visible = (i == _promo_index)
-		_promo_panels[i].visible = (i == _promo_index)
+	_promo_label.text = _promo_labels[_promo_index].to_upper()
 	for i in range(_promo_dots.size()):
 		var dot := _promo_dots[i]
 		var normal := dot.get_theme_stylebox("normal") as StyleBoxFlat
 		normal.bg_color = Color(1, 1, 1, 1.0 if i == _promo_index else 0.35)
 		dot.add_theme_stylebox_override("normal", normal)
-	_promo_current_url = [PROMO_DISCORD_URL, PROMO_WISHLIST_URL][_promo_index]
 
 
 func _advance_promo_slide() -> void:
