@@ -177,10 +177,15 @@ func _on_weather_changed(temp: float) -> void:
 ## Public (unlike the other _on_* handlers here) because customer.gd now
 ## calls this directly for the primary stand instead of GameState listening
 ## to EventBus.customer_served globally — see the note above _ready().
-func on_customer_served(_customer: Node, outcome: String, pop_delta: float) -> void:
+func on_customer_served(
+	_customer: Node,
+	outcome: String,
+	pop_delta: float,
+	cups_served: int = 1,
+) -> void:
 	total_customers_served += 1
 	if outcome != "timeout":
-		total_cups_sold += 1
+		total_cups_sold += cups_served
 	if outcome == "happy":
 		customers_served_happy += 1
 	else:

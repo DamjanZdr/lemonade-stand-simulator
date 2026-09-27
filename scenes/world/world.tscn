@@ -609,7 +609,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -58, 0, -2)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0394282, 1.4845874, -1.5014197)
 
 [node name="PreviewOrbitCamera" type="Camera3D" parent="Misc" unique_id=1183170316]
-transform = Transform3D(-0.8933836, -0.22326438, 0.38989577, 0, 0.8677952, 0.49692196, -0.44929466, 0.44394195, -0.77527404, 13.506236, 18.071976, -21.8156)
+transform = Transform3D(-0.8933836, -0.22326434, 0.3898958, 0, 0.8677953, 0.49692187, -0.44929466, 0.44394186, -0.7752741, 13.506261, 18.071974, -21.815578)
 fov = 30.0
 
 [node name="PreviewCenter2" type="Marker3D" parent="Misc" unique_id=1387901234]

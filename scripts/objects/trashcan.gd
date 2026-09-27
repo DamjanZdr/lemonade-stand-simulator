@@ -120,6 +120,12 @@ func interact(player: Node) -> void:
 		if ctype == "pitcher" and p.held_item_data.get("has_liquid", false):
 			EventBus.interaction_hint_changed.emit("Empty the pitcher first!")
 			return
+		if (
+			ctype == "workstation"
+			and not p.held_item_data.get("workstation_attached_items", []).is_empty()
+		):
+			EventBus.interaction_hint_changed.emit("Empty the table first!")
+			return
 		var refund := _get_container_refund(p.held_item_data)
 		var stand_name := _get_player_stand_name(p)
 		if WorldSync.is_host():
@@ -172,6 +178,12 @@ func interact(player: Node) -> void:
 
 func _finish_held_disposal(player: Player) -> void:
 	var mesh := player.inventory.release_hand_mesh()
+	# Workstations stay in the tree (hidden) while held — despawn the
+	# source node for everyone so a trashed table stops existing/counting.
+	var source: Node = player.held_item_data.get("source_node")
+	if source != null and is_instance_valid(source):
+		WorldSync.request_despawn(source)
+		source.queue_free()
 	player.inventory.clear_held()
 	AudioManager.play_sfx("trash", global_position)
 	if mesh == null or not is_instance_valid(mesh):

@@ -480,6 +480,65 @@ func _style_slider(slider: HSlider) -> void:
 	grab.content_margin_bottom = 6.0
 	slider.add_theme_stylebox_override("grabber_area", grab)
 	slider.add_theme_stylebox_override("grabber_area_highlight", grab)
+	# Lemon emoji grabber — same look as the lobby customize sliders.
+	_set_slider_emoji_icons(slider)
+
+
+## Set lemon emoji icons on a slider, rendered via SubViewport (async).
+func _set_slider_emoji_icons(slider: HSlider) -> void:
+	var grabber := await _render_emoji_texture("🍋", 16)
+	var grabber_hl := await _render_emoji_texture("🍋", 20)
+	if not is_instance_valid(slider):
+		return
+	if grabber != null:
+		slider.add_theme_icon_override("grabber", grabber)
+	if grabber_hl != null:
+		slider.add_theme_icon_override("grabber_highlight", grabber_hl)
+
+
+## Render an emoji to a texture via a SubViewport Label (supports emoji fallback).
+## Renders at high resolution, removes dark outline pixels, then uses GPU scaling.
+func _render_emoji_texture(emoji: String, font_size: int) -> Texture2D:
+	var sz := 128
+	var vp := SubViewport.new()
+	vp.size = Vector2(sz, sz)
+	vp.transparent_bg = true
+	vp.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
+	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	var lbl := Label.new()
+	lbl.text = emoji
+	lbl.add_theme_font_size_override("font_size", 96)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.size = Vector2(sz, sz)
+	vp.add_child(lbl)
+	add_child(vp)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var img := vp.get_texture().get_image()
+	vp.queue_free()
+	if img == null:
+		# Headless/no-GPU environments can't render SubViewports.
+		return null
+	# Remove dark outline pixels: make near-black pixels transparent.
+	_remove_dark_outline(img)
+	var tex := ImageTexture.create_from_image(img)
+	tex.set_size_override(Vector2(font_size + 8, font_size + 8))
+	return tex
+
+
+## Remove dark outline pixels from an emoji render by making them transparent.
+func _remove_dark_outline(img: Image) -> void:
+	if img == null:
+		return
+	var w := img.get_width()
+	var h := img.get_height()
+	for y in h:
+		for x in w:
+			var c := img.get_pixel(x, y)
+			var brightness := (c.r + c.g + c.b) / 3.0
+			if brightness < 0.25 and c.a > 0.0:
+				img.set_pixel(x, y, Color(c.r, c.g, c.b, brightness * c.a * 2.0))
 
 
 func _style_checkbox(cb: CheckBox) -> void:
@@ -555,7 +614,12 @@ func _make_flat_button(btn: Button) -> void:
 
 
 func _setup_hover_effect(btn: Button) -> void:
-	btn.pivot_offset = btn.size * 0.5
+	# Keep the scale pivot centered — at build time the button's size is
+	# still zero, so scaling would grow it down-right from the corner.
+	var sync_pivot := func():
+		btn.pivot_offset = btn.size * 0.5
+	sync_pivot.call()
+	btn.resized.connect(sync_pivot)
 	btn.mouse_entered.connect(
 		func():
 			var tw := create_tween()

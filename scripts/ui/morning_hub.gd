@@ -247,6 +247,19 @@ func _ready() -> void:
 	EventBus.day_time_over.connect(_on_day_time_over)
 	_build_closed_overlay()
 	_build_demo_upgrades_overlay()
+	# Small exit hint along the bottom edge — the HUD is hidden while the
+	# hub is open, so this lives inside the computer screen itself.
+	var esc_hint := Label.new()
+	esc_hint.text = "ESC to exit"
+	esc_hint.add_theme_font_size_override("font_size", 15)
+	esc_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.35))
+	esc_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	esc_hint.offset_top = -26.0
+	esc_hint.offset_bottom = -8.0
+	esc_hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	esc_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	esc_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(esc_hint)
 	# Employees tab removed in the demo.
 	var emp_tab := _flow_indicator.get_node_or_null("StepPC_employees")
 	if emp_tab:
@@ -2414,7 +2427,7 @@ func _scan_stand_state() -> void:
 		var owner := _node_stand_name(node)
 		return owner == "" or owner == stand_name
 	for node in root.get_tree().get_nodes_in_group("container"):
-		if not belongs.call(node):
+		if not belongs.call(node) or not node.visible or node.is_in_group("ghost"):
 			continue
 		if node is FruitBin:
 			for ftype in node.fruit_amounts:
@@ -2426,15 +2439,15 @@ func _scan_stand_state() -> void:
 		elif node is CupStack:
 			_bin_amounts["cups"] = (_bin_amounts.get("cups", 0) + node.current_count)
 		elif node is Pitcher:
+			# Pitcher contents are mixed product, not raw stock — only fruit
+			# counts here. Water comes from dispensers below so the number
+			# reflects the dispenser's actual remaining fillings.
 			if node.fruit_type != "" and node.fruit_count > 0.0:
 				var prev: float = _bin_amounts.get(node.fruit_type, 0.0)
 				_bin_amounts[node.fruit_type] = prev + node.fruit_count
-			_bin_amounts["water"] = (_bin_amounts.get("water", 0.0) + node.water)
-			_bin_amounts["sugar"] = (_bin_amounts.get("sugar", 0.0) + node.sugar)
-			_bin_amounts["ice"] = (_bin_amounts.get("ice", 0.0) + node.ice)
 	for node in root.get_tree().get_nodes_in_group("supply_box"):
 		var box := node as SupplyBox
-		if box == null or not belongs.call(box):
+		if box == null or not belongs.call(box) or not box.visible:
 			continue
 		if box.is_equipment:
 			var etype: String = box.equipment_type
@@ -2448,7 +2461,7 @@ func _scan_stand_state() -> void:
 		if dispenser != null and belongs.call(dispenser):
 			_bin_amounts["water"] = (_bin_amounts.get("water", 0.0) + dispenser.water_fillings)
 	for node in root.get_tree().get_nodes_in_group("container"):
-		if not belongs.call(node):
+		if not belongs.call(node) or not node.visible or node.is_in_group("ghost"):
 			continue
 		var ctype := SaveManager.get_container_type(node)
 		if ctype != "" and ctype != "cup":

@@ -746,18 +746,18 @@ func _apply_set_ice_degrees(value: float) -> void:
 	OnboardingManager.notify_ice_changed(self, ice_degrees_per_scoop)
 
 
-func request_customer_served(outcome: String, pop_delta: float) -> void:
+func request_customer_served(outcome: String, pop_delta: float, cups_served: int = 1) -> void:
 	if multiplayer.has_multiplayer_peer():
-		_rpc_on_customer_served.rpc_id(1, outcome, pop_delta)
+		_rpc_on_customer_served.rpc_id(1, outcome, pop_delta, cups_served)
 	else:
-		on_customer_served(outcome, pop_delta)
+		on_customer_served(outcome, pop_delta, cups_served)
 
 
 @rpc("any_peer", "call_local", "reliable")
-func _rpc_on_customer_served(outcome: String, pop_delta: float) -> void:
+func _rpc_on_customer_served(outcome: String, pop_delta: float, cups_served: int = 1) -> void:
 	if not is_multiplayer_authority():
 		return
-	on_customer_served(outcome, pop_delta)
+	on_customer_served(outcome, pop_delta, cups_served)
 	push_state()
 
 
@@ -777,10 +777,10 @@ func set_feedback_tier(tier: int) -> void:
 	feedback_tier_changed.emit(feedback_tier)
 
 
-func on_customer_served(outcome: String, pop_delta: float) -> void:
+func on_customer_served(outcome: String, pop_delta: float, cups_served: int = 1) -> void:
 	total_customers_served += 1
 	if outcome != "timeout":
-		total_cups_sold += 1
+		total_cups_sold += cups_served
 	if outcome == "happy":
 		customers_served_happy += 1
 	else:

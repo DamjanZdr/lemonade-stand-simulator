@@ -322,6 +322,13 @@ func _update_ground_height(delta: float) -> void:
 	)
 	query.exclude = [get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	# Ignore hits on the delivery truck — otherwise the ray lands on the
+	# truck's grid and the NPC snaps upward for a frame ("jumping" the truck).
+	var hit_node := hit.get("collider") as Node
+	while hit_node != null:
+		if hit_node is DeliveryTruck:
+			return
+		hit_node = hit_node.get_parent()
 	if not hit.is_empty() and (hit.get("normal", Vector3.UP) as Vector3).y > 0.5:
 		_ground_y = (hit.get("position", origin) as Vector3).y + _visual_ground_offset
 

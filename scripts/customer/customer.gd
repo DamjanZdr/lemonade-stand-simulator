@@ -421,6 +421,12 @@ func _update_ground_height(delta: float) -> void:
 	)
 	query.exclude = [get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	# Ignore hits on the delivery truck — NPCs must not snap onto it.
+	var hit_node := hit.get("collider") as Node
+	while hit_node != null:
+		if hit_node is DeliveryTruck:
+			return
+		hit_node = hit_node.get_parent()
 	if not hit.is_empty() and (hit.get("normal", Vector3.UP) as Vector3).y > 0.5:
 		_ground_y = (hit.get("position", origin) as Vector3).y + _visual_ground_offset
 
@@ -804,7 +810,7 @@ func _record_customer_served(outcome: String) -> void:
 	# Always route through the owning stand. The legacy GameState is kept in
 	# sync inside StandUnit.on_customer_served() for the primary stand.
 	if stand != null:
-		stand.request_customer_served(outcome, pop_delta)
+		stand.request_customer_served(outcome, pop_delta, _served_evaluations.size())
 
 
 func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:

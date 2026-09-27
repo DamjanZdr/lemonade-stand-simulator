@@ -54,6 +54,14 @@ const WP_TURN_START: int = 1
 const WP_TURN_END: int = 2
 const WP_DROP: int = 3
 
+# NPC hit footprint (local-space half extents around the truck origin).
+const _HIT_HALF_X: float = 2.4
+const _HIT_HALF_Z: float = 2.4
+const _HIT_MAX_Y: float = 2.0
+## NPCs already knocked down by this delivery run — avoids re-stunning
+## an NPC every frame while the truck still overlaps them.
+var _hit_npcs: Dictionary = { }
+
 
 func _ready() -> void:
 	visible = false
@@ -245,6 +253,7 @@ func start_delivery() -> void:
 		global_rotation.y = atan2(-to_first.x, -to_first.z) + PI / 2.0
 	visible = true
 	_current_wp = 1
+	_hit_npcs.clear()
 	_state = "driving_in"
 	_start_engine_sound()
 	# Tell clients to make the truck visible
@@ -273,6 +282,9 @@ func _process(delta: float) -> void:
 			pass
 		"driving_out":
 			_drive_out(delta)
+	# Host-only: running over an NPC plays the same Fall/stun as a trash hit.
+	if _state == "driving_in" or _state == "driving_out":
+		_check_npc_hits()
 	# Sync truck position to clients while moving (event-driven, throttled)
 	if _state != "idle":
 		_sync_timer += delta
@@ -281,6 +293,24 @@ func _process(delta: float) -> void:
 			if global_position.distance_to(_last_synced_pos) > 0.1:
 				_last_synced_pos = global_position
 				WorldSync.sync_transform(self, global_position, global_rotation)
+
+
+## Host-only: NPCs under the truck get knocked down with the same Fall
+## animation used by thrown-trash hits (stun() is host-authoritative and
+## syncs itself to clients).
+func _check_npc_hits() -> void:
+	var inv := global_transform.affine_inverse()
+	for group_name in ["pedestrians", "customers"]:
+		for npc in get_tree().get_nodes_in_group(group_name):
+			if _hit_npcs.has(npc.get_instance_id()):
+				continue
+			var local: Vector3 = inv * npc.global_position
+			if (
+				absf(local.x) <= _HIT_HALF_X and absf(local.z) <= _HIT_HALF_Z
+				and absf(local.y) <= _HIT_MAX_Y
+			):
+				_hit_npcs[npc.get_instance_id()] = true
+				npc.stun(2.0)
 
 
 ## Client-side interpolation: smoothly move toward the target position
