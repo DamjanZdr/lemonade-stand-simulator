@@ -1543,8 +1543,10 @@ func _build_promo_widget() -> void:
 	hover_mat.shader = PROMO_ROUNDED_SHADER
 	hover_mat.set_shader_parameter("size_pixels", Vector2(PROMO_WIDGET_W, PROMO_WIDGET_H))
 	hover_mat.set_shader_parameter("corner_radius", 8.0)
+	hover_mat.set_shader_parameter("is_overlay", true)
 	hover_mat.set_shader_parameter("overlay_alpha", 0.0)
 	hover.material = hover_mat
+	hover.color = Color.TRANSPARENT
 	_promo_widget.add_child(hover)
 	_promo_hover = hover
 
