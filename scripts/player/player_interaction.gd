@@ -1002,8 +1002,11 @@ func _do_throw(charge: float) -> void:
 	var start_pos := _player.head.global_position + (-_player.head.global_transform.basis.z * 0.5)
 	var trash_type: String = _player.held_item_data.get("trash_type", "empty_box")
 	var trash_value: float = _player.held_item_data.get("trash_value", 0.0)
-	var stand_name := ""
-	if _player.assigned_stand != null and is_instance_valid(_player.assigned_stand):
+	var stand_name: String = _player.held_item_data.get("stand_name", "")
+	if (
+		stand_name == "" and _player.assigned_stand != null
+		and is_instance_valid(_player.assigned_stand)
+	):
 		stand_name = _player.assigned_stand.name
 	# Spawn the networked thrown trash body via WorldSync.
 	var state: Dictionary = {

@@ -59,7 +59,8 @@ func _make_day_card() -> void:
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:
 	if phase == DayManager.Phase.EVENING:
-		_start_evening_transition()
+		if not _transitioning:
+			_start_evening_transition()
 	elif _transitioning:
 		# First non-EVENING phase after the fade = the new day arrived.
 		# A menu return emits MORNING without advancing the day — treat
@@ -89,6 +90,15 @@ func _start_evening_transition() -> void:
 	var tween := create_tween()
 	tween.tween_property(backdrop, "modulate", Color(1, 1, 1, 1), 0.8)
 	tween.tween_callback(_advance_to_next_day)
+
+
+## Called by a client-side door interaction so the local screen fades to
+## black immediately instead of waiting for the host to process the end-day
+## request. If the host has already started the transition, this is a no-op.
+func start_local_fade() -> void:
+	if _transitioning:
+		return
+	_start_evening_transition()
 
 
 func _advance_to_next_day() -> void:

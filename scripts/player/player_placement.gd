@@ -938,6 +938,22 @@ func _create_container_hand_mesh(
 			pickupable.queue_free()
 		temp.remove_child(fbin)
 		temp.queue_free()
+	elif container_type in ["sugar_bin", "ice_bin"] and inst is IngredientBin:
+		var bin := inst as IngredientBin
+		var temp := Node.new()
+		temp.name = "IngredientBinHandTemp"
+		_player.add_child(temp)
+		temp.add_child(bin)
+		# For ice, the deferred bucket setup may not have run yet — run it now
+		# so update_display() shows the correct cube count.
+		if container_type == "ice_bin":
+			bin._setup_ice_bucket()
+		bin.update_display()
+		var pickupable := bin.get_node_or_null("Pickupable")
+		if pickupable != null:
+			pickupable.queue_free()
+		temp.remove_child(bin)
+		temp.queue_free()
 	elif container_type == "pitcher" and inst is Pitcher:
 		var pitcher := inst as Pitcher
 		var temp := Node.new()

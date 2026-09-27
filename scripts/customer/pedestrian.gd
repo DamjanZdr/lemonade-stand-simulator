@@ -579,6 +579,10 @@ func _arrive() -> void:
 		if not _conversion_attempted:
 			_conversion_attempted = true
 			wants_to_join.emit(self)
+		else:
+			# Already tried here and were rejected / offered a sample — keep
+			# walking past this waypoint instead of getting stuck.
+			_advance_waypoint()
 		return
 	_advance_waypoint()
 

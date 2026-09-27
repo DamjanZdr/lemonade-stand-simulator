@@ -18,6 +18,11 @@ func interact(_player: Node) -> void:
 			DayManager.trigger_end_day()
 		else:
 			_request_end_day.rpc_id(1)
+			# Don't wait for the host — fade to black now and hold until the
+			# next day phase arrives.
+			var summary := get_tree().get_first_node_in_group("day_summary")
+			if summary != null and summary.has_method("start_local_fade"):
+				summary.start_local_fade()
 
 
 ## Client -> Host RPC to request ending the day.

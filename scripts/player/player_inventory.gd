@@ -148,8 +148,19 @@ func make_held_trash(
 	refund: float,
 	trash_type: String = "empty_box",
 	hand_mesh: Node3D = null,
+	stand_name: String = "",
 ) -> void:
-	var data := { "amount": 0.0, "is_trash": true, "trash_value": refund, "trash_type": trash_type }
+	if stand_name == "" and _player != null:
+		var stand: Node = _player.get("assigned_stand")
+		if stand != null and is_instance_valid(stand):
+			stand_name = stand.name
+	var data := {
+		"amount": 0.0,
+		"is_trash": true,
+		"trash_value": refund,
+		"trash_type": trash_type,
+		"stand_name": stand_name,
+	}
 	if hand_mesh == null:
 		var box_inst: SupplyBox = SUPPLY_BOX_SCENE.instantiate() as SupplyBox
 		box_inst.is_hand_mesh = true
