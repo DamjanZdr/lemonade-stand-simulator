@@ -6,6 +6,7 @@ const PROMO_DISCORD_PATH := "res://assets/textures/ui/discord invite.png"
 const PROMO_WISHLIST_PATH := "res://assets/textures/ui/wishlist invite.png"
 const PROMO_ROUNDED_SHADER := preload("res://shaders/promo_rounded.gdshader")
 const FONT_GRANDSTANDER := preload("res://assets/fonts/Grandstander-clean.ttf")
+const BugReportPanel := preload("res://scripts/ui/bug_report_panel.gd")
 const PROMO_DISCORD_URL := "https://discord.com/invite/h8GZZd8Fnb"
 const PROMO_WISHLIST_URL := (
 	"https://store.steampowered.com/app/5000810/When_Life_Gives_You_Lemons/"
@@ -45,6 +46,29 @@ func _build() -> void:
 	offset_right = -margin
 	offset_bottom = -(music_h + margin)
 	custom_minimum_size = Vector2(WIDGET_W, WIDGET_H)
+
+	# "Report a Bug" button above the widget frame.
+	var report_btn := Button.new()
+	report_btn.name = "ReportBug"
+	report_btn.text = "Report a Bug"
+	report_btn.flat = true
+	report_btn.anchor_left = 0.0
+	report_btn.anchor_top = 0.0
+	report_btn.anchor_right = 1.0
+	report_btn.anchor_bottom = 0.0
+	report_btn.offset_left = 0.0
+	report_btn.offset_top = -44.0
+	report_btn.offset_right = 0.0
+	report_btn.offset_bottom = -10.0
+	report_btn.add_theme_font_override("font", FONT_GRANDSTANDER)
+	report_btn.add_theme_font_size_override("font_size", 20)
+	report_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	report_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+	var empty_style := StyleBoxEmpty.new()
+	for state in ["normal", "hover", "pressed", "focus"]:
+		report_btn.add_theme_stylebox_override(state, empty_style)
+	report_btn.pressed.connect(_on_report_bug)
+	add_child(report_btn)
 
 	var clip_frame := Control.new()
 	clip_frame.name = "ClipFrame"
@@ -214,6 +238,13 @@ func _build() -> void:
 	_timer.autostart = true
 	_timer.timeout.connect(_advance_slide)
 	add_child(_timer)
+
+
+func _on_report_bug() -> void:
+	# Add to the parent (menu layer) so the panel centers on the viewport,
+	# not inside this widget's rect.
+	var panel := BugReportPanel.new()
+	get_parent().add_child(panel)
 
 
 func _on_clicked() -> void:
