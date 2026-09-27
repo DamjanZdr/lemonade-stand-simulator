@@ -18,6 +18,12 @@ const DEFAULT_AUTOSAVE_MINUTES := 5.0
 const DEFAULT_GRAPHICS_QUALITY := "high"
 const AUTOSAVE_MIN_MINUTES := 2.0
 const AUTOSAVE_MAX_MINUTES := 15.0
+const DEFAULT_MOUSE_SENSITIVITY := 1.0
+const MOUSE_SENSITIVITY_MIN := 0.5
+const MOUSE_SENSITIVITY_MAX := 2.0
+const DEFAULT_FOV := 90.0
+const FOV_MIN := 75.0
+const FOV_MAX := 105.0
 
 const GRAPHICS_PRESETS := {
 	"epic": {
@@ -51,6 +57,10 @@ const GRAPHICS_PRESETS := {
 }
 
 signal settings_loaded()
+signal gameplay_changed()
+
+var _mouse_sensitivity := DEFAULT_MOUSE_SENSITIVITY
+var _fov := DEFAULT_FOV
 
 
 func _ready() -> void:
@@ -83,10 +93,15 @@ func load_settings() -> void:
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
 	)
-	var quality := cfg.get_value(
-		SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY
-	) as String
+	var quality := cfg.get_value(SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY) as String
 	apply_graphics_quality(quality)
+	# Gameplay
+	_mouse_sensitivity = clampf(
+		cfg.get_value(SECTION_GAMEPLAY, "mouse_sensitivity", DEFAULT_MOUSE_SENSITIVITY) as float,
+		MOUSE_SENSITIVITY_MIN,
+		MOUSE_SENSITIVITY_MAX,
+	)
+	_fov = clampf(cfg.get_value(SECTION_GAMEPLAY, "fov", DEFAULT_FOV) as float, FOV_MIN, FOV_MAX)
 	# Remove any hard FPS cap so the game can run above the monitor refresh
 	# rate when VSync is off. The default is unlimited, but force it here
 	# in case project settings or an old config changed it.
@@ -126,6 +141,8 @@ func apply_graphics_quality(quality: String) -> void:
 ## Save current settings to disk.
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
+	# Load existing keys first so other sections (e.g. gameplay) survive.
+	cfg.load(CONFIG_PATH)
 	# Audio
 	var master := db_to_linear(AudioServer.get_bus_volume_db(0))
 	var sfx := master
@@ -204,11 +221,38 @@ func get_autosave_minutes() -> float:
 
 
 func set_autosave_minutes(minutes: float) -> void:
-	var cfg := ConfigFile.new()
-	cfg.load(CONFIG_PATH)
-	cfg.set_value(
-		SECTION_GAMEPLAY,
+	_set_gameplay_value(
 		"autosave_minutes",
 		clampf(minutes, AUTOSAVE_MIN_MINUTES, AUTOSAVE_MAX_MINUTES),
 	)
+
+
+## Mouse sensitivity multiplier (0.5-2.0, default 1.0).
+func get_mouse_sensitivity() -> float:
+	return _mouse_sensitivity
+
+
+func set_mouse_sensitivity(value: float, persist := true) -> void:
+	_mouse_sensitivity = clampf(value, MOUSE_SENSITIVITY_MIN, MOUSE_SENSITIVITY_MAX)
+	if persist:
+		_set_gameplay_value("mouse_sensitivity", _mouse_sensitivity)
+	gameplay_changed.emit()
+
+
+## First-person camera field of view (75-105, default 90).
+func get_fov() -> float:
+	return _fov
+
+
+func set_fov(value: float, persist := true) -> void:
+	_fov = clampf(value, FOV_MIN, FOV_MAX)
+	if persist:
+		_set_gameplay_value("fov", _fov)
+	gameplay_changed.emit()
+
+
+func _set_gameplay_value(key: String, value: Variant) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(CONFIG_PATH)
+	cfg.set_value(SECTION_GAMEPLAY, key, value)
 	cfg.save(CONFIG_PATH)

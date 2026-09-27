@@ -219,6 +219,7 @@ func configure_local_player() -> void:
 	# Layer 2 is used by the screen-space outline system for white fill nodes.
 	# The main camera must not render them ΓÇö only the SubViewport OutlineCamera does.
 	$Head/Camera3D.cull_mask &= ~2
+	$Head/Camera3D.fov = SettingsManager.get_fov()
 	# Don't claim the camera if the lobby-to-game tween is handling it.
 	if not defer_camera_claim:
 		$Head/Camera3D.make_current()

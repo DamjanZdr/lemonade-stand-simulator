@@ -30,6 +30,10 @@ var _fps_check: CheckBox
 
 var _autosave_slider: HSlider
 var _autosave_value: Label
+var _sens_slider: HSlider
+var _sens_value: Label
+var _fov_slider: HSlider
+var _fov_value: Label
 
 
 func _ready() -> void:
@@ -314,6 +318,44 @@ func _build_gameplay_tab() -> Control:
 			SaveManager.set_autosave_interval(_autosave_slider.value),
 	)
 
+	var sens := _add_slider_row(tab, "Sensitivity")
+	_sens_slider = sens[0] as HSlider
+	_sens_value = sens[1] as Label
+	_sens_slider.min_value = SettingsManager.MOUSE_SENSITIVITY_MIN
+	_sens_slider.max_value = SettingsManager.MOUSE_SENSITIVITY_MAX
+	_sens_slider.step = 0.05
+	_sens_slider.value = SettingsManager.get_mouse_sensitivity()
+	_sens_value.text = "%.2f" % _sens_slider.value
+	_sens_slider.value_changed.connect(
+		func(v: float):
+			_sens_value.text = "%.2f" % v
+			SettingsManager.set_mouse_sensitivity(v, false),
+	)
+	_sens_slider.drag_ended.connect(
+		func(_changed: bool):
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			SettingsManager.set_mouse_sensitivity(_sens_slider.value),
+	)
+
+	var fov := _add_slider_row(tab, "FOV")
+	_fov_slider = fov[0] as HSlider
+	_fov_value = fov[1] as Label
+	_fov_slider.min_value = SettingsManager.FOV_MIN
+	_fov_slider.max_value = SettingsManager.FOV_MAX
+	_fov_slider.step = 1.0
+	_fov_slider.value = SettingsManager.get_fov()
+	_fov_value.text = "%d" % int(_fov_slider.value)
+	_fov_slider.value_changed.connect(
+		func(v: float):
+			_fov_value.text = "%d" % int(v)
+			SettingsManager.set_fov(v, false),
+	)
+	_fov_slider.drag_ended.connect(
+		func(_changed: bool):
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+			SettingsManager.set_fov(_fov_slider.value),
+	)
+
 	return tab
 
 
@@ -350,6 +392,10 @@ func sync_state() -> void:
 	)
 	_autosave_slider.value = SettingsManager.get_autosave_minutes()
 	_autosave_value.text = "%d min" % int(_autosave_slider.value)
+	_sens_slider.value = SettingsManager.get_mouse_sensitivity()
+	_sens_value.text = "%.2f" % _sens_slider.value
+	_fov_slider.value = SettingsManager.get_fov()
+	_fov_value.text = "%d" % int(_fov_slider.value)
 
 	var quality := SettingsManager.get_graphics_quality()
 	for i in range(_quality_option.item_count):

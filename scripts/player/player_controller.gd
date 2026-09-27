@@ -9,6 +9,8 @@ extends Node
 func _ready() -> void:
 	if _player == null:
 		push_warning("PlayerController: parent is not a Player")
+	if not SettingsManager.gameplay_changed.is_connected(_on_gameplay_settings_changed):
+		SettingsManager.gameplay_changed.connect(_on_gameplay_settings_changed)
 
 
 const MOUSE_SENSITIVITY: float = 0.002
@@ -41,7 +43,14 @@ var _look_yaw: float = 0.0
 var _pending_look: Vector2 = Vector2.ZERO
 var _look_pitch: float = 0.0
 const NET_LERP_SPEED: float = 12.0 # How fast remote players snap to target
+
+
+func _on_gameplay_settings_changed() -> void:
+	if _player != null and _player.is_multiplayer_authority() and _player.camera != null:
+		_player.camera.fov = SettingsManager.get_fov()
 # Animation state
+
+
 var _current_anim: String = "Idle"
 var _crouch_frozen: bool = false
 var _was_moving: bool = false
@@ -316,8 +325,9 @@ func _physics_process(delta: float) -> void:
 	# mode early-returns so looking around still works in money/ESC/stun
 	# states that skip _update_body_yaw.
 	if _pending_look != Vector2.ZERO:
-		_look_yaw = wrap_angle(_look_yaw - _pending_look.x * MOUSE_SENSITIVITY)
-		_look_pitch = clampf(_look_pitch - _pending_look.y * MOUSE_SENSITIVITY, -PI / 2.1, PI / 2.1)
+		var sens := MOUSE_SENSITIVITY * SettingsManager.get_mouse_sensitivity()
+		_look_yaw = wrap_angle(_look_yaw - _pending_look.x * sens)
+		_look_pitch = clampf(_look_pitch - _pending_look.y * sens, -PI / 2.1, PI / 2.1)
 		_pending_look = Vector2.ZERO
 		_player.head.rotation = Vector3(_look_pitch, _look_yaw, 0)
 
