@@ -2256,6 +2256,7 @@ func _update_morning_data(day: int) -> void:
 
 func _show_morning_hub() -> void:
 	_update_morning_data(DayManager.day_number)
+	_scan_stand_state()
 	# Set the active stand for research so upgrades are per-stand.
 	var stand := _get_local_stand()
 	if stand:
@@ -2386,13 +2387,33 @@ func _apply_button_style(
 	)
 
 
+## Resolves which stand owns a node: its `stand_owner` if set, otherwise the
+## nearest ancestor StandUnit. "" = unassigned/usable by anyone.
+func _node_stand_name(node: Node) -> String:
+	if node is Interactable and node.stand_owner != "":
+		return node.stand_owner
+	var n := node
+	while n != null:
+		if n is StandUnit:
+			return n.name
+		n = n.get_parent()
+	return ""
+
+
 func _scan_stand_state() -> void:
 	_bin_amounts.clear()
 	_equipment_counts.clear()
 	var root := get_tree().current_scene
 	if root == null:
 		return
+	var stand := _get_local_stand()
+	var stand_name: String = stand.name if stand != null else ""
+	var belongs := func(node: Node) -> bool:
+		var owner := _node_stand_name(node)
+		return owner == "" or owner == stand_name
 	for node in root.get_tree().get_nodes_in_group("container"):
+		if not belongs.call(node):
+			continue
 		if node is FruitBin:
 			for ftype in node.fruit_amounts:
 				_bin_amounts[ftype] = (_bin_amounts.get(ftype, 0) + node.fruit_amounts[ftype])
@@ -2411,7 +2432,7 @@ func _scan_stand_state() -> void:
 			_bin_amounts["ice"] = (_bin_amounts.get("ice", 0.0) + node.ice)
 	for node in root.get_tree().get_nodes_in_group("supply_box"):
 		var box := node as SupplyBox
-		if box == null:
+		if box == null or not belongs.call(box):
 			continue
 		if box.is_equipment:
 			var etype: String = box.equipment_type
@@ -2422,21 +2443,13 @@ func _scan_stand_state() -> void:
 		_bin_amounts[btype] = _bin_amounts.get(btype, 0.0) + box.quantity
 	for node in root.get_tree().get_nodes_in_group("water_dispenser"):
 		var dispenser := node as WaterDispenser
-		if dispenser != null:
+		if dispenser != null and belongs.call(dispenser):
 			_bin_amounts["water"] = (_bin_amounts.get("water", 0.0) + dispenser.water_fillings)
 	for node in root.get_tree().get_nodes_in_group("container"):
-		var ctype: String = ""
-		if node.has_meta("container_type"):
-			ctype = node.get_meta("container_type")
-		elif "container_type" in node:
-			ctype = node.container_type
-		elif node.name.to_lower().contains("bin"):
-			ctype = node.name.replace("Bin", "").to_snake_case() + "_bin"
-		elif node.name.to_lower().contains("pitcher"):
-			ctype = "pitcher"
-		elif node.name.to_lower().contains("press"):
-			ctype = "press"
-		if ctype != "":
+		if not belongs.call(node):
+			continue
+		var ctype := SaveManager.get_container_type(node)
+		if ctype != "" and ctype != "cup":
 			_equipment_counts[ctype] = _equipment_counts.get(ctype, 0) + 1
 	_refresh_stats()
 
@@ -2513,11 +2526,15 @@ func _refresh_stats() -> void:
 	cons_hdr.add_theme_font_size_override("font_size", 18)
 	cons_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	cons_col.add_child(cons_hdr)
-	if _bin_amounts.is_empty():
-		cons_col.add_child(_stats_row("(none)", "", Color(0.5, 0.5, 0.48)))
+	var shown_any := false
 	for itype in _bin_amounts:
 		var amt: float = _bin_amounts[itype]
+		if amt <= 0.0:
+			continue
+		shown_any = true
 		cons_col.add_child(_stats_row(itype.capitalize(), "%.0f" % amt, Color(0.6, 0.75, 0.88)))
+	if not shown_any:
+		cons_col.add_child(_stats_row("(none)", "", Color(0.5, 0.5, 0.48)))
 
 
 ## Row with the label left and the value right-aligned, so all values
