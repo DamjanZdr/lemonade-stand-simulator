@@ -215,44 +215,15 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="Header" type="HBoxContainer" parent="MainHBox/Panel/VBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 16
-
-[node name="DayLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.92, 0.85, 1)
-theme_override_font_sizes/font_size = 26
-text = "Day 1"
-
-[node name="Spacer" type="Control" parent="MainHBox/Panel/VBox/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="MoneyLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.92, 0.78, 0.28, 1)
-theme_override_font_sizes/font_size = 22
-text = "Money: $0.00"
-
-[node name="TempLabel" type="Label" parent="MainHBox/Panel/VBox/Header"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.70, 0.85, 1)
-theme_override_font_sizes/font_size = 18
-text = "25C"
-
-[node name="HeaderSep" type="HSeparator" parent="MainHBox/Panel/VBox"]
-layout_mode = 2
-theme_override_styles/separator = SubResource("header_sep")
-
 [node name="FlowIndicator" type="HBoxContainer" parent="MainHBox/Panel/VBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 alignment = 1
 theme_override_constants/separation = 4
 
 [node name="StepPC_analytics" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
+size_flags_horizontal = 3
 custom_minimum_size = Vector2(130, 44)
 theme_override_styles/panel = SubResource("tab_normal")
 
@@ -265,6 +236,7 @@ horizontal_alignment = 1
 
 [node name="StepPC_shop" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
+size_flags_horizontal = 3
 custom_minimum_size = Vector2(130, 44)
 theme_override_styles/panel = SubResource("tab_normal")
 
@@ -277,6 +249,7 @@ horizontal_alignment = 1
 
 [node name="StepPC_upgrades" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
+size_flags_horizontal = 3
 custom_minimum_size = Vector2(130, 44)
 theme_override_styles/panel = SubResource("tab_normal")
 
@@ -289,6 +262,7 @@ horizontal_alignment = 1
 
 [node name="StepPC_employees" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
+size_flags_horizontal = 3
 custom_minimum_size = Vector2(130, 44)
 theme_override_styles/panel = SubResource("tab_normal")
 
@@ -312,13 +286,6 @@ visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 10
-
-[node name="PageTitle" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 26
-text = "Your Stand"
-horizontal_alignment = 1
 
 [node name="Columns" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
 layout_mode = 2
@@ -614,7 +581,7 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
 theme_override_font_sizes/font_size = 18
-text = "Stand Preview"
+text = "Your Stand"
 horizontal_alignment = 1
 
 [node name="PreviewContainer" type="PanelContainer" parent="MainHBox/RightPanel/RightVBox"]
@@ -647,13 +614,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 4, 8)
 [node name="StatsSep" type="HSeparator" parent="MainHBox/RightPanel/RightVBox"]
 layout_mode = 2
 theme_override_styles/separator = SubResource("header_sep")
-
-[node name="StatsTitle" type="Label" parent="MainHBox/RightPanel/RightVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 18
-text = "Stand Status"
-horizontal_alignment = 1
 
 [node name="StatsScroll" type="ScrollContainer" parent="MainHBox/RightPanel/RightVBox"]
 layout_mode = 2

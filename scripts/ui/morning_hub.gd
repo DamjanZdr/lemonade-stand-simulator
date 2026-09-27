@@ -1499,7 +1499,7 @@ func _build_demo_upgrades_overlay() -> void:
 
 	var tint := ColorRect.new()
 	tint.set_anchors_preset(Control.PRESET_FULL_RECT)
-	tint.color = Color(0.05, 0.05, 0.08, 0.55)
+	tint.color = Color(0.05, 0.05, 0.08, 0.90)
 	tint.mouse_filter = Control.MOUSE_FILTER_STOP
 	_demo_upgrades_overlay.add_child(tint)
 
@@ -1593,7 +1593,7 @@ func _refresh_analytics() -> void:
 	var days: int = int(stats.get("days_completed", 0))
 
 	var head := Label.new()
-	head.text = "All-Time Stats%s" % ("  (day %d)" % DayManager.day_number)
+	head.text = "All-Time Stats"
 	head.add_theme_font_size_override("font_size", 20)
 	head.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
 	col.add_child(head)
@@ -2146,13 +2146,13 @@ func _update_morning_data(day: int) -> void:
 	_tree_centered = false
 	_tree_pan_offset = Vector2.ZERO
 	_tree_laid_out = false
-	var day_lbl := $MainHBox/Panel/VBox/Header/DayLabel as Label
+	var day_lbl := get_node_or_null("MainHBox/Panel/VBox/Header/DayLabel") as Label
 	if day_lbl:
 		day_lbl.text = "Day %d" % day
-	var temp_lbl := $MainHBox/Panel/VBox/Header/TempLabel as Label
+	var temp_lbl := get_node_or_null("MainHBox/Panel/VBox/Header/TempLabel") as Label
 	if temp_lbl:
 		temp_lbl.text = "%.0fC" % GameState.temperature
-	var money_lbl := $MainHBox/Panel/VBox/Header/MoneyLabel as Label
+	var money_lbl := get_node_or_null("MainHBox/Panel/VBox/Header/MoneyLabel") as Label
 	if money_lbl:
 		money_lbl.text = "Money: $%.2f" % _get_local_money()
 	var price_slider := ($MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
@@ -2237,7 +2237,7 @@ func _on_money_changed(_amount: float) -> void:
 	_hide_tree_tooltip()
 	if not panel.visible:
 		return
-	var money_lbl := $MainHBox/Panel/VBox/Header/MoneyLabel as Label
+	var money_lbl := get_node_or_null("MainHBox/Panel/VBox/Header/MoneyLabel") as Label
 	if money_lbl:
 		money_lbl.text = "Money: $%.2f" % _get_local_money()
 	if _active_tab == "shop":
@@ -2399,11 +2399,11 @@ func _refresh_stats() -> void:
 	equip_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	equip_col.add_child(equip_hdr)
 	if _equipment_counts.is_empty():
-		equip_col.add_child(_stats_line("(none)", Color(0.5, 0.5, 0.48)))
+		equip_col.add_child(_stats_row("(none)", "", Color(0.5, 0.5, 0.48)))
 	for etype in _equipment_counts:
 		var cnt: int = _equipment_counts[etype]
 		equip_col.add_child(
-			_stats_line("%s x%d" % [HeldItem.container_name(etype), cnt], Color(0.6, 0.58, 0.52))
+			_stats_row(_equipment_display_name(etype), "x%d" % cnt, Color(0.6, 0.58, 0.52))
 		)
 
 	var vsep := VSeparator.new()
@@ -2420,20 +2420,47 @@ func _refresh_stats() -> void:
 	cons_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	cons_col.add_child(cons_hdr)
 	if _bin_amounts.is_empty():
-		cons_col.add_child(_stats_line("(none)", Color(0.5, 0.5, 0.48)))
+		cons_col.add_child(_stats_row("(none)", "", Color(0.5, 0.5, 0.48)))
 	for itype in _bin_amounts:
 		var amt: float = _bin_amounts[itype]
-		cons_col.add_child(
-			_stats_line("%s: %.0f" % [itype.capitalize(), amt], Color(0.6, 0.75, 0.88))
-		)
+		cons_col.add_child(_stats_row(itype.capitalize(), "%.0f" % amt, Color(0.6, 0.75, 0.88)))
 
 
-func _stats_line(text: String, color: Color) -> Label:
-	var line := Label.new()
-	line.text = text
-	line.add_theme_font_size_override("font_size", 15)
-	line.add_theme_color_override("font_color", color)
-	return line
+## Row with the label left and the value right-aligned, so all values
+## line up vertically down the column.
+func _stats_row(label_text: String, value_text: String, color: Color) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var name_lbl := Label.new()
+	name_lbl.text = label_text
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.add_theme_color_override("font_color", color)
+	row.add_child(name_lbl)
+	var val_lbl := Label.new()
+	val_lbl.text = value_text
+	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val_lbl.add_theme_font_size_override("font_size", 15)
+	val_lbl.add_theme_color_override("font_color", color)
+	row.add_child(val_lbl)
+	return row
+
+
+## Nicer equipment names: move trailing digits to the end so
+## "ice_2_bin" reads "Ice Bin 2" instead of "Ice 2 Bin".
+func _equipment_display_name(ctype: String) -> String:
+	var digits := ""
+	var base := ""
+	for i in ctype.length():
+		if ctype[i].is_valid_int():
+			digits += ctype[i]
+		else:
+			base += ctype[i]
+	while base.contains("__"):
+		base = base.replace("__", "_")
+	base = base.strip_edges().trim_prefix("_").trim_suffix("_")
+	var name := HeldItem.container_name(base)
+	return "%s %s" % [name, digits] if digits != "" else name
 
 
 func _on_dev_reset() -> void:
