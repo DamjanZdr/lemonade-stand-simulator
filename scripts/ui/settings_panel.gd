@@ -206,7 +206,6 @@ func _build_graphics_tab() -> Control:
 
 	var q_row := HBoxContainer.new()
 	q_row.add_theme_constant_override("separation", 12)
-	q_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	tab.add_child(q_row)
 
 	var q_label := Label.new()
@@ -401,7 +400,6 @@ func _add_slider_row(parent: Node, label_text: String) -> Array:
 func _add_checkbox_row(parent: Node, label_text: String) -> CheckBox:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	parent.add_child(row)
 
 	var label := Label.new()

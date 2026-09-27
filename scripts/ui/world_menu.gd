@@ -1486,7 +1486,7 @@ func _build_promo_widget() -> void:
 		load(PROMO_DISCORD_PATH) as Texture2D,
 		load(PROMO_WISHLIST_PATH) as Texture2D,
 	]
-	var panel_colors := [Color(0.15, 0.22, 0.32, 0.92), Color(0.15, 0.55, 0.25, 0.92)]
+	var panel_colors := [Color(0.15, 0.22, 0.32, 0.92), Color(0.15, 0.22, 0.32, 0.92)]
 	for i in range(textures.size()):
 		var slide := Control.new()
 		slide.name = "SlideContainer%d" % i
@@ -1515,7 +1515,7 @@ func _build_promo_widget() -> void:
 		var panel := Panel.new()
 		panel.name = "Panel%d" % i
 		panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		panel.offset_top = -40.0
+		panel.offset_top = -32.0
 		panel.offset_bottom = 0.0
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var panel_style := StyleBoxFlat.new()
@@ -1534,8 +1534,8 @@ func _build_promo_widget() -> void:
 		label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		label.offset_left = 8.0
 		label.offset_right = -8.0
-		label.offset_top = 4.0
-		label.offset_bottom = -4.0
+		label.offset_top = 6.0
+		label.offset_bottom = 6.0
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.add_theme_font_override("font", FONT_GRANDSTANDER)
