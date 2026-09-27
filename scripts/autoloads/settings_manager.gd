@@ -31,7 +31,9 @@ const GRAPHICS_PRESETS := {
 		"soft_shadow": 3,
 		"msaa": 2,
 		"fxaa": false,
-		"grass_multiplier": 1.5,
+		"grass_multiplier": 2.0,
+		"grass_draw_mult": 1.6,
+		"grass_max_blades": 8000,
 		"ssao": true,
 		"ssil": true,
 		"glow": true,
@@ -42,6 +44,8 @@ const GRAPHICS_PRESETS := {
 		"msaa": 2,
 		"fxaa": true,
 		"grass_multiplier": 1.0,
+		"grass_draw_mult": 1.3,
+		"grass_max_blades": 6000,
 		"ssao": true,
 		"ssil": false,
 		"glow": true,
@@ -52,6 +56,8 @@ const GRAPHICS_PRESETS := {
 		"msaa": 0,
 		"fxaa": true,
 		"grass_multiplier": 0.7,
+		"grass_draw_mult": 1.0,
+		"grass_max_blades": 4000,
 		"ssao": false,
 		"ssil": false,
 		"glow": true,
@@ -62,6 +68,8 @@ const GRAPHICS_PRESETS := {
 		"msaa": 0,
 		"fxaa": false,
 		"grass_multiplier": 0.5,
+		"grass_draw_mult": 0.7,
+		"grass_max_blades": 2500,
 		"ssao": false,
 		"ssil": false,
 		"glow": false,
@@ -210,6 +218,14 @@ func set_graphics_quality(quality: String) -> void:
 
 func get_grass_density_multiplier() -> float:
 	return GRAPHICS_PRESETS[get_graphics_quality()].grass_multiplier
+
+
+func get_grass_draw_multiplier() -> float:
+	return GRAPHICS_PRESETS[get_graphics_quality()].grass_draw_mult
+
+
+func get_grass_max_blades() -> int:
+	return GRAPHICS_PRESETS[get_graphics_quality()].grass_max_blades
 
 
 ## Save a single graphics toggle value (for enhanced_lighting / fps_counter,

@@ -6,7 +6,6 @@ extends Node3D
 @export var grass_mesh: Mesh
 @export var grass_material: Material
 @export var grass_mesh_scene: PackedScene
-const MAX_BLADES_PER_PATCH: int = 4000
 
 @export var grass_density: float = 10.0 # Blades per square unit on each patch
 @export var random_seed: int = 0
@@ -74,7 +73,7 @@ func _generate_grass() -> void:
 		var patch_size := Vector2(aabb.size.x, aabb.size.z)
 		var density := grass_density * SettingsManager.get_grass_density_multiplier()
 		var patch_instances := int(patch_size.x * patch_size.y * density)
-		patch_instances = mini(patch_instances, MAX_BLADES_PER_PATCH)
+		patch_instances = mini(patch_instances, SettingsManager.get_grass_max_blades())
 		for i in range(patch_instances):
 			var local_x := randf_range(aabb.position.x, aabb.position.x + aabb.size.x)
 			var local_z := randf_range(aabb.position.z, aabb.position.z + aabb.size.z)
@@ -107,8 +106,9 @@ func _generate_grass() -> void:
 	_multimesh.top_level = true
 	_multimesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_multimesh.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-	if max_draw_distance > 0.0:
-		_multimesh.visibility_range_end = max_draw_distance
+	var draw_distance := max_draw_distance * SettingsManager.get_grass_draw_multiplier()
+	if draw_distance > 0.0:
+		_multimesh.visibility_range_end = draw_distance
 		_multimesh.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	print("GrassScatterer: Generated %d grass instances" % instances.size())
 
