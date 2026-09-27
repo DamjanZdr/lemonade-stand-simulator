@@ -4,6 +4,8 @@ extends CanvasLayer
 ## Lobby code row with eye toggle + copy button.
 
 const MENU_THEME := preload("res://assets/themes/menu_theme.tres")
+const SETTINGS_PANEL_SCENE := preload("res://scenes/ui/settings_panel.tscn")
+const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
 
 signal back_to_game
 signal back_to_menu
@@ -27,8 +29,7 @@ var _save_button: Button
 var _invite_button: Button
 var _back_to_menu_button: Button
 var _quit_button: Button
-var _settings_panel: Control
-var _settings_back: Button
+var _settings_panel: SettingsPanel
 var _room_row: HBoxContainer
 var _eye_button: Button
 var _room_code_label: Label
@@ -191,8 +192,25 @@ func _build_ui() -> void:
 		_add_drop_shadow(btn)
 		_setup_hover_effect(btn)
 
-	# Settings panel (reuses the same structure as world_menu).
-	_settings_panel = _build_settings_panel()
+	# Settings panel (tabbed categories, shared with main menu).
+	_settings_panel = SETTINGS_PANEL_SCENE.instantiate() as SettingsPanel
+	_settings_panel.fullscreen_toggled.connect(
+		func(on: bool):
+			fullscreen_toggled.emit(on),
+	)
+	_settings_panel.vsync_toggled.connect(
+		func(on: bool):
+			vsync_toggled.emit(on),
+	)
+	_settings_panel.enhanced_lighting_toggled.connect(
+		func(on: bool):
+			enhanced_lighting_toggled.emit(on),
+	)
+	_settings_panel.fps_toggled.connect(
+		func(on: bool):
+			fps_toggled.emit(on),
+	)
+	_settings_panel.back_pressed.connect(_on_settings_back)
 	add_child(_settings_panel)
 
 	# Wire up buttons.
@@ -222,13 +240,6 @@ func _build_ui() -> void:
 	)
 	_eye_button.pressed.connect(_on_eye_pressed)
 	_copy_button.pressed.connect(_on_copy_pressed)
-	_settings_back.pressed.connect(
-		func():
-			_on_button_click(_settings_back, _on_settings_back),
-	)
-	_make_flat_button(_settings_back)
-	_add_drop_shadow(_settings_back)
-	_setup_hover_effect(_settings_back)
 
 	# Make the eye/copy/invite buttons flat with same hover color as menu buttons.
 	for btn in [_eye_button, _copy_button, _invite_button]:
@@ -270,342 +281,16 @@ func _make_menu_button(text: String) -> Button:
 	return btn
 
 
-func _build_settings_panel() -> Control:
-	var panel := Control.new()
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	panel.visible = false
-
-	var list := VBoxContainer.new()
-	list.set_anchors_preset(Control.PRESET_FULL_RECT)
-	list.offset_left = 60.0
-	list.offset_top = 80.0
-	list.offset_right = 500.0
-	list.offset_bottom = -70.0
-	list.grow_vertical = Control.GROW_DIRECTION_BOTH
-	var theme := MENU_THEME as Theme
-	list.theme = theme
-	list.add_theme_constant_override("separation", 8)
-	panel.add_child(list)
-
-	var title := Label.new()
-	title.add_theme_font_size_override("font_size", 36)
-	title.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
-	title.text = "Settings"
-	list.add_child(title)
-
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 16)
-	list.add_child(spacer)
-
-	# Audio header.
-	var audio_header := Label.new()
-	audio_header.add_theme_font_size_override("font_size", 22)
-	audio_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	audio_header.text = "Audio"
-	list.add_child(audio_header)
-
-	# Master volume.
-	var master_row := HBoxContainer.new()
-	master_row.add_theme_constant_override("separation", 12)
-	list.add_child(master_row)
-	var master_label := Label.new()
-	master_label.custom_minimum_size = Vector2(120, 0)
-	master_label.add_theme_font_size_override("font_size", 18)
-	master_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	master_label.text = "Master"
-	master_row.add_child(master_label)
-	var master_slider := HSlider.new()
-	master_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	master_slider.custom_minimum_size = Vector2(120, 24)
-	master_slider.min_value = 0.0
-	master_slider.max_value = 1.0
-	master_slider.step = 0.01
-	master_slider.value = 0.5
-	_style_slider(master_slider)
-	master_row.add_child(master_slider)
-	var master_value := Label.new()
-	master_value.custom_minimum_size = Vector2(40, 0)
-	master_value.add_theme_font_size_override("font_size", 16)
-	master_value.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
-	master_value.text = "50"
-	master_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	master_row.add_child(master_value)
-
-	# SFX volume.
-	var sfx_row := HBoxContainer.new()
-	sfx_row.add_theme_constant_override("separation", 12)
-	list.add_child(sfx_row)
-	var sfx_label := Label.new()
-	sfx_label.custom_minimum_size = Vector2(120, 0)
-	sfx_label.add_theme_font_size_override("font_size", 18)
-	sfx_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	sfx_label.text = "SFX"
-	sfx_row.add_child(sfx_label)
-	var sfx_slider := HSlider.new()
-	sfx_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	sfx_slider.custom_minimum_size = Vector2(120, 24)
-	sfx_slider.min_value = 0.0
-	sfx_slider.max_value = 1.0
-	sfx_slider.step = 0.01
-	sfx_slider.value = 0.5
-	_style_slider(sfx_slider)
-	sfx_row.add_child(sfx_slider)
-	var sfx_value := Label.new()
-	sfx_value.custom_minimum_size = Vector2(40, 0)
-	sfx_value.add_theme_font_size_override("font_size", 16)
-	sfx_value.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
-	sfx_value.text = "50"
-	sfx_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	sfx_row.add_child(sfx_value)
-
-	# Music volume.
-	var music_row := HBoxContainer.new()
-	music_row.add_theme_constant_override("separation", 12)
-	list.add_child(music_row)
-	var music_label := Label.new()
-	music_label.custom_minimum_size = Vector2(120, 0)
-	music_label.add_theme_font_size_override("font_size", 18)
-	music_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	music_label.text = "Music"
-	music_row.add_child(music_label)
-	var music_slider := HSlider.new()
-	music_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	music_slider.custom_minimum_size = Vector2(120, 24)
-	music_slider.min_value = 0.0
-	music_slider.max_value = 1.0
-	music_slider.step = 0.01
-	music_slider.value = 0.5
-	_style_slider(music_slider)
-	music_row.add_child(music_slider)
-	var music_value := Label.new()
-	music_value.custom_minimum_size = Vector2(40, 0)
-	music_value.add_theme_font_size_override("font_size", 16)
-	music_value.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
-	music_value.text = "50"
-	music_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	music_row.add_child(music_value)
-
-	# Spacer.
-	var spacer2 := Control.new()
-	spacer2.custom_minimum_size = Vector2(0, 12)
-	list.add_child(spacer2)
-
-	# Graphics header.
-	var gfx_header := Label.new()
-	gfx_header.add_theme_font_size_override("font_size", 22)
-	gfx_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	gfx_header.text = "Graphics"
-	list.add_child(gfx_header)
-
-	# Fullscreen.
-	var fs_row := HBoxContainer.new()
-	fs_row.add_theme_constant_override("separation", 12)
-	list.add_child(fs_row)
-	var fs_label := Label.new()
-	fs_label.custom_minimum_size = Vector2(200, 0)
-	fs_label.add_theme_font_size_override("font_size", 18)
-	fs_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	fs_label.text = "Fullscreen"
-	fs_row.add_child(fs_label)
-	var fs_check := CheckBox.new()
-	fs_check.custom_minimum_size = Vector2(24, 24)
-	_style_checkbox(fs_check)
-	fs_row.add_child(fs_check)
-
-	# VSync.
-	var vsync_row := HBoxContainer.new()
-	vsync_row.add_theme_constant_override("separation", 12)
-	list.add_child(vsync_row)
-	var vsync_label := Label.new()
-	vsync_label.custom_minimum_size = Vector2(200, 0)
-	vsync_label.add_theme_font_size_override("font_size", 18)
-	vsync_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	vsync_label.text = "VSync"
-	vsync_row.add_child(vsync_label)
-	var vsync_check := CheckBox.new()
-	vsync_check.custom_minimum_size = Vector2(24, 24)
-	_style_checkbox(vsync_check)
-	vsync_row.add_child(vsync_check)
-
-	# Enhanced Lighting.
-	var lighting_row := HBoxContainer.new()
-	lighting_row.add_theme_constant_override("separation", 12)
-	list.add_child(lighting_row)
-	var lighting_label := Label.new()
-	lighting_label.custom_minimum_size = Vector2(200, 0)
-	lighting_label.add_theme_font_size_override("font_size", 18)
-	lighting_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	lighting_label.text = "Enhanced Lighting"
-	lighting_row.add_child(lighting_label)
-	var lighting_check := CheckBox.new()
-	lighting_check.custom_minimum_size = Vector2(24, 24)
-	_style_checkbox(lighting_check)
-	lighting_row.add_child(lighting_check)
-
-	# Show FPS.
-	var fps_row := HBoxContainer.new()
-	fps_row.add_theme_constant_override("separation", 12)
-	list.add_child(fps_row)
-	var fps_label := Label.new()
-	fps_label.custom_minimum_size = Vector2(200, 0)
-	fps_label.add_theme_font_size_override("font_size", 18)
-	fps_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	fps_label.text = "Show FPS"
-	fps_row.add_child(fps_label)
-	var fps_check := CheckBox.new()
-	fps_check.custom_minimum_size = Vector2(24, 24)
-	_style_checkbox(fps_check)
-	fps_row.add_child(fps_check)
-
-	# Spacer.
-	var spacer3 := Control.new()
-	spacer3.custom_minimum_size = Vector2(0, 12)
-	list.add_child(spacer3)
-
-	# Gameplay header.
-	var game_header := Label.new()
-	game_header.add_theme_font_size_override("font_size", 22)
-	game_header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	game_header.text = "Gameplay"
-	list.add_child(game_header)
-
-	# Autosave interval.
-	var autosave_row := HBoxContainer.new()
-	autosave_row.add_theme_constant_override("separation", 12)
-	list.add_child(autosave_row)
-	var autosave_label := Label.new()
-	autosave_label.custom_minimum_size = Vector2(120, 0)
-	autosave_label.add_theme_font_size_override("font_size", 18)
-	autosave_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	autosave_label.text = "Autosave every"
-	autosave_row.add_child(autosave_label)
-	var autosave_slider := HSlider.new()
-	autosave_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	autosave_slider.custom_minimum_size = Vector2(120, 24)
-	autosave_slider.min_value = SettingsManager.AUTOSAVE_MIN_MINUTES
-	autosave_slider.max_value = SettingsManager.AUTOSAVE_MAX_MINUTES
-	autosave_slider.step = 1.0
-	autosave_slider.value = SettingsManager.get_autosave_minutes()
-	_style_slider(autosave_slider)
-	autosave_row.add_child(autosave_slider)
-	var autosave_value := Label.new()
-	autosave_value.custom_minimum_size = Vector2(60, 0)
-	autosave_value.add_theme_font_size_override("font_size", 16)
-	autosave_value.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
-	autosave_value.text = "%d min" % int(autosave_slider.value)
-	autosave_row.add_child(autosave_value)
-
-	# Back button (anchored to bottom-left, same as main menu).
-	_settings_back = Button.new()
-	_settings_back.theme = theme
-	_settings_back.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_settings_back.offset_left = 60.0
-	_settings_back.offset_top = -70.0
-	_settings_back.offset_right = 500.0
-	_settings_back.offset_bottom = -16.0
-	_settings_back.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_settings_back.custom_minimum_size = Vector2(0, 48)
-	_settings_back.add_theme_font_size_override("font_size", 38)
-	_settings_back.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
-	_settings_back.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-	_settings_back.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_settings_back.text = "Back"
-	panel.add_child(_settings_back)
-
-	# Wire up sliders with drag sounds (same as main menu).
-	master_slider.value_changed.connect(
-		func(v: float):
-			AudioServer.set_bus_volume_db(0, linear_to_db(v))
-			master_value.text = "%d" % int(round(v * 100)),
-	)
-	master_slider.drag_ended.connect(
-		func(_changed: bool):
-			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-			SettingsManager.save_settings(),
-	)
-	sfx_slider.value_changed.connect(
-		func(v: float):
-			if AudioServer.get_bus_count() > 1:
-				AudioServer.set_bus_volume_db(1, linear_to_db(v))
-			sfx_value.text = "%d" % int(round(v * 100)),
-	)
-	sfx_slider.drag_ended.connect(
-		func(_changed: bool):
-			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-			SettingsManager.save_settings(),
-	)
-	music_slider.value_changed.connect(
-		func(v: float):
-			if AudioServer.get_bus_count() > 2:
-				AudioServer.set_bus_volume_db(2, linear_to_db(v))
-			music_value.text = "%d" % int(round(v * 100)),
-	)
-	music_slider.drag_ended.connect(
-		func(_changed: bool):
-			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
-			SettingsManager.save_settings(),
-	)
-	# Graphics toggles — emit signals so main.gd handles them.
-	fs_check.toggled.connect(
-		func(on: bool):
-			fullscreen_toggled.emit(on)
-			SettingsManager.save_settings(),
-	)
-	vsync_check.toggled.connect(
-		func(on: bool):
-			vsync_toggled.emit(on)
-			SettingsManager.save_settings(),
-	)
-	lighting_check.toggled.connect(
-		func(on: bool):
-			enhanced_lighting_toggled.emit(on)
-			SettingsManager.save_graphics_bool("enhanced_lighting", on),
-	)
-	fps_check.toggled.connect(
-		func(on: bool):
-			fps_toggled.emit(on)
-			SettingsManager.save_graphics_bool("fps_counter", on),
-	)
-	autosave_slider.value_changed.connect(
-		func(v: float):
-			autosave_value.text = "%d min" % int(v),
-	)
-	autosave_slider.drag_ended.connect(
-		func(_changed: bool):
-			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-			SettingsManager.set_autosave_minutes(autosave_slider.value)
-			SaveManager.set_autosave_interval(autosave_slider.value),
-	)
-
-	# Store references for syncing.
-	panel.set_meta("master_slider", master_slider)
-	panel.set_meta("master_value", master_value)
-	panel.set_meta("sfx_slider", sfx_slider)
-	panel.set_meta("sfx_value", sfx_value)
-	panel.set_meta("music_slider", music_slider)
-	panel.set_meta("music_value", music_value)
-	panel.set_meta("fs_check", fs_check)
-	panel.set_meta("vsync_check", vsync_check)
-	panel.set_meta("lighting_check", lighting_check)
-	panel.set_meta("fps_check", fps_check)
-	panel.set_meta("autosave_slider", autosave_slider)
-	panel.set_meta("autosave_value", autosave_value)
-
-	return panel
-
-
 ## Show the ESC menu.
 func show_menu() -> void:
 	visible = true
 	_settings_panel.visible = false
 	_menu_box.visible = true
 	_menu_box.modulate = Color(1, 1, 1, 0)
-	# Restore version label and music widget (hidden during back-to-menu).
 	if _version_label:
 		_version_label.visible = true
 	if _music_widget:
 		_music_widget.visible = true
-	# Fade in.
 	var tw := create_tween()
 	tw.set_ease(Tween.EASE_OUT)
 	tw.tween_property(_menu_box, "modulate:a", 1.0, 0.2)
@@ -626,45 +311,6 @@ func hide_menu() -> void:
 	else:
 		visible = false
 
-
-## Sync settings controls to current state (call before showing settings).
-func _sync_settings() -> void:
-	var master_slider := _settings_panel.get_meta("master_slider") as HSlider
-	var master_value := _settings_panel.get_meta("master_value") as Label
-	var sfx_slider := _settings_panel.get_meta("sfx_slider") as HSlider
-	var sfx_value := _settings_panel.get_meta("sfx_value") as Label
-	var music_slider := _settings_panel.get_meta("music_slider") as HSlider
-	var music_value := _settings_panel.get_meta("music_value") as Label
-	var fs_check := _settings_panel.get_meta("fs_check") as CheckBox
-	var vsync_check := _settings_panel.get_meta("vsync_check") as CheckBox
-	var lighting_check := _settings_panel.get_meta("lighting_check") as CheckBox
-	var fps_check := _settings_panel.get_meta("fps_check") as CheckBox
-	var autosave_slider := _settings_panel.get_meta("autosave_slider") as HSlider
-	var autosave_value := _settings_panel.get_meta("autosave_value") as Label
-	var master_val := db_to_linear(AudioServer.get_bus_volume_db(0))
-	master_slider.value = master_val
-	master_value.text = "%d" % int(round(master_val * 100))
-	var sfx_val := 1.0
-	if AudioServer.get_bus_count() > 1:
-		sfx_val = db_to_linear(AudioServer.get_bus_volume_db(1))
-	sfx_slider.value = sfx_val
-	sfx_value.text = "%d" % int(round(sfx_val * 100))
-	var music_val := 1.0
-	if AudioServer.get_bus_count() > 2:
-		music_val = db_to_linear(AudioServer.get_bus_volume_db(2))
-	music_slider.value = music_val
-	music_value.text = "%d" % int(round(music_val * 100))
-	fs_check.button_pressed = (
-		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-	)
-	vsync_check.button_pressed = (
-		DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
-	)
-	lighting_check.button_pressed = true
-	fps_check.button_pressed = false
-	autosave_slider.value = SettingsManager.get_autosave_minutes()
-	autosave_value.text = "%d min" % int(autosave_slider.value)
-
 # --- Button handlers ---
 
 
@@ -674,7 +320,7 @@ func _on_back_to_game() -> void:
 
 
 func _on_settings_pressed() -> void:
-	_sync_settings()
+	_settings_panel.sync_state()
 	_settings_panel.visible = true
 	_menu_box.visible = false
 	settings_pressed.emit()

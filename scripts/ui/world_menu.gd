@@ -17,6 +17,8 @@ signal load_stand_requested(slot_name: String)
 const HOVER_POP: float = 1.12
 const HOVER_DURATION: float = 0.18
 const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
+const SETTINGS_PANEL_SCENE := preload("res://scenes/ui/settings_panel.tscn")
+const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
 
 @onready var _play_button: Button = $MenuBox/PlayButton
 @onready var _title_text: VBoxContainer = $MenuBox/TitleLayer/TitleText
@@ -33,20 +35,6 @@ var _eye_btn: Button = null
 var _join_error_label: Label = null
 @onready var _quit_button: Button = $MenuBox/QuitButton
 @onready var _settings_button: Button = $MenuBox/SettingsButton
-@onready var _settings_panel: Control = $SettingsPanel
-@onready var _settings_back: Button = $SettingsPanel/SettingsBack
-@onready var _master_slider: HSlider = $SettingsPanel/SettingsList/MasterRow/MasterSlider
-@onready var _master_value: Label = $SettingsPanel/SettingsList/MasterRow/MasterValue
-@onready var _sfx_slider: HSlider = $SettingsPanel/SettingsList/SFXRow/SFXSlider
-@onready var _sfx_value: Label = $SettingsPanel/SettingsList/SFXRow/SFXValue
-@onready var _music_slider: HSlider = $SettingsPanel/SettingsList/MusicRow/MusicSlider
-@onready var _music_value: Label = $SettingsPanel/SettingsList/MusicRow/MusicValue
-@onready var _fullscreen_check: CheckBox = (
-	$SettingsPanel/SettingsList/FullscreenRow/FullscreenCheck
-)
-@onready var _vsync_check: CheckBox = $SettingsPanel/SettingsList/VSyncRow/VSyncCheck
-@onready var _lighting_check: CheckBox = $SettingsPanel/SettingsList/LightingRow/LightingCheck
-@onready var _fps_check: CheckBox = $SettingsPanel/SettingsList/FPSRow/FPSCheck
 @onready var _status_label: Label = $MenuBox/StatusLabel
 @onready var _version_label: Label = $VersionLabel
 
@@ -71,10 +59,37 @@ var _music_time_total: Label = null
 
 var _saves_data: Array = []
 var _menu_buttons: Array[Button] = []
+var _settings_panel: SettingsPanel
 
 
 func _ready() -> void:
 	_menu_buttons = [_play_button, _saves_button, _join_button, _settings_button, _quit_button]
+
+	# Replace the scene-built settings panel with the tabbed shared panel.
+	var old_settings: Control = $SettingsPanel
+	if old_settings != null:
+		old_settings.visible = false
+	_settings_panel = SETTINGS_PANEL_SCENE.instantiate() as SettingsPanel
+	_settings_panel.fullscreen_toggled.connect(
+		func(on: bool):
+			fullscreen_toggled.emit(on),
+	)
+	_settings_panel.vsync_toggled.connect(
+		func(on: bool):
+			vsync_toggled.emit(on),
+	)
+	_settings_panel.enhanced_lighting_toggled.connect(
+		func(on: bool):
+			enhanced_lighting_toggled.emit(on),
+	)
+	_settings_panel.fps_toggled.connect(
+		func(on: bool):
+			fps_toggled.emit(on),
+	)
+	_settings_panel.back_pressed.connect(_on_settings_back)
+	add_child(_settings_panel)
+	_settings_panel.visible = false
+
 	_play_button.pressed.connect(
 		func():
 			_on_button_click(
@@ -196,14 +211,6 @@ func _ready() -> void:
 		func():
 			_on_button_click(_settings_button, _on_settings_pressed),
 	)
-	_settings_back.pressed.connect(
-		func():
-			_on_button_click(_settings_back, _on_settings_back),
-	)
-	# Audio sliders — control bus volumes, show value, play sound on release.
-	_style_slider(_master_slider)
-	_style_slider(_sfx_slider)
-	_style_slider(_music_slider)
 	# Style the saves list scroll container to match the game's palette.
 	# Use the cached _save_scroll reference. SHRINK_BEGIN prevents the
 	# VBoxContainer from expanding it beyond its minimum size.
@@ -214,59 +221,6 @@ func _ready() -> void:
 	_slots_container.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	# Defer styling — the scrollbar child may not exist yet at _ready.
 	call_deferred("_style_scroll_container", _save_scroll)
-	_master_slider.value_changed.connect(
-		func(v: float):
-			AudioServer.set_bus_volume_db(0, linear_to_db(v))
-			_master_value.text = "%d" % int(round(v * 100)),
-	)
-	_master_slider.drag_ended.connect(
-		func(_changed: bool):
-			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-			SettingsManager.save_settings(),
-	)
-	_sfx_slider.value_changed.connect(
-		func(v: float):
-			if AudioServer.get_bus_count() > 1:
-				AudioServer.set_bus_volume_db(1, linear_to_db(v))
-			_sfx_value.text = "%d" % int(round(v * 100)),
-	)
-	_sfx_slider.drag_ended.connect(
-		func(_changed: bool):
-			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-			SettingsManager.save_settings(),
-	)
-	_music_slider.value_changed.connect(
-		func(v: float):
-			if AudioServer.get_bus_count() > 2:
-				AudioServer.set_bus_volume_db(2, linear_to_db(v))
-			_music_value.text = "%d" % int(round(v * 100)),
-	)
-	_music_slider.drag_ended.connect(
-		func(_changed: bool):
-			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
-			SettingsManager.save_settings(),
-	)
-	# Graphics toggles.
-	_fullscreen_check.toggled.connect(
-		func(on: bool):
-			fullscreen_toggled.emit(on)
-			SettingsManager.save_settings(),
-	)
-	_vsync_check.toggled.connect(
-		func(on: bool):
-			vsync_toggled.emit(on)
-			SettingsManager.save_settings(),
-	)
-	_lighting_check.toggled.connect(
-		func(on: bool):
-			enhanced_lighting_toggled.emit(on)
-			SettingsManager.save_graphics_bool("enhanced_lighting", on),
-	)
-	_fps_check.toggled.connect(
-		func(on: bool):
-			fps_toggled.emit(on)
-			SettingsManager.save_graphics_bool("fps_counter", on),
-	)
 	_saves_back.pressed.connect(
 		func():
 			_on_button_click(_saves_back, _on_saves_back),
@@ -287,54 +241,6 @@ func _ready() -> void:
 	_make_flat_button(_join_back)
 	_add_drop_shadow(_join_back)
 	_setup_hover_effect(_join_back)
-	_make_flat_button(_settings_back)
-	_add_drop_shadow(_settings_back)
-	_setup_hover_effect(_settings_back)
-	# Style checkboxes: transparent bg, white outline, square, minimalist.
-	for cb in [_fullscreen_check, _vsync_check, _lighting_check, _fps_check]:
-		# Use a helper to make square styleboxes with equal content margins.
-		var make_sb := func(bg: Color, border: Color) -> StyleBoxFlat:
-			var s := StyleBoxFlat.new()
-			s.bg_color = bg
-			s.border_color = border
-			s.set_border_width_all(1)
-			s.content_margin_left = 6
-			s.content_margin_right = 6
-			s.content_margin_top = 6
-			s.content_margin_bottom = 6
-			s.set_corner_radius_all(2)
-			return s
-		cb.add_theme_stylebox_override(
-			"normal",
-			make_sb.call(Color(0, 0, 0, 0), Color(1, 1, 1, 0.4)),
-		)
-		cb.add_theme_stylebox_override(
-			"hover",
-			make_sb.call(Color(0, 0, 0, 0), Color(1, 1, 1, 0.8)),
-		)
-		cb.add_theme_stylebox_override(
-			"pressed",
-			make_sb.call(Color(1, 1, 1, 0.1), Color(1, 1, 1, 1.0)),
-		)
-		cb.add_theme_stylebox_override(
-			"checked",
-			make_sb.call(Color(1, 0.95, 0.7, 0.15), Color(1, 0.95, 0.7, 1.0)),
-		)
-		# Hover while checked — keep the checked style, don't go invisible.
-		cb.add_theme_stylebox_override(
-			"hover_pressed",
-			make_sb.call(Color(1, 0.95, 0.7, 0.15), Color(1, 0.95, 0.7, 1.0)),
-		)
-		cb.add_theme_stylebox_override(
-			"hover_checked",
-			make_sb.call(Color(1, 0.95, 0.7, 0.2), Color(1, 0.95, 0.7, 1.0)),
-		)
-		cb.add_theme_stylebox_override(
-			"pressed_checked",
-			make_sb.call(Color(1, 0.95, 0.7, 0.1), Color(1, 0.95, 0.7, 1.0)),
-		)
-		cb.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-		cb.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	# Style join field same as stand box outline.
 	var jf_style := StyleBoxFlat.new()
 	jf_style.bg_color = Color(0, 0, 0, 0)
@@ -833,30 +739,9 @@ func _on_join_back() -> void:
 
 
 func _on_settings_pressed() -> void:
+	_settings_panel.sync_state()
 	_settings_panel.visible = true
 	$MenuBox.visible = false
-	# Sync current state into the controls.
-	var master_val := db_to_linear(AudioServer.get_bus_volume_db(0))
-	_master_slider.value = master_val
-	_master_value.text = "%d" % int(round(master_val * 100))
-	var sfx_val := 1.0
-	if AudioServer.get_bus_count() > 1:
-		sfx_val = db_to_linear(AudioServer.get_bus_volume_db(1))
-	_sfx_slider.value = sfx_val
-	_sfx_value.text = "%d" % int(round(sfx_val * 100))
-	var music_val := 1.0
-	if AudioServer.get_bus_count() > 2:
-		music_val = db_to_linear(AudioServer.get_bus_volume_db(2))
-	_music_slider.value = music_val
-	_music_value.text = "%d" % int(round(music_val * 100))
-	_fullscreen_check.button_pressed = (
-		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-	)
-	_vsync_check.button_pressed = (
-		DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
-	)
-	_lighting_check.button_pressed = true
-	_fps_check.button_pressed = false
 
 
 func _on_settings_back() -> void:

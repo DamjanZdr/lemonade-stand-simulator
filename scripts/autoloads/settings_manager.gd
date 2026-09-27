@@ -15,8 +15,40 @@ const DEFAULT_VSYNC := false
 const DEFAULT_ENHANCED_LIGHTING := true
 const DEFAULT_FPS_COUNTER := false
 const DEFAULT_AUTOSAVE_MINUTES := 5.0
+const DEFAULT_GRAPHICS_QUALITY := "high"
 const AUTOSAVE_MIN_MINUTES := 2.0
 const AUTOSAVE_MAX_MINUTES := 15.0
+
+const GRAPHICS_PRESETS := {
+	"epic": {
+		"shadow_size": 4096,
+		"soft_shadow": 3,
+		"msaa": 2,
+		"fxaa": false,
+		"grass_multiplier": 1.5,
+	},
+	"high": {
+		"shadow_size": 2048,
+		"soft_shadow": 2,
+		"msaa": 2,
+		"fxaa": true,
+		"grass_multiplier": 1.0,
+	},
+	"medium": {
+		"shadow_size": 2048,
+		"soft_shadow": 1,
+		"msaa": 0,
+		"fxaa": true,
+		"grass_multiplier": 0.7,
+	},
+	"low": {
+		"shadow_size": 1024,
+		"soft_shadow": 0,
+		"msaa": 0,
+		"fxaa": false,
+		"grass_multiplier": 0.5,
+	},
+}
 
 signal settings_loaded()
 
@@ -51,11 +83,44 @@ func load_settings() -> void:
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
 	)
+	var quality := cfg.get_value(
+		SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY
+	) as String
+	apply_graphics_quality(quality)
 	# Remove any hard FPS cap so the game can run above the monitor refresh
 	# rate when VSync is off. The default is unlimited, but force it here
 	# in case project settings or an old config changed it.
 	Engine.max_fps = 0
 	settings_loaded.emit()
+
+
+func apply_graphics_quality(quality: String) -> void:
+	var preset: Dictionary = GRAPHICS_PRESETS.get(
+		quality,
+		GRAPHICS_PRESETS[DEFAULT_GRAPHICS_QUALITY],
+	)
+	# Directional shadow map size / soft shadow filter are read from
+	# ProjectSettings when the shadow atlas is allocated.
+	ProjectSettings.set_setting(
+		"rendering/lights_and_shadows/directional_shadow/size",
+		preset["shadow_size"],
+	)
+	ProjectSettings.set_setting(
+		"rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality",
+		preset["soft_shadow"],
+	)
+	# MSAA / FXAA live on the root viewport.
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null:
+		var vp := tree.root
+		vp.msaa_3d = preset["msaa"] as Viewport.MSAA
+		if preset["fxaa"]:
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+		else:
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	# Tell grass scatterers to regenerate with the new density multiplier.
+	if tree != null:
+		tree.call_group("grass_scatterer", "regenerate")
 
 
 ## Save current settings to disk.
@@ -83,7 +148,32 @@ func save_settings() -> void:
 		"vsync",
 		DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED,
 	)
+	cfg.set_value(SECTION_GRAPHICS, "graphics_quality", get_graphics_quality())
 	cfg.save(CONFIG_PATH)
+
+
+func get_graphics_quality() -> String:
+	var cfg := ConfigFile.new()
+	if cfg.load(CONFIG_PATH) != OK:
+		return DEFAULT_GRAPHICS_QUALITY
+	var q := cfg.get_value(SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY) as String
+	if not GRAPHICS_PRESETS.has(q):
+		return DEFAULT_GRAPHICS_QUALITY
+	return q
+
+
+func set_graphics_quality(quality: String) -> void:
+	if not GRAPHICS_PRESETS.has(quality):
+		quality = DEFAULT_GRAPHICS_QUALITY
+	var cfg := ConfigFile.new()
+	cfg.load(CONFIG_PATH)
+	cfg.set_value(SECTION_GRAPHICS, "graphics_quality", quality)
+	cfg.save(CONFIG_PATH)
+	apply_graphics_quality(quality)
+
+
+func get_grass_density_multiplier() -> float:
+	return GRAPHICS_PRESETS[get_graphics_quality()].grass_multiplier
 
 
 ## Save a single graphics toggle value (for enhanced_lighting / fps_counter,

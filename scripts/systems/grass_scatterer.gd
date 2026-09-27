@@ -24,14 +24,22 @@ var _surfaces: Array[Node] = []
 
 
 func _ready() -> void:
-	if random_seed != 0:
-		seed(random_seed)
+	add_to_group("grass_scatterer")
 	# Wait one frame so all transforms are committed before sampling AABBs.
 	await get_tree().process_frame
 	_generate_grass()
 
 
+func regenerate() -> void:
+	if _multimesh != null and is_instance_valid(_multimesh):
+		_multimesh.queue_free()
+	_multimesh = null
+	_generate_grass()
+
+
 func _generate_grass() -> void:
+	if random_seed != 0:
+		seed(random_seed)
 	var mesh := _get_grass_mesh()
 	if mesh == null:
 		push_error("GrassScatterer: No grass mesh assigned!")
@@ -64,7 +72,8 @@ func _generate_grass() -> void:
 		if aabb.size.length_squared() <= 0.0:
 			continue
 		var patch_size := Vector2(aabb.size.x, aabb.size.z)
-		var patch_instances := int(patch_size.x * patch_size.y * grass_density)
+		var density := grass_density * SettingsManager.get_grass_density_multiplier()
+		var patch_instances := int(patch_size.x * patch_size.y * density)
 		patch_instances = mini(patch_instances, MAX_BLADES_PER_PATCH)
 		for i in range(patch_instances):
 			var local_x := randf_range(aabb.position.x, aabb.position.x + aabb.size.x)
