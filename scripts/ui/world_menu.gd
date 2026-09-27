@@ -1464,7 +1464,7 @@ func _build_music_player() -> void:
 	_music_widget.mouse_filter = Control.MOUSE_FILTER_STOP
 	# Semi-transparent background with subtle border.
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.05, 0.05, 0.08, 0.55)
+	bg.bg_color = Color(0.15, 0.22, 0.32, 0.92)
 	bg.border_color = Color(1, 1, 1, 0.12)
 	bg.set_border_width_all(1)
 	bg.set_content_margin_all(10)
