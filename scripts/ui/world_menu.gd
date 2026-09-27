@@ -19,6 +19,14 @@ const HOVER_DURATION: float = 0.18
 const NAME_MAX_WEIGHT: float = 15.0 # Capitals count as 1.5, lowercase as 1.
 const SETTINGS_PANEL_SCENE := preload("res://scenes/ui/settings_panel.tscn")
 const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
+const PROMO_DISCORD_PATH := "res://assets/textures/ui/discord invite.png"
+const PROMO_WISHLIST_PATH := "res://assets/textures/ui/wishlist invite.png"
+const PROMO_BLUR_SHADER := preload("res://shaders/promo_panel_blur.gdshader")
+const PROMO_WIDGET_W: float = 1232.0
+const PROMO_WIDGET_H: float = 706.0
+# Replace DISCORD_URL with the real invite link.
+const PROMO_DISCORD_URL := "https://discord.gg/YOUR_INVITE"
+const PROMO_WISHLIST_URL := "https://store.steampowered.com/app/5329010"
 
 @onready var _play_button: Button = $MenuBox/PlayButton
 @onready var _title_text: VBoxContainer = $MenuBox/TitleLayer/TitleText
@@ -48,6 +56,14 @@ var _music_next_btn: Button = null
 var _music_progress: ProgressBar = null
 var _music_time_current: Label = null
 var _music_time_total: Label = null
+
+# Promo slideshow widget (Discord / Wishlist)
+var _promo_widget: Control = null
+var _promo_slides: Array[TextureRect] = []
+var _promo_labels: Array[Label] = []
+var _promo_buttons: Array[Button] = []
+var _promo_dots: Array[ColorRect] = []
+var _promo_index: int = 0
 
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
@@ -267,6 +283,8 @@ func _ready() -> void:
 	_fit_title_text_widths()
 	# Build the music player widget (bottom-right corner).
 	_build_music_player()
+	# Build the promo slideshow above the music player.
+	_build_promo_widget()
 	# Sync to current track.
 	_update_music_display(AudioManager.get_current_track())
 	AudioManager.music_track_changed.connect(_update_music_display)
@@ -1428,6 +1446,146 @@ func _build_save_row(
 func _on_load_save(slot_name: String, stand_name: String) -> void:
 	set_busy("Loading %s..." % stand_name)
 	load_stand_requested.emit(slot_name)
+
+# ─── Promo Slideshow Widget ───
+
+
+func _build_promo_widget() -> void:
+	var margin := 12.0
+	var music_h := MUSIC_WIDGET_H + margin * 2.0
+	_promo_widget = Control.new()
+	_promo_widget.name = "PromoWidget"
+	_promo_widget.anchor_left = 1.0
+	_promo_widget.anchor_top = 1.0
+	_promo_widget.anchor_right = 1.0
+	_promo_widget.anchor_bottom = 1.0
+	_promo_widget.offset_left = -(PROMO_WIDGET_W + margin)
+	_promo_widget.offset_top = -(PROMO_WIDGET_H + music_h + margin)
+	_promo_widget.offset_right = -margin
+	_promo_widget.offset_bottom = -(music_h + margin)
+	_promo_widget.custom_minimum_size = Vector2(PROMO_WIDGET_W, PROMO_WIDGET_H)
+	add_child(_promo_widget)
+
+	# Slide images.
+	var textures: Array[Texture2D] = [
+		load(PROMO_DISCORD_PATH) as Texture2D,
+		load(PROMO_WISHLIST_PATH) as Texture2D,
+	]
+	var labels: Array[String] = ["Join the Discord", "Wishlist on Steam"]
+	var urls: Array[String] = [PROMO_DISCORD_URL, PROMO_WISHLIST_URL]
+	for i in range(textures.size()):
+		var tr := TextureRect.new()
+		tr.name = "Slide%d" % i
+		tr.texture = textures[i]
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		tr.set_anchors_preset(Control.PRESET_FULL_RECT)
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if i != 0:
+			tr.modulate = Color(1, 1, 1, 0)
+		_promo_widget.add_child(tr)
+		_promo_slides.append(tr)
+
+		# Bottom overlay panel with blur + text.
+		var panel := Panel.new()
+		panel.name = "Panel%d" % i
+		panel.anchor_left = 0.0
+		panel.anchor_top = 1.0
+		panel.anchor_right = 1.0
+		panel.anchor_bottom = 1.0
+		panel.offset_top = -64.0
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tr.add_child(panel)
+
+		var blur_mat := ShaderMaterial.new()
+		blur_mat.shader = PROMO_BLUR_SHADER
+		blur_mat.set_shader_parameter("blur_radius", 6.0)
+		blur_mat.set_shader_parameter("overlay_color", Color(0.15, 0.22, 0.32, 0.75))
+		panel.material = blur_mat
+
+		var label := Label.new()
+		label.name = "Label%d" % i
+		label.text = labels[i]
+		label.set_anchors_preset(Control.PRESET_FULL_RECT)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 28)
+		label.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+		label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+		label.add_theme_constant_override("shadow_offset_x", 2)
+		label.add_theme_constant_override("shadow_offset_y", 2)
+		label.add_theme_constant_override("shadow_outline_size", 4)
+		label.add_theme_constant_override("outline_size", 4)
+		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+		panel.add_child(label)
+		label.visible = (i == _promo_index)
+		_promo_labels.append(label)
+
+		# Clickable invisible button on top of the slide.
+		var btn := Button.new()
+		btn.name = "Click%d" % i
+		btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+		btn.flat = true
+		btn.disabled = (i != _promo_index)
+		var style := StyleBoxEmpty.new()
+		for state in ["normal", "hover", "pressed", "focus"]:
+			btn.add_theme_stylebox_override(state, style)
+		btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
+		tr.add_child(btn)
+		_promo_buttons.append(btn)
+		var url: String = urls[i]
+		btn.pressed.connect(
+			func():
+				if url != "":
+					OS.shell_open(url),
+		)
+
+	# Slide indicator dots.
+	var dots_row := HBoxContainer.new()
+	dots_row.name = "DotsRow"
+	dots_row.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	dots_row.anchor_top = 1.0
+	dots_row.anchor_bottom = 1.0
+	dots_row.offset_left = -(PROMO_WIDGET_W / 2.0 + 24.0)
+	dots_row.offset_top = -24.0
+	dots_row.offset_right = -(PROMO_WIDGET_W / 2.0 - 24.0)
+	dots_row.offset_bottom = -8.0
+	dots_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	dots_row.add_theme_constant_override("separation", 10)
+	_promo_widget.add_child(dots_row)
+	for i in range(_promo_slides.size()):
+		var dot := ColorRect.new()
+		dot.name = "Dot%d" % i
+		dot.custom_minimum_size = Vector2(10, 10)
+		dot.color = Color(1, 1, 1, 1.0 if i == _promo_index else 0.35)
+		dots_row.add_child(dot)
+		_promo_dots.append(dot)
+
+	# Timer to auto-advance slides.
+	var timer := Timer.new()
+	timer.name = "PromoTimer"
+	timer.wait_time = 6.0
+	timer.autostart = true
+	timer.timeout.connect(_advance_promo_slide)
+	_promo_widget.add_child(timer)
+
+
+func _advance_promo_slide() -> void:
+	var next := (_promo_index + 1) % _promo_slides.size()
+	var duration := 0.5
+	var cur := _promo_slides[_promo_index]
+	var nxt := _promo_slides[next]
+
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(cur, "modulate:a", 0.0, duration)
+	tw.tween_property(nxt, "modulate:a", 1.0, duration)
+
+	_promo_index = next
+	for i in range(_promo_slides.size()):
+		_promo_labels[i].visible = (i == _promo_index)
+		_promo_buttons[i].disabled = (i != _promo_index)
+	for i in range(_promo_dots.size()):
+		_promo_dots[i].color = Color(1, 1, 1, 1.0 if i == _promo_index else 0.35)
 
 # ─── Music Player Widget ───
 
