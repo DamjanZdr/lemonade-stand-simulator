@@ -65,7 +65,11 @@ const BRANCH_COLORS: Array[Color] = [
 @onready var _stats_vbox: VBoxContainer = ($MainHBox/RightPanel/RightVBox/StatsScroll/StatsVBox)
 
 var _active_tab: String = "analytics"
-var _flow_tabs: Array[String] = ["analytics", "shop", "upgrades", "employees"]
+## Demo build: upgrades tab is blocked by a "Not Available in Demo" overlay.
+const DEMO_DISABLE_UPGRADES := true
+
+var _flow_tabs: Array[String] = ["analytics", "shop", "upgrades"]
+var _demo_upgrades_overlay: Control = null
 var _flow_step: int = 0
 var _cart: Array[Dictionary] = []
 var _closed_overlay: Panel = null
@@ -221,6 +225,14 @@ func _ready() -> void:
 	EventBus.money_changed.connect(_on_money_changed)
 	EventBus.day_time_over.connect(_on_day_time_over)
 	_build_closed_overlay()
+	_build_demo_upgrades_overlay()
+	# Employees tab removed in the demo.
+	var emp_tab := _flow_indicator.get_node_or_null("StepPC_employees")
+	if emp_tab:
+		emp_tab.hide()
+	var emp_page := $MainHBox/Panel/VBox/Content.get_node_or_null("EmployeesPage")
+	if emp_page:
+		emp_page.hide()
 	EventBus.container_placed.connect(
 		func(_t, _n):
 			_scan_stand_state(),
@@ -966,6 +978,11 @@ func _buy_tree_upgrade(
 	end_scale: Vector2 = Vector2(1.0, 1.0),
 ) -> void:
 	var data := UpgradeManager.get_node_data(id)
+	# Demo build: upgrades are disabled entirely.
+	if DEMO_DISABLE_UPGRADES:
+		_status_lbl.text = "Not Available in Demo"
+		_animate_status(true)
+		return
 	if data.get("purchased", false):
 		return
 	if _shop_closed():
@@ -1293,7 +1310,7 @@ func _show_tab(tab_name: String) -> void:
 	var content := $MainHBox/Panel/VBox/Content as MarginContainer
 	if content:
 		for child in content.get_children():
-			if child == _closed_overlay:
+			if child == _closed_overlay or child == _demo_upgrades_overlay:
 				continue
 			child.visible = (child.name.to_lower() == tab_name + "page")
 			if child.visible:
@@ -1307,8 +1324,8 @@ func _show_tab(tab_name: String) -> void:
 		_refresh_upgrades()
 	elif tab_name == "shop":
 		pass
-	elif tab_name == "employees":
-		_refresh_employees_page()
+	if _demo_upgrades_overlay != null:
+		_demo_upgrades_overlay.visible = (tab_name == "upgrades")
 	_update_flow_indicator()
 	_update_closed_overlay()
 
@@ -1363,24 +1380,34 @@ func _on_tab_unhover(_step_pc: PanelContainer, tab: String) -> void:
 	_update_flow_indicator()
 
 
-func _refresh_employees_page() -> void:
-	var emp_page := $MainHBox/Panel/VBox/Content/EmployeesPage as VBoxContainer
-	if emp_page == null:
+## Demo overlay over the Upgrades page: semi-transparent so the tree stays
+## visible, but blocks all mouse interaction and purchasing.
+func _build_demo_upgrades_overlay() -> void:
+	var content := $MainHBox/Panel/VBox/Content as MarginContainer
+	if content == null:
 		return
-	for child in emp_page.get_children():
-		child.queue_free()
-	var title := Label.new()
-	title.text = "Employees"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
-	title.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
-	emp_page.add_child(title)
-	var placeholder := Label.new()
-	placeholder.text = "Under Construction"
-	placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	placeholder.add_theme_font_size_override("font_size", 22)
-	placeholder.add_theme_color_override("font_color", Color(0.7, 0.68, 0.62))
-	emp_page.add_child(placeholder)
+	_demo_upgrades_overlay = Control.new()
+	_demo_upgrades_overlay.name = "DemoUpgradesOverlay"
+	_demo_upgrades_overlay.visible = false
+	_demo_upgrades_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_demo_upgrades_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	content.add_child(_demo_upgrades_overlay)
+
+	var tint := ColorRect.new()
+	tint.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tint.color = Color(0.05, 0.05, 0.08, 0.55)
+	tint.mouse_filter = Control.MOUSE_FILTER_STOP
+	_demo_upgrades_overlay.add_child(tint)
+
+	var label := Label.new()
+	label.text = "Not Available in Demo"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.add_theme_font_size_override("font_size", 36)
+	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.92))
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_demo_upgrades_overlay.add_child(label)
 
 
 func _build_prices_page() -> void:

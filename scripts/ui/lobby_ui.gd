@@ -67,8 +67,8 @@ var _shirt_color: Color = Color(0.8, 0.2, 0.2) # red
 var _pants_color: Color = Color(0.2, 0.3, 0.8) # blue
 var _shoes_color: Color = Color(0.2, 0.5, 0.3) # green
 var _head_size_index: int = 4 # 0-8, maps to 0.5x - 2.0x (index 4 = 1.3x default)
-var _walls_color_index: int = 0
-var _roof_color_index: int = 0
+var _wall_color: Color = Color(0.95, 0.85, 0.55) # house walls (palette[0])
+var _roof_color: Color = Color(0.5, 0.25, 0.2) # house roof (palette[0])
 var _skin_color: Color = Color(0.98, 0.87, 0.75) # light
 
 const HEAD_SIZE_MIN: float = 0.5
@@ -901,6 +901,8 @@ func _load_saved_customization() -> void:
 	_shirt_color = clothing.get("shirt", _shirt_color)
 	_pants_color = clothing.get("pants", _pants_color)
 	_shoes_color = clothing.get("shoes", _shoes_color)
+	_wall_color = saved.get("wall_color", _wall_color)
+	_roof_color = saved.get("roof_color", _roof_color)
 	var head_size: float = saved.get("head_size", 1.3)
 	# head_size is derived from _head_size_index; reverse the mapping.
 	_head_size_index = _head_size_to_index(head_size)
@@ -1014,6 +1016,26 @@ func _build_avatar_options_row() -> void:
 		_skin_color,
 		func(color):
 			_skin_color = color
+			_on_customization_changed(),
+	)
+
+	# -- House Walls: [color picker] --
+	_add_color_section(
+		vbox,
+		"House Walls",
+		_wall_color,
+		func(color):
+			_wall_color = color
+			_on_customization_changed(),
+	)
+
+	# -- House Roof: [color picker] --
+	_add_color_section(
+		vbox,
+		"House Roof",
+		_roof_color,
+		func(color):
+			_roof_color = color
 			_on_customization_changed(),
 	)
 
@@ -1310,6 +1332,12 @@ func _on_randomize() -> void:
 	_shoes_color = Color(randf(), randf(), randf())
 	_head_size_index = randi() % HEAD_SIZE_STEPS
 	_skin_color = Color(randf_range(0.3, 0.95), randf_range(0.2, 0.8), randf_range(0.15, 0.7))
+	var wc := _get_wall_colors()
+	if not wc.is_empty():
+		_wall_color = wc[randi() % wc.size()]
+	var rc := _get_roof_colors()
+	if not rc.is_empty():
+		_roof_color = rc[randi() % rc.size()]
 	if _head_slider:
 		_head_slider.value = _head_size_index
 	# Update the color picker buttons to reflect new colors.
@@ -1334,6 +1362,8 @@ func _sync_color_picker_buttons() -> void:
 		_pants_color,
 		_shoes_color,
 		_skin_color,
+		_wall_color,
+		_roof_color,
 	]
 	for i in mini(swatches.size(), colors.size()):
 		swatches[i].color = colors[i]
@@ -1356,14 +1386,6 @@ func _broadcast_customization() -> void:
 
 
 func _get_customization_data() -> Dictionary:
-	var wall_color: Color = Color.WHITE
-	var roof_color: Color = Color.WHITE
-	var wc := _get_wall_colors()
-	if not wc.is_empty() and _walls_color_index < wc.size():
-		wall_color = wc[_walls_color_index]
-	var rc := _get_roof_colors()
-	if not rc.is_empty() and _roof_color_index < rc.size():
-		roof_color = rc[_roof_color_index]
 	return {
 		"male": _is_male,
 		"hair_index": _hair_index,
@@ -1379,8 +1401,8 @@ func _get_customization_data() -> Dictionary:
 			"trousers": _pants_color,
 			"shoes": _shoes_color,
 		},
-		"wall_color": wall_color,
-		"roof_color": roof_color,
+		"wall_color": _wall_color,
+		"roof_color": _roof_color,
 	}
 
 

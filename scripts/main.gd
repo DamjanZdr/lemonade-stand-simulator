@@ -310,6 +310,37 @@ func _apply_game_mode_layout() -> void:
 			)
 	if not versus and delivery2 != null and delivery2.has_method("stop"):
 		delivery2.stop()
+	_apply_player_house_colors()
+
+
+## Recolor each stand's house from the owning player's lobby customization
+## (wall_color / roof_color). Stand 0 -> player_house, stand 1 -> player_house2.
+## In co-op both players share stand 0, so the lowest peer id wins
+## deterministically on all clients.
+func _apply_player_house_colors() -> void:
+	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
+	if neighborhood == null or not neighborhood.has_method("apply_player_house_colors"):
+		return
+	var stand_colors: Dictionary = { }
+	var peer_ids := LobbyManager.roster.keys()
+	peer_ids.sort()
+	for peer_id in peer_ids:
+		var entry: Dictionary = LobbyManager.roster[peer_id]
+		var stand_idx: int = entry.get("stand_index", -1)
+		if stand_idx < 0 or stand_colors.has(stand_idx):
+			continue
+		var custom: Dictionary = entry.get("customization", { })
+		stand_colors[stand_idx] = custom
+	for stand_idx in stand_colors:
+		var custom: Dictionary = stand_colors[stand_idx]
+		var wall = custom.get("wall_color", Color.TRANSPARENT)
+		var roof = custom.get("roof_color", Color.TRANSPARENT)
+		var house_name := StringName("player_house" if stand_idx == 0 else "player_house2")
+		neighborhood.apply_player_house_colors(
+			house_name,
+			wall if wall is Color else Color.TRANSPARENT,
+			roof if roof is Color else Color.TRANSPARENT,
+		)
 
 
 func _set_stand2_name() -> void:

@@ -35,7 +35,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _build() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Parent is a CanvasLayer — no anchor resolution there, so pin to
+	# TOP_LEFT and size explicitly to the viewport rect. Keep tracking it
+	# if the window is resized while the popup is open.
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	position = Vector2.ZERO
+	_size_to_viewport()
+	get_viewport().size_changed.connect(_size_to_viewport)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	theme = MENU_THEME
 
@@ -58,7 +64,7 @@ func _build() -> void:
 	add_child(center)
 
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(520, 0)
+	card.custom_minimum_size = Vector2(560, 0)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 	var card_style := StyleBoxFlat.new()
 	card_style.bg_color = Color(0.08, 0.10, 0.14, 0.97)
@@ -78,10 +84,18 @@ func _build() -> void:
 
 	# Header row: title + close X.
 	var header := HBoxContainer.new()
+	header.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(header)
+
+	# Spacer matching the close button so the title is truly centered.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(44, 44)
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(spacer)
 
 	var title := Label.new()
 	title.text = "Report a Bug"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_override("font", FONT_GRANDSTANDER)
 	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
@@ -100,17 +114,20 @@ func _build() -> void:
 
 	var subtitle := Label.new()
 	subtitle.text = "Found a bug? Tell us what happened — no account needed."
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 15)
 	subtitle.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
 	vbox.add_child(subtitle)
 
 	# Severity row.
 	var sev_row := HBoxContainer.new()
+	sev_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	sev_row.add_theme_constant_override("separation", 12)
 	vbox.add_child(sev_row)
 	sev_row.add_child(_make_small_label("Severity"))
 	_severity_option = OptionButton.new()
-	_severity_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_severity_option.custom_minimum_size = Vector2(200, 0)
+	_severity_option.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	for s in SEVERITIES:
 		_severity_option.add_item(s)
 	_severity_option.selected = 1 # "Minor" default
@@ -132,23 +149,15 @@ func _build() -> void:
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_status_label)
 
-	# Buttons row (right aligned).
+	# Buttons row — Submit centered, no Cancel (X closes).
 	var btn_row := HBoxContainer.new()
-	btn_row.alignment = BoxContainer.ALIGNMENT_END
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 12)
 	vbox.add_child(btn_row)
 
-	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.flat = true
-	cancel_btn.add_theme_font_size_override("font_size", 20)
-	cancel_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	cancel_btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
-	cancel_btn.pressed.connect(close)
-	btn_row.add_child(cancel_btn)
-
 	_submit_btn = Button.new()
 	_submit_btn.text = "Submit"
+	_submit_btn.custom_minimum_size = Vector2(160, 40)
 	_submit_btn.flat = true
 	_submit_btn.add_theme_font_size_override("font_size", 20)
 	_submit_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
@@ -161,9 +170,14 @@ func _build() -> void:
 	add_child(_http)
 
 
+func _size_to_viewport() -> void:
+	size = get_viewport_rect().size
+
+
 func _make_small_label(text: String) -> Label:
 	var l := Label.new()
 	l.text = text
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_font_size_override("font_size", 16)
 	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.65))
 	return l

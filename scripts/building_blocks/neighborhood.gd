@@ -419,6 +419,21 @@ func _recolor_pickup(root: Node, color: Color) -> void:
 				mesh_instance.set_surface_override_material(i, new_mat)
 
 
+## Recolor a specific player-owned house with lobby customization colors.
+## Player houses are excluded from the generic palette recoloring
+## (SKIP_RECOLOR_HOUSES) so they can be customized per-player instead.
+func apply_player_house_colors(
+	house_name: StringName,
+	wall_color: Color,
+	roof_color: Color,
+) -> void:
+	var house := get_node_or_null("Houses/" + String(house_name))
+	if house == null:
+		house = find_child(String(house_name), true, false)
+	if house:
+		_recolor_house(house, roof_color, wall_color)
+
+
 func _recolor_house(root: Node, roof_color: Color, wall_color: Color) -> void:
 	for mesh_instance in _find_mesh_instances(root):
 		var mesh := mesh_instance.mesh

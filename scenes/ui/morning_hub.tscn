@@ -260,7 +260,7 @@ theme_override_styles/panel = SubResource("tab_normal")
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "Analytics"
+text = "Stand"
 horizontal_alignment = 1
 
 [node name="StepPC_shop" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
@@ -313,24 +313,36 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
+[node name="StandNameHeader" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 24
+text = "Your Stand"
+horizontal_alignment = 1
+
 [node name="StandNameRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
 layout_mode = 2
+alignment = 1
 theme_override_constants/separation = 8
 
 [node name="Label" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Stand name"
+theme_override_colors/font_color = Color(0.9, 0.87, 0.78, 1)
+theme_override_font_sizes/font_size = 20
+text = "Stand name:"
 
 [node name="NameEdit" type="LineEdit" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow"]
+custom_minimum_size = Vector2(240, 40)
 layout_mode = 2
-size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
 max_length = 32
-placeholder_text = "Stand name"
+placeholder_text = "Type a stand name..."
 
 [node name="SaveButton" type="Button" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/StandNameRow"]
+custom_minimum_size = Vector2(140, 40)
 layout_mode = 2
-text = "Rename"
+theme_override_font_sizes/font_size = 18
+text = "Rename Stand"
 
 [node name="TodayLabel" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
 layout_mode = 2
