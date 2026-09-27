@@ -1083,12 +1083,16 @@ func _on_game_saved() -> void:
 	save_game()
 
 
+func has_default_container_snapshot() -> bool:
+	return not _default_container_positions.is_empty()
+
+
 func _on_game_reset() -> void:
 	delete_save()
-	_clear_street_trash()
+	clear_street_trash()
 
 
-func _clear_street_trash() -> void:
+func clear_street_trash() -> void:
 	var tree := get_tree()
 	if tree == null:
 		return

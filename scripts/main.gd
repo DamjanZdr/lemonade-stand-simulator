@@ -844,6 +844,13 @@ func _cleanup_game_session() -> void:
 	for cs in [spawner, spawner2]:
 		if cs and is_instance_valid(cs) and cs.has_method("reset_session"):
 			cs.reset_session()
+	# Restore the world to its default equipment so the persistent scene
+	# doesn't leak placed containers, supply boxes, trash, or cash pickups
+	# into the next new/load game.
+	if SaveManager.has_default_container_snapshot():
+		SaveManager.respawn_default_containers()
+	SaveManager.clear_street_trash()
+	_clear_transient_world_objects()
 	# Reset per-session flags so a second game isn't poisoned by leftover
 	# state — a stale _host_ready_notified would skip notify_clients_start
 	# and leave joiners stuck in the lobby; stale stand assignments leak
@@ -853,6 +860,24 @@ func _cleanup_game_session() -> void:
 	_late_join_world_ready = true
 	_pending_transition = { }
 	_assigned_stands.clear()
+
+
+func _clear_transient_world_objects() -> void:
+	var root := get_tree().current_scene
+	if root == null:
+		return
+	for node in get_tree().get_nodes_in_group("cash_pickup"):
+		if is_instance_valid(node):
+			node.queue_free()
+	for node in get_tree().get_nodes_in_group("thrown_trash"):
+		if is_instance_valid(node):
+			node.queue_free()
+	# Free anything left in the multiplayer spawn root (clients can have
+	# replicated objects that didn't get despawned when the host left).
+	var world_objects := root.get_node_or_null("WorldObjects")
+	if world_objects != null:
+		for child in world_objects.get_children():
+			child.queue_free()
 
 
 ## Smoothly transition from the lobby back to the main menu.

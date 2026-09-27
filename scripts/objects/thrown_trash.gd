@@ -61,6 +61,7 @@ func _ready() -> void:
 	set_meta("is_thrown_trash", true)
 	set_meta("trash_type", trash_type)
 	set_meta("trash_value", trash_value)
+	add_to_group("thrown_trash")
 
 	# Build the visual + collision from the variant scene.
 	_build_visuals()

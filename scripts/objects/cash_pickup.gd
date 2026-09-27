@@ -23,6 +23,7 @@ func setup(pay: float, due: float) -> void:
 
 func _ready() -> void:
 	label.text = "$%.2f" % payment
+	add_to_group("cash_pickup")
 	visibility_changed.connect(_on_visibility_changed)
 	_sync_physics_visibility()
 
