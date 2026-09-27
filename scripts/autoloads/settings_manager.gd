@@ -93,7 +93,9 @@ func load_settings() -> void:
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
 	)
-	var quality := cfg.get_value(SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY) as String
+	var quality := cfg.get_value(
+		SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY
+	) as String
 	apply_graphics_quality(quality)
 	# Gameplay
 	_mouse_sensitivity = clampf(
