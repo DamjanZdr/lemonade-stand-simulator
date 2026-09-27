@@ -147,6 +147,7 @@ func _layout_pop_panel() -> void:
 	var height := _pop_panel.offset_bottom - _pop_panel.offset_top
 	if width <= 0.0 or height <= 0.0:
 		return
+	_pop_panel.visible = true
 
 	_pop_fill.position = Vector2(POP_MARGIN, POP_MARGIN)
 	_pop_fill.size.y = height - POP_MARGIN * 2.0
@@ -290,10 +291,14 @@ func _build_ui() -> void:
 	pop_bg.corner_radius_bottom_left = 6
 	pop_bg.corner_radius_bottom_right = 6
 	_pop_panel.add_theme_stylebox_override("panel", pop_bg)
+	# Hidden until _layout_pop_panel gives it a valid rect — otherwise the
+	# fill flashes as a full-width sliver on the first frame.
+	_pop_panel.visible = false
 	_main_panel.add_child(_pop_panel)
 
 	_pop_fill = Panel.new()
 	_pop_fill.name = "PopBarFill"
+	_pop_fill.size = Vector2.ZERO
 	var pop_fill_style := StyleBoxFlat.new()
 	pop_fill_style.bg_color = Color(0.95, 0.25, 0.95, 0.7)
 	pop_fill_style.corner_radius_top_left = 0
