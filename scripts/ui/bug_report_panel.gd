@@ -114,17 +114,18 @@ func _build() -> void:
 
 	var subtitle := Label.new()
 	subtitle.text = "Found a bug? Tell us what happened — no account needed."
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_override("font", FONT_GRANDSTANDER)
 	subtitle.add_theme_font_size_override("font_size", 15)
 	subtitle.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
 	vbox.add_child(subtitle)
 
 	# Severity row.
 	var sev_row := HBoxContainer.new()
-	sev_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	sev_row.add_theme_constant_override("separation", 12)
 	vbox.add_child(sev_row)
-	sev_row.add_child(_make_small_label("Severity"))
+	var sev_lbl := _make_small_label("Severity")
+	sev_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sev_row.add_child(sev_lbl)
 	_severity_option = OptionButton.new()
 	_severity_option.custom_minimum_size = Vector2(200, 0)
 	_severity_option.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -146,6 +147,7 @@ func _build() -> void:
 	vbox.add_child(_steps_edit)
 
 	_status_label = Label.new()
+	_status_label.add_theme_font_override("font", FONT_GRANDSTANDER)
 	_status_label.add_theme_font_size_override("font_size", 14)
 	_status_label.add_theme_color_override("font_color", Color(1, 0.6, 0.5, 0.9))
 	_status_label.text = ""
@@ -162,6 +164,7 @@ func _build() -> void:
 	_submit_btn.text = "Submit"
 	_submit_btn.custom_minimum_size = Vector2(160, 40)
 	_submit_btn.flat = true
+	_submit_btn.add_theme_font_override("font", FONT_GRANDSTANDER)
 	_submit_btn.add_theme_font_size_override("font_size", 20)
 	_submit_btn.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 	_submit_btn.add_theme_color_override("font_hover_color", Color(1, 0.97, 0.6, 1))
@@ -180,7 +183,7 @@ func _size_to_viewport() -> void:
 func _make_small_label(text: String) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_override("font", FONT_GRANDSTANDER)
 	l.add_theme_font_size_override("font_size", 16)
 	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.65))
 	return l
