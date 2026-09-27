@@ -34,3 +34,4 @@ scripts/blahblah.gd.uid
 tools/steam-build-output/
 tools/steam_upload.log
 tools/steam_upload.err
+tools/_upload_out.log
