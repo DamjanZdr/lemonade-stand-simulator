@@ -22,10 +22,11 @@ const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
 const PROMO_DISCORD_PATH := "res://assets/textures/ui/discord invite.png"
 const PROMO_WISHLIST_PATH := "res://assets/textures/ui/wishlist invite.png"
 const PROMO_BLUR_SHADER := preload("res://shaders/promo_panel_blur.gdshader")
+const PROMO_ROUNDED_SHADER := preload("res://shaders/promo_rounded.gdshader")
 const FONT_GRANDSTANDER := preload("res://assets/fonts/Grandstander-clean.ttf")
 # Same width as the music player; height preserves the 1232x706 image ratio.
 const PROMO_WIDGET_W: float = 280.0
-const PROMO_WIDGET_H: float = 160.0
+const PROMO_WIDGET_H: float = 80.0
 const PROMO_DISCORD_URL := "https://discord.com/invite/h8GZZd8Fnb"
 const PROMO_WISHLIST_URL := (
 	"https://store.steampowered.com/app/5000810/When_Life_Gives_You_Lemons/"
@@ -1486,6 +1487,12 @@ func _build_promo_widget() -> void:
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		tr.set_anchors_preset(Control.PRESET_FULL_RECT)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tr.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+		var rounded_mat := ShaderMaterial.new()
+		rounded_mat.shader = PROMO_ROUNDED_SHADER
+		rounded_mat.set_shader_parameter("size_pixels", Vector2(PROMO_WIDGET_W, PROMO_WIDGET_H))
+		rounded_mat.set_shader_parameter("corner_radius", 8.0)
+		tr.material = rounded_mat
 		if i != 0:
 			tr.modulate = Color(1, 1, 1, 0)
 		_promo_widget.add_child(tr)
@@ -1498,14 +1505,14 @@ func _build_promo_widget() -> void:
 		panel.anchor_top = 1.0
 		panel.anchor_right = 1.0
 		panel.anchor_bottom = 1.0
-		panel.offset_top = -80.0
+		panel.offset_top = -28.0
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tr.add_child(panel)
 
 		var blur_mat := ShaderMaterial.new()
 		blur_mat.shader = PROMO_BLUR_SHADER
 		blur_mat.set_shader_parameter("blur_radius", 6.0)
-		blur_mat.set_shader_parameter("overlay_color", Color(0.15, 0.22, 0.32, 0.75))
+		blur_mat.set_shader_parameter("overlay_color", Color(0.15, 0.22, 0.32, 0.85))
 		panel.material = blur_mat
 
 		var panel_style := StyleBoxFlat.new()
@@ -1530,12 +1537,20 @@ func _build_promo_widget() -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.add_theme_font_override("font", FONT_GRANDSTANDER)
-		label.add_theme_font_size_override("font_size", 24)
+		label.add_theme_font_size_override("font_size", 18)
 		label.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(label)
 		label.visible = (i == _promo_index)
 		_promo_labels.append(label)
+
+		# Hover highlight overlay (ignored by mouse so the button still catches).
+		var hover := ColorRect.new()
+		hover.name = "Hover%d" % i
+		hover.set_anchors_preset(Control.PRESET_FULL_RECT)
+		hover.color = Color(1, 1, 1, 0.0)
+		hover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tr.add_child(hover)
 
 		# Invisible click target over the whole slide (image + panel + text).
 		var btn := Button.new()
@@ -1549,6 +1564,16 @@ func _build_promo_widget() -> void:
 		btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
 		tr.add_child(btn)
 		_promo_buttons.append(btn)
+		btn.mouse_entered.connect(
+			func():
+				var tw := create_tween()
+				tw.tween_property(hover, "color:a", 0.12, 0.15),
+		)
+		btn.mouse_exited.connect(
+			func():
+				var tw := create_tween()
+				tw.tween_property(hover, "color:a", 0.0, 0.15),
+		)
 		var url: String = urls[i]
 		btn.pressed.connect(
 			func():
