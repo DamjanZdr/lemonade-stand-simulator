@@ -565,6 +565,10 @@ func _advance_satisfied_tasks(stand: StandUnit) -> void:
 			"demo_set_perfect_lemon":
 				var found: Dictionary = p.discovered_recipes.get("lemon", { })
 				satisfied = not found.is_empty() and stand.get_recipe("lemon") == found
+				if satisfied:
+					# The task auto-completed because the board was already
+					# perfect, but the achievement still needs the record.
+					stand.record_perfect_recipe_set("lemon")
 		if not satisfied:
 			return
 		var idx := _task_index(id)

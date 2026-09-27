@@ -150,19 +150,21 @@ func interact(player: Node) -> void:
 		var box_data: Dictionary = p.held_item_data
 		var stand_name := _get_player_stand_name(p)
 		if box_data.get("is_equipment", false):
-			var eq_type: String = box_data.get("equipment_type", "")
-			var refund := _get_container_cost_for_trash(eq_type) + empty_box_refund
+			var refund := _get_container_cost_for_trash(box_data.get("equipment_type", "")) + empty_box_refund
+			# Equipment/supply boxes are recycling, not regular trash.
 			if WorldSync.is_host():
-				apply_trash_disposal(eq_type, refund, stand_name)
+				apply_trash_disposal("equipment", refund, stand_name)
 			else:
-				_request_trash_disposal.rpc_id(1, eq_type, refund, stand_name)
+				_request_trash_disposal.rpc_id(1, "equipment", refund, stand_name)
 		else:
-			var trash_type: String = box_data.get("ingredient_type", "empty_box")
+			# Ingredient/supply boxes are recycling, never regular trash, even
+			# if the ingredient itself (e.g. "cup", "apple") shares a name with
+			# a street-litter type.
 			var refund := _get_supply_box_refund(box_data)
 			if WorldSync.is_host():
-				apply_trash_disposal(trash_type, refund, stand_name)
+				apply_trash_disposal("supply_box", refund, stand_name)
 			else:
-				_request_trash_disposal.rpc_id(1, trash_type, refund, stand_name)
+				_request_trash_disposal.rpc_id(1, "supply_box", refund, stand_name)
 		_finish_held_disposal(p)
 		return
 

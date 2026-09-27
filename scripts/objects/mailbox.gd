@@ -65,6 +65,8 @@ func _build_indicator() -> void:
 	mark.render_priority = 1
 	mark.pixel_size = 0.0048
 	mark.outline_size = 0
+	# The glyph sits a hair left of optical centre — nudge it right.
+	mark.offset = Vector2(4.0, 0.0)
 	_indicator.add_child(mark)
 	add_child(_indicator)
 	_indicator.visible = false
@@ -76,7 +78,7 @@ func _make_circle_texture(size: int) -> ImageTexture:
 	var center := Vector2(size, size) * 0.5
 	var radius := size * 0.47
 	var edge := size * 0.50
-	var yellow := Color(1.0, 0.85, 0.2, 0.85)
+	var yellow := Color(1.0, 0.92, 0.1, 0.85)
 	for y in range(size):
 		for x in range(size):
 			var d := (Vector2(x, y) - center).length()

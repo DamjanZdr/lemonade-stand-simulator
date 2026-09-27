@@ -10,8 +10,17 @@ extends Node
 
 
 func get_ideal_ice(temperature: float) -> float:
-	# 1 ice per 10 °C bucket, starting at 1 ice for 0–10 °C.
-	return float(maxi(1, ceili(temperature / Balancing.PERFECT_ICE_DEGREES_PER_SCOOP)))
+	# 1 ice per 10 °C bucket. Explicit thresholds avoid tiny float overshoots
+	# at the boundaries (e.g. 30.000001 mapping to the next bucket).
+	if temperature <= 10.0:
+		return 1.0
+	if temperature <= 20.0:
+		return 2.0
+	if temperature <= 30.0:
+		return 3.0
+	if temperature <= 40.0:
+		return 4.0
+	return 5.0
 
 
 func get_ingredient_data(fruit_type: String) -> IngredientData:

@@ -26,6 +26,9 @@ var _waypoint_positions: Array[Vector3] = []
 var _routing_to_queue: bool = false
 var _queue_target: Vector3 = Vector3.ZERO
 var _queue_arrived_cb: Callable = Callable() # called once the pedestrian reaches the slot
+## Each pedestrian gets one chance to convert. Prevents multiple rolls per
+## route and keeps the "came to buy" count bounded by total pedestrians.
+var _conversion_attempted: bool = false
 
 @onready var _npc: Node3D = $NPCBody
 
@@ -571,7 +574,11 @@ func _arrive() -> void:
 
 	if wp.convertable:
 		# The spawner decides which stand (if any) wins this pedestrian.
-		wants_to_join.emit(self)
+		# Only attempt conversion once per pedestrian so the numbers stay
+		# predictable: total customers can never exceed total pedestrians.
+		if not _conversion_attempted:
+			_conversion_attempted = true
+			wants_to_join.emit(self)
 		return
 	_advance_waypoint()
 
