@@ -9,6 +9,12 @@ signal vsync_toggled(enabled: bool)
 signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
 
+const _TAB_NAMES: Array[String] = ["Audio", "Graphics", "Gameplay"]
+
+var _tab_buttons: Array[Button] = []
+var _tab_contents: Array[Control] = []
+var _active_tab: int = 0
+
 var _master_slider: HSlider
 var _master_value: Label
 var _sfx_slider: HSlider
@@ -54,8 +60,62 @@ func _build_ui() -> void:
 	list.add_child(title)
 
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 12)
+	spacer.custom_minimum_size = Vector2(0, 8)
 	list.add_child(spacer)
+
+	# Tabs row like the lobby (Audio | Graphics | Gameplay).
+	var tabs_row := HBoxContainer.new()
+	tabs_row.name = "TabsRow"
+	tabs_row.add_theme_constant_override("separation", 8)
+	list.add_child(tabs_row)
+
+	for i in range(_TAB_NAMES.size()):
+		var tab := Button.new()
+		tab.name = _TAB_NAMES[i] + "Tab"
+		tab.text = _TAB_NAMES[i]
+		tab.flat = true
+		tab.add_theme_font_size_override("font_size", 26)
+		tab.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+		tab.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+		tab.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_make_flat_button(tab)
+		_setup_hover_effect(tab)
+		_tab_buttons.append(tab)
+		tabs_row.add_child(tab)
+		tab.pressed.connect(
+			func():
+				AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
+				_set_tab(i),
+		)
+
+		if i < _TAB_NAMES.size() - 1:
+			var divider := ColorRect.new()
+			divider.custom_minimum_size = Vector2(2, 20)
+			divider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			divider.color = Color(1, 1, 1, 0.25)
+			tabs_row.add_child(divider)
+
+	var spacer2 := Control.new()
+	spacer2.custom_minimum_size = Vector2(0, 4)
+	list.add_child(spacer2)
+
+	# Content container that holds the three category panels.
+	var content := Control.new()
+	content.name = "Content"
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list.add_child(content)
+
+	var audio_tab := _build_audio_tab()
+	content.add_child(audio_tab)
+	_tab_contents.append(audio_tab)
+
+	var graphics_tab := _build_graphics_tab()
+	content.add_child(graphics_tab)
+	_tab_contents.append(graphics_tab)
+
+	var gameplay_tab := _build_gameplay_tab()
+	content.add_child(gameplay_tab)
+	_tab_contents.append(gameplay_tab)
 
 	var back := Button.new()
 	back.name = "Back"
@@ -75,12 +135,27 @@ func _build_ui() -> void:
 	_make_flat_button(back)
 	_setup_hover_effect(back)
 
-	var spacer2 := Control.new()
-	spacer2.custom_minimum_size = Vector2(0, 16)
-	list.add_child(spacer2)
+	_set_tab(0)
 
-	_add_header(list, "Audio")
-	var master := _add_slider_row(list, "Master")
+
+func _set_tab(index: int) -> void:
+	_active_tab = index
+	for i in range(_tab_buttons.size()):
+		var active := i == index
+		_tab_buttons[i].add_theme_color_override(
+			"font_color",
+			Color(1, 0.9, 0.3, 1.0) if active else Color(1, 1, 1, 0.7),
+		)
+		_tab_contents[i].visible = active
+
+
+func _build_audio_tab() -> Control:
+	var tab := VBoxContainer.new()
+	tab.name = "Audio"
+	tab.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tab.add_theme_constant_override("separation", 10)
+
+	var master := _add_slider_row(tab, "Master")
 	_master_slider = master[0] as HSlider
 	_master_value = master[1] as Label
 	_master_slider.value_changed.connect(
@@ -90,7 +165,7 @@ func _build_ui() -> void:
 	)
 	_master_slider.drag_ended.connect(_save_audio)
 
-	var sfx := _add_slider_row(list, "SFX")
+	var sfx := _add_slider_row(tab, "SFX")
 	_sfx_slider = sfx[0] as HSlider
 	_sfx_value = sfx[1] as Label
 	_sfx_slider.value_changed.connect(
@@ -105,7 +180,7 @@ func _build_ui() -> void:
 			_save_audio(),
 	)
 
-	var music := _add_slider_row(list, "Music")
+	var music := _add_slider_row(tab, "Music")
 	_music_slider = music[0] as HSlider
 	_music_value = music[1] as Label
 	_music_slider.value_changed.connect(
@@ -120,24 +195,33 @@ func _build_ui() -> void:
 			_save_audio(),
 	)
 
-	var spacer3 := Control.new()
-	spacer3.custom_minimum_size = Vector2(0, 12)
-	list.add_child(spacer3)
+	return tab
 
-	_add_header(list, "Graphics")
+
+func _build_graphics_tab() -> Control:
+	var tab := VBoxContainer.new()
+	tab.name = "Graphics"
+	tab.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tab.add_theme_constant_override("separation", 10)
+
 	var q_row := HBoxContainer.new()
 	q_row.add_theme_constant_override("separation", 12)
-	list.add_child(q_row)
+	q_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	tab.add_child(q_row)
 
 	var q_label := Label.new()
 	q_label.custom_minimum_size = Vector2(120, 0)
 	q_label.add_theme_font_size_override("font_size", 18)
 	q_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	q_label.text = "Quality"
+	q_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	q_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	q_row.add_child(q_label)
 
 	_quality_option = OptionButton.new()
 	_quality_option.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_quality_option.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_quality_option.custom_minimum_size = Vector2(120, 0)
 	for q in ["Epic", "High", "Medium", "Low"]:
 		_quality_option.add_item(q)
 	_style_option_button(_quality_option)
@@ -149,52 +233,60 @@ func _build_ui() -> void:
 	)
 	q_row.add_child(_quality_option)
 
-	_fs_check = _add_checkbox_row(list, "Fullscreen")
+	_fs_check = _add_checkbox_row(tab, "Fullscreen")
 	_fs_check.toggled.connect(
 		func(on: bool):
 			fullscreen_toggled.emit(on)
 			SettingsManager.save_settings(),
 	)
 
-	_vsync_check = _add_checkbox_row(list, "VSync")
+	_vsync_check = _add_checkbox_row(tab, "VSync")
 	_vsync_check.toggled.connect(
 		func(on: bool):
 			vsync_toggled.emit(on)
 			SettingsManager.save_settings(),
 	)
 
-	_lighting_check = _add_checkbox_row(list, "Enhanced Lighting")
+	_lighting_check = _add_checkbox_row(tab, "Enhanced Lighting")
 	_lighting_check.toggled.connect(
 		func(on: bool):
 			enhanced_lighting_toggled.emit(on)
 			SettingsManager.save_graphics_bool("enhanced_lighting", on),
 	)
 
-	_fps_check = _add_checkbox_row(list, "Show FPS")
+	_fps_check = _add_checkbox_row(tab, "Show FPS")
 	_fps_check.toggled.connect(
 		func(on: bool):
 			fps_toggled.emit(on)
 			SettingsManager.save_graphics_bool("fps_counter", on),
 	)
 
-	var spacer4 := Control.new()
-	spacer4.custom_minimum_size = Vector2(0, 12)
-	list.add_child(spacer4)
+	return tab
 
-	_add_header(list, "Gameplay")
+
+func _build_gameplay_tab() -> Control:
+	var tab := VBoxContainer.new()
+	tab.name = "Gameplay"
+	tab.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tab.add_theme_constant_override("separation", 10)
+
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	list.add_child(row)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	tab.add_child(row)
 
-	var as_label := Label.new()
-	as_label.custom_minimum_size = Vector2(120, 0)
-	as_label.add_theme_font_size_override("font_size", 18)
-	as_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	as_label.text = "Autosave"
-	row.add_child(as_label)
+	var label := Label.new()
+	label.custom_minimum_size = Vector2(120, 0)
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	label.text = "Autosave"
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
 
 	_autosave_slider = HSlider.new()
 	_autosave_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_autosave_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_autosave_slider.custom_minimum_size = Vector2(140, 24)
 	_autosave_slider.min_value = SettingsManager.AUTOSAVE_MIN_MINUTES
 	_autosave_slider.max_value = SettingsManager.AUTOSAVE_MAX_MINUTES
@@ -208,6 +300,8 @@ func _build_ui() -> void:
 	_autosave_value.add_theme_font_size_override("font_size", 16)
 	_autosave_value.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
 	_autosave_value.text = "%d min" % int(_autosave_slider.value)
+	_autosave_value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_autosave_value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(_autosave_value)
 
 	_autosave_slider.value_changed.connect(
@@ -220,6 +314,8 @@ func _build_ui() -> void:
 			SettingsManager.set_autosave_minutes(_autosave_slider.value)
 			SaveManager.set_autosave_interval(_autosave_slider.value),
 	)
+
+	return tab
 
 
 func sync_state() -> void:
@@ -263,17 +359,10 @@ func sync_state() -> void:
 			break
 
 
-func _add_header(parent: Node, text: String) -> void:
-	var header := Label.new()
-	header.text = text
-	header.add_theme_font_size_override("font_size", 22)
-	header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
-	parent.add_child(header)
-
-
 func _add_slider_row(parent: Node, label_text: String) -> Array:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	parent.add_child(row)
 
 	var label := Label.new()
@@ -281,10 +370,13 @@ func _add_slider_row(parent: Node, label_text: String) -> Array:
 	label.add_theme_font_size_override("font_size", 18)
 	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	label.text = label_text
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(label)
 
 	var slider := HSlider.new()
 	slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	slider.custom_minimum_size = Vector2(140, 24)
 	slider.min_value = 0.0
 	slider.max_value = 1.0
@@ -299,6 +391,8 @@ func _add_slider_row(parent: Node, label_text: String) -> Array:
 	value.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
 	value.text = "%d" % int(round(slider.value * 100))
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(value)
 
 	return [slider, value]
@@ -307,17 +401,21 @@ func _add_slider_row(parent: Node, label_text: String) -> Array:
 func _add_checkbox_row(parent: Node, label_text: String) -> CheckBox:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	parent.add_child(row)
 
 	var label := Label.new()
-	label.custom_minimum_size = Vector2(200, 0)
+	label.custom_minimum_size = Vector2(120, 0)
 	label.add_theme_font_size_override("font_size", 18)
 	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	label.text = label_text
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(label)
 
 	var cb := CheckBox.new()
 	cb.custom_minimum_size = Vector2(24, 24)
+	cb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_style_checkbox(cb)
 	row.add_child(cb)
 	return cb
