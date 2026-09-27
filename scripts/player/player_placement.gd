@@ -947,7 +947,7 @@ func _create_container_hand_mesh(
 		# For ice, the deferred bucket setup may not have run yet — run it now
 		# so update_display() shows the correct cube count.
 		if container_type == "ice_bin":
-			bin.setup_ice_bucket()
+			bin._setup_ice_bucket()
 		bin.update_display()
 		var pickupable := bin.get_node_or_null("Pickupable")
 		if pickupable != null:
@@ -1369,40 +1369,21 @@ func _update_supply_box_ghost() -> void:
 	)
 
 
-## Debug state for _update_equipment_box_ghost — logs only on change.
-var _dbg_eq_reason: String = ""
-var _dbg_eq_last_col: String = ""
-
-
-func _dbg_eq(reason: String) -> void:
-	if reason == _dbg_eq_reason:
-		return
-	_dbg_eq_reason = reason
-	GameLog.log("[EquipGhost] " + reason)
-
-
 func _update_equipment_box_ghost() -> void:
 	var equipment_type: String = _player.held_item_data.get("equipment_type", "")
 	if equipment_type == "":
-		_dbg_eq("no equipment_type in held_item_data")
 		return
 
 	if not _player.ray.is_colliding():
 		_destroy_ghost()
 		_ghost_valid = false
 		_stack_target_id = -1
-		_dbg_eq("ray not colliding")
 		return
 
 	var collider := _player.ray.get_collider()
 	var hit_point := _player.ray.get_collision_point()
 	# Reset probe cache; is_placement_surface may populate it.
 	_has_probe_hit = false
-	var col_key := "%s|%s" % [equipment_type, collider.name if collider is Node else "?"]
-	if col_key != _dbg_eq_last_col:
-		_dbg_eq_last_col = col_key
-		_dbg_eq_reason = "" # force re-log of the branch reason on new aim target
-		GameLog.log("[EquipGhost] aiming at " + col_key)
 
 	# Check if looking at another SupplyBox ΓÇö stack on top (box ghost)
 	var node: Node = collider
@@ -1414,7 +1395,6 @@ func _update_equipment_box_ghost() -> void:
 					_ghost.visible = false
 				_ghost_valid = false
 				_stack_target_id = -1
-				_dbg_eq("stack target invalid")
 				return
 			target_box.update_metrics()
 			var target_id := target_box.get_instance_id()
@@ -1428,7 +1408,6 @@ func _update_equipment_box_ghost() -> void:
 			_ghost.visible = true
 			_ghost_valid = true
 			_apply_ghost_material(_ghost, _get_ghost_mat_valid())
-			_dbg_eq("stack ghost on box")
 			return
 		node = node.get_parent()
 
@@ -1437,7 +1416,6 @@ func _update_equipment_box_ghost() -> void:
 	while grid_node != null:
 		if grid_node is DeliveryGrid:
 			_update_grid_ghost(grid_node as DeliveryGrid, hit_point)
-			_dbg_eq("delivery grid ghost")
 			return
 		grid_node = grid_node.get_parent()
 
@@ -1458,7 +1436,6 @@ func _update_equipment_box_ghost() -> void:
 		_ghost_valid = false
 		_stack_target_id = -1
 		_apply_ghost_material(_ghost, _get_ghost_mat_invalid())
-		_dbg_eq("not box-placeable surface -> red box")
 		return
 
 	# Workstations are tables ΓÇö they can only be placed on the floor.
@@ -1467,13 +1444,11 @@ func _update_equipment_box_ghost() -> void:
 			_destroy_ghost()
 			_ghost_valid = false
 			_stack_target_id = -1
-			_dbg_eq("workstation: not a PlacableFloor surface")
 			return
 		_ensure_container_ghost(equipment_type)
 		if _ghost == null:
 			_ghost_valid = false
 			_stack_target_id = -1
-			_dbg_eq("workstation: no scene/ghost")
 			return
 		var ws_offset: float = _ghost.get_meta("bottom_offset", 0.0)
 		_ghost.global_position = hit_point + Vector3(0, -ws_offset, 0)
@@ -1488,7 +1463,6 @@ func _update_equipment_box_ghost() -> void:
 			_ghost,
 			_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
 		)
-		_dbg_eq("workstation ghost valid=%s" % _ghost_valid)
 		return
 
 	# Only floor-standing equipment (workstation, water dispenser) may be placed
@@ -1504,24 +1478,18 @@ func _update_equipment_box_ghost() -> void:
 			_ghost,
 			_get_ghost_mat_valid() if _ghost_valid else _get_ghost_mat_invalid(),
 		)
-		_dbg_eq("floor equipment box ghost valid=%s" % _ghost_valid)
 		return
 
 	if not on_surface or not is_workstation_surface(collider):
 		_destroy_ghost()
 		_ghost_valid = false
 		_stack_target_id = -1
-		_dbg_eq(
-			"tabletop eq: on_surface=%s ws_surface=%s"
-			% [on_surface, is_workstation_surface(collider)]
-		)
 		return
 
 	_ensure_container_ghost(equipment_type)
 	if _ghost == null:
 		_ghost_valid = false
 		_stack_target_id = -1
-		_dbg_eq("no container scene for " + equipment_type)
 		return
 	var equip_offset: float = _ghost.get_meta("bottom_offset", 0.0)
 	_ghost.global_position = hit_point + Vector3(0, -equip_offset, 0)
@@ -2390,15 +2358,11 @@ func _check_ghost_overlap() -> bool:
 	if _ghost == null:
 		return false
 
-	# Get ghost's collision shape — use the CollisionShape3D's own global
-	# transform: several containers (e.g. the press) offset the shape far
-	# above/below the node origin, and evaluating it at the root transform
-	# makes the overlap box sink below the surface and false-block.
-	var ghost_col := _find_collision_shape_node(_ghost)
-	if ghost_col == null:
+	# Get ghost's collision shape and _player.transform
+	var ghost_shape := _get_collision_shape(_ghost)
+	if ghost_shape == null:
 		return false
-	var ghost_shape := ghost_col.shape
-	var ghost_transform := ghost_col.global_transform
+	var ghost_transform := _ghost.global_transform
 	var ghost_bounds_radius := _get_shape_radius(ghost_shape) * maxf(
 		ghost_transform.basis.get_scale().x,
 		ghost_transform.basis.get_scale().z,
@@ -2424,15 +2388,16 @@ func _check_ghost_overlap() -> bool:
 			continue
 
 		var other_node := node as Node3D
-		if ghost_origin.distance_to(other_node.global_position) > max_check_dist:
+		var other_origin := other_node.global_position
+		if ghost_origin.distance_to(other_origin) > max_check_dist:
 			continue
 
-		# Get this container's collision shape (with its own transform)
-		var other_col := _find_collision_shape_node(node)
-		if other_col == null:
+		# Get this container's collision shape
+		var other_shape := _get_collision_shape(node)
+		if other_shape == null:
 			continue
-		var other_shape := other_col.shape
-		var other_transform := other_col.global_transform
+
+		var other_transform := (node as Node3D).global_transform
 
 		# Check intersection based on shape type
 		if ghost_shape is BoxShape3D and other_shape is BoxShape3D:
@@ -2534,15 +2499,10 @@ func _get_collision_shape(node: Node) -> Shape3D:
 
 
 func _find_collision_shape(node: Node) -> Shape3D:
-	var col := _find_collision_shape_node(node)
-	return col.shape if col != null else null
-
-
-func _find_collision_shape_node(node: Node) -> CollisionShape3D:
 	for child in node.get_children():
 		if child is CollisionShape3D:
-			return child as CollisionShape3D
-		var found := _find_collision_shape_node(child)
+			return (child as CollisionShape3D).shape
+		var found := _find_collision_shape(child)
 		if found != null:
 			return found
 	return null
