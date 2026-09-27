@@ -2421,14 +2421,29 @@ func _check_ghost_overlap() -> bool:
 				return true
 
 	# Delivery palettes are static meshes, not containers — reject the
-	# placement if any part of the ghost's footprint touches one.
+	# placement only when the ghost actually sits over the palette's
+	# footprint (its center inside the XZ bounds), not merely touching the
+	# edge of the palette's bounding box. Boxes carried away from a
+	# delivery land right next to the palette, and an edge-touching AABB
+	# check made the ghost stay red across the whole surrounding area.
 	var ghost_aabb := _shape_world_aabb(ghost_shape, ghost_transform)
 	for grid in get_tree().get_nodes_in_group("delivery_grid"):
 		var palette := grid.get_node_or_null("palette")
 		if palette == null:
 			continue
 		var pal_aabb := _node_world_aabb(palette)
-		if pal_aabb.size != Vector3.ZERO and ghost_aabb.intersects(pal_aabb):
+		if pal_aabb.size == Vector3.ZERO:
+			continue
+		if not ghost_aabb.intersects(pal_aabb):
+			continue
+		var center_xz := Vector2(ghost_origin.x, ghost_origin.z)
+		var min_xz := Vector2(pal_aabb.position.x, pal_aabb.position.z)
+		var max_xz := min_xz + Vector2(pal_aabb.size.x, pal_aabb.size.z)
+		var inside := (
+			center_xz.x > min_xz.x - 0.1 and center_xz.x < max_xz.x + 0.1
+			and center_xz.y > min_xz.y - 0.1 and center_xz.y < max_xz.y + 0.1
+		)
+		if inside:
 			return true
 
 	return false

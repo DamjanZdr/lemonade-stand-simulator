@@ -115,6 +115,8 @@ func add_money(amount: float) -> void:
 func add_money_from_sale(amount: float) -> void:
 	add_money(amount)
 	total_money_earned_from_sales += amount
+	if amount > highest_purchase:
+		highest_purchase = amount
 	AchievementManager.check_game_state_thresholds()
 
 
@@ -123,8 +125,6 @@ func spend_money(amount: float) -> bool:
 		return false
 	money -= amount
 	total_money_spent += amount
-	if amount > highest_purchase:
-		highest_purchase = amount
 	AchievementManager.check_game_state_thresholds()
 	EventBus.money_changed.emit(money)
 	return true

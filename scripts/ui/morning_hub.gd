@@ -1748,9 +1748,11 @@ func _refresh_analytics() -> void:
 			Color(0.4, 0.85, 0.4) if profit >= 0.0 else Color(0.9, 0.3, 0.3),
 		)
 		var highest_money: float = stand.highest_money if stand else GameState.highest_money
-		var highest_purchase: float = (
-			stand.highest_purchase if stand else GameState.highest_purchase
-		)
+		# Primary-stand sales are routed to GameState, so its highest_purchase
+		# lives there; other stands track their own.
+		var highest_purchase: float = GameState.highest_purchase
+		if stand != null and not stand.is_legacy_primary:
+			highest_purchase = stand.highest_purchase
 		_add_stat_row(money_col, "Highest Balance", "$%.2f" % highest_money)
 		_add_stat_row(money_col, "Highest Purchase", "$%.2f" % highest_purchase)
 

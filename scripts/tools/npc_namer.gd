@@ -42,11 +42,6 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
-	if event is InputEventKey and event.pressed and event.keycode == KEY_N:
-		_toggle_mode()
-		get_viewport().set_input_as_handled()
-		return
-
 	if not _active:
 		return
 

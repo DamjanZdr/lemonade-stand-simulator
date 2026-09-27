@@ -548,6 +548,8 @@ func add_money(amount: float) -> void:
 func add_money_from_sale(amount: float) -> void:
 	add_money(amount)
 	total_money_earned_from_sales += amount
+	if amount > highest_purchase:
+		highest_purchase = amount
 	if is_legacy_primary:
 		GameState.total_money_earned_from_sales += amount
 	AchievementManager.check_stand_thresholds(self)
@@ -560,8 +562,6 @@ func spend_money(amount: float) -> bool:
 	money -= amount
 	total_money_spent += amount
 	day_costs += amount
-	if amount > highest_purchase:
-		highest_purchase = amount
 	money_changed.emit(money)
 	if is_legacy_primary:
 		GameState.spend_money(amount)

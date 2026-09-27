@@ -32,15 +32,6 @@ func _ready() -> void:
 	_rich_label.text = GameLog.get_buffer_text()
 
 
-func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F10:
-			if event.shift_pressed:
-				AchievementManager.reset_all_achievements()
-				return
-			_toggle()
-
-
 func _toggle() -> void:
 	_visible = not _visible
 	visible = _visible

@@ -287,16 +287,28 @@ func get_slot_position(slot_index: int) -> Vector3:
 	return _queue_spots[slot_index]
 
 
-## TEMPORARY (testing): always exactly 1 cup of 1 fruit type, picked from
-## whichever fruits are currently unlocked. Simplifies manually testing
-## price changes end-to-end. Revert to the randomized version below once
-## done testing.
+## Cup demand scales with the ordering stand's popularity (0-1000):
+## <50 -> exactly 1 cup, 51-200 -> 1-2, 200-500 -> 1-3, 500+ -> 2-5.
+func _order_cup_range() -> Vector2i:
+	var pop := GameState.popularity
+	if stand != null and is_instance_valid(stand):
+		pop = stand.popularity
+	if pop < 50.0:
+		return Vector2i(1, 1)
+	if pop < 200.0:
+		return Vector2i(1, 2)
+	if pop < 500.0:
+		return Vector2i(1, 3)
+	return Vector2i(2, 5)
+
+
 func _random_order() -> Dictionary:
 	var unlocked := UpgradeManager.get_unlocked_fruits()
 	if unlocked.is_empty():
 		return { "lemon": 1 }
 	var fruit_type: String = unlocked[randi() % unlocked.size()]
-	return { fruit_type: 1 }
+	var cups := _order_cup_range()
+	return { fruit_type: randi_range(cups.x, cups.y) }
 
 
 ## Randomly builds an order: 1-5 distinct fruit types (capped by how many are
@@ -308,10 +320,11 @@ func _random_order_full() -> Dictionary:
 	var shuffled := unlocked.duplicate()
 	shuffled.shuffle()
 	var type_count := randi_range(1, mini(5, shuffled.size()))
+	var cups := _order_cup_range()
 	var order: Dictionary = { }
 	for i in range(type_count):
 		var fruit_type: String = shuffled[i]
-		order[fruit_type] = randi_range(1, 5)
+		order[fruit_type] = randi_range(cups.x, cups.y)
 	return order
 
 
