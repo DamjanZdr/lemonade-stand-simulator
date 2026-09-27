@@ -238,6 +238,6 @@ transform = Transform3D(1.0000012, 2.8405339e-07, 1.4007092e-06, -9.313226e-10, 
 shape = SubResource("CylinderShape3D_qek5x")
 
 [node name="RayCast3D" type="RayCast3D" parent="Head" unique_id=113832186]
-target_position = Vector3(0, 0, -5.5)
+target_position = Vector3(0, 0, -3.85)
 collision_mask = 9
 collide_with_areas = true
