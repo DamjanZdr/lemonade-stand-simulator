@@ -1,5 +1,5 @@
 extends Control
-## Reusable settings panel with tabbed categories: Audio, Graphics, Gameplay.
+## Left-area settings page matching the main/ESC menu design.
 
 const MENU_THEME := preload("res://assets/themes/menu_theme.tres")
 
@@ -8,8 +8,6 @@ signal fullscreen_toggled(enabled: bool)
 signal vsync_toggled(enabled: bool)
 signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
-
-var _tab_container: TabContainer
 
 var _master_slider: HSlider
 var _master_value: Label
@@ -37,6 +35,7 @@ func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	var list := VBoxContainer.new()
+	list.name = "SettingsList"
 	list.set_anchors_preset(Control.PRESET_FULL_RECT)
 	list.offset_left = 60.0
 	list.offset_top = 80.0
@@ -48,36 +47,21 @@ func _build_ui() -> void:
 	add_child(list)
 
 	var title := Label.new()
+	title.name = "Title"
+	title.text = "Settings"
 	title.add_theme_font_size_override("font_size", 36)
 	title.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
-	title.text = "Settings"
 	list.add_child(title)
 
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0, 12)
 	list.add_child(spacer)
 
-	_tab_container = TabContainer.new()
-	_tab_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_tab_container.add_theme_font_size_override("font_size", 18)
-	_tab_container.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
-	list.add_child(_tab_container)
-
-	var audio_tab := _build_audio_tab()
-	_tab_container.add_child(audio_tab)
-	_tab_container.set_tab_title(0, "Audio")
-
-	var graphics_tab := _build_graphics_tab()
-	_tab_container.add_child(graphics_tab)
-	_tab_container.set_tab_title(1, "Graphics")
-
-	var gameplay_tab := _build_gameplay_tab()
-	_tab_container.add_child(gameplay_tab)
-	_tab_container.set_tab_title(2, "Gameplay")
-
 	var back := Button.new()
+	back.name = "Back"
 	back.text = "Back"
 	back.custom_minimum_size = Vector2(0, 48)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	back.add_theme_font_size_override("font_size", 38)
 	back.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 	back.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
@@ -88,57 +72,70 @@ func _build_ui() -> void:
 			back_pressed.emit(),
 	)
 	list.add_child(back)
+	_make_flat_button(back)
+	_setup_hover_effect(back)
 
+	var spacer2 := Control.new()
+	spacer2.custom_minimum_size = Vector2(0, 16)
+	list.add_child(spacer2)
 
-func _build_audio_tab() -> Control:
-	var tab := VBoxContainer.new()
-	tab.name = "Audio"
-	tab.add_theme_constant_override("separation", 8)
-
-	var master := _add_slider_row(tab, "Master", 0.5)
+	_add_header(list, "Audio")
+	var master := _add_slider_row(list, "Master")
 	_master_slider = master[0] as HSlider
 	_master_value = master[1] as Label
-	_master_slider.drag_ended.connect(
-		func(_changed: bool):
-			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-			SettingsManager.save_settings(),
+	_master_slider.value_changed.connect(
+		func(v: float):
+			AudioServer.set_bus_volume_db(0, linear_to_db(v))
+			_master_value.text = "%d" % int(round(v * 100)),
 	)
+	_master_slider.drag_ended.connect(_save_audio)
 
-	var sfx := _add_slider_row(tab, "SFX", 0.5)
+	var sfx := _add_slider_row(list, "SFX")
 	_sfx_slider = sfx[0] as HSlider
 	_sfx_value = sfx[1] as Label
+	_sfx_slider.value_changed.connect(
+		func(v: float):
+			if AudioServer.get_bus_count() > 1:
+				AudioServer.set_bus_volume_db(1, linear_to_db(v))
+			_sfx_value.text = "%d" % int(round(v * 100)),
+	)
 	_sfx_slider.drag_ended.connect(
 		func(_changed: bool):
 			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03)
-			SettingsManager.save_settings(),
+			_save_audio(),
 	)
 
-	var music := _add_slider_row(tab, "Music", 0.5)
+	var music := _add_slider_row(list, "Music")
 	_music_slider = music[0] as HSlider
 	_music_value = music[1] as Label
+	_music_slider.value_changed.connect(
+		func(v: float):
+			if AudioServer.get_bus_count() > 2:
+				AudioServer.set_bus_volume_db(2, linear_to_db(v))
+			_music_value.text = "%d" % int(round(v * 100)),
+	)
 	_music_slider.drag_ended.connect(
 		func(_changed: bool):
 			AudioManager.play_sfx_ui("blip_select", 1.0, 0.0)
-			SettingsManager.save_settings(),
+			_save_audio(),
 	)
 
-	return tab
+	var spacer3 := Control.new()
+	spacer3.custom_minimum_size = Vector2(0, 12)
+	list.add_child(spacer3)
 
-
-func _build_graphics_tab() -> Control:
-	var tab := VBoxContainer.new()
-	tab.name = "Graphics"
-	tab.add_theme_constant_override("separation", 8)
-
-	# Quality preset.
+	_add_header(list, "Graphics")
 	var q_row := HBoxContainer.new()
 	q_row.add_theme_constant_override("separation", 12)
+	list.add_child(q_row)
+
 	var q_label := Label.new()
 	q_label.custom_minimum_size = Vector2(120, 0)
 	q_label.add_theme_font_size_override("font_size", 18)
 	q_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	q_label.text = "Quality"
 	q_row.add_child(q_label)
+
 	_quality_option = OptionButton.new()
 	_quality_option.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	for q in ["Epic", "High", "Medium", "Low"]:
@@ -151,54 +148,50 @@ func _build_graphics_tab() -> Control:
 			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03),
 	)
 	q_row.add_child(_quality_option)
-	tab.add_child(q_row)
 
-	_fs_check = _add_checkbox_row(tab, "Fullscreen")
+	_fs_check = _add_checkbox_row(list, "Fullscreen")
 	_fs_check.toggled.connect(
 		func(on: bool):
 			fullscreen_toggled.emit(on)
 			SettingsManager.save_settings(),
 	)
 
-	_vsync_check = _add_checkbox_row(tab, "VSync")
+	_vsync_check = _add_checkbox_row(list, "VSync")
 	_vsync_check.toggled.connect(
 		func(on: bool):
 			vsync_toggled.emit(on)
 			SettingsManager.save_settings(),
 	)
 
-	_lighting_check = _add_checkbox_row(tab, "Enhanced Lighting")
+	_lighting_check = _add_checkbox_row(list, "Enhanced Lighting")
 	_lighting_check.toggled.connect(
 		func(on: bool):
 			enhanced_lighting_toggled.emit(on)
 			SettingsManager.save_graphics_bool("enhanced_lighting", on),
 	)
 
-	_fps_check = _add_checkbox_row(tab, "Show FPS")
+	_fps_check = _add_checkbox_row(list, "Show FPS")
 	_fps_check.toggled.connect(
 		func(on: bool):
 			fps_toggled.emit(on)
 			SettingsManager.save_graphics_bool("fps_counter", on),
 	)
 
-	return tab
+	var spacer4 := Control.new()
+	spacer4.custom_minimum_size = Vector2(0, 12)
+	list.add_child(spacer4)
 
-
-func _build_gameplay_tab() -> Control:
-	var tab := VBoxContainer.new()
-	tab.name = "Gameplay"
-	tab.add_theme_constant_override("separation", 8)
-
+	_add_header(list, "Gameplay")
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	tab.add_child(row)
+	list.add_child(row)
 
-	var label := Label.new()
-	label.custom_minimum_size = Vector2(120, 0)
-	label.add_theme_font_size_override("font_size", 18)
-	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	label.text = "Autosave every"
-	row.add_child(label)
+	var as_label := Label.new()
+	as_label.custom_minimum_size = Vector2(120, 0)
+	as_label.add_theme_font_size_override("font_size", 18)
+	as_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	as_label.text = "Autosave"
+	row.add_child(as_label)
 
 	_autosave_slider = HSlider.new()
 	_autosave_slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -227,8 +220,6 @@ func _build_gameplay_tab() -> Control:
 			SettingsManager.set_autosave_minutes(_autosave_slider.value)
 			SaveManager.set_autosave_interval(_autosave_slider.value),
 	)
-
-	return tab
 
 
 func sync_state() -> void:
@@ -272,7 +263,15 @@ func sync_state() -> void:
 			break
 
 
-func _add_slider_row(parent: Node, label_text: String, initial: float) -> Array:
+func _add_header(parent: Node, text: String) -> void:
+	var header := Label.new()
+	header.text = text
+	header.add_theme_font_size_override("font_size", 22)
+	header.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 0.9))
+	parent.add_child(header)
+
+
+func _add_slider_row(parent: Node, label_text: String) -> Array:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	parent.add_child(row)
@@ -290,7 +289,7 @@ func _add_slider_row(parent: Node, label_text: String, initial: float) -> Array:
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.01
-	slider.value = initial
+	slider.value = 0.5
 	_style_slider(slider)
 	row.add_child(slider)
 
@@ -298,32 +297,9 @@ func _add_slider_row(parent: Node, label_text: String, initial: float) -> Array:
 	value.custom_minimum_size = Vector2(40, 0)
 	value.add_theme_font_size_override("font_size", 16)
 	value.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
-	value.text = "%d" % int(round(initial * 100))
+	value.text = "%d" % int(round(slider.value * 100))
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(value)
-
-	slider.value_changed.connect(
-		func(v: float):
-			value.text = "%d" % int(round(v * 100)),
-	)
-
-	if label_text == "Master":
-		slider.value_changed.connect(
-			func(v: float):
-				AudioServer.set_bus_volume_db(0, linear_to_db(v)),
-		)
-	elif label_text == "SFX":
-		slider.value_changed.connect(
-			func(v: float):
-				if AudioServer.get_bus_count() > 1:
-					AudioServer.set_bus_volume_db(1, linear_to_db(v)),
-		)
-	elif label_text == "Music":
-		slider.value_changed.connect(
-			func(v: float):
-				if AudioServer.get_bus_count() > 2:
-					AudioServer.set_bus_volume_db(2, linear_to_db(v)),
-		)
 
 	return [slider, value]
 
@@ -430,3 +406,29 @@ func _style_option_button(ob: OptionButton) -> void:
 	ob.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
 	ob.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
 	ob.add_theme_font_size_override("font_size", 18)
+
+
+func _make_flat_button(btn: Button) -> void:
+	var empty := StyleBoxEmpty.new()
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		btn.add_theme_stylebox_override(state, empty)
+
+
+func _setup_hover_effect(btn: Button) -> void:
+	btn.pivot_offset = btn.size * 0.5
+	btn.mouse_entered.connect(
+		func():
+			var tw := create_tween()
+			tw.tween_property(btn, "scale", Vector2(1.12, 1.12), 0.18)
+			tw.parallel().tween_property(btn, "modulate", Color(1.15, 1.15, 1.15, 1.0), 0.18),
+	)
+	btn.mouse_exited.connect(
+		func():
+			var tw := create_tween()
+			tw.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.18)
+			tw.parallel().tween_property(btn, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.18),
+	)
+
+
+func _save_audio() -> void:
+	SettingsManager.save_settings()
