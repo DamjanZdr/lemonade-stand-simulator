@@ -609,16 +609,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -58, 0, -2)
 [node name="PreviewCenter" type="Marker3D" parent="Misc" unique_id=1183170315]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0394282, 1.4845874, -1.5014197)
 
-[node name="PreviewOrbitCamera" type="Marker3D" parent="Misc" unique_id=1183170316]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 10.422926, 2)
-script = ExtResource("10_preview")
+[node name="PreviewOrbitCamera" type="Camera3D" parent="Misc" unique_id=1183170316]
+transform = Transform3D(0.655, 0, 0.756, 0.649, 0.513, -0.563, -0.388, 0.859, 0.336, -2, 10.422926, 2)
 
 [node name="PreviewCenter2" type="Marker3D" parent="Misc" unique_id=1387901234]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.139428, 1.4845874, -22.498581)
 
-[node name="PreviewOrbitCamera2" type="Marker3D" parent="Misc" unique_id=1387901235]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.1, 10.422926, -26)
-script = ExtResource("10_preview")
+[node name="PreviewOrbitCamera2" type="Camera3D" parent="Misc" unique_id=1387901235]
+transform = Transform3D(-0.655, 0, -0.756, -0.649, 0.513, 0.563, 0.388, 0.859, -0.336, -6.1, 10.422926, -26)
 
 [node name="LightmapGI" type="LightmapGI" parent="." unique_id=1827849850]
 quality = 2

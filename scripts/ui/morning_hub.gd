@@ -1094,8 +1094,9 @@ func _refresh_tree_node(id: String, node: CircleNode) -> void:
 func _process(_delta: float) -> void:
 	if not _right_panel or not _right_panel.visible:
 		return
-	# Static preview: copy the editor-placed PreviewOrbitCamera marker for the
-	# local stand (suffix "2" for the versus stand) and aim at its PreviewCenter.
+	# Static preview: copy the editor-placed PreviewOrbitCamera node for the
+	# local stand (suffix "2" for the versus stand). It's a real Camera3D so
+	# its editor preview shows exactly what the hub preview will render.
 	var root := get_tree().current_scene
 	if root == null:
 		return
@@ -1106,14 +1107,10 @@ func _process(_delta: float) -> void:
 	if stand != null and is_instance_valid(stand) and not stand.get("is_legacy_primary"):
 		suffix = "2"
 	var cam_marker := search_root.get_node_or_null("PreviewOrbitCamera" + suffix) as Node3D
-	var center_marker := search_root.get_node_or_null("PreviewCenter" + suffix) as Node3D
 	if cam_marker == null and suffix != "":
 		cam_marker = search_root.get_node_or_null("PreviewOrbitCamera") as Node3D
-		center_marker = search_root.get_node_or_null("PreviewCenter") as Node3D
 	if cam_marker:
 		_preview_camera.global_transform = cam_marker.global_transform
-	if cam_marker and center_marker:
-		_preview_camera.look_at(center_marker.global_position, Vector3.UP)
 
 
 func _create_ingredient_card(item: Dictionary) -> PanelContainer:
