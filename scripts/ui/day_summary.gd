@@ -195,8 +195,7 @@ func _populate_report() -> void:
 	)
 	var first_stats: Dictionary = entries[0]["stats"]
 	day_label.text = "Day %d Report" % int(first_stats.get("day", DayManager.day_number))
-	var pedestrians := int(first_stats.get("pedestrians", DayManager.day_pedestrians))
-	sub_label.text = "%d pedestrians walked the neighborhood" % pedestrians
+	sub_label.text = ""
 	for i in entries.size():
 		if i > 0:
 			var vsep := VSeparator.new()
@@ -208,7 +207,7 @@ func _populate_report() -> void:
 func _build_stand_column(stats: Dictionary, is_local: bool) -> VBoxContainer:
 	var col := VBoxContainer.new()
 	col.custom_minimum_size = Vector2(280, 0)
-	col.add_theme_constant_override("separation", 6)
+	col.add_theme_constant_override("separation", 5)
 	var title := str(stats.get("stand_name", "Stand"))
 	if is_local:
 		title += " (You)"
@@ -217,45 +216,75 @@ func _build_stand_column(stats: Dictionary, is_local: bool) -> VBoxContainer:
 	col.add_child(title_label)
 	col.add_child(HSeparator.new())
 
+	var soft_red := Color(0.9, 0.55, 0.55)
+	var dim := Color(0.55, 0.55, 0.55)
+
+	# --- People ---
+	col.add_child(_make_section("People"))
+	col.add_child(_make_row("Total Pedestrians", str(int(stats.get("pedestrians", 0)))))
+	col.add_child(_make_row("Customers", str(int(stats.get("customers_arrived", 0)))))
+	var happy := int(stats.get("happy", 0))
+	col.add_child(_make_row("Happy", str(happy), Color(0.4, 0.85, 0.4) if happy > 0 else dim, true))
+	col.add_child(
+		_make_row("Fruit complaints", str(int(stats.get("complaints_fruit", 0))), soft_red, true)
+	)
+	col.add_child(
+		_make_row("Sugar complaints", str(int(stats.get("complaints_sugar", 0))), soft_red, true)
+	)
+	col.add_child(
+		_make_row("Ice complaints", str(int(stats.get("complaints_ice", 0))), soft_red, true)
+	)
+	col.add_child(_make_row("Patience ran out", str(int(stats.get("timeouts", 0))), soft_red, true))
+	col.add_child(
+		_make_row("Too expensive", str(int(stats.get("too_expensive", 0))), soft_red, true)
+	)
+	col.add_child(_make_row("Wrong order", str(int(stats.get("wrong_order", 0))), soft_red, true))
+	col.add_child(_make_row("Scammed", str(int(stats.get("scams", 0))), soft_red, true))
+	var delta := int(stats.get("popularity_delta", 0))
+	var pop_text := "%+d" % delta if delta != 0 else "0"
+	var pop_color := (
+		Color(0.85, 0.5, 0.95)
+		if delta > 0
+		else Color(0.9, 0.3, 0.3)
+		if delta < 0
+		else dim
+	)
+	col.add_child(_make_row("Popularity", pop_text, pop_color))
+
+	# --- Money ---
+	col.add_child(_make_gap(8))
+	col.add_child(_make_section("Money"))
 	var sales := float(stats.get("sales", stats.get("revenue", 0.0)))
 	var recycling := float(stats.get("recycling", 0.0))
 	var trash := float(stats.get("trash", 0.0))
 	var income := float(stats.get("income", sales + recycling + trash))
 	var costs := float(stats.get("costs", 0.0))
 	var profit := float(stats.get("profit", income - costs))
-
-	col.add_child(_make_row("Customers", str(int(stats.get("customers_arrived", 0)))))
-	col.add_child(_make_row("Bought", str(int(stats.get("customers_bought", 0)))))
-	col.add_child(_make_gap(6))
 	col.add_child(_make_row("Income", "$%.2f" % income, Color(0.4, 0.85, 0.4)))
-	col.add_child(_make_row("Sales", "$%.2f" % sales, Color(0.8, 0.8, 0.8), true))
-	col.add_child(_make_row("Recycling", "$%.2f" % recycling, Color(0.8, 0.8, 0.8), true))
-	col.add_child(_make_row("Trash", "$%.2f" % trash, Color(0.8, 0.8, 0.8), true))
+	col.add_child(_make_row("Sales", "$%.2f" % sales, dim, true))
+	col.add_child(_make_row("Recycling", "$%.2f" % recycling, dim, true))
+	col.add_child(_make_row("Trash", "$%.2f" % trash, dim, true))
 	col.add_child(_make_row("Costs", "-$%.2f" % costs, Color(0.9, 0.45, 0.45)))
-	col.add_child(_make_gap(4))
+	col.add_child(HSeparator.new())
 	col.add_child(
 		_make_row(
 			"Profit",
-			"$%.2f" % profit,
+			"%s$%.2f" % ["+" if profit >= 0.0 else "-", absf(profit)],
 			Color(0.4, 0.85, 0.4) if profit >= 0.0 else Color(0.9, 0.3, 0.3),
 			false,
-			22,
-		)
-	)
-	col.add_child(HSeparator.new())
-	var pop := int(stats.get("popularity", 0))
-	var delta := int(stats.get("popularity_delta", 0))
-	var pop_text := str(pop)
-	if delta != 0:
-		pop_text += " (%+d)" % delta
-	col.add_child(
-		_make_row(
-			"Popularity",
-			pop_text,
-			Color(0.85, 0.5, 0.95) if delta >= 0 else Color(0.9, 0.3, 0.3),
+			24,
 		)
 	)
 	return col
+
+
+func _make_section(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_override("font", TITLE_FONT)
+	label.add_theme_font_size_override("font_size", 24)
+	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.45))
+	return label
 
 
 ## One "label ..... value" stat row; `indent` for Income sub-rows.

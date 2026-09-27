@@ -88,6 +88,14 @@ var day_income_recycling: float = 0.0
 var day_income_trash: float = 0.0
 var day_customers_arrived: int = 0
 var day_customers_bought: int = 0
+var day_happy: int = 0
+var day_complaints_fruit: int = 0
+var day_complaints_sugar: int = 0
+var day_complaints_ice: int = 0
+var day_timeouts: int = 0
+var day_too_expensive: int = 0
+var day_wrong_order: int = 0
+var day_scams: int = 0
 var day_costs: float = 0.0
 var day_start_popularity: float = Balancing.STARTING_POPULARITY
 var last_day_stats: Dictionary = { }
@@ -564,6 +572,14 @@ func finish_day() -> void:
 		"pedestrians": DayManager.day_pedestrians,
 		"customers_arrived": day_customers_arrived,
 		"customers_bought": day_customers_bought,
+		"happy": day_happy,
+		"complaints_fruit": day_complaints_fruit,
+		"complaints_sugar": day_complaints_sugar,
+		"complaints_ice": day_complaints_ice,
+		"timeouts": day_timeouts,
+		"too_expensive": day_too_expensive,
+		"wrong_order": day_wrong_order,
+		"scams": day_scams,
 		"costs": day_costs,
 		"sales": day_revenue,
 		"recycling": day_income_recycling,
@@ -770,6 +786,14 @@ func reset_daily_stats() -> void:
 	day_income_trash = 0.0
 	day_customers_arrived = 0
 	day_customers_bought = 0
+	day_happy = 0
+	day_complaints_fruit = 0
+	day_complaints_sugar = 0
+	day_complaints_ice = 0
+	day_timeouts = 0
+	day_too_expensive = 0
+	day_wrong_order = 0
+	day_scams = 0
 	day_costs = 0.0
 	day_start_popularity = popularity
 

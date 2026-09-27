@@ -290,7 +290,7 @@ func _physics_process(delta: float) -> void:
 				_begin_smooth_facing()
 				_npc.play_anim("Idle")
 				_default_facing_target = _facing_target
-				EventBus.customer_arrived.emit(self)
+				_emit_arrival()
 				sync_state(CustomerState.WAITING, "Idle")
 		CustomerState.WAITING:
 			patience -= delta
@@ -767,11 +767,40 @@ func _record_customer_served(outcome: String) -> void:
 	## Route popularity/cup/sale stats to the correct stand/GameState.
 	var pop_delta := _compute_popularity_delta(outcome, _served_evaluations)
 	if stand != null:
-		stand.day_customers_arrived += 1
 		var bought := outcome not in ["timeout", "too_expensive", "wrong_order", "scam"]
 		if bought:
 			stand.day_customers_bought += 1
 			stand.day_revenue += _accumulated_price
+		match outcome:
+			"happy":
+				stand.day_happy += 1
+			"timeout":
+				stand.day_timeouts += 1
+			"too_expensive":
+				stand.day_too_expensive += 1
+			"wrong_order":
+				stand.day_wrong_order += 1
+			"scam":
+				stand.day_scams += 1
+		# Complaint tallies are per axis: a customer whose cups missed on
+		# both sugar and ice counts toward both rows in the day report.
+		var complained_fruit := false
+		var complained_sugar := false
+		var complained_ice := false
+		for eval in _served_evaluations:
+			var complaints: Array = eval.get("complaints", [])
+			if "too_strong" in complaints or "not_enough_fruit" in complaints:
+				complained_fruit = true
+			if "too_sweet" in complaints or "not_sweet_enough" in complaints:
+				complained_sugar = true
+			if "too_cold" in complaints or "not_cold_enough" in complaints:
+				complained_ice = true
+		if complained_fruit:
+			stand.day_complaints_fruit += 1
+		if complained_sugar:
+			stand.day_complaints_sugar += 1
+		if complained_ice:
+			stand.day_complaints_ice += 1
 	if stand != null and not stand.is_legacy_primary:
 		stand.request_customer_served(outcome, pop_delta)
 	else:
@@ -1066,7 +1095,23 @@ func start_waiting() -> void:
 	_begin_smooth_facing()
 	_default_facing_target = _facing_target
 	_npc.play_anim("Idle")
+	_emit_arrival()
+
+
+## Emits customer_arrived exactly once per customer. Queue compaction can
+## push a customer back into WALKING and re-enter WAITING — without this
+## guard every step forward would recount them. Also increments the
+## owning stand's daily customer total at arrival time.
+var _arrival_counted := false
+
+
+func _emit_arrival() -> void:
+	if _arrival_counted:
+		return
+	_arrival_counted = true
 	EventBus.customer_arrived.emit(self)
+	if stand != null and is_instance_valid(stand):
+		stand.day_customers_arrived += 1
 
 
 func show_order_to_player(player: Node) -> void:
