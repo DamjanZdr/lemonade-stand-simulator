@@ -2,7 +2,10 @@ extends Control
 ## Bug report popup. Collects severity + description + steps to reproduce and
 ## POSTs them to the project's Discord webhook. No account needed.
 
-const WEBHOOK_URL := "https://discord.com/api/webhooks/1553811409102438430/9YF81WnSIjmnt-nnli3AQ9GZxgt4lwMB-9io_c7-0dra6OtVtyuuSzdkD0w04MVSWBPp"
+const WEBHOOK_URL := (
+	"https://discord.com/api/webhooks/1553811409102438430/"
+	+ "9YF81WnSIjmnt-nnli3AQ9GZxgt4lwMB-9io_c7-0dra6OtVtyuuSzdkD0w04MVSWBPp"
+)
 const MENU_THEME := preload("res://assets/themes/menu_theme.tres")
 const FONT_GRANDSTANDER := preload("res://assets/fonts/Grandstander-clean.ttf")
 
@@ -215,20 +218,17 @@ func _submit() -> void:
 	var severity := SEVERITIES[_severity_option.selected]
 	var steps := _steps_edit.text.strip_edges()
 	var fields: Array = [
-		{"name": "Description", "value": desc.left(FIELD_LIMIT)},
-		{
-			"name": "Steps to Reproduce",
-			"value": steps.left(FIELD_LIMIT) if steps != "" else "—",
-		},
-		{"name": "Severity", "value": severity, "inline": true},
-		{"name": "Version", "value": _game_version(), "inline": true},
-		{"name": "Mode", "value": _game_mode(), "inline": true},
-		{"name": "Day", "value": str(DayManager.day_number), "inline": true},
-		{"name": "Platform", "value": _platform_info(), "inline": false},
+		{ "name": "Description", "value": desc.left(FIELD_LIMIT) },
+		{ "name": "Steps to Reproduce", "value": steps.left(FIELD_LIMIT) if steps != "" else "—" },
+		{ "name": "Severity", "value": severity, "inline": true },
+		{ "name": "Version", "value": _game_version(), "inline": true },
+		{ "name": "Mode", "value": _game_mode(), "inline": true },
+		{ "name": "Day", "value": str(DayManager.day_number), "inline": true },
+		{ "name": "Platform", "value": _platform_info(), "inline": false },
 	]
 	var log_tail := _log_tail()
 	if log_tail != "":
-		fields.append({"name": "Recent Log", "value": "```\n%s\n```" % log_tail})
+		fields.append({ "name": "Recent Log", "value": "```\n%s\n```" % log_tail })
 
 	var payload := {
 		"username": "Bug Reports",
@@ -244,7 +244,12 @@ func _submit() -> void:
 	var headers := PackedStringArray(["Content-Type: application/json"])
 	var err := _http.request(WEBHOOK_URL, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
 	if err != OK:
-		_on_request_completed(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray())
+		_on_request_completed(
+			HTTPRequest.RESULT_CANT_CONNECT,
+			0,
+			PackedStringArray(),
+			PackedByteArray(),
+		)
 
 
 func _game_version() -> String:
@@ -268,7 +273,10 @@ func _log_tail() -> String:
 
 
 func _on_request_completed(
-	_result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray
+	_result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	_body: PackedByteArray,
 ) -> void:
 	_sending = false
 	_submit_btn.disabled = false
@@ -279,5 +287,7 @@ func _on_request_completed(
 		tw.tween_interval(1.0)
 		tw.tween_callback(queue_free)
 	else:
-		_status_label.text = "Failed to send (HTTP %d). Try again or ping us on Discord." % response_code
+		_status_label.text = (
+			"Failed to send (HTTP %d). Try again or ping us on Discord." % response_code
+		)
 		_status_label.add_theme_color_override("font_color", Color(1, 0.6, 0.5, 0.9))
