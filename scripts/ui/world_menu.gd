@@ -65,11 +65,14 @@ var _music_time_total: Label = null
 # Promo slideshow widget (Discord / Wishlist)
 var _promo_widget: Control = null
 var _promo_slides: Array[TextureRect] = []
+var _promo_panels: Array[ColorRect] = []
 var _promo_labels: Array[Label] = []
-var _promo_buttons: Array[Button] = []
 var _promo_dots: Array[Button] = []
+var _promo_hover: ColorRect = null
+var _promo_click_btn: Button = null
 var _promo_timer: Timer = null
 var _promo_index: int = 0
+var _promo_current_url: String = ""
 
 # Saves panel
 @onready var _saves_panel: Control = $SavesPanel
@@ -1487,7 +1490,6 @@ func _build_promo_widget() -> void:
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		tr.set_anchors_preset(Control.PRESET_FULL_RECT)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tr.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 		var rounded_mat := ShaderMaterial.new()
 		rounded_mat.shader = PROMO_ROUNDED_SHADER
 		rounded_mat.set_shader_parameter("size_pixels", Vector2(PROMO_WIDGET_W, PROMO_WIDGET_H))
@@ -1498,42 +1500,29 @@ func _build_promo_widget() -> void:
 		_promo_widget.add_child(tr)
 		_promo_slides.append(tr)
 
-		# Bottom overlay panel with blur + text.
-		var panel := Panel.new()
+		# Bottom overlay panel with blur + text (sibling of slide, not child).
+		var panel := ColorRect.new()
 		panel.name = "Panel%d" % i
-		panel.anchor_left = 0.0
-		panel.anchor_top = 1.0
-		panel.anchor_right = 1.0
-		panel.anchor_bottom = 1.0
+		panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 		panel.offset_top = -40.0
+		panel.offset_bottom = 0.0
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tr.add_child(panel)
+		_promo_widget.add_child(panel)
 
 		var blur_mat := ShaderMaterial.new()
 		blur_mat.shader = PROMO_BLUR_SHADER
 		blur_mat.set_shader_parameter("blur_radius", 6.0)
 		blur_mat.set_shader_parameter("overlay_color", Color(0.15, 0.22, 0.32, 0.85))
+		blur_mat.set_shader_parameter("size_pixels", Vector2(PROMO_WIDGET_W, 40.0))
+		blur_mat.set_shader_parameter("corner_radius", 8.0)
 		panel.material = blur_mat
-
-		var panel_style := StyleBoxFlat.new()
-		panel_style.bg_color = Color(1, 1, 1, 1)
-		panel_style.corner_radius_top_left = 0
-		panel_style.corner_radius_top_right = 0
-		panel_style.corner_radius_bottom_left = 8
-		panel_style.corner_radius_bottom_right = 8
-		panel.add_theme_stylebox_override("panel", panel_style)
 
 		var label := Label.new()
 		label.name = "Label%d" % i
 		label.text = labels[i].to_upper()
-		label.anchor_left = 0.0
-		label.anchor_top = 0.0
-		label.anchor_right = 1.0
-		label.anchor_bottom = 1.0
+		label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		label.offset_left = 16.0
-		label.offset_top = 0.0
 		label.offset_right = -16.0
-		label.offset_bottom = 0.0
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.add_theme_font_override("font", FONT_GRANDSTANDER)
@@ -1542,44 +1531,45 @@ func _build_promo_widget() -> void:
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(label)
 		label.visible = (i == _promo_index)
+		_promo_panels.append(panel)
 		_promo_labels.append(label)
 
-		# Hover highlight overlay (ignored by mouse so the button still catches).
-		var hover := ColorRect.new()
-		hover.name = "Hover%d" % i
-		hover.set_anchors_preset(Control.PRESET_FULL_RECT)
-		hover.color = Color(1, 1, 1, 0.0)
-		hover.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tr.add_child(hover)
+	# Hover overlay (rounded to match the image).
+	var hover := ColorRect.new()
+	hover.name = "Hover"
+	hover.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hover_mat := ShaderMaterial.new()
+	hover_mat.shader = PROMO_ROUNDED_SHADER
+	hover_mat.set_shader_parameter("size_pixels", Vector2(PROMO_WIDGET_W, PROMO_WIDGET_H))
+	hover_mat.set_shader_parameter("corner_radius", 8.0)
+	hover_mat.set_shader_parameter("overlay_alpha", 0.0)
+	hover.material = hover_mat
+	_promo_widget.add_child(hover)
+	_promo_hover = hover
 
-		# Invisible click target over the whole slide (image + panel + text).
-		var btn := Button.new()
-		btn.name = "Click%d" % i
-		btn.set_anchors_preset(Control.PRESET_FULL_RECT)
-		btn.flat = true
-		btn.disabled = (i != _promo_index)
-		var style := StyleBoxEmpty.new()
-		for state in ["normal", "hover", "pressed", "focus"]:
-			btn.add_theme_stylebox_override(state, style)
-		btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
-		tr.add_child(btn)
-		_promo_buttons.append(btn)
-		btn.mouse_entered.connect(
-			func():
-				var tw := create_tween()
-				tw.tween_property(hover, "color:a", 0.12, 0.15),
-		)
-		btn.mouse_exited.connect(
-			func():
-				var tw := create_tween()
-				tw.tween_property(hover, "color:a", 0.0, 0.15),
-		)
-		var url: String = urls[i]
-		btn.pressed.connect(
-			func():
-				if url != "":
-					OS.shell_open(url),
-		)
+	# Invisible click target over the whole widget.
+	var btn := Button.new()
+	btn.name = "Click"
+	btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+	btn.flat = true
+	var style := StyleBoxEmpty.new()
+	for state in ["normal", "hover", "pressed", "focus"]:
+		btn.add_theme_stylebox_override(state, style)
+	btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
+	_promo_widget.add_child(btn)
+	_promo_click_btn = btn
+	btn.mouse_entered.connect(
+		func():
+			var tw := create_tween()
+			tw.tween_property(_promo_hover.material, "shader_parameter/overlay_alpha", 0.12, 0.15),
+	)
+	btn.mouse_exited.connect(
+		func():
+			var tw := create_tween()
+			tw.tween_property(_promo_hover.material, "shader_parameter/overlay_alpha", 0.0, 0.15),
+	)
+	btn.pressed.connect(_on_promo_clicked)
 
 	# Slide indicator dots (below the widget, not on the panel).
 	var dots_row := HBoxContainer.new()
@@ -1642,6 +1632,13 @@ func _build_promo_widget() -> void:
 	_promo_timer.timeout.connect(_advance_promo_slide)
 	_promo_widget.add_child(_promo_timer)
 
+	_promo_current_url = urls[_promo_index]
+
+
+func _on_promo_clicked() -> void:
+	if _promo_current_url != "":
+		OS.shell_open(_promo_current_url)
+
 
 func _show_promo_slide(index: int) -> void:
 	if index == _promo_index or _promo_slides.is_empty():
@@ -1657,12 +1654,13 @@ func _show_promo_slide(index: int) -> void:
 	_promo_index = index
 	for i in range(_promo_slides.size()):
 		_promo_labels[i].visible = (i == _promo_index)
-		_promo_buttons[i].disabled = (i != _promo_index)
+		_promo_panels[i].visible = (i == _promo_index)
 	for i in range(_promo_dots.size()):
 		var dot := _promo_dots[i]
 		var normal := dot.get_theme_stylebox("normal") as StyleBoxFlat
 		normal.bg_color = Color(1, 1, 1, 1.0 if i == _promo_index else 0.35)
 		dot.add_theme_stylebox_override("normal", normal)
+	_promo_current_url = [PROMO_DISCORD_URL, PROMO_WISHLIST_URL][_promo_index]
 
 
 func _advance_promo_slide() -> void:
