@@ -214,5 +214,9 @@ static func adjust_popularity_for_stand(stand_name: String, delta: float) -> voi
 			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
 				if s.name == stand_name and s.has_method("set_popularity"):
 					s.set_popularity(s.popularity + delta)
+					# Sync the new value so all peers see the change (free samples,
+					# trash hits, etc. aren't followed by a StandUnit push_state).
+					if s.has_method("push_state"):
+						s.push_state()
 					return
 	GameState.set_popularity(GameState.popularity + delta)

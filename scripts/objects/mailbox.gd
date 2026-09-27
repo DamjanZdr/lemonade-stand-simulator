@@ -59,7 +59,7 @@ func _build_indicator() -> void:
 	circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	circle.no_depth_test = true
 	# World-space (not fixed_size) — the icon shrinks with distance.
-	circle.pixel_size = 0.0065
+	circle.pixel_size = 0.009
 	_indicator.add_child(circle)
 	var mark := Label3D.new()
 	mark.name = "Mark"
@@ -76,11 +76,12 @@ func _build_indicator() -> void:
 	mark.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	mark.no_depth_test = true
 	mark.render_priority = 1
-	mark.pixel_size = 0.0068
+	mark.pixel_size = 0.0092
 	mark.font_size = 120
 	mark.outline_size = 0
-	# The glyph sits a hair left of optical centre — nudge it right.
-	mark.offset = Vector2(6.0, 0.0)
+	# Lower and nudge right so the "!" stays optically centered in the bigger circle.
+	mark.position = Vector3(0.0, -0.13, 0.0)
+	mark.offset = Vector2(8.0, 0.0)
 	_indicator.add_child(mark)
 	add_child(_indicator)
 	_indicator.visible = false
@@ -92,7 +93,7 @@ func _make_circle_texture(size: int) -> ImageTexture:
 	var center := Vector2(size, size) * 0.5
 	var radius := size * 0.47
 	var edge := size * 0.50
-	var yellow := Color(1.0, 0.92, 0.1, 0.85)
+	var yellow := Color(1.0, 0.92, 0.1, 1.0)
 	for y in range(size):
 		for x in range(size):
 			var d := (Vector2(x, y) - center).length()
@@ -100,7 +101,7 @@ func _make_circle_texture(size: int) -> ImageTexture:
 				img.set_pixel(x, y, yellow)
 			elif d <= edge:
 				var t := (d - radius) / (edge - radius)
-				img.set_pixel(x, y, Color(yellow.r, yellow.g, yellow.b, yellow.a * (1.0 - t)))
+				img.set_pixel(x, y, Color(yellow.r, yellow.g, yellow.b, 1.0 - t))
 	return ImageTexture.create_from_image(img)
 
 
