@@ -287,6 +287,21 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
+[node name="StatsTopSpacer" type="Control" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="StatsTitle" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 28
+text = "All-Time Stats"
+horizontal_alignment = 1
+
+[node name="StatsTitleSpacer" type="Control" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+
 [node name="Columns" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage"]
 layout_mode = 2
 size_flags_vertical = 3

@@ -1104,6 +1104,8 @@ func _process(_delta: float) -> void:
 		cam_marker = search_root.find_child("PreviewOrbitCamera", true, false) as Node3D
 	if cam_marker:
 		_preview_camera.global_transform = cam_marker.global_transform
+		if cam_marker is Camera3D:
+			_preview_camera.fov = (cam_marker as Camera3D).fov
 
 
 func _create_ingredient_card(item: Dictionary) -> PanelContainer:
@@ -1724,12 +1726,12 @@ func _add_stat_row(
 	var name_lbl := Label.new()
 	name_lbl.text = label
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 20)
+	name_lbl.add_theme_font_size_override("font_size", 22)
 	name_lbl.add_theme_color_override("font_color", Color(0.75, 0.72, 0.66))
 	row.add_child(name_lbl)
 	var val_lbl := Label.new()
 	val_lbl.text = value
-	val_lbl.add_theme_font_size_override("font_size", 20)
+	val_lbl.add_theme_font_size_override("font_size", 22)
 	val_lbl.add_theme_color_override("font_color", color)
 	row.add_child(val_lbl)
 	parent.add_child(row)
@@ -2403,7 +2405,7 @@ func _refresh_stats() -> void:
 
 	var day_lbl := Label.new()
 	day_lbl.text = "Day: %d" % DayManager.day_number
-	day_lbl.add_theme_font_size_override("font_size", 16)
+	day_lbl.add_theme_font_size_override("font_size", 18)
 	day_lbl.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
 	header.add_child(day_lbl)
 
@@ -2411,7 +2413,7 @@ func _refresh_stats() -> void:
 	money_lbl.text = "$%.2f" % _get_local_money()
 	money_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	money_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	money_lbl.add_theme_font_size_override("font_size", 16)
+	money_lbl.add_theme_font_size_override("font_size", 18)
 	money_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	header.add_child(money_lbl)
 
@@ -2419,7 +2421,7 @@ func _refresh_stats() -> void:
 	var temp_lbl := Label.new()
 	temp_lbl.text = "%.0fC / %.0fF" % [temp_c, temp_c * 9.0 / 5.0 + 32.0]
 	temp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	temp_lbl.add_theme_font_size_override("font_size", 16)
+	temp_lbl.add_theme_font_size_override("font_size", 18)
 	temp_lbl.add_theme_color_override("font_color", Color(0.7, 0.8, 0.95))
 	header.add_child(temp_lbl)
 
@@ -2439,7 +2441,7 @@ func _refresh_stats() -> void:
 	var equip_hdr := Label.new()
 	equip_hdr.text = "Equipment"
 	equip_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equip_hdr.add_theme_font_size_override("font_size", 15)
+	equip_hdr.add_theme_font_size_override("font_size", 18)
 	equip_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	equip_col.add_child(equip_hdr)
 	if _equipment_counts.is_empty():
@@ -2460,7 +2462,7 @@ func _refresh_stats() -> void:
 	var cons_hdr := Label.new()
 	cons_hdr.text = "Consumables"
 	cons_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cons_hdr.add_theme_font_size_override("font_size", 15)
+	cons_hdr.add_theme_font_size_override("font_size", 18)
 	cons_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	cons_col.add_child(cons_hdr)
 	if _bin_amounts.is_empty():
@@ -2478,13 +2480,13 @@ func _stats_row(label_text: String, value_text: String, color: Color) -> HBoxCon
 	var name_lbl := Label.new()
 	name_lbl.text = label_text
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.add_theme_font_size_override("font_size", 18)
 	name_lbl.add_theme_color_override("font_color", color)
 	row.add_child(name_lbl)
 	var val_lbl := Label.new()
 	val_lbl.text = value_text
 	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	val_lbl.add_theme_font_size_override("font_size", 15)
+	val_lbl.add_theme_font_size_override("font_size", 18)
 	val_lbl.add_theme_color_override("font_color", color)
 	row.add_child(val_lbl)
 	return row
