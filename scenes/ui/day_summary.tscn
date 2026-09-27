@@ -20,66 +20,53 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -320.0
-offset_top = -280.0
-offset_right = 320.0
-offset_bottom = 280.0
+offset_left = -360.0
+offset_top = -300.0
+offset_right = 360.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="VBox" type="VBoxContainer" parent="Panel"]
+[node name="Margin" type="MarginContainer" parent="Panel"]
 layout_mode = 2
-alignment = 1
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 24
 
-[node name="DayLabel" type="Label" parent="Panel/VBox"]
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Day 1 Complete!"
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="HeaderSpacer" type="Control" parent="Panel/Margin/VBox/Header"]
+custom_minimum_size = Vector2(34, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="DayLabel" type="Label" parent="Panel/Margin/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Day 1 Report"
 horizontal_alignment = 1
 
-[node name="Sep" type="HSeparator" parent="Panel/VBox"]
-layout_mode = 2
-
-[node name="Stats" type="VBoxContainer" parent="Panel/VBox"]
-layout_mode = 2
-alignment = 1
-
-[node name="RevenueLabel" type="Label" parent="Panel/VBox/Stats"]
+[node name="CloseBtn" type="Button" parent="Panel/Margin/VBox/Header"]
+custom_minimum_size = Vector2(34, 34)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "Revenue: $0.00"
-horizontal_alignment = 1
+text = "×"
 
-[node name="PedestriansLabel" type="Label" parent="Panel/VBox/Stats"]
+[node name="SubLabel" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Pedestrians: 0"
 horizontal_alignment = 1
 
-[node name="ArrivedLabel" type="Label" parent="Panel/VBox/Stats"]
+[node name="Sep" type="HSeparator" parent="Panel/Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Came to buy: 0"
-horizontal_alignment = 1
 
-[node name="BoughtLabel" type="Label" parent="Panel/VBox/Stats"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Bought: 0"
-horizontal_alignment = 1
-
-[node name="CostsLabel" type="Label" parent="Panel/VBox/Stats"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Costs: $0.00"
-horizontal_alignment = 1
-
-[node name="ProfitLabel" type="Label" parent="Panel/VBox/Stats"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "Profit: $0.00"
-horizontal_alignment = 1
-
-[node name="NextBtn" type="Button" parent="Panel/VBox"]
+[node name="Stats" type="HBoxContainer" parent="Panel/Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_font_sizes/font_size = 22
-text = "Next Day"
+alignment = 1
+theme_override_constants/separation = 40

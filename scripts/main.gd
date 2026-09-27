@@ -2024,6 +2024,14 @@ func _input(event: InputEvent) -> void:
 				_toggle_esc_menu()
 				get_viewport().set_input_as_handled()
 				return
+			# Mailbox report open: ESC closes it instead of pausing —
+			# otherwise the mouse re-captures and hover bleeds through.
+			var summary := get_tree().get_first_node_in_group("day_summary")
+			if summary != null and summary.has_method("is_report_open") \
+					and summary.is_report_open():
+				summary.close_report()
+				get_viewport().set_input_as_handled()
+				return
 			if (
 				_local_player != null and is_instance_valid(_local_player)
 				and _local_player.is_in_priceboard_mode()

@@ -45,38 +45,40 @@ func _build_indicator() -> void:
 	circle.texture = _make_circle_texture(128)
 	circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	circle.no_depth_test = true
-	circle.fixed_size = true
-	circle.pixel_size = 0.0035
+	# World-space (not fixed_size) — the icon shrinks with distance.
+	circle.pixel_size = 0.0045
 	_indicator.add_child(circle)
 	var mark := Label3D.new()
 	mark.name = "Mark"
 	mark.text = "!"
 	mark.font = INDICATOR_FONT
 	mark.font_size = 96
-	mark.modulate = Color(0.15, 0.08, 0.02)
-	mark.outline_size = 0
+	mark.modulate = Color(1.0, 1.0, 1.0)
+	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# "!" sits high in its em box — nudge down for optical centering.
+	mark.offset = Vector2(0.0, 14.0)
 	mark.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	mark.no_depth_test = true
-	mark.fixed_size = true
-	mark.pixel_size = 0.0035
+	mark.pixel_size = 0.005
 	_indicator.add_child(mark)
 	add_child(_indicator)
 	_indicator.visible = false
 
 
-## Soft-edged yellow circle with a dark rim — the "unread mail" bubble.
+## Soft-edged, slightly transparent yellow circle — the "unread mail" bubble.
 func _make_circle_texture(size: int) -> ImageTexture:
 	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	var center := Vector2(size, size) * 0.5
 	var outer := size * 0.48
-	var inner := size * 0.40
+	var inner := size * 0.42
 	for y in range(size):
 		for x in range(size):
 			var d := (Vector2(x, y) - center).length()
 			if d <= inner:
-				img.set_pixel(x, y, Color(1.0, 0.85, 0.25, 1.0))
+				img.set_pixel(x, y, Color(1.0, 0.8, 0.15, 0.85))
 			elif d <= outer:
-				img.set_pixel(x, y, Color(0.15, 0.08, 0.02, 1.0))
+				img.set_pixel(x, y, Color(1.0, 0.72, 0.08, 0.9))
 	return ImageTexture.create_from_image(img)
 
 
@@ -95,10 +97,7 @@ func _has_unread_report() -> bool:
 func _update_indicator() -> void:
 	if _indicator == null:
 		return
-	_indicator.visible = (
-		DayManager.current_phase == DayManager.Phase.DAY
-		and _has_unread_report()
-	)
+	_indicator.visible = (DayManager.current_phase == DayManager.Phase.DAY and _has_unread_report())
 
 
 func _on_day_phase_changed(phase: int, _day: int) -> void:

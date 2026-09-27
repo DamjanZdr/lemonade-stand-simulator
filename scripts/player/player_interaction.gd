@@ -137,6 +137,20 @@ func _recipe_hint_string(recipe: Dictionary) -> String:
 
 
 func poll_hint() -> void:
+	# No world hover while a blocking overlay is up (mail report, menus,
+	# day-end "Day X" card): the outline overlay renders above every UI
+	# layer, so highlights would bleed through the panel/black screen.
+	if EventBus.day_transition_active or Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		if hovered and is_instance_valid(hovered):
+			hovered.set_highlight(false)
+		hovered = null
+		if _hovered_trash_body and is_instance_valid(_hovered_trash_body):
+			_set_trash_body_highlight(_hovered_trash_body, false)
+		_hovered_trash_body = null
+		if _last_hint != "":
+			_last_hint = ""
+			EventBus.interaction_hint_changed.emit("")
+		return
 	var interactable := get_looked_at_interactable()
 	# Check for thrown trash body (works mid-air or after landing).
 	var thrown := _get_looked_at_thrown_trash() if interactable == null else null

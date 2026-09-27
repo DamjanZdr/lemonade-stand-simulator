@@ -84,6 +84,8 @@ var highest_money: float = 0.0
 
 ## Daily stats reset each morning. Captured into last_day_stats at end_day.
 var day_revenue: float = 0.0
+var day_income_recycling: float = 0.0
+var day_income_trash: float = 0.0
 var day_customers_arrived: int = 0
 var day_customers_bought: int = 0
 var day_costs: float = 0.0
@@ -555,18 +557,31 @@ func spend_money(amount: float) -> bool:
 
 ## Snapshot the finished day's stats into last_day_stats (synced via push_state).
 func finish_day() -> void:
+	var income := day_revenue + day_income_recycling + day_income_trash
 	last_day_stats = {
 		"day": DayManager.day_number,
 		"stand_name": stand_display_name if stand_display_name != "" else name,
-		"revenue": day_revenue,
+		"pedestrians": DayManager.day_pedestrians,
 		"customers_arrived": day_customers_arrived,
 		"customers_bought": day_customers_bought,
 		"costs": day_costs,
-		"profit": day_revenue - day_costs,
+		"sales": day_revenue,
+		"recycling": day_income_recycling,
+		"trash": day_income_trash,
+		"income": income,
+		"profit": income - day_costs,
 		"popularity": popularity,
 		"popularity_delta": popularity - day_start_popularity,
 	}
 	push_state()
+
+
+## Called by Trashcan when this stand receives a disposal refund.
+func record_disposal_income(amount: float, is_regular_trash: bool) -> void:
+	if is_regular_trash:
+		day_income_trash += amount
+	else:
+		day_income_recycling += amount
 
 
 func set_popularity(value: float) -> void:
@@ -751,6 +766,8 @@ func reset_daily_stats() -> void:
 	customers_served_happy = 0
 	customers_lost = 0
 	day_revenue = 0.0
+	day_income_recycling = 0.0
+	day_income_trash = 0.0
 	day_customers_arrived = 0
 	day_customers_bought = 0
 	day_costs = 0.0

@@ -8,6 +8,11 @@ static var esc_menu_open: bool = false
 ## True while a discovery announcement is showing. Freezes player movement.
 static var announcement_open: bool = false
 
+## True while the day-end fade/"Day X" card is showing. Suppresses world
+## hover highlights, which would otherwise bleed through the overlay (the
+## outline canvas layer sits above every UI panel).
+static var day_transition_active: bool = false
+
 # --- Player ---
 signal held_item_changed(item_type: int, item_data: Dictionary)
 signal interaction_hint_changed(hint: String)

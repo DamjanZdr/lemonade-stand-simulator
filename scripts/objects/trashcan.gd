@@ -209,7 +209,7 @@ func apply_trash_disposal(trash_type: String, refund: float, stand_name: String 
 	if not WorldSync.is_host():
 		return
 	if refund > 0.0:
-		_add_money_to_stand(refund, stand_name)
+		_add_money_to_stand(refund, stand_name, trash_type)
 	if Balancing.is_regular_trash_type(trash_type):
 		Balancing.adjust_popularity_for_stand(stand_name, Balancing.POPULARITY_TRASH_DISPOSED_BONUS)
 	EventBus.trash_disposed.emit(trash_type, refund, stand_name)
@@ -225,13 +225,18 @@ func _request_trash_disposal(trash_type: String, refund: float, stand_name: Stri
 
 ## Credit the refund to the correct stand. Falls back to GameState
 ## (legacy primary stand) if no stand is specified.
-func _add_money_to_stand(refund: float, stand_name: String) -> void:
+func _add_money_to_stand(refund: float, stand_name: String, trash_type: String = "") -> void:
 	if stand_name != "":
 		var tree := Engine.get_main_loop() as SceneTree
 		if tree != null and tree.current_scene != null:
 			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
 				if s.name == stand_name and s.has_method("add_money"):
 					s.add_money(refund)
+					if s.has_method("record_disposal_income"):
+						s.record_disposal_income(
+							refund,
+							Balancing.is_regular_trash_type(trash_type),
+						)
 					return
 	GameState.add_money(refund)
 
