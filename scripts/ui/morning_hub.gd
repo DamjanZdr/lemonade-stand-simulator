@@ -39,18 +39,10 @@ const BRANCH_COLORS: Array[Color] = [
 
 @onready var _status_lbl: Label = $MainHBox/Panel/VBox/BottomBar/StatusLbl
 @onready var _flow_indicator: HBoxContainer = $MainHBox/Panel/VBox/FlowIndicator
-@onready var _stand_name_edit: LineEdit = (
-	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/StandNameRow/NameEdit
-)
-@onready var _stand_name_button: Button = (
-	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/StandNameRow/SaveButton
-)
-@onready var _wall_color_btn: Button = (
-	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/WallColorRow/WallColorBtn
-)
-@onready var _roof_color_btn: Button = (
-	$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/RoofColorRow/RoofColorBtn
-)
+@onready var _stand_name_edit: LineEdit = ($MainHBox/RightPanel/RightVBox/StandNameRow/NameEdit)
+@onready var _stand_name_button: Button = ($MainHBox/RightPanel/RightVBox/StandNameRow/SaveButton)
+@onready var _wall_color_btn: Button = ($MainHBox/RightPanel/RightVBox/WallColorRow/WallColorBtn)
+@onready var _roof_color_btn: Button = ($MainHBox/RightPanel/RightVBox/RoofColorRow/RoofColorBtn)
 var _wall_swatch: ColorRect = null
 var _roof_swatch: ColorRect = null
 
@@ -200,6 +192,7 @@ func _ready() -> void:
 		func(_text: String):
 			_rename_local_stand(),
 	)
+	_style_stand_name_controls()
 	if _wall_color_btn:
 		_wall_swatch = _make_swatch_picker(
 			_wall_color_btn,
@@ -1106,9 +1099,9 @@ func _process(_delta: float) -> void:
 	var suffix := ""
 	if stand != null and is_instance_valid(stand) and not stand.get("is_legacy_primary"):
 		suffix = "2"
-	var cam_marker := search_root.get_node_or_null("PreviewOrbitCamera" + suffix) as Node3D
+	var cam_marker := (search_root.find_child("PreviewOrbitCamera" + suffix, true, false) as Node3D)
 	if cam_marker == null and suffix != "":
-		cam_marker = search_root.get_node_or_null("PreviewOrbitCamera") as Node3D
+		cam_marker = search_root.find_child("PreviewOrbitCamera", true, false) as Node3D
 	if cam_marker:
 		_preview_camera.global_transform = cam_marker.global_transform
 
@@ -1383,6 +1376,40 @@ func _make_swatch_picker(btn: Button, on_color: Callable) -> ColorRect:
 	return swatch
 
 
+## Brighter styling for the stand-name input + rename button so they
+## read as editable controls against the dark panel.
+func _style_stand_name_controls() -> void:
+	if _stand_name_edit:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.28, 0.30, 0.36, 0.95)
+		sb.set_corner_radius_all(6)
+		sb.set_border_width_all(1)
+		sb.border_color = Color(1, 1, 1, 0.35)
+		sb.content_margin_left = 10
+		sb.content_margin_right = 10
+		_stand_name_edit.add_theme_stylebox_override("normal", sb)
+		var sb_f := sb.duplicate() as StyleBoxFlat
+		sb_f.border_color = Color(1, 0.9, 0.3, 0.9)
+		_stand_name_edit.add_theme_stylebox_override("focus", sb_f)
+		_stand_name_edit.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+		_stand_name_edit.add_theme_color_override("font_placeholder_color", Color(1, 1, 1, 0.45))
+	if _stand_name_button:
+		for state in ["normal", "hover", "pressed"]:
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(0.30, 0.34, 0.42, 0.95)
+			if state == "hover":
+				sb.bg_color = Color(0.38, 0.43, 0.52, 1.0)
+			if state == "pressed":
+				sb.bg_color = Color(0.25, 0.28, 0.34, 1.0)
+			sb.set_corner_radius_all(6)
+			sb.set_border_width_all(1)
+			sb.border_color = Color(1, 1, 1, 0.35)
+			sb.content_margin_left = 14
+			sb.content_margin_right = 14
+			_stand_name_button.add_theme_stylebox_override(state, sb)
+		_stand_name_button.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+
+
 ## Store a house color choice in the local player's roster customization.
 ## Broadcasting the roster triggers _apply_player_house_colors() in main.gd
 ## on every peer, recoloring the house attached to this stand.
@@ -1574,76 +1601,98 @@ func _refresh_prices_page() -> void:
 
 ## Populate the Stand tab's left column with all-time stats, mirroring the
 ## daily mail report's layout (People / Money sections).
+## Populate the Stats tab: two columns — People (left) and Money (right).
 func _refresh_analytics() -> void:
-	var col := (
-		$MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCol as VBoxContainer
+	var people_col := (
+		get_node_or_null(
+			"MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCols/PeopleCol"
+		)
+		as VBoxContainer
 	)
-	if col == null:
+	var money_col := (
+		get_node_or_null(
+			"MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCols/MoneyCol"
+		)
+		as VBoxContainer
+	)
+	if people_col == null or money_col == null:
 		return
-	while col.get_child_count() > 0:
-		var c := col.get_child(0)
-		col.remove_child(c)
-		c.queue_free()
+	for col: VBoxContainer in [people_col, money_col]:
+		while col.get_child_count() > 0:
+			var c := col.get_child(0)
+			col.remove_child(c)
+			c.queue_free()
 
 	var stand := _get_local_stand()
 	var stats: Dictionary = stand.lifetime_stats if stand else { }
 	var days: int = int(stats.get("days_completed", 0))
 
-	var head := Label.new()
-	head.text = "All-Time Stats"
-	head.add_theme_font_size_override("font_size", 20)
-	head.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
-	col.add_child(head)
-	col.add_child(HSeparator.new())
+	_add_stat_section(people_col, "People")
 	if days == 0:
 		var none := Label.new()
 		none.text = "Finish your first day to see stats."
-		none.add_theme_font_size_override("font_size", 16)
+		none.add_theme_font_size_override("font_size", 18)
 		none.add_theme_color_override("font_color", Color(0.6, 0.58, 0.52))
-		col.add_child(none)
+		people_col.add_child(none)
 	else:
-		_add_stat_section(col, "People")
-		_add_stat_row(col, "Total Pedestrians", "%d" % int(stats.get("pedestrians", 0)))
-		_add_stat_row(col, "Came to Buy", "%d" % int(stats.get("customers_arrived", 0)))
-		_add_stat_row(col, "Bought", "%d" % int(stats.get("customers_bought", 0)))
-		_add_stat_row(col, "Happy", "%d" % int(stats.get("happy", 0)), Color(0.4, 0.85, 0.4))
+		_add_stat_row(people_col, "Total Pedestrians", "%d" % int(stats.get("pedestrians", 0)))
+		_add_stat_row(people_col, "Came to Buy", "%d" % int(stats.get("customers_arrived", 0)))
+		_add_stat_row(people_col, "Bought", "%d" % int(stats.get("customers_bought", 0)))
+		_add_stat_row(people_col, "Happy", "%d" % int(stats.get("happy", 0)), Color(0.4, 0.85, 0.4))
 		var soft_red := Color(0.9, 0.55, 0.55)
 		_add_stat_row(
-			col,
+			people_col,
 			"Fruit Complaints",
 			"%d" % int(stats.get("complaints_fruit", 0)),
 			soft_red,
 		)
 		_add_stat_row(
-			col,
+			people_col,
 			"Sugar Complaints",
 			"%d" % int(stats.get("complaints_sugar", 0)),
 			soft_red,
 		)
-		_add_stat_row(col, "Ice Complaints", "%d" % int(stats.get("complaints_ice", 0)), soft_red)
-		_add_stat_row(col, "Patience Ran Out", "%d" % int(stats.get("timeouts", 0)), soft_red)
-		_add_stat_row(col, "Too Expensive", "%d" % int(stats.get("too_expensive", 0)), soft_red)
-		_add_stat_row(col, "Wrong Order", "%d" % int(stats.get("wrong_order", 0)), soft_red)
-		_add_stat_row(col, "Scammed", "%d" % int(stats.get("scams", 0)), soft_red)
-		_add_stat_section(col, "Money")
 		_add_stat_row(
-			col,
+			people_col,
+			"Ice Complaints",
+			"%d" % int(stats.get("complaints_ice", 0)),
+			soft_red,
+		)
+		_add_stat_row(
+			people_col,
+			"Patience Ran Out",
+			"%d" % int(stats.get("timeouts", 0)),
+			soft_red,
+		)
+		_add_stat_row(
+			people_col,
+			"Too Expensive",
+			"%d" % int(stats.get("too_expensive", 0)),
+			soft_red,
+		)
+		_add_stat_row(people_col, "Wrong Order", "%d" % int(stats.get("wrong_order", 0)), soft_red)
+		_add_stat_row(people_col, "Scammed", "%d" % int(stats.get("scams", 0)), soft_red)
+
+	_add_stat_section(money_col, "Money")
+	if days > 0:
+		_add_stat_row(
+			money_col,
 			"Income",
 			"$%.2f" % float(stats.get("income", 0.0)),
 			Color(0.4, 0.85, 0.4),
 		)
-		_add_stat_row(col, "Sales", "$%.2f" % float(stats.get("sales", 0.0)))
-		_add_stat_row(col, "Recycling", "$%.2f" % float(stats.get("recycling", 0.0)))
-		_add_stat_row(col, "Trash", "$%.2f" % float(stats.get("trash", 0.0)))
+		_add_stat_row(money_col, "Sales", "$%.2f" % float(stats.get("sales", 0.0)))
+		_add_stat_row(money_col, "Recycling", "$%.2f" % float(stats.get("recycling", 0.0)))
+		_add_stat_row(money_col, "Trash", "$%.2f" % float(stats.get("trash", 0.0)))
 		_add_stat_row(
-			col,
+			money_col,
 			"Costs",
 			"-$%.2f" % float(stats.get("costs", 0.0)),
 			Color(0.9, 0.45, 0.45),
 		)
 		var profit := float(stats.get("profit", 0.0))
 		_add_stat_row(
-			col,
+			money_col,
 			"Profit",
 			"%s$%.2f" % ["+" if profit >= 0.0 else "-", absf(profit)],
 			Color(0.4, 0.85, 0.4) if profit >= 0.0 else Color(0.9, 0.3, 0.3),
@@ -1652,17 +1701,15 @@ func _refresh_analytics() -> void:
 		var highest_purchase: float = (
 			stand.highest_purchase if stand else GameState.highest_purchase
 		)
-		_add_stat_row(col, "Highest Balance", "$%.2f" % highest_money)
-		_add_stat_row(col, "Highest Purchase", "$%.2f" % highest_purchase)
+		_add_stat_row(money_col, "Highest Balance", "$%.2f" % highest_money)
+		_add_stat_row(money_col, "Highest Purchase", "$%.2f" % highest_purchase)
 
 
 func _add_stat_section(parent: VBoxContainer, title: String) -> void:
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 6)
-	parent.add_child(spacer)
 	var lbl := Label.new()
 	lbl.text = title
-	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 24)
 	lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	parent.add_child(lbl)
 
@@ -1677,12 +1724,12 @@ func _add_stat_row(
 	var name_lbl := Label.new()
 	name_lbl.text = label
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_font_size_override("font_size", 20)
 	name_lbl.add_theme_color_override("font_color", Color(0.75, 0.72, 0.66))
 	row.add_child(name_lbl)
 	var val_lbl := Label.new()
 	val_lbl.text = value
-	val_lbl.add_theme_font_size_override("font_size", 16)
+	val_lbl.add_theme_font_size_override("font_size", 20)
 	val_lbl.add_theme_color_override("font_color", color)
 	row.add_child(val_lbl)
 	parent.add_child(row)

@@ -231,7 +231,7 @@ theme_override_styles/panel = SubResource("tab_normal")
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "Stand"
+text = "Stats"
 horizontal_alignment = 1
 
 [node name="StepPC_shop" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
@@ -297,87 +297,23 @@ layout_mode = 2
 size_flags_horizontal = 3
 horizontal_scroll_mode = 0
 
-[node name="StatsCol" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll"]
+[node name="StatsCols" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 18
+
+[node name="PeopleCol" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCols"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
-[node name="Divider" type="VSeparator" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns"]
+[node name="Divider" type="VSeparator" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCols"]
 layout_mode = 2
 
-[node name="RightCol" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns"]
-custom_minimum_size = Vector2(300, 0)
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="StandNameHeader" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.87, 0.78, 1)
-theme_override_font_sizes/font_size = 20
-text = "Stand Name"
-
-[node name="StandNameRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="NameEdit" type="LineEdit" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/StandNameRow"]
+[node name="MoneyCol" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCols"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 38)
-theme_override_font_sizes/font_size = 18
-max_length = 32
-placeholder_text = "Type a stand name..."
-
-[node name="SaveButton" type="Button" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/StandNameRow"]
-custom_minimum_size = Vector2(0, 38)
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Rename"
-
-[node name="HouseHeader" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.87, 0.78, 1)
-theme_override_font_sizes/font_size = 20
-text = "House Colors"
-
-[node name="HouseHint" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.68, 0.6, 1)
-theme_override_font_sizes/font_size = 14
-text = "Colors of the house behind your stand"
-autowrap_mode = 2
-
-[node name="WallColorRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="WallLabel" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/WallColorRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
-text = "Walls"
-vertical_alignment = 1
-
-[node name="WallColorBtn" type="Button" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/WallColorRow"]
-custom_minimum_size = Vector2(60, 30)
-layout_mode = 2
-
-[node name="RoofColorRow" type="HBoxContainer" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="RoofLabel" type="Label" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/RoofColorRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
-text = "Roof"
-vertical_alignment = 1
-
-[node name="RoofColorBtn" type="Button" parent="MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/RightCol/RoofColorRow"]
-custom_minimum_size = Vector2(60, 30)
-layout_mode = 2
+theme_override_constants/separation = 4
 
 [node name="UpgradesPage" type="VBoxContainer" parent="MainHBox/Panel/VBox/Content"]
 visible = false
@@ -623,3 +559,57 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
+
+[node name="ConfigSep" type="HSeparator" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+theme_override_styles/separator = SubResource("header_sep")
+
+[node name="StandNameRow" type="HBoxContainer" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NameEdit" type="LineEdit" parent="MainHBox/RightPanel/RightVBox/StandNameRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 38)
+theme_override_font_sizes/font_size = 18
+max_length = 32
+placeholder_text = "Stand name..."
+
+[node name="SaveButton" type="Button" parent="MainHBox/RightPanel/RightVBox/StandNameRow"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Rename"
+
+[node name="WallColorRow" type="HBoxContainer" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WallLabel" type="Label" parent="MainHBox/RightPanel/RightVBox/WallColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
+text = "House Walls"
+vertical_alignment = 1
+
+[node name="WallColorBtn" type="Button" parent="MainHBox/RightPanel/RightVBox/WallColorRow"]
+custom_minimum_size = Vector2(60, 30)
+layout_mode = 2
+
+[node name="RoofColorRow" type="HBoxContainer" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RoofLabel" type="Label" parent="MainHBox/RightPanel/RightVBox/RoofColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
+text = "House Roof"
+vertical_alignment = 1
+
+[node name="RoofColorBtn" type="Button" parent="MainHBox/RightPanel/RightVBox/RoofColorRow"]
+custom_minimum_size = Vector2(60, 30)
+layout_mode = 2
