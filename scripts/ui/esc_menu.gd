@@ -6,6 +6,7 @@ extends CanvasLayer
 const MENU_THEME := preload("res://assets/themes/menu_theme.tres")
 const SETTINGS_PANEL_SCENE := preload("res://scenes/ui/settings_panel.tscn")
 const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
+const PromoWidget := preload("res://scripts/ui/promo_widget.gd")
 
 signal back_to_game
 signal back_to_menu
@@ -45,6 +46,7 @@ var _music_next_btn: Button
 var _music_progress: ProgressBar
 var _music_time_current: Label
 var _music_time_total: Label
+var _promo_widget: Control
 
 const MUSIC_WIDGET_W: float = 280.0
 const MUSIC_WIDGET_H: float = 88.0
@@ -268,6 +270,10 @@ func _build_ui() -> void:
 	# Music player widget (bottom-right, same as main menu).
 	_build_music_player()
 
+	# Promo slideshow above the music player (same as main menu).
+	_promo_widget = PromoWidget.new()
+	add_child(_promo_widget)
+
 
 func _make_menu_button(text: String) -> Button:
 	var btn := Button.new()
@@ -291,6 +297,8 @@ func show_menu() -> void:
 		_version_label.visible = true
 	if _music_widget:
 		_music_widget.visible = true
+	if _promo_widget:
+		_promo_widget.visible = true
 	var tw := create_tween()
 	tw.set_ease(Tween.EASE_OUT)
 	tw.tween_property(_menu_box, "modulate:a", 1.0, 0.2)
@@ -380,6 +388,8 @@ func _on_back_to_menu() -> void:
 		_version_label.visible = false
 	if _music_widget:
 		_music_widget.visible = false
+	if _promo_widget:
+		_promo_widget.visible = false
 	back_to_menu.emit()
 
 
