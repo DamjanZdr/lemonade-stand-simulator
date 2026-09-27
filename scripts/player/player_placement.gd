@@ -947,7 +947,7 @@ func _create_container_hand_mesh(
 		# For ice, the deferred bucket setup may not have run yet — run it now
 		# so update_display() shows the correct cube count.
 		if container_type == "ice_bin":
-			bin._setup_ice_bucket()
+			bin.setup_ice_bucket()
 		bin.update_display()
 		var pickupable := bin.get_node_or_null("Pickupable")
 		if pickupable != null:

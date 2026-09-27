@@ -71,10 +71,10 @@ func _ready() -> void:
 	update_display()
 	EventBus.debug_refill_all_bins.connect(_on_debug_refill)
 	if ingredient_type == "ice":
-		_setup_ice_bucket.call_deferred()
+		setup_ice_bucket.call_deferred()
 
 
-func _setup_ice_bucket() -> void:
+func setup_ice_bucket() -> void:
 	_ice_bucket = find_child("ice bucket with ice", false, false)
 	if _ice_bucket == null:
 		return
