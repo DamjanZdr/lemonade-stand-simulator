@@ -67,6 +67,8 @@ var _roof_swatch: ColorRect = null
 var _active_tab: String = "analytics"
 ## Demo build: upgrades tab is blocked by a "Not Available in Demo" overlay.
 const DEMO_DISABLE_UPGRADES := true
+## Matches the main-menu stand-name limit (world_menu.gd NAME_MAX_WEIGHT).
+const STAND_NAME_MAX_WEIGHT := 15.0
 
 var _flow_tabs: Array[String] = ["analytics", "shop", "upgrades"]
 var _demo_upgrades_overlay: Control = null
@@ -193,6 +195,13 @@ func _ready() -> void:
 			_rename_local_stand(),
 	)
 	_style_stand_name_controls()
+	# Same name limit as the main menu: capitals weigh 1.5, total <= 15.
+	_stand_name_edit.text_changed.connect(
+		func(new_text: String):
+			if _name_weight(new_text) > STAND_NAME_MAX_WEIGHT:
+				_stand_name_edit.text = new_text.substr(0, new_text.length() - 1)
+				_stand_name_edit.caret_column = _stand_name_edit.text.length(),
+	)
 	if _wall_color_btn:
 		_wall_swatch = _make_swatch_picker(
 			_wall_color_btn,
@@ -1300,13 +1309,21 @@ func _on_day_time_over() -> void:
 	_update_closed_overlay()
 
 
+## Weighted character count for stand names (mirrors world_menu.gd).
+func _name_weight(s: String) -> float:
+	var weight: float = 0.0
+	for ch in s:
+		weight += 1.5 if ch >= "A" and ch <= "Z" else 1.0
+	return weight
+
+
 func _rename_local_stand() -> void:
 	var stand := _get_local_stand()
 	var new_name := _stand_name_edit.text.strip_edges()
 	if stand == null or new_name.is_empty():
 		return
 	stand.request_set_stand_name(new_name)
-	_status_lbl.text = "Renaming stand to %s..." % new_name
+	_animate_status_text("Renamed to %s" % new_name)
 
 
 func _refresh_stand_name_editor() -> void:
@@ -1347,15 +1364,44 @@ func _make_swatch_picker(btn: Button, on_color: Callable) -> ColorRect:
 	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(swatch)
 
-	var popup := PopupPanel.new()
+	# Embedded popup: a real PopupPanel/Window is unreliable inside the
+	# computer's SubViewport, so use an overlay PanelContainer + a
+	# full-screen click-catcher that closes it.
 	var picker := ColorPicker.new()
 	picker.sampler_visible = false
 	picker.color_modes_visible = false
 	picker.sliders_visible = false
 	picker.hex_visible = false
 	picker.presets_visible = false
+
+	var popup := PanelContainer.new()
+	popup.name = "ColorPopup"
+	popup.visible = false
+	popup.z_index = 50
+	var pop_style := StyleBoxFlat.new()
+	pop_style.bg_color = Color(0.10, 0.12, 0.16, 0.97)
+	pop_style.set_corner_radius_all(8)
+	pop_style.set_border_width_all(1)
+	pop_style.border_color = Color(1, 1, 1, 0.2)
+	popup.add_theme_stylebox_override("panel", pop_style)
 	popup.add_child(picker)
-	btn.add_child(popup)
+
+	var catcher := Button.new()
+	catcher.name = "ColorPopupCatcher"
+	catcher.set_anchors_preset(Control.PRESET_FULL_RECT)
+	catcher.flat = true
+	catcher.visible = false
+	catcher.z_index = 49
+	var empty := StyleBoxEmpty.new()
+	for state in ["normal", "hover", "pressed", "focus"]:
+		catcher.add_theme_stylebox_override(state, empty)
+	add_child(catcher)
+	add_child(popup)
+	catcher.pressed.connect(
+		func():
+			popup.visible = false
+			catcher.visible = false,
+	)
 	picker.color_changed.connect(
 		func(c: Color):
 			on_color.call(c)
@@ -1364,16 +1410,18 @@ func _make_swatch_picker(btn: Button, on_color: Callable) -> ColorRect:
 	btn.pressed.connect(
 		func():
 			picker.color = swatch.color
-			popup.popup()
+			catcher.visible = true
+			popup.visible = true
 			# Open to the left of the button, vertically centered on it.
+			var pop_size := popup.get_combined_minimum_size()
 			var pos := Vector2(
-				btn.global_position.x - popup.size.x - 4,
-				btn.global_position.y + (btn.size.y - popup.size.y) * 0.5,
+				btn.global_position.x - pop_size.x - 8,
+				btn.global_position.y + (btn.size.y - pop_size.y) * 0.5,
 			)
 			var win_size := get_viewport().get_visible_rect().size
-			pos.x = clampf(pos.x, 0.0, win_size.x - popup.size.x)
-			pos.y = clampf(pos.y, 0.0, win_size.y - popup.size.y)
-			popup.position = Vector2i(pos),
+			pos.x = clampf(pos.x, 0.0, win_size.x - pop_size.x)
+			pos.y = clampf(pos.y, 0.0, win_size.y - pop_size.y)
+			popup.position = pos,
 	)
 	return swatch
 

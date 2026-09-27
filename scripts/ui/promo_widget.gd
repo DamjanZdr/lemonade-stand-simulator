@@ -42,9 +42,9 @@ func _build() -> void:
 	anchor_right = 1.0
 	anchor_bottom = 1.0
 	offset_left = -(WIDGET_W + margin)
-	offset_top = -(WIDGET_H + music_h + margin)
+	offset_top = -(WIDGET_H + music_h)
 	offset_right = -margin
-	offset_bottom = -(music_h + margin)
+	offset_bottom = -music_h
 	custom_minimum_size = Vector2(WIDGET_W, WIDGET_H)
 
 	# "Report a Bug" bar above the widget frame — same width as the widget.

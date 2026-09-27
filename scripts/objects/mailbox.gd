@@ -59,7 +59,7 @@ func _build_indicator() -> void:
 	circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	circle.no_depth_test = true
 	# World-space (not fixed_size) — the icon shrinks with distance.
-	circle.pixel_size = 0.009
+	circle.pixel_size = 0.011
 	_indicator.add_child(circle)
 	var mark := Label3D.new()
 	mark.name = "Mark"
@@ -79,9 +79,9 @@ func _build_indicator() -> void:
 	mark.pixel_size = 0.0092
 	mark.font_size = 120
 	mark.outline_size = 0
-	# Lower and nudge right so the "!" stays optically centered in the bigger circle.
-	mark.position = Vector3(0.0, -0.13, 0.0)
-	mark.offset = Vector2(8.0, 0.0)
+	# Lower and nudge left so the "!" stays optically centered in the bigger circle.
+	mark.position = Vector3(-0.03, -0.16, 0.0)
+	mark.offset = Vector2(-4.0, 0.0)
 	_indicator.add_child(mark)
 	add_child(_indicator)
 	_indicator.visible = false

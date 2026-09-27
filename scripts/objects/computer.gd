@@ -101,7 +101,7 @@ func interact(player: Node) -> void:
 func get_hint(_hint_player: Node) -> String:
 	if _transitioning:
 		return ""
-	return "Computer | E: close" if _active else "Computer | LMB: use"
+	return "ESC: exit computer" if _active else "Computer | LMB: use"
 
 
 func _enter(player: Node) -> void:
@@ -192,10 +192,8 @@ func _input(event: InputEvent) -> void:
 	if not _active and not _transitioning:
 		return
 
-	var exit_action := (
-		event.is_action_pressed("ui_cancel")
-		or event.is_action_pressed("secondary_interact") or _is_right_click(event)
-	)
+	# Only ESC exits — other inputs (E, right-click) belong to the UI/game.
+	var exit_action := event.is_action_pressed("ui_cancel")
 	if exit_action:
 		_exit()
 		get_viewport().set_input_as_handled()
