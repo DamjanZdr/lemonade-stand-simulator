@@ -49,6 +49,11 @@ var _last_local_customization: Dictionary = { }
 ## saves, so a session with no meaningful change still checkpoints.
 var _autosave_timer: Timer = null
 
+## Debounces rapid event-triggered saves (every sale/price change/etc.)
+## so a busy frame doesn't serialize JSON multiple times.
+var _save_debounce_timer: Timer = null
+var _save_pending: bool = false
+
 ## True while apply_save_to_game_state() is running. The apply emits
 ## money/popularity/recipe signals to refresh UI, and each of those is
 ## also an autosave trigger — this flag stops us writing the save back
@@ -95,14 +100,22 @@ func _ready() -> void:
 	_autosave_timer.timeout.connect(_on_autosave_timer)
 	add_child(_autosave_timer)
 
+	# Rapid event-triggered saves (money/popularity/recipe changes, etc.)
+	# are coalesced into one write at most every 0.25 s.
+	_save_debounce_timer = Timer.new()
+	_save_debounce_timer.wait_time = 0.25
+	_save_debounce_timer.one_shot = true
+	_save_debounce_timer.timeout.connect(_do_save)
+	add_child(_save_debounce_timer)
+
 	# Migrate legacy save to slot system if needed
 	_migrate_legacy_save()
 
 
 func _on_autosave_timer() -> void:
-	# save_game() already gates on host + slot + auto_save_enabled, so
-	# this is a no-op in menus and on clients.
-	save_game()
+	# _do_save() gates on host + slot + auto_save_enabled, so this is a
+	# no-op in menus and on clients.
+	_do_save()
 
 
 ## Update the running autosave timer (called from the settings UI).
@@ -132,12 +145,24 @@ func save_game(force: bool = false) -> void:
 	# from the main menu before networking is set up).
 	if not force and not WorldSync.is_host():
 		return
-	# Don't write the save back to disk while we're in the middle of
-	# applying it — the apply emits change signals that are also
-	# autosave triggers.
 	if _applying_save:
 		return
 	if not auto_save_enabled or current_slot == "":
+		return
+	if force:
+		_do_save()
+		return
+	# Coalesce rapid event-triggered saves into one write per tick.
+	_save_pending = true
+	if _save_debounce_timer.is_stopped():
+		_save_debounce_timer.start()
+
+
+func _do_save() -> void:
+	_save_pending = false
+	if _applying_save or not auto_save_enabled or current_slot == "":
+		return
+	if not WorldSync.is_host():
 		return
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		DirAccess.make_dir_recursive_absolute(SAVE_DIR)

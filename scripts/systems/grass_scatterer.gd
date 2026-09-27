@@ -6,11 +6,13 @@ extends Node3D
 @export var grass_mesh: Mesh
 @export var grass_material: Material
 @export var grass_mesh_scene: PackedScene
-@export var grass_density: float = 20.0 # Blades per square unit on each patch
+const MAX_BLADES_PER_PATCH: int = 4000
+
+@export var grass_density: float = 10.0 # Blades per square unit on each patch
 @export var random_seed: int = 0
 @export var base_scale: float = 0.1
 @export var scale_variance: float = 0.05
-@export var max_draw_distance: float = 80.0
+@export var max_draw_distance: float = 50.0
 @export var grass_surfaces_path: NodePath
 @export var surface_group: StringName = &"grass_surface"
 @export var blocker_group: StringName = &"grass_blocker"
@@ -63,6 +65,7 @@ func _generate_grass() -> void:
 			continue
 		var patch_size := Vector2(aabb.size.x, aabb.size.z)
 		var patch_instances := int(patch_size.x * patch_size.y * grass_density)
+		patch_instances = mini(patch_instances, MAX_BLADES_PER_PATCH)
 		for i in range(patch_instances):
 			var local_x := randf_range(aabb.position.x, aabb.position.x + aabb.size.x)
 			var local_z := randf_range(aabb.position.z, aabb.position.z + aabb.size.z)
