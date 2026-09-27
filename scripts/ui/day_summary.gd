@@ -222,7 +222,7 @@ func _build_stand_column(stats: Dictionary, is_local: bool) -> VBoxContainer:
 	# --- People ---
 	col.add_child(_make_section("People"))
 	col.add_child(_make_row("Total Pedestrians", str(int(stats.get("pedestrians", 0)))))
-	col.add_child(_make_row("Customers", str(int(stats.get("customers_arrived", 0)))))
+	col.add_child(_make_row("Came to buy", str(int(stats.get("customers_arrived", 0)))))
 	var happy := int(stats.get("happy", 0))
 	col.add_child(_make_row("Happy", str(happy), Color(0.4, 0.85, 0.4) if happy > 0 else dim, true))
 	col.add_child(

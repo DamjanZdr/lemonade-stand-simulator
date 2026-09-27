@@ -56,11 +56,15 @@ func _build_indicator() -> void:
 	mark.modulate = Color(1.0, 1.0, 1.0)
 	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# "!" sits high in its em box — nudge down for optical centering.
-	mark.offset = Vector2(0.0, 14.0)
+	# The glyph's visual center sits above its baseline/origin, so lower
+	# the label so the "!" is centered inside the circle rather than
+	# aligned with the top edge.
+	mark.position = Vector3(0.0, -0.09, 0.0)
 	mark.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	mark.no_depth_test = true
-	mark.pixel_size = 0.005
+	mark.render_priority = 1
+	mark.pixel_size = 0.0048
+	mark.outline_size = 0
 	_indicator.add_child(mark)
 	add_child(_indicator)
 	_indicator.visible = false
@@ -70,15 +74,17 @@ func _build_indicator() -> void:
 func _make_circle_texture(size: int) -> ImageTexture:
 	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	var center := Vector2(size, size) * 0.5
-	var outer := size * 0.48
-	var inner := size * 0.42
+	var radius := size * 0.47
+	var edge := size * 0.50
+	var yellow := Color(1.0, 0.85, 0.2, 0.85)
 	for y in range(size):
 		for x in range(size):
 			var d := (Vector2(x, y) - center).length()
-			if d <= inner:
-				img.set_pixel(x, y, Color(1.0, 0.8, 0.15, 0.85))
-			elif d <= outer:
-				img.set_pixel(x, y, Color(1.0, 0.72, 0.08, 0.9))
+			if d <= radius:
+				img.set_pixel(x, y, yellow)
+			elif d <= edge:
+				var t := (d - radius) / (edge - radius)
+				img.set_pixel(x, y, Color(yellow.r, yellow.g, yellow.b, yellow.a * (1.0 - t)))
 	return ImageTexture.create_from_image(img)
 
 
