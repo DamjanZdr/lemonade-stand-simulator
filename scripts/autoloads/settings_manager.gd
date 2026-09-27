@@ -32,6 +32,9 @@ const GRAPHICS_PRESETS := {
 		"msaa": 2,
 		"fxaa": false,
 		"grass_multiplier": 1.5,
+		"ssao": true,
+		"ssil": true,
+		"glow": true,
 	},
 	"high": {
 		"shadow_size": 2048,
@@ -39,6 +42,9 @@ const GRAPHICS_PRESETS := {
 		"msaa": 2,
 		"fxaa": true,
 		"grass_multiplier": 1.0,
+		"ssao": true,
+		"ssil": false,
+		"glow": true,
 	},
 	"medium": {
 		"shadow_size": 2048,
@@ -46,6 +52,9 @@ const GRAPHICS_PRESETS := {
 		"msaa": 0,
 		"fxaa": true,
 		"grass_multiplier": 0.7,
+		"ssao": false,
+		"ssil": false,
+		"glow": true,
 	},
 	"low": {
 		"shadow_size": 1024,
@@ -53,11 +62,15 @@ const GRAPHICS_PRESETS := {
 		"msaa": 0,
 		"fxaa": false,
 		"grass_multiplier": 0.5,
+		"ssao": false,
+		"ssil": false,
+		"glow": false,
 	},
 }
 
 signal settings_loaded()
 signal gameplay_changed()
+signal graphics_quality_applied()
 
 var _mouse_sensitivity := DEFAULT_MOUSE_SENSITIVITY
 var _fov := DEFAULT_FOV
@@ -93,9 +106,7 @@ func load_settings() -> void:
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
 	)
-	var quality := cfg.get_value(
-		SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY
-	) as String
+	var quality := cfg.get_value(SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY) as String
 	apply_graphics_quality(quality)
 	# Gameplay
 	_mouse_sensitivity = clampf(
@@ -135,9 +146,15 @@ func apply_graphics_quality(quality: String) -> void:
 			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 		else:
 			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+		var env := vp.world_3d.environment if vp.world_3d != null else null
+		if env != null:
+			env.ssao_enabled = preset["ssao"]
+			env.ssil_enabled = preset["ssil"]
+			env.glow_enabled = preset["glow"]
 	# Tell grass scatterers to regenerate with the new density multiplier.
 	if tree != null:
 		tree.call_group("grass_scatterer", "regenerate")
+	graphics_quality_applied.emit()
 
 
 ## Save current settings to disk.

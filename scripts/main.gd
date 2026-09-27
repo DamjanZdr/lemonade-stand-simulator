@@ -195,6 +195,11 @@ func _ready() -> void:
 
 	# Mark static meshes for LightmapGI baking
 	_mark_static_gi(world)
+	# Apply the quality preset's env flags (SSAO/SSIL/glow) to the freshly
+	# loaded world environment, then let enhanced lighting override on top.
+	SettingsManager.apply_graphics_quality(SettingsManager.get_graphics_quality())
+	if not SettingsManager.graphics_quality_applied.is_connected(_on_graphics_quality_applied):
+		SettingsManager.graphics_quality_applied.connect(_on_graphics_quality_applied)
 	# Load enhanced_lighting / fps_counter from saved settings.
 	_enhanced_lighting = SettingsManager.get_graphics_bool("enhanced_lighting", true)
 	if _enhanced_lighting:
@@ -570,6 +575,14 @@ func _on_enhanced_lighting_toggled(enabled: bool) -> void:
 		_enable_enhanced_lighting()
 	else:
 		_disable_enhanced_lighting()
+
+
+func _on_graphics_quality_applied() -> void:
+	# Re-apply enhanced lighting so its env overrides win over the preset.
+	# (When off, the env keeps the values the preset just wrote.)
+	if _world_env == null or not _enhanced_lighting:
+		return
+	_enable_enhanced_lighting()
 
 
 func _on_fps_toggled(enabled: bool) -> void:
