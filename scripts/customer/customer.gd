@@ -766,6 +766,12 @@ func _resolve(outcome: String) -> void:
 func _record_customer_served(outcome: String) -> void:
 	## Route popularity/cup/sale stats to the correct stand/GameState.
 	var pop_delta := _compute_popularity_delta(outcome, _served_evaluations)
+	if stand != null:
+		stand.day_customers_arrived += 1
+		var bought := outcome not in ["timeout", "too_expensive", "wrong_order", "scam"]
+		if bought:
+			stand.day_customers_bought += 1
+			stand.day_revenue += _accumulated_price
 	if stand != null and not stand.is_legacy_primary:
 		stand.request_customer_served(outcome, pop_delta)
 	else:

@@ -82,6 +82,14 @@ var total_money_spent: float = 0.0
 var highest_purchase: float = 0.0
 var highest_money: float = 0.0
 
+## Daily stats reset each morning. Captured into last_day_stats at end_day.
+var day_revenue: float = 0.0
+var day_customers_arrived: int = 0
+var day_customers_bought: int = 0
+var day_costs: float = 0.0
+var day_start_popularity: float = Balancing.STARTING_POPULARITY
+var last_day_stats: Dictionary = { }
+
 ## Achievement / mastery counters (synced via STATE_PROPS).
 var total_fruit_pressed: int = 0
 ## fruit_type -> true for every perfected recipe that has been set on the board.
@@ -125,6 +133,7 @@ const STATE_PROPS: Array[String] = [
 	"perfect_recipes_set",
 	"onboarding_progress",
 	"stand_display_name",
+	"last_day_stats",
 ]
 
 
@@ -169,6 +178,7 @@ func push_state(peer_id: int = 0) -> void:
 		onboarding_progress.duplicate(true),
 		stand_display_name,
 		purchased_upgrade_nodes.duplicate(true),
+		last_day_stats.duplicate(true),
 	]
 	# peer_id 0 = broadcast to everyone; otherwise target one peer (e.g.
 	# a late joiner re-pulling state after its world finishes loading).
@@ -200,6 +210,7 @@ func _apply_state(
 	new_onboarding_progress: Dictionary,
 	new_stand_display_name: String,
 	new_purchased_upgrade_nodes: Dictionary,
+	new_last_day_stats: Dictionary,
 ) -> void:
 	if is_multiplayer_authority():
 		return # Host already has correct values; don't overwrite
@@ -239,6 +250,7 @@ func _apply_state(
 	total_fruit_pressed = new_total_fruit_pressed
 	perfect_recipes_set = new_perfect_recipes_set.duplicate(true)
 	onboarding_progress = new_onboarding_progress.duplicate(true)
+	last_day_stats = new_last_day_stats.duplicate(true)
 	# Sync per-stand unlocks. Notify local UI (price/recipe boards) if they changed.
 	var old_unlocks: Dictionary = purchased_upgrade_nodes.duplicate(true)
 	purchased_upgrade_nodes = new_purchased_upgrade_nodes.duplicate(true)
@@ -311,6 +323,8 @@ func reset_to_starting_state() -> void:
 	highest_money = money
 	total_fruit_pressed = 0
 	perfect_recipes_set.clear()
+	last_day_stats = { }
+	reset_daily_stats()
 	init_default_prices()
 	init_default_recipes()
 	purchased_upgrade_nodes.clear()
@@ -528,6 +542,7 @@ func spend_money(amount: float) -> bool:
 		return false
 	money -= amount
 	total_money_spent += amount
+	day_costs += amount
 	if amount > highest_purchase:
 		highest_purchase = amount
 	money_changed.emit(money)
@@ -536,6 +551,22 @@ func spend_money(amount: float) -> bool:
 	push_state()
 	AchievementManager.check_stand_thresholds(self)
 	return true
+
+
+## Snapshot the finished day's stats into last_day_stats (synced via push_state).
+func finish_day() -> void:
+	last_day_stats = {
+		"day": DayManager.day_number,
+		"stand_name": stand_display_name if stand_display_name != "" else name,
+		"revenue": day_revenue,
+		"customers_arrived": day_customers_arrived,
+		"customers_bought": day_customers_bought,
+		"costs": day_costs,
+		"profit": day_revenue - day_costs,
+		"popularity": popularity,
+		"popularity_delta": popularity - day_start_popularity,
+	}
+	push_state()
 
 
 func set_popularity(value: float) -> void:
@@ -713,9 +744,17 @@ func on_customer_served(outcome: String, pop_delta: float) -> void:
 	AchievementManager.check_stand_thresholds(self)
 
 
+## Reset per-day counters at the start of each morning. Called by
+## DayManager.start_morning() after the previous day was snapshotted into
+## last_day_stats by finish_day().
 func reset_daily_stats() -> void:
 	customers_served_happy = 0
 	customers_lost = 0
+	day_revenue = 0.0
+	day_customers_arrived = 0
+	day_customers_bought = 0
+	day_costs = 0.0
+	day_start_popularity = popularity
 
 
 ## --- Scoped inventory: totals of items physically placed within THIS

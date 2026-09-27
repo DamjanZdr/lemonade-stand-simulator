@@ -418,11 +418,15 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	# doesn't reset to $150 every time the host reopens the game.
 	var saved_stand_money: Dictionary = data.get("stand_money", { })
 	var saved_stand_popularity: Dictionary = data.get("stand_popularity", { })
+	var saved_last_day: Dictionary = data.get("stand_last_day_stats", { })
 	for stand in get_tree().get_nodes_in_group("stand"):
 		if stand is StandUnit:
 			var fallback := GameState.money if stand.is_legacy_primary else Balancing.STARTING_MONEY
 			stand.money = float(saved_stand_money.get(stand.name, fallback))
 			stand.highest_money = maxf(stand.money, data.get("highest_money", stand.money) as float)
+			var saved_stats: Variant = saved_last_day.get(stand.name, { })
+			if saved_stats is Dictionary:
+				stand.last_day_stats = saved_stats
 			stand.popularity = _migrate_popularity(
 				saved_stand_popularity.get(
 					stand.name,
@@ -559,6 +563,14 @@ func _collect_stand_popularity() -> Dictionary:
 	return pops
 
 
+func _collect_stand_last_day_stats() -> Dictionary:
+	var stats := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit and not stand.last_day_stats.is_empty():
+			stats[stand.name] = stand.last_day_stats.duplicate(true)
+	return stats
+
+
 func _container_stand_owner(node: Node) -> String:
 	if "stand_owner" in node and not str(node.get("stand_owner")).is_empty():
 		return str(node.get("stand_owner"))
@@ -599,6 +611,7 @@ func _build_save_dict() -> Dictionary:
 		"stand_names": _collect_stand_names(),
 		"stand_money": _collect_stand_money(),
 		"stand_popularity": _collect_stand_popularity(),
+		"stand_last_day_stats": _collect_stand_last_day_stats(),
 		"game_mode": GameState.game_mode,
 		"creator_steam_id": str(NetworkManager.steam_id),
 		"money": GameState.money,

@@ -24,6 +24,7 @@
 [ext_resource type="PackedScene" uid="uid://hxhernj57qv8" path="res://assets/models/environment/surroundings/mailboxes/9.glb" id="18_7lc8q"]
 [ext_resource type="PackedScene" uid="uid://cw000n4ksw1ia" path="res://assets/models/environment/surroundings/mailboxes/10.glb" id="19_mpqsg"]
 [ext_resource type="PackedScene" uid="uid://7bukla7g0dec" path="res://assets/models/environment/surroundings/vehicles/pickup truck.glb" id="21_kyhvj"]
+[ext_resource type="Script" path="res://scripts/objects/mailbox.gd" id="mailbox_scr"]
 [ext_resource type="Script" uid="uid://c6kebdtth2nic" path="res://scripts/building_blocks/neighborhood.gd" id="22_neigh"]
 [ext_resource type="ArrayMesh" uid="uid://duj6747nq4qsk" path="res://assets/models/environment/Grass/grass.res" id="23_xtpmv"]
 [ext_resource type="PackedScene" uid="uid://c14egrwx1ebnx" path="res://assets/models/environment/surroundings/insider.glb" id="27_7lc8q"]
@@ -2032,6 +2033,10 @@ transform = Transform3D(-4.371139e-09, 0, 0.1, 0, 0.1, 0, -0.1, 0, -4.371139e-09
 transform = Transform3D(10, 0, 5.684342e-14, 0, 10, 0, -5.684342e-14, 0, 10, 0, -19.999998, 0)
 light_energy = 0.2
 
+[node name="Mailbox" parent="Houses/player_house" unique_id=188093175 instance=ExtResource("12_kyhvj")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 2.2636244, -1.2687881, 15.549042)
+script = ExtResource("mailbox_scr")
+
 [node name="player_house2" parent="Houses" unique_id=942529271 instance=ExtResource("2_wlhmk")]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 29.953249, 3.1774137, -4.620962)
 metadata/house_color_index = 2
@@ -2088,6 +2093,10 @@ transform = Transform3D(1.3113417e-08, 0, -0.1, 0, 0.1, 0, 0.1, 0, 1.3113417e-08
 [node name="OmniLight3D" type="OmniLight3D" parent="Houses/player_house2/LED Light" unique_id=1200459184]
 transform = Transform3D(10, 0, 5.684342e-14, 0, 10, 0, -5.684342e-14, 0, 10, 0, -19.999998, 0)
 light_energy = 0.2
+
+[node name="Mailbox" parent="Houses/player_house2" unique_id=1508242398 instance=ExtResource("17_t3nbc")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 2.721034, -1.2845318, 15.402266)
+script = ExtResource("mailbox_scr")
 
 [node name="Streets" type="Node3D" parent="." unique_id=1338897075 groups=["grass_blocker"]]
 
@@ -7839,9 +7848,6 @@ transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-
 [node name="12" parent="NonPlayableArea/Mailbox" unique_id=354165136 instance=ExtResource("11_wkue0")]
 transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-08, -6.4509583, 0.099998474, 25)
 
-[node name="13" parent="NonPlayableArea/Mailbox" unique_id=188093175 instance=ExtResource("12_kyhvj")]
-transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-08, -6.4509583, 0.099998474, -5.963625)
-
 [node name="14" parent="NonPlayableArea/Mailbox" unique_id=1293916309 instance=ExtResource("13_uvpv4")]
 transform = Transform3D(-2.6226834e-08, 0, 0.6, 0, 0.6, 0, -0.6, 0, -2.6226834e-08, -6.4509583, 0.099998474, -31)
 
@@ -7853,9 +7859,6 @@ transform = Transform3D(-2.6226834e-08, 0, -0.6, 0, 0.6, 0, 0.6, 0, -2.6226834e-
 
 [node name="17" parent="NonPlayableArea/Mailbox" unique_id=1026102549 instance=ExtResource("16_0awr7")]
 transform = Transform3D(-2.6226834e-08, 0, -0.6, 0, 0.6, 0, 0.6, 0, -2.6226834e-08, 14.901909, 0.099998474, -33)
-
-[node name="18" parent="NonPlayableArea/Mailbox" unique_id=1508242398 instance=ExtResource("17_t3nbc")]
-transform = Transform3D(-2.6226834e-08, 0, -0.6, 0, 0.6, 0, 0.6, 0, -2.6226834e-08, 14.550983, 0.099998474, -1.8999288)
 
 [node name="19" parent="NonPlayableArea/Mailbox" unique_id=696976206 instance=ExtResource("18_7lc8q")]
 transform = Transform3D(-2.6226834e-08, 0, -0.6, 0, 0.6, 0, 0.6, 0, -2.6226834e-08, 14.901909, 0.099998474, 23)

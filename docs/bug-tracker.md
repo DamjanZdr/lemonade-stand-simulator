@@ -5,6 +5,19 @@
 
 ## Active Issues
 
+### 18. Mailbox daily report + Day X day-end transition
+- **Reported:** feature request
+- **Symptom:** Ending the day showed the stats panel immediately on a black screen with a "Next Day" button. The requested flow: fade to black, show "Day X" for the new day, then let players read the previous day's stats from their house mailbox via a "!" indicator each morning.
+- **Fix:**
+  - `DaySummary` is repurposed: on EVENING it now only fades to black; once the screen is dark the host runs `end_evening()` + `start_day()` and a large "Day X" card sits on black before fading back in on the new day. Quitting to menu mid-fade aborts cleanly (no day advance, no stuck overlay).
+  - Each `StandUnit` tracks per-day counters (`day_revenue`, `day_customers_arrived`, `day_customers_bought`, `day_costs`, `day_start_popularity`), snapshotted into `last_day_stats` by `finish_day()` inside `DayManager.end_day()` — before `start_morning()` resets them. `last_day_stats` is synced to clients via `push_state()`/`_apply_state()` and persisted in saves as `stand_last_day_stats`.
+  - `Customer._record_customer_served()` now feeds the owning stand's daily counters (arrived / bought / revenue) for both primary and rival stands.
+  - New `scripts/objects/mailbox.gd` (`Interactable`) is attached only to `Houses/player_house/Mailbox` and `Houses/player_house2/Mailbox` — decorative `NonPlayableArea/Mailbox` nodes are untouched. It adds a StaticBody3D collider for the interaction raycast and a billboarded yellow circle + Grandstander "!" indicator above the box, shown during DAY while the report is unread (per-peer `_seen` flag).
+  - Clicking a mailbox opens the report locally (no RPC — stats arrive via stand state sync): one column per active stand, ordered local-first with "(You)"; co-op shows the single shared stand, versus shows both stands. Shows revenue, came-to-buy, bought, costs, profit, and popularity with its daily delta.
+  - In co-op, `player_house2`'s mailbox is inert automatically because `apply_game_mode()` already hides/disables that house.
+- **Status:** fixed in code — needs playtest verification
+- **Files:** `scripts/ui/day_summary.gd`, `scripts/objects/mailbox.gd`, `scripts/stand/stand_unit.gd`, `scripts/systems/day_manager.gd`, `scripts/customer/customer.gd`, `scripts/systems/save_manager.gd`, `scenes/building_blocks/neighborhood.tscn`
+
 ### 16. HUD popularity display: bar above money, larger temperature
 - **Reported:** playtest feedback
 - **Symptom:** The popularity percentage text was not the desired UI style, and the temperature readout was too small.

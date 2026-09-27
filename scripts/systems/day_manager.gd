@@ -201,6 +201,9 @@ func start_morning() -> void:
 	current_phase = Phase.MORNING
 	day_start_money = GameState.money
 	day_costs = 0.0
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand.has_method("reset_daily_stats"):
+			stand.reset_daily_stats()
 	# Randomize temperature for the day — weighted toward 25–35 °C.
 	GameState.temperature = Balancing.random_day_temperature()
 	EventBus.weather_changed.emit(GameState.temperature)
@@ -233,6 +236,13 @@ func end_day() -> void:
 	_day_running = false
 	day_time_over = false
 	day_costs = day_start_money - GameState.money + day_revenue
+	# Snapshot each active stand's day into last_day_stats before counters
+	# reset tomorrow — this is the data the morning mailbox report shows.
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand.process_mode == Node.PROCESS_MODE_DISABLED:
+			continue
+		if stand.has_method("finish_day"):
+			stand.finish_day()
 	current_phase = Phase.EVENING
 	EventBus.day_phase_changed.emit(Phase.EVENING, day_number)
 	_sync_phase_to_clients()
