@@ -613,6 +613,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0394282, 1.4845874, -1.5014
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 10.422926, 2)
 script = ExtResource("10_preview")
 
+[node name="PreviewCenter2" type="Marker3D" parent="Misc" unique_id=1387901234]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.139428, 1.4845874, -22.498581)
+
+[node name="PreviewOrbitCamera2" type="Marker3D" parent="Misc" unique_id=1387901235]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.1, 10.422926, -26)
+script = ExtResource("10_preview")
+
 [node name="LightmapGI" type="LightmapGI" parent="." unique_id=1827849850]
 quality = 2
 bounces = 4

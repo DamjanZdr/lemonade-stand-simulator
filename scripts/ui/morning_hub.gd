@@ -81,7 +81,6 @@ var _demo_upgrades_overlay: Control = null
 var _flow_step: int = 0
 var _cart: Array[Dictionary] = []
 var _closed_overlay: Panel = null
-var _preview_angle: float = 0.0
 var _bin_amounts: Dictionary = { }
 var _equipment_counts: Dictionary = { }
 
@@ -1092,30 +1091,29 @@ func _refresh_tree_node(id: String, node: CircleNode) -> void:
 	_style_tree_node(node, data)
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if not _right_panel or not _right_panel.visible:
 		return
-	var center := Vector3.ZERO
-	var h_dist := 8.0
-	var height := 4.0
-	var base_angle := 0.0
+	# Static preview: copy the editor-placed PreviewOrbitCamera marker for the
+	# local stand (suffix "2" for the versus stand) and aim at its PreviewCenter.
 	var root := get_tree().current_scene
-	if root:
-		var world := root.get_node_or_null("World")
-		var search_root := world if world != null else root
-		var marker := search_root.get_node_or_null("PreviewCenter") as Marker3D
-		if marker:
-			center = marker.global_position
-		var orbit_cam := search_root.get_node_or_null("PreviewOrbitCamera") as Node3D
-		if orbit_cam:
-			var off := orbit_cam.global_position - center
-			h_dist = Vector2(off.x, off.z).length()
-			height = off.y
-			base_angle = atan2(off.x, off.z)
-	_preview_angle += delta * 0.5
-	var angle := base_angle + _preview_angle
-	_preview_camera.position = center + Vector3(sin(angle) * h_dist, height, cos(angle) * h_dist)
-	_preview_camera.look_at(center, Vector3.UP)
+	if root == null:
+		return
+	var world := root.get_node_or_null("World")
+	var search_root := world if world != null else root
+	var stand := _get_local_stand()
+	var suffix := ""
+	if stand != null and is_instance_valid(stand) and not stand.get("is_legacy_primary"):
+		suffix = "2"
+	var cam_marker := search_root.get_node_or_null("PreviewOrbitCamera" + suffix) as Node3D
+	var center_marker := search_root.get_node_or_null("PreviewCenter" + suffix) as Node3D
+	if cam_marker == null and suffix != "":
+		cam_marker = search_root.get_node_or_null("PreviewOrbitCamera") as Node3D
+		center_marker = search_root.get_node_or_null("PreviewCenter") as Node3D
+	if cam_marker:
+		_preview_camera.global_transform = cam_marker.global_transform
+	if cam_marker and center_marker:
+		_preview_camera.look_at(center_marker.global_position, Vector3.UP)
 
 
 func _create_ingredient_card(item: Dictionary) -> PanelContainer:
@@ -1375,11 +1373,15 @@ func _make_swatch_picker(btn: Button, on_color: Callable) -> ColorRect:
 		func():
 			picker.color = swatch.color
 			popup.popup()
-			# Open directly above the button, right edge aligned.
-			popup.position = Vector2i(
-				int(btn.global_position.x + btn.size.x - popup.size.x),
-				int(btn.global_position.y - popup.size.y - 4),
-			),
+			# Open to the left of the button, vertically centered on it.
+			var pos := Vector2(
+				btn.global_position.x - popup.size.x - 4,
+				btn.global_position.y + (btn.size.y - popup.size.y) * 0.5,
+			)
+			var win_size := get_viewport().get_visible_rect().size
+			pos.x = clampf(pos.x, 0.0, win_size.x - popup.size.x)
+			pos.y = clampf(pos.y, 0.0, win_size.y - popup.size.y)
+			popup.position = Vector2i(pos),
 	)
 	return swatch
 
@@ -2350,46 +2352,78 @@ func _refresh_stats() -> void:
 		var c := _stats_vbox.get_child(0)
 		_stats_vbox.remove_child(c)
 		c.queue_free()
-	# Status lines: day / money / temperature.
+	# Header row: Day left, Money centered, Temp right.
+	var header := HBoxContainer.new()
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_stats_vbox.add_child(header)
+
 	var day_lbl := Label.new()
 	day_lbl.text = "Day: %d" % DayManager.day_number
 	day_lbl.add_theme_font_size_override("font_size", 16)
 	day_lbl.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
-	_stats_vbox.add_child(day_lbl)
+	header.add_child(day_lbl)
+
 	var money_lbl := Label.new()
-	money_lbl.text = "Money: $%.2f" % _get_local_money()
+	money_lbl.text = "$%.2f" % _get_local_money()
+	money_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	money_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	money_lbl.add_theme_font_size_override("font_size", 16)
 	money_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
-	_stats_vbox.add_child(money_lbl)
+	header.add_child(money_lbl)
+
+	var temp_c: float = GameState.temperature
 	var temp_lbl := Label.new()
-	temp_lbl.text = "Temp: %.0fC" % GameState.temperature
+	temp_lbl.text = "%.0fC / %.0fF" % [temp_c, temp_c * 9.0 / 5.0 + 32.0]
+	temp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	temp_lbl.add_theme_font_size_override("font_size", 16)
 	temp_lbl.add_theme_color_override("font_color", Color(0.7, 0.8, 0.95))
-	_stats_vbox.add_child(temp_lbl)
+	header.add_child(temp_lbl)
 
+	var sep := HSeparator.new()
+	_stats_vbox.add_child(sep)
+
+	# Two columns: Equipment left, Consumables right.
+	var cols := HBoxContainer.new()
+	cols.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cols.add_theme_constant_override("separation", 8)
+	_stats_vbox.add_child(cols)
+
+	var equip_col := VBoxContainer.new()
+	equip_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	equip_col.add_theme_constant_override("separation", 2)
+	cols.add_child(equip_col)
 	var equip_hdr := Label.new()
 	equip_hdr.text = "Equipment"
+	equip_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	equip_hdr.add_theme_font_size_override("font_size", 15)
 	equip_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
-	_stats_vbox.add_child(equip_hdr)
+	equip_col.add_child(equip_hdr)
 	if _equipment_counts.is_empty():
-		_stats_vbox.add_child(_stats_line("(none)", Color(0.5, 0.5, 0.48)))
+		equip_col.add_child(_stats_line("(none)", Color(0.5, 0.5, 0.48)))
 	for etype in _equipment_counts:
 		var cnt: int = _equipment_counts[etype]
-		_stats_vbox.add_child(
+		equip_col.add_child(
 			_stats_line("%s x%d" % [HeldItem.container_name(etype), cnt], Color(0.6, 0.58, 0.52))
 		)
 
+	var vsep := VSeparator.new()
+	cols.add_child(vsep)
+
+	var cons_col := VBoxContainer.new()
+	cons_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cons_col.add_theme_constant_override("separation", 2)
+	cols.add_child(cons_col)
 	var cons_hdr := Label.new()
 	cons_hdr.text = "Consumables"
+	cons_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cons_hdr.add_theme_font_size_override("font_size", 15)
 	cons_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
-	_stats_vbox.add_child(cons_hdr)
+	cons_col.add_child(cons_hdr)
 	if _bin_amounts.is_empty():
-		_stats_vbox.add_child(_stats_line("(none)", Color(0.5, 0.5, 0.48)))
+		cons_col.add_child(_stats_line("(none)", Color(0.5, 0.5, 0.48)))
 	for itype in _bin_amounts:
 		var amt: float = _bin_amounts[itype]
-		_stats_vbox.add_child(
+		cons_col.add_child(
 			_stats_line("%s: %.0f" % [itype.capitalize(), amt], Color(0.6, 0.75, 0.88))
 		)
 

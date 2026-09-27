@@ -10,7 +10,8 @@ extends Marker3D
 
 
 func _look_at_preview_center() -> void:
-	var preview_center := get_node_or_null("../PreviewCenter") as Marker3D
+	var suffix := String(name).trim_prefix("PreviewOrbitCamera")
+	var preview_center := get_node_or_null("../PreviewCenter" + suffix) as Marker3D
 	if preview_center == null:
 		push_warning("PreviewOrbitCamera: PreviewCenter not found as sibling node.")
 		return
