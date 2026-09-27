@@ -150,7 +150,8 @@ func interact(player: Node) -> void:
 		var box_data: Dictionary = p.held_item_data
 		var stand_name := _get_player_stand_name(p)
 		if box_data.get("is_equipment", false):
-			var refund := _get_container_cost_for_trash(box_data.get("equipment_type", "")) + empty_box_refund
+			var eq_cost := _get_container_cost_for_trash(box_data.get("equipment_type", ""))
+			var refund := eq_cost + empty_box_refund
 			# Equipment/supply boxes are recycling, not regular trash.
 			if WorldSync.is_host():
 				apply_trash_disposal("equipment", refund, stand_name)
