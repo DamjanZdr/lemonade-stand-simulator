@@ -5,7 +5,6 @@
 [ext_resource type="PackedScene" uid="uid://b5nygw38vywdu" path="res://scenes/objects/thermometer.tscn" id="5_v5dby"]
 [ext_resource type="LightmapGIData" uid="uid://60b7fspwoxly" path="res://scenes/world/world.lmbake" id="6_j0rhc"]
 [ext_resource type="PackedScene" uid="uid://c7m3x1q2y405a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
-[ext_resource type="Script" uid="uid://dcc7v87n0gjjq" path="res://scripts/tools/preview_orbit_camera.gd" id="10_preview"]
 [ext_resource type="PackedScene" uid="uid://vc244erl2bi2" path="res://assets/models/props/Desk2.0.glb" id="14_mxkvs"]
 [ext_resource type="PackedScene" uid="uid://csb7yl8gpw1q3" path="res://scenes/objects/computer.tscn" id="15_m114p"]
 [ext_resource type="PackedScene" uid="uid://3iu5tq16nvb0" path="res://scenes/building_blocks/neighborhood.tscn" id="15_mxkvs"]
@@ -610,13 +609,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -58, 0, -2)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0394282, 1.4845874, -1.5014197)
 
 [node name="PreviewOrbitCamera" type="Camera3D" parent="Misc" unique_id=1183170316]
-transform = Transform3D(0.655, 0, 0.756, 0.649, 0.513, -0.563, -0.388, 0.859, 0.336, -2, 10.422926, 2)
+transform = Transform3D(-0.8933836, -0.22326438, 0.38989577, 0, 0.8677952, 0.49692196, -0.44929466, 0.44394195, -0.77527404, 13.506236, 18.071976, -21.8156)
+fov = 30.0
 
 [node name="PreviewCenter2" type="Marker3D" parent="Misc" unique_id=1387901234]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.139428, 1.4845874, -22.498581)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.139428, 1.4845874, -22.49858)
 
 [node name="PreviewOrbitCamera2" type="Camera3D" parent="Misc" unique_id=1387901235]
-transform = Transform3D(-0.655, 0, -0.756, -0.649, 0.513, 0.563, 0.388, 0.859, -0.336, -6.1, 10.422926, -26)
+transform = Transform3D(0.90460753, 0.21082218, -0.37045813, 0, 0.86911917, 0.49460274, 0.42624548, -0.44742137, 0.7862117, -21.211117, 18.056896, -1.8949094)
+fov = 30.0
 
 [node name="LightmapGI" type="LightmapGI" parent="." unique_id=1827849850]
 quality = 2
