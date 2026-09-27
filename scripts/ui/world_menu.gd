@@ -26,7 +26,7 @@ const PROMO_ROUNDED_SHADER := preload("res://shaders/promo_rounded.gdshader")
 const FONT_GRANDSTANDER := preload("res://assets/fonts/Grandstander-clean.ttf")
 # Same width as the music player; height preserves the 1232x706 image ratio.
 const PROMO_WIDGET_W: float = 280.0
-const PROMO_WIDGET_H: float = 80.0
+const PROMO_WIDGET_H: float = 160.0
 const PROMO_DISCORD_URL := "https://discord.com/invite/h8GZZd8Fnb"
 const PROMO_WISHLIST_URL := (
 	"https://store.steampowered.com/app/5000810/When_Life_Gives_You_Lemons/"
@@ -1505,7 +1505,7 @@ func _build_promo_widget() -> void:
 		panel.anchor_top = 1.0
 		panel.anchor_right = 1.0
 		panel.anchor_bottom = 1.0
-		panel.offset_top = -28.0
+		panel.offset_top = -40.0
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tr.add_child(panel)
 
@@ -1519,8 +1519,8 @@ func _build_promo_widget() -> void:
 		panel_style.bg_color = Color(1, 1, 1, 1)
 		panel_style.corner_radius_top_left = 0
 		panel_style.corner_radius_top_right = 0
-		panel_style.corner_radius_bottom_left = 6
-		panel_style.corner_radius_bottom_right = 6
+		panel_style.corner_radius_bottom_left = 8
+		panel_style.corner_radius_bottom_right = 8
 		panel.add_theme_stylebox_override("panel", panel_style)
 
 		var label := Label.new()
