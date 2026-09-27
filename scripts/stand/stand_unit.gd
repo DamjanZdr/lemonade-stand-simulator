@@ -772,6 +772,13 @@ func on_customer_served(outcome: String, pop_delta: float) -> void:
 	else:
 		customers_lost += 1
 	set_popularity(popularity + pop_delta)
+	if is_legacy_primary:
+		GameState.total_customers_served = total_customers_served
+		GameState.total_cups_sold = total_cups_sold
+		GameState.customers_served_happy = customers_served_happy
+		GameState.customers_lost = customers_lost
+		GameState.set_popularity(popularity)
+		AchievementManager.check_game_state_thresholds()
 	AchievementManager.check_stand_thresholds(self)
 
 

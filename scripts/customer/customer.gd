@@ -801,10 +801,10 @@ func _record_customer_served(outcome: String) -> void:
 			stand.day_complaints_sugar += 1
 		if complained_ice:
 			stand.day_complaints_ice += 1
-	if stand != null and not stand.is_legacy_primary:
+	# Always route through the owning stand. The legacy GameState is kept in
+	# sync inside StandUnit.on_customer_served() for the primary stand.
+	if stand != null:
 		stand.request_customer_served(outcome, pop_delta)
-	else:
-		GameState.on_customer_served(self, outcome, pop_delta)
 
 
 func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:
