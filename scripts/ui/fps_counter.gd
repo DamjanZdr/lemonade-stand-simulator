@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## Simple FPS counter shown in the bottom-left corner.
-## Toggle with the F key.
+## Toggled from the settings panel.
 
 var _label: Label
 var _refresh_timer: float = 0.0
@@ -22,14 +22,6 @@ func _ready() -> void:
 	_label.text = "FPS: --"
 	_label.visible = false
 	add_child(_label)
-
-
-func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.is_pressed() and not event.is_echo():
-		if event.keycode == KEY_F:
-			_shown = not _shown
-			_label.visible = _shown
-			get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:

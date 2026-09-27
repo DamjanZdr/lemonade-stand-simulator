@@ -2116,13 +2116,6 @@ func _input(event: InputEvent) -> void:
 		else:
 			_disable_enhanced_lighting()
 		get_viewport().set_input_as_handled()
-	elif (
-		event is InputEventKey and event.keycode == KEY_F and event.pressed and not event.is_echo()
-	):
-		_fps_shown = not _fps_shown
-		if _fps_label:
-			_fps_label.visible = _fps_shown
-		get_viewport().set_input_as_handled()
 
 
 ## Toggle the in-game ESC menu.
