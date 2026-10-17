@@ -100,6 +100,10 @@ func stun(duration: float) -> void:
 	stun_fall_played = false
 	stun_recovering = false
 	stun_recover_timer = 0.0
+	# Knocked-down carriers drop carried boxes on nearby clear ground so
+	# stolen goods can be recovered before the thief reaches their stand.
+	if placement != null:
+		placement.drop_held_box_on_stun()
 	# Sync to all clients (including the owning peer). The RPC is
 	# authority-to-all, but we use rpc_id to reach the owning peer
 	# even though the host doesn't have authority over that node.
@@ -129,6 +133,28 @@ func _sync_stun(timer: float) -> void:
 	stun_fall_played = false
 	stun_recovering = false
 	stun_recover_timer = 0.0
+
+
+## Clear the held item after a stun drop spawned it back into the world.
+## Called host-side; routes to the owning client (or runs locally for the
+## host's own player and solo play). The client's clear_held() mirrors the
+## empty hand back to the host via request_held_item_sync.
+func clear_held_stun() -> void:
+	if multiplayer.has_multiplayer_peer() and get_multiplayer_authority() != 1:
+		_rpc_clear_held_stun.rpc_id(get_multiplayer_authority())
+	else:
+		_rpc_clear_held_stun()
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_clear_held_stun() -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	if sender != 1 and not is_multiplayer_authority():
+		return
+	if placement != null:
+		placement.clear_placement_ghost()
+	if inventory != null:
+		inventory.clear_held()
 
 
 func _enter_tree() -> void:

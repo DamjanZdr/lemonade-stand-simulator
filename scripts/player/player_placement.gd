@@ -671,6 +671,86 @@ func _drop_held_box() -> void:
 	_player.inventory.clear_held()
 
 
+## Host-side: drop the carried box on nearby clear ground when the player
+## is knocked down (thrown trash hit), so stolen goods spill loose before
+## the thief can reach their stand. Only runs on the host.
+func drop_held_box_on_stun() -> void:
+	if not WorldSync.is_host():
+		return
+	var data: Dictionary = _player.held_item_data
+	var state: Dictionary = { }
+	match _player.held_item:
+		HeldItem.SUPPLY_BOX:
+			if data.get("is_equipment", false):
+				state["is_equipment"] = true
+				state["equipment_type"] = data.get("equipment_type", "")
+			else:
+				state["ingredient_type"] = data.get("ingredient_type", "lemon")
+				state["quantity"] = data.get("amount", 1.0)
+			var original_owner: String = data.get("box_stand_owner", "")
+			if original_owner != "":
+				state["stand_owner"] = original_owner
+		HeldItem.TRASH:
+			if data.get("trash_type", "") != "empty_box":
+				return
+			state["is_trash_box"] = true
+			state["ingredient_type"] = "trash"
+			state["quantity"] = 0.0
+			state["trash_value"] = data.get("trash_value", 0.0)
+			state["trash_type"] = "empty_box"
+		_:
+			return
+	var drop_pos := _find_stun_drop_position()
+	var box := WorldSync.spawn_networked(
+		"res://scenes/objects/supply_box.tscn",
+		WorldSync.get_world_objects(),
+		drop_pos,
+		Vector3(0.0, randf() * TAU, 0.0),
+		state,
+	) as SupplyBox
+	if box:
+		box.update_metrics()
+		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
+		box.global_position.y += y_diff
+	AudioManager.play_sfx("box_drop", drop_pos)
+	# The owning client clears its real inventory + hand mesh via the RPC;
+	# its set_held(NONE) mirrors the cleared state back to the host.
+	_player.clear_held_stun()
+
+
+## Find a clear, flat spot near the player to drop a knocked-loose box.
+## Rays down at ring offsets around the player, then shape-tests the box
+## footprint so it can't clip into props, walls, or other bodies.
+func _find_stun_drop_position() -> Vector3:
+	var space := _player.get_world_3d().direct_space_state
+	var origin := _player.global_position
+	var probe := Vector3(0.85, 0.55, 0.7) # supply box footprint, padded
+	var shape := BoxShape3D.new()
+	shape.size = probe
+	var exclude: Array[RID] = [_player.get_rid()]
+	for radius in [1.0, 1.6, 2.2]:
+		for i in 8:
+			var angle := TAU * float(i) / 8.0 + randf() * 0.4
+			var cand: Vector3 = origin + Vector3(cos(angle), 0.0, sin(angle)) * radius
+			var ray_q := PhysicsRayQueryParameters3D.create(
+				cand + Vector3.UP * 2.5,
+				cand + Vector3.DOWN * 4.5,
+			)
+			ray_q.exclude = exclude
+			var hit := space.intersect_ray(ray_q)
+			if hit.is_empty() or hit.normal.y < 0.8:
+				continue
+			var ground: Vector3 = hit.position
+			var shape_q := PhysicsShapeQueryParameters3D.new()
+			shape_q.shape = shape
+			shape_q.transform = Transform3D(Basis(), ground + Vector3.UP * (probe.y * 0.5 + 0.03))
+			shape_q.exclude = exclude
+			if space.intersect_shape(shape_q, 1).is_empty():
+				return ground + Vector3(0.0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0.0)
+	# No clear ring found — drop at the player's feet.
+	return origin + Vector3(0.8, 0.3, 0.0) + Vector3(0.0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0.0)
+
+
 func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 	var state: Dictionary = {
 		"is_trash_box": true,
