@@ -21,6 +21,7 @@ var _transitioning: bool = false
 var _day_card_shown: bool = false
 var _transition_day: int = 0
 var _day_card: Label = null
+var _report_player: Node = null
 
 
 func _ready() -> void:
@@ -41,6 +42,7 @@ func _exit_tree() -> void:
 	# Static flag lives on the EventBus autoload — make sure it never
 	# leaks across scene reloads (e.g. quitting to menu mid-transition).
 	EventBus.day_transition_active = false
+	_restore_report_player()
 
 
 func _make_day_card() -> void:
@@ -82,6 +84,7 @@ func _start_evening_transition() -> void:
 	_transition_day = DayManager.day_number
 	EventBus.day_transition_active = true
 	_clear_local_hover()
+	_restore_report_player()
 	panel.visible = false
 	_day_card.visible = false
 	_day_card.modulate = Color(1, 1, 1, 0)
@@ -154,8 +157,9 @@ func show_report() -> void:
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("set_hud_visible"):
 		hud.set_hud_visible(false)
+	_lock_report_player()
 	backdrop.visible = true
-	backdrop.modulate = Color(1, 1, 1, 0.75)
+	backdrop.modulate = Color(1, 1, 1, 0.92)
 	panel.visible = true
 	panel.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
@@ -180,6 +184,39 @@ func _on_close() -> void:
 	if hud and hud.has_method("set_hud_visible"):
 		hud.set_hud_visible(true)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_restore_report_player()
+
+
+## Freeze the local player while the report is open — same pattern as
+## Computer._enter(): stop process/physics/input on the player and its
+## controller so movement, crouch, jump, and interaction all halt.
+func _lock_report_player() -> void:
+	_report_player = WorldSync.get_local_player()
+	if _report_player == null:
+		return
+	_report_player.set_process(false)
+	_report_player.set_physics_process(false)
+	_report_player.set_process_input(false)
+	_report_player.set_process_unhandled_input(false)
+	var controller: Node = _report_player.get("controller")
+	if controller != null:
+		controller.set_process(false)
+		controller.set_physics_process(false)
+
+
+func _restore_report_player() -> void:
+	if _report_player == null:
+		return
+	if is_instance_valid(_report_player):
+		_report_player.set_process(true)
+		_report_player.set_physics_process(true)
+		_report_player.set_process_input(true)
+		_report_player.set_process_unhandled_input(true)
+		var controller: Node = _report_player.get("controller")
+		if controller != null:
+			controller.set_process(true)
+			controller.set_physics_process(true)
+	_report_player = null
 
 
 func _populate_report() -> void:

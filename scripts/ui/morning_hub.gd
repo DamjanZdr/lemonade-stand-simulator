@@ -43,8 +43,21 @@ const BRANCH_COLORS: Array[Color] = [
 @onready var _stand_name_button: Button = ($MainHBox/RightPanel/RightVBox/StandNameRow/SaveButton)
 @onready var _wall_color_btn: Button = ($MainHBox/RightPanel/RightVBox/WallColorRow/WallColorBtn)
 @onready var _roof_color_btn: Button = ($MainHBox/RightPanel/RightVBox/RoofColorRow/RoofColorBtn)
+@onready var _fence_prev: Button = ($MainHBox/RightPanel/RightVBox/FenceRow/FencePrev)
+@onready var _fence_next: Button = ($MainHBox/RightPanel/RightVBox/FenceRow/FenceNext)
+@onready var _fence_preview: TextureRect = ($MainHBox/RightPanel/RightVBox/FenceRow/FencePreview)
 var _wall_swatch: ColorRect = null
 var _roof_swatch: ColorRect = null
+# The fence texture is a 13-band gradient atlas, 20px per band; the fence
+# models ship on band 12 (beige). See neighborhood.gd FENCE_BAND_*.
+const FENCE_TEXTURE: Texture2D = preload(
+	"res://assets/models/environment/Fences/White1_mailboxmaterialgrid.png"
+)
+const FENCE_BAND_COUNT: int = 13
+const FENCE_DEFAULT_BAND: int = 12
+const FENCE_BAND_WIDTH: float = 20.0
+const FENCE_TEX_HEIGHT: float = 160.0
+var _fence_band: int = FENCE_DEFAULT_BAND
 
 @onready var _cart_list: VBoxContainer = (
 	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll/CartList
@@ -213,6 +226,21 @@ func _ready() -> void:
 			_roof_color_btn,
 			func(c: Color):
 				_set_house_color("roof_color", c),
+		)
+	if _fence_preview:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = FENCE_TEXTURE
+		_fence_preview.texture = atlas
+		_update_fence_preview()
+	if _fence_prev:
+		_fence_prev.pressed.connect(
+			func():
+				_cycle_fence_gradient(-1),
+		)
+	if _fence_next:
+		_fence_next.pressed.connect(
+			func():
+				_cycle_fence_gradient(1),
 		)
 
 	# Make tab labels clickable
@@ -1259,8 +1287,8 @@ func _create_item_card(
 
 		var add_btn := Button.new()
 		add_btn.text = "+"
-		add_btn.custom_minimum_size = Vector2(40, 40)
-		add_btn.add_theme_font_size_override("font_size", 22)
+		add_btn.custom_minimum_size = Vector2(52, 52)
+		add_btn.add_theme_font_size_override("font_size", 28)
 		_apply_button_style(
 			add_btn,
 			Color(0.14, 0.15, 0.19),
@@ -1363,6 +1391,8 @@ func _refresh_stand_name_editor() -> void:
 	if _roof_swatch != null:
 		var rc_val = custom.get("roof_color", null)
 		_roof_swatch.color = rc_val if rc_val is Color else roof_default
+	_fence_band = posmod(int(custom.get("fence_gradient", FENCE_DEFAULT_BAND)), FENCE_BAND_COUNT)
+	_update_fence_preview()
 
 
 ## Turn a plain Button into a lobby-style color picker: a flat rounded
@@ -1494,6 +1524,37 @@ func _set_house_color(key: String, color: Color) -> void:
 			wall if wall is Color else Color.TRANSPARENT,
 			roof if roof is Color else Color.TRANSPARENT,
 		)
+
+
+func _cycle_fence_gradient(direction: int) -> void:
+	AudioManager.play_sfx_ui("tab_click")
+	_fence_band = posmod(_fence_band + direction, FENCE_BAND_COUNT)
+	_update_fence_preview()
+	_set_fence_gradient(_fence_band)
+
+
+func _update_fence_preview() -> void:
+	if _fence_preview == null:
+		return
+	var atlas := _fence_preview.texture as AtlasTexture
+	if atlas == null:
+		return
+	atlas.region = Rect2(_fence_band * FENCE_BAND_WIDTH, 0.0, FENCE_BAND_WIDTH, FENCE_TEX_HEIGHT)
+
+
+## Store a fence gradient choice in the local player's roster customization,
+## same broadcast path as _set_house_color().
+func _set_fence_gradient(band: int) -> void:
+	var custom := LobbyManager.get_my_customization().duplicate(true)
+	custom["fence_gradient"] = band
+	LobbyManager.set_my_customization(custom)
+	SaveManager.set_last_local_customization(custom)
+	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
+	if neighborhood != null and neighborhood.has_method("apply_player_fence_gradient"):
+		var entry := LobbyManager.get_my_entry()
+		var stand_idx: int = entry.get("stand_index", 0)
+		var house_name := StringName("player_house" if stand_idx == 0 else "player_house2")
+		neighborhood.apply_player_fence_gradient(house_name, band)
 
 
 func _show_tab(tab_name: String) -> void:
@@ -1915,8 +1976,8 @@ func _update_cart_ui() -> void:
 		row.add_child(price_lbl)
 		var rem_btn := Button.new()
 		rem_btn.text = "X"
-		rem_btn.custom_minimum_size = Vector2(36, 32)
-		rem_btn.add_theme_font_size_override("font_size", 16)
+		rem_btn.custom_minimum_size = Vector2(44, 40)
+		rem_btn.add_theme_font_size_override("font_size", 20)
 		_apply_button_style(
 			rem_btn,
 			Color(0.14, 0.12, 0.10),
@@ -2881,8 +2942,8 @@ func _style_spinbox(spin: SpinBox, accent: Color) -> void:
 
 
 func _style_unit_button(btn: Button, accent: Color) -> void:
-	btn.custom_minimum_size = Vector2(44, 32)
-	btn.add_theme_font_size_override("font_size", 16)
+	btn.custom_minimum_size = Vector2(52, 40)
+	btn.add_theme_font_size_override("font_size", 18)
 	btn.add_theme_color_override("font_color", Color(0.95, 0.93, 0.86, 1))
 	btn.add_theme_color_override("font_pressed_color", Color(0.05, 0.05, 0.05, 1))
 	btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 1))

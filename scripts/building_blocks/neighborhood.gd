@@ -22,6 +22,12 @@ const HOUSE_LOD_SCENE: PackedScene = preload("res://assets/models/environment/ho
 const HOUSE_LOD_DISTANCE: float = 200.0
 const HOUSE_LOD_OVERLAP: float = 2.0
 
+# The fence texture (White*_mailboxmaterialgrid.png) is a horizontal atlas
+# of 13 gradient bands, 20px each. The fence models' UVs sit on band 12
+# (the beige gradient), so band i is shown via uv1_offset.x = (i - 12)/13.
+const FENCE_BAND_COUNT: int = 13
+const FENCE_BASE_BAND: int = 12
+
 # These must match the ColorManager palette in scenes/main.tscn so editor fallback
 # uses the same runtime colors.
 const _DEFAULT_ROOF_COLORS: Array[Color] = [
@@ -426,16 +432,63 @@ func apply_player_house_colors(
 	house_name: StringName,
 	wall_color: Color,
 	roof_color: Color,
+	fence_band: int = -1,
 ) -> void:
 	var house := get_node_or_null("Houses/" + String(house_name))
 	if house == null:
 		house = find_child(String(house_name), true, false)
 	if house:
 		_recolor_house(house, roof_color, wall_color)
+		if fence_band >= 0:
+			_apply_fence_band(house, fence_band)
+
+
+## Shift the UVs of a player house's fence onto a different gradient band
+## of the shared mailboxmaterialgrid texture (see FENCE_BAND_COUNT).
+func apply_player_fence_gradient(house_name: StringName, band_index: int) -> void:
+	var house := get_node_or_null("Houses/" + String(house_name))
+	if house == null:
+		house = find_child(String(house_name), true, false)
+	if house != null:
+		_apply_fence_band(house, band_index)
+
+
+func _apply_fence_band(house: Node, band_index: int) -> void:
+	var fence := house.get_node_or_null("Fence")
+	if fence == null:
+		fence = house.find_child("Fence", true, false)
+	if fence == null:
+		return
+	band_index = posmod(band_index, FENCE_BAND_COUNT)
+	var offset_x := float(band_index - FENCE_BASE_BAND) / float(FENCE_BAND_COUNT)
+	for mesh_instance in _find_mesh_instances(fence):
+		var mesh := mesh_instance.mesh
+		if mesh == null:
+			continue
+		for i in range(mesh.get_surface_count()):
+			var mat := mesh_instance.get_active_material(i) as BaseMaterial3D
+			if mat == null:
+				continue
+			var new_mat := mat.duplicate() as BaseMaterial3D
+			new_mat.uv1_offset = Vector3(offset_x, 0.0, 0.0)
+			mesh_instance.set_surface_override_material(i, new_mat)
+
+
+## True if a mesh lives under a house's "Fence" node — fences use a
+## gradient atlas, not a flat color, so house recoloring must skip them.
+func _is_under_fence(node: Node, stop_at: Node) -> bool:
+	var p := node.get_parent()
+	while p != null and p != stop_at:
+		if p.name == "Fence":
+			return true
+		p = p.get_parent()
+	return false
 
 
 func _recolor_house(root: Node, roof_color: Color, wall_color: Color) -> void:
 	for mesh_instance in _find_mesh_instances(root):
+		if _is_under_fence(mesh_instance, root):
+			continue
 		var mesh := mesh_instance.mesh
 		if mesh == null:
 			continue

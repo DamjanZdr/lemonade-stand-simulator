@@ -69,19 +69,17 @@ func _build_indicator() -> void:
 	mark.modulate = Color(1.0, 1.0, 1.0)
 	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# The glyph's visual center sits above its baseline/origin, so lower
-	# the label so the "!" is centered inside the circle rather than
-	# aligned with the top edge.
-	mark.position = Vector3(0.0, -0.09, 0.0)
 	mark.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	mark.no_depth_test = true
 	mark.render_priority = 1
 	mark.pixel_size = 0.0092
 	mark.font_size = 120
 	mark.outline_size = 0
-	# Lower and nudge left so the "!" stays optically centered in the bigger circle.
-	mark.position = Vector3(-0.03, -0.16, 0.0)
-	mark.offset = Vector2(-4.0, 0.0)
+	# The glyph's visual center sits above its baseline/origin, so lower
+	# the label so the "!" is centered inside the circle rather than
+	# aligned with the top edge. No horizontal shift — the label already
+	# centers the glyph in its own bounds.
+	mark.position = Vector3(0.0, -0.16, 0.0)
 	_indicator.add_child(mark)
 	add_child(_indicator)
 	_indicator.visible = false

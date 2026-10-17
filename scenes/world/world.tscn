@@ -68,40 +68,40 @@ tonemap_white = 8.0
 glow_enabled = true
 glow_intensity = 0.4
 glow_strength = 0.8
-volumetric_fog_density = 0.001
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.82, 0.88, 0.92, 1)
+fog_density = 1.0
+fog_sky_affect = 0.25
+fog_depth_begin = 80.0
+fog_depth_end = 200.0
+volumetric_fog_density = 0.0
 volumetric_fog_emission = Color(0.5780994, 0.8133498, 0.85745275, 1)
 volumetric_fog_length = 446.7
-
-[sub_resource type="FogMaterial" id="FogMaterial_g4v7s"]
-density = 0.04
-emission = Color(0.85974914, 0.8806802, 0.8578844, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g4v7s"]
 size = Vector3(2.7165565, 1.725708, 1.3293457)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_82f87"]
-size = Vector3(7.683838, 0.5522232, 9.968597)
+size = Vector3(7.9207153, 0.5522232, 9.968597)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wbwoo"]
-size = Vector3(13.727234, 0.39840698, 6.9540253)
+size = Vector3(13.632553, 0.39840698, 6.293419)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_t634p"]
-size = Vector3(7.420061, 0.3982849, 8.016338)
+size = Vector3(6.9563336, 0.3982849, 7.9145412)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_6hctx"]
 size = Vector3(1.2252893, 0.3982849, 2.9915676)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_tytul"]
-size = Vector3(5.2276, 0.40233612, 9.767376)
+size = Vector3(3.2850418, 0.40233612, 9.124899)
 
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
 albedo_color = Color(0.42331815, 0.62640846, 3.85046e-07, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
 size = Vector3(120, 0.1, 120)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
-size = Vector3(148.4972, 0.59904784, 116.18762)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_yf5fn"]
 size = Vector3(38.054382, 18.523682, 41.272736)
@@ -135,16 +135,6 @@ light_energy = 0.6
 environment = SubResource("Environment_main")
 script = ExtResource("37_sky")
 
-[node name="FogVolume" type="FogVolume" parent="Environment" unique_id=829046607]
-transform = Transform3D(1, 0, 0, 0, 0.16174394, 0, 0, 0, 1, -268.22437, -15.5393715, 31)
-size = Vector3(166.2, 107.12, 343)
-material = SubResource("FogMaterial_g4v7s")
-
-[node name="FogVolume2" type="FogVolume" parent="Environment" unique_id=595344647]
-transform = Transform3D(1, 0, 0, 0, 0.16174394, 0, 0, 0, 1, 264.77563, -15.186977, 31)
-size = Vector3(166, 111.47754, 343)
-material = SubResource("FogMaterial_g4v7s")
-
 [node name="Stands" type="Node3D" parent="." unique_id=1765668174]
 
 [node name="StandUnit" type="Node3D" parent="Stands" unique_id=1000000001]
@@ -155,13 +145,13 @@ is_legacy_primary = true
 transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.18679726, -2.1485605)
 
 [node name="WaterDispenser" parent="Stands/StandUnit" unique_id=1929335132 instance=ExtResource("3_wdispenser")]
-transform = Transform3D(-2.6821102e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -2.6821102e-08, 6.743279, 0.25480768, 1.1123774)
+transform = Transform3D(-2.6821102e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -2.6821102e-08, 6.69381, 0.25480768, 1.7789915)
 
 [node name="DeliveryMarker" type="Marker3D" parent="Stands/StandUnit" unique_id=1391857877]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 6.77292, 0.51908034, 0.7752135)
 
 [node name="DeliveryGrid" parent="Stands/StandUnit" unique_id=2063779733 instance=ExtResource("7_dgrid")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.225821, 0.3128554, -0.76168585)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.550384, 0.3128554, 0.0748499)
 
 [node name="QueueMarkerActive" type="Marker3D" parent="Stands/StandUnit" unique_id=1918688920]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9837594, 0, -2.300959)
@@ -197,15 +187,15 @@ transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0.3,
 collision_layer = 8
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=61180459]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9992676, -0.2264862, 3.0013885)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9934998, -0.2264862, 3.0013885)
 shape = SubResource("BoxShape3D_82f87")
 
 [node name="CollisionShape3D2" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=457180925]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.980324, -0.3007965, 1.4941025)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.836517, -0.3007965, 1.8244057)
 shape = SubResource("BoxShape3D_wbwoo")
 
 [node name="CollisionShape3D6" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=346573680]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.244374, -0.30085754, 8.989265)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.028244, -0.30085754, 8.938367)
 shape = SubResource("BoxShape3D_t634p")
 
 [node name="CollisionShape3D5" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=1362229542]
@@ -213,7 +203,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.9156823, -0.30085754, 6.47
 shape = SubResource("BoxShape3D_6hctx")
 
 [node name="CollisionShape3D3" type="CollisionShape3D" parent="Stands/StandUnit/PlacableFloor" unique_id=1002167862]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.617897, -0.29895782, 2.9007778)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.676777, -0.29895782, 3.2220163)
 shape = SubResource("BoxShape3D_tytul")
 
 [node name="StandUnit2" type="Node3D" parent="Stands" unique_id=2000000000]
@@ -224,13 +214,13 @@ script = ExtResource("72_standunit")
 transform = Transform3D(-0.65, 0, 9.814727e-08, 0, 0.65, 0, -9.814727e-08, 0, -0.65, 2, 0.18679726, -2.1485605)
 
 [node name="WaterDispenser" parent="Stands/StandUnit2" unique_id=2000000002 instance=ExtResource("3_wdispenser")]
-transform = Transform3D(-2.6821102e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -2.6821102e-08, 6.743279, 0.25480768, 1.1123774)
+transform = Transform3D(-2.6821102e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -2.6821102e-08, 6.487934, 0.25480768, 1.6642494)
 
 [node name="DeliveryMarker" type="Marker3D" parent="Stands/StandUnit2" unique_id=2000000003]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 6.77292, 0.51908034, 0.7752135)
 
 [node name="DeliveryGrid" parent="Stands/StandUnit2" unique_id=2000000004 instance=ExtResource("7_dgrid")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.225821, 0.3128554, -0.76168585)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.341137, 0.3128554, 0.06593895)
 
 [node name="QueueMarkerActive" type="Marker3D" parent="Stands/StandUnit2" unique_id=2000000005]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9837594, 0, -2.300959)
@@ -313,10 +303,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.143356, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.011994839, -9.364746, -0.020724297)
 material_override = SubResource("Material_ground")
 mesh = SubResource("BoxMesh_ground")
-
-[node name="Col" type="CollisionShape3D" parent="Ground/DefaultGround" unique_id=1231860438]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9057007, -0.2495, -16.958313)
-shape = SubResource("BoxShape3D_ground")
 
 [node name="PlayableArea" type="Area3D" parent="Ground" unique_id=146113540]
 collision_layer = 0

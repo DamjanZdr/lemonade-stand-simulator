@@ -340,11 +340,13 @@ func _apply_player_house_colors() -> void:
 		var custom: Dictionary = stand_colors[stand_idx]
 		var wall = custom.get("wall_color", Color.TRANSPARENT)
 		var roof = custom.get("roof_color", Color.TRANSPARENT)
+		var fence_band := int(custom.get("fence_gradient", -1))
 		var house_name := StringName("player_house" if stand_idx == 0 else "player_house2")
 		neighborhood.apply_player_house_colors(
 			house_name,
 			wall if wall is Color else Color.TRANSPARENT,
 			roof if roof is Color else Color.TRANSPARENT,
+			fence_band,
 		)
 
 

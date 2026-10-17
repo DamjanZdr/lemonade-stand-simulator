@@ -224,52 +224,52 @@ theme_override_constants/separation = 4
 [node name="StepPC_analytics" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(130, 44)
+custom_minimum_size = Vector2(160, 56)
 theme_override_styles/panel = SubResource("tab_normal")
 
 [node name="StepLbl_analytics" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_analytics"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Stats"
 horizontal_alignment = 1
 
 [node name="StepPC_shop" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(130, 44)
+custom_minimum_size = Vector2(160, 56)
 theme_override_styles/panel = SubResource("tab_normal")
 
 [node name="StepLbl_shop" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_shop"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Shop"
 horizontal_alignment = 1
 
 [node name="StepPC_upgrades" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(130, 44)
+custom_minimum_size = Vector2(160, 56)
 theme_override_styles/panel = SubResource("tab_normal")
 
 [node name="StepLbl_upgrades" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_upgrades"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Upgrades"
 horizontal_alignment = 1
 
 [node name="StepPC_employees" type="PanelContainer" parent="MainHBox/Panel/VBox/FlowIndicator"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(130, 44)
+custom_minimum_size = Vector2(160, 56)
 theme_override_styles/panel = SubResource("tab_normal")
 
 [node name="StepLbl_employees" type="Label" parent="MainHBox/Panel/VBox/FlowIndicator/StepPC_employees"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Employees"
 horizontal_alignment = 1
 
@@ -443,11 +443,11 @@ horizontal_alignment = 1
 
 [node name="CheckoutBtn" type="Button" parent="MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 56)
 theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
 theme_override_colors/font_hover_color = Color(0.05, 0.05, 0.05, 1)
 theme_override_colors/font_pressed_color = Color(0.95, 0.92, 0.85, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = SubResource("btn_primary")
 theme_override_styles/hover = SubResource("btn_primary_hover")
 theme_override_styles/pressed = SubResource("btn_primary_pressed")
@@ -609,8 +609,16 @@ theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
 text = "House Walls"
 vertical_alignment = 1
 
+[node name="WallPadL" type="Control" parent="MainHBox/RightPanel/RightVBox/WallColorRow"]
+custom_minimum_size = Vector2(38, 0)
+layout_mode = 2
+
 [node name="WallColorBtn" type="Button" parent="MainHBox/RightPanel/RightVBox/WallColorRow"]
 custom_minimum_size = Vector2(60, 30)
+layout_mode = 2
+
+[node name="WallPadR" type="Control" parent="MainHBox/RightPanel/RightVBox/WallColorRow"]
+custom_minimum_size = Vector2(38, 0)
 layout_mode = 2
 
 [node name="RoofColorRow" type="HBoxContainer" parent="MainHBox/RightPanel/RightVBox"]
@@ -625,6 +633,41 @@ theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
 text = "House Roof"
 vertical_alignment = 1
 
+[node name="RoofPadL" type="Control" parent="MainHBox/RightPanel/RightVBox/RoofColorRow"]
+custom_minimum_size = Vector2(38, 0)
+layout_mode = 2
+
 [node name="RoofColorBtn" type="Button" parent="MainHBox/RightPanel/RightVBox/RoofColorRow"]
 custom_minimum_size = Vector2(60, 30)
 layout_mode = 2
+
+[node name="RoofPadR" type="Control" parent="MainHBox/RightPanel/RightVBox/RoofColorRow"]
+custom_minimum_size = Vector2(38, 0)
+layout_mode = 2
+
+[node name="FenceRow" type="HBoxContainer" parent="MainHBox/RightPanel/RightVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FenceLabel" type="Label" parent="MainHBox/RightPanel/RightVBox/FenceRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
+text = "House Fence"
+vertical_alignment = 1
+
+[node name="FencePrev" type="Button" parent="MainHBox/RightPanel/RightVBox/FenceRow"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+text = "<"
+
+[node name="FencePreview" type="TextureRect" parent="MainHBox/RightPanel/RightVBox/FenceRow"]
+custom_minimum_size = Vector2(60, 30)
+layout_mode = 2
+expand_mode = 1
+
+[node name="FenceNext" type="Button" parent="MainHBox/RightPanel/RightVBox/FenceRow"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+text = ">"

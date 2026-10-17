@@ -619,6 +619,16 @@ func _container_stand_owner(node: Node) -> String:
 	return ""
 
 
+func _default_container_entry(ctype: String, stand_owner: String) -> Dictionary:
+	for entry in _default_container_positions:
+		if str(entry.get("type", "")) != ctype:
+			continue
+		if str(entry.get("stand_owner", "")) != stand_owner:
+			continue
+		return entry
+	return { }
+
+
 func _stand_owner_is_active(owner: String) -> bool:
 	return GameState.game_mode == GameState.GameMode.VERSUS or owner != "StandUnit2"
 
@@ -985,6 +995,19 @@ func _do_respawn() -> void:
 			var pos: Array = entry.get("position", [])
 			var rot: Array = entry.get("rotation", [])
 			var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
+			# Water dispensers are fixed appliances — players can't move them,
+			# so a saved position is just a stale scene layout from when the
+			# save was created. Respawn them where the scene currently puts
+			# them so editor repositioning always wins.
+			if ctype == "water_dispenser":
+				var scene_entry := _default_container_entry(
+					ctype,
+					str(entry.get("stand_owner", "")),
+				)
+				if not scene_entry.is_empty():
+					pos = scene_entry.get("position", pos)
+					rot = scene_entry.get("rotation", rot)
+					scl = scene_entry.get("scale", scl)
 			if ctype == "" or pos.size() < 3:
 				continue
 			# A container at exact world origin is always a bug artifact
