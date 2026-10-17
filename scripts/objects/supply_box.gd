@@ -485,21 +485,10 @@ func _tint_for_type(itype: String) -> Color:
 
 
 func _make_hand_mesh() -> Node3D:
-	# Instance the actual supply_box scene so all labels/sprites match the editor
-	var scene: PackedScene = load("res://scenes/objects/supply_box.tscn") as PackedScene
-	var inst: SupplyBox = scene.instantiate() as SupplyBox
-	# Mark as hand mesh BEFORE _ready runs (add_child triggers _ready)
-	inst.is_hand_mesh = true
-	inst.is_equipment = is_equipment
-	inst.ingredient_type = ingredient_type
-	inst.quantity = quantity
-	inst.equipment_type = equipment_type
-	# Scale the whole thing down to hand size
-	# World box has 'box' child at scale 0.3, so root at 0.05/0.3 gives box at 0.05
-	inst.scale = Vector3.ONE * (0.05 / 0.3)
-	# Disable physics
-	var phys := inst.get_node_or_null("Physics") as StaticBody3D
-	if phys:
-		phys.collision_layer = 0
-		phys.collision_mask = 0
-	return inst
+	var hand_root := Node3D.new()
+	for node_name in ["box", "Icons"]:
+		var source := get_node_or_null(node_name)
+		if source != null:
+			hand_root.add_child(source.duplicate())
+	hand_root.scale = Vector3.ONE * (0.05 / 0.3)
+	return hand_root

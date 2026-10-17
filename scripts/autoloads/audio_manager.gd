@@ -71,6 +71,7 @@ func _preload_all() -> void:
 		"pick_up_box": "pick up box.mp3",
 		"press_fruits": "press fruits.mp3",
 		"taking_cup": "taking cup.mp3",
+		"ice_cubes": "ice cubes.mp3",
 		"water_pour_in_pitcher": "water pour in pitcher.mp3",
 		"coins": "coins.mp3",
 		"cash": "cash.mp3",

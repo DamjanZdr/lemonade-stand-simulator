@@ -506,7 +506,6 @@ func _on_menu_play() -> void:
 		LobbyManager.game_mode = GameState.game_mode
 		_apply_game_mode_layout()
 		NetworkManager.host_game()
-		_world_menu.hide_menu()
 		return
 	var saves := SaveManager.list_saves()
 	if not saves.is_empty():
@@ -699,7 +698,6 @@ func _finish_transition() -> void:
 	if _host_after_transition:
 		_host_after_transition = false
 		NetworkManager.host_game()
-		_world_menu.hide_menu()
 		return
 	# Show the menu again (without animation — animation tween may not
 	# process reliably right after the transition tweens).
@@ -775,6 +773,7 @@ func _on_menu_session_ready(_arg: Variant = null) -> void:
 ## Called when a connection fails while in the MAIN_MENU state.
 func _on_menu_session_failed(reason: String) -> void:
 	if _world_menu:
+		_world_menu.show_menu_immediate()
 		if _world_menu.is_join_panel_open():
 			_world_menu.set_join_error("Failed: %s" % reason)
 		else:

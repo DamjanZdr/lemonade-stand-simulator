@@ -309,9 +309,21 @@ func _update_single_cup_ghost() -> void:
 	# Check if looking at existing cup stack
 	var interactable := _player.interaction.get_looked_at_interactable() as Interactable
 	if interactable is CupStack and _player.held_item == HeldItem.CUP_EMPTY:
-		# For empty cups, hide ghost when looking at stack
-		_ghost.visible = false
-		_ghost_valid = true
+		var stack := interactable as CupStack
+		var can_add := stack.current_count < stack.max_capacity and stack.can_player_use(_player)
+		_ghost.global_transform = stack.global_transform
+		var preview_grid := _ghost.get_node_or_null("ItemGrid") as Node3D
+		if preview_grid != null and preview_grid.get_child_count() > 0:
+			var preview_cup := preview_grid.get_child(0) as Node3D
+			if preview_cup != null:
+				var target := stack.get_next_cup_global_transform()
+				_ghost.global_position += target.origin - preview_cup.global_position
+		_ghost.visible = true
+		_ghost_valid = can_add
+		_apply_ghost_material(
+			_ghost,
+			_get_ghost_mat_valid() if can_add else _get_ghost_mat_invalid(),
+		)
 		return
 
 	# Only show ghost when on valid placement surface
@@ -947,7 +959,7 @@ func _create_container_hand_mesh(
 		# For ice, the deferred bucket setup may not have run yet — run it now
 		# so update_display() shows the correct cube count.
 		if container_type == "ice_bin":
-			bin._setup_ice_bucket()
+			bin.setup_ice_bucket()
 		bin.update_display()
 		var pickupable := bin.get_node_or_null("Pickupable")
 		if pickupable != null:
@@ -1926,6 +1938,7 @@ func _cancel_container_placement() -> void:
 
 
 func pickup_container(interactable: Interactable, container_type: String) -> void:
+	_player.inventory.play_pickup_source(interactable)
 	# Workstations are tables ΓÇö keep the original instance so items on top move with it.
 	if container_type == "workstation":
 		_attach_items_to_workstation(interactable)

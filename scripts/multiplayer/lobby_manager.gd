@@ -77,6 +77,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 
 func _local_display_name() -> String:
+	if not NetworkManager.is_steam_initialized():
+		return "Player"
 	var n: String = Steam.getPersonaName()
 	return n if n != "" else "Player"
 

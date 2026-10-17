@@ -17,14 +17,12 @@ func _ready() -> void:
 
 func _write(msg: String) -> void:
 	var path := "user://game_log.txt"
-	var file := FileAccess.open(path, FileAccess.READ)
-	var existing := ""
+	var file := FileAccess.open(path, FileAccess.READ_WRITE)
+	if file == null:
+		file = FileAccess.open(path, FileAccess.WRITE)
 	if file:
-		existing = file.get_as_text()
-		file.close()
-	file = FileAccess.open(path, FileAccess.WRITE)
-	if file:
-		file.store_string(existing + msg + "\n")
+		file.seek_end()
+		file.store_line(msg)
 		file.close()
 	_buffer.append(msg)
 	if _buffer.size() > MAX_BUFFER:

@@ -133,6 +133,12 @@ func _update_display() -> void:
 	EventBus.cup_stack_changed.emit(current_count)
 
 
+func get_next_cup_global_transform() -> Transform3D:
+	if current_count < 0 or current_count >= _item_nodes.size():
+		return global_transform
+	return _item_nodes[current_count].global_transform
+
+
 func add_cups(qty: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 	var old_count := mini(current_count, _item_nodes.size())
 	current_count = mini(current_count + qty, max_capacity)
@@ -194,6 +200,7 @@ func interact(player: Node) -> void:
 	if p.held_item == HeldItem.CUP_EMPTY:
 		add_cups(1, _get_hand_pos(p))
 		AudioManager.play_sfx("taking_cup", global_position)
+		p.placement.clear_placement_ghost()
 		p.inventory.clear_held()
 		return
 
@@ -203,6 +210,9 @@ func interact(player: Node) -> void:
 			# Pick up empty stack
 			p.pickup_container(self, "cup_stack")
 			return
+		var cup_index := mini(current_count, _item_nodes.size()) - 1
+		if cup_index >= 0:
+			p.inventory.play_pickup_source(_item_nodes[cup_index], true)
 		current_count -= 1
 		_update_display()
 		AudioManager.play_sfx("taking_cup", global_position)

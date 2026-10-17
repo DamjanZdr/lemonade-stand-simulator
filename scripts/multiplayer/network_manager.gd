@@ -111,9 +111,16 @@ func _connect_signals() -> void:
 # --- Public API ---
 
 
+func is_steam_initialized() -> bool:
+	return _steam_initialized
+
+
 ## Create a lobby and start hosting.
 func host_game() -> void:
 	if not _steam_initialized:
+		if OS.has_feature("editor"):
+			_host_offline_editor_session()
+			return
 		push_warning("[NetworkManager] Cannot host: Steam not initialized")
 		connection_failed.emit(
 			"Steam is not initialized. Please restart the game with Steam running."
@@ -122,6 +129,15 @@ func host_game() -> void:
 	is_host = true
 	print("[NetworkManager] Creating lobby...")
 	Steam.createLobby(Steam.LOBBY_TYPE_PUBLIC, 4)
+
+
+func _host_offline_editor_session() -> void:
+	is_host = true
+	connected = true
+	lobby_id = 0
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	GameLog.log("[NetworkManager] Steam unavailable; hosting editor-only offline session")
+	lobby_created.emit(lobby_id)
 
 
 ## Join a lobby by its ID.

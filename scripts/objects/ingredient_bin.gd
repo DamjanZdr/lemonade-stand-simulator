@@ -71,10 +71,10 @@ func _ready() -> void:
 	update_display()
 	EventBus.debug_refill_all_bins.connect(_on_debug_refill)
 	if ingredient_type == "ice":
-		_setup_ice_bucket.call_deferred()
+		setup_ice_bucket.call_deferred()
 
 
-func _setup_ice_bucket() -> void:
+func setup_ice_bucket() -> void:
 	_ice_bucket = find_child("ice bucket with ice", false, false)
 	if _ice_bucket == null:
 		return
@@ -277,6 +277,8 @@ func interact(player: Node) -> void:
 		if data.get("source") == "bin_scoop" \
 				and data.get("ingredient_type", "") == ingredient_type:
 			add_amount(data.get("amount", Balancing.GRAB_AMOUNT), _get_hand_pos(player))
+			if ingredient_type == "ice":
+				AudioManager.play_sfx("ice_cubes", global_position)
 			player.inventory.clear_held()
 			return
 		# Deposit delivery box — 1 unit per click so the player sees the bin fill up.
@@ -316,7 +318,23 @@ func interact(player: Node) -> void:
 			player.pickup_container(self, _get_container_type())
 			return
 		# Otherwise take a scoop
+		var pickup_mesh: Node3D = null
+		if ingredient_type == "ice" and not _ice_cubes.is_empty():
+			var visible_ice := mini(
+				roundi((current_amount / max_capacity) * float(_ice_cubes.size())),
+				_ice_cubes.size(),
+			)
+			if visible_ice > 0:
+				pickup_mesh = _ice_cubes[visible_ice - 1]
+		elif not _item_nodes.is_empty():
+			var visible_item := mini(roundi(current_amount), _item_nodes.size())
+			if visible_item > 0:
+				pickup_mesh = _item_nodes[visible_item - 1]
+		if pickup_mesh != null:
+			player.inventory.play_pickup_source(pickup_mesh, true)
 		take_amount(Balancing.GRAB_AMOUNT)
+		if ingredient_type == "ice":
+			AudioManager.play_sfx("ice_cubes", global_position)
 		player.inventory.set_held(
 			HELD_SUPPLY_BOX,
 			{
