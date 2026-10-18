@@ -1863,6 +1863,13 @@ func _try_place_container() -> Node3D:
 			source_node.global_transform = _ghost.global_transform
 			_enable_physics(source_node)
 			source_node.visible = true
+			# The pickup shrink effect hides each MeshInstance3D individually;
+			# visible=true on the root does not restore them.
+			if source_node.has_meta(&"_pickup_hidden_meshes"):
+				for hidden_mesh in source_node.get_meta(&"_pickup_hidden_meshes"):
+					if is_instance_valid(hidden_mesh):
+						hidden_mesh.visible = true
+				source_node.remove_meta(&"_pickup_hidden_meshes")
 			# Clear the interaction hover state so poll_hint() re-applies
 			# highlights on the next frame. After moving the workstation,
 			# the bin on it may still be referenced by `hovered` but its

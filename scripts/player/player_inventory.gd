@@ -169,6 +169,7 @@ func _play_source_shrink(
 	var afterimage := Node3D.new()
 	scene.add_child(afterimage)
 	afterimage.global_position = _get_transfer_world_position()
+	var hidden_meshes: Array[MeshInstance3D] = []
 	for source_mesh in meshes:
 		var copy := MeshInstance3D.new()
 		copy.mesh = source_mesh.mesh
@@ -178,6 +179,12 @@ func _play_source_shrink(
 		copy.global_transform = source_mesh.global_transform
 		if data.get("source", "") != "bin_scoop" and not single_mesh:
 			source_mesh.visible = false
+			hidden_meshes.append(source_mesh)
+	# Remember the meshes this effect hid so the placement code can restore
+	# them — for reused nodes (workstation) setting the root's visible flag
+	# is not enough because each child keeps its own hidden state.
+	if not hidden_meshes.is_empty():
+		source_3d.set_meta(&"_pickup_hidden_meshes", hidden_meshes)
 	var tween := afterimage.create_tween()
 	tween.tween_property(afterimage, "scale", Vector3.ONE * 1.12, 0.04) \
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
