@@ -1527,8 +1527,15 @@ func _move_and_show_on_clients(
 			var col := child as CollisionShape3D
 			if col:
 				col.disabled = not show
+		GameLog.log(
+			"[WorldSync] Client move_and_show applied: %s visible=%s pos=%s"
+			% [obj.name, obj.visible, obj.global_position]
+		)
 	else:
-		GameLog.log("[WorldSync] Client move_and_show: object not found: " + obj_name)
+		GameLog.log(
+			"[WorldSync] Client move_and_show: object not found: %s net_id=%d parent=%s"
+			% [obj_name, net_id, parent_path_str]
+		)
 
 
 ## Hide an object on all clients (e.g. when a workstation is picked up
@@ -1630,6 +1637,8 @@ func _set_visible_on_clients(
 		if not visible and obj is Workstation:
 			_attach_surface_items(obj)
 		obj.visible = visible
+		if obj is Workstation:
+			GameLog.log("[WorldSync] Client set_visible: %s -> %s" % [obj.name, visible])
 		# Also disable collision so hidden objects don't block the player
 		for child in obj.find_children("*", "CollisionShape3D", true, false):
 			var col := child as CollisionShape3D

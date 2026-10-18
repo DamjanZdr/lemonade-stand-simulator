@@ -1894,6 +1894,19 @@ func _try_place_container() -> Node3D:
 			AudioManager.play_sfx("table", source_node.global_position, -1.0, 0.05, 0.85)
 			_destroy_ghost()
 			_player.inventory.clear_held()
+			var placed_ref := source_node
+			get_tree().create_timer(0.7).timeout.connect(
+				func():
+					GameLog.log(
+						"[WS-PLACE] placer state after 0.7s: node=%s valid=%s visible=%s pos=%s"
+						% [
+							placed_ref.name,
+							is_instance_valid(placed_ref),
+							placed_ref.visible if is_instance_valid(placed_ref) else "?",
+							placed_ref.global_position if is_instance_valid(placed_ref) else "?",
+						]
+					),
+			)
 			return source_node
 		return null
 
