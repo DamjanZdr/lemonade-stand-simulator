@@ -1898,12 +1898,13 @@ func _try_place_container() -> Node3D:
 			get_tree().create_timer(0.7).timeout.connect(
 				func():
 					GameLog.log(
-						"[WS-PLACE] placer state after 0.7s: node=%s valid=%s visible=%s pos=%s"
+						"[WS-PLACE] placer state after 0.7s: node=%s valid=%s visible=%s pos=%s scale=%s"
 						% [
 							placed_ref.name,
 							is_instance_valid(placed_ref),
 							placed_ref.visible if is_instance_valid(placed_ref) else "?",
 							placed_ref.global_position if is_instance_valid(placed_ref) else "?",
+							placed_ref.scale if is_instance_valid(placed_ref) else "?",
 						]
 					),
 			)

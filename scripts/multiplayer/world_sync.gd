@@ -1180,11 +1180,19 @@ static func play_place_pop(node: Node3D) -> void:
 		return
 	var target := node.scale
 	node.scale = target * 0.01
-	var t := node.create_tween()
+	# Bind to the SceneTree, not the node — a reparent/remove+re-add would
+	# kill a node-bound tween and leave the object stuck at ~0 scale.
+	var t := node.get_tree().create_tween()
 	t.tween_property(node, "scale", target * 1.12, 0.14) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.tween_property(node, "scale", target, 0.09) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Guarantee restoration even if the tween is killed mid-run.
+	node.get_tree().create_timer(0.4).timeout.connect(
+		func():
+			if is_instance_valid(node):
+				node.scale = target,
+	)
 
 
 ## Despawn a world object on the host and tell all clients to despawn it too.
