@@ -54,7 +54,7 @@ var _onboarding_panel: PanelContainer
 var _onboarding_text: RichTextLabel
 var _displayed_task_id := ""
 var _displayed_parts: Dictionary = { }
-var _onboarding_revision := -1
+var _task_transitioning := false
 var _discovery_overlay: Control
 var _discovery_title: Label
 var _discovery_detail: Label
@@ -684,39 +684,48 @@ func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
 		return
 	var task := OnboardingManager.get_task(progress)
 	var next_id: String = task.get("id", "")
-	var revision := int(progress.get("revision", 0))
-	_onboarding_revision = revision
 	var should_hold_completion: bool = (
 		_displayed_task_id != "" and next_id != _displayed_task_id
 		and next_id != "day_end" and not bool(progress.get("day_end_active", false))
 	)
-	if not should_hold_completion and next_id == _displayed_task_id and next_id != "":
+	if (
+		not should_hold_completion and not _task_transitioning
+		and next_id == _displayed_task_id and next_id != ""
+	):
 		var new_parts: Dictionary = progress.get("completed_parts", { })
 		for part in new_parts:
 			if new_parts.get(part, false) and not _displayed_parts.get(part, false):
 				_play_onboarding_completion_sound()
 				break
-	if should_hold_completion:
+	if should_hold_completion and not _task_transitioning:
+		_task_transitioning = true
 		_play_onboarding_completion_sound()
-		# Render the old task as crossed out, then animate it out.
+		# Render the old task as crossed out, then animate it out. Claim the
+		# new id up front — rapid-fire events during the animation would
+		# otherwise re-enter this branch and replay the transition.
 		var old_progress := progress.duplicate(true)
 		old_progress["current_task_id"] = _displayed_task_id
 		old_progress["completed_parts"] = { }
+		_displayed_task_id = next_id
 		_render_onboarding(old_progress, true, true)
 		# Brief pause to show the crossed-out state, then exit animation.
 		await get_tree().create_timer(1.0).timeout
-		if _stand != stand or _onboarding_revision != revision:
-			return
-		await _animate_task_exit()
-		if _stand != stand or _onboarding_revision != revision:
-			return
-		_displayed_task_id = next_id
-		_displayed_parts = { }
-		# Render the new task off-screen, then animate it in.
-		_render_onboarding(progress)
-		await _animate_task_enter()
-		if _stand == stand and _onboarding_revision == revision:
-			_displayed_parts = progress.get("completed_parts", { }).duplicate(true)
+		if _stand == stand:
+			await _animate_task_exit()
+		if _stand == stand:
+			_displayed_parts = { }
+			# Use the live progress — events that arrived mid-animation may
+			# have already advanced or part-completed the new task.
+			var latest: Dictionary = stand.onboarding_progress
+			_render_onboarding(latest)
+			await _animate_task_enter()
+			if _stand == stand:
+				var latest_task := OnboardingManager.get_task(latest)
+				_displayed_task_id = latest_task.get("id", "")
+				_displayed_parts = latest.get("completed_parts", { }).duplicate(true)
+		_task_transitioning = false
+		return
+	if _task_transitioning:
 		return
 	_displayed_task_id = next_id
 	_displayed_parts = progress.get("completed_parts", { }).duplicate(true)
@@ -726,7 +735,7 @@ func _on_onboarding_progress(stand: StandUnit, progress: Dictionary) -> void:
 func _play_onboarding_completion_sound() -> void:
 	var player := WorldSync.get_local_player() as Node3D
 	var position := player.global_position if player != null else Vector3.ZERO
-	AudioManager.play_sfx("trash", position)
+	AudioManager.play_sfx("task_done", position)
 
 
 ## Exit animation: slide the onboarding panel left slightly, then off to

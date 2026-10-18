@@ -12,24 +12,39 @@ render_mode blend_mix;
 uniform sampler2D outline_texture : source_color, repeat_disable;
 uniform float outline_width : hint_range(0.5, 6.0) = 2.5;
 uniform vec4  outline_color : source_color = vec4(1.0, 0.85, 0.0, 1.0);
+// Screen-space rects (UV coords: xy = min, zw = max) where the outline is
+// suppressed — fed per-frame with the on-screen rect of every visible
+// "npc_bubble" sprite so hover outlines never paint over bubble text.
+uniform int   hole_count = 0;
+uniform vec4  hole_rects[8];
 
 void fragment() {
-	vec2 tex_size = vec2(textureSize(outline_texture, 0));
-	vec2 step = vec2(outline_width) / tex_size;
+	bool in_hole = false;
+	for (int i = 0; i < hole_count; i++) {
+		vec4 r = hole_rects[i];
+		if (UV.x >= r.x && UV.x <= r.z && UV.y >= r.y && UV.y <= r.w) {
+			in_hole = true;
+		}
+	}
+	float edge = 0.0;
+	if (!in_hole) {
+		vec2 tex_size = vec2(textureSize(outline_texture, 0));
+		vec2 step = vec2(outline_width) / tex_size;
 
-	float center = texture(outline_texture, UV).a;
+		float center = texture(outline_texture, UV).a;
 
-	float n =
-		texture(outline_texture, UV + vec2( step.x,  0.0    )).a +
-		texture(outline_texture, UV + vec2(-step.x,  0.0    )).a +
-		texture(outline_texture, UV + vec2( 0.0,     step.y )).a +
-		texture(outline_texture, UV + vec2( 0.0,    -step.y )).a +
-		texture(outline_texture, UV + vec2( step.x,  step.y )).a +
-		texture(outline_texture, UV + vec2(-step.x,  step.y )).a +
-		texture(outline_texture, UV + vec2( step.x, -step.y )).a +
-		texture(outline_texture, UV + vec2(-step.x, -step.y )).a;
+		float n =
+			texture(outline_texture, UV + vec2( step.x,  0.0    )).a +
+			texture(outline_texture, UV + vec2(-step.x,  0.0    )).a +
+			texture(outline_texture, UV + vec2( 0.0,     step.y )).a +
+			texture(outline_texture, UV + vec2( 0.0,    -step.y )).a +
+			texture(outline_texture, UV + vec2( step.x,  step.y )).a +
+			texture(outline_texture, UV + vec2(-step.x,  step.y )).a +
+			texture(outline_texture, UV + vec2( step.x, -step.y )).a +
+			texture(outline_texture, UV + vec2(-step.x, -step.y )).a;
 
-	// edge = neighbour is filled, this pixel is not  ->  outer border only
-	float edge = clamp(n, 0.0, 1.0) * (1.0 - center);
+		// edge = neighbour is filled, this pixel is not -> outer border
+		edge = clamp(n, 0.0, 1.0) * (1.0 - center);
+	}
 	COLOR = outline_color * edge;
 }

@@ -256,16 +256,6 @@ const HELD_NONE := 0
 const HELD_SUPPLY_BOX := 3
 
 
-func _get_next_fruit_slot_position(fruit_type: String) -> Vector3:
-	var grid: Dictionary = fruit_grids.get(fruit_type, { })
-	var nodes: Array[Node3D] = grid.get("nodes", [])
-	var origins: Array[Vector3] = grid.get("origins", [])
-	var index := mini(roundi(fruit_amounts.get(fruit_type, 0.0)), nodes.size() - 1)
-	if index >= 0 and index < nodes.size() and index < origins.size():
-		return nodes[index].get_parent_node_3d().to_global(origins[index])
-	return global_position
-
-
 func interact(player: Node) -> void:
 	# Only the stand that owns this bin can interact with it.
 	if not can_player_use(player):
@@ -283,9 +273,7 @@ func interact(player: Node) -> void:
 			var scoop_space: float = get_capacity(itype) - fruit_amounts.get(itype, 0.0)
 			if scoop_space <= 0.0:
 				return
-			var slot_position := _get_next_fruit_slot_position(itype)
 			add_amount(itype, data.get("amount", Balancing.GRAB_AMOUNT), _get_hand_pos(player))
-			player.inventory.play_fruit_particles(itype, slot_position, true)
 			player.inventory.clear_held()
 			return
 		# Depositing from delivery box
@@ -307,9 +295,7 @@ func interact(player: Node) -> void:
 				return
 			# Deposit one unit per click so the player sees the bin fill up.
 			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
-			var slot_position := _get_next_fruit_slot_position(itype)
 			add_amount(itype, deposited, _get_hand_pos(player))
-			player.inventory.play_fruit_particles(itype, slot_position)
 			EventBus.supply_box_deposited.emit(itype, deposited)
 			OnboardingManager.report(
 				OnboardingManager.stand_for_node(self),

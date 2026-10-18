@@ -154,6 +154,46 @@ func _on_frame_pre_draw() -> void:
 		_update_shader_width()
 	# Final sync right before rendering as a last-chance correction.
 	_sync_outline_camera()
+	_update_bubble_holes(vp_size)
+
+
+## Punches holes in the outline where NPC dialogue bubbles are on screen.
+## Each visible "npc_bubble" Sprite3D contributes one rect (converted to
+## UV space) so hover outlines never paint over bubble text.
+func _update_bubble_holes(vp_size: Vector2i) -> void:
+	var mat := _display.material as ShaderMaterial
+	if mat == null:
+		return
+	var holes := PackedVector4Array()
+	for node in get_tree().get_nodes_in_group("npc_bubble"):
+		if holes.size() >= 8:
+			break
+		var sprite := node as Sprite3D
+		if sprite == null or not sprite.visible or not sprite.is_inside_tree():
+			continue
+		var center := sprite.global_position
+		if _main_cam.is_position_behind(center):
+			continue
+		var tex_size := sprite.texture.get_size() if sprite.texture else Vector2.ZERO
+		if tex_size.x <= 0.0 or tex_size.y <= 0.0:
+			continue
+		var dist := maxf(_main_cam.global_position.distance_to(center), 0.3)
+		var px_per_meter := (vp_size.y / (2.0 * dist * tan(deg_to_rad(_main_cam.fov) * 0.5)))
+		var half_size := tex_size * sprite.pixel_size * px_per_meter * 0.5
+		var screen_pos := _main_cam.unproject_position(center)
+		var min_px := screen_pos - half_size - Vector2(4, 4)
+		var max_px := screen_pos + half_size + Vector2(4, 4)
+		holes.append(
+			Vector4(
+				min_px.x / vp_size.x,
+				min_px.y / vp_size.y,
+				max_px.x / vp_size.x,
+				max_px.y / vp_size.y,
+			)
+		)
+	mat.set_shader_parameter("hole_count", holes.size())
+	if not holes.is_empty():
+		mat.set_shader_parameter("hole_rects", holes)
 
 
 func _sync_outline_camera() -> void:

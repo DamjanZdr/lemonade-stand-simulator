@@ -210,11 +210,13 @@ func _finish_held_disposal(player: Player) -> void:
 
 ## Quadratic bezier helper for the trash arc animation. `t` goes 0 -> 1,
 ## `a`/`b`/`c` are start/mid/end, `mesh` is the node to move.
-func _bezier_pos(t: float, a: Vector3, b: Vector3, c: Vector3, mesh: Node3D) -> void:
-	if mesh == null or not is_instance_valid(mesh):
+func _bezier_pos(t: float, a: Vector3, b: Vector3, c: Vector3, mesh: Variant) -> void:
+	# Variant param: a freed mesh can't convert to a typed Node3D argument,
+	# which fails the call before the validity check gets a chance to run.
+	if mesh == null or not is_instance_valid(mesh) or not mesh is Node3D:
 		return
 	var u := 1.0 - t
-	mesh.global_position = u * u * a + 2.0 * u * t * b + t * t * c
+	(mesh as Node3D).global_position = u * u * a + 2.0 * u * t * b + t * t * c
 
 
 ## Host-side: apply money refund. The disposable visual was removed — the

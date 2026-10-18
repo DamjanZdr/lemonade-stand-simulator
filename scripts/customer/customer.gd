@@ -23,6 +23,14 @@ var state: CustomerState = CustomerState.WALKING
 var _stun_timer: float = 0.0
 const _STUN_DOWN_DURATION: float = 2.0
 
+## Order-bubble world rendering: the UI panel renders at BUBBLE_UI_SCALE×
+## font resolution into a SubViewport, shown on a billboarded Sprite3D.
+## The bubble joins group "npc_bubble" so the outline overlay can skip
+## drawing hover outlines over its screen area.
+const BUBBLE_UI_SCALE: float = 4.0
+const BUBBLE_PIXEL_SIZE: float = 0.0013
+const BUBBLE_LOCAL_POS := Vector3(0.0, 1.3, 0.0)
+
 ## Recovery: playing Fall in reverse to get back up.
 var _recovering: bool = false
 var _recover_timer: float = 0.0
@@ -137,7 +145,8 @@ var _talk_anim_playing: bool = false
 @onready var order_label: Label3D = $EmojiAnchor/OrderLabel
 @onready var _npc: Node3D = $NPCBody
 
-var _ui_layer: CanvasLayer = null
+var _bubble_viewport: SubViewport = null
+var _bubble_sprite: Sprite3D = null
 var _ui_label: Label = null
 var _ui_panel: Panel = null
 
@@ -226,11 +235,6 @@ func _exit_tree() -> void:
 		EventBus.change_tendered_updated.disconnect(_on_change_tendered)
 	if _change_callable.is_valid() and EventBus.change_finalized.is_connected(_change_callable):
 		EventBus.change_finalized.disconnect(_change_callable)
-
-
-func _process(_delta: float) -> void:
-	if _ui_label != null and _ui_label.visible:
-		_update_bubble_screen_pos()
 
 
 func _physics_process(delta: float) -> void:
@@ -1085,6 +1089,10 @@ func _on_debug_force_happy() -> void:
 func step_forward(new_pos: Vector3) -> void:
 	## Called by the spawner when a closer queue slot opens up.
 	_is_rotating_to_face = false # cancel any in-progress facing rotation
+	# Moving up in the queue restores 20% of max patience — the customer
+	# feels the line is making progress.
+	patience = minf(patience + patience_max * 0.2, patience_max)
+	_refresh_patience_bar(patience / patience_max)
 	if state == CustomerState.WALKING:
 		queue_position = new_pos # redirect mid-walk to the closer spot
 	elif state == CustomerState.WAITING:
@@ -1223,38 +1231,12 @@ func _set_order_text(text: String) -> void:
 	_ui_label.text = text
 	_ui_label.visible = true
 	if _ui_panel:
-		# Resize synchronously rather than deferring: _process() runs
-		# _update_bubble_screen_pos() every frame while the label is visible,
-		# and it forces the panel visible again using whatever size it has
-		# *right now* — deferring the resize left a 1-frame window where that
-		# happened with the stale (pre-update) size, which also contributed
-		# to the panel/text looking misaligned right after the text changed.
+		# Resize synchronously rather than deferring — a deferred resize
+		# leaves a 1-frame window where the sprite shows the stale size.
 		_resize_order_panel()
 	# Sync any bubble text change to clients so they see change/feedback/wrong-item messages.
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		sync_show_order(text)
-
-
-func _update_bubble_screen_pos() -> void:
-	if _ui_panel == null or emoji_anchor == null:
-		return
-	var cam := get_viewport().get_camera_3d()
-	if cam == null:
-		return
-	# Position the order bubble at chest height.
-	var bubble_pos := global_position + Vector3(0, 1.1, 0)
-	if cam.is_position_behind(bubble_pos):
-		_ui_panel.visible = false
-		return
-	_ui_panel.visible = true
-	var screen_pos := cam.unproject_position(bubble_pos)
-	# Scale the screen-space bubble with distance so it doesn't look
-	# huge when the NPC is far away.
-	var dist := cam.global_position.distance_to(bubble_pos)
-	var ui_scale := clampf(4.0 / dist, 0.25, 1.3)
-	_ui_panel.scale = Vector2(ui_scale, ui_scale)
-	var panel_size := _ui_panel.size * ui_scale
-	_ui_panel.position = screen_pos - panel_size * 0.5
 
 
 func _show_order() -> void:
@@ -1290,6 +1272,8 @@ func _sync_show_order(text: String) -> void:
 			_ui_panel.visible = false
 		if _ui_label:
 			_ui_label.visible = false
+		if _bubble_sprite:
+			_bubble_sprite.visible = false
 	else:
 		_set_order_text(text)
 
@@ -1385,7 +1369,7 @@ func _resize_order_panel() -> void:
 	if _ui_panel == null or _ui_label == null:
 		return
 	var label_size := _ui_label.get_combined_minimum_size()
-	var pad := Vector2(8, 4)
+	var pad := Vector2(8, 4) * BUBBLE_UI_SCALE
 	_ui_panel.size = label_size + pad * 2
 	_ui_label.position = pad
 	# The label's own size never got updated here, so as the text got shorter
@@ -1393,7 +1377,13 @@ func _resize_order_panel() -> void:
 	# stale bounds instead of the new (smaller) panel — causing the text to
 	# drift out of alignment with the panel around it.
 	_ui_label.size = label_size
+	# The label already renders at BUBBLE_UI_SCALE× font size, so the
+	# viewport matches the panel one-to-one.
+	if _bubble_viewport != null:
+		_bubble_viewport.size = Vector2i(_ui_panel.size.ceil())
 	_ui_panel.visible = true
+	if _bubble_sprite:
+		_bubble_sprite.visible = true
 
 
 func _create_rounded_panel_texture(
@@ -1422,42 +1412,71 @@ func _hide_order_bubble() -> void:
 		_ui_panel.visible = false
 	if _ui_label:
 		_ui_label.visible = false
+	if _bubble_sprite:
+		_bubble_sprite.visible = false
 	sync_show_order("")
 
 
 func _build_order_bubble() -> void:
-	# Hide the scene's Label3D — we use a CanvasLayer-based label instead
-	# so the text renders above the outline overlay (CanvasLayer layer=100).
+	# Hide the scene's Label3D — we use a SubViewport-rendered panel on a
+	# billboarded Sprite3D instead, so the bubble is a fixed-size
+	# world-space element (same pattern as the patience circle).
 	order_label.visible = false
 
-	_ui_layer = CanvasLayer.new()
-	_ui_layer.name = "OrderBubbleLayer"
-	_ui_layer.layer = 101
-	add_child(_ui_layer)
+	_bubble_viewport = SubViewport.new()
+	_bubble_viewport.name = "OrderBubbleViewport"
+	_bubble_viewport.transparent_bg = true
+	_bubble_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_bubble_viewport.disable_3d = true
+	_bubble_viewport.size = Vector2i(64, 64)
+	add_child(_bubble_viewport)
 
 	_ui_panel = Panel.new()
 	_ui_panel.name = "OrderPanel"
 	_ui_panel.visible = false
 	_ui_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.05, 0.05, 0.8)
-	sb.corner_radius_top_left = 5
-	sb.corner_radius_top_right = 5
-	sb.corner_radius_bottom_left = 5
-	sb.corner_radius_bottom_right = 5
+	sb.bg_color = Color(0.0, 0.0, 0.0, 0.97)
+	var corner := int(5 * BUBBLE_UI_SCALE)
+	sb.corner_radius_top_left = corner
+	sb.corner_radius_top_right = corner
+	sb.corner_radius_bottom_left = corner
+	sb.corner_radius_bottom_right = corner
 	_ui_panel.add_theme_stylebox_override("panel", sb)
-	_ui_layer.add_child(_ui_panel)
+	_bubble_viewport.add_child(_ui_panel)
 
 	_ui_label = Label.new()
 	_ui_label.name = "OrderLabel"
 	_ui_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ui_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ui_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_ui_label.add_theme_font_size_override("font_size", 12)
+	# Render at BUBBLE_UI_SCALE× font size — Control scaling would just
+	# bitmap-upscale the rasterized glyphs and look pixelated.
+	_ui_label.add_theme_font_size_override("font_size", int(12 * BUBBLE_UI_SCALE))
 	_ui_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	_ui_label.add_theme_constant_override("outline_size", 2)
+	_ui_label.add_theme_constant_override("outline_size", int(2 * BUBBLE_UI_SCALE))
 	_ui_label.visible = false
 	_ui_panel.add_child(_ui_label)
+
+	_bubble_sprite = Sprite3D.new()
+	_bubble_sprite.name = "OrderBubble"
+	_bubble_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_bubble_sprite.double_sided = true
+	_bubble_sprite.no_depth_test = true
+	_bubble_sprite.shaded = false
+	_bubble_sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_bubble_sprite.pixel_size = BUBBLE_PIXEL_SIZE
+	_bubble_sprite.position = BUBBLE_LOCAL_POS
+	_bubble_sprite.texture = _bubble_viewport.get_texture()
+	_bubble_sprite.visible = false
+	_bubble_sprite.add_to_group("npc_bubble")
+	add_child(_bubble_sprite)
+	_apply_ui_tonemap_comp(_bubble_sprite)
+	if not Engine.is_editor_hint():
+		EventBus.exposure_changed.connect(
+			func(exposure: float):
+				_apply_ui_tonemap_comp(_bubble_sprite, exposure),
+		)
 
 
 func _build_patience_circle() -> void:
@@ -1555,10 +1574,22 @@ static func get_ui_tonemap_shader() -> Shader:
 	if _ui_tonemap_shader == null:
 		_ui_tonemap_shader = Shader.new()
 		_ui_tonemap_shader.code = (
-			"shader_type spatial;\n" + "render_mode unshaded, cull_disabled;\n"
-			+ "uniform sampler2D tex;\n" + "uniform float boost = 1.0;\n"
-			+ "void fragment() {\n" + "\tvec4 c = texture(tex, UV);\n"
-			+ "\tALBEDO = c.rgb * boost;\n" + "\tALPHA = c.a;\n" + "}\n"
+			"shader_type spatial;\n"
+			+ "render_mode unshaded, cull_disabled, depth_test_disabled;\n"
+			+ "uniform sampler2D tex;\n"
+			+ "uniform float boost = 1.0;\n"
+			# Billboard manually — material_override drops Sprite3D's own
+			# billboard flag, leaving the quad mirrored when seen from behind.
+			+ "void vertex() {\n"
+			+ "\tMODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0],"
+			+ " INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);\n"
+			+ "\tMODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);\n"
+			+ "}\n"
+			+ "void fragment() {\n"
+			+ "\tvec4 c = texture(tex, UV);\n"
+			+ "\tALBEDO = c.rgb * boost;\n"
+			+ "\tALPHA = c.a;\n"
+			+ "}\n"
 		)
 	return _ui_tonemap_shader
 

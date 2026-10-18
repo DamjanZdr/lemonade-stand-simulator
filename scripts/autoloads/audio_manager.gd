@@ -88,9 +88,15 @@ func _preload_all() -> void:
 		"fruit_bin": "fruit bin placed.mp3",
 		"table": "table placed.mp3",
 		"trash": "trash.mp3",
+		"task_done": "task done.mp3",
 		"car_engine": "car engine.mp3",
 		"car_beep": "car beep.mp3",
 		"start_engine": "start engine.mp3",
+		"step_concrete_1": "steps/concrete1.mp3",
+		"step_concrete_2": "steps/concrete2.mp3",
+		"step_concrete_3": "steps/concrete3.mp3",
+		"step_dirt_1": "steps/dirt1.mp3",
+		"step_dirt_2": "steps/dirt2.mp3",
 	}
 	for key in files:
 		var path: String = SFX_DIR + files[key]

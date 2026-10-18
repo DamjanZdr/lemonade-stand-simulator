@@ -1115,6 +1115,7 @@ func spawn_networked(
 	clean_state.erase("_net_pitcher_recipe")
 	clean_state.erase("_net_delivery_cell_idx")
 	clean_state.erase("_net_delivery_grid_path")
+	clean_state.erase("_net_place_fx")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	# Give the object a unique name and stable network ID so despawn and
@@ -1169,6 +1170,21 @@ func spawn_networked(
 		[scene_path, parent_path, obj.name, net_id, global_pos, global_rot, obj_scale, state],
 	)
 	return obj
+
+
+## Scale-pop juice for player-placed objects: grow from ~zero, slight
+## overshoot, settle at the final scale. Objects opt in via the
+## "_net_place_fx" spawn-state flag so host and remote clients both see it.
+static func play_place_pop(node: Node3D) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var target := node.scale
+	node.scale = target * 0.01
+	var t := node.create_tween()
+	t.tween_property(node, "scale", target * 1.12, 0.14) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(node, "scale", target, 0.09) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 ## Despawn a world object on the host and tell all clients to despawn it too.
@@ -1663,6 +1679,7 @@ func _spawn_on_clients(
 	var net_pitcher_recipe: Dictionary = state.get("_net_pitcher_recipe", { })
 	var net_delivery_cell_idx: int = state.get("_net_delivery_cell_idx", -1)
 	var net_delivery_grid_path: String = state.get("_net_delivery_grid_path", "")
+	var net_place_fx: bool = state.get("_net_place_fx", false)
 	var clean_state := state.duplicate()
 	clean_state.erase("_net_groups")
 	clean_state.erase("_net_scale")
@@ -1670,6 +1687,7 @@ func _spawn_on_clients(
 	clean_state.erase("_net_pitcher_recipe")
 	clean_state.erase("_net_delivery_cell_idx")
 	clean_state.erase("_net_delivery_grid_path")
+	clean_state.erase("_net_place_fx")
 	for key in clean_state:
 		obj.set(key, clean_state[key])
 	obj.name = obj_name
@@ -1714,6 +1732,8 @@ func _spawn_on_clients(
 	for g in net_groups:
 		obj.add_to_group(g)
 	_node_cache[obj_name] = obj
+	if net_place_fx and obj is Node3D:
+		play_place_pop(obj as Node3D)
 	GameLog.log("[WorldSync] Client spawned %s OK scale=%s" % [obj_name, str(obj_scale)])
 
 

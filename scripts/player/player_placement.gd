@@ -224,6 +224,7 @@ func _place_cup_stack_from_box() -> void:
 		"max_capacity": 10,
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
+		"_net_place_fx": true,
 	}
 	# Ownership follows the stand the item lands on, not the placer.
 	var stand_name := _get_placement_stand_name()
@@ -237,6 +238,7 @@ func _place_cup_stack_from_box() -> void:
 	) as CupStack
 	if stack:
 		stack.scale = placement_scale
+		WorldSync.play_place_pop(stack)
 		stack.add_to_group("container")
 
 	# Deduct one cup from held box
@@ -390,6 +392,7 @@ func _place_single_cup(_filled: bool) -> void:
 		"max_capacity": 10,
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
+		"_net_place_fx": true,
 	}
 	# Ownership follows the stand the item lands on, not the placer.
 	var stand_name := _get_placement_stand_name()
@@ -403,6 +406,7 @@ func _place_single_cup(_filled: bool) -> void:
 	) as CupStack
 	if stack:
 		stack.scale = placement_scale
+		WorldSync.play_place_pop(stack)
 		stack.add_to_group("container")
 
 	_destroy_ghost()
@@ -438,11 +442,13 @@ func _place_filled_cup() -> void:
 		"state": Cup.CupState.FILLED,
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
+		"_net_place_fx": true,
 	}
 	var cup_scene_path := "res://scenes/objects/cup.tscn"
 	var cup := WorldSync.request_spawn(cup_scene_path, cup_pos, cup_rot, state) as Cup
 	if cup:
 		cup.scale = placement_scale
+		WorldSync.play_place_pop(cup)
 		cup.add_to_group("container")
 		# Ensure collision is active and on the _player.interaction layer
 		if cup.physics != null:
@@ -470,6 +476,7 @@ func _place_held_supply_box_on(
 	if _ghost != null and not _ghost_valid:
 		return null
 	var state: Dictionary = extra_state.duplicate()
+	state["_net_place_fx"] = true
 	if _player.held_item_data.get("is_equipment", false):
 		state["is_equipment"] = true
 		state["equipment_type"] = _player.held_item_data.get("equipment_type", "")
@@ -492,6 +499,7 @@ func _place_held_supply_box_on(
 		# root origin which may be above the visual bottom.
 		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
 		box.global_position.y += y_diff
+		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", place_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()
@@ -629,7 +637,7 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 
 
 func _drop_held_box() -> void:
-	var state: Dictionary = { }
+	var state: Dictionary = { "_net_place_fx": true }
 	if _player.held_item_data.get("is_equipment", false):
 		state["is_equipment"] = true
 		state["equipment_type"] = _player.held_item_data.get("equipment_type", "")
@@ -666,6 +674,7 @@ func _drop_held_box() -> void:
 		# root origin which may be above the visual bottom.
 		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
 		box.global_position.y += y_diff
+		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", drop_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()
@@ -758,6 +767,7 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 		"quantity": 0.0,
 		"trash_value": _player.held_item_data.get("trash_value", 0.0),
 		"trash_type": _player.held_item_data.get("trash_type", "empty_box"),
+		"_net_place_fx": true,
 	}
 	var drop_pos: Vector3
 	if place_pos != Vector3.ZERO:
@@ -786,6 +796,7 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 		# root origin which may be above the visual bottom.
 		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
 		box.global_position.y += y_diff
+		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", drop_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()
@@ -814,6 +825,7 @@ func _place_held_trash_box_on_stack(root: SupplyBox) -> void:
 		"trash_value": _player.held_item_data.get("trash_value", 0.0),
 		"trash_type": _player.held_item_data.get("trash_type", "empty_box"),
 		"stack_base_id": top.get_instance_id(),
+		"_net_place_fx": true,
 	}
 	# Inherit delivery grid metas from the box we're stacking on.
 	if top.has_meta("delivery_grid_path"):
@@ -828,6 +840,7 @@ func _place_held_trash_box_on_stack(root: SupplyBox) -> void:
 	) as SupplyBox
 	if box:
 		box.update_metrics()
+		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", place_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()
@@ -865,6 +878,7 @@ func _place_held_trash_box_at(
 	place_rot: Vector3,
 	state: Dictionary,
 ) -> SupplyBox:
+	state["_net_place_fx"] = true
 	var box := WorldSync.request_spawn(
 		"res://scenes/objects/supply_box.tscn",
 		place_pos,
@@ -875,6 +889,7 @@ func _place_held_trash_box_at(
 		box.update_metrics()
 		var y_diff := box.bottom_offset - SupplyBox.DEFAULT_BOTTOM_OFFSET
 		box.global_position.y += y_diff
+		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", place_pos)
 	_destroy_ghost()
 	_player.inventory.clear_held()
@@ -909,6 +924,7 @@ func _place_equipment_from_box() -> void:
 	state["starting_count"] = 0
 	state["_net_groups"] = ["container"]
 	state["_net_scale"] = placement_scale
+	state["_net_place_fx"] = true
 	# Ownership follows the stand the item lands on, not the placer.
 	var stand_name := _get_placement_stand_name()
 	if stand_name != "":
@@ -916,6 +932,7 @@ func _place_equipment_from_box() -> void:
 	var instance := WorldSync.request_spawn(scene_path, place_pos, place_rot, state) as Node3D
 	if instance:
 		instance.scale = placement_scale
+		WorldSync.play_place_pop(instance)
 		instance.add_to_group("container")
 		# Add pitcher to pitcher group for water tap detection
 		if instance is Pitcher:
@@ -1048,7 +1065,7 @@ func _create_container_hand_mesh(
 		temp.queue_free()
 	elif container_type == "pitcher" and inst is Pitcher:
 		var pitcher := inst as Pitcher
-		var temp := Node.new()
+		var temp := Node3D.new()
 		temp.name = "PitcherHandTemp"
 		temp.visible = false
 		_player.add_child(temp)
@@ -1383,15 +1400,20 @@ func _update_supply_box_ghost() -> void:
 
 	# Check if looking at another SupplyBox ΓÇö stack on top
 	var node: Node = collider
+	var hit_box: SupplyBox = null
 	var target_box: SupplyBox = null
 	while node != null:
 		if node is SupplyBox:
-			target_box = _get_topmost_box_in_stack(node as SupplyBox)
+			hit_box = node as SupplyBox
+			target_box = _get_topmost_box_in_stack(hit_box)
 			break
 		node = node.get_parent()
 
 	if target_box != null and target_box.is_inside_tree():
-		if not is_any_stand_surface(target_box):
+		# Validate the box actually hit — the click path checks the same
+		# box, so ghost and placement stay consistent even if a stacked
+		# box above lost its stand_owner.
+		if not is_any_stand_surface(hit_box):
 			_ghost.visible = false
 			_ghost_valid = false
 			return
@@ -1481,8 +1503,12 @@ func _update_equipment_box_ghost() -> void:
 	var node: Node = collider
 	while node != null:
 		if node is SupplyBox:
-			var target_box := _get_topmost_box_in_stack(node as SupplyBox)
-			if target_box == null or not target_box.is_inside_tree():
+			var hit_box := node as SupplyBox
+			var target_box := _get_topmost_box_in_stack(hit_box)
+			if (
+				target_box == null or not target_box.is_inside_tree()
+				or not is_any_stand_surface(hit_box)
+			):
 				if _ghost != null:
 					_ghost.visible = false
 				_ghost_valid = false
@@ -1861,6 +1887,9 @@ func _try_place_container() -> Node3D:
 				source_node.scale,
 				true,
 			)
+			# Pop after sync_move_and_show captured the real scale — the
+			# broadcast must not see the tween's shrunken start value.
+			WorldSync.play_place_pop(source_node)
 			EventBus.container_placed.emit(container_type, source_node)
 			AudioManager.play_sfx("table", source_node.global_position, -1.0, 0.05, 0.85)
 			_destroy_ghost()
@@ -1881,6 +1910,7 @@ func _try_place_container() -> Node3D:
 		"starting_count": saved_count,
 		"_net_groups": ["container"],
 		"_net_scale": placement_scale,
+		"_net_place_fx": true,
 	}
 	# Include fruit bin amounts in spawn state so the host (and all
 	# clients) receive them. The host applies them after _ready().
@@ -1923,6 +1953,7 @@ func _try_place_container() -> Node3D:
 		_player.inventory.clear_held()
 		return null
 	instance.scale = placement_scale
+	WorldSync.play_place_pop(instance)
 	instance.add_to_group("container")
 	# Add pitcher to pitcher group for water tap detection
 	if instance is Pitcher:

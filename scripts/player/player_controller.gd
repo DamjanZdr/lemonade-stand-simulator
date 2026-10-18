@@ -62,6 +62,132 @@ var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
 var _priceboard_camera_original_top_level := false
 
+# --- First-person view bob ---
+# Driven by distance travelled, so the bob rate always matches actual
+# ground speed (and thus roughly the Walk/Run/Crouch anim cadence).
+var _bob_phase: float = 0.0
+var _bob_strength: float = 0.0
+var _cam_base_pos: Vector3 = Vector3.ZERO
+var _cam_base_set: bool = false
+const BOB_STEP_LENGTH: float = 2.5 # meters per full left-right bob cycle
+const BOB_AMP_Y_WALK: float = 0.025
+const BOB_AMP_Y_RUN: float = 0.042
+const BOB_AMP_Y_CROUCH: float = 0.012
+const BOB_LATERAL_RATIO: float = 0.9
+const BOB_GLOBAL_SCALE: float = 0.7
+
+
+## Subtle camera bob — vertical dips twice per step cycle, lateral sway
+## once (left foot / right foot). Amplitude follows the current gait.
+func _update_view_bob(delta: float) -> void:
+	var cam := _player.camera
+	if cam == null:
+		return
+	if not _cam_base_set:
+		_cam_base_pos = cam.position
+		_cam_base_set = true
+	# Priceboard focus and stun own the camera — don't fight them.
+	if _in_priceboard_mode or _player.is_stunned() or _player.stun_recover_timer > 0.0:
+		_bob_strength = 0.0
+		if cam.position != _cam_base_pos:
+			cam.position = _cam_base_pos
+		return
+	var horizontal_vel := Vector3(_player.velocity.x, 0.0, _player.velocity.z).length()
+	var moving := _player.is_on_floor() and horizontal_vel > 0.5
+	_bob_strength = lerpf(_bob_strength, 1.0 if moving else 0.0, minf(delta * 8.0, 1.0))
+	if moving:
+		var prev_step := int(_bob_phase / PI)
+		_bob_phase += horizontal_vel * delta * TAU / BOB_STEP_LENGTH
+		# A foot lands each half cycle — play a step at every PI crossing.
+		if int(_bob_phase / PI) != prev_step:
+			_play_footstep()
+	if _bob_strength < 0.001:
+		if cam.position != _cam_base_pos:
+			cam.position = _cam_base_pos
+		return
+	var amp_y := BOB_AMP_Y_WALK
+	if _player.is_crouching:
+		amp_y = BOB_AMP_Y_CROUCH
+	elif _is_sprinting:
+		amp_y = BOB_AMP_Y_RUN
+	var bob := Vector3(
+		sin(_bob_phase) * amp_y * BOB_LATERAL_RATIO,
+		sin(_bob_phase * 2.0) * amp_y,
+		0.0,
+	)
+	cam.position = _cam_base_pos + bob * _bob_strength * BOB_GLOBAL_SCALE
+
+
+## Footstep SFX at each bob half-cycle. Concrete everywhere; dirt when
+## standing on grass (CSGBox3D / "grass_surface" group in neighborhood).
+func _play_footstep() -> void:
+	var key := "step_concrete_%d" % randi_range(1, 3)
+	if _is_on_grass(_get_ground_collider()):
+		key = "step_dirt_%d" % randi_range(1, 2)
+	AudioManager.play_sfx(key, _player.global_position, -1.0, 0.08)
+
+
+## Grass under the player's feet? Collider type/group/name on the floor
+## contact or its ancestors — "grass" covers GrassPatch* nodes, "csgbox"
+## covers collision bodies CSG generates under the CSGBox3D's name.
+## Fallback: grass patches are visuals whose floor collider can be a
+## generated road/sidewalk body — so also test the feet against every
+## grass multimesh's world-space footprint.
+func _is_on_grass(ground: Node) -> bool:
+	var node := ground
+	while node != null:
+		if (
+			node is CSGBox3D or node.is_in_group("grass_surface")
+			or "grass" in node.name.to_lower() or "csgbox" in node.name.to_lower()
+		):
+			return true
+		node = node.get_parent()
+	var feet := _player.global_position
+	for a in _get_grass_aabbs():
+		if (
+			feet.x >= a.position.x + 0.05 and feet.x <= a.end.x - 0.05
+			and feet.z >= a.position.z + 0.05 and feet.z <= a.end.z - 0.05
+			and feet.y >= a.position.y - 0.5 and feet.y <= a.end.y + 0.4
+		):
+			return true
+	return false
+
+
+var _grass_aabbs: Array[AABB] = []
+var _grass_aabbs_root: Node = null
+
+
+func _get_grass_aabbs() -> Array[AABB]:
+	var root := get_tree().current_scene
+	if root == _grass_aabbs_root:
+		return _grass_aabbs
+	_grass_aabbs_root = root
+	_grass_aabbs.clear()
+	if root == null:
+		return _grass_aabbs
+	for grass_root in root.find_children("Grass", "Node3D", true, false):
+		for child in grass_root.get_children():
+			if child is MultiMeshInstance3D:
+				_grass_aabbs.append(child.global_transform * child.get_aabb())
+	return _grass_aabbs
+
+
+## What the player is standing on: the floor contact from the last
+## move_and_slide is ground truth; a raycast is the fallback.
+func _get_ground_collider() -> Node:
+	for i in _player.get_slide_collision_count():
+		var kc := _player.get_slide_collision(i)
+		if kc.get_normal().y > 0.7:
+			return kc.get_collider() as Node
+	var space_state := _player.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		_player.global_position + Vector3.UP * 0.5,
+		_player.global_position + Vector3.DOWN * 1.5,
+	)
+	query.exclude = [_player.get_rid()]
+	var hit := space_state.intersect_ray(query)
+	return hit.get("collider") as Node if not hit.is_empty() else null
+
 
 func set_current_animation(animation_name: String) -> void:
 	_current_anim = animation_name
@@ -269,6 +395,7 @@ func _process(delta: float) -> void:
 			_player.interaction.poll_hint()
 			_player.interaction.update_rapid_fire(delta)
 		_player.placement.update_ghost()
+		_update_view_bob(delta)
 
 
 func _update_stun_animation(delta: float) -> void:
