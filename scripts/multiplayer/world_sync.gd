@@ -163,6 +163,31 @@ func _get_net_id(obj: Node) -> int:
 	return get_net_id(obj)
 
 
+## Mirror a host-assigned net_id onto a locally resolved node. Used when
+## a client finds a node by name/path but doesn't have the host's id
+## mapping yet — registering it here makes later id lookups hit directly.
+func _heal_net_id_mapping(obj: Node, net_id: int) -> void:
+	if net_id < 0 or obj == null or not is_instance_valid(obj):
+		return
+	if get_net_id(obj) >= 0:
+		return
+	var existing := _find_node_by_net_id(net_id)
+	if existing != null and existing != obj:
+		return # id already maps to another live node — don't clobber it
+	obj.set_meta(NET_ID_META, net_id)
+	_net_id_to_node[net_id] = weakref(obj)
+	_node_to_net_id[obj] = net_id
+	if not obj.tree_exited.is_connected(_on_net_object_tree_exited.bind(net_id)):
+		obj.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
+
+
+## Serialized parent path for an object ("" when parentless).
+func _parent_path_of(obj: Node) -> String:
+	if obj == null or not is_instance_valid(obj) or obj.get_parent() == null:
+		return ""
+	return _node_path_to_string(obj.get_parent().get_path())
+
+
 func _find_node_by_net_id(net_id: int) -> Node:
 	if net_id < 0:
 		return null
@@ -1184,17 +1209,27 @@ func _sync_boxes_fall(box_pos: Vector3) -> void:
 ## the host moves an object (e.g. a supply box from the truck grid to
 ## the world) and clients need to match the hierarchy.
 @rpc("authority", "call_local", "reliable")
-func reparent_on_clients(new_parent_path_str: String, obj_name: String, net_id: int) -> void:
+func reparent_on_clients(
+	new_parent_path_str: String,
+	obj_name: String,
+	net_id: int,
+	parent_net_id: int = -1,
+) -> void:
 	if is_host():
 		return
 	var obj := _find_node("", obj_name, net_id)
 	if obj == null:
 		GameLog.log("[WorldSync] Client reparent: object not found: " + obj_name)
 		return
-	var new_parent := _string_to_node(new_parent_path_str)
+	var new_parent: Node = null
+	if parent_net_id >= 0:
+		new_parent = _find_node_by_net_id(parent_net_id)
+	if new_parent == null:
+		new_parent = _string_to_node(new_parent_path_str)
 	if new_parent == null:
 		GameLog.log("[WorldSync] Client reparent: parent not found: " + new_parent_path_str)
 		return
+	_heal_net_id_mapping(new_parent, parent_net_id)
 	var old_pos: Vector3 = obj.global_position
 	var old_rot: Vector3 = obj.global_rotation
 	obj.get_parent().remove_child(obj)
@@ -1210,27 +1245,54 @@ func reparent_on_clients(new_parent_path_str: String, obj_name: String, net_id: 
 ## player picks up a table, the items on top must be reparented to that
 ## table on every client so they follow the table when it moves.
 ## 'item_data' is an Array[Dictionary] of { name, net_id } for attached items.
-## 'parent_name' is the workstation name.
-func sync_workstation_items(parent_name: String, item_data: Array[Dictionary]) -> void:
+## 'parent' is the workstation node — multiple stands can hold same-named
+## workstations, so its net_id and parent path are sent along for an
+## unambiguous lookup on every peer.
+func sync_workstation_items(parent: Node, item_data: Array[Dictionary]) -> void:
+	var parent_name := parent.name
+	var parent_net_id := get_net_id(parent)
+	var parent_path := _parent_path_of(parent)
 	if not is_host():
-		_request_host(&"_rpc_request_workstation_items", [parent_name, item_data])
+		_request_host(
+			&"_rpc_request_workstation_items",
+			[parent_name, parent_net_id, parent_path, item_data],
+		)
 		return
-	_reparent_workstation_items_on_host(parent_name, item_data)
+	_reparent_workstation_items_on_host(parent_name, parent_net_id, parent_path, item_data)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_workstation_items(parent_name: String, item_data: Array[Dictionary]) -> void:
+func _rpc_request_workstation_items(
+	parent_name: String,
+	parent_net_id: int,
+	parent_path_str: String,
+	item_data: Array[Dictionary],
+) -> void:
 	if not is_host():
 		return
-	_reparent_workstation_items_on_host(parent_name, item_data)
+	_reparent_workstation_items_on_host(parent_name, parent_net_id, parent_path_str, item_data)
 
 
-func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[Dictionary]) -> void:
-	var parent := _find_node_by_name_only(parent_name)
+func _reparent_workstation_items_on_host(
+	parent_name: String,
+	parent_net_id: int,
+	parent_path_str: String,
+	item_data: Array[Dictionary],
+) -> void:
+	var parent := _find_node(parent_path_str, parent_name, parent_net_id)
 	if parent == null or not is_instance_valid(parent):
-		GameLog.log("[WorldSync] Workstation items: parent not found: " + parent_name)
+		GameLog.log(
+			"[WorldSync] Workstation items: parent not found: %s (net_id=%d)"
+			% [parent_name, parent_net_id]
+		)
 		return
 	var parent_path := _node_path_to_string(parent.get_path())
+	var resolved_parent_net_id := _get_net_id(parent)
+	if resolved_parent_net_id < 0:
+		# Scene-authored or save-restored workstation may not be
+		# registered yet — give it an id now so clients and any
+		# later sync resolve this exact instance, not a same-named one.
+		resolved_parent_net_id = _assign_net_id(parent)
 	for entry in item_data:
 		var item_name: String = entry.get("name", "")
 		var net_id: int = entry.get("net_id", -1)
@@ -1242,7 +1304,10 @@ func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[D
 			# Already parented on the host, but still broadcast to clients
 			# in case they haven't reparented yet (e.g. late joiner or
 			# previous reparent RPC was lost).
-			_broadcast(&"reparent_on_clients", [parent_path, item_name, net_id])
+			_broadcast(
+				&"reparent_on_clients",
+				[parent_path, item_name, net_id, resolved_parent_net_id],
+			)
 			continue
 		var old_pos: Vector3 = item.global_position
 		var old_rot: Vector3 = item.global_rotation
@@ -1251,7 +1316,7 @@ func _reparent_workstation_items_on_host(parent_name: String, item_data: Array[D
 		item.global_position = old_pos
 		item.global_rotation = old_rot
 		# Tell all clients to do the same reparent
-		_broadcast(&"reparent_on_clients", [parent_path, item_name, net_id])
+		_broadcast(&"reparent_on_clients", [parent_path, item_name, net_id, resolved_parent_net_id])
 
 
 ## Attach any loose container items resting on a workstation's surface
@@ -1267,6 +1332,11 @@ func _attach_surface_items(obj: Node) -> void:
 	var root := get_tree().current_scene
 	for item in get_tree().get_nodes_in_group("container"):
 		if item == obj or obj.is_ancestor_of(item) or not item is Node3D:
+			continue
+		# A workstation is itself a container-group member — never swallow
+		# a neighbouring table as a "surface item" or it would hide/show
+		# and move with this table.
+		if item is Workstation:
 			continue
 		var par := (item as Node).get_parent()
 		if par == null or (par != root and par.name != "WorldObjects"):
@@ -1330,9 +1400,11 @@ func sync_move_and_show(
 	if not is_host():
 		_request_host(
 			&"_rpc_request_move_and_show",
-			[obj_name, net_id, new_pos, new_rot, new_scale, show],
+			[obj_name, net_id, new_pos, new_rot, new_scale, show, _parent_path_of(obj)],
 		)
 		return
+	if net_id < 0:
+		net_id = _assign_net_id(obj)
 	_attach_surface_items(obj)
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
@@ -1342,7 +1414,10 @@ func sync_move_and_show(
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = not show
-	_broadcast(&"_move_and_show_on_clients", [obj_name, net_id, new_pos, new_rot, new_scale, show])
+	_broadcast(
+		&"_move_and_show_on_clients",
+		[obj_name, net_id, new_pos, new_rot, new_scale, show, _parent_path_of(obj)],
+	)
 
 
 @rpc("any_peer", "reliable")
@@ -1353,13 +1428,20 @@ func _rpc_request_move_and_show(
 	new_rot: Vector3,
 	new_scale: Vector3,
 	show: bool,
+	parent_path_str: String = "",
 ) -> void:
 	if not is_host():
 		return
-	var obj := _find_node("", obj_name, net_id)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] Host _rpc_request_move_and_show: object not found: " + obj_name)
 		return
+	net_id = _get_net_id(obj)
+	if net_id < 0:
+		# The requester may not know this object's id — assign one so the
+		# broadcast resolves the exact instance on every client (same-named
+		# nodes exist across stands).
+		net_id = _assign_net_id(obj)
 	_attach_surface_items(obj)
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
@@ -1369,7 +1451,10 @@ func _rpc_request_move_and_show(
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = not show
-	_broadcast(&"_move_and_show_on_clients", [obj.name, net_id, new_pos, new_rot, new_scale, show])
+	_broadcast(
+		&"_move_and_show_on_clients",
+		[obj.name, net_id, new_pos, new_rot, new_scale, show, _parent_path_of(obj)],
+	)
 
 
 ## Reparent an object to a new parent on the host and sync to clients.
@@ -1385,7 +1470,10 @@ func sync_reparent_object(obj: Node, new_parent: Node) -> void:
 	obj.global_position = old_pos
 	obj.global_rotation = old_rot
 	var new_parent_path := _node_path_to_string(new_parent.get_path())
-	_broadcast(&"reparent_on_clients", [new_parent_path, obj.name, _get_net_id(obj)])
+	_broadcast(
+		&"reparent_on_clients",
+		[new_parent_path, obj.name, _get_net_id(obj), _get_net_id(new_parent)],
+	)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -1407,11 +1495,13 @@ func _move_and_show_on_clients(
 	new_rot: Vector3,
 	new_scale: Vector3,
 	show: bool,
+	parent_path_str: String = "",
 ) -> void:
 	if is_host():
 		return
-	var obj := _find_node("", obj_name, net_id)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj:
+		_heal_net_id_mapping(obj, net_id)
 		_attach_surface_items(obj)
 		obj.global_position = new_pos
 		obj.global_rotation = new_rot
@@ -1435,8 +1525,10 @@ func sync_hide_object(obj: Node) -> void:
 	var net_id := _get_net_id(obj)
 	var obj_name := obj.name
 	if not is_host():
-		_request_host(&"_rpc_request_set_visible", [obj_name, net_id, false])
+		_request_host(&"_rpc_request_set_visible", [obj_name, net_id, false, _parent_path_of(obj)])
 		return
+	if net_id < 0:
+		net_id = _assign_net_id(obj)
 	# Hide on the host too — the host should see the table disappear
 	# when any player picks it up. Attach loose surface items first so
 	# they hide/move with the table even if the pickup-time reparent RPC
@@ -1448,7 +1540,7 @@ func sync_hide_object(obj: Node) -> void:
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = true
-	_broadcast(&"_set_visible_on_clients", [obj_name, net_id, false])
+	_broadcast(&"_set_visible_on_clients", [obj_name, net_id, false, _parent_path_of(obj)])
 
 
 ## Show an object on all clients (e.g. when a workstation is placed
@@ -1459,27 +1551,37 @@ func sync_show_object(obj: Node) -> void:
 	var net_id := _get_net_id(obj)
 	var obj_name := obj.name
 	if not is_host():
-		_request_host(&"_rpc_request_set_visible", [obj_name, net_id, true])
+		_request_host(&"_rpc_request_set_visible", [obj_name, net_id, true, _parent_path_of(obj)])
 		return
+	if net_id < 0:
+		net_id = _assign_net_id(obj)
 	obj.visible = true
 	for child in obj.find_children("*", "CollisionShape3D", true, false):
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = false
-	_broadcast(&"_set_visible_on_clients", [obj_name, net_id, true])
+	_broadcast(&"_set_visible_on_clients", [obj_name, net_id, true, _parent_path_of(obj)])
 
 
 @rpc("any_peer", "reliable")
-func _rpc_request_set_visible(obj_name: String, net_id: int, show: bool) -> void:
+func _rpc_request_set_visible(
+	obj_name: String,
+	net_id: int,
+	show: bool,
+	parent_path_str: String = "",
+) -> void:
 	if not is_host():
 		return
-	var obj := _find_node("", obj_name, net_id)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log(
 			"[WorldSync] Host _rpc_request_set_visible: object not found: %s net_id=%d"
 			% [obj_name, net_id]
 		)
 		return
+	net_id = _get_net_id(obj)
+	if net_id < 0:
+		net_id = _assign_net_id(obj)
 	# Apply on the host too — the host needs to hide/show the object
 	# just like clients do, not just broadcast.
 	if not show and obj is Workstation:
@@ -1489,16 +1591,26 @@ func _rpc_request_set_visible(obj_name: String, net_id: int, show: bool) -> void
 		var col := child as CollisionShape3D
 		if col:
 			col.disabled = not show
-	# Broadcast to all non-host clients
-	_broadcast(&"_set_visible_on_clients", [obj.name, net_id, show])
+	# Broadcast to all non-host clients. The parent path lets clients
+	# scope the name lookup to the right stand when ids aren't mapped yet.
+	var parent_path := ""
+	if obj.get_parent():
+		parent_path = _node_path_to_string(obj.get_parent().get_path())
+	_broadcast(&"_set_visible_on_clients", [obj.name, net_id, show, parent_path])
 
 
 @rpc("authority", "call_local", "reliable")
-func _set_visible_on_clients(obj_name: String, net_id: int, visible: bool) -> void:
+func _set_visible_on_clients(
+	obj_name: String,
+	net_id: int,
+	visible: bool,
+	parent_path_str: String = "",
+) -> void:
 	if is_host():
 		return
-	var obj := _find_node("", obj_name, net_id)
+	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj:
+		_heal_net_id_mapping(obj, net_id)
 		if not visible and obj is Workstation:
 			_attach_surface_items(obj)
 		obj.visible = visible

@@ -2035,7 +2035,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 				attached_items.append({ "name": child.name, "net_id": WorldSync.get_net_id(child) })
 		_player.held_item_data["workstation_attached_items"] = attached_items
 		if not attached_items.is_empty():
-			WorldSync.sync_workstation_items(interactable.name, attached_items)
+			WorldSync.sync_workstation_items(interactable, attached_items)
 		var pickup_pos := interactable.global_position
 		# Don't remove the workstation from the tree — just hide it locally
 		# so items stay attached and the tree structure matches other peers.
@@ -2722,6 +2722,10 @@ func _attach_items_to_workstation(workstation: Node) -> void:
 		if not is_instance_valid(item):
 			continue
 		if item == workstation or workstation.is_ancestor_of(item):
+			continue
+		# Tables belong to the container group too — skip other
+		# workstations so an adjacent table isn't swallowed as an item.
+		if item is Workstation:
 			continue
 		if not item is Node3D:
 			continue
