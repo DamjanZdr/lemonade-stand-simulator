@@ -68,6 +68,16 @@ var _discovery_player: AudioStreamPlayer
 var _stand: StandUnit = null
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	# F1 hides/shows the whole HUD (money, time, onboarding, hints, crosshair)
+	# for clean screenshots. In debug builds the debug panel claims F1 in
+	# _input first, so this never fires there.
+	if event is InputEventKey and event.is_pressed() and not event.is_echo():
+		if event.keycode == KEY_F1:
+			visible = not visible
+			get_viewport().set_input_as_handled()
+
+
 func _ready() -> void:
 	add_to_group("hud")
 	_create_flipped_icon()
