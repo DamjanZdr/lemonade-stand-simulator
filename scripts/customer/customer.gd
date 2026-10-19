@@ -120,6 +120,7 @@ var _outcome: String = ""
 var _waiting_for_change: bool = false
 var _change_callable: Callable = Callable()
 var _change_due_cents: int = 0
+var _change_voice_played: bool = false
 var _last_tendered_cents: int = 0
 var _serving_peer_id: int = 1
 ## What the customer handed over (in dollars), shown alongside how much is
@@ -733,6 +734,7 @@ func _resolve(outcome: String) -> void:
 		var payment := _customer_payment(price)
 		var change_due := roundf((payment - price) * 100.0) / 100.0
 		_change_due_cents = roundi(change_due * 100.0)
+		_change_voice_played = false
 		if _change_due_cents > 0:
 			# Only enter the change flow if the customer is owed change.
 			# If change_due is 0 (customer paid exact amount), skip the
@@ -968,36 +970,23 @@ func _start_leaving() -> void:
 
 
 static func _customer_payment(price: float) -> float:
-	## Customer pays 10%-100% more than the price, made up of a combination
-	## of real denominations (like handing over a mix of bills/coins) so any
-	## markup amount in that range is achievable — not just whichever single
-	## bill happens to be closest, which for low prices (e.g. a $1 item,
-	## with no denomination between $1 and $5) used to collapse to "pays
-	## exactly the price, no change owed" far too often.
-	const DENOMS: Array[int] = [1000, 500, 100, 50, 10, 5] # largest first
+	## Customer pays the price plus a free-form markup of 10%-100% — any
+	## cent value, not restricted to real denominations. The player can
+	## always make change since the money tray includes pennies.
 	var price_cents := roundi(price * 100.0)
-	var min_cents := price_cents + int(float(price_cents) * 0.1)
-	var max_cents := price_cents + int(float(price_cents) * 1.0)
-	if max_cents <= min_cents:
-		max_cents = min_cents + DENOMS[-1]
-	var target := randi_range(min_cents, max_cents)
-	# Greedily build the payment up to (not exceeding) the target out of
-	# real denominations, largest first — same idea as making change.
-	var best := 0
-	for d in DENOMS:
-		while best + d <= target:
-			best += d
-	# Ensure payment covers the price (rare edge case: very cheap items
-	# where even the smallest denomination overshoots the 10%-100% target).
-	# Pick the smallest single denomination that's still >= price_cents —
-	# DENOMS is largest-first, so scan it in reverse (ascending) order.
+	var min_cents := price_cents + maxi(roundi(price_cents * 0.1), 1)
+	var max_cents := price_cents + roundi(price_cents * 1.0)
+	var best := randi_range(min_cents, maxi(min_cents, max_cents))
+	# Clamp the trailing digit to <=5 so change is always payable with the
+	# tray's denominations (10c steps + at most 5 pennies — there's no
+	# nickel). 6-7 round down to 5, 8-9 round up to the next 0.
+	var digit := best % 10
+	if digit == 6 or digit == 7:
+		best -= digit - 5
+	elif digit == 8 or digit == 9:
+		best += 10 - digit
 	if best < price_cents:
-		var ascending := DENOMS.duplicate()
-		ascending.reverse()
-		for d in ascending:
-			if d >= price_cents:
-				best = d
-				break
+		best = price_cents
 	return float(best) / 100.0
 
 
@@ -1005,11 +994,17 @@ func _on_change_tendered(tendered_cents: int, _due_cents: int) -> void:
 	_last_tendered_cents = tendered_cents
 	var remaining := _change_due_cents - tendered_cents
 	if remaining > 0:
+		# Speak once per change interaction — repeated coin clicks only
+		# update the amount text, so no fresh blurb for each one.
 		_set_order_text(
-			"I gave you $%.2f. You still owe me $%.2f" % [_payment_amount, remaining / 100.0]
+			"I gave you $%.2f. You still owe me $%.2f" % [_payment_amount, remaining / 100.0],
+			not _change_voice_played,
 		)
+		_change_voice_played = true
 	else:
-		_set_order_text("Thank you!")
+		# "Thank you!" is instantly replaced by the feedback line — skip
+		# its voice so two blurbs don't stack.
+		_set_order_text("Thank you!", false)
 
 
 func _show_feedback_then_leave() -> void:
@@ -1225,18 +1220,21 @@ func _sync_patience(ratio: float) -> void:
 	_last_patience_percent = int(ratio * 100.0)
 
 
-func _set_order_text(text: String) -> void:
+func _set_order_text(text: String, with_voice: bool = true) -> void:
 	if _ui_label == null:
 		return
 	_ui_label.text = text
 	_ui_label.visible = true
+	# New dialogue line shown — play a voice blurb (positional, all peers).
+	if with_voice and text != "" and _npc != null:
+		AudioManager.play_npc_dialogue(global_position, _npc.is_female)
 	if _ui_panel:
 		# Resize synchronously rather than deferring — a deferred resize
 		# leaves a 1-frame window where the sprite shows the stale size.
 		_resize_order_panel()
 	# Sync any bubble text change to clients so they see change/feedback/wrong-item messages.
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		sync_show_order(text)
+		sync_show_order(text, with_voice)
 
 
 func _show_order() -> void:
@@ -1255,14 +1253,14 @@ func _show_order() -> void:
 
 
 ## Host: sync the order bubble text to clients so they see it too.
-func sync_show_order(text: String) -> void:
+func sync_show_order(text: String, with_voice: bool = true) -> void:
 	if not multiplayer.has_multiplayer_peer():
 		return
-	_sync_show_order.rpc(text)
+	_sync_show_order.rpc(text, with_voice)
 
 
 @rpc("authority", "call_local", "reliable")
-func _sync_show_order(text: String) -> void:
+func _sync_show_order(text: String, with_voice: bool = true) -> void:
 	if multiplayer.is_server():
 		return
 	if text == "":
@@ -1275,7 +1273,7 @@ func _sync_show_order(text: String) -> void:
 		if _bubble_sprite:
 			_bubble_sprite.visible = false
 	else:
-		_set_order_text(text)
+		_set_order_text(text, with_voice)
 
 
 func _run_price_check_and_show_order() -> void:
@@ -1463,6 +1461,10 @@ func _build_order_bubble() -> void:
 	_bubble_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_bubble_sprite.double_sided = true
 	_bubble_sprite.no_depth_test = true
+	# Draw after every other transparent object — no_depth_test ignores
+	# the depth buffer, but nearby transparent meshes (e.g. the pitcher's
+	# liquid) sort later and would still paint over the bubble.
+	_bubble_sprite.render_priority = 127
 	_bubble_sprite.shaded = false
 	_bubble_sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_bubble_sprite.pixel_size = BUBBLE_PIXEL_SIZE
@@ -1507,6 +1509,7 @@ func _build_patience_circle() -> void:
 	_patience_circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_patience_circle.double_sided = true
 	_patience_circle.no_depth_test = true
+	_patience_circle.render_priority = 127
 	_patience_circle.shaded = false
 	_patience_circle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_patience_circle.pixel_size = 0.0012
@@ -1599,4 +1602,8 @@ func _apply_ui_tonemap_comp(sprite: Sprite3D, exposure: float = 1.0) -> void:
 	mat.shader = get_ui_tonemap_shader()
 	mat.set_shader_parameter("tex", sprite.texture)
 	mat.set_shader_parameter("boost", 1.0 / exposure)
+	# The override replaces the sprite's internal material, so the node's
+	# own render_priority no longer applies — set it on the material so the
+	# bubble still draws after other transparents (pitcher glass/liquid).
+	mat.render_priority = 127
 	sprite.material_override = mat

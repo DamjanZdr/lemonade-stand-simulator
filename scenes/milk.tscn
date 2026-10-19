@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://dgi7bbvi7kuhm" path="res://assets/danis_karlson_milk.glb" id="1_milk"]
+[ext_resource type="Script" path="res://scripts/objects/milk.gd" id="2_milk"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_milk"]
+size = Vector3(0.5, 0.6, 0.5)
+
+[node name="Milk" type="Area3D"]
+script = ExtResource("2_milk")
+
+[node name="Model" parent="." instance=ExtResource("1_milk")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+shape = SubResource("BoxShape3D_milk")

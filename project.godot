@@ -16,7 +16,7 @@ run/main_scene="res://scenes/main.tscn"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="Godot/app_userdata/Lemonade Stand Simulator"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://assets/textures/app_icon.png"
 config/windows_native_icon="res://assets/textures/shortcut icon.ico"
 
 [autoload]

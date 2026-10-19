@@ -15,6 +15,7 @@ const ACH_SPARE_MONEY := "ACH_SPARE_MONEY"
 const ACH_DO_YOU_HAVE_A_PERMIT := "ACH_DO_YOU_HAVE_A_PERMIT"
 const ACH_HAPPY_BEGINNING := "ACH_HAPPY_BEGINNING"
 const ACH_GOLDEN_SHOWER := "ACH_GOLDEN_SHOWER"
+const ACH_HE_WAS_HERE := "ACH_HE_WAS_HERE"
 
 ## Achievements already unlocked this session so we don't spam Steam.
 var _unlocked: Dictionary = { }
@@ -104,6 +105,12 @@ func check_game_state_thresholds() -> void:
 		_unlock(ACH_HAPPY_BEGINNING)
 
 
+## Public unlock for one-off achievements not driven by stand stats
+## (e.g. easter eggs). Safe to call repeatedly — deduped per session.
+func unlock(id: String) -> void:
+	_unlock(id)
+
+
 func _unlock(id: String) -> void:
 	if id in _unlocked:
 		return
@@ -131,6 +138,7 @@ func reset_all_achievements() -> void:
 		ACH_DO_YOU_HAVE_A_PERMIT,
 		ACH_HAPPY_BEGINNING,
 		ACH_GOLDEN_SHOWER,
+		ACH_HE_WAS_HERE,
 	]
 	_unlocked.clear()
 	if not Steam.isSteamRunning():

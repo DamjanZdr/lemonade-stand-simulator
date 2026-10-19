@@ -57,6 +57,7 @@
 [ext_resource type="Texture2D" uid="uid://dypa6kron6oro" path="res://assets/models/characters/man_Shoes Base Color.png" id="44_7iotn"]
 [ext_resource type="PackedScene" uid="uid://dr4k7li21a5fg" path="res://scenes/objects/cash_pickup.tscn" id="45_i4fc3"]
 [ext_resource type="PackedScene" uid="uid://djukgdu6j3p67" path="res://scenes/duck.tscn" id="46_c4p11"]
+[ext_resource type="PackedScene" path="res://scenes/milk.tscn" id="47_milk"]
 [ext_resource type="Script" uid="uid://e7o24oyy11ah" path="res://scripts/objects/cup.gd" id="46_myl1y"]
 [ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
 [ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
@@ -10457,8 +10458,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
 light_energy = 10.0
 omni_range = 20.0
 
-[node name="Sketchfab_Scene" parent="." unique_id=1396670853 instance=ExtResource("30_wewmw")]
-transform = Transform3D(-0.023428977, 0.35000592, 0.9364544, 0.68654084, 0.6865408, -0.23942263, -0.7267135, 0.6373048, -0.25637838, -22.460365, 11.3622265, 2.0936258)
+[node name="Milk" parent="." unique_id=1396670853 instance=ExtResource("47_milk")]
+transform = Transform3D(-0.3014353, -0.019312382, 0.953291, 0.650858, 0.7264666, 0.22052188, -0.6967928, 0.6869302, -0.20641312, -24.014608, 11.371785, 2.1302476)
 
 [node name="Decorations" type="Node3D" parent="." unique_id=1407390588]
 transform = Transform3D(-1.0927847e-08, 0, -0.25, 0, 0.25, 0, 0.25, 0, -1.0927847e-08, -8.000037, 1.0291692, 0.070590496)

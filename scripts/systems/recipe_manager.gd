@@ -10,17 +10,10 @@ extends Node
 
 
 func get_ideal_ice(temperature: float) -> float:
-	# 1 ice per 10 °C bucket. Explicit thresholds avoid tiny float overshoots
-	# at the boundaries (e.g. 30.000001 mapping to the next bucket).
-	if temperature <= 10.0:
-		return 1.0
-	if temperature <= 20.0:
-		return 2.0
-	if temperature <= 30.0:
-		return 3.0
-	if temperature <= 40.0:
-		return 4.0
-	return 5.0
+	# 1 ice per full 10 °C — 15° wants 1 cube, 26° wants 2, 31° wants 3.
+	# floor() tolerates float dust at the boundaries (30.000001 still
+	# floors to 3).
+	return maxf(1.0, floorf(temperature / 10.0))
 
 
 func get_ingredient_data(fruit_type: String) -> IngredientData:

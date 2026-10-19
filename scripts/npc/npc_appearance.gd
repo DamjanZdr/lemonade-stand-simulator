@@ -72,6 +72,9 @@ const CLOTHING_SURFACES: Array[String] = [
 	"shoes",
 ]
 
+## Set by randomize_appearance() — drives voice pitch for dialogue SFX.
+var is_female: bool = false
+
 @onready var _man: Node3D = $man
 @onready var _woman: Node3D = $woman
 @onready var _newman: Node3D = $newman
@@ -197,6 +200,7 @@ func randomize_appearance() -> void:
 	else:
 		rng.randomize()
 	var male := rng.randi() % 2 == 0
+	is_female = not male
 	_man.visible = male
 	_woman.visible = not male
 	_active_anim = _man_anim if male else _woman_anim

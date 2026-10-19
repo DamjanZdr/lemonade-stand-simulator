@@ -124,7 +124,7 @@ const TASKS: Array[Dictionary] = [
 		"id": "demo_add_sugar_ice",
 		"text": (
 			"Add at least one scoop each of {sugar} and {ice} to the pitcher. "
-			+ "Ideally, add 1 ice for every 10C/18F."
+			+ "Ideally, add 1 ice for every full 10C/18F."
 		),
 		"event": "pitcher_ingredient",
 		"parts": { "sugar": "sugar", "ice": "ice" },
@@ -796,11 +796,12 @@ func enforce_guaranteed_feedback(
 					return c in ICE_COMPLAINTS,
 			)
 		):
-			result.complaints.append(
-				("too_cold"
-					if ratio < Balancing.PERFECT_ICE_DEGREES_PER_SCOOP
-					else "not_cold_enough")
-			)
+			# Only force feedback when the served drink's ice was actually
+			# off — the ratio setting is about the recipe board, not the
+			# cup, so a physically-correct drink must never be complained
+			# about.
+			if result.ice_delta > 0.0:
+				result.complaints.append("too_cold" if result.ice_high else "not_cold_enough")
 
 
 func request_skip(stand: StandUnit) -> void:

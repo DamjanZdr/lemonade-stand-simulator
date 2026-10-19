@@ -67,6 +67,11 @@ func set_money_mode(active: bool) -> void:
 
 ## Called from Player._unhandled_input to track the primary mouse button.
 func set_primary_held(held: bool) -> void:
+	# A deposit tick can be owed-but-unfired when the button is released
+	# (release landed between the timer elapsing and _process running).
+	# Process it now so a held supply box isn't left one unit short.
+	if not held and _primary_held and _rapid_fire_timer <= 0.0:
+		update_rapid_fire(0.0)
 	_primary_held = held
 	if held:
 		_rapid_fire_timer = _player.get_rapid_fire_interval()
@@ -818,7 +823,7 @@ func update_rapid_fire(delta: float) -> void:
 		var amount: float = _player.inventory.held_item_data.get("amount", 0.0)
 		if amount <= 0.0:
 			return
-		_rapid_fire_timer = _player.get_rapid_fire_interval()
+		_rapid_fire_timer = maxf(_rapid_fire_timer + _player.get_rapid_fire_interval(), 0.0)
 		_player.last_interact_hit = _player.ray.get_collider()
 		cup_stack.interact(_player)
 		_player.last_interact_hit = null
@@ -834,7 +839,7 @@ func update_rapid_fire(delta: float) -> void:
 		var amount: float = _player.inventory.held_item_data.get("amount", 0.0)
 		if amount <= 0.0:
 			return
-		_rapid_fire_timer = _player.get_rapid_fire_interval()
+		_rapid_fire_timer = maxf(_rapid_fire_timer + _player.get_rapid_fire_interval(), 0.0)
 		_player.last_interact_hit = _player.ray.get_collider()
 		dispenser.interact(_player)
 		_player.last_interact_hit = null
@@ -847,7 +852,10 @@ func update_rapid_fire(delta: float) -> void:
 			if bin.current_amount < bin.max_capacity:
 				var amount: float = _player.inventory.held_item_data.get("amount", 0.0)
 				if amount > 0.0:
-					_rapid_fire_timer = _player.get_rapid_fire_interval()
+					_rapid_fire_timer = maxf(
+						_rapid_fire_timer + _player.get_rapid_fire_interval(),
+						0.0,
+					)
 					_player.last_interact_hit = _player.ray.get_collider()
 					bin.interact(_player)
 					_player.last_interact_hit = null
@@ -858,7 +866,7 @@ func update_rapid_fire(delta: float) -> void:
 		if fbin.fruit_grids.has(itype):
 			var amt: float = _player.inventory.held_item_data.get("amount", 0.0)
 			if amt > 0.0 and fbin.fruit_amounts.get(itype, 0.0) < fbin.get_capacity(itype):
-				_rapid_fire_timer = _player.get_rapid_fire_interval()
+				_rapid_fire_timer = maxf(_rapid_fire_timer + _player.get_rapid_fire_interval(), 0.0)
 				_player.last_interact_hit = _player.ray.get_collider()
 				fbin.interact(_player)
 				_player.last_interact_hit = null

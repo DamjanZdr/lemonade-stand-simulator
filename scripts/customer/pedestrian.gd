@@ -801,6 +801,8 @@ func _show_order_text(text: String) -> void:
 		return
 	_ui_label.text = text
 	_ui_label.visible = true
+	if text != "" and _npc != null:
+		AudioManager.play_npc_dialogue(global_position, _npc.is_female)
 	if _ui_panel:
 		_resize_order_panel()
 
@@ -876,6 +878,9 @@ func _build_order_bubble() -> void:
 	_bubble_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_bubble_sprite.double_sided = true
 	_bubble_sprite.no_depth_test = true
+	# Same as customer.gd — draw last among transparents so nearby
+	# transparent meshes (pitcher liquid) can't paint over the bubble.
+	_bubble_sprite.render_priority = 127
 	_bubble_sprite.shaded = false
 	_bubble_sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_bubble_sprite.pixel_size = BUBBLE_PIXEL_SIZE
@@ -920,6 +925,7 @@ func _build_patience_circle() -> void:
 	_patience_circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_patience_circle.double_sided = true
 	_patience_circle.no_depth_test = true
+	_patience_circle.render_priority = 127
 	_patience_circle.shaded = false
 	_patience_circle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_patience_circle.pixel_size = 0.0012
@@ -939,6 +945,7 @@ func _apply_ui_tonemap_comp(sprite: Sprite3D, exposure: float = 1.0) -> void:
 	mat.shader = Customer.get_ui_tonemap_shader()
 	mat.set_shader_parameter("tex", sprite.texture)
 	mat.set_shader_parameter("boost", 1.0 / exposure)
+	mat.render_priority = 127
 	sprite.material_override = mat
 
 

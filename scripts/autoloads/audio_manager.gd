@@ -32,7 +32,7 @@ func _ready() -> void:
 	EventBus.change_finalized.connect(_on_change_finalized)
 	# Start menu music immediately — it loops and persists across
 	# scene transitions since AudioManager is an autoload.
-	_play_music("Easy Lemon")
+	_play_music("Autumn Day")
 
 
 func _process(_delta: float) -> void:
@@ -97,6 +97,10 @@ func _preload_all() -> void:
 		"step_concrete_3": "steps/concrete3.mp3",
 		"step_dirt_1": "steps/dirt1.mp3",
 		"step_dirt_2": "steps/dirt2.mp3",
+		"npc_1": "npcs/1.mp3",
+		"npc_2": "npcs/2.mp3",
+		"npc_3": "npcs/3.mp3",
+		"npc_4": "npcs/4.mp3",
 	}
 	for key in files:
 		var path: String = SFX_DIR + files[key]
@@ -111,6 +115,15 @@ func _on_change_finalized(_earned: float) -> void:
 	var player := WorldSync.get_local_player()
 	var pos: Vector3 = (player as Node3D).global_position if player else Vector3.ZERO
 	play_sfx("transaction_complete", pos, -1.0, 0.1)
+
+
+## Random NPC voice blurb — played whenever an NPC shows a new dialogue line
+## (order, feedback, offer response). Females are pitched up; males stay at
+## the default pitch. Both get slight random variation.
+func play_npc_dialogue(pos: Vector3, female: bool) -> void:
+	var key := "npc_%d" % (randi() % 4 + 1)
+	var base_pitch := 1.45 if female else 1.0
+	play_sfx(key, pos, -1.0, 0.08, base_pitch)
 
 
 ## Preload music tracks. The list is explicit because directory scanning
