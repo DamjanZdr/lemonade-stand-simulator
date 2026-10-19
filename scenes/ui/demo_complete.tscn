@@ -1,0 +1,244 @@
+[gd_scene load_steps=12 format=3 uid="uid://cantq3vr5drke"]
+
+[ext_resource type="Script" path="res://scripts/ui/demo_complete.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/AmaticSC-Bold.ttf" id="2_titlefont"]
+[ext_resource type="FontFile" uid="uid://cs7ipv0dhsp7g" path="res://assets/fonts/Grandstander-clean.ttf" id="3_bodyfont"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_continue_normal"]
+bg_color = Color(0.18, 0.18, 0.2, 1)
+content_margin_left = 24.0
+content_margin_top = 8.0
+content_margin_right = 24.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_continue_hover"]
+bg_color = Color(0.24, 0.24, 0.27, 1)
+content_margin_left = 24.0
+content_margin_top = 8.0
+content_margin_right = 24.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_continue_pressed"]
+bg_color = Color(0.13, 0.13, 0.15, 1)
+content_margin_left = 24.0
+content_margin_top = 8.0
+content_margin_right = 24.0
+content_margin_bottom = 8.0
+
+[sub_resource type="Gradient" id="Gradient_wishlist"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.345098, 0.541176, 0.101961, 1, 0.45098, 0.682353, 0.129412, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTex_wishlist"]
+gradient = SubResource("Gradient_wishlist")
+width = 256
+height = 64
+fill_from = Vector2(0.5, 1)
+fill_to = Vector2(0.5, 0)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTex_wishlist_normal"]
+content_margin_left = 24.0
+content_margin_top = 8.0
+content_margin_right = 24.0
+content_margin_bottom = 8.0
+texture = SubResource("GradientTex_wishlist")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTex_wishlist_hover"]
+content_margin_left = 24.0
+content_margin_top = 8.0
+content_margin_right = 24.0
+content_margin_bottom = 8.0
+texture = SubResource("GradientTex_wishlist")
+modulate_color = Color(1.15, 1.15, 1.15, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTex_wishlist_pressed"]
+content_margin_left = 24.0
+content_margin_top = 8.0
+content_margin_right = 24.0
+content_margin_bottom = 8.0
+texture = SubResource("GradientTex_wishlist")
+modulate_color = Color(0.8, 0.8, 0.8, 1)
+
+[node name="DemoComplete" type="CanvasLayer"]
+layer = 60
+script = ExtResource("1_script")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 1)
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -330.0
+offset_right = 320.0
+offset_bottom = 330.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1.0, 0.98, 0.88, 1)
+theme_override_fonts/font = ExtResource("2_titlefont")
+theme_override_font_sizes/font_size = 44
+text = "Demo Complete!"
+horizontal_alignment = 1
+
+[node name="Sub" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_bodyfont")
+theme_override_font_sizes/font_size = 18
+text = "You've successfully completed the demo!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Sep" type="HSeparator" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="CreditsTitle" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1.0, 0.85, 0.45, 1)
+theme_override_fonts/font = ExtResource("2_titlefont")
+theme_override_font_sizes/font_size = 24
+text = "Credits"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 170)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Credits" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="MadeByHead" type="Label" parent="Panel/Margin/VBox/Scroll/Credits"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1.0, 0.85, 0.45, 1)
+theme_override_fonts/font = ExtResource("2_titlefont")
+theme_override_font_sizes/font_size = 20
+text = "Made By"
+horizontal_alignment = 1
+
+[node name="MadeByText" type="Label" parent="Panel/Margin/VBox/Scroll/Credits"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_fonts/font = ExtResource("3_bodyfont")
+theme_override_font_sizes/font_size = 15
+text = "DamianDevz"
+horizontal_alignment = 1
+
+[node name="Gap1" type="Control" parent="Panel/Margin/VBox/Scroll/Credits"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="EngineHead" type="Label" parent="Panel/Margin/VBox/Scroll/Credits"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1.0, 0.85, 0.45, 1)
+theme_override_fonts/font = ExtResource("2_titlefont")
+theme_override_font_sizes/font_size = 20
+text = "Engine"
+horizontal_alignment = 1
+
+[node name="EngineText" type="Label" parent="Panel/Margin/VBox/Scroll/Credits"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_fonts/font = ExtResource("3_bodyfont")
+theme_override_font_sizes/font_size = 15
+text = "Godot"
+horizontal_alignment = 1
+
+[node name="Gap2" type="Control" parent="Panel/Margin/VBox/Scroll/Credits"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ThanksHead" type="Label" parent="Panel/Margin/VBox/Scroll/Credits"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1.0, 0.85, 0.45, 1)
+theme_override_fonts/font = ExtResource("2_titlefont")
+theme_override_font_sizes/font_size = 20
+text = "Special Thanks"
+horizontal_alignment = 1
+
+[node name="ThanksText" type="Label" parent="Panel/Margin/VBox/Scroll/Credits"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_fonts/font = ExtResource("3_bodyfont")
+theme_override_font_sizes/font_size = 15
+text = "Discord community support
+You, for playing the demo"
+horizontal_alignment = 1
+
+[node name="Gap3" type="Control" parent="Panel/Margin/VBox/Scroll/Credits"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="MusicHead" type="Label" parent="Panel/Margin/VBox/Scroll/Credits"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1.0, 0.85, 0.45, 1)
+theme_override_fonts/font = ExtResource("2_titlefont")
+theme_override_font_sizes/font_size = 20
+text = "Soundtrack"
+horizontal_alignment = 1
+
+[node name="MusicText" type="Label" parent="Panel/Margin/VBox/Scroll/Credits"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_fonts/font = ExtResource("3_bodyfont")
+theme_override_font_sizes/font_size = 15
+text = "\"Autumn Day\" Kevin MacLeod (incompetech.com)
+\"Clear Air\" Kevin MacLeod (incompetech.com)
+\"Crinoline Dreams\" Kevin MacLeod (incompetech.com)
+\"Easy Lemon\" Kevin MacLeod (incompetech.com)
+\"Morning\" Kevin MacLeod (incompetech.com)"
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="ContinueButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+custom_minimum_size = Vector2(210, 46)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_bodyfont")
+theme_override_styles/normal = SubResource("StyleBoxFlat_continue_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_continue_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_continue_pressed")
+theme_override_font_sizes/font_size = 20
+text = "Continue Playing"
+
+[node name="WishlistButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+custom_minimum_size = Vector2(230, 46)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_bodyfont")
+theme_override_styles/normal = SubResource("StyleBoxTex_wishlist_normal")
+theme_override_styles/hover = SubResource("StyleBoxTex_wishlist_hover")
+theme_override_styles/pressed = SubResource("StyleBoxTex_wishlist_pressed")
+theme_override_font_sizes/font_size = 20
+text = "Wishlist on Steam"

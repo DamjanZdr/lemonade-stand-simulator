@@ -100,10 +100,11 @@ func _ready() -> void:
 	_autosave_timer.timeout.connect(_on_autosave_timer)
 	add_child(_autosave_timer)
 
-	# Rapid event-triggered saves (money/popularity/recipe changes, etc.)
-	# are coalesced into one write at most every 0.25 s.
+	# Event-triggered saves use a trailing debounce: every save request
+	# restarts the timer, so the write fires once 5 s after the last
+	# change — one write per burst of activity, during idle moments.
 	_save_debounce_timer = Timer.new()
-	_save_debounce_timer.wait_time = 0.25
+	_save_debounce_timer.wait_time = 5.0
 	_save_debounce_timer.one_shot = true
 	_save_debounce_timer.timeout.connect(_do_save)
 	add_child(_save_debounce_timer)
@@ -152,10 +153,10 @@ func save_game(force: bool = false) -> void:
 	if force:
 		_do_save()
 		return
-	# Coalesce rapid event-triggered saves into one write per tick.
+	# Trailing debounce — restart the timer on every request so a burst of
+	# changes collapses into a single write once activity settles.
 	_save_pending = true
-	if _save_debounce_timer.is_stopped():
-		_save_debounce_timer.start()
+	_save_debounce_timer.start()
 
 
 func _do_save() -> void:

@@ -21,11 +21,9 @@ const SETTINGS_PANEL_SCENE := preload("res://scenes/ui/settings_panel.tscn")
 const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
 const PromoWidget := preload("res://scripts/ui/promo_widget.gd")
 
-@onready var _play_button: Button = $MenuBox/PlayButton
-@onready var _title_text: VBoxContainer = $MenuBox/TitleLayer/TitleText
-@onready var _title_shadow: TextureRect = $MenuBox/TitleLayer/Shadow
-@onready var _saves_button: Button = $MenuBox/SavesButton
-@onready var _join_button: Button = $MenuBox/JoinButton
+@onready var _play_button: Button = $MenuBox/ButtonsMargin/ButtonsCol/PlayButton
+@onready var _saves_button: Button = $MenuBox/ButtonsMargin/ButtonsCol/SavesButton
+@onready var _join_button: Button = $MenuBox/ButtonsMargin/ButtonsCol/JoinButton
 @onready var _join_panel: Control = $JoinPanel
 @onready var _join_field: LineEdit = $JoinPanel/JoinList/JoinField
 @onready var _join_submit: Button = $JoinPanel/JoinList/JoinSubmit
@@ -34,9 +32,9 @@ var _join_paste_btn: Button = null
 var _join_clear_btn: Button = null
 var _eye_btn: Button = null
 var _join_error_label: Label = null
-@onready var _quit_button: Button = $MenuBox/QuitButton
-@onready var _settings_button: Button = $MenuBox/SettingsButton
-@onready var _status_label: Label = $MenuBox/StatusLabel
+@onready var _quit_button: Button = $MenuBox/ButtonsMargin/ButtonsCol/QuitButton
+@onready var _settings_button: Button = $MenuBox/ButtonsMargin/ButtonsCol/SettingsButton
+@onready var _status_label: Label = $MenuBox/ButtonsMargin/ButtonsCol/StatusLabel
 @onready var _version_label: Label = $VersionLabel
 
 # Music player widget
@@ -238,7 +236,7 @@ func _ready() -> void:
 	for btn in _menu_buttons:
 		_make_flat_button(btn)
 		_add_drop_shadow(btn)
-		_setup_hover_effect(btn)
+		_setup_hover_effect(btn, false)
 	_make_flat_button(_join_submit)
 	_add_drop_shadow(_join_submit)
 	_setup_hover_effect(_join_submit)
@@ -268,7 +266,6 @@ func _ready() -> void:
 	_make_flat_button(_new_stand_button)
 	_add_drop_shadow(_new_stand_button)
 	_setup_hover_effect(_new_stand_button)
-	_fit_title_text_widths()
 	# Build the music player widget (bottom-right corner).
 	_build_music_player()
 	# Build the promo slideshow above the music player.
@@ -368,6 +365,14 @@ func is_join_panel_open() -> bool:
 	return _join_panel.visible
 
 
+## Re-open the join panel after a failed join attempt, so the error
+## lands inline under the input instead of on the main button stack.
+func reopen_join_panel() -> void:
+	_join_panel.visible = true
+	$MenuBox.visible = false
+	_join_field.grab_focus()
+
+
 ## Show a join failure inline under the lobby code input.
 func set_join_error(text: String) -> void:
 	_join_error_label.add_theme_color_override("font_color", Color(1, 0.4, 0.4, 0.9))
@@ -404,36 +409,6 @@ func show_name_entry() -> void:
 	_saves_panel.visible = true
 	$MenuBox.visible = false
 	_on_new_stand_pressed()
-
-
-func _fit_title_text_widths() -> void:
-	var rows: Array[Label] = []
-	var widths: Array[float] = []
-	var sizes: Array[int] = []
-	var target_width := 0.0
-	for child in _title_text.get_children():
-		var row := child as Label
-		if row == null:
-			continue
-		var size := row.get_theme_font_size("font_size")
-		var width := row.get_theme_font("font").get_string_size(row.text, 0, -1, size).x
-		rows.append(row)
-		widths.append(width)
-		sizes.append(size)
-		target_width = maxf(target_width, width)
-	for i in rows.size():
-		rows[i].add_theme_font_size_override(
-			"font_size",
-			roundi(float(sizes[i]) * target_width / widths[i]),
-		)
-	call_deferred("_center_title_shadow")
-
-
-func _center_title_shadow() -> void:
-	var text_size := _title_text.get_combined_minimum_size()
-	var shadow_size := text_size * 1.2
-	_title_shadow.position = _title_text.position + (text_size - shadow_size) * 0.5
-	_title_shadow.size = shadow_size
 
 
 ## Add a drop shadow to a button's text.
@@ -640,8 +615,7 @@ func _animate_hover(btn: Button, hover: bool) -> void:
 	if not btn.has_meta("_base_scale"):
 		btn.set_meta("_base_scale", btn.scale)
 	# Pivot at left-center (grows right) or right-center (grows left).
-	var pop_left: bool = btn.has_meta("_pop_left") and btn.get_meta("_pop_left")
-	if pop_left:
+	if btn.has_meta("_pop_left") and btn.get_meta("_pop_left"):
 		btn.pivot_offset = Vector2(btn.size.x, btn.size.y / 2.0)
 	else:
 		btn.pivot_offset = Vector2(0, btn.size.y / 2.0)

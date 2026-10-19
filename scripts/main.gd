@@ -4,6 +4,7 @@ extends Node
 const CASH_PICKUP_SCENE: PackedScene = preload("res://scenes/objects/cash_pickup.tscn")
 const OUTLINE_SCENE: PackedScene = preload("res://scenes/ui/outline_overlay.tscn")
 const DAY_SUMMARY_SCENE: PackedScene = preload("res://scenes/ui/day_summary.tscn")
+const DEMO_COMPLETE_SCENE: PackedScene = preload("res://scenes/ui/demo_complete.tscn")
 const WORLD_MENU_SCENE: PackedScene = preload("res://scenes/ui/world_menu.tscn")
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const COOP_LIGHTMAP_PATH := "res://scenes/world/world_coop.lmbake"
@@ -230,6 +231,10 @@ func _ready() -> void:
 	LobbyManager.late_join_starting.connect(_on_late_join_starting)
 	LobbyManager.late_join_denied.connect(_on_late_join_denied)
 	WorldSync.world_snapshot_applied.connect(_on_world_snapshot_applied)
+
+	# Demo-complete screen (credits + wishlist CTA). It listens for the
+	# local stand's onboarding reaching the terminal task; hidden until then.
+	add_child(DEMO_COMPLETE_SCENE.instantiate())
 
 	# If we're connected to a server (joining an existing game), go
 	# straight to the lobby/game flow. Otherwise, show the in-world
@@ -775,8 +780,12 @@ func _on_menu_session_ready(_arg: Variant = null) -> void:
 ## Called when a connection fails while in the MAIN_MENU state.
 func _on_menu_session_failed(reason: String) -> void:
 	if _world_menu:
+		# show_menu_immediate() hides the join panel — capture whether it
+		# was open first so a join failure can be re-shown inline.
+		var join_was_open: bool = _world_menu.is_join_panel_open()
 		_world_menu.show_menu_immediate()
-		if _world_menu.is_join_panel_open():
+		if join_was_open:
+			_world_menu.reopen_join_panel()
 			_world_menu.set_join_error("Failed: %s" % reason)
 		else:
 			_world_menu.set_status("Failed: %s" % reason)
@@ -2085,6 +2094,15 @@ func _process(_delta: float) -> void:
 		_menu_cam_parallax(_delta)
 
 
+func _notification(what: int) -> void:
+	# Window X (OS close) bypasses the ESC menu entirely — checkpoint here
+	# too. No-op outside a session (no active slot / not host), and with
+	# auto_quit the tree exits right after this notification.
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and _game_state == MenuState.PLAYING:
+		UpgradeManager.flush_active_stand()
+		SaveManager.save_game(true)
+
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed:
 		if _game_state == MenuState.PLAYING:
@@ -2110,13 +2128,6 @@ func _input(event: InputEvent) -> void:
 			_toggle_esc_menu()
 			get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and event.keycode == KEY_F2 and event.pressed:
-		_enhanced_lighting = not _enhanced_lighting
-		if _enhanced_lighting:
-			_enable_enhanced_lighting()
-		else:
-			_disable_enhanced_lighting()
-		get_viewport().set_input_as_handled()
 
 
 ## Toggle the in-game ESC menu.
@@ -2169,9 +2180,11 @@ func _on_esc_back_to_menu() -> void:
 	EventBus.esc_menu_open = false
 	_host_after_transition = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	# Checkpoint before leaving — save_game() is a no-op on clients and
-	# when no slot is active.
-	SaveManager.save_game()
+	# Checkpoint before leaving — force a synchronous write; the debounced
+	# save_game() may not fire before the slot is released during the fade.
+	# _do_save() still gates on is_host(), so clients write nothing.
+	UpgradeManager.flush_active_stand()
+	SaveManager.save_game(true)
 	# Create the fade overlay.
 	var fade_rect := ColorRect.new()
 	fade_rect.color = Color(0, 0, 0, 0)
@@ -2251,9 +2264,11 @@ func _on_esc_back_to_menu() -> void:
 
 ## ESC menu: Quit Game.
 func _on_esc_quit_game() -> void:
-	# Checkpoint before exiting — save_game() is a no-op on clients and
-	# when no slot is active.
-	SaveManager.save_game()
+	# Checkpoint before exiting — must be a synchronous write: the debounced
+	# save_game() timer never fires because get_tree().quit() destroys the
+	# tree first. _do_save() still gates on is_host(), so clients write nothing.
+	UpgradeManager.flush_active_stand()
+	SaveManager.save_game(true)
 	get_tree().quit()
 
 

@@ -12,6 +12,7 @@ const PROMO_WISHLIST_URL := (
 	"https://store.steampowered.com/app/5000810/When_Life_Gives_You_Lemons/"
 	+ "?utm_source=demo&utm_medium=menu&utm_campaign=nextfest"
 )
+const STORE_APP_ID := 5000810
 
 # Same width as the music player; height preserves the 1232x706 image ratio.
 const WIDGET_W: float = 280.0
@@ -257,8 +258,13 @@ func _on_report_bug() -> void:
 
 func _on_clicked() -> void:
 	var url := _urls[_index]
-	if url != "":
-		OS.shell_open(url)
+	if url == "":
+		return
+	# Wishlist slide: prefer the in-game Steam overlay store page.
+	if url == PROMO_WISHLIST_URL and Steam.isSteamRunning():
+		Steam.activateGameOverlayToStore(STORE_APP_ID)
+		return
+	OS.shell_open(url)
 
 
 func _show_slide(index: int) -> void:

@@ -1,12 +1,14 @@
-[gd_scene load_steps=10 format=3 uid="uid://cworldmenu01"]
+[gd_scene format=3 uid="uid://cworldmenu01"]
 
-[ext_resource type="Script" path="res://scripts/ui/world_menu.gd" id="1_script"]
-[ext_resource type="Theme" path="res://assets/themes/menu_theme.tres" id="2_theme"]
-[ext_resource type="Shader" path="res://shaders/ui_blur.gdshader" id="3_blur"]
-[ext_resource type="Shader" path="res://shaders/ui_dim_fade.gdshader" id="4_dimfade"]
-[ext_resource type="Texture2D" path="res://assets/textures/ui/Title.png" id="5_title"]
-[ext_resource type="Texture2D" path="res://assets/textures/ui/Titleshadow.png" id="6_shadow"]
-[ext_resource type="FontFile" path="res://assets/fonts/Grandstander-clean.ttf" id="7_titlefont"]
+[ext_resource type="Script" uid="uid://c28e6gy4bg87b" path="res://scripts/ui/world_menu.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://gd20br3y4m22" path="res://assets/themes/menu_theme.tres" id="2_theme"]
+[ext_resource type="Shader" uid="uid://bu74deeihd5vd" path="res://shaders/ui_blur.gdshader" id="3_blur"]
+[ext_resource type="Shader" uid="uid://cikt8xjka2cqu" path="res://shaders/ui_dim_fade.gdshader" id="4_dimfade"]
+[ext_resource type="Texture2D" uid="uid://fev30eo22ydo" path="res://assets/textures/ui/Title.png" id="5_title"]
+[ext_resource type="Texture2D" uid="uid://cx1iby118716b" path="res://assets/textures/ui/Titleshadow.png" id="6_shadow"]
+[ext_resource type="FontFile" uid="uid://cs7ipv0dhsp7g" path="res://assets/fonts/Grandstander-clean.ttf" id="7_titlefont"]
+[ext_resource type="Texture2D" uid="uid://edp8vghw4wno" path="res://assets/textures/ui/shadow.png" id="8_8yoto"]
+[ext_resource type="Texture2D" uid="uid://bsv24rfduax2t" path="res://assets/textures/ui/shadowaa.png" id="9_p3pnr"]
 
 [sub_resource type="ShaderMaterial" id="BlurMat"]
 shader = ExtResource("3_blur")
@@ -22,36 +24,30 @@ shader_parameter/fade_start = 0.35
 atlas = ExtResource("5_title")
 region = Rect2(15, 15, 392, 229)
 
-[node name="WorldMenu" type="CanvasLayer"]
+[node name="WorldMenu" type="CanvasLayer" unique_id=1502343641]
 layer = 50
 script = ExtResource("1_script")
 
-[node name="BackBufferCopy" type="BackBufferCopy" parent="."]
+[node name="BackBufferCopy" type="BackBufferCopy" parent="." unique_id=1548409099]
 copy_mode = 0
 
-[node name="BlurPanel" type="ColorRect" parent="."]
-anchors_preset = 9
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 800.0
-offset_bottom = 0.0
-grow_vertical = 2
+[node name="BlurPanel" type="ColorRect" parent="." unique_id=1054767308]
 material = SubResource("BlurMat")
-color = Color(0, 0, 0, 0)
-
-[node name="DimLayer" type="ColorRect" parent="."]
 anchors_preset = 9
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 800.0
-offset_bottom = 0.0
 grow_vertical = 2
-material = SubResource("DimFadeMat")
 color = Color(0, 0, 0, 0)
 
-[node name="MenuBox" type="VBoxContainer" parent="."]
+[node name="DimLayer" type="ColorRect" parent="." unique_id=1447693575]
+material = SubResource("DimFadeMat")
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 800.0
+grow_vertical = 2
+color = Color(0, 0, 0, 0)
+
+[node name="MenuBox" type="VBoxContainer" parent="." unique_id=1600975867]
 anchors_preset = 9
 anchor_bottom = 1.0
 offset_left = 60.0
@@ -61,14 +57,13 @@ offset_bottom = -80.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
 theme_override_constants/separation = 4
-alignment = 0
 
-[node name="TitleLayer" type="Control" parent="MenuBox"]
+[node name="TitleLayer" type="Control" parent="MenuBox" unique_id=1366142273]
 custom_minimum_size = Vector2(320, 185)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Shadow" type="TextureRect" parent="MenuBox/TitleLayer"]
+[node name="Shadow" type="TextureRect" parent="MenuBox/TitleLayer" unique_id=2042698515]
 visible = false
 layout_mode = 0
 offset_left = -24.0
@@ -80,7 +75,7 @@ texture = ExtResource("6_shadow")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Title" type="TextureRect" parent="MenuBox/TitleLayer"]
+[node name="Title" type="TextureRect" parent="MenuBox/TitleLayer" unique_id=2104491434]
 visible = false
 self_modulate = Color(1, 1, 1, 0.85)
 layout_mode = 0
@@ -91,127 +86,147 @@ texture = SubResource("TitleAtlas")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="TitleText" type="VBoxContainer" parent="MenuBox/TitleLayer"]
+[node name="TitleText" type="VBoxContainer" parent="MenuBox/TitleLayer" unique_id=1103394992]
 layout_mode = 0
 offset_right = 300.0
 offset_bottom = 210.0
 theme_override_constants/separation = 4
 
-[node name="Top" type="Label" parent="MenuBox/TitleLayer/TitleText"]
+[node name="Top" type="Label" parent="MenuBox/TitleLayer/TitleText" unique_id=1823701405]
+visible = false
 layout_mode = 2
-theme_override_fonts/font = ExtResource("7_titlefont")
-theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_fonts/font = ExtResource("7_titlefont")
+theme_override_font_sizes/font_size = 54
 text = "WHEN LIFE"
 
-[node name="Middle" type="Label" parent="MenuBox/TitleLayer/TitleText"]
+[node name="Middle" type="Label" parent="MenuBox/TitleLayer/TitleText" unique_id=1375983495]
+visible = false
 layout_mode = 2
-theme_override_fonts/font = ExtResource("7_titlefont")
-theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_fonts/font = ExtResource("7_titlefont")
+theme_override_font_sizes/font_size = 51
 text = "GIVES YOU"
 
-[node name="Bottom" type="Label" parent="MenuBox/TitleLayer/TitleText"]
+[node name="Bottom" type="Label" parent="MenuBox/TitleLayer/TitleText" unique_id=674024552]
+visible = false
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9176, 0.0627, 1)
 theme_override_fonts/font = ExtResource("7_titlefont")
 theme_override_font_sizes/font_size = 68
-theme_override_colors/font_color = Color(1, 0.9176, 0.0627, 1)
 text = "LEMONS"
 
-[node name="Spacer" type="Control" parent="MenuBox"]
+[node name="Shadow" type="Sprite2D" parent="MenuBox/TitleLayer/TitleText" unique_id=163210710]
+visible = false
+modulate = Color(1, 1, 1, 0.44313726)
+z_index = -12
+position = Vector2(137.07436, 83.625015)
+scale = Vector2(0.43086708, 0.46267772)
+texture = ExtResource("8_8yoto")
+
+[node name="TitleImage" type="Sprite2D" parent="MenuBox/TitleLayer/TitleText" unique_id=2015401055]
+z_index = 3
+position = Vector2(170.0, 83)
+scale = Vector2(0.45023695, 0.450237)
+texture = ExtResource("9_p3pnr")
+
+[node name="Spacer" type="Control" parent="MenuBox" unique_id=1731197249]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
-[node name="PlayButton" type="Button" parent="MenuBox"]
+[node name="ButtonsMargin" type="MarginContainer" parent="MenuBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+
+[node name="ButtonsCol" type="VBoxContainer" parent="MenuBox/ButtonsMargin"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="PlayButton" type="Button" parent="MenuBox/ButtonsMargin/ButtonsCol" unique_id=909164622]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 50)
-theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 56
 text = "Play"
+alignment = 0
 
-[node name="SavesButton" type="Button" parent="MenuBox"]
+[node name="SavesButton" type="Button" parent="MenuBox/ButtonsMargin/ButtonsCol" unique_id=140768382]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 50)
-theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 56
 text = "Stands"
+alignment = 0
 
-[node name="JoinButton" type="Button" parent="MenuBox"]
+[node name="JoinButton" type="Button" parent="MenuBox/ButtonsMargin/ButtonsCol" unique_id=691033560]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 50)
-theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 56
 text = "Join"
+alignment = 0
 
-[node name="JoinRow" type="HBoxContainer" parent="MenuBox"]
+[node name="JoinRow" type="HBoxContainer" parent="MenuBox/ButtonsMargin/ButtonsCol" unique_id=57346874]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
-offset_left = 20.0
 
-[node name="StatusLabel" type="Label" parent="MenuBox"]
+[node name="StatusLabel" type="Label" parent="MenuBox/ButtonsMargin/ButtonsCol" unique_id=1783937091]
 visible = false
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(1, 1, 0.4, 0.8)
-text = ""
+theme_override_font_sizes/font_size = 16
 
-[node name="SettingsButton" type="Button" parent="MenuBox"]
+[node name="SettingsButton" type="Button" parent="MenuBox/ButtonsMargin/ButtonsCol" unique_id=1266589712]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 50)
-theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 56
 text = "Settings"
+alignment = 0
 
-[node name="QuitButton" type="Button" parent="MenuBox"]
+[node name="QuitButton" type="Button" parent="MenuBox/ButtonsMargin/ButtonsCol" unique_id=781023795]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 50)
-theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 56
 text = "Quit"
+alignment = 0
 
-[node name="VersionLabel" type="Label" parent="."]
+[node name="VersionLabel" type="Label" parent="." unique_id=761780418]
 anchors_preset = 2
-anchor_left = 0.0
 anchor_top = 1.0
-anchor_right = 0.0
 anchor_bottom = 1.0
 offset_left = 12.0
 offset_top = -28.0
 offset_right = 100.0
 offset_bottom = -8.0
-grow_horizontal = 1
 grow_vertical = 0
-horizontal_alignment = 0
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(1, 1, 1, 0.3)
+theme_override_font_sizes/font_size = 14
 text = "v0.7.2"
 
-[node name="SavesPanel" type="Control" parent="."]
+[node name="SavesPanel" type="Control" parent="." unique_id=204814694]
 visible = false
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SavesList" type="VBoxContainer" parent="SavesPanel"]
-anchors_preset = 9
+[node name="SavesList" type="VBoxContainer" parent="SavesPanel" unique_id=1734616867]
+layout_mode = 0
 anchor_bottom = 1.0
 offset_left = 60.0
 offset_top = 60.0
@@ -220,60 +235,59 @@ offset_bottom = -10.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
 theme_override_constants/separation = 6
-alignment = 0
 
-[node name="SavesTitle" type="Label" parent="SavesPanel/SavesList"]
+[node name="SavesTitle" type="Label" parent="SavesPanel/SavesList" unique_id=1882523219]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_font_sizes/font_size = 36
 text = "Your Stands"
 
-[node name="Spacer" type="Control" parent="SavesPanel/SavesList"]
+[node name="Spacer" type="Control" parent="SavesPanel/SavesList" unique_id=1486769836]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="SaveScroll" type="ScrollContainer" parent="SavesPanel/SavesList"]
-layout_mode = 2
+[node name="SaveScroll" type="ScrollContainer" parent="SavesPanel/SavesList" unique_id=1260422597]
 custom_minimum_size = Vector2(0, 340)
-theme_override_constants/separation = 0
+layout_mode = 2
 
-[node name="SlotsContainer" type="VBoxContainer" parent="SavesPanel/SavesList/SaveScroll"]
+[node name="SlotsContainer" type="VBoxContainer" parent="SavesPanel/SavesList/SaveScroll" unique_id=1857419784]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="NewStandButton" type="Button" parent="SavesPanel/SavesList"]
-layout_mode = 2
+[node name="NewStandButton" type="Button" parent="SavesPanel/SavesList" unique_id=2018182632]
 custom_minimum_size = Vector2(0, 40)
-theme_override_font_sizes/font_size = 24
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.3, 0.9)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 24
 text = "+ New Stand"
+alignment = 0
 
-[node name="Spacer2" type="Control" parent="SavesPanel/SavesList"]
+[node name="Spacer2" type="Control" parent="SavesPanel/SavesList" unique_id=2061454522]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
-[node name="BackButton" type="Button" parent="SavesPanel/SavesList"]
-layout_mode = 2
+[node name="BackButton" type="Button" parent="SavesPanel/SavesList" unique_id=935616314]
 custom_minimum_size = Vector2(0, 48)
-theme_override_font_sizes/font_size = 38
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 38
 text = "Back"
+alignment = 0
 
-[node name="JoinPanel" type="Control" parent="."]
+[node name="JoinPanel" type="Control" parent="." unique_id=853438589]
 visible = false
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="JoinList" type="VBoxContainer" parent="JoinPanel"]
-anchors_preset = 9
+[node name="JoinList" type="VBoxContainer" parent="JoinPanel" unique_id=1010210821]
+layout_mode = 0
 anchor_bottom = 1.0
 offset_left = 60.0
 offset_top = 80.0
@@ -282,69 +296,64 @@ offset_bottom = -70.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
 theme_override_constants/separation = 6
-alignment = 0
 
-[node name="JoinTitle" type="Label" parent="JoinPanel/JoinList"]
+[node name="JoinTitle" type="Label" parent="JoinPanel/JoinList" unique_id=321001770]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_font_sizes/font_size = 36
 text = "Join a Stand"
 
-[node name="Spacer" type="Control" parent="JoinPanel/JoinList"]
+[node name="Spacer" type="Control" parent="JoinPanel/JoinList" unique_id=1512311193]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
-[node name="JoinField" type="LineEdit" parent="JoinPanel/JoinList"]
-layout_mode = 2
+[node name="JoinField" type="LineEdit" parent="JoinPanel/JoinList" unique_id=1909219210]
 custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
 size_flags_horizontal = 0
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_color = Color(1, 1, 1, 1.0)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_placeholder_color = Color(1, 1, 1, 0.7)
-theme_override_colors/caret_color = Color(1, 1, 1, 1.0)
+theme_override_colors/caret_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 20
 placeholder_text = "Lobby ID..."
 secret = true
 
-[node name="JoinSubmit" type="Button" parent="JoinPanel/JoinList"]
+[node name="JoinSubmit" type="Button" parent="JoinPanel/JoinList" unique_id=446553690]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(0, 40)
-theme_override_font_sizes/font_size = 24
 theme_override_colors/font_color = Color(0.7, 1, 0.7, 0.8)
 theme_override_colors/font_hover_color = Color(0.8, 1, 0.8, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 24
 text = "Join"
+alignment = 0
 
-[node name="JoinBack" type="Button" parent="JoinPanel"]
-layout_mode = 2
-theme = ExtResource("2_theme")
-anchors_preset = 5
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
+[node name="JoinBack" type="Button" parent="JoinPanel" unique_id=1701343640]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 0
 offset_left = 60.0
 offset_top = 460.0
 offset_right = 500.0
 offset_bottom = 508.0
 grow_vertical = 0
-custom_minimum_size = Vector2(0, 48)
-theme_override_font_sizes/font_size = 38
+theme = ExtResource("2_theme")
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 38
 text = "Back"
+alignment = 0
 
-[node name="SettingsPanel" type="Control" parent="."]
+[node name="SettingsPanel" type="Control" parent="." unique_id=13645234]
 visible = false
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SettingsList" type="VBoxContainer" parent="SettingsPanel"]
-anchors_preset = 9
+[node name="SettingsList" type="VBoxContainer" parent="SettingsPanel" unique_id=622440076]
+layout_mode = 0
 anchor_bottom = 1.0
 offset_left = 60.0
 offset_top = 80.0
@@ -353,213 +362,205 @@ offset_bottom = -70.0
 grow_vertical = 2
 theme = ExtResource("2_theme")
 theme_override_constants/separation = 8
-alignment = 0
 
-[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsList"]
+[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsList" unique_id=1505536160]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_font_sizes/font_size = 36
 text = "Settings"
 
-[node name="Spacer" type="Control" parent="SettingsPanel/SettingsList"]
+[node name="Spacer" type="Control" parent="SettingsPanel/SettingsList" unique_id=1741700118]
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
-[node name="AudioHeader" type="Label" parent="SettingsPanel/SettingsList"]
+[node name="AudioHeader" type="Label" parent="SettingsPanel/SettingsList" unique_id=1687588618]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
 theme_override_colors/font_color = Color(1, 0.9, 0.3, 0.9)
+theme_override_font_sizes/font_size = 22
 text = "Audio"
 
-[node name="MasterRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+[node name="MasterRow" type="HBoxContainer" parent="SettingsPanel/SettingsList" unique_id=1385863726]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="MasterLabel" type="Label" parent="SettingsPanel/SettingsList/MasterRow"]
-layout_mode = 2
+[node name="MasterLabel" type="Label" parent="SettingsPanel/SettingsList/MasterRow" unique_id=1023233960]
 custom_minimum_size = Vector2(120, 0)
-theme_override_font_sizes/font_size = 18
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 18
 text = "Master"
 
-[node name="MasterSlider" type="HSlider" parent="SettingsPanel/SettingsList/MasterRow"]
+[node name="MasterSlider" type="HSlider" parent="SettingsPanel/SettingsList/MasterRow" unique_id=521189395]
+custom_minimum_size = Vector2(100, 20)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(100, 20)
-min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 0.5
 
-[node name="MasterValue" type="Label" parent="SettingsPanel/SettingsList/MasterRow"]
-layout_mode = 2
+[node name="MasterValue" type="Label" parent="SettingsPanel/SettingsList/MasterRow" unique_id=362811909]
 custom_minimum_size = Vector2(40, 0)
-theme_override_font_sizes/font_size = 16
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_font_sizes/font_size = 16
 text = "50"
 horizontal_alignment = 2
 
-[node name="SFXRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+[node name="SFXRow" type="HBoxContainer" parent="SettingsPanel/SettingsList" unique_id=1612758923]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="SFXLabel" type="Label" parent="SettingsPanel/SettingsList/SFXRow"]
-layout_mode = 2
+[node name="SFXLabel" type="Label" parent="SettingsPanel/SettingsList/SFXRow" unique_id=1941009648]
 custom_minimum_size = Vector2(120, 0)
-theme_override_font_sizes/font_size = 18
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 18
 text = "SFX"
 
-[node name="SFXSlider" type="HSlider" parent="SettingsPanel/SettingsList/SFXRow"]
+[node name="SFXSlider" type="HSlider" parent="SettingsPanel/SettingsList/SFXRow" unique_id=2126387169]
+custom_minimum_size = Vector2(100, 20)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(100, 20)
-min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 0.5
 
-[node name="SFXValue" type="Label" parent="SettingsPanel/SettingsList/SFXRow"]
-layout_mode = 2
+[node name="SFXValue" type="Label" parent="SettingsPanel/SettingsList/SFXRow" unique_id=2064557529]
 custom_minimum_size = Vector2(40, 0)
-theme_override_font_sizes/font_size = 16
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_font_sizes/font_size = 16
 text = "50"
 horizontal_alignment = 2
 
-[node name="MusicRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+[node name="MusicRow" type="HBoxContainer" parent="SettingsPanel/SettingsList" unique_id=1522871666]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="MusicLabel" type="Label" parent="SettingsPanel/SettingsList/MusicRow"]
-layout_mode = 2
+[node name="MusicLabel" type="Label" parent="SettingsPanel/SettingsList/MusicRow" unique_id=1967369939]
 custom_minimum_size = Vector2(120, 0)
-theme_override_font_sizes/font_size = 18
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 18
 text = "Music"
 
-[node name="MusicSlider" type="HSlider" parent="SettingsPanel/SettingsList/MusicRow"]
+[node name="MusicSlider" type="HSlider" parent="SettingsPanel/SettingsList/MusicRow" unique_id=1697757930]
+custom_minimum_size = Vector2(100, 20)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(100, 20)
-min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 0.5
 
-[node name="MusicValue" type="Label" parent="SettingsPanel/SettingsList/MusicRow"]
-layout_mode = 2
+[node name="MusicValue" type="Label" parent="SettingsPanel/SettingsList/MusicRow" unique_id=1746744565]
 custom_minimum_size = Vector2(40, 0)
-theme_override_font_sizes/font_size = 16
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_font_sizes/font_size = 16
 text = "50"
 horizontal_alignment = 2
 
-[node name="Spacer2" type="Control" parent="SettingsPanel/SettingsList"]
+[node name="Spacer2" type="Control" parent="SettingsPanel/SettingsList" unique_id=1923513613]
 custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
-[node name="GraphicsHeader" type="Label" parent="SettingsPanel/SettingsList"]
+[node name="GraphicsHeader" type="Label" parent="SettingsPanel/SettingsList" unique_id=649590286]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
 theme_override_colors/font_color = Color(1, 0.9, 0.3, 0.9)
+theme_override_font_sizes/font_size = 22
 text = "Graphics"
 
-[node name="FullscreenRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+[node name="FullscreenRow" type="HBoxContainer" parent="SettingsPanel/SettingsList" unique_id=894429079]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="FullscreenLabel" type="Label" parent="SettingsPanel/SettingsList/FullscreenRow"]
-layout_mode = 2
+[node name="FullscreenLabel" type="Label" parent="SettingsPanel/SettingsList/FullscreenRow" unique_id=596234940]
 custom_minimum_size = Vector2(200, 0)
-theme_override_font_sizes/font_size = 18
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 18
 text = "Fullscreen"
 
-[node name="FullscreenCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FullscreenRow"]
-layout_mode = 2
+[node name="FullscreenCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FullscreenRow" unique_id=1992722334]
 custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
 
-[node name="VSyncRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+[node name="VSyncRow" type="HBoxContainer" parent="SettingsPanel/SettingsList" unique_id=519413519]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="VSyncLabel" type="Label" parent="SettingsPanel/SettingsList/VSyncRow"]
-layout_mode = 2
+[node name="VSyncLabel" type="Label" parent="SettingsPanel/SettingsList/VSyncRow" unique_id=463843898]
 custom_minimum_size = Vector2(200, 0)
-theme_override_font_sizes/font_size = 18
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 18
 text = "VSync"
 
-[node name="VSyncCheck" type="CheckBox" parent="SettingsPanel/SettingsList/VSyncRow"]
-layout_mode = 2
+[node name="VSyncCheck" type="CheckBox" parent="SettingsPanel/SettingsList/VSyncRow" unique_id=1035092707]
 custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
 
-[node name="LightingRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+[node name="LightingRow" type="HBoxContainer" parent="SettingsPanel/SettingsList" unique_id=1809890677]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="LightingLabel" type="Label" parent="SettingsPanel/SettingsList/LightingRow"]
-layout_mode = 2
+[node name="LightingLabel" type="Label" parent="SettingsPanel/SettingsList/LightingRow" unique_id=1020728108]
 custom_minimum_size = Vector2(200, 0)
-theme_override_font_sizes/font_size = 18
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 18
 text = "Enhanced Lighting"
 
-[node name="LightingCheck" type="CheckBox" parent="SettingsPanel/SettingsList/LightingRow"]
-layout_mode = 2
+[node name="LightingCheck" type="CheckBox" parent="SettingsPanel/SettingsList/LightingRow" unique_id=1448148324]
 custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
 
-[node name="FPSRow" type="HBoxContainer" parent="SettingsPanel/SettingsList"]
+[node name="FPSRow" type="HBoxContainer" parent="SettingsPanel/SettingsList" unique_id=678521518]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="FPSLabel" type="Label" parent="SettingsPanel/SettingsList/FPSRow"]
-layout_mode = 2
+[node name="FPSLabel" type="Label" parent="SettingsPanel/SettingsList/FPSRow" unique_id=292401927]
 custom_minimum_size = Vector2(200, 0)
-theme_override_font_sizes/font_size = 18
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 18
 text = "Show FPS"
 
-[node name="FPSCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FPSRow"]
-layout_mode = 2
+[node name="FPSCheck" type="CheckBox" parent="SettingsPanel/SettingsList/FPSRow" unique_id=724990404]
 custom_minimum_size = Vector2(24, 24)
-
-[node name="SettingsBack" type="Button" parent="SettingsPanel"]
 layout_mode = 2
-theme = ExtResource("2_theme")
-anchors_preset = 7
-anchor_left = 0.0
+
+[node name="SettingsBack" type="Button" parent="SettingsPanel" unique_id=1973234552]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 0
 anchor_top = 1.0
-anchor_right = 0.0
 anchor_bottom = 1.0
 offset_left = 60.0
 offset_top = -70.0
 offset_right = 500.0
 offset_bottom = -16.0
 grow_vertical = 0
-custom_minimum_size = Vector2(0, 48)
-theme_override_font_sizes/font_size = 38
+theme = ExtResource("2_theme")
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
-alignment = 0
+theme_override_font_sizes/font_size = 38
 text = "Back"
+alignment = 0
 
-[node name="NameEntryDialog" type="AcceptDialog" parent="."]
+[node name="NameEntryDialog" type="AcceptDialog" parent="." unique_id=2087182828]
 title = "Name Your Stand"
 ok_button_text = "Create"
 dialog_text = "Enter a name for your new stand:"
 
-[node name="NameEntry" type="LineEdit" parent="NameEntryDialog"]
-layout_mode = 2
+[node name="NameEntry" type="LineEdit" parent="NameEntryDialog" unique_id=239463995]
 offset_left = 12.0
 offset_top = 44.0
 offset_right = 388.0
 offset_bottom = 76.0
 theme_override_font_sizes/font_size = 20
-max_length = 14
 placeholder_text = "e.g. Damjan's Lemonade"
+max_length = 14
 
-[node name="ConfirmDialog" type="ConfirmationDialog" parent="."]
+[node name="ConfirmDialog" type="ConfirmationDialog" parent="." unique_id=708102758]
 ok_button_text = "Delete"
 dialog_text = "Delete this save?"

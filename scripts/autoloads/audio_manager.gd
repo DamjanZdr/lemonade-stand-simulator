@@ -116,7 +116,13 @@ func _on_change_finalized(_earned: float) -> void:
 ## Preload music tracks. The list is explicit because directory scanning
 ## does not work reliably in exported PCK builds.
 func _preload_music() -> void:
-	var tracks: Array[String] = ["Clear Air", "Crinoline Dreams", "Easy Lemon"]
+	var tracks: Array[String] = [
+		"Autumn Day",
+		"Clear Air",
+		"Crinoline Dreams",
+		"Easy Lemon",
+		"Morning",
+	]
 	for key in tracks:
 		var path: String = MUSIC_DIR + key + ".mp3"
 		var stream := load(path) as AudioStreamMP3
