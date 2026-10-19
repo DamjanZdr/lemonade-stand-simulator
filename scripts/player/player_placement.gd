@@ -22,7 +22,15 @@ func configure_local_player() -> void:
 
 ## Public entry point used by PlayerController._process to refresh the ghost.
 func update_ghost() -> void:
+	if (
+		_ghost_suppressed and _player.camera != null
+		and _player.camera.global_basis.get_rotation_quaternion().angle_to(_ghost_suppress_quat)
+		> GHOST_SUPPRESS_ANGLE
+	):
+		_ghost_suppressed = false
 	_update_ghost()
+	if _ghost_suppressed and _ghost != null:
+		_ghost.visible = false
 
 
 const HINT_GROUND := "Aim at ground to place"
@@ -258,6 +266,7 @@ func _place_cup_stack_from_box() -> void:
 			0.05,
 			0.85,
 		)
+	suppress_ghost_until_look()
 	EventBus.container_placed.emit("cup_stack", stack)
 
 
@@ -409,7 +418,7 @@ func _place_single_cup(_filled: bool) -> void:
 		WorldSync.play_place_pop(stack)
 		stack.add_to_group("container")
 
-	_destroy_ghost()
+	_finish_place()
 	_player.inventory.clear_held()
 	AudioManager.play_sfx("taking_cup", stack_pos)
 	EventBus.container_placed.emit("cup_stack", stack)
@@ -458,7 +467,7 @@ func _place_filled_cup() -> void:
 				if child is CollisionShape3D:
 					child.disabled = false
 
-	_destroy_ghost()
+	_finish_place()
 	_player.inventory.clear_held()
 	AudioManager.play_sfx("taking_cup", cup_pos)
 	EventBus.interaction_hint_changed.emit("Filled cup placed!")
@@ -501,7 +510,7 @@ func _place_held_supply_box_on(
 		box.global_position.y += y_diff
 		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", place_pos)
-	_destroy_ghost()
+	_finish_place()
 	_player.inventory.clear_held()
 	return box
 
@@ -676,7 +685,7 @@ func _drop_held_box() -> void:
 		box.global_position.y += y_diff
 		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", drop_pos)
-	_destroy_ghost()
+	_finish_place()
 	_player.inventory.clear_held()
 
 
@@ -798,7 +807,7 @@ func _drop_trash(place_pos: Vector3 = Vector3.ZERO) -> void:
 		box.global_position.y += y_diff
 		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", drop_pos)
-	_destroy_ghost()
+	_finish_place()
 	_player.inventory.clear_held()
 
 
@@ -842,7 +851,7 @@ func _place_held_trash_box_on_stack(root: SupplyBox) -> void:
 		box.update_metrics()
 		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", place_pos)
-	_destroy_ghost()
+	_finish_place()
 	_player.inventory.clear_held()
 
 
@@ -891,7 +900,7 @@ func _place_held_trash_box_at(
 		box.global_position.y += y_diff
 		WorldSync.play_place_pop(box)
 	AudioManager.play_sfx("box_drop", place_pos)
-	_destroy_ghost()
+	_finish_place()
 	_player.inventory.clear_held()
 	return box
 
@@ -941,7 +950,7 @@ func _place_equipment_from_box() -> void:
 			instance.sync_fill_display()
 			instance.call_deferred("update_label")
 			EventBus.pitcher_state_changed.emit(int(instance.state))
-	_destroy_ghost()
+	_finish_place()
 	_player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 	AudioManager.play_sfx(_get_place_sfx_key(equipment_type), place_pos, -1.0, 0.05, 0.85)
 	OnboardingManager.report(
@@ -1250,6 +1259,34 @@ func _destroy_ghost() -> void:
 	_ghost = null
 	_last_ghost_mat = null
 	_ghost_valid = false
+
+
+## After a successful place the held item often turns into something that
+## can't go where you're still aiming (e.g. the empty trash box hovering
+## over the stack you just put down) — flashing the red invalid ghost that
+## same frame reads as "something went wrong". Hide the ghost until the
+## camera actually moves. Ghost validity keeps updating under the hood, so
+## clicking to place again without moving the mouse still works.
+var _ghost_suppressed := false
+var _ghost_suppress_quat := Quaternion.IDENTITY
+
+## Camera rotation needed to re-show the ghost after a placement (~0.3 deg).
+## Small enough that any deliberate look clears it, large enough that
+## sub-pixel mouse drift doesn't.
+const GHOST_SUPPRESS_ANGLE := 0.005
+
+
+func suppress_ghost_until_look() -> void:
+	_ghost_suppressed = true
+	if _player.camera != null:
+		_ghost_suppress_quat = _player.camera.global_basis.get_rotation_quaternion()
+
+
+## Shared tail for successful placements: mark the ghost suppressed and
+## destroy the current preview.
+func _finish_place() -> void:
+	suppress_ghost_until_look()
+	_destroy_ghost()
 
 
 ## Destroys the placement ghost. The ghost is parented to the world
@@ -2026,7 +2063,7 @@ func _try_place_container() -> Node3D:
 		instance.call_deferred("update_label")
 		EventBus.pitcher_state_changed.emit(int(instance.state))
 
-	_destroy_ghost()
+	_finish_place()
 	var container_type_str: String = _player.held_item_data.get("container_type", "")
 	var placed_recipe: Dictionary = _player.held_item_data.get("saved_recipe", { }).duplicate(true)
 	var on_workstation := is_workstation_surface(_player.ray.get_collider())
@@ -2063,7 +2100,7 @@ func _cancel_container_placement() -> void:
 			source_node.scale,
 			true,
 		)
-	_destroy_ghost()
+	_finish_place()
 	var refund_value := cost * 0.7
 	_player.inventory.make_held_trash(refund_value, container_type)
 	EventBus.interaction_hint_changed.emit("Recycled ΓÇö take to trashcan for $%.2f" % refund_value)
