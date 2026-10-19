@@ -623,42 +623,30 @@ func end_press_eraser_animation() -> void:
 
 
 func fill_water_slow(amount: float, duration: float = 2.0) -> void:
-	var start_color := _get_current_liquid_color()
 	GameLog.log(
 		"[Pitcher] fill_water_slow %s: water %.2f->%.2f liq->%.2f host=%s"
 		% [str(name), water, water + amount, get_liquid_volume() + amount, str(WorldSync.is_host())]
 	)
 	water += amount
-	var end_color := _get_current_liquid_color()
 	_update_eraser_position(duration)
 	update_label()
-	var tween := create_tween()
-	tween.tween_method(
-		func(c: Color):
-			_apply_liquid_color(c),
-		start_color,
-		end_color,
-		duration,
-	)
+	# Color is categorical (fruit color if any fruit, else water color) —
+	# no dilution lerp, so a single apply is enough.
+	update_liquid_color()
 	if fruit_count > 0.0 and water > 0.0 and state == PitcherState.PREPPING:
 		state = PitcherState.COMPLETE
 		EventBus.pitcher_state_changed.emit(int(state))
 
 
+@warning_ignore("unused_parameter")
 func tween_color_for_water_addition(water_amount: float, duration: float) -> void:
-	var start_color := _get_current_liquid_color()
+	# Show the post-fill color immediately — color is categorical so
+	# there's nothing to animate (and per-frame CSG rebuilds tanked FPS).
 	var original_water := water
 	water = original_water + water_amount
 	var end_color := _get_current_liquid_color()
 	water = original_water
-	var tween := create_tween()
-	tween.tween_method(
-		func(c: Color):
-			_apply_liquid_color(c),
-		start_color,
-		end_color,
-		duration,
-	)
+	_apply_liquid_color(end_color)
 
 
 func _can_add_ingredient(ingredient_type: String, amount: float) -> bool:

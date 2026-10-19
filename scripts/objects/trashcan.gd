@@ -35,7 +35,7 @@ func get_hint(player: Node) -> String:
 	if p.held_item == HeldItem.CUP_EMPTY:
 		return "Trashcan | LMB: trash cup for $%.2f" % _get_cup_refund()
 	if p.held_item == HeldItem.CUP_FILLED:
-		return "Trashcan | LMB: dump cup (no refund)"
+		return "Trashcan | LMB: trash cup for $%.2f" % _get_cup_refund()
 	if p.held_item == HeldItem.SUPPLY_BOX:
 		var box_data: Dictionary = p.held_item_data
 		if box_data.get("is_equipment", false):
@@ -134,21 +134,25 @@ func interact(player: Node) -> void:
 			_request_trash_disposal.rpc_id(1, ctype, refund, stand_name)
 		_finish_held_disposal(p)
 		return
+	# Held stand cups use "stand_cup" — not "cup" — so they don't earn the
+	# NPC-litter popularity bonus or count as trash income. "cup" stays in
+	# REGULAR_TRASH_TYPES for litter picked off the street.
 	if p.held_item == HeldItem.CUP_EMPTY:
 		var refund := _get_cup_refund()
 		var stand_name := _get_player_stand_name(p)
 		if WorldSync.is_host():
-			apply_trash_disposal("cup", refund, stand_name)
+			apply_trash_disposal("stand_cup", refund, stand_name)
 		else:
-			_request_trash_disposal.rpc_id(1, "cup", refund, stand_name)
+			_request_trash_disposal.rpc_id(1, "stand_cup", refund, stand_name)
 		_finish_held_disposal(p)
 		return
 	if p.held_item == HeldItem.CUP_FILLED:
+		var filled_refund := _get_cup_refund()
 		var stand_name := _get_player_stand_name(p)
 		if WorldSync.is_host():
-			apply_trash_disposal("cup", 0.0, stand_name)
+			apply_trash_disposal("stand_cup", filled_refund, stand_name)
 		else:
-			_request_trash_disposal.rpc_id(1, "cup", 0.0, stand_name)
+			_request_trash_disposal.rpc_id(1, "stand_cup", filled_refund, stand_name)
 		_finish_held_disposal(p)
 		return
 	if p.held_item == HeldItem.SUPPLY_BOX:
@@ -178,6 +182,12 @@ func interact(player: Node) -> void:
 
 func _finish_held_disposal(player: Player) -> void:
 	var mesh := player.inventory.release_hand_mesh()
+	# Pull the mesh out of hand_slot BEFORE clear_held — set_held() frees
+	# every hand_slot child, which would kill the mesh before the arc runs.
+	if mesh != null and is_instance_valid(mesh):
+		var keep_transform := mesh.global_transform
+		mesh.reparent(self)
+		mesh.global_transform = keep_transform
 	# Workstations stay in the tree (hidden) while held — despawn the
 	# source node for everyone so a trashed table stops existing/counting.
 	var source: Node = player.held_item_data.get("source_node")
@@ -188,35 +198,19 @@ func _finish_held_disposal(player: Player) -> void:
 	AudioManager.play_sfx("trash", global_position)
 	if mesh == null or not is_instance_valid(mesh):
 		return
-	var start_transform := mesh.global_transform
-	mesh.reparent(get_tree().current_scene)
-	mesh.global_transform = start_transform
+	# Same curved throw arc used by bins/containers (plays "swoosh" itself).
+	# Mesh is reparented to this can, so the target is a local offset.
 	var start_pos := mesh.global_position
-	var target := global_position + Vector3.UP * 0.65
-	# Arc apex: midpoint between start and target, raised to form a parabola.
-	var mid := (start_pos + target) * 0.5 + Vector3.UP * 1.2
-	var tween := create_tween()
-	tween.set_parallel(true)
-	# Fly along a quadratic bezier arc (start -> mid -> target).
-	tween.tween_method(_bezier_pos.bind(start_pos, mid, target, mesh), 0.0, 1.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
-		Tween.EASE_IN_OUT
-	)
-	tween.tween_property(mesh, "scale", Vector3.ZERO, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(
-		Tween.EASE_IN
-	)
-	tween.tween_property(mesh, "rotation", mesh.rotation + Vector3(0.8, 1.6, 0.4), 0.45)
-	tween.chain().tween_callback(mesh.queue_free)
-
-
-## Quadratic bezier helper for the trash arc animation. `t` goes 0 -> 1,
-## `a`/`b`/`c` are start/mid/end, `mesh` is the node to move.
-func _bezier_pos(t: float, a: Vector3, b: Vector3, c: Vector3, mesh: Variant) -> void:
-	# Variant param: a freed mesh can't convert to a typed Node3D argument,
-	# which fails the call before the validity check gets a chance to run.
-	if mesh == null or not is_instance_valid(mesh) or not mesh is Node3D:
-		return
-	var u := 1.0 - t
-	(mesh as Node3D).global_position = u * u * a + 2.0 * u * t * b + t * t * c
+	var arc := _animate_throw_arc(mesh, start_pos, Vector3.UP * 0.65, 0.45)
+	var shrink := create_tween()
+	shrink.set_parallel(true)
+	shrink.tween_property(mesh, "scale", Vector3.ZERO, 0.45) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	shrink.tween_property(mesh, "rotation", mesh.rotation + Vector3(0.8, 1.6, 0.4), 0.45)
+	var done := create_tween()
+	if arc != null:
+		done.tween_interval(0.45)
+	done.tween_callback(mesh.queue_free)
 
 
 ## Host-side: apply money refund. The disposable visual was removed — the

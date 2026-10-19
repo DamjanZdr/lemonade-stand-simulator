@@ -275,19 +275,42 @@ func _ready() -> void:
 	EventBus.day_time_over.connect(_on_day_time_over)
 	_build_closed_overlay()
 	_build_demo_upgrades_overlay()
-	# Small exit hint along the bottom edge — the HUD is hidden while the
-	# hub is open, so this lives inside the computer screen itself.
-	var esc_hint := Label.new()
-	esc_hint.text = "ESC to exit"
-	esc_hint.add_theme_font_size_override("font_size", 15)
-	esc_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.35))
-	esc_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	esc_hint.offset_top = -26.0
-	esc_hint.offset_bottom = -8.0
-	esc_hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	esc_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	esc_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(esc_hint)
+	# Exit button along the bottom edge — the HUD is hidden while the hub
+	# is open, so this lives inside the computer screen itself. Clicking it
+	# exits the computer view, same as pressing ESC.
+	var exit_btn := Button.new()
+	exit_btn.text = "X"
+	exit_btn.tooltip_text = "Exit computer (ESC)"
+	exit_btn.custom_minimum_size = Vector2(72, 60)
+	exit_btn.add_theme_font_size_override("font_size", 32)
+	exit_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
+	var btn_style := StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.12, 0.13, 0.16, 1)
+	btn_style.border_color = Color(0.18, 0.20, 0.25, 1)
+	btn_style.set_border_width_all(1)
+	btn_style.set_corner_radius_all(8)
+	btn_style.content_margin_left = 10.0
+	btn_style.content_margin_top = 4.0
+	btn_style.content_margin_right = 10.0
+	btn_style.content_margin_bottom = 4.0
+	var btn_hover := btn_style.duplicate() as StyleBoxFlat
+	btn_hover.bg_color = Color(0.45, 0.15, 0.15, 1)
+	var btn_pressed := btn_style.duplicate() as StyleBoxFlat
+	btn_pressed.bg_color = Color(0.3, 0.1, 0.1, 1)
+	exit_btn.add_theme_stylebox_override("normal", btn_style)
+	exit_btn.add_theme_stylebox_override("hover", btn_hover)
+	exit_btn.add_theme_stylebox_override("pressed", btn_pressed)
+	# Sits in the strip below the panels (MainHBox bottom margin is 80px):
+	# panel edge at -80, 8px gap, then the button.
+	exit_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	exit_btn.offset_left = -36.0
+	exit_btn.offset_right = 36.0
+	exit_btn.offset_top = -72.0
+	exit_btn.offset_bottom = -12.0
+	exit_btn.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	exit_btn.pressed.connect(_on_exit_button_pressed)
+	add_child(exit_btn)
+
 	# Employees tab removed in the demo.
 	var emp_tab := _flow_indicator.get_node_or_null("StepPC_employees")
 	if emp_tab:
@@ -2363,6 +2386,17 @@ func _show_morning_hub() -> void:
 	tween.parallel().tween_property(panel, "modulate", Color(1, 1, 1, 1), 0.3)
 	if _right_panel:
 		tween.parallel().tween_property(_right_panel, "modulate", Color(1, 1, 1, 1), 0.3)
+
+
+## The bottom-screen X button exits the computer view, same as ESC.
+## The hub is a child of the computer's ScreenUI SubViewport, so the
+## owning Computer node is two parents up.
+func _on_exit_button_pressed() -> void:
+	var computer := get_parent()
+	while computer != null and not computer is Computer:
+		computer = computer.get_parent()
+	if computer != null:
+		computer._exit()
 
 
 func _hide_morning_hub() -> void:

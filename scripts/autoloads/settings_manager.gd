@@ -6,6 +6,20 @@ const CONFIG_PATH := "user://settings.cfg"
 const SECTION_AUDIO := "audio"
 const SECTION_GRAPHICS := "graphics"
 const SECTION_GAMEPLAY := "gameplay"
+const SECTION_CONTROLS := "controls"
+
+## Actions the player can remap from the Controls settings tab.
+const REMAPPABLE_ACTIONS: Array[String] = [
+	"move_forward",
+	"move_back",
+	"move_left",
+	"move_right",
+	"sprint",
+	"jump",
+	"crouch",
+	"primary_interact",
+	"secondary_interact",
+]
 
 const DEFAULT_MASTER_VOLUME := 0.5
 const DEFAULT_SFX_VOLUME := 0.5
@@ -127,6 +141,8 @@ func load_settings() -> void:
 	# rate when VSync is off. The default is unlimited, but force it here
 	# in case project settings or an old config changed it.
 	Engine.max_fps = 0
+	# Keybinds
+	apply_saved_keybinds()
 	settings_loaded.emit()
 
 
@@ -291,3 +307,88 @@ func _set_gameplay_value(key: String, value: Variant) -> void:
 	cfg.load(CONFIG_PATH)
 	cfg.set_value(SECTION_GAMEPLAY, key, value)
 	cfg.save(CONFIG_PATH)
+
+# === KEYBINDS ===
+# Saved as "key:<physical_keycode>" or "mouse:<button_index>" per action.
+
+
+## Rebind an action to a single input event. Any other remappable action
+## holding the same binding loses it — two actions never share one key.
+func rebind_action(action: String, event: InputEvent) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	for other in REMAPPABLE_ACTIONS:
+		if other == action or not InputMap.has_action(other):
+			continue
+		for ev in InputMap.action_get_events(other):
+			if _events_equal(ev, event):
+				InputMap.action_erase_event(other, ev)
+				var cfg := ConfigFile.new()
+				cfg.load(CONFIG_PATH)
+				cfg.erase_section_key(SECTION_CONTROLS, other)
+				cfg.save(CONFIG_PATH)
+	InputMap.action_erase_events(action)
+	InputMap.action_add_event(action, event)
+	var cfg := ConfigFile.new()
+	cfg.load(CONFIG_PATH)
+	cfg.set_value(SECTION_CONTROLS, action, _serialize_input_event(event))
+	cfg.save(CONFIG_PATH)
+
+
+## Re-apply persisted keybinds over the project.godot defaults.
+func apply_saved_keybinds() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(CONFIG_PATH) != OK:
+		return
+	for action in REMAPPABLE_ACTIONS:
+		var saved: String = str(cfg.get_value(SECTION_CONTROLS, action, ""))
+		if saved == "":
+			continue
+		var event := _deserialize_input_event(saved)
+		if event == null:
+			continue
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		InputMap.action_erase_events(action)
+		InputMap.action_add_event(action, event)
+
+
+## First bound event for an action, or null when unbound.
+func get_action_binding(action: String) -> InputEvent:
+	if not InputMap.has_action(action):
+		return null
+	var events := InputMap.action_get_events(action)
+	return events[0] if not events.is_empty() else null
+
+
+func _events_equal(a: InputEvent, b: InputEvent) -> bool:
+	if a is InputEventKey and b is InputEventKey:
+		return ((a as InputEventKey).physical_keycode == (b as InputEventKey).physical_keycode)
+	if a is InputEventMouseButton and b is InputEventMouseButton:
+		return (
+			(a as InputEventMouseButton).button_index == (b as InputEventMouseButton).button_index
+		)
+	return false
+
+
+func _serialize_input_event(event: InputEvent) -> String:
+	if event is InputEventKey:
+		return "key:%d" % (event as InputEventKey).physical_keycode
+	if event is InputEventMouseButton:
+		return "mouse:%d" % (event as InputEventMouseButton).button_index
+	return ""
+
+
+func _deserialize_input_event(data: String) -> InputEvent:
+	var parts := data.split(":")
+	if parts.size() != 2:
+		return null
+	if parts[0] == "key":
+		var e := InputEventKey.new()
+		e.physical_keycode = parts[1].to_int() as Key
+		return e
+	if parts[0] == "mouse":
+		var e := InputEventMouseButton.new()
+		e.button_index = parts[1].to_int() as MouseButton
+		return e
+	return null

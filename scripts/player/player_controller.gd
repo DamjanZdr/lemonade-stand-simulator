@@ -86,8 +86,12 @@ func _update_view_bob(delta: float) -> void:
 	if not _cam_base_set:
 		_cam_base_pos = cam.position
 		_cam_base_set = true
-	# Priceboard focus and stun own the camera — don't fight them.
-	if _in_priceboard_mode or _player.is_stunned() or _player.stun_recover_timer > 0.0:
+	# Priceboard focus owns the camera — while top_level is set, writing
+	# cam.position would teleport it to world origin, so touch nothing.
+	if _in_priceboard_mode:
+		_bob_strength = 0.0
+		return
+	if _player.is_stunned() or _player.stun_recover_timer > 0.0:
 		_bob_strength = 0.0
 		if cam.position != _cam_base_pos:
 			cam.position = _cam_base_pos
@@ -343,14 +347,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if event.is_action_pressed("primary_interact"):
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			if _player.interaction != null:
 				_player.interaction.set_primary_held(true)
 				_player.interaction.primary_interact()
-		elif not event.pressed:
-			if _player.interaction != null:
-				_player.interaction.set_primary_held(false)
+	elif event.is_action_released("primary_interact"):
+		if _player.interaction != null:
+			_player.interaction.set_primary_held(false)
 
 	if event.is_action_pressed("secondary_interact") and \
 			Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:

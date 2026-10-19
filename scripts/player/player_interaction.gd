@@ -267,6 +267,9 @@ func poll_hint() -> void:
 		hint = "Empty Cup | LMB: place cup"
 		if interactable is CupStack:
 			hint = "Empty Cup | LMB: add to stack"
+		var cup_can := _get_looked_at_trashcan()
+		if cup_can != null:
+			hint = cup_can.get_hint(_player)
 	elif _player.inventory.held_item == HeldItem.CUP_FILLED:
 		var held_recipe: Dictionary = _player.inventory.held_item_data.get("recipe", { })
 		hint = "[%s]\nFilled Cup | LMB: place filled cup" % _recipe_hint_string(held_recipe)
@@ -276,6 +279,9 @@ func poll_hint() -> void:
 			var has_ped := _player.find_pedestrian_in_ancestors(hit_node) != null
 			if has_customer or has_ped:
 				hint = "Filled Cup | LMB: serve lemonade"
+		var filled_can := _get_looked_at_trashcan()
+		if filled_can != null:
+			hint = filled_can.get_hint(_player)
 	else:
 		hint = interactable.get_hint(_player) if interactable else ""
 		# Thrown trash (mid-air or landed) — pickupable with empty hands.
@@ -327,10 +333,19 @@ func primary_interact() -> void:
 	if _player.inventory.held_item == HeldItem.NONE and interactable != null:
 		var is_bin := interactable.is_in_group("bin")
 		if not is_bin:
-			var pickupable := interactable.find_child("Pickupable", false, false)
-			if pickupable != null and pickupable.can_pick_up(_player):
-				pickupable.pick_up(_player)
-				return
+			# A workstation with items on it is "full" — like a full container,
+			# it can only be picked up with RMB. LMB should hit the items
+			# on the table, not yank the whole table out from under them.
+			# Items sit as world siblings (not children) until pickup, so
+			# the check has to be positional.
+			var workstation_full := (
+				interactable is Workstation and (interactable as Workstation).has_items_on()
+			)
+			if not workstation_full:
+				var pickupable := interactable.find_child("Pickupable", false, false)
+				if pickupable != null and pickupable.can_pick_up(_player):
+					pickupable.pick_up(_player)
+					return
 
 	# Pick up thrown trash (RigidBody3D, mid-air or landed) with empty hands.
 	# Uses WorldSync so the pickup is networked — any player can catch it.
@@ -524,6 +539,11 @@ func primary_interact() -> void:
 
 	# Handle single empty cup placement or pitcher interaction
 	if _player.inventory.held_item == HeldItem.CUP_EMPTY:
+		# Trashcan disposes the cup for a small refund.
+		var cup_trashcan := _get_looked_at_trashcan()
+		if cup_trashcan != null:
+			cup_trashcan.interact(_player)
+			return
 		# First check if looking at a pitcher to fill cup
 		if interactable is Pitcher:
 			_player.last_interact_hit = _player.ray.get_collider()
@@ -552,6 +572,11 @@ func primary_interact() -> void:
 
 	# Handle filled cup - serve to customer or place on surface
 	if _player.inventory.held_item == HeldItem.CUP_FILLED:
+		# Trashcan dumps the cup for the same refund as a clean cup.
+		var filled_trashcan := _get_looked_at_trashcan()
+		if filled_trashcan != null:
+			filled_trashcan.interact(_player)
+			return
 		# First check if looking at a customer or pedestrian to serve.
 		if _player.ray.is_colliding():
 			var hit_node: Node = _player.ray.get_collider() as Node

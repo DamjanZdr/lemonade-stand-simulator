@@ -198,7 +198,7 @@ anchor_bottom = 1.0
 offset_left = 24.0
 offset_top = 24.0
 offset_right = -24.0
-offset_bottom = -24.0
+offset_bottom = -80.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 16
@@ -618,7 +618,7 @@ custom_minimum_size = Vector2(60, 30)
 layout_mode = 2
 
 [node name="WallPadR" type="Control" parent="MainHBox/RightPanel/RightVBox/WallColorRow"]
-custom_minimum_size = Vector2(38, 0)
+custom_minimum_size = Vector2(30, 0)
 layout_mode = 2
 
 [node name="RoofColorRow" type="HBoxContainer" parent="MainHBox/RightPanel/RightVBox"]
@@ -642,7 +642,7 @@ custom_minimum_size = Vector2(60, 30)
 layout_mode = 2
 
 [node name="RoofPadR" type="Control" parent="MainHBox/RightPanel/RightVBox/RoofColorRow"]
-custom_minimum_size = Vector2(38, 0)
+custom_minimum_size = Vector2(30, 0)
 layout_mode = 2
 
 [node name="FenceRow" type="HBoxContainer" parent="MainHBox/RightPanel/RightVBox"]

@@ -293,13 +293,15 @@ func interact(player: Node) -> void:
 					start_fill(space)
 				return
 
+		# No pitcher snapped — nothing to fill or take.
+		if _snapped_pitcher == null or not is_instance_valid(_snapped_pitcher):
+			return
 		# Pitcher full or otherwise take it
 		if _is_filling or _snapped_pitcher.locked_by_dispenser:
 			EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
 			return
 		var pitcher := _snapped_pitcher
-		if pitcher != null:
-			pitcher.locked_by_dispenser = false
+		pitcher.locked_by_dispenser = false
 		_snapped_pitcher = null
 		_pending_snap_pitcher_net_id = -1
 		WorldSync.sync_property(self, "_pending_snap_pitcher_net_id", -1)

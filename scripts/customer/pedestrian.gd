@@ -752,7 +752,9 @@ func try_serve(player: Node) -> void:
 	if _patience_circle:
 		_patience_circle.visible = false
 
-	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "")
+	# Free-sample NPCs give deterministic feedback — every off-ideal axis is
+	# named, no unhappy-chance rolls hiding real problems.
+	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "", true)
 	var feedback := _feedback_text(result)
 	_show_order_text(feedback)
 

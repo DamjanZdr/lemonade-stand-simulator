@@ -53,6 +53,7 @@ func _setup_pickupable() -> void:
 					{ "recipe": recipe },
 					_make_hand_mesh(true),
 				)
+				AudioManager.play_sfx("fill_up_cup", global_position)
 		_despawn_networked()
 		return { }
 	add_child(pickupable)
@@ -98,6 +99,7 @@ func _pick_up_player(player: Node) -> void:
 			physics.collision_layer = 0
 			model.visible = false
 			p.inventory.set_held(HeldItem.CUP_FILLED, { "recipe": recipe }, _make_hand_mesh(true))
+			AudioManager.play_sfx("fill_up_cup", global_position)
 	_despawn_networked()
 
 

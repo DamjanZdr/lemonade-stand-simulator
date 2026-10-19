@@ -80,8 +80,12 @@ func evaluate_detailed(
 	recipe: Dictionary,
 	temperature: float,
 	expected_fruit_type: String = "",
+	deterministic: bool = false,
 ) -> EvaluationResult:
 	## Returns full per-axis scores and an ordered list of complaints.
+	## When `deterministic` is true, every axis that deviates produces its
+	## complaint instead of rolling the unhappy chance — used for free-sample
+	## NPCs whose whole purpose is accurate recipe feedback.
 	var result := EvaluationResult.new()
 
 	var fruit_type: String = recipe.get("fruit_type", "")
@@ -140,19 +144,24 @@ func evaluate_detailed(
 	)
 
 	# --- Complaint generation: roll for each axis ---
-	if randf() < fruit_unhappy:
+	# In deterministic mode every off-ideal axis complains; otherwise each
+	# axis rolls its unhappy chance so mild misses sometimes get a pass.
+	var complains_fruit := fruit_unhappy > 0.0 if deterministic else randf() < fruit_unhappy
+	var complains_sugar := sugar_unhappy > 0.0 if deterministic else randf() < sugar_unhappy
+	var complains_ice := ice_unhappy > 0.0 if deterministic else randf() < ice_unhappy
+	if complains_fruit:
 		if fruit_count > data.ideal_fruit_count:
 			result.complaints.append("too_strong")
 		else:
 			result.complaints.append("not_enough_fruit")
 
-	if randf() < sugar_unhappy:
+	if complains_sugar:
 		if sugar > ideal_sugar:
 			result.complaints.append("too_sweet")
 		else:
 			result.complaints.append("not_sweet_enough")
 
-	if randf() < ice_unhappy:
+	if complains_ice:
 		if ice > ideal_ice:
 			result.complaints.append("too_cold")
 		else:

@@ -213,6 +213,7 @@ func play_sfx(
 	duration_match: float = -1.0,
 	pitch_variation: float = _PITCH_VARIATION,
 	base_pitch: float = 1.0,
+	volume_db: float = 0.0,
 ) -> void:
 	var stream: AudioStream = _streams.get(key)
 	if stream == null:
@@ -227,6 +228,7 @@ func play_sfx(
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_SQUARE_DISTANCE
 	player.unit_size = 5.0
 	player.max_distance = 50.0
+	player.volume_db = volume_db
 
 	# Pitch variation so each play sounds slightly different
 	var pitch := randf_range(base_pitch - pitch_variation, base_pitch + pitch_variation)
@@ -246,7 +248,7 @@ func play_sfx(
 			# Fade in over 0.3s
 			player.volume_db = -40.0
 			var tween := scene.create_tween()
-			tween.tween_property(player, "volume_db", 0.0, 0.3)
+			tween.tween_property(player, "volume_db", volume_db, 0.3)
 			return
 
 	player.play()

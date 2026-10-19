@@ -154,6 +154,8 @@ func _animate_throw_arc(
 	start_global: Vector3,
 	target_local: Vector3,
 	duration: float = 0.35,
+	delay: float = 0.0,
+	play_swoosh: bool = true,
 ) -> Tween:
 	var parent := node.get_parent()
 	if parent == null:
@@ -163,9 +165,16 @@ func _animate_throw_arc(
 	var arc_h := clampf(dist * 0.4, 0.3, 2.0)
 	var cp1 := start_global + Vector3(0, arc_h, 0)
 	var cp2: Vector3 = target_global + Vector3(0, arc_h, 0)
-	node.global_position = start_global
-	AudioManager.play_sfx("swoosh", start_global)
 	var tween := node.create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_callback(
+		func():
+			node.visible = true
+			node.global_position = start_global
+			if play_swoosh:
+				AudioManager.play_sfx("swoosh", start_global),
+	)
 	tween \
 			.tween_method(
 		func(t: float):

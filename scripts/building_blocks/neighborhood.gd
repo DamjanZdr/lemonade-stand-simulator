@@ -485,9 +485,25 @@ func _is_under_fence(node: Node, stop_at: Node) -> bool:
 	return false
 
 
+## True if a mesh belongs to an instanced sub-scene under the house
+## (e.g. a copied tree or prop). House recoloring must only touch the
+## house model's own surfaces — instanced children like a pine have
+## surfaces named "Material.001" that would otherwise get painted
+## with the wall/roof colors.
+func _is_foreign_instance(node: Node, stop_at: Node) -> bool:
+	var p := node.get_parent()
+	while p != null and p != stop_at:
+		if not p.scene_file_path.is_empty():
+			return true
+		p = p.get_parent()
+	return false
+
+
 func _recolor_house(root: Node, roof_color: Color, wall_color: Color) -> void:
 	for mesh_instance in _find_mesh_instances(root):
 		if _is_under_fence(mesh_instance, root):
+			continue
+		if _is_foreign_instance(mesh_instance, root):
 			continue
 		var mesh := mesh_instance.mesh
 		if mesh == null:

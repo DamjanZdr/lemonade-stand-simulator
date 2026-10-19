@@ -9,11 +9,27 @@ signal vsync_toggled(enabled: bool)
 signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
 
-const _TAB_NAMES: Array[String] = ["Gameplay", "Graphics", "Audio"]
+const _TAB_NAMES: Array[String] = ["Gameplay", "Graphics", "Audio", "Controls"]
+
+const _CONTROL_ROWS: Array[Dictionary] = [
+	{ "action": "move_forward", "label": "Move Forward" },
+	{ "action": "move_back", "label": "Move Back" },
+	{ "action": "move_left", "label": "Move Left" },
+	{ "action": "move_right", "label": "Move Right" },
+	{ "action": "sprint", "label": "Sprint" },
+	{ "action": "jump", "label": "Jump" },
+	{ "action": "crouch", "label": "Crouch" },
+	{ "action": "primary_interact", "label": "Primary Interact" },
+	{ "action": "secondary_interact", "label": "Secondary Interact" },
+]
 
 var _tab_buttons: Array[Button] = []
 var _tab_contents: Array[Control] = []
 var _active_tab: int = 0
+
+var _bind_buttons: Dictionary = { }
+var _capture_action: String = ""
+var _capture_button: Button = null
 
 var _master_slider: HSlider
 var _master_value: Label
@@ -120,6 +136,10 @@ func _build_ui() -> void:
 	var audio_tab := _build_audio_tab()
 	content.add_child(audio_tab)
 	_tab_contents.append(audio_tab)
+
+	var controls_tab := _build_controls_tab()
+	content.add_child(controls_tab)
+	_tab_contents.append(controls_tab)
 
 	var back := Button.new()
 	back.name = "Back"
@@ -356,6 +376,129 @@ func _build_gameplay_tab() -> Control:
 	)
 
 	return tab
+
+
+func _build_controls_tab() -> Control:
+	var tab := VBoxContainer.new()
+	tab.name = "Controls"
+	tab.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tab.add_theme_constant_override("separation", 8)
+
+	for row_data in _CONTROL_ROWS:
+		var action: String = row_data["action"]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		tab.add_child(row)
+
+		var label := Label.new()
+		label.custom_minimum_size = Vector2(130, 0)
+		label.add_theme_font_size_override("font_size", 18)
+		label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+		label.text = row_data["label"]
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(label)
+
+		var btn := Button.new()
+		btn.custom_minimum_size = Vector2(150, 32)
+		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		btn.add_theme_font_size_override("font_size", 16)
+		btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
+		_style_bind_button(btn)
+		btn.pressed.connect(_start_bind_capture.bind(action, btn))
+		row.add_child(btn)
+		_bind_buttons[action] = btn
+		_refresh_bind_button(action, btn)
+
+	return tab
+
+
+func _style_bind_button(btn: Button) -> void:
+	var make_sb := func(bg: Color, border: Color) -> StyleBoxFlat:
+		var s := StyleBoxFlat.new()
+		s.bg_color = bg
+		s.border_color = border
+		s.set_border_width_all(1)
+		s.set_corner_radius_all(4)
+		s.content_margin_left = 10.0
+		s.content_margin_right = 10.0
+		s.content_margin_top = 4.0
+		s.content_margin_bottom = 4.0
+		return s
+	btn.add_theme_stylebox_override(
+		"normal",
+		make_sb.call(Color(0, 0, 0, 0.3), Color(1, 1, 1, 0.4)),
+	)
+	btn.add_theme_stylebox_override(
+		"hover",
+		make_sb.call(Color(0, 0, 0, 0.4), Color(1, 0.95, 0.7, 0.8)),
+	)
+	btn.add_theme_stylebox_override(
+		"pressed",
+		make_sb.call(Color(0, 0, 0, 0.5), Color(1, 0.95, 0.7, 1.0)),
+	)
+	btn.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7, 1))
+
+
+func _start_bind_capture(action: String, btn: Button) -> void:
+	if _capture_button != null and _capture_button != btn:
+		_refresh_bind_button(_capture_action, _capture_button)
+	_capture_action = action
+	_capture_button = btn
+	btn.text = "press a key…"
+
+
+func _refresh_bind_button(action: String, btn: Button) -> void:
+	var event := SettingsManager.get_action_binding(action)
+	btn.text = _event_display_name(event) if event != null else "-"
+
+
+func _event_display_name(event: InputEvent) -> String:
+	if event is InputEventKey:
+		var k := (event as InputEventKey).physical_keycode
+		return OS.get_keycode_string(k)
+	if event is InputEventMouseButton:
+		match (event as InputEventMouseButton).button_index:
+			MOUSE_BUTTON_LEFT:
+				return "LMB"
+			MOUSE_BUTTON_RIGHT:
+				return "RMB"
+			MOUSE_BUTTON_MIDDLE:
+				return "MMB"
+			MOUSE_BUTTON_WHEEL_UP:
+				return "Wheel Up"
+			MOUSE_BUTTON_WHEEL_DOWN:
+				return "Wheel Down"
+			_:
+				return "Mouse %d" % (event as InputEventMouseButton).button_index
+	return "?"
+
+
+func _input(event: InputEvent) -> void:
+	if _capture_action == "":
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		var key_ev := event as InputEventKey
+		if key_ev.keycode == KEY_ESCAPE:
+			# ESC cancels the capture, keeps the old binding.
+			_refresh_bind_button(_capture_action, _capture_button)
+			_capture_action = ""
+			_capture_button = null
+			get_viewport().set_input_as_handled()
+			return
+		_finish_bind_capture(key_ev)
+	elif event is InputEventMouseButton and event.pressed:
+		_finish_bind_capture(event)
+
+
+func _finish_bind_capture(event: InputEvent) -> void:
+	SettingsManager.rebind_action(_capture_action, event)
+	_capture_action = ""
+	_capture_button = null
+	# Refresh every row — a conflicting action may have lost its binding.
+	for action in _bind_buttons:
+		_refresh_bind_button(action, _bind_buttons[action])
+	get_viewport().set_input_as_handled()
 
 
 func sync_state() -> void:

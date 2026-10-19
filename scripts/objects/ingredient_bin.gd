@@ -110,18 +110,44 @@ func _sync_ice_display(animate_add: bool = false, from_pos: Vector3 = Vector3.ZE
 	for cube in _ice_cubes:
 		if cube.visible:
 			prev_visible += 1
+	var landing_tween: Tween = null
+	var new_idx := 0
 	for i in range(_ice_cubes.size()):
 		var was_visible := i < prev_visible
 		var should_visible := i < target_visible
 		_ice_cubes[i].visible = should_visible
 		if should_visible and not was_visible and animate_add and _ice_origins.size() > i:
+			# Stagger each new cube's flight so they stream in one by one
+			# instead of clumping through the same arc together.
+			var delay := new_idx * 0.09
+			var first := new_idx == 0
+			new_idx += 1
 			if from_pos != Vector3.ZERO:
-				_animate_throw_arc(_ice_cubes[i], from_pos, _ice_origins[i])
+				_ice_cubes[i].visible = false
+				var arc := _animate_throw_arc(
+					_ice_cubes[i],
+					from_pos,
+					_ice_origins[i],
+					0.35,
+					delay,
+					first,
+				)
+				# Landing sfx fires when the FIRST cube arrives.
+				if landing_tween == null and arc != null:
+					landing_tween = arc
 				continue
 			_ice_cubes[i].position.y = _ice_origins[i].y + drop_height
 			var tween := create_tween()
+			tween.tween_interval(delay)
 			tween.tween_property(_ice_cubes[i], "position:y", _ice_origins[i].y, 0.25) \
 					.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+			if landing_tween == null:
+				landing_tween = tween
+	if landing_tween != null:
+		landing_tween.finished.connect(
+			func() -> void:
+				AudioManager.play_sfx("ice_cubes", global_position),
+		)
 
 
 func update_display() -> void:
@@ -198,10 +224,27 @@ func _play_fly_in(from_pos: Vector3, old_count: int, new_count: int) -> void:
 		return
 	if ingredient_type == "ice" and _ice_bucket != null:
 		var ice_end := mini(new_count, _ice_cubes.size())
+		var landing_tween: Tween = null
+		var arc_idx := 0
 		for i in range(maxi(0, old_count), ice_end):
 			if is_instance_valid(_ice_cubes[i]) and _ice_origins.size() > i:
-				_ice_cubes[i].visible = true
-				_animate_throw_arc(_ice_cubes[i], from_pos, _ice_origins[i])
+				_ice_cubes[i].visible = false
+				var arc := _animate_throw_arc(
+					_ice_cubes[i],
+					from_pos,
+					_ice_origins[i],
+					0.35,
+					arc_idx * 0.09,
+					arc_idx == 0,
+				)
+				arc_idx += 1
+				if landing_tween == null and arc != null:
+					landing_tween = arc
+		if landing_tween != null:
+			landing_tween.finished.connect(
+				func() -> void:
+					AudioManager.play_sfx("ice_cubes", global_position),
+			)
 		return
 	# Always update display first so item nodes are visible.
 	update_display()
@@ -216,12 +259,22 @@ func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 	var node := _item_nodes[index]
 	var origin := _item_origins[index]
 	if from_pos != Vector3.ZERO:
-		_animate_throw_arc(node, from_pos, origin)
+		var arc_tween := _animate_throw_arc(node, from_pos, origin)
+		if arc_tween != null:
+			arc_tween.finished.connect(_play_landing_sfx)
 		return
 	node.position.y = origin.y + drop_height
 	var tween := create_tween()
 	tween.tween_property(node, "position:y", origin.y, 0.25) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.finished.connect(_play_landing_sfx)
+
+
+## Landing sound when an ingredient drops into this bin. Sugar reuses the
+## lemon crate sound pitched up and quieter; ice uses its own cubes sfx.
+func _play_landing_sfx() -> void:
+	if ingredient_type == "sugar":
+		AudioManager.play_sfx("fruit_in_crate", global_position, -1.0, 0.05, 1.3, -4.0)
 
 
 func take_amount(qty: float) -> float:
@@ -277,8 +330,7 @@ func interact(player: Node) -> void:
 		if data.get("source") == "bin_scoop" \
 				and data.get("ingredient_type", "") == ingredient_type:
 			add_amount(data.get("amount", Balancing.GRAB_AMOUNT), _get_hand_pos(player))
-			if ingredient_type == "ice":
-				AudioManager.play_sfx("ice_cubes", global_position)
+			# Landing sfx plays when the arc tween finishes — don't double it here.
 			player.inventory.clear_held()
 			return
 		# Deposit delivery box — 1 unit per click so the player sees the bin fill up.
@@ -335,6 +387,8 @@ func interact(player: Node) -> void:
 		take_amount(Balancing.GRAB_AMOUNT)
 		if ingredient_type == "ice":
 			AudioManager.play_sfx("ice_cubes", global_position)
+		elif ingredient_type == "sugar":
+			AudioManager.play_sfx("fruit_pickup_from_crate", global_position, -1.0, 0.05, 1.3)
 		player.inventory.set_held(
 			HELD_SUPPLY_BOX,
 			{
