@@ -286,11 +286,17 @@ func _set_mode_node_active(node: Node, active: bool) -> void:
 func _apply_mode_lightmap(versus: bool) -> void:
 	var path := VERSUS_LIGHTMAP_PATH if versus else COOP_LIGHTMAP_PATH
 	if not ResourceLoader.exists(path):
+		GameLog.log("[Lighting] mode lightmap missing: %s" % path)
 		return
 	var lightmap := world.find_child("LightmapGI", true, false) as LightmapGI
 	var data := ResourceLoader.load(path, "LightmapGIData") as LightmapGIData
 	if lightmap != null and data != null:
 		lightmap.light_data = data
+		GameLog.log("[Lighting] applied mode lightmap: %s" % path)
+	else:
+		GameLog.log(
+			"[Lighting] lightmap swap failed: node=%s data=%s" % [lightmap != null, data != null]
+		)
 
 
 func _apply_game_mode_layout() -> void:
@@ -406,6 +412,58 @@ func _setup_lobby() -> void:
 	# game mode (it was read in _ready() before the mode was set).
 	if lobby_ui.has_method("apply_mode_layout"):
 		lobby_ui.apply_mode_layout()
+	_log_lighting_state("lobby")
+
+
+## Dumps renderer + lighting state to the GameLog so multiplayer lighting
+## bugs can be diagnosed from the joiner's game_log.txt.
+func _log_lighting_state(tag: String) -> void:
+	var lines: Array[String] = []
+	lines.append(
+		"renderer=%s adapter=%s"
+		% [
+			ProjectSettings.get_setting("rendering/renderer/rendering_method", "?"),
+			RenderingServer.get_video_adapter_name(),
+		]
+	)
+	if get_viewport().get_camera_3d():
+		lines.append("camera=%s" % get_viewport().get_camera_3d().name)
+	var env := _world_env.environment if _world_env else null
+	if env:
+		lines.append(
+			(
+				"env: amb_src=%d amb_col=%s amb_sky=%.2f exposure=%.2f tonemap=%d ssao=%s sdfgi=%s"
+				% [
+					env.ambient_light_source,
+					env.ambient_light_color,
+					env.ambient_light_sky_contribution,
+					env.tonemap_exposure,
+					env.tonemap_mode,
+					env.ssao_enabled,
+					env.sdfgi_enabled,
+				]
+			)
+		)
+	var sun := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
+	if sun:
+		lines.append(
+			"sun: energy=%.2f rot=%s shadow=%s"
+			% [sun.light_energy, sun.rotation_degrees, sun.shadow_enabled]
+		)
+	var lgi := world.find_child("LightmapGI", true, false) as LightmapGI
+	if lgi:
+		lines.append(
+			"lightmap: data=%s" % (lgi.light_data.resource_path if lgi.light_data else "null")
+		)
+	lines.append(
+		"enhanced=%s quality=%s mode=%s"
+		% [
+			_enhanced_lighting,
+			SettingsManager.get_graphics_quality(),
+			"versus" if _is_versus_mode() else "coop",
+		]
+	)
+	GameLog.log("[Lighting %s] %s" % [tag, " | ".join(lines)])
 
 ## --- In-world main menu ---
 
