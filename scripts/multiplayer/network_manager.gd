@@ -38,6 +38,20 @@ func _process(_delta: float) -> void:
 		Steam.run_callbacks()
 
 
+func _exit_tree() -> void:
+	# Clean teardown so the process actually exits. Without steamShutdown()
+	# the Steam API worker thread keeps the exe alive after the window
+	# closes — Steam then shows "Running" and its Stop can't kill it.
+	if lobby_id != 0:
+		Steam.leaveLobby(lobby_id)
+		lobby_id = 0
+	if multiplayer != null and multiplayer.multiplayer_peer != null:
+		multiplayer.multiplayer_peer.close()
+	if _steam_initialized:
+		Steam.steamShutdown()
+		_steam_initialized = false
+
+
 ## Pick the Steam app ID at runtime: SteamAppId/SteamAppID environment variable
 ## takes priority (set when launched through Steam), then steam_appid.txt for
 ## local development, then 480 as a last resort.
