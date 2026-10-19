@@ -106,6 +106,9 @@ func _ready() -> void:
 func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	var err := cfg.load(CONFIG_PATH)
+	# Always launch fullscreen. The Settings fullscreen toggle still works
+	# for the current session, but every launch starts fullscreen.
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	if err != OK:
 		# No config file yet — use defaults (already set by AudioManager).
 		settings_loaded.emit()
@@ -120,11 +123,7 @@ func load_settings() -> void:
 	if AudioServer.get_bus_count() > 2:
 		AudioServer.set_bus_volume_db(2, linear_to_db(music))
 	# Graphics
-	var fullscreen := cfg.get_value(SECTION_GRAPHICS, "fullscreen", DEFAULT_FULLSCREEN) as bool
 	var vsync := cfg.get_value(SECTION_GRAPHICS, "vsync", DEFAULT_VSYNC) as bool
-	DisplayServer.window_set_mode(
-		DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
-	)
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
 	)

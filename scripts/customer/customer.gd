@@ -1227,7 +1227,7 @@ func _set_order_text(text: String, with_voice: bool = true) -> void:
 	_ui_label.visible = true
 	# New dialogue line shown — play a voice blurb (positional, all peers).
 	if with_voice and text != "" and _npc != null:
-		AudioManager.play_npc_dialogue(global_position, _npc.is_female)
+		AudioManager.play_npc_dialogue(global_position, _npc.voice_pitch)
 	if _ui_panel:
 		# Resize synchronously rather than deferring — a deferred resize
 		# leaves a 1-frame window where the sprite shows the stale size.

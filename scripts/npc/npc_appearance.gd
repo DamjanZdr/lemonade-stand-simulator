@@ -74,6 +74,9 @@ const CLOTHING_SURFACES: Array[String] = [
 
 ## Set by randomize_appearance() — drives voice pitch for dialogue SFX.
 var is_female: bool = false
+## This NPC's personal voice pitch — picked once from the same seed so
+## every dialogue line sounds like the same voice on all peers.
+var voice_pitch: float = 1.0
 
 @onready var _man: Node3D = $man
 @onready var _woman: Node3D = $woman
@@ -201,6 +204,8 @@ func randomize_appearance() -> void:
 		rng.randomize()
 	var male := rng.randi() % 2 == 0
 	is_female = not male
+	# One consistent pitch per NPC — seeded so all peers agree.
+	voice_pitch = (1.45 if is_female else 1.0) + rng.randf_range(-0.08, 0.08)
 	_man.visible = male
 	_woman.visible = not male
 	_active_anim = _man_anim if male else _woman_anim

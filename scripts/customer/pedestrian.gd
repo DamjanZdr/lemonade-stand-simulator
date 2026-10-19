@@ -802,7 +802,7 @@ func _show_order_text(text: String) -> void:
 	_ui_label.text = text
 	_ui_label.visible = true
 	if text != "" and _npc != null:
-		AudioManager.play_npc_dialogue(global_position, _npc.is_female)
+		AudioManager.play_npc_dialogue(global_position, _npc.voice_pitch)
 	if _ui_panel:
 		_resize_order_panel()
 

@@ -120,10 +120,11 @@ func _on_change_finalized(_earned: float) -> void:
 ## Random NPC voice blurb — played whenever an NPC shows a new dialogue line
 ## (order, feedback, offer response). Females are pitched up; males stay at
 ## the default pitch. Both get slight random variation.
-func play_npc_dialogue(pos: Vector3, female: bool) -> void:
+func play_npc_dialogue(pos: Vector3, pitch: float = 1.0) -> void:
 	var key := "npc_%d" % (randi() % 4 + 1)
-	var base_pitch := 1.45 if female else 1.0
-	play_sfx(key, pos, -1.0, 0.08, base_pitch)
+	# No per-line pitch variation — NPCAppearance gives each NPC one
+	# consistent voice_pitch so a single NPC always sounds the same.
+	play_sfx(key, pos, -1.0, 0.0, pitch)
 
 
 ## Preload music tracks. The list is explicit because directory scanning
