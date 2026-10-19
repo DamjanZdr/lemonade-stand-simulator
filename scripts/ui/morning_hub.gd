@@ -485,7 +485,9 @@ func _ready() -> void:
 		preview_viewport.world_3d = get_viewport().world_3d
 		preview_viewport.render_target_update_mode = (SubViewport.UPDATE_WHEN_VISIBLE)
 
-	# Dev panel
+	# Dev panel — release builds skip it entirely.
+	if not OS.is_debug_build():
+		return
 	var dev_panel := PanelContainer.new()
 	dev_panel.name = "DevPanel"
 	dev_panel.anchors_preset = Control.PRESET_TOP_RIGHT
@@ -1532,7 +1534,7 @@ func _style_stand_name_controls() -> void:
 func _set_house_color(key: String, color: Color) -> void:
 	var custom := LobbyManager.get_my_customization().duplicate(true)
 	custom[key] = color
-	LobbyManager.set_my_customization(custom)
+	LobbyManager.set_my_customization(custom, true)
 	SaveManager.set_last_local_customization(custom)
 	# Apply immediately locally too — the roster round-trip may lag a frame.
 	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
@@ -1570,7 +1572,7 @@ func _update_fence_preview() -> void:
 func _set_fence_gradient(band: int) -> void:
 	var custom := LobbyManager.get_my_customization().duplicate(true)
 	custom["fence_gradient"] = band
-	LobbyManager.set_my_customization(custom)
+	LobbyManager.set_my_customization(custom, true)
 	SaveManager.set_last_local_customization(custom)
 	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
 	if neighborhood != null and neighborhood.has_method("apply_player_fence_gradient"):

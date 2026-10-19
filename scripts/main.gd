@@ -331,24 +331,27 @@ func _apply_game_mode_layout() -> void:
 
 ## Recolor each stand's house from the owning player's lobby customization
 ## (wall_color / roof_color). Stand 0 -> player_house, stand 1 -> player_house2.
-## In co-op both players share stand 0, so the lowest peer id wins
-## deterministically on all clients.
+## In co-op both players share stand 0: whoever last changed the house style
+## (LobbyManager.house_style_owner) wins; otherwise the lowest peer id does.
 func _apply_player_house_colors() -> void:
 	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
 	if neighborhood == null or not neighborhood.has_method("apply_player_house_colors"):
 		return
-	var stand_colors: Dictionary = { }
+	var stand_peer: Dictionary = { } # stand_idx -> lowest peer id on it
 	var peer_ids := LobbyManager.roster.keys()
 	peer_ids.sort()
 	for peer_id in peer_ids:
 		var entry: Dictionary = LobbyManager.roster[peer_id]
 		var stand_idx: int = entry.get("stand_index", -1)
-		if stand_idx < 0 or stand_colors.has(stand_idx):
-			continue
-		var custom: Dictionary = entry.get("customization", { })
-		stand_colors[stand_idx] = custom
-	for stand_idx in stand_colors:
-		var custom: Dictionary = stand_colors[stand_idx]
+		if stand_idx >= 0 and not stand_peer.has(stand_idx):
+			stand_peer[stand_idx] = peer_id
+	for stand_idx in stand_peer:
+		var chosen: int = stand_peer[stand_idx]
+		var owner_id := int(LobbyManager.house_style_owner.get(stand_idx, -1))
+		var owner_entry: Dictionary = LobbyManager.roster.get(owner_id, { })
+		if int(owner_entry.get("stand_index", -1)) == stand_idx:
+			chosen = owner_id
+		var custom: Dictionary = LobbyManager.roster[chosen].get("customization", { })
 		var wall = custom.get("wall_color", Color.TRANSPARENT)
 		var roof = custom.get("roof_color", Color.TRANSPARENT)
 		var fence_band := int(custom.get("fence_gradient", -1))
