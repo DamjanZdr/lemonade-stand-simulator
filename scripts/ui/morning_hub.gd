@@ -1396,10 +1396,10 @@ func _refresh_stand_name_editor() -> void:
 	var stand := _get_local_stand()
 	if stand != null and _stand_name_edit != null:
 		_stand_name_edit.text = stand.stand_display_name
-	# Sync house color swatches to the local player's customization,
-	# falling back to the house palettes' defaults so the current color
-	# is always shown even if it was never customized.
-	var custom: Dictionary = LobbyManager.get_my_customization()
+	# Sync house color swatches to this stand's style, falling back to
+	# the house palettes' defaults so the current color is always shown
+	# even if it was never customized.
+	var custom: Dictionary = LobbyManager.stand_house_styles.get(_local_stand_index(), { })
 	var cm := get_tree().get_first_node_in_group("color_manager")
 	var wall_default := Color(0.95, 0.85, 0.55)
 	var roof_default := Color(0.5, 0.25, 0.2)
@@ -1528,26 +1528,34 @@ func _style_stand_name_controls() -> void:
 		_stand_name_button.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
 
 
-## Store a house color choice in the local player's roster customization.
-## Broadcasting the roster triggers _apply_player_house_colors() in main.gd
-## on every peer, recoloring the house attached to this stand.
+## The stand index this player is assigned to (0 = primary). Peers without
+## a roster entry — offline single-player — default to stand 0.
+func _local_stand_index() -> int:
+	var idx: int = LobbyManager.get_my_entry().get("stand_index", -1)
+	return idx if idx >= 0 else 0
+
+
+## Store a house color choice on the STAND's style (host-authoritative),
+## not on the player. The broadcast triggers _apply_player_house_colors()
+## in main.gd on every peer, recoloring the house attached to this stand.
 func _set_house_color(key: String, color: Color) -> void:
-	var custom := LobbyManager.get_my_customization().duplicate(true)
-	custom[key] = color
-	LobbyManager.set_my_customization(custom, true)
-	SaveManager.set_last_local_customization(custom)
-	# Apply immediately locally too — the roster round-trip may lag a frame.
+	var stand_idx := _local_stand_index()
+	LobbyManager.set_stand_house_style(stand_idx, key, color)
+	# Apply immediately locally too — the roster round-trip may lag a frame,
+	# and on clients our own write hasn't landed in stand_house_styles yet.
 	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
 	if neighborhood != null and neighborhood.has_method("apply_player_house_colors"):
-		var entry := LobbyManager.get_my_entry()
-		var stand_idx: int = entry.get("stand_index", 0)
+		var style: Dictionary = LobbyManager.stand_house_styles.get(stand_idx, { }).duplicate(true)
+		style[key] = color
 		var house_name := StringName("player_house" if stand_idx == 0 else "player_house2")
-		var wall = custom.get("wall_color", Color.TRANSPARENT)
-		var roof = custom.get("roof_color", Color.TRANSPARENT)
+		var wall = style.get("wall_color", Color.TRANSPARENT)
+		var roof = style.get("roof_color", Color.TRANSPARENT)
+		var fence_band := int(style.get("fence_gradient", -1))
 		neighborhood.apply_player_house_colors(
 			house_name,
 			wall if wall is Color else Color.TRANSPARENT,
 			roof if roof is Color else Color.TRANSPARENT,
+			fence_band,
 		)
 
 
@@ -1567,17 +1575,13 @@ func _update_fence_preview() -> void:
 	atlas.region = Rect2(_fence_band * FENCE_BAND_WIDTH, 0.0, FENCE_BAND_WIDTH, FENCE_TEX_HEIGHT)
 
 
-## Store a fence gradient choice in the local player's roster customization,
-## same broadcast path as _set_house_color().
+## Store a fence gradient choice on the stand's style, same broadcast
+## path as _set_house_color().
 func _set_fence_gradient(band: int) -> void:
-	var custom := LobbyManager.get_my_customization().duplicate(true)
-	custom["fence_gradient"] = band
-	LobbyManager.set_my_customization(custom, true)
-	SaveManager.set_last_local_customization(custom)
+	var stand_idx := _local_stand_index()
+	LobbyManager.set_stand_house_style(stand_idx, "fence_gradient", band)
 	var neighborhood := get_tree().get_first_node_in_group("neighborhood")
 	if neighborhood != null and neighborhood.has_method("apply_player_fence_gradient"):
-		var entry := LobbyManager.get_my_entry()
-		var stand_idx: int = entry.get("stand_index", 0)
 		var house_name := StringName("player_house" if stand_idx == 0 else "player_house2")
 		neighborhood.apply_player_fence_gradient(house_name, band)
 

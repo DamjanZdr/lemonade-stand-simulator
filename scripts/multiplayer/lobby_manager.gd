@@ -19,10 +19,12 @@ signal late_join_denied(reason: String)
 ## corresponds to the Nth stand), "ready": bool, "customization": Dictionary }
 var roster: Dictionary = { }
 
-## stand_index -> peer_id of whoever last changed house style (wall/roof/fence)
-## on that stand. Last writer wins; falls back to the lowest peer id on the
-## stand when unset. Host-maintained, broadcast alongside the roster.
-var house_style_owner: Dictionary = { }
+## stand_index -> { "wall_color": Color|TRANSPARENT, "roof_color": ... ,
+## "fence_gradient": int }. The house belongs to the STAND, not a player —
+## anyone assigned to a stand can restyle its house, and each field is
+## merged independently (last writer wins per field). Host-authoritative;
+## broadcast alongside the roster and persisted in the save file.
+var stand_house_styles: Dictionary = { }
 
 ## Set to true when the game has already started. Late joiners go through the
 ## lobby UI but are auto-assigned a free stand, then spawned when they ready up.
@@ -76,14 +78,9 @@ func _wait_then_request_register() -> void:
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
-	if multiplayer.is_server():
-		var changed := roster.erase(peer_id)
-		for stand_idx in house_style_owner.keys():
-			if house_style_owner[stand_idx] == peer_id:
-				house_style_owner.erase(stand_idx)
-				changed = true
-		if changed:
-			_broadcast_roster()
+	if multiplayer.is_server() and roster.has(peer_id):
+		roster.erase(peer_id)
+		_broadcast_roster()
 
 
 func _local_display_name() -> String:
@@ -96,7 +93,7 @@ func _local_display_name() -> String:
 ## Reset roster state for a fresh lobby (call before hosting/joining again).
 func reset() -> void:
 	roster.clear()
-	house_style_owner.clear()
+	stand_house_styles.clear()
 	game_started = false
 	game_mode = GameState.GameMode.COOP
 
@@ -179,7 +176,10 @@ func _disconnect_peer_deferred(peer_id: int) -> void:
 
 func _broadcast_roster() -> void:
 	print("[LobbyManager] Broadcasting roster: %d players" % roster.size())
-	_apply_roster.rpc(roster, house_style_owner)
+	if multiplayer.has_multiplayer_peer():
+		_apply_roster.rpc(roster, stand_house_styles)
+	else:
+		_apply_roster(roster, stand_house_styles)
 
 
 ## Marks the game as started on the host and syncs that to all clients.
@@ -220,9 +220,9 @@ func _deny_late_join(reason: String) -> void:
 
 
 @rpc("any_peer", "call_local", "reliable")
-func _apply_roster(new_roster: Dictionary, style_owners: Dictionary) -> void:
+func _apply_roster(new_roster: Dictionary, house_styles: Dictionary) -> void:
 	roster = new_roster
-	house_style_owner = style_owners
+	stand_house_styles = house_styles
 	print(
 		"[LobbyManager] Applied roster: %d players, my id=%d"
 		% [roster.size(), multiplayer.get_unique_id()]
@@ -250,22 +250,48 @@ func set_my_ready(is_ready: bool) -> void:
 	_request_set_ready.rpc_id(1, is_ready)
 
 
-func set_my_customization(data: Dictionary, claims_house_style: bool = false) -> void:
-	_request_set_customization.rpc_id(1, data, claims_house_style)
+func set_my_customization(data: Dictionary) -> void:
+	_request_set_customization.rpc_id(1, data)
 
 
 @rpc("any_peer", "call_local", "reliable")
-func _request_set_customization(data: Dictionary, claims_house_style: bool) -> void:
+func _request_set_customization(data: Dictionary) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := _sender_id()
 	if roster.has(id):
 		roster[id]["customization"] = data
-		if claims_house_style:
-			var stand_idx: int = roster[id].get("stand_index", -1)
-			if stand_idx >= 0:
-				house_style_owner[stand_idx] = id
 		_broadcast_roster()
+
+
+## Change one house-style field (wall_color / roof_color / fence_gradient)
+## on a stand. Clients ask the host; the host merges the field into the
+## stand's style and rebroadcasts, so every peer repaints the same way.
+func set_stand_house_style(stand_idx: int, key: String, value: Variant) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		_request_set_house_style.rpc_id(1, stand_idx, key, value)
+	else:
+		_apply_stand_house_style(multiplayer.get_unique_id(), stand_idx, key, value)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _request_set_house_style(stand_idx: int, key: String, value: Variant) -> void:
+	if not multiplayer.is_server():
+		return
+	_apply_stand_house_style(_sender_id(), stand_idx, key, value)
+
+
+func _apply_stand_house_style(peer_id: int, stand_idx: int, key: String, value: Variant) -> void:
+	# A player may only style the stand they are assigned to (versus can't
+	# restyle the rival's house). Peers without a roster entry — offline
+	# single-player — are allowed; they can only reach their own stand.
+	var entry: Dictionary = roster.get(peer_id, { })
+	if not entry.is_empty() and int(entry.get("stand_index", -1)) != stand_idx:
+		return
+	var style: Dictionary = stand_house_styles.get(stand_idx, { }).duplicate(true)
+	style[key] = value
+	stand_house_styles[stand_idx] = style
+	_broadcast_roster()
 
 
 func get_my_customization() -> Dictionary:

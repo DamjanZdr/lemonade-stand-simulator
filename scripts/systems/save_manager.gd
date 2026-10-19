@@ -327,6 +327,8 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	# fall back to _default_container_positions when _pending is empty.
 	_pending_container_respawn = []
 	_pending_supply_box_respawn = []
+	# Fresh stand, fresh house — reset to authored colors.
+	LobbyManager.stand_house_styles.clear()
 	# Propagate the reset to live stands/UI — the direct assignments
 	# above don't emit, so a previous session's money/popularity would
 	# linger on the HUD. _applying_save suppresses the autosaves these
@@ -543,6 +545,10 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	if saved_customization is Dictionary and not saved_customization.is_empty():
 		_apply_saved_customization(saved_customization)
 
+	var saved_house_styles: Variant = data.get("house_styles", { })
+	if saved_house_styles is Dictionary:
+		_apply_house_styles(saved_house_styles, saved_customization)
+
 	EventBus.money_changed.emit(GameState.money)
 	EventBus.popularity_changed.emit(GameState.popularity)
 	EventBus.weather_changed.emit(GameState.temperature)
@@ -686,6 +692,7 @@ func _build_save_dict() -> Dictionary:
 		"placed_containers": placed_containers,
 		"supply_boxes": supply_boxes,
 		"customization": _collect_customization(),
+		"house_styles": _collect_house_styles(),
 		"onboarding": OnboardingManager.serialize(),
 		"version": 2,
 	}
@@ -725,6 +732,86 @@ func _apply_saved_customization(saved: Dictionary) -> void:
 	var local_id := multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
 	if saved.has(str(local_id)):
 		_last_local_customization = saved[str(local_id)].duplicate(true)
+
+
+## Collect per-stand house styles for saving. Colors are stored as
+## "#rrggbbaa" strings since JSON can't encode Color natively.
+func _collect_house_styles() -> Dictionary:
+	var result := { }
+	for stand_idx in LobbyManager.stand_house_styles:
+		var style: Dictionary = LobbyManager.stand_house_styles[stand_idx]
+		var entry := { }
+		var wall: Variant = style.get("wall_color", null)
+		var roof: Variant = style.get("roof_color", null)
+		if wall is Color:
+			entry["wall_color"] = "#" + wall.to_html(true)
+		if roof is Color:
+			entry["roof_color"] = "#" + roof.to_html(true)
+		var fence := int(style.get("fence_gradient", -1))
+		if fence >= 0:
+			entry["fence_gradient"] = fence
+		if not entry.is_empty():
+			result[str(stand_idx)] = entry
+	return result
+
+
+## Restore per-stand house styles. Legacy saves kept them inside each
+## player's customization dict — migrate the local player's keys to
+## stand 0 so nothing is lost.
+func _apply_house_styles(saved: Dictionary, saved_customization: Variant) -> void:
+	LobbyManager.stand_house_styles.clear()
+	for key in saved:
+		var entry: Variant = saved[key]
+		if not entry is Dictionary:
+			continue
+		var style := _parse_house_style(entry)
+		if not style.is_empty():
+			LobbyManager.stand_house_styles[int(key)] = style
+	if LobbyManager.stand_house_styles.has(0) or not saved_customization is Dictionary:
+		return
+	var local_custom: Variant = saved_customization.get(str(multiplayer.get_unique_id()), { })
+	if not local_custom is Dictionary or local_custom.is_empty():
+		# The save's creator is always the host (peer id 1).
+		local_custom = saved_customization.get("1", { })
+	if local_custom is Dictionary:
+		var style := _parse_house_style(local_custom)
+		if not style.is_empty():
+			LobbyManager.stand_house_styles[0] = style
+
+
+func _parse_house_style(entry: Dictionary) -> Dictionary:
+	var style := { }
+	var wall: Variant = _color_from_save(entry.get("wall_color", null))
+	var roof: Variant = _color_from_save(entry.get("roof_color", null))
+	if wall is Color:
+		style["wall_color"] = wall
+	if roof is Color:
+		style["roof_color"] = roof
+	var fence := int(entry.get("fence_gradient", -1))
+	if fence >= 0:
+		style["fence_gradient"] = fence
+	return style
+
+
+## Colors saved through JSON arrive as strings — either "#rrggbbaa" from
+## _collect_house_styles, or "(r, g, b, a)" from legacy customization dumps.
+func _color_from_save(v: Variant) -> Variant:
+	if v is Color:
+		return v
+	if v is String:
+		var s: String = v.strip_edges()
+		if s.begins_with("#") and s.is_valid_html_color():
+			return Color.html(s)
+		var t: String = s.trim_prefix("Color").trim_prefix("(").trim_suffix(")")
+		var parts: PackedStringArray = t.split(",")
+		if parts.size() >= 3:
+			return Color(
+				parts[0].to_float(),
+				parts[1].to_float(),
+				parts[2].to_float(),
+				parts[3].to_float() if parts.size() >= 4 else 1.0,
+			)
+	return null
 
 
 ## Get the last saved customization for the local player.
