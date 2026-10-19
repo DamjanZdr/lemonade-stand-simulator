@@ -348,6 +348,10 @@ func interact(player: Node) -> void:
 			if space <= 0.0:
 				return # hint already says "Bin full"
 			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
+			GameLog.log(
+				"[Deposit] %s tick: box=%.0f space=%.0f dep=%.2f host=%s"
+				% [name, to_deposit, space, deposited, WorldSync.is_host()]
+			)
 			add_amount(deposited, _get_hand_pos(player))
 			EventBus.supply_box_deposited.emit(ingredient_type, deposited)
 			OnboardingManager.report(

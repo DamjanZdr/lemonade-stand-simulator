@@ -945,6 +945,10 @@ func request_container_action(obj: Node, action: String, args: Array) -> void:
 	if is_host():
 		_apply_container_action(net_id, action, args)
 	else:
+		GameLog.log(
+			"[Deposit] client request: %s %s net_id=%d args=%s"
+			% [obj.name, action, net_id, str(args)]
+		)
 		_request_host(&"_rpc_request_container_action", [net_id, action, args])
 
 
@@ -957,6 +961,26 @@ func _rpc_request_container_action(net_id: int, action: String, args: Array) -> 
 
 func _apply_container_action(net_id: int, action: String, args: Array) -> void:
 	var obj := _find_node_by_net_id(net_id)
+	if obj == null:
+		GameLog.log(
+			"[Deposit] host DROPPED %s net_id=%d args=%s sender=%d"
+			% [action, net_id, str(args), multiplayer.get_remote_sender_id()]
+		)
+	elif obj is IngredientBin or obj is FruitBin:
+		GameLog.log(
+			"[Deposit] host apply: %s %s net_id=%d args=%s -> cur=%s"
+			% [
+				obj.name,
+				action,
+				net_id,
+				str(args),
+				(
+					str(obj.current_amount)
+					if obj is IngredientBin
+					else str((obj as FruitBin).fruit_amounts)
+				),
+			]
+		)
 	if obj is IngredientBin:
 		if action == "add" and args.size() >= 2:
 			obj.apply_add_amount(float(args[0]), args[1] as Vector3)

@@ -295,6 +295,10 @@ func interact(player: Node) -> void:
 				return
 			# Deposit one unit per click so the player sees the bin fill up.
 			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
+			GameLog.log(
+				"[Deposit] %s tick: box=%.0f space=%.0f dep=%.2f host=%s"
+				% [name, to_deposit, space, deposited, WorldSync.is_host()]
+			)
 			add_amount(itype, deposited, _get_hand_pos(player))
 			EventBus.supply_box_deposited.emit(itype, deposited)
 			OnboardingManager.report(

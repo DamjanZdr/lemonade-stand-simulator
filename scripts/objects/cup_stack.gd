@@ -186,6 +186,10 @@ func interact(player: Node) -> void:
 			if space <= 0:
 				return
 			# Only add ONE cup at a time
+			GameLog.log(
+				"[Deposit] %s tick: box=%s space=%d dep=1 host=%s"
+				% [name, str(data.get("amount")), space, WorldSync.is_host()]
+			)
 			add_cups(1, _get_hand_pos(p))
 			AudioManager.play_sfx("taking_cup", global_position)
 			EventBus.supply_box_deposited.emit("cups", 1.0)

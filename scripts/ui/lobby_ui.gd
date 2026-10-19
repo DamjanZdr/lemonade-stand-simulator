@@ -67,8 +67,11 @@ var _shirt_color: Color = Color(0.8, 0.2, 0.2) # red
 var _pants_color: Color = Color(0.2, 0.3, 0.8) # blue
 var _shoes_color: Color = Color(0.2, 0.5, 0.3) # green
 var _head_size_index: int = 4 # 0-8, maps to 0.5x - 2.0x (index 4 = 1.3x default)
-var _wall_color: Color = Color(0.95, 0.85, 0.55) # house walls (palette[0])
-var _roof_color: Color = Color(0.5, 0.25, 0.2) # house roof (palette[0])
+# TRANSPARENT = "not chosen" — house colors are picked in the morning hub,
+# not the lobby, so the lobby must not inject palette defaults into the
+# customization broadcast (doing so repaints the house on any change).
+var _wall_color: Color = Color.TRANSPARENT
+var _roof_color: Color = Color.TRANSPARENT
 var _skin_color: Color = Color(0.98, 0.87, 0.75) # light
 
 const HEAD_SIZE_MIN: float = 0.5
@@ -903,6 +906,13 @@ func _load_saved_customization() -> void:
 	_shoes_color = clothing.get("shoes", _shoes_color)
 	_wall_color = saved.get("wall_color", _wall_color)
 	_roof_color = saved.get("roof_color", _roof_color)
+	# Older builds hardcoded palette[0] wall/roof colors into every
+	# customization broadcast, polluting saves. Treat those exact legacy
+	# defaults as "not chosen" so the house keeps its authored colors.
+	if _wall_color == Color(0.95, 0.85, 0.55):
+		_wall_color = Color.TRANSPARENT
+	if _roof_color == Color(0.5, 0.25, 0.2):
+		_roof_color = Color.TRANSPARENT
 	var head_size: float = saved.get("head_size", 1.3)
 	# head_size is derived from _head_size_index; reverse the mapping.
 	_head_size_index = _head_size_to_index(head_size)
