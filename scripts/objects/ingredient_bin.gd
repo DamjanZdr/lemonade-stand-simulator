@@ -119,7 +119,7 @@ func _sync_ice_display(animate_add: bool = false, from_pos: Vector3 = Vector3.ZE
 		if should_visible and not was_visible and animate_add and _ice_origins.size() > i:
 			# Stagger each new cube's flight so they stream in one by one
 			# instead of clumping through the same arc together.
-			var delay := new_idx * 0.09
+			var delay := new_idx * 0.03
 			var first := new_idx == 0
 			new_idx += 1
 			if from_pos != Vector3.ZERO:
@@ -128,7 +128,7 @@ func _sync_ice_display(animate_add: bool = false, from_pos: Vector3 = Vector3.ZE
 					_ice_cubes[i],
 					from_pos,
 					_ice_origins[i],
-					0.35,
+					0.28,
 					delay,
 					first,
 				)
