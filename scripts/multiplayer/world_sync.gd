@@ -983,19 +983,34 @@ func _apply_container_action(net_id: int, action: String, args: Array) -> void:
 		)
 	if obj is IngredientBin:
 		if action == "add" and args.size() >= 2:
+			var before: float = obj.current_amount
 			obj.apply_add_amount(float(args[0]), args[1] as Vector3)
 			obj.sync_state_to_peers(args[1] as Vector3)
+			_confirm_deposit(net_id, obj.current_amount - before)
 		elif action == "take" and not args.is_empty():
 			obj.apply_take_amount(float(args[0]))
 			obj.sync_state_to_peers()
 	elif obj is FruitBin:
 		if action == "add" and args.size() >= 3:
-			obj.add_amount(str(args[0]), float(args[1]), args[2] as Vector3)
+			var ft := str(args[0])
+			var before := float(obj.fruit_amounts.get(ft, 0.0))
+			obj.add_amount(ft, float(args[1]), args[2] as Vector3)
+			_confirm_deposit(net_id, float(obj.fruit_amounts.get(ft, 0.0)) - before)
 		elif action == "take" and args.size() >= 2:
 			obj.take_amount(str(args[0]), float(args[1]))
+	elif obj is CupStack:
+		if action == "add" and args.size() >= 1:
+			var pos: Vector3 = args[1] if args.size() > 1 else Vector3.ZERO
+			var before: int = obj.current_count
+			obj.apply_add_cups(int(args[0]), pos)
+			sync_property(obj, "current_count", obj.current_count)
+			sync_call(obj, "_update_display")
+			_confirm_deposit(net_id, obj.current_count - before)
 	elif obj is WaterDispenser:
 		if action == "refill" and not args.is_empty():
+			var before: int = obj.water_fillings
 			obj.apply_refill(int(args[0]))
+			_confirm_deposit(net_id, float(obj.water_fillings - before))
 		elif action == "start_fill" and not args.is_empty():
 			obj.start_fill(float(args[0]))
 		elif action == "finish_fill":
@@ -1006,6 +1021,37 @@ func _apply_container_action(net_id: int, action: String, args: Array) -> void:
 			obj._is_filling = false
 			obj._fill_progress = 0.0
 			obj._reset_tap()
+
+
+## After applying a client's deposit request, tell the requester how much
+## actually landed. The client drains its held box by the CONFIRMED amount
+## only — clamped or dropped requests no longer silently eat units.
+func _confirm_deposit(net_id: int, applied: float) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	# 0 means this ran as a direct host call, not inside an RPC context.
+	if sender == 0 or sender == multiplayer.get_unique_id():
+		return
+	_rpc_deposit_confirmed.rpc_id(sender, net_id, applied)
+
+
+@rpc("authority", "reliable")
+func _rpc_deposit_confirmed(net_id: int, applied: float) -> void:
+	var obj := find_node_by_net_id(net_id)
+	if obj != null and obj.has_method("_on_deposit_confirmed"):
+		obj._on_deposit_confirmed(applied)
+		return
+	# Bin unresolved on this client — still settle the held box so the
+	# units the host accepted don't reappear as a phantom remainder.
+	var p := get_local_player()
+	if p == null or p.inventory == null:
+		return
+	if p.held_item != HeldItem.SUPPLY_BOX:
+		return
+	var remaining := maxf(0.0, float(p.held_item_data.get("amount", 0.0)) - applied)
+	if remaining > 0.0:
+		p.inventory.update_held_amount(remaining)
+	else:
+		p.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 
 
 ## Request a despawn from any peer. On the host, despawns directly.

@@ -139,6 +139,31 @@ func _sync_state_to_peers(
 		WorldSync.sync_call(self, "update_display")
 
 
+## Settles a delivery-box deposit after the host confirms it (clients) or
+## immediately (host path). The held box is decremented by the APPLIED
+## amount so clamped/dropped requests can't silently eat units.
+func _on_deposit_confirmed(applied: float, player: Node = null) -> void:
+	if player == null:
+		player = WorldSync.get_local_player()
+	if player == null or player.inventory == null:
+		return
+	if player.held_item != HeldItem.SUPPLY_BOX:
+		return
+	var itype: String = player.held_item_data.get("ingredient_type", "")
+	if applied > 0.0:
+		EventBus.supply_box_deposited.emit(itype, applied)
+		OnboardingManager.report(
+			OnboardingManager.stand_for_node(self),
+			"supply_deposited",
+			{ "type": itype, "amount": applied },
+		)
+	var remaining := maxf(0.0, float(player.held_item_data.get("amount", 0.0)) - applied)
+	if remaining > 0.0:
+		player.inventory.update_held_amount(remaining)
+	else:
+		player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+
+
 ## Client-side: play the fly-in animation for newly visible fruits.
 ## Called via sync_call from the host after fruit_amounts changes.
 ## Only animates fruits from old_count to new_count-1.
@@ -295,22 +320,12 @@ func interact(player: Node) -> void:
 				return
 			# Deposit one unit per click so the player sees the bin fill up.
 			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
-			GameLog.log(
-				"[Deposit] %s tick: box=%.0f space=%.0f dep=%.2f host=%s"
-				% [name, to_deposit, space, deposited, WorldSync.is_host()]
-			)
 			add_amount(itype, deposited, _get_hand_pos(player))
-			EventBus.supply_box_deposited.emit(itype, deposited)
-			OnboardingManager.report(
-				OnboardingManager.stand_for_node(self),
-				"supply_deposited",
-				{ "type": itype, "amount": deposited },
-			)
-			var remaining: float = to_deposit - deposited
-			if remaining > 0.0:
-				player.inventory.update_held_amount(remaining)
-			else:
-				player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+			if WorldSync.is_host():
+				# Host: the apply already happened inside add_amount.
+				_on_deposit_confirmed(deposited, player)
+			# Client: the held box is settled when the host confirms the
+			# applied amount via _rpc_deposit_confirmed.
 		return
 
 	# Take

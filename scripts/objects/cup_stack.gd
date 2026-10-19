@@ -140,14 +140,37 @@ func get_next_cup_global_transform() -> Transform3D:
 
 
 func add_cups(qty: int, from_pos: Vector3 = Vector3.ZERO) -> void:
+	apply_add_cups(qty, from_pos)
+	WorldSync.sync_property(self, "current_count", current_count)
+	WorldSync.sync_call(self, "_update_display")
+
+
+func apply_add_cups(qty: int, from_pos: Vector3 = Vector3.ZERO) -> void:
 	var old_count := mini(current_count, _item_nodes.size())
 	current_count = mini(current_count + qty, max_capacity)
 	_update_display()
 	var new_count := mini(current_count, _item_nodes.size())
 	for i in range(old_count, new_count):
 		_drop_item(i, from_pos)
-	WorldSync.sync_property(self, "current_count", current_count)
-	WorldSync.sync_call(self, "_update_display")
+
+
+## Settles a delivery-box deposit after the host confirms it (clients) or
+## immediately (host path). Decrements the held box by the applied amount
+## so clamped/dropped requests can't silently eat units.
+func _on_deposit_confirmed(applied: float, player: Node = null) -> void:
+	if player == null:
+		player = WorldSync.get_local_player()
+	if player == null or player.inventory == null:
+		return
+	if player.held_item != HeldItem.SUPPLY_BOX:
+		return
+	if applied > 0.0:
+		EventBus.supply_box_deposited.emit("cups", applied)
+	var remaining := maxf(0.0, float(player.held_item_data.get("amount", 0.0)) - applied)
+	if remaining > 0.0:
+		player.inventory.update_held_amount(remaining)
+	else:
+		player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 
 
 func _drop_item(index: int, from_pos: Vector3 = Vector3.ZERO) -> void:
@@ -186,18 +209,14 @@ func interact(player: Node) -> void:
 			if space <= 0:
 				return
 			# Only add ONE cup at a time
-			GameLog.log(
-				"[Deposit] %s tick: box=%s space=%d dep=1 host=%s"
-				% [name, str(data.get("amount")), space, WorldSync.is_host()]
-			)
-			add_cups(1, _get_hand_pos(p))
-			AudioManager.play_sfx("taking_cup", global_position)
-			EventBus.supply_box_deposited.emit("cups", 1.0)
-			var remaining: int = int(data.get("amount", 0.0)) - 1
-			if remaining > 0:
-				p.inventory.update_held_amount(float(remaining))
+			if WorldSync.is_host():
+				add_cups(1, _get_hand_pos(p))
+				_on_deposit_confirmed(1.0, p)
 			else:
-				p.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+				# Client: request only — the held box is settled when the
+				# host confirms how much actually landed.
+				WorldSync.request_container_action(self, "add", [1, _get_hand_pos(p)])
+			AudioManager.play_sfx("taking_cup", global_position)
 			return
 
 	# Return an empty cup back to the stack

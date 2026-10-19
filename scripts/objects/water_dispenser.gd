@@ -44,6 +44,23 @@ func apply_refill(to_add: int) -> void:
 	WorldSync.sync_call(self, "_update_water_visual")
 
 
+## Settles a water-box deposit after the host confirms it (clients) or
+## immediately (host path). The held box is decremented by the APPLIED
+## amount so clamped/dropped requests can't silently eat units.
+func _on_deposit_confirmed(applied: float, player: Node = null) -> void:
+	if player == null:
+		player = WorldSync.get_local_player()
+	if player == null or player.inventory == null:
+		return
+	if player.held_item != HeldItem.SUPPLY_BOX:
+		return
+	var remaining := maxf(0.0, float(player.held_item_data.get("amount", 0.0)) - applied)
+	if remaining > 0.0:
+		player.inventory.update_held_amount(remaining)
+	else:
+		player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+
+
 ## Host-only: apply finishing a fill and sync to all clients.
 ## Idempotent: every peer's _process can trigger a finish, and clients
 ## relay it to the host via request_container_action("finish_fill"), so a
@@ -249,17 +266,14 @@ func interact(player: Node) -> void:
 				return
 			var start_pos := _get_hand_pos(player)
 			var to_add: int = 1
-			var remaining: float = qty - float(to_add)
-			if remaining > 0.0:
-				p.inventory.update_held_amount(remaining)
-			else:
-				p.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
 			_animate_water_drop(start_pos, to_add)
-			# Route through host for authoritative state.
-			if not WorldSync.is_host():
-				WorldSync.request_container_action(self, "refill", [to_add])
-			else:
+			# Route through host for authoritative state; the held box is
+			# settled when the host confirms how much actually landed.
+			if WorldSync.is_host():
 				apply_refill(to_add)
+				_on_deposit_confirmed(float(to_add), p)
+			else:
+				WorldSync.request_container_action(self, "refill", [to_add])
 			return
 
 	# Place pitcher on dispenser — handled by player script ghost placement

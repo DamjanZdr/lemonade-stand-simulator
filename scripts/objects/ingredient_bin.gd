@@ -217,6 +217,31 @@ func sync_state_to_peers(from_pos: Vector3 = Vector3.ZERO) -> void:
 		WorldSync.sync_call(self, "update_display")
 
 
+## Settles a delivery-box deposit after the host confirms it (clients) or
+## immediately (host path). The held box is decremented by the APPLIED
+## amount so clamped/dropped requests can't silently eat units.
+func _on_deposit_confirmed(applied: float, player: Node = null) -> void:
+	if player == null:
+		player = WorldSync.get_local_player()
+	if player == null or player.inventory == null:
+		return
+	if player.held_item != HELD_SUPPLY_BOX:
+		return
+	if applied > 0.0:
+		EventBus.supply_box_deposited.emit(ingredient_type, applied)
+		OnboardingManager.report(
+			OnboardingManager.stand_for_node(self),
+			"supply_deposited",
+			{ "type": ingredient_type, "amount": applied },
+		)
+	var remaining := maxf(0.0, float(player.held_item_data.get("amount", 0.0)) - applied)
+	if remaining > 0.0:
+		player.inventory.update_held_amount(remaining)
+	else:
+		# Emptied delivery box becomes trash that can be sold at the trashcan.
+		player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+
+
 ## Client-side: play the fly-in animation for newly visible items.
 ## Called via sync_call from the host after current_amount changes.
 func _play_fly_in(from_pos: Vector3, old_count: int, new_count: int) -> void:
@@ -348,23 +373,12 @@ func interact(player: Node) -> void:
 			if space <= 0.0:
 				return # hint already says "Bin full"
 			var deposited: float = minf(Balancing.GRAB_AMOUNT, minf(to_deposit, space))
-			GameLog.log(
-				"[Deposit] %s tick: box=%.0f space=%.0f dep=%.2f host=%s"
-				% [name, to_deposit, space, deposited, WorldSync.is_host()]
-			)
 			add_amount(deposited, _get_hand_pos(player))
-			EventBus.supply_box_deposited.emit(ingredient_type, deposited)
-			OnboardingManager.report(
-				OnboardingManager.stand_for_node(self),
-				"supply_deposited",
-				{ "type": ingredient_type, "amount": deposited },
-			)
-			var remaining: float = to_deposit - deposited
-			if remaining > 0.0:
-				player.inventory.update_held_amount(remaining)
-			else:
-				# Emptied delivery box becomes trash that can be sold at the trashcan.
-				player.inventory.make_held_trash(Balancing.TRASH_REFUND_EMPTY_BOX, "empty_box")
+			if WorldSync.is_host():
+				# Host: the apply already happened inside add_amount.
+				_on_deposit_confirmed(deposited, player)
+			# Client: the held box is settled when the host confirms the
+			# applied amount via _rpc_deposit_confirmed.
 		return
 
 	# Take one unit OR pick up empty container
