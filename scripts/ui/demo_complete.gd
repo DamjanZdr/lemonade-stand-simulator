@@ -30,6 +30,9 @@ func _ready() -> void:
 ## Debug preview: F2 toggles the screen without consuming the one-shot
 ## flag, so the real trigger still fires later in the session.
 func _unhandled_input(event: InputEvent) -> void:
+	# Debug preview — dead in release builds.
+	if not OS.is_debug_build():
+		return
 	if event is InputEventKey and event.keycode == KEY_F2 and event.pressed:
 		if visible:
 			_on_continue()
@@ -64,6 +67,7 @@ func _show(debug: bool = false) -> void:
 		return
 	if not debug:
 		_shown = true
+		Analytics.checkpoint("demo_complete")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	visible = true
 	_backdrop.modulate = Color(1, 1, 1, 0)

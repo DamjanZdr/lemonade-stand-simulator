@@ -2,7 +2,7 @@ extends Node
 ## Every tunable number lives here. Nothing is hardcoded elsewhere.
 
 # === ECONOMY ===
-const STARTING_MONEY: float = 150.0
+const STARTING_MONEY: float = 200.0
 const STARTING_POPULARITY: float = 300.0
 const MAX_POPULARITY: float = 1000.0
 const PRICE_FAIR_MAX: float = 2.00

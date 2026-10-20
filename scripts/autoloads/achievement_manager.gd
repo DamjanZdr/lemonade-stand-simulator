@@ -124,6 +124,11 @@ func _unlock(id: String) -> void:
 	GameLog.log("[Ach] %s set=%s store=%s" % [id, set_ok, store_ok])
 
 
+## Ids unlocked this session — used by Analytics session summaries.
+func get_unlocked_ids() -> Array:
+	return _unlocked.keys()
+
+
 ## Clears every tracked achievement on the local Steam account. Useful for testing.
 func reset_all_achievements() -> void:
 	var ids: Array = [

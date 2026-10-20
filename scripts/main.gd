@@ -1133,6 +1133,7 @@ func _on_game_starting() -> void:
 	_day_intro_active = true
 	_in_lobby = false
 	_game_state = MenuState.PLAYING
+	Analytics.session_begin()
 
 	# Determine which stand this player is on
 	var my_id := multiplayer.get_unique_id()
@@ -1425,6 +1426,7 @@ func _start_late_join(peer_id: int) -> void:
 func _do_late_join_transition() -> void:
 	_in_lobby = false
 	_game_state = MenuState.PLAYING
+	Analytics.session_begin()
 	# Hide the lobby UI and player models, show the HUD.
 	if lobby_ui:
 		lobby_ui.visible = false
@@ -2143,12 +2145,20 @@ func _process(_delta: float) -> void:
 
 
 func _notification(what: int) -> void:
+	# auto_accept_quit is disabled so the quit path can checkpoint + flush the
+	# analytics summary with a bounded wait before exiting.
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_on_window_close_requested()
+
+
+func _on_window_close_requested() -> void:
 	# Window X (OS close) bypasses the ESC menu entirely — checkpoint here
-	# too. No-op outside a session (no active slot / not host), and with
-	# auto_quit the tree exits right after this notification.
-	if what == NOTIFICATION_WM_CLOSE_REQUEST and _game_state == MenuState.PLAYING:
+	# too. No-op outside a session (no active slot / not host).
+	if _game_state == MenuState.PLAYING:
 		UpgradeManager.flush_active_stand()
 		SaveManager.save_game(true)
+	await Analytics.send_and_wait("quit")
+	get_tree().quit()
 
 
 func _input(event: InputEvent) -> void:

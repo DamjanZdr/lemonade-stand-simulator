@@ -32,6 +32,19 @@ func _ready() -> void:
 	_rich_label.text = GameLog.get_buffer_text()
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	# Debug tool — dead in release builds (editor/debug runs only).
+	if not OS.is_debug_build():
+		return
+	if event is InputEventKey and event.is_pressed() and not event.is_echo():
+		if event.keycode == KEY_F10:
+			if event.shift_pressed:
+				AchievementManager.reset_all_achievements()
+			else:
+				_toggle()
+			get_viewport().set_input_as_handled()
+
+
 func _toggle() -> void:
 	_visible = not _visible
 	visible = _visible
