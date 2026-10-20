@@ -48,6 +48,15 @@ func checkpoint(reason: String) -> void:
 	_send(reason)
 
 
+## Session ended without quitting (exit to menu / disconnect). Sends the
+## summary then clears the id so a later quit doesn't double-report.
+func end_session(reason: String) -> void:
+	if session_id == "":
+		return
+	_send(reason)
+	session_id = ""
+
+
 ## Bounded send for the quit path — caller awaits then quits.
 func send_and_wait(reason: String, timeout := 1.2) -> void:
 	if not OS.has_feature("release") or OS.is_debug_build():

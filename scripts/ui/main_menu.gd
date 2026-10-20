@@ -33,6 +33,7 @@ func _ready() -> void:
 	_position_eye_button()
 	_quit_button.pressed.connect(
 		func():
+			await Analytics.send_and_wait("quit")
 			get_tree().quit(),
 	)
 	_refresh_button.pressed.connect(_on_refresh_pressed)

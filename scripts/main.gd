@@ -2065,6 +2065,7 @@ func _on_host_left() -> void:
 
 
 func _go_to_main_menu() -> void:
+	Analytics.end_session("exit_to_menu")
 	LobbyManager.reset()
 	SaveManager.clear_current_slot()
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
@@ -2243,6 +2244,7 @@ func _on_esc_back_to_menu() -> void:
 	# _do_save() still gates on is_host(), so clients write nothing.
 	UpgradeManager.flush_active_stand()
 	SaveManager.save_game(true)
+	Analytics.end_session("exit_to_menu")
 	# Create the fade overlay.
 	var fade_rect := ColorRect.new()
 	fade_rect.color = Color(0, 0, 0, 0)

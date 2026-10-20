@@ -206,6 +206,7 @@ func _ready() -> void:
 			_on_button_click(
 				_quit_button,
 				func():
+					await Analytics.send_and_wait("quit")
 					get_tree().quit(),
 			),
 	)
