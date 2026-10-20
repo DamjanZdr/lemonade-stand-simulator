@@ -67,6 +67,7 @@ func _show(debug: bool = false) -> void:
 		return
 	if not debug:
 		_shown = true
+		Analytics.track("demo_screen_seen")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	visible = true
 	_backdrop.modulate = Color(1, 1, 1, 0)

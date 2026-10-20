@@ -2028,6 +2028,7 @@ func _on_host_left() -> void:
 	# Avoid stacking multiple overlays
 	if has_node("HostLeftOverlay"):
 		return
+	Analytics.end_session("host_disconnected")
 	# Suppress any connection-failed popup that might fire during the
 	# transition back to the main menu.
 	if NetworkManager.connection_failed.is_connected(_on_menu_session_failed):

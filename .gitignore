@@ -35,3 +35,6 @@ tools/steam-build-output/
 tools/steam_upload.log
 tools/steam_upload.err
 tools/_upload_out.log
+
+# Local analytics report dumps (pasted from Discord, not for git/export)
+player_reports.md

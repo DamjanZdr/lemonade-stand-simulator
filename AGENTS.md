@@ -120,3 +120,12 @@ func _rpc_do_thing(params) -> void:
 - **Duplication on client pick-up:** caller mutates locally and also waits for host replication. Fix: clients request, host applies + broadcasts.
 - **Slot stacking in air:** local slot count is stale because host release RPC is delayed or crashes. Fix: slot reservation/release must be host-authoritative with idempotent RPCs.
 - **Recipe/price desync:** UI writes to local `GameState` and the host overwrites it later. Fix: make `GameState` the single source of truth.
+
+## Demo Analytics
+
+- `scripts/autoloads/analytics.gd` owns participant reports, anonymous shared match IDs, and host-only stand snapshots. Do not sum co-op participant sales as separate stand sales.
+- `tools/sheets_analytics.gs` is the Google Apps Script source. Changes require the owner to replace Code.gs, run `setupTelemetry`, and deploy a new version of the existing web app before releasing compatible game changes.
+- Apps Script redirects POST responses to `script.googleusercontent.com`; Godot must explicitly fetch that acknowledgement using GET. A Python-only endpoint test does not verify Godot transport.
+- Pending release-build reports persist at `user://analytics_pending.json`. Checkpoint/end revisions update existing rows; no end received is not evidence of a crash.
+- The private Sheets read key stays outside the repository at `%USERPROFILE%/lemonade-analytics-read-key.txt`. Never print it, commit it, or include it in game exports.
+- Legacy imported reports have known stale-client/mode issues and receipt-time timestamps; do not mix them with schema-v2 match-level metrics.

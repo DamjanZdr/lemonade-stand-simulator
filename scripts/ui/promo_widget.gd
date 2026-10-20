@@ -260,10 +260,13 @@ func _on_clicked() -> void:
 	var url := _urls[_index]
 	if url == "":
 		return
+	var location := "main_menu" if Analytics.session_id == "" else "pause"
 	if url == PROMO_DISCORD_URL:
 		Analytics.track("discord")
+		Analytics.track("discord_" + location)
 	elif url == PROMO_WISHLIST_URL:
 		Analytics.track("wishlist_menu")
+		Analytics.track("wishlist_" + location)
 	# Wishlist slide: prefer the in-game Steam overlay store page.
 	if url == PROMO_WISHLIST_URL and Steam.isSteamRunning():
 		Steam.activateGameOverlayToStore(STORE_APP_ID)
