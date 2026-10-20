@@ -18,9 +18,13 @@ func _ready() -> void:
 	# Window-close is handled manually in main.gd so the quit summary
 	# gets a bounded window to flush before the process exits.
 	get_tree().auto_accept_quit = false
-	EventBus.day_time_over.connect(
-		func() -> void:
-			checkpoint("day_end"),
+	# finish_day() snapshots stats right before the EVENING phase change;
+	# the 1s delay lets the synced stand state reach clients first.
+	EventBus.day_phase_changed.connect(
+		func(phase: int, _day: int) -> void:
+			if phase == DayManager.Phase.EVENING:
+				await get_tree().create_timer(1.0).timeout
+				checkpoint("day_end"),
 	)
 
 
@@ -116,9 +120,21 @@ func _payload(reason: String) -> Dictionary:
 	if multiplayer.has_multiplayer_peer() and multiplayer.get_peers().size() > 0:
 		mode = "coop" if LobbyManager.game_mode == GameState.GameMode.COOP else "versus"
 		role = "host" if multiplayer.is_server() else "client"
+	# GameState is only written on the host — clients must read the synced
+	# StandUnit or every stat reports as frozen defaults.
+	var money := GameState.money
+	var cups := GameState.total_cups_sold
+	var happy := GameState.customers_served_happy
+	var lost := GameState.customers_lost
 	var stand: StandUnit = WorldSync.get_local_stand()
+	if stand != null and is_instance_valid(stand):
+		money = stand.money
+		cups = stand.total_cups_sold
+		happy = stand.customers_served_happy
+		lost = stand.customers_lost
 	var discoveries := ""
 	var perfect := "no"
+	var last_day := ""
 	if stand != null and is_instance_valid(stand):
 		var p: Dictionary = stand.onboarding_progress
 		var found: Array = p.get("discovered_recipes", { }).keys()
@@ -127,22 +143,35 @@ func _payload(reason: String) -> Dictionary:
 		discoveries = ", ".join(found) if not found.is_empty() else "none"
 		if not stand.perfect_recipes_set.is_empty():
 			perfect = ", ".join(stand.perfect_recipes_set.keys())
+		var l: Dictionary = stand.last_day_stats
+		if not l.is_empty():
+			last_day = (
+				"d%d: %d arrived · %d bought · %d happy · "
+				+ "%d timeouts · %d pricey · %d wrong · %d scams · profit $%.0f"
+			) % [
+				int(l.get("day", 0)),
+				int(l.get("customers_arrived", 0)),
+				int(l.get("customers_bought", 0)),
+				int(l.get("happy", 0)),
+				int(l.get("timeouts", 0)),
+				int(l.get("too_expensive", 0)),
+				int(l.get("wrong_order", 0)),
+				int(l.get("scams", 0)),
+				float(l.get("profit", 0.0)),
+			]
 	var mem := OS.get_memory_info()
 	var fields: Array = [
 		{ "name": "Session", "value": "%s · %.1f min" % [session_id, minutes], "inline": true },
 		{ "name": "Mode", "value": "%s (%s)" % [mode, role], "inline": true },
 		{ "name": "Day", "value": str(DayManager.day_number), "inline": true },
-		{ "name": "Money", "value": "$%.0f" % GameState.money, "inline": true },
-		{ "name": "Cups (all-time)", "value": str(GameState.total_cups_sold), "inline": true },
-		{
-			"name": "Served/lost (today)",
-			"value": "%d / %d" % [GameState.customers_served_happy, GameState.customers_lost],
-			"inline": true,
-		},
+		{ "name": "Money", "value": "$%.0f" % money, "inline": true },
+		{ "name": "Cups (all-time)", "value": str(cups), "inline": true },
+		{ "name": "Served/lost (today)", "value": "%d / %d" % [happy, lost], "inline": true },
 		{ "name": "Avg FPS", "value": "%.0f (%.0f%% <30)" % [avg_fps, low_pct], "inline": true },
 		{ "name": "Discoveries", "value": discoveries, "inline": true },
 		{ "name": "Perfect recipe", "value": perfect, "inline": true },
 		{ "name": "Achievements", "value": _achievements(), "inline": true },
+		{ "name": "Last day", "value": last_day if last_day != "" else "n/a", "inline": false },
 		{ "name": "GPU", "value": RenderingServer.get_video_adapter_name(), "inline": false },
 		{
 			"name": "PC",
