@@ -2329,6 +2329,7 @@ func _on_esc_quit_game() -> void:
 	# tree first. _do_save() still gates on is_host(), so clients write nothing.
 	UpgradeManager.flush_active_stand()
 	SaveManager.save_game(true)
+	await Analytics.send_and_wait("quit")
 	get_tree().quit()
 
 
