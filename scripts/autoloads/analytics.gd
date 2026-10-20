@@ -3,8 +3,8 @@ extends Node
 ## No personal data — random session id only, no Steam id or username.
 ## Release builds only; debug/editor sessions log locally instead.
 const WEBHOOK_URL := (
-	"https://discord.com/api/webhooks/1553811409102438430/"
-	+ "9YF81WnSIjmnt-nnli3AQ9GZxgt4lwMB-9io_c7-0dra6OtVtyuuSzdkD0w04MVSWBPp"
+	"https://discord.com/api/webhooks/1561941448419713124/"
+	+ "m2X0NgGua4e4DMLZo2tDwllv-uTXe6Mn3-b2HyGYi-qZ5loCkeKSHSxB8TD1JOE-S2SJ"
 )
 
 var session_id := ""
