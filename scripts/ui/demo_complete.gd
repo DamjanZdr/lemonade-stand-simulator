@@ -67,7 +67,6 @@ func _show(debug: bool = false) -> void:
 		return
 	if not debug:
 		_shown = true
-		Analytics.checkpoint("demo_complete")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	visible = true
 	_backdrop.modulate = Color(1, 1, 1, 0)
@@ -90,6 +89,7 @@ func _on_continue() -> void:
 
 
 func _on_wishlist() -> void:
+	Analytics.track("wishlist_complete")
 	# Prefer the in-game Steam overlay; fall back to the client store link
 	# when Steam isn't running (e.g. exe launched directly).
 	var running: bool = Steam.isSteamRunning()
