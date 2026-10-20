@@ -13,6 +13,11 @@ const PRICE_MAX: float = 5.00
 # === CUSTOMER PATIENCE ===
 const PATIENCE_BASE: float = 45.0
 
+## Onboarding grace: pedestrians never convert until the stand's first
+## cup is filled, then the next N conversion attempts succeed
+## guaranteed before normal popularity-based odds resume.
+const GRACE_CONVERSIONS: int = 3
+
 # === RECIPE — SHARPNESS (Lemon / liquid_volume ratio) ===
 const IDEAL_LEMON_RATIO: float = 0.30 # 3 lemon scoops out of 10 total liquid
 

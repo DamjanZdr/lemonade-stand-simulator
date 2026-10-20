@@ -434,11 +434,14 @@ func _fill_cup_for_player(player: Player) -> void:
 		_make_filled_cup_mesh(cup_color),
 	)
 	EventBus.pitcher_cup_filled.emit(recipe)
+	var pour_stand := OnboardingManager.stand_for_node(self)
 	OnboardingManager.report(
-		OnboardingManager.stand_for_node(self),
+		pour_stand,
 		"cup_filled",
 		{ "type": "cup", "snapshot": recipe.duplicate(true), "cups_poured": cups_poured },
 	)
+	if pour_stand != null:
+		pour_stand.note_first_cup_filled()
 	if is_fully_empty():
 		_clear_and_return()
 	# If the player is not on this machine, tell their owning peer they now

@@ -694,6 +694,41 @@ func record_perfect_recipe_set(fruit_type: String) -> void:
 	push_state()
 
 
+## Onboarding grace: pedestrians won't convert for this stand until a
+## player fills their first cup, then the next GRACE_CONVERSIONS
+## conversion attempts succeed guaranteed. Lives in onboarding_progress
+## so it syncs, saves, and resets with the rest of the per-stand state.
+func note_first_cup_filled() -> void:
+	if not is_multiplayer_authority():
+		return
+	if onboarding_progress.get("first_cup_filled", false):
+		return
+	onboarding_progress["first_cup_filled"] = true
+	onboarding_progress["grace_conversions"] = Balancing.GRACE_CONVERSIONS
+	push_state()
+
+
+## Old saves predate the flag: any stand that already sold cups has
+## filled them, so it skips the gate (and the grace tokens).
+func conversion_gated() -> bool:
+	return not onboarding_progress.get("first_cup_filled", false) \
+			and total_cups_sold <= 0
+
+
+func has_grace_conversion() -> bool:
+	return int(onboarding_progress.get("grace_conversions", 0)) > 0
+
+
+func consume_grace_conversion() -> void:
+	if not is_multiplayer_authority():
+		return
+	var left := int(onboarding_progress.get("grace_conversions", 0))
+	if left <= 0:
+		return
+	onboarding_progress["grace_conversions"] = left - 1
+	push_state()
+
+
 func request_set_price(fruit_type: String, new_price: float) -> void:
 	if multiplayer.has_multiplayer_peer():
 		_rpc_set_price.rpc_id(1, fruit_type, new_price)

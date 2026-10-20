@@ -316,6 +316,8 @@ func default_progress() -> Dictionary:
 		"started": true,
 		"skipped": false,
 		"day_end_active": false,
+		"first_cup_filled": false,
+		"grace_conversions": 0,
 		"revision": 0,
 	}
 

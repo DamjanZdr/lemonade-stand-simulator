@@ -280,6 +280,13 @@ func _on_wants_to_join(ped: Pedestrian) -> void:
 		var stand: StandUnit = entry.get("stand") as StandUnit
 		if stand == null or not is_instance_valid(stand):
 			continue
+		# Onboarding grace: a stand nobody has filled a cup for yet never
+		# converts — peds walk past until the player is actually ready.
+		if stand.conversion_gated():
+			continue
+		if stand.has_grace_conversion():
+			candidates.append(entry)
+			continue
 		var chance := _convert_chance_for(stand)
 		if randf() <= chance:
 			candidates.append(entry)
@@ -313,6 +320,11 @@ func _on_wants_to_join(ped: Pedestrian) -> void:
 	if slot == -1:
 		_resume(ped)
 		return
+
+	# Only burn the grace token once the pedestrian actually commits.
+	var winning_stand: StandUnit = entry.get("stand") as StandUnit
+	if winning_stand != null:
+		winning_stand.consume_grace_conversion()
 
 	# Remember which spawner this pedestrian committed to, so
 	# _finalize_conversion/_resume use the same one later.
