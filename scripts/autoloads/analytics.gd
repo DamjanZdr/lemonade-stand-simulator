@@ -133,9 +133,9 @@ func _payload(reason: String) -> Dictionary:
 		{ "name": "Mode", "value": "%s (%s)" % [mode, role], "inline": true },
 		{ "name": "Day", "value": str(DayManager.day_number), "inline": true },
 		{ "name": "Money", "value": "$%.0f" % GameState.money, "inline": true },
-		{ "name": "Cups sold", "value": str(GameState.total_cups_sold), "inline": true },
+		{ "name": "Cups (all-time)", "value": str(GameState.total_cups_sold), "inline": true },
 		{
-			"name": "Served / lost",
+			"name": "Served/lost (today)",
 			"value": "%d / %d" % [GameState.customers_served_happy, GameState.customers_lost],
 			"inline": true,
 		},
