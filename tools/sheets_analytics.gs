@@ -251,9 +251,9 @@ function refreshLearningCharts(book) {
     });
   }
   data.getRange("Z1:AG1").setValues([["Lemon batch", "Unhappy %", "Sugar complaint %", "Ice complaint %", "Fruit complaint %", "Tasters", "Batches", "Happy %"]]);
-  data.getRange("AI1:AJ1").setValues([["Tutorial bottleneck", "Median unpaused minutes"]]);
+  data.getRange("AI1:AJ1").setValues([["Tutorial bottleneck", "Median unpaused seconds"]]);
   const slow = summary.filter(g => g.times.length).sort((a, b) => median(b.times) - median(a.times)).slice(0, 8);
-  data.getRange("AI2:AJ9").setValues(Array.from({length: 8}, (_, i) => slow[i] ? [slow[i].name, median(slow[i].times) / 60] : ["", ""]));
+  data.getRange("AI2:AJ9").setValues(Array.from({length: 8}, (_, i) => slow[i] ? [slow[i].name, Math.round(median(slow[i].times))] : ["", ""]));
   data.getRange("BC1:BD1").setValues([["Step left unfinished", "Known exits"]]);
   const exits = summary.filter(g => g.left > 0).sort((a, b) => b.left - a.left).slice(0, 8);
   data.getRange("BC2:BD9").setValues(Array.from({length: 8}, (_, i) => exits[i] ? [exits[i].name, exits[i].left] : ["", ""]));
@@ -428,7 +428,7 @@ function buildOverview(book) {
   data.getRange("K6").setFormula('=COUNTIFS(Stands!W2:W,"completed",Stands!B2:B,"<>TEST_*")');
   data.getRange("M1").setFormula('=IFERROR(QUERY({Sessions!AD2:AD,Sessions!AB2:AB,Sessions!AL2:AL,Sessions!B2:B,Sessions!A2:A},"select Col1, avg(Col2) where Col3 = \'v2\' and Col4 = \'Ended\' and Col2 > 0 and not Col5 starts with \'TEST_\' group by Col1 label Col1 \'GPU\', avg(Col2) \'Average FPS\'",0),"")');
   if (data.getMaxColumns() < 56) data.insertColumnsAfter(data.getMaxColumns(), 56 - data.getMaxColumns());
-  data.getRange("AI1:AJ1").setValues([["Tutorial bottleneck", "Median unpaused minutes"]]);
+  data.getRange("AI1:AJ1").setValues([["Tutorial bottleneck", "Median unpaused seconds"]]);
   data.getRange("Z1:AD1").setValues([["Lemon batch", "Unhappy %", "Sugar complaint %", "Ice complaint %", "Fruit complaint %"]]);
   sheet.getRange("J1:L2").merge().setValue("Batch chart shows feedback from →").setWrap(true).setFontWeight("bold");
   const selector = sheet.getRange("M1:O2").merge();
@@ -444,10 +444,10 @@ function buildOverview(book) {
   });
   const charts = [
     ["BC1:BD9", Charts.ChartType.BAR, "Tutorial steps players quit on"],
-    ["AI1:AJ9", Charts.ChartType.BAR, "Tutorial steps that took longest (min)"],
+    ["AI1:AJ9", Charts.ChartType.BAR, "Tutorial steps that took longest (seconds)"],
     ["AW1:BA21", Charts.ChartType.LINE, "Complaints per batch — should fall"],
     ["AT1:AU6", Charts.ChartType.COLUMN, "How long sessions lasted"],
-    ["G1:H7", Charts.ChartType.BAR, "Customer outcomes — once per stand"],
+    ["G1:H7", Charts.ChartType.BAR, "Customer outcomes — all matches combined"],
     ["M1:N200", Charts.ChartType.BAR, "FPS by graphics card"]
   ];
   const existing = sheet.getCharts();
@@ -465,6 +465,10 @@ function buildOverview(book) {
   sheet.getRange("A45:F53").setFontSize(10).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
   sheet.getRange("A45:A53").setNumberFormat("dd/MM HH:mm");
   sheet.getRange("D45:D53").setNumberFormat("0.0");
-  sheet.getRange("A55:R56").merge().setValue("Matches = one host's authoritative record; \"Players seen\" = individual player reports.\nA missing \"Ended\" can mean still playing, disconnected, or a failed upload — not proof of a crash.").setWrap(true).setFontColor("#526171").setFontSize(10);
+  sheet.getRange("A55:R57").merge().setValue(
+    "Customer outcomes: Happy = paid, no complaints · Unhappy = paid but complained · Timeout = left waiting too long · Price rejection = too expensive · Wrong order = wrong drink · Scam = served water-only cup.\n" +
+    "Matches = one host's authoritative record; \"Players seen\" = individual player reports.\n" +
+    "A missing \"Ended\" can mean still playing, disconnected, or a failed upload — not proof of a crash."
+  ).setWrap(true).setFontColor("#526171").setFontSize(10);
   book.setActiveSheet(sheet);
 }
