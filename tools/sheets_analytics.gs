@@ -46,6 +46,11 @@ function setupTelemetry() {
     buildPreview(book);
     layoutOverview();
     refreshLearningCharts(book);
+    // Pure plumbing stays out of sight — unhide via View > Hidden sheets.
+    ["Chart Data v2", "Preview"].forEach(name => {
+      const s = book.getSheetByName(name);
+      if (s) s.hideSheet();
+    });
   } finally {
     lock.releaseLock();
   }
@@ -367,21 +372,20 @@ function buildPreview(book) {
 function layoutOverview() {
   const sheet = getBook().getSheetByName("Overview");
   if (!sheet) return;
-  sheet.setColumnWidths(1, 18, 85);
-  sheet.setRowHeights(1, 65, 20);
-  sheet.setRowHeight(4, 34);
-  sheet.setRowHeight(8, 34);
+  sheet.setColumnWidths(1, 18, 90);
+  sheet.setRowHeights(1, 60, 22);
+  sheet.setRowHeight(4, 30);
   sheet.setFrozenRows(2);
-  const positions = [[16, 1], [16, 7], [16, 13], [32, 1], [32, 7], [32, 13], [48, 1], [48, 7]];
+  const positions = [[12, 1], [12, 8], [12, 15], [28, 1], [28, 8], [28, 15]];
   sheet.getCharts().forEach((chart, index) => {
     if (index >= positions.length) return;
     const [row, column] = positions[index];
     sheet.updateChart(chart.modify()
       .setPosition(row, column, 0, 0)
-      .setOption("width", 490)
-      .setOption("height", 290)
+      .setOption("width", 470)
+      .setOption("height", 280)
       .setOption("fontSize", 12)
-      .setOption("titleTextStyle", {fontSize: 14})
+      .setOption("titleTextStyle", {fontSize: 13})
       .build());
   });
 }
@@ -390,25 +394,27 @@ function buildOverview(book) {
   let sheet = book.getSheetByName("Overview");
   if (!sheet) sheet = book.insertSheet("Overview");
   sheet.setHiddenGridlines(true);
-  sheet.setColumnWidths(1, 8, 110);
-  sheet.getRange("A1:H2").merge().setValue("DEMO ANALYTICS — MATCHES & PLAYERS").setBackground("#17324d").setFontColor("white").setFontWeight("bold").setFontSize(18);
+  sheet.getRange("A1:S90").breakApart().clear();
+  sheet.setColumnWidths(1, 18, 90);
+  sheet.getRange("A1:H2").merge().setValue("WHEN LIFE GIVES YOU LEMONS — DEMO REPORT")
+    .setBackground("#17324d").setFontColor("white").setFontWeight("bold").setFontSize(18);
   const cards = [
-    ["A4:B4", "A5:B6", "New matches", '=COUNTIFS(Matches!A2:A,"<>",Matches!A2:A,"<>TEST_*")'],
-    ["D4:E4", "D5:E6", "New participant reports", '=COUNTIFS(Sessions!AL2:AL,"v2",Sessions!A2:A,"<>TEST_*")'],
-    ["G4:H4", "G5:H6", "Completed stands", '=SUMIF(Matches!A2:A,"<>TEST_*",Matches!P2:P)'],
-    ["A8:B8", "A9:B10", "Wishlist button clicks (new)", '=SUMIFS(Sessions!Y2:Y,Sessions!AL2:AL,"v2",Sessions!A2:A,"<>TEST_*")+SUMIFS(Sessions!Z2:Z,Sessions!AL2:AL,"v2",Sessions!A2:A,"<>TEST_*")'],
-    ["D8:E8", "D9:E10", "Legacy reports (not matches)", '=COUNTIFS(Sessions!AL2:AL,"legacy",Sessions!A2:A,"<>TEST_*")'],
-    ["G8:H8", "G9:H10", "New ended participant reports", '=COUNTIFS(Sessions!AL2:AL,"v2",Sessions!B2:B,"Ended",Sessions!A2:A,"<>TEST_*")'],
-    ["J4:L4", "J5:L6", "Average ended match (min)", '=IFERROR(ROUND(AVERAGEIFS(Matches!F2:F,Matches!B2:B,"Ended",Matches!A2:A,"<>TEST_*"),1),0)'],
-    ["N4:P4", "N5:P6", "Median ended match (min)", '=IFERROR(ROUND(MEDIAN(FILTER(Matches!F2:F,Matches!B2:B="Ended",LEFT(Matches!A2:A,5)<>"TEST_")),1),0)'],
-    ["J8:L8", "J9:L10", "Recorded match-hours (incl. open)", '=ROUND(SUMIF(Matches!A2:A,"<>TEST_*",Matches!F2:F)/60,1)'],
-    ["N8:P8", "N9:P10", "Longest ended match (min)", '=IFERROR(ROUND(MAX(FILTER(Matches!F2:F,Matches!B2:B="Ended",LEFT(Matches!A2:A,5)<>"TEST_")),1),0)']
+    ["A4:B4", "A5:B6", "Games played", '=COUNTIFS(Matches!A2:A,"<>",Matches!A2:A,"<>TEST_*")'],
+    ["D4:E4", "D5:E6", "Players seen", '=COUNTIFS(Sessions!AL2:AL,"v2",Sessions!A2:A,"<>TEST_*")'],
+    ["G4:H4", "G5:H6", "Typical session (min)", '=IFERROR(ROUND(MEDIAN(FILTER(Matches!F2:F,Matches!B2:B="Ended",LEFT(Matches!A2:A,5)<>"TEST_")),1),0)'],
+    ["J4:K4", "J5:K6", "Demos completed", '=SUMIF(Matches!A2:A,"<>TEST_*",Matches!P2:P)'],
+    ["M4:N4", "M5:N6", "Wishlist clicks", '=SUMIFS(Sessions!Y2:Y,Sessions!AL2:AL,"v2",Sessions!A2:A,"<>TEST_*")+SUMIFS(Sessions!Z2:Z,Sessions!AL2:AL,"v2",Sessions!A2:A,"<>TEST_*")']
   ];
   cards.forEach(([label, value, title, formula]) => {
     sheet.getRange(label).merge().setValue(title).setBackground("#dce6f1").setWrap(true).setFontWeight("bold");
     sheet.getRange(value).merge().setFormula(formula).setBackground("#eef4fa").setFontSize(25).setHorizontalAlignment("center");
   });
-  sheet.getRange("A12:H14").merge().setValue("Matches = one host's authoritative record. Participants = each player's performance/clicks.\nPeak connected and participant connections are NOT unique humans. Legacy data is excluded from new match charts.\nNo end received can mean still playing, disconnected, or failed submission—not proof of a crash.").setWrap(true).setFontColor("#526171");
+  sheet.getRange("A8:R10").merge().setValue(
+    "Only check three things:\n" +
+    "1) Are people playing? → \"Games played\", \"Typical session\", and the \"How long sessions lasted\" chart below.\n" +
+    "2) Where do they get stuck? → \"Tutorial steps players quit on\" — a tall bar is a step worth fixing.\n" +
+    "3) Are they learning the recipe? → \"Complaints per batch\" should trend DOWN. Dropdown (top right) switches customers vs free samples."
+  ).setWrap(true).setFontColor("#3c4b5a").setFontSize(11).setBackground("#f4f8fc");
   const data = book.getSheetByName("Chart Data v2") || book.insertSheet("Chart Data v2");
   data.getRange("A1:B3").setValues([["Mode", "Matches"], ["coop", ""], ["versus", ""]]);
   data.getRange("B2").setFormula('=COUNTIFS(Matches!C2:C,A2,Matches!A2:A,"<>TEST_*")');
@@ -424,7 +430,7 @@ function buildOverview(book) {
   if (data.getMaxColumns() < 56) data.insertColumnsAfter(data.getMaxColumns(), 56 - data.getMaxColumns());
   data.getRange("AI1:AJ1").setValues([["Tutorial bottleneck", "Median unpaused minutes"]]);
   data.getRange("Z1:AD1").setValues([["Lemon batch", "Unhappy %", "Sugar complaint %", "Ice complaint %", "Fruit complaint %"]]);
-  sheet.getRange("J1:L2").merge().setValue("Recipe learning source (lemon)").setWrap(true).setFontWeight("bold");
+  sheet.getRange("J1:L2").merge().setValue("Batch chart shows feedback from →").setWrap(true).setFontWeight("bold");
   const selector = sheet.getRange("M1:O2").merge();
   const selected = selector.getValue();
   selector.setValue(["Customers", "Free samples"].includes(selected) ? selected : "Customers").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(["Customers", "Free samples"], true).setAllowInvalid(false).build()).setBackground("#fff2cc");
@@ -436,28 +442,29 @@ function buildOverview(book) {
     if (high != null) formula += ',Matches!F2:F,"<' + high + '"';
     data.getRange(i + 2, 47).setFormula(formula + ')');
   });
-  sheet.getRange("J12:R14").merge().setValue("Tutorial: unpaused stand time; auto-satisfied and resumed partial steps excluded from timing medians.\nBatch learning: choose customers or free samples above; carried-in/unattributed batches excluded.\nPlaytime cards use matches, not the sum of every co-op player's duplicate duration.").setWrap(true).setFontColor("#526171");
   const charts = [
-    ["A1:B3", Charts.ChartType.PIE, "New matches — selected mode"],
-    ["D1:E5", Charts.ChartType.COLUMN, "New matches — peak players"],
+    ["BC1:BD9", Charts.ChartType.BAR, "Tutorial steps players quit on"],
+    ["AI1:AJ9", Charts.ChartType.BAR, "Tutorial steps that took longest (min)"],
+    ["AW1:BA21", Charts.ChartType.LINE, "Complaints per batch — should fall"],
+    ["AT1:AU6", Charts.ChartType.COLUMN, "How long sessions lasted"],
     ["G1:H7", Charts.ChartType.BAR, "Customer outcomes — once per stand"],
-    ["AI1:AJ9", Charts.ChartType.BAR, "Tutorial: 8 slowest completed steps (min)"],
-    ["AW1:BA21", Charts.ChartType.LINE, "Lemon learning: selected source, batches 1–20"],
-    ["AT1:AU6", Charts.ChartType.COLUMN, "How long matches lasted"],
-    ["M1:N200", Charts.ChartType.BAR, "Gameplay FPS by GPU"],
-    ["BC1:BD9", Charts.ChartType.BAR, "Tutorial: steps unfinished at known exit"]
+    ["M1:N200", Charts.ChartType.BAR, "FPS by graphics card"]
   ];
   const existing = sheet.getCharts();
+  existing.forEach((chart, index) => {
+    if (index >= charts.length) sheet.removeChart(chart);
+  });
   charts.forEach(([range, type, title], index) => {
     const builder = existing[index] ? existing[index].modify().clearRanges() : sheet.newChart();
-    builder.setChartType(type).addRange(data.getRange(range)).setNumHeaders(1).setOption("title", title).setOption("width", 490).setOption("height", 290).setPosition(16 + 16 * Math.floor(index / 3), 1 + 6 * (index % 3), 0, 0);
-    if (index === 4) builder.setOption("vAxis", {minValue: 0, maxValue: 100});
+    builder.setChartType(type).addRange(data.getRange(range)).setNumHeaders(1).setOption("title", title).setOption("width", 470).setOption("height", 280).setPosition(12 + 16 * Math.floor(index / 3), 1 + 7 * (index % 3), 0, 0);
+    if (index === 2) builder.setOption("vAxis", {minValue: 0, maxValue: 100});
     if (existing[index]) sheet.updateChart(builder.build()); else sheet.insertChart(builder.build());
   });
-  sheet.getRange("M48:R48").merge().setValue("LATEST MATCHES — last reported playtime").setBackground("#dce6f1").setFontWeight("bold");
-  sheet.getRange("M49").setFormula('=IFERROR(QUERY(Matches!A1:T,"select C,D,F,B,S,A where A is not null and not A starts with \'TEST_\' order by S desc limit 10 label C \'Mode\', D \'Players\', F \'Minutes\', B \'Status\', S \'Last update\', A \'Match ID\'",1),"")');
-  sheet.getRange("M49:R60").setFontSize(10).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
-  sheet.getRange("O50:O60").setNumberFormat("0.0");
-  sheet.getRange("Q50:Q60").setNumberFormat("dd/MM HH:mm");
+  sheet.getRange("A44:R44").merge().setValue("LATEST MATCHES — most recent first").setBackground("#dce6f1").setFontWeight("bold");
+  sheet.getRange("A45").setFormula('=IFERROR(QUERY(Matches!A1:T,"select S,C,D,F,B,A where A is not null and not A starts with \'TEST_\' order by S desc limit 8 label S \'Last update\', C \'Mode\', D \'Players\', F \'Minutes\', B \'Status\', A \'Match ID\'",1),"")');
+  sheet.getRange("A45:F53").setFontSize(10).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+  sheet.getRange("A45:A53").setNumberFormat("dd/MM HH:mm");
+  sheet.getRange("D45:D53").setNumberFormat("0.0");
+  sheet.getRange("A55:R56").merge().setValue("Matches = one host's authoritative record; \"Players seen\" = individual player reports.\nA missing \"Ended\" can mean still playing, disconnected, or a failed upload — not proof of a crash.").setWrap(true).setFontColor("#526171").setFontSize(10);
   book.setActiveSheet(sheet);
 }
