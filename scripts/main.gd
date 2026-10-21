@@ -2341,6 +2341,7 @@ func _on_esc_quit_game() -> void:
 	# Checkpoint before exiting — must be a synchronous write: the debounced
 	# save_game() timer never fires because get_tree().quit() destroys the
 	# tree first. _do_save() still gates on is_host(), so clients write nothing.
+	GameLog.log("[Main] quit: clicked at %.1f epoch" % Time.get_unix_time_from_system())
 	var t0 := Time.get_ticks_msec()
 	UpgradeManager.flush_active_stand()
 	SaveManager.save_game(true)

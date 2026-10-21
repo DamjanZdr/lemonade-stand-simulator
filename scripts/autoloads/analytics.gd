@@ -236,6 +236,12 @@ func end_session(reason: String) -> void:
 	_ending = true
 	if reason == "quit":
 		_cancel_inflight()
+		# Stale summaries (e.g. the ESC-open checkpoint) are superseded by
+		# this higher-revision payload — the receiver upserts, so sending
+		# them first would just add a pointless serial roundtrip at quit.
+		for key in _queue.keys():
+			if str(_queue[key].get("event", "")) != "learning":
+				_queue.erase(key)
 	_send(_payload(reason))
 	_flush_learning()
 	session_id = ""
