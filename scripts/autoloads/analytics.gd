@@ -242,6 +242,19 @@ func end_session(reason: String) -> void:
 	_clicks.clear()
 
 
+## Fire-and-forget checkpoint when the ESC menu opens — by the time the
+## player reaches Quit, the report is usually already delivered and the
+## quit path only owes the final session_end roundtrip. Reopening just
+## overwrites the row with a newer revision.
+func checkpoint() -> void:
+	if session_id == "" or _ending:
+		return
+	_capture()
+	if not _start.is_empty() and _match_id != "":
+		_send(_payload("checkpoint"))
+		_flush_learning()
+
+
 ## Bounded send for the quit path — caller awaits then quits.
 func send_and_wait(reason: String, timeout := QUIT_FLUSH_SECONDS) -> void:
 	# A menu-only visit can still have clicks worth reporting (e.g. they
@@ -812,7 +825,10 @@ func _pump() -> void:
 	var key: String = message.key
 	var payload: Dictionary = message.payload
 	_request = HTTPRequest.new()
-	_request.use_threads = true
+	# Non-threaded: freeing a threaded request mid-flight joins the worker
+	# and can stall quit for seconds. Our payloads are small JSON — polling
+	# on the main loop is plenty and cancels instantly on teardown.
+	_request.use_threads = false
 	_request.timeout = 10.0
 	_request.max_redirects = 0
 	_following_redirect = false

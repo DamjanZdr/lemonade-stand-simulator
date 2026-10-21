@@ -126,7 +126,7 @@ func _run() -> void:
 	var different := { "snapshot": perfect, "complaints": ["too_sweet"], "sugar_delta": 3.0 }
 	var mixed: String = evaluator.format_feedback([evaluation, different])
 	check(
-		mixed.contains("cup 1") and mixed.contains("cup 2"),
+		mixed.contains("first cup") and mixed.contains("second cup"),
 		"different cups receive labeled feedback rather than contradictory unqualified instructions",
 	)
 	check(evaluator.format_feedback([]) == "Delicious!", "success wording preserved")

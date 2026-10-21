@@ -9,6 +9,17 @@ extends Node
 ##   too_sweet, not_sweet_enough, too_strong, not_enough_fruit,
 ##   too_cold, not_cold_enough
 
+const ORDINALS: Array[String] = [
+	"first",
+	"second",
+	"third",
+	"fourth",
+	"fifth",
+	"sixth",
+	"seventh",
+	"eighth",
+]
+
 const FEEDBACK_LINES := {
 	"not_enough_fruit": [
 		"Just a little more fruit.",
@@ -242,11 +253,14 @@ func format_feedback(evaluations: Array) -> String:
 		return str(groups[0].text)
 	var sections: Array[String] = []
 	for group in groups:
-		var label := str(group.fruit).capitalize() if group.fruit != "" else "Drink"
-		var text: String = str(group.text)
-		sections.append(
-			"%s cup %d: %s" % [label, group.cup, text.substr(0, 1).to_lower() + text.substr(1)]
+		var cup_idx := int(group.cup) - 1
+		var ordinal := (
+			"The %s cup" % ORDINALS[cup_idx]
+			if cup_idx < ORDINALS.size()
+			else "Cup %d" % int(group.cup)
 		)
+		var text: String = str(group.text)
+		sections.append("%s: %s" % [ordinal, text.substr(0, 1).to_lower() + text.substr(1)])
 	return " ".join(sections)
 
 

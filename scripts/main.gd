@@ -2209,6 +2209,9 @@ func _toggle_esc_menu() -> void:
 		EventBus.esc_menu_open = true
 		# Free the mouse.
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		# Upload progress while the player sits in the menu — if they quit,
+		# most of the report is already delivered and exit stays fast.
+		Analytics.checkpoint()
 
 
 ## Skip the Day X intro and clean up its overlay/tween immediately.
