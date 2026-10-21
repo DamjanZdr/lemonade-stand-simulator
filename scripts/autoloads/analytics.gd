@@ -280,17 +280,27 @@ func send_and_wait(reason: String, timeout := QUIT_FLUSH_SECONDS) -> void:
 		session_id = ""
 		_clicks.clear()
 	var start := Time.get_ticks_msec()
-	while not _queue.is_empty() and Time.get_ticks_msec() - start < int(timeout * 1000.0):
+	# Only the session summary is worth waiting on: it embeds the pending
+	# learning records, so queued learning posts add nothing at quit.
+	while _summary_pending() and Time.get_ticks_msec() - start < int(timeout * 1000.0):
 		_pump()
 		await get_tree().process_frame
-	# Anything still in flight would be freed during engine teardown — a
-	# threaded HTTPRequest join can stall process exit for seconds. Cancel
+	# Anything still in flight would be freed during engine teardown. Cancel
 	# it now; the queued messages are abandoned per the no-retry design.
 	_cancel_inflight()
 	GameLog.log(
 		"[Analytics] quit flush: %dms, %d queued message(s) dropped"
 		% [Time.get_ticks_msec() - start, _queue.size()]
 	)
+
+
+func _summary_pending() -> bool:
+	# In-flight messages stay in _queue until their response lands, so this
+	# covers both queued and in-flight summary payloads.
+	for key in _queue:
+		if str(_queue[key].get("event", "")) != "learning":
+			return true
+	return false
 
 
 func _capture() -> void:

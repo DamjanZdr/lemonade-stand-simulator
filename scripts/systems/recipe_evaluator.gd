@@ -9,17 +9,6 @@ extends Node
 ##   too_sweet, not_sweet_enough, too_strong, not_enough_fruit,
 ##   too_cold, not_cold_enough
 
-const ORDINALS: Array[String] = [
-	"first",
-	"second",
-	"third",
-	"fourth",
-	"fifth",
-	"sixth",
-	"seventh",
-	"eighth",
-]
-
 const FEEDBACK_LINES := {
 	"not_enough_fruit": [
 		"Just a little more fruit.",
@@ -35,6 +24,14 @@ const FEEDBACK_LINES := {
 	"too_sweet": ["Just a little too sweet.", "Too much sugar.", "Far too much sugar."],
 	"not_cold_enough": ["Just a little more ice.", "Could use more ice.", "Way too little ice."],
 	"too_cold": ["Just a little too cold.", "Too much ice.", "Far too much ice."],
+}
+
+## Templates used when several axes are off by the same distance in the
+## same direction — one merged line reads better than two separate ones
+## ("Just a little more lemon and sugar."). %s takes the joined nouns.
+const MERGED_LINES := {
+	"low": ["Just a little more %s.", "Could use more %s.", "Way too little %s."],
+	"high": ["Just a little too much %s.", "Too much %s.", "Far too much %s."],
 }
 
 var _manager: Node = null
@@ -200,8 +197,19 @@ func evaluate_detailed(
 	return result
 
 
+func _axis_noun(axis: String, deltas: Dictionary) -> String:
+	if axis == "fruit":
+		var fruit := str(deltas.get("snapshot", { }).get("fruit_type", ""))
+		return fruit if fruit != "" else "fruit"
+	return axis
+
+
 func get_feedback_lines(complaints: Array, deltas: Dictionary) -> Array[String]:
-	var lines: Array[String] = []
+	# Group complaints by direction + distance tier. Axes that are off by
+	# the same amount in the same direction collapse into one merged line
+	# ("Just a little more lemon and sugar.") instead of separate clauses.
+	var buckets: Array[Dictionary] = []
+	var bucket_index := { }
 	for complaint in complaints:
 		if not FEEDBACK_LINES.has(complaint):
 			continue
@@ -210,11 +218,39 @@ func get_feedback_lines(complaints: Array, deltas: Dictionary) -> Array[String]:
 			axis = "sugar"
 		elif complaint in ["too_cold", "not_cold_enough"]:
 			axis = "ice"
+		var direction := (
+			"low"
+			if complaint in ["not_enough_fruit", "not_sweet_enough", "not_cold_enough"]
+			else "high"
+		)
 		var tier := clampi(roundi(float(deltas.get(axis + "_delta", 1.0))), 1, 3) - 1
-		var text: String = FEEDBACK_LINES[complaint][tier]
-		if not lines.has(text):
-			lines.append(text)
-	return lines
+		var key := direction + "|" + str(tier)
+		if not bucket_index.has(key):
+			bucket_index[key] = buckets.size()
+			buckets.append({ "direction": direction, "tier": tier, "items": [] })
+		buckets[bucket_index[key]].items.append(
+			{ "complaint": complaint, "noun": _axis_noun(axis, deltas) }
+		)
+	var lines: Array[String] = []
+	for bucket in buckets:
+		var items: Array = bucket.items
+		if items.size() == 1:
+			lines.append(FEEDBACK_LINES[items[0].complaint][bucket.tier])
+		else:
+			var nouns: Array[String] = []
+			for item in items:
+				nouns.append(item.noun)
+			var noun_text := (
+				" and ".join(nouns)
+				if nouns.size() == 2
+				else ", ".join(nouns.slice(0, -1)) + " and " + nouns[-1]
+			)
+			lines.append(MERGED_LINES[bucket.direction][bucket.tier] % noun_text)
+	var deduped: Array[String] = []
+	for line in lines:
+		if not deduped.has(line):
+			deduped.append(line)
+	return deduped
 
 
 func join_feedback_lines(lines: Array) -> String:
@@ -231,37 +267,15 @@ func join_feedback_lines(lines: Array) -> String:
 
 
 func format_feedback(evaluations: Array) -> String:
-	var groups: Array[Dictionary] = []
-	var seen := { }
-	var fruits := { }
-	for index in evaluations.size():
-		var evaluation: Dictionary = evaluations[index]
-		var fruit := str(evaluation.get("snapshot", { }).get("fruit_type", ""))
-		fruits[fruit] = true
-		var lines := get_feedback_lines(evaluation.get("complaints", []), evaluation)
-		if lines.is_empty():
-			continue
-		var text := join_feedback_lines(lines)
-		var key := fruit + ":" + text
-		if seen.has(key):
-			continue
-		seen[key] = true
-		groups.append({ "fruit": fruit, "cup": index + 1, "text": text })
-	if groups.is_empty():
+	# Feedback only describes the last cup served — per-cup labels made
+	# multi-cup orders produce walls of text nobody reads.
+	if evaluations.is_empty():
 		return "Delicious!"
-	if groups.size() == 1 and fruits.size() <= 1:
-		return str(groups[0].text)
-	var sections: Array[String] = []
-	for group in groups:
-		var cup_idx := int(group.cup) - 1
-		var ordinal := (
-			"The %s cup" % ORDINALS[cup_idx]
-			if cup_idx < ORDINALS.size()
-			else "Cup %d" % int(group.cup)
-		)
-		var text: String = str(group.text)
-		sections.append("%s: %s" % [ordinal, text.substr(0, 1).to_lower() + text.substr(1)])
-	return " ".join(sections)
+	var last: Dictionary = evaluations[evaluations.size() - 1]
+	var lines := get_feedback_lines(last.get("complaints", []), last)
+	if lines.is_empty():
+		return "Delicious!"
+	return join_feedback_lines(lines)
 
 
 func get_verdict_string(recipe: Dictionary, temperature: float) -> String:

@@ -2154,6 +2154,9 @@ func _notification(what: int) -> void:
 
 
 func _on_window_close_requested() -> void:
+	# The window already wants to close — hide it now so save/report/
+	# teardown happen invisibly instead of the window lingering open.
+	get_window().hide()
 	# Window X (OS close) bypasses the ESC menu entirely — checkpoint here
 	# too. No-op outside a session (no active slot / not host).
 	var t0 := Time.get_ticks_msec()
@@ -2331,6 +2334,10 @@ func _on_esc_back_to_menu() -> void:
 
 ## ESC menu: Quit Game.
 func _on_esc_quit_game() -> void:
+	# Hide the window immediately: the player already chose to leave, so
+	# save + report delivery + teardown run invisibly instead of freezing
+	# the menu for seconds.
+	get_window().hide()
 	# Checkpoint before exiting — must be a synchronous write: the debounced
 	# save_game() timer never fires because get_tree().quit() destroys the
 	# tree first. _do_save() still gates on is_host(), so clients write nothing.

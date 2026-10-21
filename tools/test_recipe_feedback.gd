@@ -111,13 +111,27 @@ func _run() -> void:
 		"ice_delta": 0.0,
 	}
 	var lines: Array = evaluator.get_feedback_lines(evaluation.complaints, evaluation)
-	check(lines.size() == 2, "full feedback contains both ingredient corrections")
+	check(lines.size() == 1, "same distance + direction merges into one line")
 	var joined: String = evaluator.join_feedback_lines(lines)
-	check(
-		joined == "Just a little more fruit, just a little more sugar.",
-		"flowing one-line wording",
-	)
+	check(joined == "Just a little more lemon and sugar.", "merged wording names both ingredients")
 	check(not joined.contains("\n"), "no forced line breaks")
+	check(evaluator.get_feedback_lines(["not_sweet_enough", "too_cold"], {
+			"sugar_delta": 1.0,
+			"ice_delta": 2.0,
+		}).size() == 2, "different direction does not merge")
+	check(
+		evaluator.get_feedback_lines(
+			["not_enough_fruit", "not_sweet_enough", "not_cold_enough"],
+			{
+				"snapshot": { "fruit_type": "lemon" },
+				"fruit_delta": 1.0,
+				"sugar_delta": 1.0,
+				"ice_delta": 1.0,
+			},
+		)
+		== ["Just a little more lemon, sugar and ice."],
+		"three-way merge",
+	)
 	check(evaluator.format_feedback([evaluation]) == joined, "customer uses shared wording")
 	check(
 		evaluator.format_feedback([evaluation, evaluation]) == joined,
@@ -125,10 +139,7 @@ func _run() -> void:
 	)
 	var different := { "snapshot": perfect, "complaints": ["too_sweet"], "sugar_delta": 3.0 }
 	var mixed: String = evaluator.format_feedback([evaluation, different])
-	check(
-		mixed.contains("first cup") and mixed.contains("second cup"),
-		"different cups receive labeled feedback rather than contradictory unqualified instructions",
-	)
+	check(mixed == "Far too much sugar.", "only the last cup's feedback is reported")
 	check(evaluator.format_feedback([]) == "Delicious!", "success wording preserved")
 	check(
 		evaluator.evaluate(first, 15.0, 999.0, 1.0) == "too_expensive",
@@ -141,7 +152,8 @@ func _run() -> void:
 	)
 	var pedestrian: Node = load("res://scripts/customer/pedestrian.gd").new()
 	var feedback: String = pedestrian._feedback_text(
-		evaluator.evaluate_detailed(first, 15.0, "", true)
+		evaluator.evaluate_detailed(first, 15.0, "", true),
+		"lemon",
 	)
 	check(
 		feedback == "Hmm, " + joined.substr(0, 1).to_lower() + joined.substr(1),

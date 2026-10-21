@@ -42,14 +42,20 @@ func _exit_tree() -> void:
 	# Clean teardown so the process actually exits. Without steamShutdown()
 	# the Steam API worker thread keeps the exe alive after the window
 	# closes — Steam then shows "Running" and its Stop can't kill it.
+	var t0 := Time.get_ticks_msec()
 	if lobby_id != 0:
 		Steam.leaveLobby(lobby_id)
 		lobby_id = 0
+	GameLog.log("[Quit] teardown: leaveLobby %dms" % (Time.get_ticks_msec() - t0))
+	var t1 := Time.get_ticks_msec()
 	if multiplayer != null and multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
+	GameLog.log("[Quit] teardown: peer close %dms" % (Time.get_ticks_msec() - t1))
+	var t2 := Time.get_ticks_msec()
 	if _steam_initialized:
 		Steam.steamShutdown()
 		_steam_initialized = false
+	GameLog.log("[Quit] teardown: steamShutdown %dms" % (Time.get_ticks_msec() - t2))
 
 
 ## Pick the Steam app ID at runtime: SteamAppId/SteamAppID environment variable

@@ -762,7 +762,7 @@ func try_serve(player: Node) -> void:
 		true,
 		get_instance_id(),
 	)
-	var feedback := _feedback_text(result)
+	var feedback := _feedback_text(result, str(recipe.get("fruit_type", "")))
 	_show_order_text(feedback)
 
 	# Free lemonade samples give a small popularity boost for any real drink;
@@ -814,12 +814,13 @@ func _show_order_text(text: String) -> void:
 		_resize_order_panel()
 
 
-func _feedback_text(result: EvaluationResult) -> String:
+func _feedback_text(result: EvaluationResult, fruit_type := "") -> String:
 	if result.complaints.is_empty():
 		return "Mmm, perfect! Thanks!"
 	var lines := RecipeEvaluator.get_feedback_lines(
 		result.complaints,
 		{
+			"snapshot": { "fruit_type": fruit_type },
 			"fruit_delta": result.fruit_delta,
 			"sugar_delta": result.sugar_delta,
 			"ice_delta": result.ice_delta,
