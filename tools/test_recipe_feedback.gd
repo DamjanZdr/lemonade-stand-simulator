@@ -112,12 +112,15 @@ func _run() -> void:
 	}
 	var lines: Array = evaluator.get_feedback_lines(evaluation.complaints, evaluation)
 	check(lines.size() == 2, "full feedback contains both ingredient corrections")
+	var joined: String = evaluator.join_feedback_lines(lines)
 	check(
-		evaluator.format_feedback([evaluation]) == "\n".join(lines),
-		"customer uses shared wording",
+		joined == "Just a little more fruit, just a little more sugar.",
+		"flowing one-line wording",
 	)
+	check(not joined.contains("\n"), "no forced line breaks")
+	check(evaluator.format_feedback([evaluation]) == joined, "customer uses shared wording")
 	check(
-		evaluator.format_feedback([evaluation, evaluation]) == "\n".join(lines),
+		evaluator.format_feedback([evaluation, evaluation]) == joined,
 		"repeated cups do not repeat identical feedback",
 	)
 	var different := { "snapshot": perfect, "complaints": ["too_sweet"], "sugar_delta": 3.0 }
@@ -140,12 +143,15 @@ func _run() -> void:
 	var feedback: String = pedestrian._feedback_text(
 		evaluator.evaluate_detailed(first, 15.0, "", true)
 	)
-	check(feedback == "\n".join(lines), "free-sample and customer wording match")
+	check(
+		feedback == "Hmm, " + joined.substr(0, 1).to_lower() + joined.substr(1),
+		"free-sample and customer wording match",
+	)
 	pedestrian.free()
 	var customer: Node = load("res://scripts/customer/customer.gd").new()
 	customer._served_evaluations.append(evaluation)
 	check(
-		customer._feedback_for_outcome("not_enough_fruit") == "\n".join(lines),
+		customer._feedback_for_outcome("not_enough_fruit") == joined,
 		"actual customer flow reports all axes",
 	)
 	check(

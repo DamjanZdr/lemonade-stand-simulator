@@ -270,6 +270,14 @@ func send_and_wait(reason: String, timeout := QUIT_FLUSH_SECONDS) -> void:
 	while not _queue.is_empty() and Time.get_ticks_msec() - start < int(timeout * 1000.0):
 		_pump()
 		await get_tree().process_frame
+	# Anything still in flight would be freed during engine teardown — a
+	# threaded HTTPRequest join can stall process exit for seconds. Cancel
+	# it now; the queued messages are abandoned per the no-retry design.
+	_cancel_inflight()
+	GameLog.log(
+		"[Analytics] quit flush: %dms, %d queued message(s) dropped"
+		% [Time.get_ticks_msec() - start, _queue.size()]
+	)
 
 
 func _capture() -> void:

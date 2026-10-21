@@ -816,7 +816,7 @@ func _show_order_text(text: String) -> void:
 
 func _feedback_text(result: EvaluationResult) -> String:
 	if result.complaints.is_empty():
-		return "Mmm, perfect!\nThanks!"
+		return "Mmm, perfect! Thanks!"
 	var lines := RecipeEvaluator.get_feedback_lines(
 		result.complaints,
 		{
@@ -825,7 +825,10 @@ func _feedback_text(result: EvaluationResult) -> String:
 			"ice_delta": result.ice_delta,
 		},
 	)
-	return "\n".join(lines) if not lines.is_empty() else "Hmm, something isn't right."
+	var joined := RecipeEvaluator.join_feedback_lines(lines)
+	if joined == "":
+		return "Hmm, something isn't right."
+	return "Hmm, " + joined.substr(0, 1).to_lower() + joined.substr(1)
 
 
 func _build_order_bubble() -> void:

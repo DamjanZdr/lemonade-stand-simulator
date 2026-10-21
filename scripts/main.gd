@@ -2156,10 +2156,13 @@ func _notification(what: int) -> void:
 func _on_window_close_requested() -> void:
 	# Window X (OS close) bypasses the ESC menu entirely — checkpoint here
 	# too. No-op outside a session (no active slot / not host).
+	var t0 := Time.get_ticks_msec()
 	if _game_state == MenuState.PLAYING:
 		UpgradeManager.flush_active_stand()
 		SaveManager.save_game(true)
+	GameLog.log("[Main] quit: save+flush took %dms" % (Time.get_ticks_msec() - t0))
 	await Analytics.send_and_wait("quit")
+	GameLog.log("[Main] quit: exiting after %dms total" % (Time.get_ticks_msec() - t0))
 	get_tree().quit()
 
 
@@ -2328,9 +2331,12 @@ func _on_esc_quit_game() -> void:
 	# Checkpoint before exiting — must be a synchronous write: the debounced
 	# save_game() timer never fires because get_tree().quit() destroys the
 	# tree first. _do_save() still gates on is_host(), so clients write nothing.
+	var t0 := Time.get_ticks_msec()
 	UpgradeManager.flush_active_stand()
 	SaveManager.save_game(true)
+	GameLog.log("[Main] quit: save+flush took %dms" % (Time.get_ticks_msec() - t0))
 	await Analytics.send_and_wait("quit")
+	GameLog.log("[Main] quit: exiting after %dms total" % (Time.get_ticks_msec() - t0))
 	get_tree().quit()
 
 

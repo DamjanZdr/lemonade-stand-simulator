@@ -206,6 +206,19 @@ func get_feedback_lines(complaints: Array, deltas: Dictionary) -> Array[String]:
 	return lines
 
 
+func join_feedback_lines(lines: Array) -> String:
+	## Flatten complaint lines into one flowing sentence. The bubble wraps
+	## on width on its own, so nothing here forces line breaks.
+	var fragments: Array[String] = []
+	for line in lines:
+		var text := str(line).strip_edges().trim_suffix(".")
+		if text != "" and not fragments.has(text):
+			fragments.append(text)
+	for i in range(1, fragments.size()):
+		fragments[i] = fragments[i].substr(0, 1).to_lower() + fragments[i].substr(1)
+	return ", ".join(fragments) + ("." if not fragments.is_empty() else "")
+
+
 func format_feedback(evaluations: Array) -> String:
 	var groups: Array[Dictionary] = []
 	var seen := { }
@@ -217,7 +230,7 @@ func format_feedback(evaluations: Array) -> String:
 		var lines := get_feedback_lines(evaluation.get("complaints", []), evaluation)
 		if lines.is_empty():
 			continue
-		var text := "\n".join(lines)
+		var text := join_feedback_lines(lines)
 		var key := fruit + ":" + text
 		if seen.has(key):
 			continue
@@ -230,8 +243,11 @@ func format_feedback(evaluations: Array) -> String:
 	var sections: Array[String] = []
 	for group in groups:
 		var label := str(group.fruit).capitalize() if group.fruit != "" else "Drink"
-		sections.append("%s cup %d:\n%s" % [label, group.cup, group.text])
-	return "\n".join(sections)
+		var text: String = str(group.text)
+		sections.append(
+			"%s cup %d: %s" % [label, group.cup, text.substr(0, 1).to_lower() + text.substr(1)]
+		)
+	return " ".join(sections)
 
 
 func get_verdict_string(recipe: Dictionary, temperature: float) -> String:
