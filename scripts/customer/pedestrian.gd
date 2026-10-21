@@ -755,6 +755,13 @@ func try_serve(player: Node) -> void:
 	# Free-sample NPCs give deterministic feedback — every off-ideal axis is
 	# named, no unhappy-chance rolls hiding real problems.
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "", true)
+	Analytics.record_batch_feedback(
+		p.assigned_stand,
+		recipe,
+		result.complaints,
+		true,
+		get_instance_id(),
+	)
 	var feedback := _feedback_text(result)
 	_show_order_text(feedback)
 
@@ -810,28 +817,15 @@ func _show_order_text(text: String) -> void:
 func _feedback_text(result: EvaluationResult) -> String:
 	if result.complaints.is_empty():
 		return "Mmm, perfect!\nThanks!"
-	var parts: Array[String] = []
-	for c: String in result.complaints:
-		parts.append(_complaint_word(c))
-	return "Hmm, %s." % ", ".join(parts)
-
-
-func _complaint_word(complaint: String) -> String:
-	match complaint:
-		"too_strong":
-			return "too strong"
-		"not_enough_fruit":
-			return "not enough fruit"
-		"too_sweet":
-			return "too sweet"
-		"not_sweet_enough":
-			return "not sweet enough"
-		"too_cold":
-			return "too cold"
-		"not_cold_enough":
-			return "not cold enough"
-		_:
-			return complaint
+	var lines := RecipeEvaluator.get_feedback_lines(
+		result.complaints,
+		{
+			"fruit_delta": result.fruit_delta,
+			"sugar_delta": result.sugar_delta,
+			"ice_delta": result.ice_delta,
+		},
+	)
+	return "\n".join(lines) if not lines.is_empty() else "Hmm, something isn't right."
 
 
 func _build_order_bubble() -> void:

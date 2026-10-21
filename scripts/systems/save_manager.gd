@@ -452,6 +452,11 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		if stand is StandUnit:
 			var fallback := GameState.money if stand.is_legacy_primary else Balancing.STARTING_MONEY
 			stand.money = float(saved_stand_money.get(stand.name, fallback))
+			if stand.is_legacy_primary:
+				stand.total_money_earned_from_sales = float(
+					data.get("total_money_earned_from_sales", 0.0)
+				)
+				stand.highest_purchase = float(data.get("highest_purchase", 0.0))
 			stand.highest_money = maxf(stand.money, data.get("highest_money", stand.money) as float)
 			var saved_stats: Variant = saved_last_day.get(stand.name, { })
 			if saved_stats is Dictionary:

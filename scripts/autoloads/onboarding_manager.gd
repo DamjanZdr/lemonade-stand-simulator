@@ -463,6 +463,7 @@ func _match_task(stand: StandUnit, event_name: String, data: Dictionary) -> void
 		return
 	p.completed_parts = completed_parts
 	if completed_parts.size() >= task.parts.size():
+		Analytics.tutorial_completed(stand, task.id)
 		p.completed_task_ids.append(task.id)
 		p.completed_parts = { }
 		p["part_counts"] = { }
@@ -532,6 +533,7 @@ func _retro_satisfy_current_task(stand: StandUnit) -> void:
 		p.completed_parts = completed_parts
 		if completed_parts.size() < task.parts.size():
 			break
+		Analytics.tutorial_completed(stand, task.id, true)
 		p.completed_task_ids.append(task.id)
 		p.completed_parts = { }
 		p["part_counts"] = { }
@@ -575,6 +577,7 @@ func _advance_satisfied_tasks(stand: StandUnit) -> void:
 			return
 		var idx := _task_index(id)
 		if not p.completed_task_ids.has(id):
+			Analytics.tutorial_completed(stand, id, true)
 			p.completed_task_ids.append(id)
 		p.completed_parts = { }
 		p["part_counts"] = { }

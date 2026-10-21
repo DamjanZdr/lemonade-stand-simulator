@@ -9,6 +9,23 @@ extends Node
 ##   too_sweet, not_sweet_enough, too_strong, not_enough_fruit,
 ##   too_cold, not_cold_enough
 
+const FEEDBACK_LINES := {
+	"not_enough_fruit": [
+		"Just a little more fruit.",
+		"Could use more fruit.",
+		"Way too little fruit.",
+	],
+	"too_strong": ["Just a little too strong.", "Too much fruit.", "Far too much fruit."],
+	"not_sweet_enough": [
+		"Just a little more sugar.",
+		"Could use more sugar.",
+		"Way too little sugar.",
+	],
+	"too_sweet": ["Just a little too sweet.", "Too much sugar.", "Far too much sugar."],
+	"not_cold_enough": ["Just a little more ice.", "Could use more ice.", "Way too little ice."],
+	"too_cold": ["Just a little too cold.", "Too much ice.", "Far too much ice."],
+}
+
 var _manager: Node = null
 
 
@@ -80,7 +97,7 @@ func evaluate_detailed(
 	recipe: Dictionary,
 	temperature: float,
 	expected_fruit_type: String = "",
-	deterministic: bool = false,
+	deterministic: bool = true,
 ) -> EvaluationResult:
 	## Returns full per-axis scores and an ordered list of complaints.
 	## When `deterministic` is true, every axis that deviates produces its
@@ -140,15 +157,16 @@ func evaluate_detailed(
 	result.temperature_score = 1.0 - ice_unhappy
 	result.overall_score = result.strength_score * result.sweetness_score * result.temperature_score
 	result.is_perfect = (
-		result.fruit_delta == 0.0 and result.sugar_delta == 0.0 and result.ice_delta == 0.0
+		is_zero_approx(result.fruit_delta) and is_zero_approx(result.sugar_delta)
+		and is_zero_approx(result.ice_delta)
 	)
 
 	# --- Complaint generation: roll for each axis ---
 	# In deterministic mode every off-ideal axis complains; otherwise each
 	# axis rolls its unhappy chance so mild misses sometimes get a pass.
-	var complains_fruit := fruit_unhappy > 0.0 if deterministic else randf() < fruit_unhappy
-	var complains_sugar := sugar_unhappy > 0.0 if deterministic else randf() < sugar_unhappy
-	var complains_ice := ice_unhappy > 0.0 if deterministic else randf() < ice_unhappy
+	var complains_fruit := not is_zero_approx(result.fruit_delta) if deterministic else randf() < fruit_unhappy
+	var complains_sugar := not is_zero_approx(result.sugar_delta) if deterministic else randf() < sugar_unhappy
+	var complains_ice := not is_zero_approx(result.ice_delta) if deterministic else randf() < ice_unhappy
 	if complains_fruit:
 		if fruit_count > data.ideal_fruit_count:
 			result.complaints.append("too_strong")
@@ -169,6 +187,51 @@ func evaluate_detailed(
 
 	result.summary = get_verdict_string(recipe, temperature)
 	return result
+
+
+func get_feedback_lines(complaints: Array, deltas: Dictionary) -> Array[String]:
+	var lines: Array[String] = []
+	for complaint in complaints:
+		if not FEEDBACK_LINES.has(complaint):
+			continue
+		var axis := "fruit"
+		if complaint in ["too_sweet", "not_sweet_enough"]:
+			axis = "sugar"
+		elif complaint in ["too_cold", "not_cold_enough"]:
+			axis = "ice"
+		var tier := clampi(roundi(float(deltas.get(axis + "_delta", 1.0))), 1, 3) - 1
+		var text: String = FEEDBACK_LINES[complaint][tier]
+		if not lines.has(text):
+			lines.append(text)
+	return lines
+
+
+func format_feedback(evaluations: Array) -> String:
+	var groups: Array[Dictionary] = []
+	var seen := { }
+	var fruits := { }
+	for index in evaluations.size():
+		var evaluation: Dictionary = evaluations[index]
+		var fruit := str(evaluation.get("snapshot", { }).get("fruit_type", ""))
+		fruits[fruit] = true
+		var lines := get_feedback_lines(evaluation.get("complaints", []), evaluation)
+		if lines.is_empty():
+			continue
+		var text := "\n".join(lines)
+		var key := fruit + ":" + text
+		if seen.has(key):
+			continue
+		seen[key] = true
+		groups.append({ "fruit": fruit, "cup": index + 1, "text": text })
+	if groups.is_empty():
+		return "Delicious!"
+	if groups.size() == 1 and fruits.size() <= 1:
+		return str(groups[0].text)
+	var sections: Array[String] = []
+	for group in groups:
+		var label := str(group.fruit).capitalize() if group.fruit != "" else "Drink"
+		sections.append("%s cup %d:\n%s" % [label, group.cup, group.text])
+	return "\n".join(sections)
 
 
 func get_verdict_string(recipe: Dictionary, temperature: float) -> String:

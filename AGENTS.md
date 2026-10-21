@@ -126,6 +126,15 @@ func _rpc_do_thing(params) -> void:
 - `scripts/autoloads/analytics.gd` owns participant reports, anonymous shared match IDs, and host-only stand snapshots. Do not sum co-op participant sales as separate stand sales.
 - `tools/sheets_analytics.gs` is the Google Apps Script source. Changes require the owner to replace Code.gs, run `setupTelemetry`, and deploy a new version of the existing web app before releasing compatible game changes.
 - Apps Script redirects POST responses to `script.googleusercontent.com`; Godot must explicitly fetch that acknowledgement using GET. A Python-only endpoint test does not verify Godot transport.
-- Pending release-build reports persist at `user://analytics_pending.json`. Checkpoint/end revisions update existing rows; no end received is not evidence of a crash.
+- Reports send during play (checkpoint every 30s, critical changes after 5s) plus one bounded quit flush (`QUIT_FLUSH_SECONDS`). The queue is in-memory only — anything unsent at process exit is lost; there is no next-launch retry. Checkpoint/end revisions update existing rows; no end received is not evidence of a crash.
 - The private Sheets read key stays outside the repository at `%USERPROFILE%/lemonade-analytics-read-key.txt`. Never print it, commit it, or include it in game exports.
 - Legacy imported reports have known stale-client/mode issues and receipt-time timestamps; do not mix them with schema-v2 match-level metrics.
+- Tutorial and pitcher learning details use revisioned `learning` submissions, batched up to 10 rows per request. Deploy the matching Google receiver before shipping these game changes.
+- Tutorial timing is per stand and observed match segment; automatic completions and resumed partial steps are excluded from completed-step timing medians. Unpaused time includes any active teammate but is not an AFK detector.
+- A pitcher batch starts at its first pour; its anonymous batch/cup tags travel in recipe snapshots across placement, network sync, and saves. Free-sample feedback is separate from customer tastings. Carried-in/unattributed batches are excluded from aggregate learning curves.
+- Run `node tools/test_sheets_analytics.cjs` for the standalone backend regression checks (no Google access required).
+
+## Recipe Feedback
+
+- Customers and free-sample pedestrians use deterministic ingredient complaints and shared 1 / 2 / 3+ unit wording in `scripts/systems/recipe_evaluator.gd`. Sugar still scales with fruit count; ice still follows current temperature. Mixed-cup orders label different feedback groups rather than presenting contradictory instructions for one drink.
+- Run `tools/godotsteam-editor/godotsteam.471.editor.win64.console.exe --headless --path . --script res://tools/test_recipe_feedback.gd` for feedback regression checks. The standalone harness may also report the existing UpgradeManager missing-current-scene startup error; distinguish that from the explicit test result.

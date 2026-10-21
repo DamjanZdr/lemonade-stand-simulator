@@ -394,6 +394,8 @@ func _ready() -> void:
 	# but it doesn't emit money_changed for that initial assignment, so we
 	# read it directly here rather than waiting for the first future change.
 	money = GameState.money
+	total_money_earned_from_sales = GameState.total_money_earned_from_sales
+	highest_purchase = GameState.highest_purchase
 	ice_degrees_per_scoop = GameState.ice_degrees_per_scoop
 	highest_money = maxf(highest_money, money)
 
@@ -551,7 +553,8 @@ func add_money_from_sale(amount: float) -> void:
 	if amount > highest_purchase:
 		highest_purchase = amount
 	if is_legacy_primary:
-		GameState.total_money_earned_from_sales += amount
+		GameState.total_money_earned_from_sales = total_money_earned_from_sales
+		GameState.highest_purchase = highest_purchase
 	AchievementManager.check_stand_thresholds(self)
 	push_state()
 

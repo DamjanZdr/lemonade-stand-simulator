@@ -39,43 +39,6 @@ var _recover_timer: float = 0.0
 var _pre_stun_state: CustomerState = CustomerState.WALKING
 var _pre_stun_anim: String = "Walk"
 
-const _FRUIT_HIGH_LINES: Array[String] = [
-	"A touch too fruity.",
-	"A bit too strong.",
-	"Way too much fruit!",
-	"Way, way too strong!",
-]
-const _FRUIT_LOW_LINES: Array[String] = [
-	"Could use a bit more fruit.",
-	"Needs more fruit.",
-	"Way too little fruit.",
-	"Barely any fruit!",
-]
-const _SUGAR_HIGH_LINES: Array[String] = [
-	"A touch too sweet.",
-	"Too sweet.",
-	"Way too sweet!",
-	"Syrupy sweet!",
-]
-const _SUGAR_LOW_LINES: Array[String] = [
-	"Could use a bit more sugar.",
-	"Needs more sugar.",
-	"Not sweet enough.",
-	"Barely any sugar!",
-]
-const _ICE_HIGH_LINES: Array[String] = [
-	"A touch too cold.",
-	"Too cold.",
-	"Way too cold!",
-	"Freezing!",
-]
-const _ICE_LOW_LINES: Array[String] = [
-	"Could use a bit more ice.",
-	"Could be colder.",
-	"Not cold enough.",
-	"Barely any ice!",
-]
-
 ## Upright rotation of NPCBody (saved before Fall animation).
 var _npc_base_rot: Vector3 = Vector3.ZERO
 ## Remaining order: fruit_type -> cups still needed. Set by the spawner
@@ -659,8 +622,9 @@ func try_serve(player: Node) -> void:
 
 	_serving_peer_id = p.get_multiplayer_authority()
 	p.inventory.clear_held()
-	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, fruit_type)
+	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, fruit_type, true)
 	OnboardingManager.enforce_guaranteed_feedback(stand, recipe, result)
+	Analytics.record_batch_feedback(stand, recipe, result.complaints, false, get_instance_id())
 	_served_evaluations.append(
 		{
 			"snapshot": recipe.duplicate(true),
@@ -754,10 +718,7 @@ func _resolve(outcome: String) -> void:
 		else:
 			# Exact payment — no change owed (payment == price). The stand
 			# earns the full price; payment - price would credit $0.
-			if stand != null and not stand.is_legacy_primary:
-				stand.request_add_money_from_sale(price)
-			else:
-				GameState.add_money_from_sale(price)
+			_credit_sale(price)
 			_record_customer_served(outcome)
 			# Still show feedback + report evaluations — exact payers are
 			# mastery-eligible transactions just like change-makers.
@@ -773,6 +734,13 @@ func _resolve(outcome: String) -> void:
 		var tween := create_tween()
 		tween.tween_interval(interval)
 		tween.tween_callback(_start_leaving)
+
+
+func _credit_sale(amount: float) -> void:
+	if stand != null:
+		stand.request_add_money_from_sale(amount)
+	else:
+		GameState.add_money_from_sale(amount)
 
 
 func _record_customer_served(outcome: String) -> void:
@@ -908,10 +876,7 @@ func _receive_change_finalized(tendered_cents: int) -> void:
 		return
 	_last_tendered_cents = tendered_cents
 	var earned := float(roundi(_payment_amount * 100.0) - tendered_cents) / 100.0
-	if stand != null and not stand.is_legacy_primary:
-		stand.request_add_money_from_sale(earned)
-	else:
-		GameState.add_money_from_sale(earned)
+	_credit_sale(earned)
 	_record_customer_served(_outcome)
 	_leave_after_change()
 
@@ -1030,29 +995,9 @@ func _show_feedback_then_leave() -> void:
 func _feedback_for_outcome(outcome: String) -> String:
 	## Specific feedback for quality complaints is based on how far the drink
 	## was from the ideal recipe on the relevant axis.
-	var lines: Array[String] = []
-	var delta_key := ""
 	match outcome:
 		"happy":
 			return "Delicious!"
-		"too_strong":
-			lines = _FRUIT_HIGH_LINES
-			delta_key = "fruit_delta"
-		"not_enough_fruit":
-			lines = _FRUIT_LOW_LINES
-			delta_key = "fruit_delta"
-		"too_sweet":
-			lines = _SUGAR_HIGH_LINES
-			delta_key = "sugar_delta"
-		"not_sweet_enough":
-			lines = _SUGAR_LOW_LINES
-			delta_key = "sugar_delta"
-		"too_cold":
-			lines = _ICE_HIGH_LINES
-			delta_key = "ice_delta"
-		"not_cold_enough":
-			lines = _ICE_LOW_LINES
-			delta_key = "ice_delta"
 		"too_expensive":
 			return "Too expensive."
 		"wrong_order":
@@ -1060,14 +1005,11 @@ func _feedback_for_outcome(outcome: String) -> String:
 		"timeout":
 			return "This takes too long, I have places to be!"
 		_:
-			return ""
-
-	if delta_key != "":
-		for eval in _served_evaluations:
-			if outcome in eval.get("complaints", []):
-				var dist := clampi(roundi(float(eval.get(delta_key, 1.0))), 1, 4)
-				return lines[dist - 1]
-	return lines[0]
+			return (
+				RecipeEvaluator.format_feedback(_served_evaluations)
+				if RecipeEvaluator.FEEDBACK_LINES.has(outcome)
+				else ""
+			)
 
 
 func _on_debug_force_happy() -> void:

@@ -224,6 +224,8 @@ func pour_portion() -> Dictionary:
 		serving_recipe = snap.duplicate(true)
 	else:
 		snap = serving_recipe.duplicate(true)
+	Analytics.record_pour(OnboardingManager.stand_for_node(self), serving_recipe, cups_poured > 0)
+	snap = serving_recipe.duplicate(true)
 	# Each cup removes a fixed portion of the FIRST pour's volume, so a
 	# full pitcher (PITCHER_MAX_LIQUID) always yields exactly
 	# PITCHER_MAX_LIQUID / PORTION_SIZE cups. Using the remaining volume
