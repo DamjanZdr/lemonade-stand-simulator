@@ -341,7 +341,6 @@ func _on_wants_to_join(ped: Pedestrian) -> void:
 
 
 const NO_LEMONADE_CONVERT_FACTOR := 0.5
-const LEMONADE_SCAN_RADIUS := 8.0
 
 
 func _convert_chance_for(stand: StandUnit) -> float:
@@ -358,23 +357,23 @@ func _convert_chance_for(stand: StandUnit) -> float:
 	return chance
 
 
-## Any sellable lemonade within reach of this stand? Pitchers with real
-## fruit content count, and so do filled cups left nearby — both mean the
-## player can actually serve the next customer.
+## Does this stand own any sellable lemonade? Pitchers with real fruit
+## content count, and so do filled cups — ownership resolves through
+## stand_owner / StandUnit ancestry via stand_for_node, so stock that
+## belongs to a rival stand never counts.
 func _stand_has_lemonade(stand: StandUnit) -> bool:
-	var origin := stand.global_position
 	for node in get_tree().get_nodes_in_group("pitcher"):
 		var pitcher := node as Pitcher
 		if (
 			pitcher != null and pitcher.fruit_count > 0.0 and pitcher.get_liquid_volume() > 0.0
-			and pitcher.global_position.distance_to(origin) <= LEMONADE_SCAN_RADIUS
+			and OnboardingManager.stand_for_node(pitcher) == stand
 		):
 			return true
 	for node in get_tree().get_nodes_in_group("container"):
 		var cup := node as Cup
 		if (
 			cup != null and float(cup.recipe.get("fruit_count", 0.0)) > 0.0
-			and cup.global_position.distance_to(origin) <= LEMONADE_SCAN_RADIUS
+			and OnboardingManager.stand_for_node(cup) == stand
 		):
 			return true
 	return false

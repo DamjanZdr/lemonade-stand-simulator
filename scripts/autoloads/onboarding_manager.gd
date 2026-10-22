@@ -192,7 +192,7 @@ const TASKS: Array[Dictionary] = [
 	},
 	{
 		"id": "demo_set_price",
-		"text": "On the price board next to your stand, {change the lemonade price to $1.00} — click it, type 1, then press Enter.",
+		"text": "On the price board next to your stand, {change the lemonade price to $1.00} - click it, type 1, then press Enter.",
 		"event": "price_changed",
 		"parts": { "change the lemonade price to $1.00": "lemon" },
 		"value": 1.0,
