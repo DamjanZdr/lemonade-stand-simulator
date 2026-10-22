@@ -340,6 +340,10 @@ func _on_wants_to_join(ped: Pedestrian) -> void:
 	)
 
 
+const NO_LEMONADE_CONVERT_FACTOR := 0.5
+const LEMONADE_SCAN_RADIUS := 8.0
+
+
 func _convert_chance_for(stand: StandUnit) -> float:
 	var chance := Balancing.pedestrian_convert_chance(stand.popularity)
 	if _ensure_people_manager():
@@ -347,7 +351,33 @@ func _convert_chance_for(stand: StandUnit) -> float:
 	var marketing_bonus: float = UpgradeManager.get_effect_total("marketing")
 	if marketing_bonus > 0.0:
 		chance = clampf(chance + marketing_bonus, 0.0, 1.0)
+	# A stand with no lemonade to sell only frustrates customers — halve
+	# conversions until the player has stock near the stand again.
+	if chance > 0.0 and not _stand_has_lemonade(stand):
+		chance *= NO_LEMONADE_CONVERT_FACTOR
 	return chance
+
+
+## Any sellable lemonade within reach of this stand? Pitchers with real
+## fruit content count, and so do filled cups left nearby — both mean the
+## player can actually serve the next customer.
+func _stand_has_lemonade(stand: StandUnit) -> bool:
+	var origin := stand.global_position
+	for node in get_tree().get_nodes_in_group("pitcher"):
+		var pitcher := node as Pitcher
+		if (
+			pitcher != null and pitcher.fruit_count > 0.0 and pitcher.get_liquid_volume() > 0.0
+			and pitcher.global_position.distance_to(origin) <= LEMONADE_SCAN_RADIUS
+		):
+			return true
+	for node in get_tree().get_nodes_in_group("container"):
+		var cup := node as Cup
+		if (
+			cup != null and float(cup.recipe.get("fruit_count", 0.0)) > 0.0
+			and cup.global_position.distance_to(origin) <= LEMONADE_SCAN_RADIUS
+		):
+			return true
+	return false
 
 
 var _people_manager: Node = null
