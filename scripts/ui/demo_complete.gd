@@ -43,6 +43,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_stand_progress(stand: StandUnit, progress: Dictionary) -> void:
 	if stand == null:
 		return
+	# Before the host's first state push, a client's stand carries default
+	# progress — treating it as "not done" then flipping to done on sync
+	# would pop this screen for a stand that completed long before join.
+	if not stand.has_authoritative_state():
+		return
 	var key := stand.name
 	var done: bool = (
 		not progress.get("skipped", false)

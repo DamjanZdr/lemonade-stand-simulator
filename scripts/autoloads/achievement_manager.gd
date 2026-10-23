@@ -20,6 +20,25 @@ const ACH_HE_WAS_HERE := "ACH_HE_WAS_HERE"
 ## Achievements already unlocked this session so we don't spam Steam.
 var _unlocked: Dictionary = { }
 
+## Per-stand stat baselines recorded when a client joins mid-game —
+## thresholds are checked against progress made *since* the baseline so a
+## late joiner doesn't instantly inherit every achievement the host
+## already earned before they were present.
+var _stand_baselines: Dictionary = { }
+
+
+func set_stand_baseline(stand: StandUnit) -> void:
+	if stand == null:
+		return
+	_stand_baselines[stand.get_instance_id()] = {
+		"spent": stand.total_money_spent,
+		"cups": stand.total_cups_sold,
+		"sales": stand.total_money_earned_from_sales,
+		"happy": stand.customers_served_happy,
+		"pressed": stand.total_fruit_pressed,
+		"perfect": stand.perfect_recipes_set.keys(),
+	}
+
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
@@ -49,27 +68,39 @@ func check_stand_thresholds(stand: StandUnit) -> void:
 		]
 	)
 
-	if stand.total_money_spent >= 10.0:
+	var base: Dictionary = _stand_baselines.get(stand.get_instance_id(), { })
+	var spent: float = stand.total_money_spent - float(base.get("spent", 0.0))
+	var cups: int = stand.total_cups_sold - int(base.get("cups", 0))
+	var sales: float = (stand.total_money_earned_from_sales - float(base.get("sales", 0.0)))
+	var happy: int = stand.customers_served_happy - int(base.get("happy", 0))
+	var pressed: int = stand.total_fruit_pressed - int(base.get("pressed", 0))
+	var base_perfect: Array = base.get("perfect", [])
+	var new_perfect := false
+	for fruit in stand.perfect_recipes_set:
+		if not base_perfect.has(fruit):
+			new_perfect = true
+
+	if spent >= 10.0:
 		_unlock(ACH_START_SPENDING)
-	if stand.total_fruit_pressed > 0:
+	if pressed > 0:
 		_unlock(ACH_SQUEEZE_EM)
-	if stand.total_cups_sold >= 1:
+	if cups >= 1:
 		_unlock(ACH_FIRST_CUSTOMER)
-	if stand.total_cups_sold >= 10:
+	if cups >= 10:
 		_unlock(ACH_DOUBLE_DIGITS)
-	if stand.total_cups_sold >= 30:
+	if cups >= 30:
 		_unlock(ACH_SALES_EXPERT)
-	if stand.total_cups_sold >= 100:
+	if cups >= 100:
 		_unlock(ACH_ENTREPRENEUR)
-	if stand.total_money_earned_from_sales >= 20.0:
+	if sales >= 20.0:
 		_unlock(ACH_POCKET_CHANGE)
-	if stand.total_money_earned_from_sales >= 50.0:
+	if sales >= 50.0:
 		_unlock(ACH_SPARE_MONEY)
-	if stand.total_money_earned_from_sales >= 200.0:
+	if sales >= 200.0:
 		_unlock(ACH_DO_YOU_HAVE_A_PERMIT)
-	if stand.customers_served_happy >= 1:
+	if happy >= 1:
 		_unlock(ACH_HAPPY_BEGINNING)
-	if stand.perfect_recipes_set.has("lemon"):
+	if new_perfect and stand.perfect_recipes_set.has("lemon"):
 		_unlock(ACH_GOLDEN_SHOWER)
 
 

@@ -63,6 +63,11 @@ var recipes: Dictionary = { }
 var ice_degrees_per_scoop: float = 4.0
 ## Synchronized and persisted stand-owned tutorial/mastery state.
 var onboarding_progress: Dictionary = { }
+## True once this peer holds authoritative stand data — always for the
+## host/solo, for clients only after the first _apply_state push. Used to
+## keep join-time state replay from re-triggering announcements, demo
+## completion, and achievements the joiner wasn't present for.
+var _received_authoritative_state: bool = false
 var stand_display_name: String = ""
 
 ## Mirrors UpgradeManager.purchased_nodes (node_name -> true) for this
@@ -229,6 +234,7 @@ func _apply_state(
 ) -> void:
 	if is_multiplayer_authority():
 		return # Host already has correct values; don't overwrite
+	var first_apply := not _received_authoritative_state
 	var changed_money := not is_equal_approx(money, new_money)
 	var changed_pop := not is_equal_approx(popularity, new_popularity)
 	var changed_tier := feedback_tier != new_feedback_tier
@@ -267,6 +273,7 @@ func _apply_state(
 	onboarding_progress = new_onboarding_progress.duplicate(true)
 	last_day_stats = new_last_day_stats.duplicate(true)
 	lifetime_stats = new_lifetime_stats.duplicate(true)
+	_received_authoritative_state = true
 	# Sync per-stand unlocks. Notify local UI (price/recipe boards) if they changed.
 	var old_unlocks: Dictionary = purchased_upgrade_nodes.duplicate(true)
 	purchased_upgrade_nodes = new_purchased_upgrade_nodes.duplicate(true)
@@ -279,7 +286,7 @@ func _apply_state(
 	OnboardingManager.stand_progress_changed.emit(self, onboarding_progress.duplicate(true))
 	var new_discoveries: Dictionary = onboarding_progress.get("discovered_recipes", { })
 	for fruit in new_discoveries:
-		if not had_onboarding_state or old_discoveries.has(fruit):
+		if first_apply or not had_onboarding_state or old_discoveries.has(fruit):
 			continue
 		var found: Dictionary = new_discoveries[fruit]
 		OnboardingManager.discovery_announced.emit(
@@ -293,7 +300,10 @@ func _apply_state(
 			],
 		)
 	var new_ice_discovery = onboarding_progress.get("discovered_ice_ratio")
-	if had_onboarding_state and old_ice_discovery == null and new_ice_discovery != null:
+	if (
+		not first_apply and had_onboarding_state
+		and old_ice_discovery == null and new_ice_discovery != null
+	):
 		OnboardingManager.discovery_announced.emit(
 			self,
 			"Perfect Ice Ratio Found",
@@ -317,9 +327,13 @@ func _apply_state(
 			GameState.set_recipe(ft, recipes[ft])
 
 	# Every peer checks achievements for its own stand when authoritative
-	# state arrives. This lets joiners unlock achievements for actions the
-	# host performed on their behalf (spending, sales, etc.).
-	AchievementManager.check_stand_thresholds(self)
+	# state arrives. On the first push after joining, the synced totals are
+	# recorded as the baseline instead — only progress made while this
+	# player is present counts toward their unlocks.
+	if first_apply:
+		AchievementManager.set_stand_baseline(self)
+	else:
+		AchievementManager.check_stand_thresholds(self)
 
 
 ## Reset this stand to its pristine starting state. Called when starting a
@@ -448,6 +462,14 @@ func _ready() -> void:
 ## stand state on every EventBus emit.
 func _is_remote_client() -> bool:
 	return multiplayer.has_multiplayer_peer() and not is_multiplayer_authority()
+
+
+## Whether this peer's stand data is authoritative yet. Hosts/solo are
+## authoritative immediately; a multiplayer client only becomes so after
+## the first _apply_state push from the host — signals emitted before
+## that carry default progress and must not drive UI celebrations.
+func has_authoritative_state() -> bool:
+	return _received_authoritative_state or not _is_remote_client()
 
 
 func _on_global_money_changed_bridge(new_amount: float) -> void:
