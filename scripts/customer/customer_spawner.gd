@@ -288,18 +288,16 @@ func get_slot_position(slot_index: int) -> Vector3:
 
 
 ## Cup demand scales with the ordering stand's popularity (0-1000):
-## <=300 -> exactly 1 cup, 301-500 -> 1-2, 501-800 -> 1-3, 800+ -> 1-4.
+## <=500 -> exactly 1 cup, 501-750 -> 1-2, 751+ -> 1-3.
 func _order_cup_range() -> Vector2i:
 	var pop := GameState.popularity
 	if stand != null and is_instance_valid(stand):
 		pop = stand.popularity
-	if pop <= 300.0:
-		return Vector2i(1, 1)
 	if pop <= 500.0:
+		return Vector2i(1, 1)
+	if pop <= 750.0:
 		return Vector2i(1, 2)
-	if pop <= 800.0:
-		return Vector2i(1, 3)
-	return Vector2i(1, 4)
+	return Vector2i(1, 3)
 
 
 func _random_order() -> Dictionary:
