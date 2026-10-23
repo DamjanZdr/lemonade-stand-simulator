@@ -660,6 +660,10 @@ func try_serve(player: Node) -> void:
 
 	if not order.is_empty():
 		# Still waiting on more cups — stay put and refresh what's left.
+		# Each served cup refills patience so multi-cup orders don't time
+		# out while the player mixes a fresh pitcher mid-order.
+		patience = serve_patience_max
+		_refresh_patience_bar(1.0)
 		_show_order()
 		return
 
