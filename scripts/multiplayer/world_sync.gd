@@ -261,6 +261,7 @@ func sync_world_state_to_peer(peer_id: int) -> void:
 func _collect_world_snapshot() -> Dictionary:
 	var containers: Array = []
 	var supply_boxes: Array = []
+	var trash_items: Array = []
 	if get_tree() == null or get_tree().current_scene == null:
 		return { }
 	_ensure_default_objects_registered()
@@ -283,9 +284,13 @@ func _collect_world_snapshot() -> Dictionary:
 			var entry := _serialize_supply_box(node)
 			if entry != null:
 				supply_boxes.append(entry)
+		elif node.is_in_group("trash_item"):
+			var entry := _serialize_trash_item(node)
+			if entry != null:
+				trash_items.append(entry)
 	for id in to_remove:
 		_placed_objects.erase(id)
-	return { "containers": containers, "supply_boxes": supply_boxes }
+	return { "containers": containers, "supply_boxes": supply_boxes, "trash_items": trash_items }
 
 
 ## Ensure default-scene objects (not spawned through WorldSync) are in the
@@ -432,6 +437,28 @@ func _serialize_supply_box(node: Node) -> Dictionary:
 	}
 
 
+func _serialize_trash_item(node: Node) -> Dictionary:
+	var item := node as TrashItem
+	if item == null:
+		return { }
+	var scene_path: String = TrashItem._VARIANT_SCENES.get(item.trash_type, "")
+	if scene_path == "":
+		return { }
+	var net_id := _get_net_id(node)
+	if net_id < 0:
+		net_id = _assign_net_id(node)
+	return {
+		"scene_path": scene_path,
+		"name": item.name,
+		"net_id": net_id,
+		"position": [item.global_position.x, item.global_position.y, item.global_position.z],
+		"rotation": [item.global_rotation.x, item.global_rotation.y, item.global_rotation.z],
+		"trash_type": item.trash_type,
+		"trash_variant": item.trash_variant,
+		"trash_value": item.trash_value,
+	}
+
+
 ## Clients receive the full world snapshot and instantiate all
 ## containers and supply boxes to match the host's world.
 ## Instantiation is chunked across frames — a mid-game world can hold
@@ -461,15 +488,31 @@ func _apply_world_snapshot(snapshot: Dictionary) -> void:
 		if spawned_since_yield >= 12:
 			spawned_since_yield = 0
 			await get_tree().process_frame
+	for entry in snapshot.get("trash_items", []):
+		_spawn_trash_item_from_snapshot(entry, root)
 	GameLog.log(
-		"[WorldSync] Applied world snapshot: %d containers, %d supply boxes"
-		% [snapshot.get("containers", []).size(), snapshot.get("supply_boxes", []).size()]
+		"[WorldSync] Applied world snapshot: %d containers, %d supply boxes, %d trash items"
+		% [
+			snapshot.get("containers", []).size(),
+			snapshot.get("supply_boxes", []).size(),
+			snapshot.get("trash_items", []).size(),
+		]
 	)
 	world_snapshot_applied.emit()
 
 
 func _clear_client_world_objects() -> void:
 	var removed: Dictionary = { }
+	# Trash items are never default-scene objects — the snapshot is the
+	# authoritative list, so every local one can be rebuilt or dropped.
+	for node in get_tree().get_nodes_in_group("trash_item"):
+		if not is_instance_valid(node) or node.is_queued_for_deletion():
+			continue
+		_node_cache.erase(node.name)
+		node.queue_free()
+		var parent := node.get_parent()
+		if parent != null:
+			parent.remove_child(node)
 	for group_name in ["container", "supply_box"]:
 		for node in get_tree().get_nodes_in_group(group_name):
 			if not is_instance_valid(node) or node.is_queued_for_deletion():
@@ -690,6 +733,44 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 		var grid_path_str: String = entry.get("delivery_grid_path", "")
 		if grid_path_str != "":
 			box.set_meta("delivery_grid_path", NodePath(grid_path_str))
+
+
+func _spawn_trash_item_from_snapshot(entry: Dictionary, root: Node) -> void:
+	var scene_path: String = entry.get("scene_path", "")
+	if scene_path == "":
+		return
+	var scene := _get_scene(scene_path)
+	if scene == null:
+		return
+	var item_name: String = entry.get("name", "")
+	var existing := root.get_node_or_null(item_name)
+	if existing != null:
+		var pos0: Array = entry.get("position", [0, 0, 0])
+		existing.global_position = Vector3(pos0[0], pos0[1], pos0[2])
+		return
+	var item := scene.instantiate() as TrashItem
+	if item == null:
+		return
+	item.trash_type = entry.get("trash_type", "trash")
+	item.trash_variant = entry.get("trash_variant", "")
+	item.trash_value = float(entry.get("trash_value", 0.10))
+	item.name = item_name
+	var net_id: int = entry.get("net_id", -1)
+	if net_id >= 0:
+		item.set_meta(NET_ID_META, net_id)
+		_net_id_to_node[net_id] = weakref(item)
+		_node_to_net_id[item] = net_id
+		item.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
+	root.add_child(item)
+	var pos: Array = entry.get("position", [0, 0, 0])
+	var rot: Array = entry.get("rotation", [0, 0, 0])
+	item.global_position = Vector3(pos[0], pos[1], pos[2])
+	item.global_rotation = Vector3(
+		rot[0] if rot.size() > 0 else 0.0,
+		rot[1] if rot.size() > 1 else 0.0,
+		rot[2] if rot.size() > 2 else 0.0,
+	)
+	_node_cache[item.name] = item
 
 
 ## Update an existing supply box from a snapshot entry instead of spawning
