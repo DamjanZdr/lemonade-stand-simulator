@@ -1049,11 +1049,14 @@ func _do_throw(charge: float) -> void:
 		"source_peer_id": _player.get_multiplayer_authority(),
 		"_initial_velocity": aim_dir * force,
 	}
+	# No prediction: ThrownTrash is a host-simulated RigidBody3D — a local
+	# kinematic stand-in couldn't follow the real arc anyway.
 	var body := WorldSync.request_spawn(
 		"res://scenes/objects/thrown_trash.tscn",
 		start_pos,
 		Vector3.ZERO,
 		state,
+		false,
 	) as ThrownTrash
 	if body:
 		body.set_source(_player)

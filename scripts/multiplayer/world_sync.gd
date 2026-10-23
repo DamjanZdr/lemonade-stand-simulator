@@ -817,15 +817,112 @@ func get_world_objects() -> Node:
 	return root.get_node_or_null("WorldObjects")
 
 
+## Meta keys marking a client-side predicted spawn — a purely visual,
+## non-interactive stand-in shown until the host's authoritative spawn
+## arrives (or an expiry timer removes it if the request was rejected).
+const PREDICTED_META := &"_predicted_spawn"
+const PREDICTED_SCENE_META := &"_predicted_scene"
+const PREDICTED_EXPIRE_SEC := 5.0
+var _predict_counter := 0
+
+
 ## Request a spawn from any peer. On the host, spawns directly and returns
-## the node. On a client, sends an RPC to the host to spawn and returns
-## null (the client will receive the replicated object via _spawn_on_clients).
+## the node. On a client, sends an RPC to the host to spawn. With predict
+## (default), the client immediately returns a local non-interactive
+## stand-in so placements feel instant; the real object replaces it when
+## the authoritative spawn arrives via _spawn_on_clients.
 ## All player-placed objects should use this instead of instantiating locally.
-func request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: Dictionary = { }) -> Node:
+func request_spawn(
+	scene_path: String,
+	pos: Vector3,
+	rot: Vector3,
+	state: Dictionary = { },
+	predict: bool = true,
+) -> Node:
 	if is_host():
 		return spawn_networked(scene_path, get_world_objects(), pos, rot, state)
 	_request_host(&"_rpc_request_spawn", [scene_path, pos, rot, state])
+	if predict:
+		return _spawn_predicted(scene_path, pos, rot, state)
 	return null
+
+
+## Client-side optimistic stand-in for a requested spawn. Visual only:
+## all collision/interaction is disabled, it is tagged "ghost" (skipped by
+## snapshots), and it frees itself after PREDICTED_EXPIRE_SEC if the
+## authoritative spawn never arrives (request rejected or dropped).
+func _spawn_predicted(scene_path: String, pos: Vector3, rot: Vector3, state: Dictionary) -> Node:
+	var scene := _get_scene(scene_path)
+	if scene == null:
+		return null
+	var obj := scene.instantiate()
+	var clean_state := state.duplicate()
+	clean_state.erase("_net_groups")
+	clean_state.erase("_net_scale")
+	clean_state.erase("_net_fruit_amounts")
+	clean_state.erase("_net_pitcher_recipe")
+	clean_state.erase("_net_delivery_cell_idx")
+	clean_state.erase("_net_delivery_grid_path")
+	clean_state.erase("_net_place_fx")
+	for key in clean_state:
+		obj.set(key, clean_state[key])
+	obj.name = "predicted_%d" % _predict_counter
+	_predict_counter += 1
+	obj.set_meta(PREDICTED_META, true)
+	obj.set_meta(PREDICTED_SCENE_META, scene_path)
+	obj.add_to_group("ghost")
+	_disable_predicted_collisions(obj)
+	var parent := get_world_objects()
+	if parent == null:
+		parent = get_tree().current_scene
+	parent.add_child(obj)
+	obj.global_position = pos
+	obj.global_rotation = rot
+	var net_scale: Vector3 = state.get("_net_scale", Vector3.ZERO)
+	if net_scale != Vector3.ZERO:
+		obj.scale = net_scale
+	var wr: WeakRef = weakref(obj)
+	get_tree().create_timer(PREDICTED_EXPIRE_SEC).timeout.connect(
+		func():
+			var n: Node = wr.get_ref()
+			if n != null and is_instance_valid(n):
+				n.queue_free(),
+	)
+	return obj
+
+
+func _disable_predicted_collisions(node: Node) -> void:
+	if node is CollisionObject3D:
+		node.collision_layer = 0
+		node.collision_mask = 0
+		if node is Area3D:
+			node.monitoring = false
+			node.monitorable = false
+	for child in node.get_children():
+		_disable_predicted_collisions(child)
+
+
+## Remove the closest predicted stand-in matching a freshly arrived
+## authoritative spawn, so the real object doesn't duplicate it.
+func _consume_predicted(scene_path: String, pos: Vector3) -> void:
+	var world := get_world_objects()
+	if world == null:
+		return
+	var best: Node3D = null
+	var best_dist := 0.75
+	for child in world.get_children():
+		if not child is Node3D:
+			continue
+		if not child.has_meta(PREDICTED_META):
+			continue
+		if child.get_meta(PREDICTED_SCENE_META) != scene_path:
+			continue
+		var d := (child as Node3D).global_position.distance_to(pos)
+		if d < best_dist:
+			best_dist = d
+			best = child
+	if best != null:
+		best.queue_free()
 
 
 @rpc("any_peer", "reliable")
@@ -1902,6 +1999,9 @@ func _spawn_on_clients(
 	_node_cache[obj_name] = obj
 	if net_place_fx and obj is Node3D:
 		play_place_pop(obj as Node3D)
+	# Replace the optimistic stand-in (if this client's request created one)
+	# so the authoritative object doesn't duplicate it.
+	_consume_predicted(scene_path, global_pos)
 	GameLog.log("[WorldSync] Client spawned %s OK scale=%s" % [obj_name, str(obj_scale)])
 
 
