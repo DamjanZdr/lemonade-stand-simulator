@@ -415,6 +415,20 @@ func request_fill_cup(player: Player) -> void:
 	else:
 		_fill_request_pending = true
 		_fill_request_msec = Time.get_ticks_msec()
+		# Optimistic: show the filled cup in hand now — the host's result
+		# either reconciles the recipe or restores the empty cup.
+		var predicted: Dictionary = (
+			serving_recipe.duplicate(true)
+			if not serving_recipe.is_empty()
+			else get_recipe_snapshot()
+		)
+		var pred_color: Color = predicted.get("color", Color(0.0, 0.0, 0.0, -1.0))
+		player.inventory.set_held(
+			HeldItem.CUP_FILLED,
+			{ "recipe": predicted, "fill_predicted": true },
+			_make_filled_cup_mesh(pred_color),
+		)
+		get_tree().create_timer(3.0).timeout.connect(_expire_fill_prediction)
 		var peer_id := player.get_multiplayer_authority()
 		var net_id := WorldSync.get_net_id(self)
 		WorldSync.request_pitcher_fill_cup(peer_id, net_id)
@@ -460,15 +474,44 @@ func _fill_cup_for_player(player: Player) -> void:
 		)
 
 
+## The host never answered a fill request (dropped RPC or silent
+## rejection) — undo the predicted cup so the player isn't stuck with a
+## phantom filled cup the host doesn't know about.
+func _expire_fill_prediction() -> void:
+	if not _fill_request_pending:
+		return
+	_fill_request_pending = false
+	var local := WorldSync.get_local_player() as Player
+	if local == null:
+		return
+	if local.held_item == HeldItem.CUP_FILLED \
+			and local.held_item_data.get("fill_predicted", false):
+		local.inventory.set_held(HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
+
+
 ## Called on the owning client when the host's fill result arrives.
 func apply_fill_cup_result(recipe: Dictionary) -> void:
 	_fill_request_pending = false
-	if recipe.is_empty():
-		return
 	var local := WorldSync.get_local_player() as Player
 	if local == null:
 		local = _find_player_by_peer(multiplayer.get_unique_id())
 	if local == null:
+		return
+	var was_predicted: bool = (
+		local.held_item == HeldItem.CUP_FILLED and local.held_item_data.get("fill_predicted", false)
+	)
+	if recipe.is_empty():
+		# Host rejected the fill — restore the empty cup the prediction
+		# replaced.
+		if was_predicted:
+			local.inventory.set_held(HeldItem.CUP_EMPTY, { }, Cup.make_hand_mesh(false))
+		return
+	if was_predicted:
+		# Confirmation: swap in the authoritative recipe without
+		# re-animating the hand mesh.
+		local.inventory.held_item_data = { "recipe": recipe }
+		local.held_item_data = local.inventory.held_item_data
+		EventBus.held_item_changed.emit(int(local.held_item), local.held_item_data)
 		return
 	var cup_color: Color = recipe.get("color", Color(0.0, 0.0, 0.0, -1.0))
 	local.inventory.set_held(

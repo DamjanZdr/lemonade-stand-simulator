@@ -79,6 +79,9 @@ var _snap_attempts: int = 0
 var _playable_area: Area3D = null
 var _playable_snapped: bool = false
 var _people_manager: Node = null
+## Client-side: recipes of cups optimistically removed from hand while a
+## free-sample serve request is in flight, so a rejected serve restores them.
+var _pending_serve_recipes: Dictionary = { }
 
 var _bubble_viewport: SubViewport = null
 var _bubble_sprite: Sprite3D = null
@@ -679,6 +682,11 @@ func request_serve(peer_id: int, recipe: Dictionary) -> void:
 		var player := WorldSync.get_local_player()
 		if player != null:
 			player.held_item_data["serve_pending"] = true
+			# Optimistic: the cup leaves the hand now; _serve_result
+			# restores it if the host didn't consume it.
+			_pending_serve_recipes[peer_id] = recipe.duplicate(true)
+			player.inventory.clear_held()
+			get_tree().create_timer(3.0).timeout.connect(_expire_pending_serve.bind(peer_id))
 		_request_serve.rpc_id(1, peer_id, recipe)
 
 
@@ -699,12 +707,43 @@ func _request_serve(peer_id: int, recipe: Dictionary) -> void:
 
 @rpc("authority", "reliable")
 func _serve_result(consumed: bool) -> void:
-	var player := WorldSync.get_local_player()
+	var player := WorldSync.get_local_player() as Player
 	if player == null:
 		return
 	player.held_item_data.erase("serve_pending")
-	if consumed and player.held_item == HeldItem.CUP_FILLED:
-		player.inventory.clear_held()
+	var stored: Dictionary = _pending_serve_recipes.get(player.get_multiplayer_authority(), { })
+	_pending_serve_recipes.erase(player.get_multiplayer_authority())
+	if consumed:
+		if player.held_item == HeldItem.CUP_FILLED:
+			player.inventory.clear_held()
+	elif player.held_item == HeldItem.NONE and not stored.is_empty():
+		# Optimistic clear was wrong — put the cup back in hand.
+		var cup_color: Color = stored.get("color", Color(0.0, 0.0, 0.0, -1.0))
+		player.inventory.set_held(
+			HeldItem.CUP_FILLED,
+			{ "recipe": stored },
+			Cup.make_hand_mesh(true, cup_color),
+		)
+
+
+## The serve result never arrived — restore the optimistically-removed
+## cup so it isn't lost to a dropped RPC.
+func _expire_pending_serve(peer_id: int) -> void:
+	if not _pending_serve_recipes.has(peer_id):
+		return
+	var stored: Dictionary = _pending_serve_recipes[peer_id]
+	_pending_serve_recipes.erase(peer_id)
+	var player := WorldSync.get_local_player() as Player
+	if player == null or player.get_multiplayer_authority() != peer_id:
+		return
+	if player.held_item != HeldItem.NONE:
+		return
+	var cup_color: Color = stored.get("color", Color(0.0, 0.0, 0.0, -1.0))
+	player.inventory.set_held(
+		HeldItem.CUP_FILLED,
+		{ "recipe": stored },
+		Cup.make_hand_mesh(true, cup_color),
+	)
 
 
 ## Find a player node by peer ID. Players are named by peer ID under Players/.
