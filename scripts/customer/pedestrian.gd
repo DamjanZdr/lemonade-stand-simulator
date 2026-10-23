@@ -63,7 +63,7 @@ var _pre_stun_anim: String = "Walk"
 var _npc_base_rot: Vector3 = Vector3.ZERO
 
 var _offered_by_player: Node3D = null
-var _offer_patience_max: float = 30.0
+var _offer_patience_max: float = 45.0
 var _offer_patience: float = 0.0
 
 var _facing_target: Basis = Basis.IDENTITY

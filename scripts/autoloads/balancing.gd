@@ -11,7 +11,7 @@ const PRICE_MIN: float = 0.25
 const PRICE_MAX: float = 5.00
 
 # === CUSTOMER PATIENCE ===
-const PATIENCE_BASE: float = 45.0
+const PATIENCE_BASE: float = 67.5
 
 ## Onboarding grace: pedestrians never convert until the stand's first
 ## cup is filled, then the next N conversion attempts succeed
