@@ -38,11 +38,10 @@ extends Resource
 @export var price_max: float = 5.00
 
 
-func get_ideal_sugar_for(fruit_count: float) -> float:
-	## Sugar scales linearly with fruit count.
-	if ideal_fruit_count <= 0:
-		return ideal_sugar
-	return ideal_sugar * (fruit_count / float(ideal_fruit_count))
+func get_ideal_sugar_for(_fruit_count: float) -> float:
+	## Ideal sugar is a fixed per-fruit target — each ingredient is judged
+	## against its own ideal, not scaled by how much fruit was used.
+	return ideal_sugar
 
 
 func get_ideal_water_for(fruit_count: float) -> float:

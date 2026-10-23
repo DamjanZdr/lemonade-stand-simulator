@@ -34,7 +34,7 @@ func _run() -> void:
 		"fruit_type": "lemon",
 		"fruit_count": 1.0,
 		"water": 9.0,
-		"sugar": 2.0,
+		"sugar": 4.0,
 		"ice": 1.0,
 	}
 	var perfect := {
@@ -151,12 +151,21 @@ func _run() -> void:
 		"wrong-order rejection unchanged",
 	)
 	var pedestrian: Node = load("res://scripts/customer/pedestrian.gd").new()
-	var feedback: String = pedestrian._feedback_text(
-		evaluator.evaluate_detailed(first, 15.0, "", true),
-		"lemon",
+	var first_eval: RefCounted = evaluator.evaluate_detailed(first, 15.0, "", true)
+	var feedback: String = pedestrian._feedback_text(first_eval, "lemon")
+	var customer_text: String = evaluator.format_feedback(
+		[
+			{
+				"snapshot": { "fruit_type": "lemon" },
+				"complaints": first_eval.complaints,
+				"fruit_delta": first_eval.fruit_delta,
+				"sugar_delta": first_eval.sugar_delta,
+				"ice_delta": first_eval.ice_delta,
+			},
+		]
 	)
 	check(
-		feedback == "Hmm, " + joined.substr(0, 1).to_lower() + joined.substr(1),
+		feedback == "Hmm, " + customer_text.substr(0, 1).to_lower() + customer_text.substr(1),
 		"free-sample and customer wording match",
 	)
 	pedestrian.free()
