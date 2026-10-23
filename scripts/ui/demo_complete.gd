@@ -54,9 +54,19 @@ func _on_stand_progress(stand: StandUnit, progress: Dictionary) -> void:
 	if done and not _demo_done_seen[key]:
 		_demo_done_seen[key] = true
 		if stand == WorldSync.get_local_stand():
-			# Let the last task's completion moment breathe before the
-			# celebration screen takes over.
-			get_tree().create_timer(5.0).timeout.connect(_show)
+			_schedule_show()
+
+
+## Let the last task's completion moment breathe before the celebration
+## screen takes over. When the board already held the perfect recipe, the
+## final task auto-completes while the "perfect recipe found" discovery
+## overlay is still up — in that case wait for it to finish first, then
+## start the countdown so the two never overlap.
+func _schedule_show() -> void:
+	while EventBus.announcement_open:
+		await get_tree().create_timer(0.25).timeout
+	await get_tree().create_timer(5.0).timeout
+	_show()
 
 
 func _show(debug: bool = false) -> void:
