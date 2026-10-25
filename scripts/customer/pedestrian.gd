@@ -878,7 +878,10 @@ func _build_order_bubble() -> void:
 	_bubble_viewport = SubViewport.new()
 	_bubble_viewport.name = "OrderBubbleViewport"
 	_bubble_viewport.transparent_bg = true
-	_bubble_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# Only render while the bubble sprite is actually showing — with
+	# ~20 NPCs live, UPDATE_ALWAYS was dozens of hidden viewport passes
+	# every frame for no benefit.
+	_bubble_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	_bubble_viewport.disable_3d = true
 	_bubble_viewport.size = Vector2i(64, 64)
 	add_child(_bubble_viewport)
