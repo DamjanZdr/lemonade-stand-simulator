@@ -28,6 +28,13 @@ var _started_utc := ""
 var _fps_sum := 0.0
 var _fps_samples := 0.0
 var _fps_low := 0.0
+# Peak resource monitors — sampled once a second so a memory/node leak
+# that ends in a hard freeze still leaves a growth signature in the
+# last checkpoint.
+var _peak_mem_mb := 0.0
+var _peak_nodes := 0
+var _peak_objects := 0
+var _peak_vram_mb := 0.0
 var _max_players := 1
 var _participants := 1
 var _clicks: Dictionary = { }
@@ -118,6 +125,16 @@ func _process(delta: float) -> void:
 		if _match_id == "" and multiplayer.has_multiplayer_peer() and multiplayer.get_peers().has(1):
 			_request_match.rpc_id(1, session_id)
 		_capture()
+		_peak_mem_mb = maxf(
+			_peak_mem_mb,
+			Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0,
+		)
+		_peak_nodes = maxi(_peak_nodes, int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)))
+		_peak_objects = maxi(_peak_objects, int(Performance.get_monitor(Performance.OBJECT_COUNT)))
+		_peak_vram_mb = maxf(
+			_peak_vram_mb,
+			Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+		)
 	if _critical_dirty:
 		_change_clock += delta
 	if (
@@ -755,6 +772,12 @@ func _payload(reason: String) -> Dictionary:
 		"stand_reports": _host_stands.values().duplicate(true) if _role == "host" else [],
 		"clicks": _clicks.duplicate(true),
 		"achievements": AchievementManager.get_unlocked_ids(),
+		"peaks": {
+			"mem_mb": _peak_mem_mb,
+			"nodes": _peak_nodes,
+			"objects": _peak_objects,
+			"vram_mb": _peak_vram_mb,
+		},
 		"avg_fps": _fps_sum / _fps_samples if _fps_samples > 0 else null,
 		"low_fps_percent": 100.0 * _fps_low / _fps_samples if _fps_samples > 0 else null,
 		"fps_sample_seconds": _fps_samples,
