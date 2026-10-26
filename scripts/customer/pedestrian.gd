@@ -86,6 +86,7 @@ var _pending_serve_recipes: Dictionary = { }
 var _bubble_viewport: SubViewport = null
 var _bubble_sprite: Sprite3D = null
 var _ui_label: Label = null
+var _prompt_label: RichTextLabel = null
 var _prompt_active := false
 var _ui_panel: Panel = null
 var _patience_circle: Sprite3D = null
@@ -101,6 +102,7 @@ const _OFFER_TEXT := "A free lemonade? Sure, I would love that!"
 const BUBBLE_UI_SCALE: float = 4.0
 const BUBBLE_PIXEL_SIZE: float = 0.0013
 const BUBBLE_LOCAL_POS := Vector3(0.0, 1.3, 0.0)
+const MOUSE_ICON_PATH := "res://assets/textures/ui/upgrades/mouse indicator.png"
 
 ## Set by WorldSync spawn state before _ready(). Forwarded to NPCBody
 ## so all peers see the same hair/clothing/gender.
@@ -862,6 +864,8 @@ func _show_order_text(text: String) -> void:
 	if _ui_label == null:
 		return
 	_prompt_active = false
+	if _prompt_label:
+		_prompt_label.visible = false
 	_ui_label.text = text
 	_ui_label.visible = true
 	if text != "" and _npc != null:
@@ -929,6 +933,22 @@ func _build_order_bubble() -> void:
 	_ui_label.add_theme_constant_override("outline_size", int(2 * BUBBLE_UI_SCALE))
 	_ui_label.visible = false
 	_ui_panel.add_child(_ui_label)
+
+	# Interact prompt — same panel, but a RichTextLabel so it can carry
+	# the LMB mouse icon inline like the HUD hints do.
+	_prompt_label = RichTextLabel.new()
+	_prompt_label.name = "PromptLabel"
+	_prompt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_prompt_label.bbcode_enabled = true
+	_prompt_label.fit_content = true
+	_prompt_label.scroll_active = false
+	_prompt_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_prompt_label.add_theme_font_size_override("normal_font_size", int(12 * BUBBLE_UI_SCALE))
+	_prompt_label.add_theme_font_size_override("bold_font_size", int(12 * BUBBLE_UI_SCALE))
+	_prompt_label.add_theme_constant_override("outline_size", int(2 * BUBBLE_UI_SCALE))
+	_prompt_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_prompt_label.visible = false
+	_ui_panel.add_child(_prompt_label)
 
 	_bubble_sprite = Sprite3D.new()
 	_bubble_sprite.name = "OrderBubble"
@@ -1009,11 +1029,16 @@ func _apply_ui_tonemap_comp(sprite: Sprite3D, exposure: float = 1.0) -> void:
 func _resize_order_panel() -> void:
 	if _ui_panel == null or _ui_label == null:
 		return
-	var label_size := _ui_label.get_combined_minimum_size()
+	var content: Control = _prompt_label \
+			if _prompt_label != null and _prompt_label.visible else _ui_label
+	var label_size := content.get_combined_minimum_size()
 	var pad := Vector2(8, 4) * BUBBLE_UI_SCALE
 	_ui_panel.size = label_size + pad * 2
 	_ui_label.position = pad
 	_ui_label.size = label_size
+	if _prompt_label:
+		_prompt_label.position = pad
+		_prompt_label.size = label_size
 	# The label already renders at BUBBLE_UI_SCALE× font size, so the
 	# viewport matches the panel one-to-one.
 	if _bubble_viewport != null:
@@ -1029,6 +1054,8 @@ func _hide_order_bubble() -> void:
 		_ui_panel.visible = false
 	if _ui_label:
 		_ui_label.visible = false
+	if _prompt_label:
+		_prompt_label.visible = false
 	if _bubble_sprite:
 		_bubble_sprite.visible = false
 
@@ -1044,14 +1071,18 @@ func show_interact_prompt(player: Node) -> void:
 		return
 	var who := npc_display_name()
 	var p := player as Player
+	var action: String
 	if p != null and p.held_item == HeldItem.CUP_FILLED:
-		_ui_label.text = "Serve %s lemonade" % who if who != "" else "Serve lemonade"
+		action = "serve %s lemonade" % who if who != "" else "serve lemonade"
 	elif who != "":
-		_ui_label.text = "Talk to %s" % who
+		action = "talk to %s" % who
 	else:
-		_ui_label.text = "Offer free lemonade"
+		action = "offer free lemonade"
+	var icon_h := int(14 * BUBBLE_UI_SCALE)
+	_prompt_label.text = "[img=%d]%s[/img] %s" % [icon_h, MOUSE_ICON_PATH, action]
 	_prompt_active = true
-	_ui_label.visible = true
+	_ui_label.visible = false
+	_prompt_label.visible = true
 	_resize_order_panel()
 
 
