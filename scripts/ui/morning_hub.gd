@@ -285,7 +285,7 @@ func _ready() -> void:
 	_build_closed_overlay()
 	# Editor/debug builds (or `--dev` launch flag) skip the demo gate so
 	# upgrades stay testable without shipping them in the release demo.
-	if DEMO_DISABLE_UPGRADES and not (OS.is_debug_build() or "--dev" in OS.get_cmdline_user_args()):
+	if _demo_upgrades_blocked():
 		_build_demo_upgrades_overlay()
 	# Exit button along the bottom edge — the HUD is hidden while the hub
 	# is open, so this lives inside the computer screen itself. Clicking it
@@ -1090,7 +1090,7 @@ func _buy_tree_upgrade(
 ) -> void:
 	var data := UpgradeManager.get_node_data(id)
 	# Demo build: upgrades are disabled entirely.
-	if DEMO_DISABLE_UPGRADES:
+	if _demo_upgrades_blocked():
 		_status_lbl.text = "Not Available in Demo"
 		_animate_status(true)
 		return
@@ -1928,6 +1928,14 @@ func _on_tab_unhover(_step_pc: PanelContainer, tab: String) -> void:
 	if tab == _active_tab:
 		return
 	_update_flow_indicator()
+
+
+## True when the demo should block upgrades — release builds without the
+## `--dev` flag. Editor/debug runs and `--dev` launches keep them open.
+func _demo_upgrades_blocked() -> bool:
+	return (
+		DEMO_DISABLE_UPGRADES and not (OS.is_debug_build() or "--dev" in OS.get_cmdline_user_args())
+	)
 
 
 ## Demo overlay over the Upgrades page: semi-transparent so the tree stays
