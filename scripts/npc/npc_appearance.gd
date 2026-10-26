@@ -55,6 +55,9 @@ const SKIN_COLOR_MAP: Dictionary = {
 	"olive": Color(0.70, 0.54, 0.38),
 	"brown": Color(0.48, 0.33, 0.21),
 	"dark": Color(0.29, 0.19, 0.13),
+	# Special skins for specific roster NPCs (not human tones).
+	"orange": Color(0.95, 0.55, 0.15),
+	"blue": Color(0.25, 0.45, 0.95),
 }
 
 const CLOTH_COLOR_MAP: Dictionary = {

@@ -83,7 +83,7 @@ Bob the Buyer | m | 1 | white | fair | blue | tan | tan | 1.04 | 1.03
 Peace Drinker | f | 5 | white | tan | pink | navy | charcoal | 1.01 | 1.06
 Ieatfloortiles | m | 4 | white | olive | lime | charcoal | charcoal | 1.05 | 1.07
 Billy Bob | m | 2 | auburn | fair | red | blue | tan | 0.96 | 1.02
-Demitrius Demarcus Bartholemew James George Junior III | m | 3 | auburn | brown | purple | navy | charcoal | 1.04 | 1.06
+amDani | m | 2 | black | orange | grey | blue | tan | 1.0 | 1.0
 Smop Smingle | m | 1 | white | pale | orange | charcoal | tan | 1.04 | 1.01
 Johnny Mcjohnington | m | 5 | white | fair | navy | tan | charcoal | 0.96 | 0.93
 Connor Wilson | m | 2 | grey | fair | green | blue | tan | 1.06 | 0.95
@@ -129,7 +129,7 @@ Vedinad | m | 1 | black | brown | grey | blue | tan | 0.94 | 0.94
 Professor Ludwig | m | 4 | dark_brown | fair | charcoal | charcoal | charcoal | 0.95 | 0.93
 CaseOh | m | 2 | dark_brown | fair | charcoal | tan | charcoal | 1.06 | 1.10
 Sketch | m | 3 | brown | fair | grey | blue | charcoal | 1.01 | 1.12
-DaniDev | m | 2 | brown | fair | orange | charcoal | charcoal | 0.94 | 1.06
+DaniDev | m | 2 | brown | blue | white | brown | charcoal | 0.94 | 1.06
 Karlson | m | 1 | dark_brown | fair | orange | navy | charcoal | 1.02 | 0.97
 Erling Haaland | m | 4 | blonde | pale | blue | charcoal | charcoal | 1.07 | 1.00
 Penguinz0 | m | 5 | black | fair | charcoal | charcoal | charcoal | 0.94 | 1.00
