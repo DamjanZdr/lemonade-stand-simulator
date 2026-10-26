@@ -30,7 +30,13 @@ static func open(assistant: Assistant) -> void:
 	var m := AssistantMenu.new()
 	m._assistant = assistant
 	tree.current_scene.add_child(m)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	m._rebuild()
+
+
+func _exit_tree() -> void:
+	if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _ready() -> void:
@@ -63,24 +69,31 @@ func _rebuild() -> void:
 		queue_free()
 		return
 	_clear()
+	# CenterContainer wrapper keeps the panel truly centered regardless of
+	# how tall the contents get.
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(center)
 	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(340, 0)
+	_panel.custom_minimum_size = Vector2(380, 0)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = BG
 	sb.border_color = BORDER
 	sb.set_border_width_all(2)
 	sb.set_corner_radius_all(10)
-	sb.set_content_margin_all(14)
+	sb.set_content_margin_all(18)
 	_panel.add_theme_stylebox_override("panel", sb)
-	_panel.set_anchors_preset(Control.PRESET_CENTER)
-	add_child(_panel)
+	center.add_child(_panel)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 8)
+	vb.add_theme_constant_override("separation", 10)
 	_panel.add_child(vb)
 	var title := Label.new()
 	title.text = "Assistant"
-	title.add_theme_font_size_override("font_size", 20)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
 	vb.add_child(title)
+	vb.add_child(HSeparator.new())
 	if not _assistant.wage_paid:
 		_mode = "pay"
 		_build_pay_view(vb)
@@ -101,12 +114,16 @@ func _rebuild() -> void:
 func _build_pay_view(vb: VBoxContainer) -> void:
 	var info := Label.new()
 	info.text = "Daily wage: $%.2f — pay to start work." % Assistant.WAGE
+	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vb.add_child(info)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
 	vb.add_child(row)
 	var pay := _make_button("Pay $%.2f" % Assistant.WAGE)
+	pay.custom_minimum_size = Vector2(140, 36)
+	pay.add_theme_color_override("font_color", Color(0.45, 0.95, 0.55))
 	var stand := _assistant.assigned_stand
 	pay.disabled = stand == null or stand.money < Assistant.WAGE
 	pay.pressed.connect(
@@ -115,19 +132,26 @@ func _build_pay_view(vb: VBoxContainer) -> void:
 	)
 	row.add_child(pay)
 	var cancel := _make_button("Cancel")
+	cancel.custom_minimum_size = Vector2(140, 36)
 	cancel.pressed.connect(queue_free)
 	row.add_child(cancel)
 
 
 func _build_role_view(vb: VBoxContainer) -> void:
 	var status := Label.new()
-	status.text = ("Task: %s" % ROLE_LABELS.get(_assistant.role, "none"))
+	status.text = ("Current task: %s" % ROLE_LABELS.get(_assistant.role, "none"))
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.add_theme_color_override("font_color", Color(0.7, 0.75, 0.85))
 	vb.add_child(status)
 	for r in Assistant.ROLES:
+		var is_current := _assistant.role == r
 		var label: String = ROLE_LABELS.get(r, r)
-		if _assistant.role == r:
-			label += "  (current)"
+		if is_current:
+			label += "  ✓"
 		var b := _make_button(label)
+		b.custom_minimum_size = Vector2(0, 34)
+		if is_current:
+			b.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
 		var role := r
 		b.pressed.connect(
 			func():
