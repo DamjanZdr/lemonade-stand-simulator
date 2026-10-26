@@ -784,6 +784,7 @@ func _resolve(outcome: String) -> void:
 			# Exact payment — no change owed (payment == price). The stand
 			# earns the full price; payment - price would credit $0.
 			_credit_sale(price + _tip_amount)
+			_notify_tip()
 			_record_customer_served(outcome)
 			# Still show feedback + report evaluations — exact payers are
 			# mastery-eligible transactions just like change-makers.
@@ -954,6 +955,7 @@ func _receive_change_finalized(tendered_cents: int) -> void:
 	_last_tendered_cents = tendered_cents
 	var earned := float(roundi(_payment_amount * 100.0) - tendered_cents) / 100.0
 	_credit_sale(earned + _tip_amount)
+	_notify_tip()
 	_record_customer_served(_outcome)
 	_leave_after_change()
 
@@ -1009,6 +1011,22 @@ func _start_leaving() -> void:
 	_npc.play_anim("Walk")
 	EventBus.customer_left.emit(self, _outcome)
 	sync_state(CustomerState.LEAVING, "Walk")
+
+
+func _notify_tip() -> void:
+	## Let the serving peer's HUD know a regular left a tip.
+	if _tip_amount <= 0.0:
+		return
+	var who := npc_display_name()
+	if _serving_peer_id == multiplayer.get_unique_id():
+		EventBus.npc_tip_earned.emit(_tip_amount, who)
+	elif _serving_peer_id != 0:
+		_tip_notify.rpc_id(_serving_peer_id, _tip_amount, who)
+
+
+@rpc("authority", "reliable")
+func _tip_notify(amount: float, who: String) -> void:
+	EventBus.npc_tip_earned.emit(amount, who)
 
 
 func _compute_tip() -> float:
@@ -1466,6 +1484,14 @@ func _hide_order_bubble() -> void:
 ## Shows a world-space "Talk to X" prompt where the dialogue bubble
 ## appears, driven by the interactable's highlight. Local-only — never
 ## synced, so it can't fight the order bubble on other peers.
+func _is_regular() -> bool:
+	## True when this NPC's perfect-cup counter is maxed for this stand.
+	if stand == null or npc_id < 0:
+		return false
+	var entry: Dictionary = stand.get_npc_collection().get(npc_id, { })
+	return float(entry.get("affinity", 0.0)) >= 10.0
+
+
 func show_interact_prompt(player: Node) -> void:
 	if _prompt_active or _ui_label == null or _ui_panel == null:
 		return
@@ -1481,6 +1507,8 @@ func show_interact_prompt(player: Node) -> void:
 		action = "talk to %s" % who
 	else:
 		action = "take order"
+	if _is_regular():
+		action += "  [color=#e84855]♥[/color]"
 	var icon_h := int(9 * BUBBLE_UI_SCALE)
 	var icon: Texture2D = load(MOUSE_ICON_PATH)
 	var icon_w := int(icon_h * float(icon.get_width()) / float(icon.get_height()))

@@ -1070,6 +1070,16 @@ func _hide_order_bubble() -> void:
 ## Shows a world-space "Talk to X" prompt where the dialogue bubble
 ## appears, driven by the interactable's highlight. Local-only — never
 ## synced, so it can't fight the order bubble on other peers.
+func _is_regular(p: Node) -> bool:
+	## True when this NPC's perfect-cup counter is maxed for the
+	## interacting player's stand.
+	var s: Node = p.get("assigned_stand") if p != null else null
+	if s == null or npc_id < 0:
+		return false
+	var entry: Dictionary = s.get_npc_collection().get(npc_id, { })
+	return float(entry.get("affinity", 0.0)) >= 10.0
+
+
 func show_interact_prompt(player: Node) -> void:
 	if _prompt_active or _ui_label == null or _ui_panel == null:
 		return
@@ -1085,6 +1095,8 @@ func show_interact_prompt(player: Node) -> void:
 		action = "talk to %s" % who
 	else:
 		action = "offer free lemonade"
+	if _is_regular(p):
+		action += "  [color=#e84855]♥[/color]"
 	var icon_h := int(9 * BUBBLE_UI_SCALE)
 	var icon: Texture2D = load(MOUSE_ICON_PATH)
 	var icon_w := int(icon_h * float(icon.get_width()) / float(icon.get_height()))

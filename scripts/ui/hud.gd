@@ -558,6 +558,7 @@ func _connect_signals() -> void:
 	EventBus.throw_charge_changed.connect(_on_throw_charge)
 	OnboardingManager.stand_progress_changed.connect(_on_onboarding_progress)
 	OnboardingManager.discovery_announced.connect(_on_discovery)
+	EventBus.npc_tip_earned.connect(_on_npc_tip)
 	_build_throw_charge_bar()
 
 
@@ -938,6 +939,18 @@ func _show_money_gain(amount: float, new_total: float) -> void:
 			_money_label.text = "$%.2f" % new_total
 			_update_hud_size(),
 	)
+
+
+func _on_npc_tip(amount: float, npc_name: String) -> void:
+	## Regular-customer tip toast — sits just below the popularity bar.
+	if _main_panel == null or _pop_panel == null:
+		return
+	var text := "%s tipped +$%.2f" % [npc_name if npc_name != "" else "Regular", amount]
+	var lbl := _make_label(text, 26, AMATIC_FONT, Color(1.0, 0.75, 0.3))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var start_pos := Vector2(8.0, _pop_panel.offset_top + POP_BAR_HEIGHT + 8.0)
+	_main_panel.add_child(lbl)
+	_animate_floating_label(lbl, start_pos, 20.0)
 
 
 func _show_popularity_change(delta: float) -> void:
