@@ -48,25 +48,39 @@ const HAIR_COLOR_MAP: Dictionary = {
 	"white": Color(0.92, 0.92, 0.90),
 }
 
-## Fat system: X/Z widen per bone, weighted by where fat actually sits.
-## Values are fractions of FAT_MAX_WIDTH applied at fat=1.0.
-const FAT_BONE_WEIGHTS: Dictionary = {
-	"LowerBack": 1.0,
-	"UpperBack": 0.55,
-	"UpperBack.001": 0.25,
-	"UpperArm.L": 0.45,
-	"UpperArm.R": 0.45,
-	"Forearm.L": 0.30,
-	"Forearm.R": 0.30,
-	"Thigh.L": 0.60,
-	"Thigh.R": 0.60,
-	"Shin.L": 0.35,
-	"Shin.R": 0.35,
+## Fat system: TARGET NET X/Z width per bone at fat=1.0 — each bone's
+## local scale is derived as target / parent-net, so fat tapers off
+## along the chain instead of compounding (belly widest, chest less,
+## shins least). Order matters: parents must come before children.
+const FAT_BONE_ORDER: Array[String] = [
+	"LowerBack",
+	"UpperBack",
+	"UpperBack.001",
+	"UpperArm.L",
+	"Forearm.L",
+	"UpperArm.R",
+	"Forearm.R",
+	"Thigh.L",
+	"Shin.L",
+	"Thigh.R",
+	"Shin.R",
+]
+const FAT_TARGET_WIDTH: Dictionary = {
+	"LowerBack": 1.7,
+	"UpperBack": 1.3,
+	"UpperBack.001": 1.35,
+	"UpperArm.L": 1.25,
+	"UpperArm.R": 1.25,
+	"Forearm.L": 1.2,
+	"Forearm.R": 1.2,
+	"Thigh.L": 1.4,
+	"Thigh.R": 1.4,
+	"Shin.L": 1.2,
+	"Shin.R": 1.2,
 }
 ## Bones whose net scale must stay ~1 — they counter-scale against the
 ## fat their ancestors accumulated (head/hands/feet look wrong fat).
 const FAT_PROTECTED_BONES: Array[String] = ["Neck", "Hand.L", "Hand.R", "Foot.L", "Foot.R"]
-const FAT_MAX_WIDTH := 0.8
 const BoneScaler := preload("res://scripts/npc/npc_bone_scaler.gd")
 
 const SKIN_COLOR_MAP: Dictionary = {
@@ -677,14 +691,24 @@ func _apply_body_bones(fat: float, head_scale: float) -> void:
 		scaler.name = "NpcBoneScaler"
 		skel.add_child(scaler)
 	scaler.clear()
-	# Fat zones: widen on X/Z only.
-	var applied: Dictionary = { }
-	for bone_name in FAT_BONE_WEIGHTS:
-		var s: float = 1.0 + fat * float(FAT_BONE_WEIGHTS[bone_name]) * FAT_MAX_WIDTH
-		scaler.set_bone_scale(bone_name, Vector3(s, 1.0, s))
+	# Fat zones: each bone's local X/Z scale = its target net width
+	# divided by the net width its parent already accumulated.
+	var applied: Dictionary = { } # bone_idx -> net X/Z Vector2
+	for bone_name in FAT_BONE_ORDER:
 		var idx := skel.find_bone(bone_name)
-		if idx >= 0:
-			applied[idx] = Vector2(s, s)
+		if idx < 0:
+			continue
+		var net := Vector2.ONE
+		var p := skel.get_bone_parent(idx)
+		while p >= 0:
+			net *= applied.get(p, Vector2.ONE)
+			p = skel.get_bone_parent(p)
+		var target: float = 1.0 \
+				+ (float(FAT_TARGET_WIDTH[bone_name]) - 1.0) * fat
+		var local_x := target / net.x
+		var local_z := target / net.y
+		scaler.set_bone_scale(bone_name, Vector3(local_x, 1.0, local_z))
+		applied[idx] = Vector2(target, target)
 	# Protected bones divide out the fat their ancestors accumulated so
 	# their net scale stays at the desired size. "Head" also carries the
 	# roster head_scale factor.
