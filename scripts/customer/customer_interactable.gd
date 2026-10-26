@@ -26,21 +26,20 @@ func interact(player: Node) -> void:
 
 func set_highlight(on: bool) -> void:
 	_clear_highlight_outlines()
+	var customer := get_parent() as Customer
 	if on:
 		_apply_outline(get_parent(), true)
+		if customer != null and customer.state == Customer.CustomerState.WAITING:
+			customer.show_interact_prompt(WorldSync.get_local_player())
+	elif customer != null:
+		customer.hide_interact_prompt()
 
 
 func get_hint(player: Node) -> String:
 	var customer := get_parent() as Customer
 	if customer == null or customer.state != Customer.CustomerState.WAITING:
 		return ""
-	# Named roster NPCs introduce themselves through the hint — the
-	# bubble itself stays nameless.
-	var who: String = customer.npc_display_name()
 	var p := player as Player
 	if p != null and p.held_item == HeldItem.CUP_FILLED:
-		return "%s | LMB: serve lemonade" % who if who != "" \
-				else "Customer | LMB: serve lemonade"
-	if who != "":
-		return "%s | LMB: talk" % who
-	return ""
+		return "Customer | LMB: serve lemonade"
+	return "Customer | LMB: take order"

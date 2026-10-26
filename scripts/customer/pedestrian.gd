@@ -86,6 +86,7 @@ var _pending_serve_recipes: Dictionary = { }
 var _bubble_viewport: SubViewport = null
 var _bubble_sprite: Sprite3D = null
 var _ui_label: Label = null
+var _prompt_active := false
 var _ui_panel: Panel = null
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
@@ -860,6 +861,7 @@ func _resume_walking() -> void:
 func _show_order_text(text: String) -> void:
 	if _ui_label == null:
 		return
+	_prompt_active = false
 	_ui_label.text = text
 	_ui_label.visible = true
 	if text != "" and _npc != null:
@@ -1022,12 +1024,41 @@ func _resize_order_panel() -> void:
 
 
 func _hide_order_bubble() -> void:
+	_prompt_active = false
 	if _ui_panel:
 		_ui_panel.visible = false
 	if _ui_label:
 		_ui_label.visible = false
 	if _bubble_sprite:
 		_bubble_sprite.visible = false
+
+
+## Shows a world-space "Talk to X" prompt where the dialogue bubble
+## appears, driven by the interactable's highlight. Local-only — never
+## synced, so it can't fight the order bubble on other peers.
+func show_interact_prompt(player: Node) -> void:
+	if _prompt_active or _ui_label == null or _ui_panel == null:
+		return
+	# A real dialogue/order bubble is already up — don't stomp it.
+	if _ui_panel.visible:
+		return
+	var who := npc_display_name()
+	var p := player as Player
+	if p != null and p.held_item == HeldItem.CUP_FILLED:
+		_ui_label.text = "Serve %s lemonade" % who if who != "" else "Serve lemonade"
+	elif who != "":
+		_ui_label.text = "Talk to %s" % who
+	else:
+		_ui_label.text = "Offer free lemonade"
+	_prompt_active = true
+	_ui_label.visible = true
+	_resize_order_panel()
+
+
+func hide_interact_prompt() -> void:
+	if not _prompt_active:
+		return
+	_hide_order_bubble()
 
 
 func _refresh_patience_bar(ratio: float) -> void:
