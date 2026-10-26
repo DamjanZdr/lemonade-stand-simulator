@@ -1678,15 +1678,21 @@ func _build_npcs_tab() -> void:
 	title.add_theme_color_override("font_color", Color(0.92, 0.72, 0.22))
 	page.add_child(title)
 
-	var desc := Label.new()
-	desc.text = "Meet everyone who visits your stand. Serve a customer" \
-			+ " 10 perfect cups and they become a regular — regulars leave" \
-			+ " a tip on every sale:" \
-			+ "  common +20% · community +40% · rare +70% · elite +100%"
-	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 12)
-	desc.add_theme_color_override("font_color", Color(0.60, 0.60, 0.66))
+	var desc := RichTextLabel.new()
+	desc.bbcode_enabled = true
+	desc.fit_content = true
+	desc.scroll_active = false
+	desc.add_theme_font_size_override("normal_font_size", 12)
+	desc.add_theme_color_override("default_color", Color(0.60, 0.60, 0.66))
+	var tip_parts: Array[String] = []
+	for rarity in ["common", "community", "rare", "elite"]:
+		var col: Color = NpcRoster.RARITY_NAME_COLORS[rarity]
+		tip_parts.append(
+			"[color=#%s]%s +%d%%[/color]"
+			% [col.to_html(false), rarity, int(NpcRoster.RARITY_TIP_PCT[rarity] * 100.0)],
+		)
+	desc.text = "[center]Serve a customer 10 perfect cups and they" \
+			+ " leave a tip on every sale:  %s[/center]" % " · ".join(tip_parts)
 	page.add_child(desc)
 
 	var header := Label.new()
@@ -1729,7 +1735,11 @@ func _populate_npc_page() -> void:
 		return
 	var stand := _get_local_stand() as StandUnit
 	var collection: Dictionary = (stand.get_npc_collection() if stand != null else { })
-	header.text = "Customers met: %d / %d" % [collection.size(), NpcRoster.size()]
+	var perfected := 0
+	for k in collection:
+		if float((collection[k] as Dictionary).get("affinity", 0.0)) >= 10.0:
+			perfected += 1
+	header.text = "%d / %d / %d" % [perfected, collection.size(), NpcRoster.size()]
 	# Refresh live if the collection changes while the tab is open.
 	if stand != null and not stand.npc_collection_changed.is_connected(_on_npc_collection_changed):
 		stand.npc_collection_changed.connect(_on_npc_collection_changed)
