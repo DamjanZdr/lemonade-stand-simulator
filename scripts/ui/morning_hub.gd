@@ -283,7 +283,10 @@ func _ready() -> void:
 	EventBus.money_changed.connect(_on_money_changed)
 	EventBus.day_time_over.connect(_on_day_time_over)
 	_build_closed_overlay()
-	_build_demo_upgrades_overlay()
+	# Editor/debug builds (or `--dev` launch flag) skip the demo gate so
+	# upgrades stay testable without shipping them in the release demo.
+	if DEMO_DISABLE_UPGRADES and not (OS.is_debug_build() or "--dev" in OS.get_cmdline_user_args()):
+		_build_demo_upgrades_overlay()
 	# Exit button along the bottom edge — the HUD is hidden while the hub
 	# is open, so this lives inside the computer screen itself. Clicking it
 	# exits the computer view, same as pressing ESC.
