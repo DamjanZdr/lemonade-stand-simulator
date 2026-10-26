@@ -141,6 +141,7 @@ var voice_pitch: float = 1.0
 
 
 func _ready() -> void:
+	_base_scale_y = scale.y
 	_check_timer = randf() * 0.2
 	_eye_update_timer = randf() * _EYE_UPDATE_INTERVAL
 	_disable_cast_shadows()
@@ -207,6 +208,9 @@ var _camera_cache: Camera3D = null
 var _is_near_player: bool = false
 var _check_timer: float = 0.0
 var _eye_update_timer: float = 0.0
+## Authored scene scale — captured in _ready so roster height is a
+## multiplier on it (NPCBody imports ~11x oversize, scene compensates).
+var _base_scale_y: float = -1.0
 const _EYE_UPDATE_INTERVAL: float = 0.05
 
 
@@ -602,9 +606,11 @@ func apply_appearance(def: Dictionary) -> void:
 			if color_name != "" and CLOTH_COLOR_MAP.has(color_name):
 				_set_surface_color(body, i, CLOTH_COLOR_MAP[color_name])
 
-	# Height is a subtle Y-scale on the whole body; head gets its own
-	# bone scale so it reads as proportion, not uniform growth.
-	scale.y = clampf(float(def.get("height", 1.0)), 0.85, 1.15)
+	# Height is a subtle Y-scale multiplier — NPCBody's authored scale is
+	# ~0.09 (the model imports ~11x oversize), so multiply, never assign.
+	if _base_scale_y < 0.0:
+		_base_scale_y = scale.y
+	scale.y = _base_scale_y * clampf(float(def.get("height", 1.0)), 0.85, 1.15)
 	var head_scale := clampf(float(def.get("head", 1.0)), 0.85, 1.25)
 	if not is_equal_approx(head_scale, 1.0):
 		var skel := get_active_skeleton()
