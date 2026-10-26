@@ -523,7 +523,6 @@ func _place_cup_on_tray(tray: CupTray) -> void:
 	var cup := WorldSync.request_spawn("res://scenes/objects/cup.tscn", spot, cup_rot, state) as Cup
 	if cup:
 		cup.scale = placement_scale
-		WorldSync.play_place_pop(cup)
 		cup.add_to_group("container")
 		if cup.physics != null:
 			cup.physics.collision_layer = 1
@@ -531,7 +530,13 @@ func _place_cup_on_tray(tray: CupTray) -> void:
 			for child in cup.physics.get_children():
 				if child is CollisionShape3D:
 					child.disabled = false
+		# Seat BEFORE the pop — the pop tween resets scale to ~zero,
+		# which would shrink the measured AABB and zero out the lift.
 		_seat_cup_on(cup, spot.y)
+		# The spawn broadcast carried the unseated marker position —
+		# push the corrected transform so clients see the same seat.
+		WorldSync.sync_move_and_show(cup, cup.global_position, cup.global_rotation, cup.scale, true)
+		WorldSync.play_place_pop(cup)
 
 	_finish_place()
 	_player.inventory.clear_held()

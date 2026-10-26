@@ -632,6 +632,9 @@ func _place_held_cup(spot: Vector3) -> void:
 			cup.physics.collision_layer = 1
 			cup.physics.collision_mask = 1
 		_seat_cup_on(cup, spot.y)
+		# The spawn broadcast carried the unseated marker position —
+		# push the corrected transform so clients see the same seat.
+		WorldSync.sync_move_and_show(cup, cup.global_position, cup.global_rotation, cup.scale, true)
 	_held_recipe = { }
 
 
@@ -665,6 +668,11 @@ func _fill_cup(pitcher: Pitcher) -> void:
 	if not is_instance_valid(pitcher) or pitcher.get_liquid_volume() <= 0.0:
 		return
 	_held_recipe = pitcher.pour_portion()
+	# Player pours reset the drained pitcher via _fill_cup_for_player;
+	# mirror that so assistant-emptied pitchers return to PREPPING and
+	# can go back to the press instead of staying locked as SERVING.
+	if pitcher.is_fully_empty():
+		pitcher._clear_and_return()
 
 
 func _serve_customer(cust: Customer) -> void:

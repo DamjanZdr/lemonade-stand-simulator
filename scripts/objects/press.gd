@@ -390,9 +390,12 @@ func has_snapped_pitcher() -> bool:
 func _pitcher_accepts_fruit_type(itype: String) -> bool:
 	if not has_snapped_pitcher():
 		return false
+	# A fully-drained pitcher is reusable even if cups_poured/SERVING
+	# weren't reset (e.g. drained via a path that skipped _clear_and_return).
 	if _snapped_pitcher.cups_poured > 0 \
 			or _snapped_pitcher.state == Pitcher.PitcherState.SERVING:
-		return false
+		if not _snapped_pitcher.is_fully_empty():
+			return false
 	if _snapped_pitcher.water > 0.0:
 		return false
 	return _snapped_pitcher.fruit_type.is_empty() or _snapped_pitcher.fruit_type == itype
@@ -514,7 +517,8 @@ func get_snap_global_position() -> Vector3:
 
 func _can_press_into_pitcher(pitcher: Pitcher) -> bool:
 	if pitcher.cups_poured > 0 or pitcher.state == Pitcher.PitcherState.SERVING:
-		return false
+		if not pitcher.is_fully_empty():
+			return false
 	if pitcher.get_liquid_volume() + fruit_count > Balancing.PITCHER_MAX_LIQUID:
 		return false
 	## Empty pitcher is always valid.
