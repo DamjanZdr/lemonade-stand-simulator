@@ -851,7 +851,7 @@ func _record_customer_served(outcome: String) -> void:
 	# sync inside StandUnit.on_customer_served() for the primary stand.
 	if stand != null:
 		stand.request_customer_served(outcome, pop_delta, _served_evaluations.size())
-		stand.record_npc_encounter(npc_id, _affinity_delta(outcome))
+		stand.record_npc_encounter(npc_id, _affinity_delta(outcome), _serving_peer_id)
 
 
 ## The bar counts perfect cups: +1 for each clean (zero-complaint) cup,

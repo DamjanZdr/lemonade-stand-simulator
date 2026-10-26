@@ -34,7 +34,6 @@ var _prep_scale: Vector3 = Vector3.ONE
 @onready var _glass_mesh: MeshInstance3D = $pitcher/Cylinder_001
 @onready var _lemonade_eraser: Node3D = $LemonadeFill/LemonadeEraser
 
-var _drop_busy: bool = false # true while a drop animation is playing
 var _eraser_tween: Tween = null
 var _press_eraser_tween: Tween = null
 var _suppress_eraser_updates: bool = false
@@ -324,8 +323,6 @@ func interact(player: Node) -> void:
 			# Deposit scoop from hand (sugar/ice only in COMPLETE state)
 			if p.held_item == HeldItem.SUPPLY_BOX \
 					and p.held_item_data.get("source") == "bin_scoop":
-				if _drop_busy:
-					return
 				var itype: String = p.held_item_data.get("ingredient_type", "")
 				var amount: float = p.held_item_data.get("amount", 0.0)
 				if _is_ingredient_fruit(itype):
@@ -335,8 +332,13 @@ func interact(player: Node) -> void:
 					return
 				if _can_add_ingredient(itype, amount):
 					var start_pos := _get_hand_pos(player)
-					p.inventory.clear_held()
-					_animate_drop(itype, amount, start_pos)
+					# Commit immediately — the drop animation is purely
+					# visual. Deferring add_ingredient() to the end of the
+					# tween re-validated against a possibly-changed state
+					# and could silently eat the scoop.
+					if add_ingredient(itype, amount):
+						p.inventory.clear_held()
+						_animate_drop(itype, start_pos)
 				else:
 					EventBus.interaction_hint_changed.emit(
 						"Cannot add %s! (State: %s, Cups poured: %d)"
@@ -523,12 +525,12 @@ func apply_fill_cup_result(recipe: Dictionary) -> void:
 
 func try_add_ingredient(ingredient_type: String, amount: float) -> bool:
 	## Public entry for press machine / automated addition.
-	## Returns true if the drop animation was started.
-	if _drop_busy:
-		return false
+	## Returns true if the ingredient was committed.
 	if not _can_add_ingredient(ingredient_type, amount):
 		return false
-	_animate_drop(ingredient_type, amount)
+	if not add_ingredient(ingredient_type, amount):
+		return false
+	_animate_drop(ingredient_type)
 	return true
 
 
@@ -740,12 +742,9 @@ func _is_ingredient_fruit(ingredient_type: String) -> bool:
 	return res is IngredientData
 
 
-func _animate_drop(
-	ingredient_type: String,
-	amount: float,
-	from_pos: Vector3 = Vector3.ZERO,
-) -> void:
-	_drop_busy = true
+func _animate_drop(ingredient_type: String, from_pos: Vector3 = Vector3.ZERO) -> void:
+	## Purely cosmetic — the ingredient is already committed before this
+	## runs, so a mid-animation state change can't lose the scoop.
 	var drop_mesh := _make_drop_mesh(ingredient_type)
 	add_child(drop_mesh)
 	if from_pos != Vector3.ZERO:
@@ -754,9 +753,7 @@ func _animate_drop(
 		if tween:
 			tween.finished.connect(
 				func():
-					drop_mesh.queue_free()
-					add_ingredient(ingredient_type, amount)
-					_drop_busy = false,
+					drop_mesh.queue_free(),
 			)
 			return
 	# Fallback: simple vertical drop from above
@@ -767,9 +764,7 @@ func _animate_drop(
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	tween.tween_callback(
 		func():
-			drop_mesh.queue_free()
-			add_ingredient(ingredient_type, amount)
-			_drop_busy = false,
+			drop_mesh.queue_free(),
 	)
 
 

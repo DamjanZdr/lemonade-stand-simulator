@@ -848,7 +848,11 @@ func set_feedback_tier(tier: int) -> void:
 ## "affinity" is a perfect-cup count capped at 10 — a counter, not a
 ## second popularity meter.
 ## Host-authoritative — NPC scripts call this on the host only.
-func record_npc_encounter(npc_id: int, affinity_delta: float = 0.0) -> void:
+func record_npc_encounter(
+	npc_id: int,
+	affinity_delta: float = 0.0,
+	notify_peer_id: int = 0,
+) -> void:
 	if npc_id < 0:
 		return
 	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
@@ -856,14 +860,36 @@ func record_npc_encounter(npc_id: int, affinity_delta: float = 0.0) -> void:
 	var collection := get_npc_collection()
 	var is_new := not collection.has(npc_id)
 	var entry: Dictionary = collection.get(npc_id, { })
+	var old_affinity := float(entry.get("affinity", 0.0))
 	if is_new:
 		entry["order"] = collection.size()
-	entry["affinity"] = clampf(float(entry.get("affinity", 0.0)) + affinity_delta, 0.0, 10.0)
+	entry["affinity"] = clampf(old_affinity + affinity_delta, 0.0, 10.0)
 	collection[npc_id] = entry
 	lifetime_stats["npc_collection"] = collection
+	if old_affinity < 10.0 and float(entry["affinity"]) >= 10.0:
+		_notify_regular_unlocked(npc_id, notify_peer_id)
 	if is_new or affinity_delta != 0.0:
 		npc_collection_changed.emit(collection.duplicate(true))
 		push_state()
+
+
+## An NPC crossed to 10/10 — tell the serving/interacting peer's HUD so
+## only that player sees the "became a regular" toast. Save/load and
+## push_state never call this, so syncs can't spam it.
+func _notify_regular_unlocked(npc_id: int, notify_peer_id: int) -> void:
+	if not NpcRoster.has_id(npc_id):
+		return
+	var who := str(NpcRoster.get_entry(npc_id).get("name", "Someone"))
+	if notify_peer_id == 0 or notify_peer_id == multiplayer.get_unique_id() \
+			or not multiplayer.has_multiplayer_peer():
+		EventBus.npc_regular_unlocked.emit(who)
+	else:
+		_rpc_npc_regular_unlocked.rpc_id(notify_peer_id, who)
+
+
+@rpc("authority", "reliable")
+func _rpc_npc_regular_unlocked(who: String) -> void:
+	EventBus.npc_regular_unlocked.emit(who)
 
 
 ## Debug helper: mark every roster NPC as met (used by the dev panel).

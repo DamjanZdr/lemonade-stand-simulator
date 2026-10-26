@@ -559,6 +559,7 @@ func _connect_signals() -> void:
 	OnboardingManager.stand_progress_changed.connect(_on_onboarding_progress)
 	OnboardingManager.discovery_announced.connect(_on_discovery)
 	EventBus.npc_tip_earned.connect(_on_npc_tip)
+	EventBus.npc_regular_unlocked.connect(_on_npc_regular_unlocked)
 	_build_throw_charge_bar()
 
 
@@ -947,6 +948,18 @@ func _on_npc_tip(amount: float, npc_name: String) -> void:
 		return
 	var text := "%s tipped +$%.2f" % [npc_name if npc_name != "" else "Regular", amount]
 	var lbl := _make_label(text, 26, AMATIC_FONT, Color(1.0, 0.75, 0.3))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var start_pos := Vector2(8.0, _pop_panel.offset_top + POP_BAR_HEIGHT + 8.0)
+	_main_panel.add_child(lbl)
+	_animate_floating_label(lbl, start_pos, 20.0)
+
+
+func _on_npc_regular_unlocked(npc_name: String) -> void:
+	## "Became a regular" toast — same spot as the tip toast.
+	if _main_panel == null or _pop_panel == null:
+		return
+	var text := "%s is now a regular!" % (npc_name if npc_name != "" else "Someone")
+	var lbl := _make_label(text, 26, AMATIC_FONT, Color(1.0, 0.45, 0.55))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var start_pos := Vector2(8.0, _pop_panel.offset_top + POP_BAR_HEIGHT + 8.0)
 	_main_panel.add_child(lbl)

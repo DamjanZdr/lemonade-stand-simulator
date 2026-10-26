@@ -820,7 +820,11 @@ func try_serve(player: Node) -> void:
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "", true)
 	# Free samples count the same way — a clean cup is +1 on their bar.
 	if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
-		p.assigned_stand.record_npc_encounter(npc_id, 1.0 if result.complaints.is_empty() else 0.0)
+		p.assigned_stand.record_npc_encounter(
+			npc_id,
+			1.0 if result.complaints.is_empty() else 0.0,
+			p.get_multiplayer_authority(),
+		)
 	Analytics.record_batch_feedback(
 		p.assigned_stand,
 		recipe,
