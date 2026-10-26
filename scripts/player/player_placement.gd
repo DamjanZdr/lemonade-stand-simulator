@@ -478,6 +478,55 @@ func _place_filled_cup() -> void:
 	EventBus.container_placed.emit("filled_cup", cup)
 
 
+func _place_cup_on_tray(tray: CupTray) -> void:
+	# Snap the held cup (empty or filled) into the tray's first free slot.
+	var spot := tray.free_slot_position()
+	if spot == Vector3.INF:
+		EventBus.interaction_hint_changed.emit("Tray is full!")
+		return
+
+	var filled := _player.held_item == HeldItem.CUP_FILLED
+	var recipe: Dictionary = _player.held_item_data.get("recipe", { })
+	var placement_scale := Vector3.ONE * 0.03
+	var look_dir := _player.global_position - spot
+	look_dir.y = 0
+	var cup_rot := Vector3.ZERO
+	if look_dir.length_squared() > 0.001:
+		cup_rot.y = atan2(look_dir.x, look_dir.z)
+
+	var state: Dictionary = {
+		"state": Cup.CupState.FILLED if filled else Cup.CupState.EMPTY,
+		"_net_groups": ["container"],
+		"_net_scale": placement_scale,
+		"_net_place_fx": true,
+	}
+	if filled:
+		state["recipe"] = recipe
+		state["fill_color"] = recipe.get("color", Color(1.0, 0.9, 0.3, 1.0))
+	var cup := WorldSync.request_spawn("res://scenes/objects/cup.tscn", spot, cup_rot, state) as Cup
+	if cup:
+		cup.scale = placement_scale
+		WorldSync.play_place_pop(cup)
+		cup.add_to_group("container")
+		if cup.physics != null:
+			cup.physics.collision_layer = 1
+			cup.physics.collision_mask = 1
+			for child in cup.physics.get_children():
+				if child is CollisionShape3D:
+					child.disabled = false
+		# Rest the cup's bottom on the slot — the model pivot is not at
+		# its base, so spawning at the marker sinks it into the tray.
+		var mi := cup.find_child("", "MeshInstance3D", true, false) as MeshInstance3D
+		if mi != null and mi.mesh != null:
+			cup.global_position.y -= mi.get_aabb().position.y * cup.scale.y
+
+	_finish_place()
+	_player.inventory.clear_held()
+	AudioManager.play_sfx("taking_cup", spot)
+	EventBus.interaction_hint_changed.emit("Cup placed on tray!")
+	EventBus.container_placed.emit("filled_cup" if filled else "cup", cup)
+
+
 func _place_held_supply_box_on(
 	place_pos: Vector3,
 	place_rot: Vector3 = Vector3.ZERO,

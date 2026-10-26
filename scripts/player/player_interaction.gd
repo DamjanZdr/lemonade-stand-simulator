@@ -272,6 +272,8 @@ func poll_hint() -> void:
 		hint = "Empty Cup | LMB: place cup"
 		if interactable is CupStack:
 			hint = "Empty Cup | LMB: add to stack"
+		if interactable is CupTray:
+			hint = "Empty Cup | LMB: place on tray"
 		var cup_can := _get_looked_at_trashcan()
 		if cup_can != null:
 			hint = cup_can.get_hint(_player)
@@ -284,6 +286,8 @@ func poll_hint() -> void:
 			var has_ped := _player.find_pedestrian_in_ancestors(hit_node) != null
 			if has_customer or has_ped:
 				hint = "Filled Cup | LMB: serve lemonade"
+		if interactable is CupTray:
+			hint = "[%s]\nFilled Cup | LMB: place on tray" % _recipe_hint_string(held_recipe)
 		var filled_can := _get_looked_at_trashcan()
 		if filled_can != null:
 			hint = filled_can.get_hint(_player)
@@ -567,6 +571,10 @@ func primary_interact() -> void:
 			(interactable as WaterTap).interact(_player)
 			_player.last_interact_hit = null
 			return
+		# Snap into a free tray slot
+		if interactable is CupTray:
+			_player.placement._place_cup_on_tray(interactable)
+			return
 		# Place on surface to start new stack
 		if _player.ray.is_colliding() and _player.placement.is_stand_or_workstation_surface(
 				_player.ray.get_collider(),
@@ -581,6 +589,10 @@ func primary_interact() -> void:
 		var filled_trashcan := _get_looked_at_trashcan()
 		if filled_trashcan != null:
 			filled_trashcan.interact(_player)
+			return
+		# Snap into a free tray slot
+		if interactable is CupTray:
+			_player.placement._place_cup_on_tray(interactable)
 			return
 		# First check if looking at a customer or pedestrian to serve.
 		if _player.ray.is_colliding():
