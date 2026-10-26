@@ -815,7 +815,7 @@ func _record_customer_served(outcome: String) -> void:
 		var bought := outcome not in ["timeout", "too_expensive", "wrong_order", "scam"]
 		if bought:
 			stand.day_customers_bought += 1
-			stand.day_revenue += _accumulated_price
+			stand.day_revenue += _accumulated_price + _tip_amount
 		match outcome:
 			"happy":
 				stand.day_happy += 1
