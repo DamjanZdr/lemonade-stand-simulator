@@ -4,10 +4,12 @@
 # Lines starting with # are comments and are ignored.
 #
 # Line format (| separated):
-#   Name | gender | hair | hair_color | skin | shirt | pants | shoes | height | head
+#   Name | gender | hair | hair_color | skin | shirt | pants | shoes | height | head [| fat]
 #
 #   height     : body Y-scale, 0.93-1.08 (subtle; 1.00 = normal)
 #   head       : head bone scale, 0.93-1.12
+#   fat        : optional, 0.0-1.0 body width (belly/limbs widen,
+#                head/hands/feet are compensated back to normal)
 #
 #   gender     : m / f
 #   hair       : hairstyle index 1-5 (per gender)
@@ -127,7 +129,7 @@ Vedinad | m | 1 | black | brown | grey | blue | tan | 0.94 | 0.94
 
 [elite]
 Professor Ludwig | m | 4 | dark_brown | fair | charcoal | charcoal | charcoal | 0.95 | 0.93
-CaseOh | m | 2 | dark_brown | fair | charcoal | tan | charcoal | 1.06 | 1.10
+CaseOh | m | 2 | black | fair | charcoal | charcoal | charcoal | 1.04 | 0.95 | 1.0
 Sketch | m | 3 | brown | fair | grey | blue | charcoal | 1.01 | 1.12
 DaniDev | m | 2 | brown | blue | white | brown | charcoal | 0.94 | 1.06
 Karlson | m | 1 | dark_brown | fair | orange | navy | charcoal | 1.02 | 0.97

@@ -48,6 +48,27 @@ const HAIR_COLOR_MAP: Dictionary = {
 	"white": Color(0.92, 0.92, 0.90),
 }
 
+## Fat system: X/Z widen per bone, weighted by where fat actually sits.
+## Values are fractions of FAT_MAX_WIDTH applied at fat=1.0.
+const FAT_BONE_WEIGHTS: Dictionary = {
+	"LowerBack": 1.0,
+	"UpperBack": 0.55,
+	"UpperBack.001": 0.25,
+	"UpperArm.L": 0.45,
+	"UpperArm.R": 0.45,
+	"Forearm.L": 0.30,
+	"Forearm.R": 0.30,
+	"Thigh.L": 0.60,
+	"Thigh.R": 0.60,
+	"Shin.L": 0.35,
+	"Shin.R": 0.35,
+}
+## Bones whose net scale must stay ~1 — they counter-scale against the
+## fat their ancestors accumulated (head/hands/feet look wrong fat).
+const FAT_PROTECTED_BONES: Array[String] = ["Neck", "Hand.L", "Hand.R", "Foot.L", "Foot.R"]
+const FAT_MAX_WIDTH := 0.8
+const BoneScaler := preload("res://scripts/npc/npc_bone_scaler.gd")
+
 const SKIN_COLOR_MAP: Dictionary = {
 	"pale": Color(0.97, 0.86, 0.73),
 	"fair": Color(0.92, 0.75, 0.60),
@@ -633,17 +654,53 @@ func apply_appearance(def: Dictionary) -> void:
 		_base_scale_y = scale.y
 	scale.y = _base_scale_y * clampf(float(def.get("height", 1.0)), 0.85, 1.15)
 	var head_scale := clampf(float(def.get("head", 1.0)), 0.85, 1.25)
-	if not is_equal_approx(head_scale, 1.0):
-		var skel := get_active_skeleton()
-		var head_idx := skel.find_bone("Head") if skel else -1
-		if head_idx >= 0:
-			skel.set_bone_pose_scale(head_idx, Vector3.ONE * head_scale)
-		else:
+	var fat := clampf(float(def.get("fat", 0.0)), 0.0, 1.0)
+	if not is_equal_approx(head_scale, 1.0) or fat > 0.0:
+		_apply_body_bones(fat, head_scale)
+		if get_active_skeleton() == null:
 			# Fallback: scale the attachment node (affects hair + eyes,
 			# which is most of the visible head anyway).
 			var head_node := _man_head if male else _woman_head
-			if head_node:
+			if head_node and not is_equal_approx(head_scale, 1.0):
 				head_node.scale = Vector3.ONE * head_scale
+
+
+## Installs an NpcBoneScaler on the active skeleton and gives it the
+## fat X/Z scales plus counter-scales for the protected bones.
+func _apply_body_bones(fat: float, head_scale: float) -> void:
+	var skel := get_active_skeleton()
+	if skel == null:
+		return
+	var scaler := skel.get_node_or_null("NpcBoneScaler") as SkeletonModifier3D
+	if scaler == null:
+		scaler = BoneScaler.new()
+		scaler.name = "NpcBoneScaler"
+		skel.add_child(scaler)
+	scaler.clear()
+	# Fat zones: widen on X/Z only.
+	var applied: Dictionary = { }
+	for bone_name in FAT_BONE_WEIGHTS:
+		var s: float = 1.0 + fat * float(FAT_BONE_WEIGHTS[bone_name]) * FAT_MAX_WIDTH
+		scaler.set_bone_scale(bone_name, Vector3(s, 1.0, s))
+		var idx := skel.find_bone(bone_name)
+		if idx >= 0:
+			applied[idx] = Vector2(s, s)
+	# Protected bones divide out the fat their ancestors accumulated so
+	# their net scale stays at the desired size. "Head" also carries the
+	# roster head_scale factor.
+	var protect := FAT_PROTECTED_BONES.duplicate()
+	protect.append("Head")
+	for bone_name in protect:
+		var idx := skel.find_bone(bone_name)
+		if idx < 0:
+			continue
+		var net := Vector2.ONE
+		var p := skel.get_bone_parent(idx)
+		while p >= 0:
+			net *= applied.get(p, Vector2.ONE)
+			p = skel.get_bone_parent(p)
+		var desired := head_scale if bone_name == "Head" else 1.0
+		scaler.set_bone_scale(bone_name, Vector3(desired / net.x, desired, desired / net.y))
 
 
 func _show_hair_index(hairs: Node3D, index: int, color: Color) -> void:

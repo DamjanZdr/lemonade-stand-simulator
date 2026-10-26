@@ -109,7 +109,7 @@ func _load_roster() -> void:
 			tier = line.trim_prefix("[").trim_suffix("]").to_lower()
 			continue
 		var parts := line.split("|")
-		if parts.size() != 10 or tier.is_empty():
+		if (parts.size() < 10 or parts.size() > 11) or tier.is_empty():
 			push_warning("NpcRoster: skipping malformed line '%s'" % line)
 			continue
 		var fields: Array[String] = []
@@ -130,6 +130,7 @@ func _load_roster() -> void:
 				"shoes": fields[7],
 				"height": float(fields[8]),
 				"head": float(fields[9]),
+				"fat": float(fields[10]) if fields.size() > 10 else 0.0,
 			}
 		)
 		_by_tier.get_or_add(tier, []).append(id)
