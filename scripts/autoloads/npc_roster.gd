@@ -52,6 +52,21 @@ func get_entry(npc_id: int) -> Dictionary:
 	return _entries[npc_id]
 
 
+## Looks up a roster id by name — exact case-insensitive match first,
+## then substring ("dani" finds DaniDev). -1 when nothing matches.
+func find_id_by_name(query: String) -> int:
+	var q := query.strip_edges().to_lower()
+	if q.is_empty():
+		return -1
+	for i in _entries.size():
+		if str(_entries[i].get("name", "")).to_lower() == q:
+			return i
+	for i in _entries.size():
+		if str(_entries[i].get("name", "")).to_lower().contains(q):
+			return i
+	return -1
+
+
 ## Picks a roster id that is not in [alive_ids]. -1 when the roster is
 ## empty or every name is currently alive (caller falls back to random).
 func pick_id(alive_ids: Dictionary) -> int:

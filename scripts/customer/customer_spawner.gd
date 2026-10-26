@@ -25,6 +25,7 @@ func set_stand(s: StandUnit) -> void:
 func _ready() -> void:
 	EventBus.customer_left.connect(_on_customer_left)
 	EventBus.debug_force_spawn_customer.connect(_on_debug_force_spawn)
+	EventBus.debug_spawn_npc.connect(_on_debug_spawn_npc)
 	EventBus.debug_set_queue_max.connect(_on_debug_set_queue_max)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 
@@ -109,10 +110,12 @@ func set_queue_spots(spots: Array[Vector3], _step: Vector3 = Vector3.ZERO) -> vo
 	_counter_face_dir = Vector3(0, 0, 1)
 
 
-func _spawn_at_slot(slot_index: int) -> void:
+func _spawn_at_slot(slot_index: int, npc_id: int = -1) -> void:
 	if not WorldSync.is_host():
 		return
 	var state: Dictionary = { "queue_slot": slot_index, "queue_position": _queue_spots[slot_index] }
+	if npc_id >= 0:
+		state["npc_id"] = npc_id
 	# Customers are parented to get_parent() (usually Main)
 	var spawned := WorldSync.spawn_networked(
 		"res://scenes/customer/customer.tscn",
@@ -247,6 +250,18 @@ func _on_debug_force_spawn() -> void:
 			continue
 		if _queue[i] == null or not is_instance_valid(_queue[i]):
 			_spawn_at_slot(i)
+			return
+
+
+func _on_debug_spawn_npc(npc_id: int) -> void:
+	if not NpcRoster.has_id(npc_id):
+		return
+	_compact_queue()
+	for i in range(_queue.size()):
+		if _reserved_slots.has(i):
+			continue
+		if _queue[i] == null or not is_instance_valid(_queue[i]):
+			_spawn_at_slot(i, npc_id)
 			return
 
 

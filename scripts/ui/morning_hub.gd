@@ -534,6 +534,15 @@ func _ready() -> void:
 	meet_btn.text = "Meet All NPCs"
 	meet_btn.pressed.connect(_on_dev_meet_all_npcs)
 	dev_vbox.add_child(meet_btn)
+	# Spawn a specific roster NPC by name (exact or substring).
+	var npc_edit := LineEdit.new()
+	npc_edit.name = "DevNpcEdit"
+	npc_edit.placeholder_text = "NPC name to spawn"
+	dev_vbox.add_child(npc_edit)
+	var spawn_btn := Button.new()
+	spawn_btn.text = "Spawn NPC"
+	spawn_btn.pressed.connect(_on_dev_spawn_npc)
+	dev_vbox.add_child(spawn_btn)
 
 
 func _build_shop() -> void:
@@ -3292,3 +3301,22 @@ func _on_dev_meet_all_npcs() -> void:
 	var stand := _get_local_stand() as StandUnit
 	if stand != null:
 		stand.request_meet_all_npcs()
+
+
+func _on_dev_spawn_npc() -> void:
+	var panel := get_node_or_null("DevPanel")
+	if panel == null:
+		return
+	var edit := panel.find_child("DevNpcEdit", true, false) as LineEdit
+	if edit == null:
+		return
+	var npc_id := NpcRoster.find_id_by_name(edit.text)
+	if npc_id < 0:
+		# Flash the field red to show no name matched.
+		edit.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		edit.text = ""
+		edit.placeholder_text = "No match — try again"
+		return
+	edit.placeholder_text = "Spawned %s" % str(NpcRoster.get_entry(npc_id).get("name", ""))
+	edit.text = ""
+	EventBus.debug_spawn_npc.emit(npc_id)
