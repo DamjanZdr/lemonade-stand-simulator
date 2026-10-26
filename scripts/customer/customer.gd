@@ -31,16 +31,6 @@ const BUBBLE_UI_SCALE: float = 4.0
 const BUBBLE_PIXEL_SIZE: float = 0.0013
 const BUBBLE_LOCAL_POS := Vector3(0.0, 1.3, 0.0)
 const MOUSE_ICON_PATH := "res://assets/textures/ui/upgrades/mouse indicator.png"
-## How much each serve outcome raises this NPC's affinity for the stand
-## (0–100 bar in the computer's NPCs tab). Paying-but-unhappy outcomes
-## fall through to the .get() default of 2.0.
-const NPC_AFFINITY_DELTAS: Dictionary = {
-	"happy": 10.0,
-	"timeout": 0.0,
-	"too_expensive": 1.0,
-	"wrong_order": 1.0,
-	"scam": 0.5,
-}
 
 ## Recovery: playing Fall in reverse to get back up.
 var _recovering: bool = false
@@ -859,23 +849,15 @@ func _record_customer_served(outcome: String) -> void:
 		stand.record_npc_encounter(npc_id, _affinity_delta(outcome))
 
 
-## Affinity scales with cup quality, not just the outcome label: a 3-cup
-## order where every cup was clean earns more than a single lucky cup.
-## Per cup: clean = 10, 1–2 complaints = 4, worse = 1; averaged across
-## cups. Non-serve outcomes use the flat table in NPC_AFFINITY_DELTAS.
-func _affinity_delta(outcome: String) -> float:
-	if _served_evaluations.is_empty():
-		return NPC_AFFINITY_DELTAS.get(outcome, 2.0)
-	var total := 0.0
+## The bar counts perfect cups: +1 for each clean (zero-complaint) cup,
+## nothing else. A 3-cup order can tick it up to 3 times at once;
+## non-serve outcomes never move it.
+func _affinity_delta(_outcome: String) -> float:
+	var clean := 0.0
 	for eval in _served_evaluations:
-		var complaints: Array = eval.get("complaints", [])
-		if complaints.is_empty():
-			total += 10.0
-		elif complaints.size() <= 2:
-			total += 4.0
-		else:
-			total += 1.0
-	return total / _served_evaluations.size()
+		if (eval.get("complaints", []) as Array).is_empty():
+			clean += 1.0
+	return clean
 
 
 func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:

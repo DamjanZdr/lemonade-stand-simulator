@@ -844,7 +844,9 @@ func set_feedback_tier(tier: int) -> void:
 
 ## Per-stand NPC collection, stored inside lifetime_stats under
 ## "npc_collection" so it rides the existing save + push_state channels:
-## { npc_id: { "affinity": float } }. Presence in the dict = discovered.
+## { npc_id: { "affinity": float } }. Presence in the dict = discovered;
+## "affinity" is a perfect-cup count capped at 10 — a counter, not a
+## second popularity meter.
 ## Host-authoritative — NPC scripts call this on the host only.
 func record_npc_encounter(npc_id: int, affinity_delta: float = 0.0) -> void:
 	if npc_id < 0:
@@ -854,7 +856,7 @@ func record_npc_encounter(npc_id: int, affinity_delta: float = 0.0) -> void:
 	var collection := get_npc_collection()
 	var is_new := not collection.has(npc_id)
 	var entry: Dictionary = collection.get(npc_id, { })
-	entry["affinity"] = clampf(float(entry.get("affinity", 0.0)) + affinity_delta, 0.0, 100.0)
+	entry["affinity"] = clampf(float(entry.get("affinity", 0.0)) + affinity_delta, 0.0, 10.0)
 	collection[npc_id] = entry
 	lifetime_stats["npc_collection"] = collection
 	if is_new or affinity_delta != 0.0:

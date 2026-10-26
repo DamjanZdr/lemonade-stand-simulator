@@ -1787,15 +1787,15 @@ func _npc_fill_column(
 		row.add_child(name_lbl)
 		var bar := ProgressBar.new()
 		bar.min_value = 0.0
-		bar.max_value = 100.0
+		bar.max_value = 10.0 # 10 perfect cups to max an NPC
 		bar.value = affinity
 		bar.custom_minimum_size = Vector2(64, 8)
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		bar.show_percentage = false
 		row.add_child(bar)
 		var pct := Label.new()
-		pct.text = "%d%%" % int(affinity) if met else ""
-		pct.custom_minimum_size = Vector2(30, 0)
+		pct.text = "%d/10" % int(affinity) if met else ""
+		pct.custom_minimum_size = Vector2(34, 0)
 		pct.add_theme_font_size_override("font_size", 10)
 		pct.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
 		row.add_child(pct)

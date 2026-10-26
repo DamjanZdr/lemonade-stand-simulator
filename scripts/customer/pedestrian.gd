@@ -818,9 +818,9 @@ func try_serve(player: Node) -> void:
 	# Free-sample NPCs give deterministic feedback — every off-ideal axis is
 	# named, no unhappy-chance rolls hiding real problems.
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "", true)
-	# Free samples grow affinity too — clean recipe = bigger bump.
+	# Free samples count the same way — a clean cup is +1 on their bar.
 	if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
-		p.assigned_stand.record_npc_encounter(npc_id, 8.0 if result.complaints.is_empty() else 2.0)
+		p.assigned_stand.record_npc_encounter(npc_id, 1.0 if result.complaints.is_empty() else 0.0)
 	Analytics.record_batch_feedback(
 		p.assigned_stand,
 		recipe,
