@@ -48,40 +48,15 @@ const HAIR_COLOR_MAP: Dictionary = {
 	"white": Color(0.92, 0.92, 0.90),
 }
 
-## Fat system: TARGET NET X/Z width per bone at fat=1.0 — each bone's
-## local scale is derived as target / parent-net, so fat tapers off
-## along the chain instead of compounding (belly widest, chest less,
-## shins least). Order matters: parents must come before children.
-const FAT_BONE_ORDER: Array[String] = [
-	"LowerBack",
-	"UpperBack",
-	"UpperBack.001",
-	"UpperArm.L",
-	"Forearm.L",
-	"UpperArm.R",
-	"Forearm.R",
-	"Thigh.L",
-	"Shin.L",
-	"Thigh.R",
-	"Shin.R",
-]
-const FAT_TARGET_WIDTH: Dictionary = {
-	"LowerBack": 1.7,
-	"UpperBack": 1.3,
-	"UpperBack.001": 1.35,
-	"UpperArm.L": 1.25,
-	"UpperArm.R": 1.25,
-	"Forearm.L": 1.2,
-	"Forearm.R": 1.2,
-	"Thigh.L": 1.4,
-	"Thigh.R": 1.4,
-	"Shin.L": 1.2,
-	"Shin.R": 1.2,
-}
-## Bones whose net scale must stay ~1 — they counter-scale against the
-## fat their ancestors accumulated (head/hands/feet look wrong fat).
-const FAT_PROTECTED_BONES: Array[String] = ["Neck", "Hand.L", "Hand.R", "Foot.L", "Foot.R"]
+## Fat system: fat_npc.tscn is the hand-authored "max fat" skeleton —
+## every bone's authored pose scale there is the target at fat=1.0,
+## and an NPC's fat value lerps between default (1.0) and that target.
+## Retweaking the fat_npc scene automatically updates every NPC.
+const FAT_SCENE_PATH := "res://scenes/customer/fat_npc.tscn"
 const BoneScaler := preload("res://scripts/npc/npc_bone_scaler.gd")
+
+## bone_name -> authored fat pose scale, loaded once from fat_npc.tscn.
+static var _fat_scales: Dictionary = { }
 
 const SKIN_COLOR_MAP: Dictionary = {
 	"pale": Color(0.97, 0.86, 0.73),
@@ -679,8 +654,28 @@ func apply_appearance(def: Dictionary) -> void:
 				head_node.scale = Vector3.ONE * head_scale
 
 
-## Installs an NpcBoneScaler on the active skeleton and gives it the
-## fat X/Z scales plus counter-scales for the protected bones.
+## Loads the authored max-fat bone scales from fat_npc.tscn (once).
+static func _load_fat_scales() -> Dictionary:
+	if not _fat_scales.is_empty():
+		return _fat_scales
+	var scene := load(FAT_SCENE_PATH) as PackedScene
+	if scene == null:
+		push_warning("npc_appearance: fat_npc scene missing at %s" % FAT_SCENE_PATH)
+		return _fat_scales
+	var inst := scene.instantiate()
+	var skel := inst.find_child("Skeleton3D", true, false) as Skeleton3D
+	if skel != null:
+		for i in skel.get_bone_count():
+			var s := skel.get_bone_pose_scale(i)
+			if not s.is_equal_approx(Vector3.ONE):
+				_fat_scales[skel.get_bone_name(i)] = s
+	inst.free()
+	return _fat_scales
+
+
+## Installs an NpcBoneScaler on the active skeleton: each authored fat
+## bone lerps from 1.0 toward its fat_npc scale by the NPC's fat value.
+## The roster head_scale multiplies on top of that on the Head bone.
 func _apply_body_bones(fat: float, head_scale: float) -> void:
 	var skel := get_active_skeleton()
 	if skel == null:
@@ -691,40 +686,14 @@ func _apply_body_bones(fat: float, head_scale: float) -> void:
 		scaler.name = "NpcBoneScaler"
 		skel.add_child(scaler)
 	scaler.clear()
-	# Fat zones: each bone's local X/Z scale = its target net width
-	# divided by the net width its parent already accumulated.
-	var applied: Dictionary = { } # bone_idx -> net X/Z Vector2
-	for bone_name in FAT_BONE_ORDER:
-		var idx := skel.find_bone(bone_name)
-		if idx < 0:
-			continue
-		var net := Vector2.ONE
-		var p := skel.get_bone_parent(idx)
-		while p >= 0:
-			net *= applied.get(p, Vector2.ONE)
-			p = skel.get_bone_parent(p)
-		var target: float = 1.0 \
-				+ (float(FAT_TARGET_WIDTH[bone_name]) - 1.0) * fat
-		var local_x := target / net.x
-		var local_z := target / net.y
-		scaler.set_bone_scale(bone_name, Vector3(local_x, 1.0, local_z))
-		applied[idx] = Vector2(target, target)
-	# Protected bones divide out the fat their ancestors accumulated so
-	# their net scale stays at the desired size. "Head" also carries the
-	# roster head_scale factor.
-	var protect := FAT_PROTECTED_BONES.duplicate()
-	protect.append("Head")
-	for bone_name in protect:
-		var idx := skel.find_bone(bone_name)
-		if idx < 0:
-			continue
-		var net := Vector2.ONE
-		var p := skel.get_bone_parent(idx)
-		while p >= 0:
-			net *= applied.get(p, Vector2.ONE)
-			p = skel.get_bone_parent(p)
-		var desired := head_scale if bone_name == "Head" else 1.0
-		scaler.set_bone_scale(bone_name, Vector3(desired / net.x, desired, desired / net.y))
+	for bone_name: String in _load_fat_scales():
+		var mul := Vector3.ONE.lerp(_fat_scales[bone_name] as Vector3, fat)
+		if bone_name == "Head":
+			mul *= head_scale
+		scaler.set_bone_scale(bone_name, mul)
+	# Head on a non-fat body still honors the roster head_scale.
+	if fat <= 0.0 and not is_equal_approx(head_scale, 1.0):
+		scaler.set_bone_scale("Head", Vector3.ONE * head_scale)
 
 
 func _show_hair_index(hairs: Node3D, index: int, color: Color) -> void:
