@@ -392,6 +392,8 @@ func _ready() -> void:
 	highest_money = money
 	if not EventBus.day_phase_changed.is_connected(_on_day_phase_for_assistants):
 		EventBus.day_phase_changed.connect(_on_day_phase_for_assistants)
+	if not EventBus.upgrade_purchased.is_connected(_on_upgrade_purchased_for_assistants):
+		EventBus.upgrade_purchased.connect(_on_upgrade_purchased_for_assistants)
 
 	if not is_legacy_primary:
 		# Clean, fully independent stand — no legacy bridge, no GameState
@@ -1102,6 +1104,15 @@ func _on_day_phase_for_assistants(phase: DayManager.Phase, _day: int) -> void:
 		_despawn_assistants()
 
 
+## Upgrades can be bought mid-day via the computer — spawn any missing
+## workers immediately instead of waiting for the next day transition.
+func _on_upgrade_purchased_for_assistants(_upgrade: int, _cost: float) -> void:
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
+	if DayManager.current_phase == DayManager.Phase.DAY:
+		_spawn_assistants()
+
+
 func _spawn_assistants() -> void:
 	# Clear any stale refs before counting (e.g. a previous day whose
 	# despawn didn't run because the game was saved mid-evening).
@@ -1109,10 +1120,8 @@ func _spawn_assistants() -> void:
 		func(a):
 			return is_instance_valid(a),
 	)
-	if not assistants.is_empty():
-		return
-	var count := int(UpgradeManager.get_effect_total_for_stand("assistant", name))
-	for i in count:
+	var want := int(UpgradeManager.get_effect_total_for_stand("assistant", name))
+	for i in range(assistants.size(), want):
 		var pos := to_global(Vector3(-2.0 - i * 0.9, 0.0, 2.0))
 		var a := WorldSync.spawn_networked(
 			ASSISTANT_SCENE,
