@@ -35,6 +35,46 @@ const HAIR_COLORS: Array[Color] = [
 	Color(0.92, 0.92, 0.90), # white / silver
 ]
 
+## Named palettes matching the names used in npc_roster.txt — a roster
+## line can reference any of these keys.
+const HAIR_COLOR_MAP: Dictionary = {
+	"black": Color(0.08, 0.04, 0.01),
+	"dark_brown": Color(0.18, 0.09, 0.03),
+	"brown": Color(0.42, 0.25, 0.08),
+	"light_brown": Color(0.65, 0.45, 0.15),
+	"blonde": Color(0.88, 0.74, 0.28),
+	"auburn": Color(0.72, 0.20, 0.05),
+	"grey": Color(0.55, 0.55, 0.55),
+	"white": Color(0.92, 0.92, 0.90),
+}
+
+const SKIN_COLOR_MAP: Dictionary = {
+	"pale": Color(0.97, 0.86, 0.73),
+	"fair": Color(0.92, 0.75, 0.60),
+	"tan": Color(0.78, 0.58, 0.40),
+	"olive": Color(0.70, 0.54, 0.38),
+	"brown": Color(0.48, 0.33, 0.21),
+	"dark": Color(0.29, 0.19, 0.13),
+}
+
+const CLOTH_COLOR_MAP: Dictionary = {
+	"red": Color(0.80, 0.20, 0.20),
+	"blue": Color(0.20, 0.40, 0.85),
+	"green": Color(0.15, 0.55, 0.20),
+	"yellow": Color(0.85, 0.75, 0.10),
+	"purple": Color(0.55, 0.10, 0.55),
+	"orange": Color(0.95, 0.50, 0.05),
+	"charcoal": Color(0.20, 0.20, 0.22),
+	"grey": Color(0.88, 0.88, 0.88),
+	"tan": Color(0.72, 0.48, 0.28),
+	"teal": Color(0.05, 0.32, 0.35),
+	"maroon": Color(0.60, 0.15, 0.10),
+	"navy": Color(0.10, 0.22, 0.45),
+	"pink": Color(0.85, 0.40, 0.55),
+	"sky": Color(0.25, 0.55, 0.75),
+	"lime": Color(0.40, 0.70, 0.30),
+}
+
 const CLOTHING_COLORS: Array[Color] = [
 	Color(0.80, 0.20, 0.20), # red
 	Color(0.20, 0.40, 0.85), # blue
@@ -504,6 +544,99 @@ func _pick_hair_seeded(hairs: Node3D, color: Color, rng: RandomNumberGenerator) 
 		child.visible = i == chosen
 		if i == chosen:
 			_tint_meshes_in(child, color)
+
+
+## Applies a fixed roster appearance instead of randomizing. The def
+## comes from NpcRoster.get_entry(); unknown color names are skipped so
+## a typo in the roster file degrades gracefully instead of crashing.
+func apply_appearance(def: Dictionary) -> void:
+	var male: bool = str(def.get("gender", "m")) == "m"
+	is_female = not male
+	var name_hash: int = int(str(def.get("name", "")).hash())
+	voice_pitch = ((1.45 if is_female else 1.0) + (name_hash % 161 - 80) / 1000.0)
+	_man.visible = male
+	_woman.visible = not male
+	_active_anim = _man_anim if male else _woman_anim
+	_left_eye = _man_left_eye if male else _woman_left_eye
+	_right_eye = _man_right_eye if male else _woman_right_eye
+	_left_marker = _man_left_marker if male else _woman_left_marker
+	_right_marker = _man_right_marker if male else _woman_right_marker
+	_left_rest_dir = (
+		_left_marker.position.normalized()
+		if _left_marker.position.length() > 0.001
+		else Vector3(0, 0, 1)
+	)
+	_right_rest_dir = (
+		_right_marker.position.normalized()
+		if _right_marker.position.length() > 0.001
+		else Vector3(0, 0, 1)
+	)
+	_eye_rot_l = Quaternion.IDENTITY
+	_eye_rot_r = Quaternion.IDENTITY
+
+	var hairs: Node3D = _man_hairs if male else _woman_hairs
+	var body: MeshInstance3D = _man_mesh if male else _woman_mesh
+
+	var hair_color: Color = HAIR_COLOR_MAP.get(
+		str(def.get("hair_color", "brown")),
+		Color(0.42, 0.25, 0.08),
+	)
+	_show_hair_index(hairs, int(def.get("hair", 1)), hair_color)
+
+	var mesh := body.mesh as ArrayMesh
+	if mesh != null:
+		for i in mesh.get_surface_count():
+			var surface := mesh.surface_get_name(i).to_lower()
+			var color_name := ""
+			match surface:
+				"skin":
+					color_name = str(def.get("skin", ""))
+					if SKIN_COLOR_MAP.has(color_name):
+						_set_surface_color(body, i, SKIN_COLOR_MAP[color_name])
+				"shirt", "top", "dress", "skirt", "jacket", "shorts", "blouse", "trousers", "suit", "coat", "sweater", "pullover":
+					color_name = str(def.get("shirt", ""))
+				"pants":
+					color_name = str(def.get("pants", ""))
+				"shoes":
+					color_name = str(def.get("shoes", ""))
+			if color_name != "" and CLOTH_COLOR_MAP.has(color_name):
+				_set_surface_color(body, i, CLOTH_COLOR_MAP[color_name])
+
+	# Height is a subtle Y-scale on the whole body; head gets its own
+	# bone scale so it reads as proportion, not uniform growth.
+	scale.y = clampf(float(def.get("height", 1.0)), 0.85, 1.15)
+	var head_scale := clampf(float(def.get("head", 1.0)), 0.85, 1.25)
+	if not is_equal_approx(head_scale, 1.0):
+		var skel := get_active_skeleton()
+		var head_idx := skel.find_bone("Head") if skel else -1
+		if head_idx >= 0:
+			skel.set_bone_pose_scale(head_idx, Vector3.ONE * head_scale)
+		else:
+			# Fallback: scale the attachment node (affects hair + eyes,
+			# which is most of the visible head anyway).
+			var head_node := _man_head if male else _woman_head
+			if head_node:
+				head_node.scale = Vector3.ONE * head_scale
+
+
+func _show_hair_index(hairs: Node3D, index: int, color: Color) -> void:
+	var children := hairs.get_children()
+	if children.is_empty():
+		return
+	var chosen := clampi(index - 1, 0, children.size() - 1)
+	for i in children.size():
+		var child := children[i] as Node3D
+		if child == null:
+			continue
+		child.visible = i == chosen
+		if i == chosen:
+			_tint_meshes_in(child, color)
+
+
+func _set_surface_color(body: MeshInstance3D, surface: int, color: Color) -> void:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	body.set_surface_override_material(surface, mat)
 
 
 ## Each clothing surface picks its own independent random color.

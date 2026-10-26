@@ -1,0 +1,135 @@
+# NPC Roster — When Life Gives You Lemons
+#
+# One NPC per line, grouped under a rarity section header.
+# Lines starting with # are comments and are ignored.
+#
+# Line format (| separated):
+#   Name | gender | hair | hair_color | skin | shirt | pants | shoes | height | head
+#
+#   height     : body Y-scale, 0.93-1.08 (subtle; 1.00 = normal)
+#   head       : head bone scale, 0.93-1.12
+#
+#   gender     : m / f
+#   hair       : hairstyle index 1-5 (per gender)
+#   hair_color : black, dark_brown, brown, light_brown, blonde,
+#                auburn, grey, white
+#   skin       : pale, fair, tan, olive, brown, dark
+#   shirt / pants / shoes : red, blue, green, yellow, purple, orange,
+#                charcoal, grey, tan, teal, maroon, navy, pink, sky, lime
+#
+# A name may only spawn one live instance at a time; the same NPC can
+# return after it despawns ("regulars").
+#
+# Sections (spawn weight — roughly how often each tier appears):
+#   [common]    — everyday names / puns, make up the bulk of spawns
+#   [community] — community-submitted names
+#   [rare]      — less frequent, more distinctive
+#   [elite]     — rarest; special/well-known characters
+
+[common]
+Smell E. Feat | m | 2 | dark_brown | fair | teal | charcoal | charcoal | 1.01 | 1.07
+Yuri Khant | m | 4 | black | tan | orange | navy | charcoal | 0.97 | 0.93
+Pour Nub | m | 1 | brown | fair | green | tan | tan | 1.00 | 1.08
+Dixon Myaz | m | 5 | auburn | pale | maroon | charcoal | charcoal | 1.03 | 1.04
+Gabe Horn | m | 3 | black | brown | yellow | navy | charcoal | 0.98 | 1.03
+Jack Hoff | m | 2 | light_brown | fair | red | blue | tan | 1.06 | 1.03
+Isaac Ox | m | 4 | dark_brown | tan | navy | charcoal | charcoal | 1.06 | 1.01
+Mike Oxlong | m | 1 | black | olive | lime | tan | tan | 0.95 | 0.96
+Peter File | m | 3 | grey | pale | grey | blue | charcoal | 0.99 | 1.02
+Ben Dover | m | 2 | brown | fair | blue | tan | tan | 1.06 | 0.98
+Anne P. Cee | f | 3 | light_brown | fair | pink | tan | tan | 0.98 | 0.98
+Sherlock Homeless | m | 5 | grey | pale | charcoal | charcoal | charcoal | 1.05 | 1.09
+Poe Kerr | m | 1 | black | olive | purple | navy | charcoal | 1.05 | 0.96
+Rou Lette | f | 4 | auburn | tan | red | charcoal | charcoal | 0.97 | 1.03
+Moe Lester | m | 3 | dark_brown | brown | green | tan | tan | 0.95 | 1.11
+Hugh Janus | m | 2 | black | olive | sky | navy | charcoal | 0.94 | 0.98
+Reta R. Dud | f | 5 | brown | fair | yellow | blue | tan | 1.01 | 1.09
+Yorak Hunt | m | 4 | dark_brown | dark | orange | charcoal | charcoal | 0.97 | 0.99
+Edanomel | m | 1 | auburn | fair | maroon | tan | tan | 0.94 | 1.10
+Isaac Demnuts | m | 3 | black | tan | teal | navy | charcoal | 0.99 | 0.95
+Mike Rowfon | m | 2 | light_brown | fair | lime | charcoal | tan | 1.00 | 1.08
+Mabal Zitch | m | 5 | dark_brown | brown | navy | blue | charcoal | 0.95 | 0.94
+Surry Fex | m | 1 | brown | olive | red | tan | tan | 1.00 | 0.97
+Paul Sack | m | 4 | grey | pale | blue | charcoal | charcoal | 1.03 | 1.12
+Ema Teastick | f | 2 | blonde | fair | green | tan | tan | 0.96 | 0.93
+Jan Etalls | f | 1 | auburn | olive | purple | navy | charcoal | 1.00 | 1.01
+Maya Sizitchy | f | 4 | dark_brown | tan | pink | charcoal | tan | 0.97 | 1.10
+Sal Moanella | f | 3 | black | brown | teal | blue | charcoal | 1.00 | 0.96
+Cree Perahman | m | 2 | dark_brown | dark | green | navy | charcoal | 1.00 | 1.03
+Jack Mehoff | m | 3 | brown | fair | orange | tan | tan | 1.02 | 1.06
+Paul E. Tician | m | 5 | black | olive | navy | charcoal | charcoal | 1.01 | 1.05
+Dill Doe | m | 1 | light_brown | fair | lime | blue | tan | 0.97 | 0.97
+Wayne Kerr | m | 4 | auburn | tan | maroon | navy | charcoal | 0.96 | 1.03
+Harry Kauk | m | 2 | dark_brown | brown | yellow | charcoal | tan | 0.95 | 1.08
+Muster Baiter | m | 3 | black | olive | teal | tan | charcoal | 0.99 | 1.08
+Zach Madik | m | 1 | brown | fair | red | navy | charcoal | 0.99 | 1.04
+Hugh Man | m | 5 | dark_brown | tan | sky | charcoal | tan | 0.97 | 1.08
+Justin Case | m | 2 | grey | pale | blue | tan | charcoal | 1.05 | 1.09
+Houl E. Sheet | m | 4 | black | dark | green | navy | charcoal | 1.04 | 1.11
+Alf Artolot | m | 3 | light_brown | fair | purple | charcoal | tan | 1.00 | 1.06
+Drew P. Bowls | m | 1 | dark_brown | olive | orange | blue | charcoal | 0.98 | 0.94
+Eileen Dover | f | 5 | blonde | pale | maroon | tan | tan | 1.00 | 0.97
+Phoebe N. Jay | f | 2 | auburn | tan | pink | navy | charcoal | 0.98 | 1.09
+Gabe Owners | m | 3 | black | brown | lime | charcoal | charcoal | 0.99 | 0.96
+Wood Jabloume | m | 4 | brown | olive | teal | tan | tan | 0.98 | 1.11
+Alco Hoelick | m | 1 | grey | fair | navy | blue | charcoal | 0.98 | 1.09
+Will U. Werwigz | m | 5 | dark_brown | tan | yellow | charcoal | charcoal | 1.04 | 0.98
+
+[community]
+Sun Sunson | f | 4 | blonde | fair | yellow | tan | tan | 0.98 | 0.98
+Fish | m | 2 | auburn | pale | teal | navy | charcoal | 0.95 | 1.00
+Antonio Matteo Giovanni | m | 3 | black | olive | green | charcoal | charcoal | 0.96 | 1.08
+Bob the Buyer | m | 1 | brown | fair | blue | tan | tan | 1.04 | 1.03
+Peace Drinker | f | 5 | light_brown | tan | pink | navy | charcoal | 1.01 | 1.06
+Ieatfloortiles | m | 4 | dark_brown | olive | lime | charcoal | charcoal | 1.05 | 1.07
+Billy Bob | m | 2 | black | fair | red | blue | tan | 0.96 | 1.02
+Demitrius Demarcus Bartholemew James George Junior III | m | 3 | black | brown | purple | navy | charcoal | 1.04 | 1.06
+Smop Smingle | m | 1 | auburn | pale | orange | charcoal | tan | 1.04 | 1.01
+Johnny Mcjohnington | m | 5 | brown | fair | navy | tan | charcoal | 0.96 | 0.93
+Connor Wilson | m | 2 | light_brown | fair | green | blue | tan | 1.06 | 0.95
+Lemon S. Kennedy | m | 4 | grey | fair | yellow | charcoal | charcoal | 1.05 | 0.93
+King Brownie | m | 3 | dark_brown | dark | maroon | navy | charcoal | 0.94 | 0.97
+Osama Bin Lemon | m | 2 | black | olive | tan | charcoal | tan | 1.03 | 0.95
+Lee Mone | m | 1 | brown | tan | lime | blue | charcoal | 0.93 | 0.94
+East R. Egg | m | 5 | auburn | pale | sky | tan | tan | 0.99 | 1.01
+Melonade | f | 3 | auburn | fair | lime | charcoal | charcoal | 1.03 | 1.03
+Crazy Dave | m | 4 | dark_brown | olive | red | navy | tan | 1.05 | 1.01
+Regular Dave | m | 2 | brown | fair | blue | charcoal | charcoal | 1.00 | 1.01
+Too Tall Man | m | 3 | black | brown | teal | tan | tan | 1.08 | 1.00
+Robbin Bankins | m | 1 | dark_brown | fair | charcoal | navy | charcoal | 0.98 | 1.00
+Arthur Oregon | m | 5 | grey | pale | green | tan | charcoal | 1.05 | 0.95
+Sigma Bastart Ligminius | m | 4 | black | brown | maroon | charcoal | charcoal | 1.06 | 1.00
+Lemon Games | m | 2 | auburn | fair | yellow | blue | tan | 1.02 | 1.09
+Lee Money | m | 3 | dark_brown | tan | navy | charcoal | charcoal | 0.95 | 1.02
+Fanny Schmelar | f | 1 | brown | olive | pink | tan | tan | 1.02 | 1.04
+Luke Skyrunner | m | 4 | light_brown | fair | sky | navy | charcoal | 0.97 | 0.96
+John Buggy Berry | m | 1 | black | dark | orange | blue | charcoal | 1.05 | 1.03
+Pulp Daddy | m | 5 | dark_brown | olive | lime | tan | charcoal | 0.96 | 0.93
+Hom Tolland | m | 2 | grey | pale | purple | charcoal | tan | 0.95 | 1.05
+Unavailable Character | m | 3 | brown | tan | charcoal | navy | charcoal | 1.07 | 1.06
+Abdullah | m | 4 | black | olive | green | blue | charcoal | 1.03 | 1.09
+Salamanca Dihh | f | 5 | black | brown | teal | tan | tan | 1.02 | 0.97
+Yuhroon | m | 1 | dark_brown | dark | maroon | charcoal | charcoal | 1.04 | 0.93
+
+[rare]
+Grzegorz Brzeczyszczykiewicz | m | 3 | brown | fair | grey | navy | charcoal | 1.02 | 1.00
+Monkey D Goofy | m | 2 | black | tan | red | blue | tan | 1.00 | 1.11
+McLovin | m | 4 | dark_brown | pale | teal | charcoal | charcoal | 0.95 | 1.05
+Pickle Rick | m | 1 | grey | pale | green | green | charcoal | 0.97 | 1.11
+Morty | m | 2 | brown | fair | yellow | blue | tan | 0.94 | 0.95
+Prison Mike | m | 3 | dark_brown | fair | purple | charcoal | charcoal | 1.04 | 1.00
+Walter Black | m | 1 | grey | pale | charcoal | grey | tan | 1.05 | 0.94
+Alexander the Okay | m | 4 | brown | tan | maroon | tan | tan | 1.02 | 1.00
+MrBeast | m | 2 | light_brown | fair | blue | charcoal | charcoal | 1.04 | 1.10
+Peter Darker | m | 3 | dark_brown | fair | charcoal | navy | charcoal | 1.07 | 1.06
+Napoleon Blownaparte | m | 2 | black | pale | navy | charcoal | charcoal | 1.01 | 0.98
+Vedinad | m | 1 | black | brown | grey | blue | tan | 0.94 | 0.94
+
+[elite]
+Professor Ludwig | m | 4 | dark_brown | fair | charcoal | charcoal | charcoal | 0.95 | 0.93
+CaseOh | m | 2 | dark_brown | fair | charcoal | tan | charcoal | 1.06 | 1.10
+Sketch | m | 3 | brown | fair | grey | blue | charcoal | 1.01 | 1.12
+DaniDev | m | 2 | brown | fair | orange | charcoal | charcoal | 0.94 | 1.06
+Karlson | m | 1 | dark_brown | fair | orange | navy | charcoal | 1.02 | 0.97
+Erling Haaland | m | 4 | blonde | pale | blue | charcoal | charcoal | 1.07 | 1.00
+Penguinz0 | m | 5 | black | fair | charcoal | charcoal | charcoal | 0.94 | 1.00

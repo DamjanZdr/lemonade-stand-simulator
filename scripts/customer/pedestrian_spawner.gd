@@ -205,9 +205,13 @@ func _spawn_pedestrian(path: PedestrianPath) -> void:
 	# Generate a deterministic appearance seed so all peers see the same
 	# hair/clothing/gender for this NPC.
 	var seed := randi()
+	# Named NPCs come from the roster; a name can only be alive once
+	# (across pedestrians AND customers) so nobody double-books.
+	var npc_id := NpcRoster.pick_id(_alive_npc_ids())
 	# Server-authoritative: spawn on host + replicate to clients via WorldSync.
-	# Pass the appearance seed in spawn state so clients randomize identically.
-	var state := { "appearance_seed": seed }
+	# Pass the appearance seed + roster id in spawn state so clients
+	# render the identical NPC.
+	var state := { "appearance_seed": seed, "npc_id": npc_id }
 	# NPCs have collision_mask=0 (no floor detection), so they stay at whatever
 	# Y they spawn at. The route markers have Y values ranging from ~-0.1 to
 	# ~+0.07, which causes visible sinking/floating. Force Y=0 (the ground
@@ -268,6 +272,19 @@ func _try_spawn() -> void:
 			break
 
 	_spawn_pedestrian(chosen)
+
+
+## NPC ids currently on screen — pedestrians alive now plus customers
+## (a converted pedestrian keeps its identity through the swap).
+func _alive_npc_ids() -> Dictionary:
+	var alive: Dictionary = { }
+	for ped in _pedestrians:
+		if is_instance_valid(ped) and ped.npc_id >= 0:
+			alive[ped.npc_id] = true
+	for c in get_tree().get_nodes_in_group("customers"):
+		if is_instance_valid(c) and c.get("npc_id") != null and int(c.get("npc_id")) >= 0:
+			alive[int(c.get("npc_id"))] = true
+	return alive
 
 
 func _on_wants_to_join(ped: Pedestrian) -> void:

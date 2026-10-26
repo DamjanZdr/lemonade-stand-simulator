@@ -105,6 +105,10 @@ const BUBBLE_LOCAL_POS := Vector3(0.0, 1.3, 0.0)
 ## so all peers see the same hair/clothing/gender.
 var appearance_seed: int = 0
 
+## Roster index (from npc_roster.txt) set by spawn state. -1 = anonymous
+## NPC → falls back to seeded random appearance.
+var npc_id: int = -1
+
 
 func _ready() -> void:
 	_ground_y = global_position.y
@@ -117,11 +121,15 @@ func _ready() -> void:
 	floor_constant_speed = true
 	floor_stop_on_slope = false
 	floor_block_on_wall = false
-	# Pass seed to NPCBody before randomizing
-	if appearance_seed != 0:
-		_npc.appearance_seed = appearance_seed
-	_npc.randomize_appearance()
+	# Named roster NPCs get their fixed look; anonymous NPCs randomize.
+	if npc_id >= 0 and NpcRoster.has_id(npc_id):
+		_npc.apply_appearance(NpcRoster.get_entry(npc_id))
+	else:
+		if appearance_seed != 0:
+			_npc.appearance_seed = appearance_seed
+		_npc.randomize_appearance()
 	_npc.play_anim("Walk")
+	_build_name_tag()
 	_build_order_bubble()
 	_build_patience_circle()
 	_hide_order_bubble()
@@ -869,6 +877,29 @@ func _feedback_text(result: EvaluationResult, fruit_type := "") -> String:
 	if joined == "":
 		return "Hmm, something isn't right."
 	return "Hmm, " + joined.substr(0, 1).to_lower() + joined.substr(1)
+
+
+## Floating name tag above the order bubble — plain Label3D (no
+## SubViewport, so hidden NPCs cost nothing). Hidden for anonymous NPCs.
+func _build_name_tag() -> void:
+	if npc_id < 0 or not NpcRoster.has_id(npc_id):
+		return
+	var entry: Dictionary = NpcRoster.get_entry(npc_id)
+	var label := Label3D.new()
+	label.name = "NameTag"
+	label.text = str(entry.get("name", ""))
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.pixel_size = 0.004
+	label.font_size = 42
+	label.outline_size = 8
+	label.modulate = NpcRoster.RARITY_NAME_COLORS.get(
+		str(entry.get("rarity", "common")),
+		Color.WHITE,
+	)
+	label.outline_modulate = Color(0.0, 0.0, 0.0, 0.9)
+	label.position = Vector3(0.0, 1.62, 0.0)
+	add_child(label)
 
 
 func _build_order_bubble() -> void:

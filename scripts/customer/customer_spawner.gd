@@ -336,8 +336,10 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	# looks identical on all peers (no NPCBody transfer needed â€” the seed
 	# produces the same appearance deterministically).
 	var seed := 0
+	var npc_id := -1
 	if source_pedestrian != null and is_instance_valid(source_pedestrian):
 		seed = source_pedestrian.appearance_seed
+		npc_id = source_pedestrian.npc_id
 
 	var spawn_pos: Vector3 = _queue_spots[slot_index]
 	# NPCs have collision_mask=0 (no floor detection), so they stay at whatever
@@ -353,6 +355,7 @@ func spawn_converted(slot_index: int, source_pedestrian: Pedestrian = null) -> v
 	# Build spawn state for WorldSync â€” clients get appearance_seed + queue data
 	var state: Dictionary = {
 		"appearance_seed": seed,
+		"npc_id": npc_id,
 		"queue_slot": slot_index,
 		"queue_position": _queue_spots[slot_index],
 	}
