@@ -240,7 +240,7 @@ func _cycle_fruit(idx: int) -> void:
 		if UpgradeManager.is_fruit_unlocked(ft):
 			fruits.append(ft)
 	var cur: String = _queue_edit[idx]["fruit"]
-	var next := fruits[(fruits.find(cur) + 1) % fruits.size()]
+	var next: String = fruits[(fruits.find(cur) + 1) % fruits.size()]
 	_queue_edit[idx]["fruit"] = next
 
 
