@@ -478,6 +478,23 @@ func _place_filled_cup() -> void:
 	EventBus.container_placed.emit("filled_cup", cup)
 
 
+## Lift the cup so the bottom of its merged visual bounds rests on
+## surface_y. The GLB pivot is mid-cup, so a raw spawn sinks it halfway
+## into the tray/surface.
+func _seat_cup_on(cup: Node3D, surface_y: float) -> void:
+	var found := false
+	var aabb := AABB()
+	for n in cup.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		var wa := mi.global_transform * mi.get_aabb()
+		aabb = wa if not found else aabb.merge(wa)
+		found = true
+	if found:
+		cup.global_position.y += surface_y - aabb.position.y
+
+
 func _place_cup_on_tray(tray: CupTray) -> void:
 	# Snap the held cup (empty or filled) into the tray's first free slot.
 	var spot := tray.free_slot_position()
@@ -514,12 +531,7 @@ func _place_cup_on_tray(tray: CupTray) -> void:
 			for child in cup.physics.get_children():
 				if child is CollisionShape3D:
 					child.disabled = false
-		# Rest the cup's bottom on the slot — the model pivot is not at
-		# its base, so spawning at the marker sinks it into the tray.
-		var meshes := cup.find_children("*", "MeshInstance3D", true, false)
-		if not meshes.is_empty() and (meshes[0] as MeshInstance3D).mesh != null:
-			var mi := meshes[0] as MeshInstance3D
-			cup.global_position.y -= mi.get_aabb().position.y * cup.scale.y
+		_seat_cup_on(cup, spot.y)
 
 	_finish_place()
 	_player.inventory.clear_held()
@@ -1952,8 +1964,9 @@ func _try_place_container() -> Node3D:
 		return null
 
 	var container_type: String = _player.held_item_data.get("container_type", "")
-	# Move the existing workstation instead of creating a new one, so attached items follow.
-	if container_type == "workstation":
+	# Move the existing instance instead of creating a new one, so
+	# attached items (workstation items / tray cups) follow.
+	if container_type == "workstation" or container_type == "cup_tray":
 		var source_node: Node3D = _player.held_item_data.get("source_node") as Node3D
 		if source_node != null and is_instance_valid(source_node):
 			# Workstation was hidden (not removed from tree) when picked up,
@@ -2169,9 +2182,13 @@ func _cancel_container_placement() -> void:
 
 func pickup_container(interactable: Interactable, container_type: String) -> void:
 	_player.inventory.play_pickup_source(interactable)
-	# Workstations are tables ΓÇö keep the original instance so items on top move with it.
-	if container_type == "workstation":
-		_attach_items_to_workstation(interactable)
+	# Workstations and loaded cup trays keep the original instance so
+	# items/cups on top move with it.
+	if container_type == "workstation" or container_type == "cup_tray":
+		if container_type == "workstation":
+			_attach_items_to_workstation(interactable)
+		else:
+			_attach_cups_to_tray(interactable)
 		_disable_physics(interactable)
 		var source_parent := interactable.get_parent()
 		_player.held_item_data["source_parent"] = source_parent
@@ -2893,3 +2910,25 @@ func _attach_items_to_workstation(workstation: Node) -> void:
 		if absf(pos.x - table_pos.x) > 1.0 or absf(pos.z - table_pos.z) > 1.0:
 			continue
 		(item as Node3D).reparent(workstation, true)
+
+
+func _attach_cups_to_tray(tray: Node) -> void:
+	var tray_pos := (tray as Node3D).global_position
+	for item in get_tree().get_nodes_in_group("container"):
+		if not item is Cup or not is_instance_valid(item):
+			continue
+		if tray.is_ancestor_of(item):
+			continue
+		# Only attach cups that are direct children of the world root —
+		# not cups already parented to another carried item.
+		var parent := (item as Node).get_parent()
+		if parent == null:
+			continue
+		if parent != get_tree().current_scene and parent.name != "WorldObjects":
+			continue
+		var pos := (item as Node3D).global_position
+		if pos.y < tray_pos.y - 0.05 or pos.y > tray_pos.y + 0.3:
+			continue
+		if absf(pos.x - tray_pos.x) > 0.35 or absf(pos.z - tray_pos.z) > 0.35:
+			continue
+		(item as Node3D).reparent(tray, true)

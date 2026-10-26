@@ -631,13 +631,25 @@ func _place_held_cup(spot: Vector3) -> void:
 		if cup.physics != null:
 			cup.physics.collision_layer = 1
 			cup.physics.collision_mask = 1
-		# Rest the cup's bottom on the slot — the model pivot is not at its
-		# base, so spawning at the marker sank it into the surface.
-		var meshes := cup.find_children("*", "MeshInstance3D", true, false)
-		if not meshes.is_empty() and (meshes[0] as MeshInstance3D).mesh != null:
-			var mi := meshes[0] as MeshInstance3D
-			cup.global_position.y -= mi.get_aabb().position.y * cup.scale.y
+		_seat_cup_on(cup, spot.y)
 	_held_recipe = { }
+
+
+## Lift the cup so the bottom of its merged visual bounds rests on
+## surface_y. The GLB pivot is mid-cup, so a raw spawn sinks it halfway
+## into the tray/surface.
+static func _seat_cup_on(cup: Node3D, surface_y: float) -> void:
+	var found := false
+	var aabb := AABB()
+	for n in cup.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		var wa := mi.global_transform * mi.get_aabb()
+		aabb = wa if not found else aabb.merge(wa)
+		found = true
+	if found:
+		cup.global_position.y += surface_y - aabb.position.y
 
 
 func _take_cup(stack: CupStack) -> void:

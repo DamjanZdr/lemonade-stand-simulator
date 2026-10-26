@@ -350,7 +350,9 @@ func primary_interact() -> void:
 			var workstation_full := (
 				interactable is Workstation and (interactable as Workstation).has_items_on()
 			)
-			if not workstation_full:
+			# Same rule for a loaded cup tray — LMB should hit the cups.
+			var tray_full := interactable is CupTray and (interactable as CupTray).has_cups()
+			if not workstation_full and not tray_full:
 				var pickupable := interactable.find_child("Pickupable", false, false)
 				if pickupable != null and pickupable.can_pick_up(_player):
 					pickupable.pick_up(_player)
