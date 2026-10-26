@@ -26,8 +26,9 @@ const SYNC_INTERVAL := 0.1
 const NET_LERP_SPEED := 12.0
 const NET_STALE_MSEC := 8000
 const ROLES: Array[String] = ["server", "brewer", "stocker", "cleaner"]
-## How many filled cups a server pre-stages on the counter when idle.
-const MAX_PREPARED_CUPS := 4
+## How many filled cups a server pre-stages on the counter when idle —
+## capped by counter grid space (4 per row x 3 rows), not by cups.
+const MAX_PREPARED_CUPS := 12
 
 var assigned_stand: StandUnit = null
 var stand_name: String = ""
@@ -52,6 +53,7 @@ var _step_act: Callable = Callable()
 var _brewer_idx := 0
 var _carried: Node3D = null
 var _carried_pitcher: Pitcher = null
+var _carried_refund := 0.0
 var _held_recipe: Dictionary = { }
 var _sync_accum := 0.0
 var _last_anim := ""
@@ -361,6 +363,17 @@ func _build_cleaner_steps() -> void:
 	var item := _nearest(_cleaner_targets()) as Node3D
 	if item == null:
 		return
+	# Prefer the topmost target of the same pile — taking a supporting box
+	# from under a stack leaves the rest hovering.
+	var best_y := item.global_position.y
+	for n in _cleaner_targets():
+		var flat := Vector2(
+			n.global_position.x - item.global_position.x,
+			n.global_position.z - item.global_position.z,
+		)
+		if flat.length() < 1.2 and n.global_position.y > best_y:
+			item = n
+			best_y = n.global_position.y
 	var can := _nearest(_stand_objects("trashcan")) as Node3D
 	if can == null:
 		return
@@ -381,25 +394,26 @@ func _build_cleaner_steps() -> void:
 func _pick_up_item(item: Node3D) -> void:
 	if not is_instance_valid(item):
 		return
+	# Despawn on pick-up, not on drop-off — leaving a hidden supporting box
+	# in place kept stacked boxes floating until the trash can was reached.
+	_carried_refund = 0.0
+	if item is SupplyBox:
+		_carried_refund = item.trash_value
+	elif "refund" in item:
+		_carried_refund = item.refund
+	elif item is ThrownTrash and item.has_method("get_refund"):
+		_carried_refund = item.get_refund()
 	_carried = item
-	item.visible = false
+	WorldSync.despawn_networked(item)
 
 
 func _dispose_carried(can: Node3D) -> void:
-	var item := _carried
-	_carried = null
-	if item == null or not is_instance_valid(item):
+	if _carried == null:
 		return
-	var refund := 0.0
-	if item is SupplyBox:
-		refund = item.trash_value
-	elif "refund" in item:
-		refund = item.refund
-	elif item is ThrownTrash and item.has_method("get_refund"):
-		refund = item.get_refund()
+	_carried = null
 	if can != null and can.has_method("apply_trash_disposal"):
-		can.apply_trash_disposal("trash", refund, assigned_stand.name)
-	WorldSync.despawn_networked(item)
+		can.apply_trash_disposal("trash", _carried_refund, assigned_stand.name)
+	_carried_refund = 0.0
 
 # ── Server ───────────────────────────────────────────────────────────
 
@@ -469,11 +483,31 @@ func _build_server_steps() -> void:
 	)
 
 
+## Approach position for talking to / serving a customer: a point a short
+## distance toward the stand, so the assistant stops in front of the queue
+## instead of clipping through the stand to reach the customer's exact spot.
+func _approach_point(n: Node3D) -> Vector3:
+	var to := n.global_position
+	var dir := to - _idle_spot()
+	dir.y = 0.0
+	if dir.length() < 0.01:
+		return to
+	return to - dir.normalized() * 0.85
+
+
+## Route to a customer in two legs — via the counter-front idle spot first,
+## then to the approach point — so the path goes around the stand rather
+## than through it.
+func _queue_customer_step(cust: Customer, wait: float, act: Callable) -> void:
+	_steps.append({ "target": _idle_spot(), "wait": 0.1, "act": Callable() })
+	_steps.append({ "target": _approach_point(cust), "wait": wait, "act": act })
+
+
 func _build_customer_serve_steps(cust: Customer) -> void:
 	if not cust.order_ready():
 		# Go take the order first — show_order_to_player only needs a Node3D
 		# position for facing; can_be_served_by passes via assigned_stand.
-		_queue_step(
+		_queue_customer_step(
 			cust,
 			0.8,
 			func():
@@ -490,7 +524,7 @@ func _build_customer_serve_steps(cust: Customer) -> void:
 				func():
 					_grab_filled_cup(cup),
 			)
-			_queue_step(
+			_queue_customer_step(
 				cust,
 				1.2,
 				func():
@@ -514,7 +548,7 @@ func _build_customer_serve_steps(cust: Customer) -> void:
 				func():
 					_fill_cup(pitcher),
 			)
-			_queue_step(
+			_queue_customer_step(
 				cust,
 				1.2,
 				func():
@@ -552,15 +586,28 @@ func _counter_top_center() -> Vector3:
 	var counter := assigned_stand.find_child("Counter", true, false)
 	if counter == null:
 		return assigned_stand.to_global(Vector3(0.0, 1.0, 1.0))
-	var top_y: float = counter.global_position.y + 0.55
-	var col := counter.find_child("Col", true, false) as CollisionShape3D
-	if col != null and col.shape is BoxShape3D:
-		top_y = col.global_position.y + col.shape.size.y * 0.5
-	return Vector3(counter.global_position.x, top_y, counter.global_position.z)
+	# Real counter-top height comes from the visual mesh AABB — guessing an
+	# offset floated the cups above the surface.
+	var aabb := AABB()
+	var found := false
+	for c in counter.find_children("", "MeshInstance3D", true, false):
+		var mi := c as MeshInstance3D
+		if mi == null or mi.mesh == null:
+			continue
+		var wa := mi.global_transform * mi.get_aabb()
+		aabb = wa if not found else aabb.merge(wa)
+		found = true
+	if not found:
+		return Vector3(
+			counter.global_position.x,
+			counter.global_position.y + 0.55,
+			counter.global_position.z,
+		)
+	return Vector3(aabb.get_center().x, aabb.end.y, aabb.get_center().z)
 
 
-## Slot for the next filled cup: a row across the counter top, spaced so
-## up to MAX_PREPARED_CUPS fit without overlapping.
+## Slot for the next filled cup: row-major grid on the counter top (4 per
+## row, rows stepping away from the front edge).
 func _next_counter_cup_spot() -> Vector3:
 	var top := _counter_top_center()
 	var idx := _stand_filled_cup_count()
@@ -568,7 +615,13 @@ func _next_counter_cup_spot() -> Vector3:
 			if assigned_stand != null else Vector3.RIGHT
 	right.y = 0.0
 	right = right.normalized()
-	return top + right * ((idx - 1.5) * 0.28)
+	var fwd := assigned_stand.global_transform.basis.z \
+			if assigned_stand != null else Vector3.FORWARD
+	fwd.y = 0.0
+	fwd = fwd.normalized()
+	var col := idx % 4
+	var row_i := idx / 4
+	return top + right * ((col - 1.5) * 0.26) - fwd * (row_i * 0.26)
 
 
 func _grab_filled_cup(cup: Cup) -> void:
