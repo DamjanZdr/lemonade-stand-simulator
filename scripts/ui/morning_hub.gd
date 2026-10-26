@@ -1763,43 +1763,56 @@ func _npc_fill_column(
 	for raw_id in ids:
 		var id := int(raw_id)
 		var entry := NpcRoster.get_entry(id)
-		var rarity := str(entry.get("rarity", "common"))
 		var met := collection.has(id) or collection.has(str(id))
-		var affinity := 0.0
+		var cups := 0
 		if met:
-			affinity = float(
-				(collection.get(id, collection.get(str(id), { }))).get("affinity", 0.0)
-			)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		var name_lbl := Label.new()
-		name_lbl.text = str(entry.get("name", "")) if met else "???"
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.add_theme_font_size_override("font_size", 13)
-		name_lbl.add_theme_color_override(
-			"font_color",
-			(
-				NpcRoster.RARITY_NAME_COLORS.get(rarity, Color.WHITE)
-				if met
-				else Color(0.45, 0.42, 0.38)
-			),
-		)
-		row.add_child(name_lbl)
-		var bar := ProgressBar.new()
-		bar.min_value = 0.0
-		bar.max_value = 10.0 # 10 perfect cups to max an NPC
-		bar.value = affinity
-		bar.custom_minimum_size = Vector2(64, 8)
-		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		bar.show_percentage = false
-		row.add_child(bar)
-		var pct := Label.new()
-		pct.text = "%d/10" % int(affinity) if met else ""
-		pct.custom_minimum_size = Vector2(34, 0)
-		pct.add_theme_font_size_override("font_size", 10)
-		pct.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
-		row.add_child(pct)
-		col.add_child(row)
+			cups = int((collection.get(id, collection.get(str(id), { }))).get("affinity", 0.0))
+		col.add_child(_make_npc_card(entry, met, cups))
+
+
+## One NPC collection card: name (or "Unknown") in its rarity color +
+## a row of 10 chunk pips that fill yellow per perfect cup served.
+func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
+	var card := PanelContainer.new()
+	var st := StyleBoxFlat.new()
+	st.bg_color = Color(0.10, 0.08, 0.05)
+	st.border_color = Color(0.40, 0.28, 0.12)
+	st.set_border_width_all(1)
+	st.set_corner_radius_all(6)
+	st.set_content_margin_all(8)
+	card.add_theme_stylebox_override("panel", st)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 5)
+	card.add_child(vbox)
+
+	var rarity := str(entry.get("rarity", "common"))
+	var name_lbl := Label.new()
+	name_lbl.text = str(entry.get("name", "")) if met else "Unknown"
+	name_lbl.clip_text = true
+	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.add_theme_color_override(
+		"font_color",
+		(NpcRoster.RARITY_NAME_COLORS.get(rarity, Color.WHITE)
+			if met
+			else Color(0.45, 0.42, 0.38)),
+	)
+	vbox.add_child(name_lbl)
+
+	# 10 chunk pips — grey until earned, yellow per perfect cup.
+	var pips := HBoxContainer.new()
+	pips.add_theme_constant_override("separation", 3)
+	for i in 10:
+		var pip := Panel.new()
+		pip.custom_minimum_size = Vector2(10, 10)
+		var pip_st := StyleBoxFlat.new()
+		pip_st.bg_color = Color(0.92, 0.72, 0.22) if i < cups \
+				else Color(0.28, 0.27, 0.24)
+		pip_st.set_corner_radius_all(2)
+		pip.add_theme_stylebox_override("panel", pip_st)
+		pips.add_child(pip)
+	vbox.add_child(pips)
+	return card
 
 
 func _on_npc_collection_changed(_collection: Dictionary) -> void:
