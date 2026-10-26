@@ -1774,41 +1774,45 @@ func _npc_fill_column(
 ## a row of 10 chunk pips that fill yellow per perfect cup served.
 func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
 	var card := PanelContainer.new()
+	# Same card chrome as the shop item cards.
 	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.10, 0.08, 0.05)
-	st.border_color = Color(0.40, 0.28, 0.12)
+	st.bg_color = Color(0.10, 0.11, 0.14)
+	st.border_color = Color(0.20, 0.22, 0.27)
 	st.set_border_width_all(1)
-	st.set_corner_radius_all(6)
+	st.set_corner_radius_all(10)
 	st.set_content_margin_all(8)
 	card.add_theme_stylebox_override("panel", st)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 5)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 6)
 	card.add_child(vbox)
 
 	var rarity := str(entry.get("rarity", "common"))
 	var name_lbl := Label.new()
 	name_lbl.text = str(entry.get("name", "")) if met else "Unknown"
 	name_lbl.clip_text = true
-	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.add_theme_font_size_override("font_size", 14)
 	name_lbl.add_theme_color_override(
 		"font_color",
 		(NpcRoster.RARITY_NAME_COLORS.get(rarity, Color.WHITE)
 			if met
-			else Color(0.45, 0.42, 0.38)),
+			else Color(0.45, 0.45, 0.50)),
 	)
 	vbox.add_child(name_lbl)
 
 	# 10 chunk pips — grey until earned, yellow per perfect cup.
 	var pips := HBoxContainer.new()
+	pips.alignment = BoxContainer.ALIGNMENT_CENTER
 	pips.add_theme_constant_override("separation", 3)
 	for i in 10:
 		var pip := Panel.new()
-		pip.custom_minimum_size = Vector2(10, 10)
+		pip.custom_minimum_size = Vector2(13, 13)
 		var pip_st := StyleBoxFlat.new()
-		pip_st.bg_color = Color(0.92, 0.72, 0.22) if i < cups \
-				else Color(0.28, 0.27, 0.24)
-		pip_st.set_corner_radius_all(2)
+		pip_st.bg_color = Color(0.88, 0.65, 0.12) if i < cups \
+				else Color(0.16, 0.17, 0.21)
+		pip_st.set_corner_radius_all(3)
 		pip.add_theme_stylebox_override("panel", pip_st)
 		pips.add_child(pip)
 	vbox.add_child(pips)
