@@ -390,6 +390,8 @@ func _ready() -> void:
 	init_default_prices()
 	init_default_recipes()
 	highest_money = money
+	if not EventBus.day_phase_changed.is_connected(_on_day_phase_for_assistants):
+		EventBus.day_phase_changed.connect(_on_day_phase_for_assistants)
 
 	if not is_legacy_primary:
 		# Clean, fully independent stand — no legacy bridge, no GameState
@@ -1084,6 +1086,56 @@ func get_delivery_marker_position() -> Vector3:
 ## able to test every stand locally. In real multiplayer (at least one
 ## other peer connected), a player may only interact with the stand they
 ## were actually assigned to.
+## Assistant NPCs hired via the "assistant" upgrade — one worker per
+## purchased node. Spawned at DAY start, removed at EVENING. Host-only
+## sim; clients receive spawned nodes + transform sync via WorldSync.
+var assistants: Array = []
+const ASSISTANT_SCENE := "res://scenes/npc/assistant.tscn"
+
+
+func _on_day_phase_for_assistants(phase: DayManager.Phase, _day: int) -> void:
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
+	if phase == DayManager.Phase.DAY:
+		_spawn_assistants()
+	elif phase == DayManager.Phase.EVENING:
+		_despawn_assistants()
+
+
+func _spawn_assistants() -> void:
+	# Clear any stale refs before counting (e.g. a previous day whose
+	# despawn didn't run because the game was saved mid-evening).
+	assistants = assistants.filter(
+		func(a):
+			return is_instance_valid(a),
+	)
+	if not assistants.is_empty():
+		return
+	var count := int(UpgradeManager.get_effect_total_for_stand("assistant", name))
+	for i in count:
+		var pos := to_global(Vector3(-2.0 - i * 0.9, 0.0, 2.0))
+		var a := WorldSync.spawn_networked(
+			ASSISTANT_SCENE,
+			get_parent(),
+			pos,
+			Vector3.ZERO,
+			{
+				"stand_name": name,
+				"assistant_index": i,
+				"appearance_seed": abs(hash(name)) + i * 7919,
+			},
+		)
+		if a != null:
+			assistants.append(a)
+
+
+func _despawn_assistants() -> void:
+	for a in assistants:
+		if is_instance_valid(a):
+			WorldSync.despawn_networked(a)
+	assistants.clear()
+
+
 func can_be_served_by(player: Node) -> bool:
 	if multiplayer.get_peers().is_empty():
 		return true

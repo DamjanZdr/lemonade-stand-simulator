@@ -87,6 +87,7 @@ var _change_due_cents: int = 0
 var _change_voice_played: bool = false
 var _last_tendered_cents: int = 0
 var _serving_peer_id: int = 1
+var _served_by_assistant: bool = false
 ## What the customer handed over (in dollars), shown alongside how much is
 ## still owed while the player makes change.
 var _payment_amount: float = 0.0
@@ -682,6 +683,13 @@ func try_serve(player: Node) -> void:
 
 	_serving_peer_id = p.get_multiplayer_authority()
 	p.inventory.clear_held()
+	_apply_serve(recipe, fruit_type)
+
+
+## Shared serve bookkeeping for player and assistant serves: evaluates
+## the cup, logs feedback/analytics, decrements the order, and resolves
+## the customer when it's empty.
+func _apply_serve(recipe: Dictionary, fruit_type: String) -> void:
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, fruit_type, true)
 	OnboardingManager.enforce_guaranteed_feedback(stand, recipe, result)
 	Analytics.record_batch_feedback(stand, recipe, result.complaints, false, get_instance_id())
@@ -734,6 +742,40 @@ func try_serve(player: Node) -> void:
 	_resolve(outcome)
 
 
+func order_ready() -> bool:
+	## True once the price check ran and the order has cups left to serve.
+	## Used by Assistant servers to decide between taking the order and
+	## fetching a cup.
+	return _price_checked and not order.is_empty()
+
+
+## Host-only entry: an Assistant NPC serves a filled cup. Same rules as
+## try_serve minus the player — payment auto-resolves to exact change in
+## _resolve so no change minigame opens.
+func try_serve_assistant(recipe: Dictionary) -> bool:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return false
+	if state != CustomerState.WAITING or patience <= 0.0:
+		return false
+	if _price_checking or order.is_empty():
+		return false
+	var fruit_type: String = recipe.get("fruit_type", "")
+	if fruit_type == "" or recipe.get("fruit_count", 0.0) <= 0.0:
+		return false
+	if not order.has(fruit_type) or order[fruit_type] <= 0:
+		return false
+	_served_by_assistant = true
+	# Route the regular-tip toast to the peer that owns this stand.
+	_serving_peer_id = multiplayer.get_unique_id()
+	if multiplayer.has_multiplayer_peer():
+		for pl in get_tree().get_nodes_in_group("player"):
+			if pl.get("assigned_stand") == stand:
+				_serving_peer_id = pl.get_multiplayer_authority()
+				break
+	_apply_serve(recipe, fruit_type)
+	return true
+
+
 func force_timeout() -> void:
 	## Called by DayManager / spawner when day ends.
 	_resolve("timeout")
@@ -758,8 +800,16 @@ func _resolve(outcome: String) -> void:
 	# nothing.
 	if outcome != "timeout" and _accumulated_price > 0.0:
 		_tip_amount = _compute_tip()
-		# The money controller on the player's camera handles change-making.
 		var price := _accumulated_price
+		if _served_by_assistant:
+			# Assistant serves settle instantly — the customer pays exact,
+			# no change UI. Tips still apply; credit and move on.
+			_credit_sale(price + _tip_amount)
+			_notify_tip()
+			_record_customer_served(outcome)
+			_show_feedback_then_leave()
+			return
+		# The money controller on the player's camera handles change-making.
 		var payment := _customer_payment(price)
 		var change_due := roundf((payment - price) * 100.0) / 100.0
 		_change_due_cents = roundi(change_due * 100.0)

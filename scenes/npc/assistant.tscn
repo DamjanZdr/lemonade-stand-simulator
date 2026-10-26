@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/assistant.gd" id="1_ast"]
+[ext_resource type="PackedScene" uid="uid://dgiq68gtr7ei4" path="res://scenes/customer/npc.tscn" id="2_npc"]
+[ext_resource type="Script" path="res://scripts/npc/assistant_interactable.gd" id="3_aint"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ast"]
+radius = 0.3
+height = 1.6
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_asti"]
+radius = 0.55
+height = 2.2
+
+[node name="Assistant" type="CharacterBody3D"]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1_ast")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.667, 0)
+shape = SubResource("CapsuleShape3D_ast")
+
+[node name="NPCBody" parent="." instance=ExtResource("2_npc")]
+transform = Transform3D(-0.09, 0, 0, 0, 0.09, 0, 0, 0, -0.09, 0, 0.87, 0)
+
+[node name="AssistantInteractable" type="Node3D" parent="."]
+script = ExtResource("3_aint")
+
+[node name="Physics" type="Area3D" parent="AssistantInteractable"]
+collision_layer = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AssistantInteractable/Physics"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("CapsuleShape3D_asti")
