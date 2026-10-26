@@ -18,6 +18,7 @@ const PRODUCT_IMAGES: Dictionary = {
 	"pitcher": "res://assets/textures/ui/products/pitcher.png",
 	"press": "res://assets/textures/ui/products/press.png",
 	"workstation": "res://assets/textures/ui/products/table.png",
+	"cup_tray": "res://assets/textures/ui/products/cup.png",
 }
 
 const BRANCH_COLORS: Array[Color] = [
@@ -192,6 +193,7 @@ var container_items: Array[Dictionary] = [
 	{ "id": "pitcher", "name": "Pitcher", "cost": Balancing.CONTAINER_COST_PITCHER },
 	{ "id": "press", "name": "Fruit Press", "cost": Balancing.CONTAINER_COST_PRESS },
 	{ "id": "workstation", "name": "Table", "cost": Balancing.CONTAINER_COST_WORKSTATION },
+	{ "id": "cup_tray", "name": "Cup Tray", "cost": Balancing.CONTAINER_COST_CUP_TRAY },
 ]
 
 

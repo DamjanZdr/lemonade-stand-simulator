@@ -294,6 +294,8 @@ func _get_container_cost_for_trash(container_type: String) -> float:
 			cost = Balancing.CONTAINER_COST_WATER_DISPENSER
 		"workstation":
 			cost = Balancing.CONTAINER_COST_WORKSTATION
+		"cup_tray":
+			cost = Balancing.CONTAINER_COST_CUP_TRAY
 	return cost * 0.7
 
 

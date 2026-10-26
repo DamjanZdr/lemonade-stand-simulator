@@ -16,6 +16,7 @@ const CONTAINER_SCENES: Dictionary = {
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
 	"cup_stack": preload("res://scenes/objects/cup_stack.tscn"),
 	"cup": preload("res://scenes/objects/cup.tscn"),
+	"cup_tray": preload("res://scenes/objects/cup_tray.tscn"),
 }
 
 # Workstation is loaded at runtime to avoid compile-time preload issues while the

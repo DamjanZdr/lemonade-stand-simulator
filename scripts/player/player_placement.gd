@@ -77,6 +77,7 @@ const CONTAINER_SCENE_PATHS: Dictionary = {
 	"press": "res://scenes/objects/press.tscn",
 	"water_dispenser": "res://scenes/objects/water_dispenser.tscn",
 	"workstation": "res://scenes/stand/workstation.tscn",
+	"cup_tray": "res://scenes/objects/cup_tray.tscn",
 }
 
 # Workstation scene is loaded at runtime to avoid compile-time preload issues
@@ -95,6 +96,7 @@ const CONTAINER_PLACEMENT_SCALE: Dictionary = {
 	"press": Vector3.ONE * 0.10,
 	"water_dispenser": Vector3.ONE * 0.25,
 	"workstation": Vector3.ONE,
+	"cup_tray": Vector3.ONE,
 }
 
 const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.tscn")
@@ -111,6 +113,7 @@ const CONTAINER_HAND_SCALE: Dictionary = {
 	"press": Vector3.ONE * 0.05,
 	"water_dispenser": Vector3.ONE * 0.08,
 	"workstation": Vector3.ONE * 0.05,
+	"cup_tray": Vector3.ONE * 0.4,
 }
 
 

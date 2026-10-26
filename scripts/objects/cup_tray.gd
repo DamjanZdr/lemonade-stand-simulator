@@ -1,11 +1,36 @@
 class_name CupTray
-extends Node3D
-## A fixed tray on the counter holding filled cups in authored slots.
-## The server assistant fills free slots; players pick cups off it like
-## any other placed cup (cups are regular networked Cup objects).
-## Not pickupable — it's stand furniture once spawned.
+extends Interactable
+## A tray holding filled cups in authored slots. Purchased as equipment
+## and placed like any other container. The server assistant fills free
+## slots; players pick cups off it like any other placed cup.
+## Pickupable only while no cups sit on it.
 
 @onready var _slots: Node3D = $Slots
+@onready var physics: StaticBody3D = $Physics
+
+
+func _ready() -> void:
+	add_to_group("container")
+	add_to_group("cup_tray")
+	var p := Pickupable.setup_for_container(self, "cup_tray")
+	p.can_pickup_callback = func(player: Node) -> bool:
+		if player == null or player.get("held_item") != HeldItem.NONE:
+			return false
+		if not can_player_use(player):
+			return false
+		return _cups_on_tray() == 0
+
+
+func interact(player: Node) -> void:
+	var pickupable := get_node_or_null("Pickupable") as Pickupable
+	if pickupable != null:
+		pickupable.pick_up(player)
+
+
+func get_hint(player: Node) -> String:
+	if _cups_on_tray() == 0 and can_player_use(player):
+		return "Cup Tray | LMB: pick up"
+	return "Cup Tray"
 
 
 ## World position of the first free slot, or Vector3.INF when full.
@@ -19,6 +44,14 @@ func free_slot_position() -> Vector3:
 
 func has_free_slot() -> bool:
 	return free_slot_position() != Vector3.INF
+
+
+func _cups_on_tray() -> int:
+	var c := 0
+	for m in _slots.get_children():
+		if _slot_occupied(m.global_position):
+			c += 1
+	return c
 
 
 func _slot_occupied(p: Vector3) -> bool:
