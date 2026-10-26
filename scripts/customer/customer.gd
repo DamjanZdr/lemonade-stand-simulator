@@ -90,6 +90,9 @@ var _serving_peer_id: int = 1
 ## What the customer handed over (in dollars), shown alongside how much is
 ## still owed while the player makes change.
 var _payment_amount: float = 0.0
+## Tip credited on top of the sale when this customer is a regular
+## (10 perfect cups in the stand's NPC collection).
+var _tip_amount: float = 0.0
 var _feedback_text: String = ""
 ## Client-side: recipes of cups optimistically removed from hand while a
 ## serve request is in flight, so a rejected serve can restore them.
@@ -754,6 +757,7 @@ func _resolve(outcome: String) -> void:
 	# correctly-ordered cup (timeout, or everything priced them out) pays
 	# nothing.
 	if outcome != "timeout" and _accumulated_price > 0.0:
+		_tip_amount = _compute_tip()
 		# The money controller on the player's camera handles change-making.
 		var price := _accumulated_price
 		var payment := _customer_payment(price)
@@ -779,7 +783,7 @@ func _resolve(outcome: String) -> void:
 		else:
 			# Exact payment — no change owed (payment == price). The stand
 			# earns the full price; payment - price would credit $0.
-			_credit_sale(price)
+			_credit_sale(price + _tip_amount)
 			_record_customer_served(outcome)
 			# Still show feedback + report evaluations — exact payers are
 			# mastery-eligible transactions just like change-makers.
@@ -949,7 +953,7 @@ func _receive_change_finalized(tendered_cents: int) -> void:
 		return
 	_last_tendered_cents = tendered_cents
 	var earned := float(roundi(_payment_amount * 100.0) - tendered_cents) / 100.0
-	_credit_sale(earned)
+	_credit_sale(earned + _tip_amount)
 	_record_customer_served(_outcome)
 	_leave_after_change()
 
@@ -1005,6 +1009,17 @@ func _start_leaving() -> void:
 	_npc.play_anim("Walk")
 	EventBus.customer_left.emit(self, _outcome)
 	sync_state(CustomerState.LEAVING, "Walk")
+
+
+func _compute_tip() -> float:
+	## Regulars (10/10 perfect cups) tip per cup they paid for.
+	if stand == null or npc_id < 0 or not NpcRoster.has_id(npc_id):
+		return 0.0
+	var entry: Dictionary = stand.get_npc_collection().get(npc_id, { })
+	if float(entry.get("affinity", 0.0)) < 10.0:
+		return 0.0
+	var rarity := str(NpcRoster.get_entry(npc_id).get("rarity", "common"))
+	return float(NpcRoster.RARITY_TIPS.get(rarity, 0.0)) * _served_evaluations.size()
 
 
 static func _customer_payment(price: float) -> float:

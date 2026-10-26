@@ -11,12 +11,7 @@ const ROSTER_PATH := "res://resources/data/npc_roster.txt"
 
 ## Relative spawn weight per rarity tier — a tier's chance is
 ## weight / total-weight across tiers that still have free names.
-const RARITY_WEIGHTS: Dictionary = {
-	"common": 60.0,
-	"community": 25.0,
-	"rare": 10.0,
-	"elite": 5.0,
-}
+const RARITY_WEIGHTS: Dictionary = { "common": 60.0, "community": 25.0, "rare": 10.0, "elite": 5.0 }
 
 ## Optional name-label tint per rarity (used by the NPC name tag).
 const RARITY_NAME_COLORS: Dictionary = {
@@ -25,6 +20,9 @@ const RARITY_NAME_COLORS: Dictionary = {
 	"rare": Color(0.80, 0.55, 1.0),
 	"elite": Color(1.0, 0.80, 0.20),
 }
+
+## Tip per cup paid for, once a customer is a regular (10 perfect cups).
+const RARITY_TIPS: Dictionary = { "common": 0.20, "community": 0.30, "rare": 0.70, "elite": 1.00 }
 
 var _entries: Array[Dictionary] = []
 var _by_tier: Dictionary = { }
@@ -55,7 +53,8 @@ func pick_id(alive_ids: Dictionary) -> int:
 	var total := 0.0
 	for tier in RARITY_WEIGHTS:
 		var free_ids: Array = _by_tier.get(tier, []).filter(
-			func(id): return not alive_ids.has(id)
+			func(id):
+				return not alive_ids.has(id),
 		)
 		if free_ids.is_empty():
 			continue
@@ -96,27 +95,35 @@ func _load_roster() -> void:
 		for p in parts:
 			fields.append(p.strip_edges())
 		var id := _entries.size()
-		_entries.append({
-			"id": id,
-			"name": fields[0],
-			"rarity": tier,
-			"gender": fields[1],
-			"hair": int(fields[2]),
-			"hair_color": fields[3],
-			"skin": fields[4],
-			"shirt": fields[5],
-			"pants": fields[6],
-			"shoes": fields[7],
-			"height": float(fields[8]),
-			"head": float(fields[9]),
-		})
+		_entries.append(
+			{
+				"id": id,
+				"name": fields[0],
+				"rarity": tier,
+				"gender": fields[1],
+				"hair": int(fields[2]),
+				"hair_color": fields[3],
+				"skin": fields[4],
+				"shirt": fields[5],
+				"pants": fields[6],
+				"shoes": fields[7],
+				"height": float(fields[8]),
+				"head": float(fields[9]),
+			}
+		)
 		_by_tier.get_or_add(tier, []).append(id)
 	if _entries.is_empty():
 		push_warning("NpcRoster: no NPC entries loaded")
 	else:
-		GameLog.log("[NpcRoster] Loaded %d NPCs: %s" % [
-			_entries.size(),
-			str(_by_tier.keys().map(
-				func(t): return "%s=%d" % [t, _by_tier[t].size()]
-			)),
-		])
+		GameLog.log(
+			"[NpcRoster] Loaded %d NPCs: %s"
+			% [
+				_entries.size(),
+				str(
+					_by_tier.keys().map(
+						func(t):
+							return "%s=%d" % [t, _by_tier[t].size()],
+					)
+				),
+			]
+		)

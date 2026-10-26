@@ -1656,7 +1656,7 @@ func _build_npcs_tab() -> void:
 	step_pc.name = "StepPC_npcs"
 	var step_lbl := Label.new()
 	step_lbl.name = "StepLbl_npcs"
-	step_lbl.text = "NPCs"
+	step_lbl.text = "Customers"
 	step_lbl.add_theme_font_size_override("font_size", 13)
 	step_lbl.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
 	step_pc.add_child(step_lbl)
@@ -1670,13 +1670,33 @@ func _build_npcs_tab() -> void:
 	page.visible = false
 	page.add_theme_constant_override("separation", 6)
 	content.add_child(page)
+
+	var title := Label.new()
+	title.text = "Customers"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.92, 0.72, 0.22))
+	page.add_child(title)
+
+	var desc := Label.new()
+	desc.text = "Serve a customer 10 perfect cups and they become a regular." \
+			+ " Regulars tip on every cup they buy:" \
+			+ "  common +$0.20 · community +$0.30 · rare +$0.70 · elite +$1.00"
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.add_theme_font_size_override("font_size", 12)
+	desc.add_theme_color_override("font_color", Color(0.60, 0.60, 0.66))
+	page.add_child(desc)
+
 	var header := Label.new()
 	header.name = "NpcHeader"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 15)
-	header.add_theme_color_override("font_color", Color(0.92, 0.72, 0.22))
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(0.75, 0.75, 0.80))
 	page.add_child(header)
 	# Three columns: common | community | rare + elite (stacked).
+	# Scrollbars are hidden — mouse wheel still scrolls, and nothing
+	# overlaps the cards.
 	var cols := HBoxContainer.new()
 	cols.name = "NpcColumns"
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1687,6 +1707,8 @@ func _build_npcs_tab() -> void:
 		scroll.name = "Scroll_" + col_name
 		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 		cols.add_child(scroll)
 		var col := VBoxContainer.new()
 		col.name = "Col_" + col_name
@@ -1754,11 +1776,19 @@ func _npc_fill_column(
 ) -> void:
 	if ids.is_empty():
 		return
+	var rarity_key := title.to_lower()
+	var met_count := 0
+	for raw_id in ids:
+		if collection.has(int(raw_id)) or collection.has(str(raw_id)):
+			met_count += 1
 	var header := Label.new()
-	header.text = title
+	header.text = "%s  ·  %d/%d" % [title, met_count, ids.size()]
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 13)
-	header.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
+	header.add_theme_font_size_override("font_size", 17)
+	header.add_theme_color_override(
+		"font_color",
+		NpcRoster.RARITY_NAME_COLORS.get(rarity_key, Color(0.65, 0.58, 0.48)),
+	)
 	col.add_child(header)
 	for raw_id in ids:
 		var id := int(raw_id)
