@@ -929,8 +929,6 @@ func _build_order_bubble() -> void:
 	# Render at BUBBLE_UI_SCALE× font size — Control scaling would just
 	# bitmap-upscale the rasterized glyphs and look pixelated.
 	_ui_label.add_theme_font_size_override("font_size", int(12 * BUBBLE_UI_SCALE))
-	_ui_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	_ui_label.add_theme_constant_override("outline_size", int(2 * BUBBLE_UI_SCALE))
 	_ui_label.visible = false
 	_ui_panel.add_child(_ui_label)
 
@@ -945,8 +943,6 @@ func _build_order_bubble() -> void:
 	_prompt_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_prompt_label.add_theme_font_size_override("normal_font_size", int(12 * BUBBLE_UI_SCALE))
 	_prompt_label.add_theme_font_size_override("bold_font_size", int(12 * BUBBLE_UI_SCALE))
-	_prompt_label.add_theme_constant_override("outline_size", int(2 * BUBBLE_UI_SCALE))
-	_prompt_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_prompt_label.visible = false
 	# Parented to the viewport, not the panel — the prompt renders with
 	# no panel behind it, so it must outlive _ui_panel being hidden.
@@ -1085,16 +1081,7 @@ func show_interact_prompt(player: Node) -> void:
 	_prompt_active = true
 	_ui_label.visible = false
 	_prompt_label.visible = true
-	# No panel behind the prompt — bare icon + text floating where the
-	# dialogue bubble will appear.
-	var prompt_size := _prompt_label.get_combined_minimum_size()
-	_prompt_label.position = Vector2.ZERO
-	_prompt_label.size = prompt_size
-	_ui_panel.visible = false
-	if _bubble_viewport != null:
-		_bubble_viewport.size = Vector2i(prompt_size.ceil())
-	if _bubble_sprite:
-		_bubble_sprite.visible = true
+	_resize_order_panel()
 
 
 func hide_interact_prompt() -> void:
