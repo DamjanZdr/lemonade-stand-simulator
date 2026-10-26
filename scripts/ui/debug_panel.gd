@@ -190,7 +190,53 @@ func _ready() -> void:
 	)
 	vbox.add_child(end_day_btn)
 
+	# NPC roster tools
+	vbox.add_child(HSeparator.new())
+	var meet_btn := Button.new()
+	meet_btn.text = "Meet All NPCs"
+	meet_btn.add_theme_font_size_override("font_size", 9)
+	meet_btn.pressed.connect(_on_meet_all_npcs)
+	vbox.add_child(meet_btn)
+	var npc_edit := LineEdit.new()
+	npc_edit.placeholder_text = "NPC name"
+	npc_edit.add_theme_font_size_override("font_size", 9)
+	vbox.add_child(npc_edit)
+	var npc_btn := Button.new()
+	npc_btn.text = "Spawn NPC"
+	npc_btn.add_theme_font_size_override("font_size", 9)
+	npc_btn.pressed.connect(_on_spawn_named_npc.bind(npc_edit))
+	vbox.add_child(npc_btn)
+
+	# The VBox has outgrown the screen height — wrap it in a
+	# ScrollContainer so every control stays reachable. Done last so
+	# all the $Panel/VBox/... lookups above still resolve.
+	var panel := $Panel
+	panel.remove_child(vbox)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
+	scroll.add_child(vbox)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
 	_refresh()
+
+
+func _on_meet_all_npcs() -> void:
+	for s in get_tree().get_nodes_in_group("stand"):
+		(s as StandUnit).request_meet_all_npcs()
+		return
+
+
+func _on_spawn_named_npc(edit: LineEdit) -> void:
+	var npc_id := NpcRoster.find_id_by_name(edit.text)
+	if npc_id < 0:
+		edit.text = ""
+		edit.placeholder_text = "No match"
+		return
+	var npc_name := str(NpcRoster.get_entry(npc_id).get("name", ""))
+	edit.text = ""
+	edit.placeholder_text = "Spawned %s" % npc_name
+	EventBus.debug_spawn_npc.emit(npc_id)
 
 
 func _process(delta: float) -> void:
