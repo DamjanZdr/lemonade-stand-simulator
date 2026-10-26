@@ -999,6 +999,8 @@ func get_container_type(node: Node) -> String:
 		return "cup_stack"
 	if node is Cup:
 		return "cup"
+	if node is CupTray:
+		return "cup_tray"
 	var node_script: Script = node.get_script() as Script
 	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
