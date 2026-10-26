@@ -1859,10 +1859,20 @@ func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
 
 	var rarity := str(entry.get("rarity", "common"))
 	var name_lbl := Label.new()
-	name_lbl.text = str(entry.get("name", ""))
+	var npc_name := str(entry.get("name", ""))
+	name_lbl.text = npc_name
 	name_lbl.clip_text = true
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.add_theme_font_size_override("font_size", 14)
+	# Shrink long names so they fit inside the card instead of clipping;
+	# the really long ones wrap onto two lines.
+	var name_size := 14
+	if npc_name.length() > 28:
+		name_size = 10
+		name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_lbl.max_lines_visible = 2
+	elif npc_name.length() > 20:
+		name_size = 11
+	name_lbl.add_theme_font_size_override("font_size", name_size)
 	name_lbl.add_theme_color_override(
 		"font_color",
 		(NpcRoster.RARITY_NAME_COLORS.get(rarity, Color.WHITE)
