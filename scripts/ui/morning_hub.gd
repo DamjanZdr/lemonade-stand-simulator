@@ -1663,11 +1663,13 @@ func _build_npcs_tab() -> void:
 		return
 	var step_pc := PanelContainer.new()
 	step_pc.name = "StepPC_npcs"
+	step_pc.custom_minimum_size = Vector2(160, 56)
 	var step_lbl := Label.new()
 	step_lbl.name = "StepLbl_npcs"
 	step_lbl.text = "Customers"
-	step_lbl.add_theme_font_size_override("font_size", 13)
-	step_lbl.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
+	step_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	step_lbl.add_theme_font_size_override("font_size", 22)
+	step_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	step_pc.add_child(step_lbl)
 	_flow_indicator.add_child(step_pc)
 
@@ -1857,7 +1859,7 @@ func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
 
 	var rarity := str(entry.get("rarity", "common"))
 	var name_lbl := Label.new()
-	name_lbl.text = str(entry.get("name", "")) if met else "Unknown"
+	name_lbl.text = str(entry.get("name", ""))
 	name_lbl.clip_text = true
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.add_theme_font_size_override("font_size", 14)
