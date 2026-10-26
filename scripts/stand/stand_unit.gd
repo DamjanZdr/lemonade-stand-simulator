@@ -891,6 +891,34 @@ func _debug_meet_all_npcs() -> void:
 	push_state()
 
 
+## Debug helper: every roster NPC at 9/10 perfect cups (one away from
+## becoming a regular — for testing the regular unlock + tip flow).
+func request_set_all_npcs_nine() -> void:
+	if multiplayer.has_multiplayer_peer():
+		_rpc_set_all_npcs_nine.rpc_id(1)
+	else:
+		_debug_set_all_npcs_nine()
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_set_all_npcs_nine() -> void:
+	if not is_multiplayer_authority():
+		return
+	_debug_set_all_npcs_nine()
+
+
+func _debug_set_all_npcs_nine() -> void:
+	var collection := get_npc_collection()
+	for id in NpcRoster.size():
+		if not collection.has(id):
+			collection[id] = { "affinity": 9.0, "order": collection.size() }
+		else:
+			collection[id]["affinity"] = 9.0
+	lifetime_stats["npc_collection"] = collection
+	npc_collection_changed.emit(collection.duplicate(true))
+	push_state()
+
+
 ## Read-side helper — normalizes keys to int (JSON saves stringify them).
 func get_npc_collection() -> Dictionary:
 	var out := { }

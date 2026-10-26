@@ -197,6 +197,11 @@ func _ready() -> void:
 	meet_btn.add_theme_font_size_override("font_size", 9)
 	meet_btn.pressed.connect(_on_meet_all_npcs)
 	vbox.add_child(meet_btn)
+	var nine_btn := Button.new()
+	nine_btn.text = "Set All NPCs 9/10"
+	nine_btn.add_theme_font_size_override("font_size", 9)
+	nine_btn.pressed.connect(_on_set_all_nine)
+	vbox.add_child(nine_btn)
 	var npc_edit := LineEdit.new()
 	npc_edit.placeholder_text = "NPC name"
 	npc_edit.add_theme_font_size_override("font_size", 9)
@@ -224,6 +229,12 @@ func _ready() -> void:
 func _on_meet_all_npcs() -> void:
 	for s in get_tree().get_nodes_in_group("stand"):
 		(s as StandUnit).request_meet_all_npcs()
+		return
+
+
+func _on_set_all_nine() -> void:
+	for s in get_tree().get_nodes_in_group("stand"):
+		(s as StandUnit).request_set_all_npcs_nine()
 		return
 
 
