@@ -21,8 +21,14 @@ const RARITY_NAME_COLORS: Dictionary = {
 	"elite": Color(1.0, 0.80, 0.20),
 }
 
-## Tip per cup paid for, once a customer is a regular (10 perfect cups).
-const RARITY_TIPS: Dictionary = { "common": 0.20, "community": 0.30, "rare": 0.70, "elite": 1.00 }
+## Tip as a fraction of the sale, once a customer is a regular
+## (10 perfect cups).
+const RARITY_TIP_PCT: Dictionary = {
+	"common": 0.20,
+	"community": 0.40,
+	"rare": 0.70,
+	"elite": 1.00,
+}
 
 var _entries: Array[Dictionary] = []
 var _by_tier: Dictionary = { }

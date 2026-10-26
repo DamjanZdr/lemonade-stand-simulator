@@ -856,6 +856,8 @@ func record_npc_encounter(npc_id: int, affinity_delta: float = 0.0) -> void:
 	var collection := get_npc_collection()
 	var is_new := not collection.has(npc_id)
 	var entry: Dictionary = collection.get(npc_id, { })
+	if is_new:
+		entry["order"] = collection.size()
 	entry["affinity"] = clampf(float(entry.get("affinity", 0.0)) + affinity_delta, 0.0, 10.0)
 	collection[npc_id] = entry
 	lifetime_stats["npc_collection"] = collection

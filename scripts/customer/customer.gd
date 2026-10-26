@@ -1019,7 +1019,7 @@ func _compute_tip() -> float:
 	if float(entry.get("affinity", 0.0)) < 10.0:
 		return 0.0
 	var rarity := str(NpcRoster.get_entry(npc_id).get("rarity", "common"))
-	return float(NpcRoster.RARITY_TIPS.get(rarity, 0.0)) * _served_evaluations.size()
+	return _accumulated_price * float(NpcRoster.RARITY_TIP_PCT.get(rarity, 0.0))
 
 
 static func _customer_payment(price: float) -> float:

@@ -1679,9 +1679,10 @@ func _build_npcs_tab() -> void:
 	page.add_child(title)
 
 	var desc := Label.new()
-	desc.text = "Serve a customer 10 perfect cups and they become a regular." \
-			+ " Regulars tip on every cup they buy:" \
-			+ "  common +$0.20 · community +$0.30 · rare +$0.70 · elite +$1.00"
+	desc.text = "Meet everyone who visits your stand. Serve a customer" \
+			+ " 10 perfect cups and they become a regular — regulars leave" \
+			+ " a tip on every sale:" \
+			+ "  common +20% · community +40% · rare +70% · elite +100%"
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.add_theme_font_size_override("font_size", 12)
@@ -1728,7 +1729,7 @@ func _populate_npc_page() -> void:
 		return
 	var stand := _get_local_stand() as StandUnit
 	var collection: Dictionary = (stand.get_npc_collection() if stand != null else { })
-	header.text = "Regulars met: %d / %d" % [collection.size(), NpcRoster.size()]
+	header.text = "Customers met: %d / %d" % [collection.size(), NpcRoster.size()]
 	# Refresh live if the collection changes while the tab is open.
 	if stand != null and not stand.npc_collection_changed.is_connected(_on_npc_collection_changed):
 		stand.npc_collection_changed.connect(_on_npc_collection_changed)
@@ -1753,6 +1754,20 @@ func _populate_npc_page() -> void:
 	for rarity in by_rarity:
 		by_rarity[rarity].sort_custom(
 			func(a, b):
+				# Met customers float to the top in the order they were
+				# first met; unmet slots stay alphabetical below them.
+				var ea: Dictionary = collection.get(a, collection.get(str(a), { }))
+				var eb: Dictionary = collection.get(b, collection.get(str(b), { }))
+				# Met entries sort by discovery order (0 = first met);
+				# unmet get -1. Met entries from older saves lack "order"
+				# — they keep a large sentinel so they still float to the
+				# top, just after the properly-ordered ones.
+				var oa: int = ea.get("order", 1000000) if not ea.is_empty() else -1
+				var ob: int = eb.get("order", 1000000) if not eb.is_empty() else -1
+				if (oa >= 0) != (ob >= 0):
+					return oa >= 0
+				if oa != ob:
+					return oa < ob
 				return str(NpcRoster.get_entry(a).get("name", "")) \
 						< str(NpcRoster.get_entry(b).get("name", "")),
 		)
