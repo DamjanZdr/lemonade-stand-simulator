@@ -251,6 +251,11 @@ func _ready() -> void:
 	for tab in _flow_tabs:
 		var step_pc := _flow_indicator.get_node_or_null("StepPC_" + tab) as PanelContainer
 		if step_pc:
+			# Equal-width tabs — each cell stretches to the same share.
+			step_pc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var step_lbl := step_pc.get_node_or_null("StepLbl_" + tab) as Label
+			if step_lbl:
+				step_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			step_pc.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			var t := tab
 			step_pc.gui_input.connect(
@@ -525,6 +530,10 @@ func _ready() -> void:
 	end_btn.text = "End Day Early"
 	end_btn.pressed.connect(_on_dev_end_day)
 	dev_vbox.add_child(end_btn)
+	var meet_btn := Button.new()
+	meet_btn.text = "Meet All NPCs"
+	meet_btn.pressed.connect(_on_dev_meet_all_npcs)
+	dev_vbox.add_child(meet_btn)
 
 
 func _build_shop() -> void:
@@ -1678,6 +1687,15 @@ func _build_npcs_tab() -> void:
 	title.add_theme_color_override("font_color", Color(0.92, 0.72, 0.22))
 	page.add_child(title)
 
+	# perfected / met / total — sits directly under the title like a
+	# second row of it.
+	var header := Label.new()
+	header.name = "NpcHeader"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 14)
+	header.add_theme_color_override("font_color", Color(0.75, 0.75, 0.80))
+	page.add_child(header)
+
 	var desc := RichTextLabel.new()
 	desc.bbcode_enabled = true
 	desc.fit_content = true
@@ -1695,12 +1713,6 @@ func _build_npcs_tab() -> void:
 			+ " leave a tip on every sale:  %s[/center]" % " · ".join(tip_parts)
 	page.add_child(desc)
 
-	var header := Label.new()
-	header.name = "NpcHeader"
-	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 13)
-	header.add_theme_color_override("font_color", Color(0.75, 0.75, 0.80))
-	page.add_child(header)
 	# Three columns: common | community | rare + elite (stacked).
 	# Scrollbars are hidden — mouse wheel still scrolls, and nothing
 	# overlaps the cards.
@@ -3265,3 +3277,9 @@ func _refresh_recipes_page() -> void:
 
 func _on_dev_end_day() -> void:
 	DayManager.end_day()
+
+
+func _on_dev_meet_all_npcs() -> void:
+	var stand := _get_local_stand() as StandUnit
+	if stand != null:
+		stand.request_meet_all_npcs()

@@ -866,6 +866,31 @@ func record_npc_encounter(npc_id: int, affinity_delta: float = 0.0) -> void:
 		push_state()
 
 
+## Debug helper: mark every roster NPC as met (used by the dev panel).
+func request_meet_all_npcs() -> void:
+	if multiplayer.has_multiplayer_peer():
+		_rpc_meet_all_npcs.rpc_id(1)
+	else:
+		_debug_meet_all_npcs()
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _rpc_meet_all_npcs() -> void:
+	if not is_multiplayer_authority():
+		return
+	_debug_meet_all_npcs()
+
+
+func _debug_meet_all_npcs() -> void:
+	var collection := get_npc_collection()
+	for id in NpcRoster.size():
+		if not collection.has(id):
+			collection[id] = { "affinity": 0.0, "order": collection.size() }
+	lifetime_stats["npc_collection"] = collection
+	npc_collection_changed.emit(collection.duplicate(true))
+	push_state()
+
+
 ## Read-side helper — normalizes keys to int (JSON saves stringify them).
 func get_npc_collection() -> Dictionary:
 	var out := { }
