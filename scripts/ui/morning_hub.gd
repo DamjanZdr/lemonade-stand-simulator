@@ -1863,15 +1863,12 @@ func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
 	name_lbl.text = npc_name
 	name_lbl.clip_text = true
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# Shrink long names so they fit inside the card instead of clipping;
-	# the really long ones wrap onto two lines.
+	# Shrink long names so they fit inside the card on a single line.
 	var name_size := 14
 	if npc_name.length() > 28:
-		name_size = 10
-		name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		name_lbl.max_lines_visible = 2
+		name_size = 8
 	elif npc_name.length() > 20:
-		name_size = 11
+		name_size = 12
 	name_lbl.add_theme_font_size_override("font_size", name_size)
 	name_lbl.add_theme_color_override(
 		"font_color",
