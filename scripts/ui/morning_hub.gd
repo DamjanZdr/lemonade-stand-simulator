@@ -1676,15 +1676,23 @@ func _build_npcs_tab() -> void:
 	header.add_theme_font_size_override("font_size", 15)
 	header.add_theme_color_override("font_color", Color(0.92, 0.72, 0.22))
 	page.add_child(header)
-	var scroll := ScrollContainer.new()
-	scroll.name = "NpcScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	page.add_child(scroll)
-	var list := VBoxContainer.new()
-	list.name = "NpcList"
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 4)
-	scroll.add_child(list)
+	# Three columns: common | community | rare + elite (stacked).
+	var cols := HBoxContainer.new()
+	cols.name = "NpcColumns"
+	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cols.add_theme_constant_override("separation", 14)
+	page.add_child(cols)
+	for col_name in ["common", "community", "right"]:
+		var scroll := ScrollContainer.new()
+		scroll.name = "Scroll_" + col_name
+		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		cols.add_child(scroll)
+		var col := VBoxContainer.new()
+		col.name = "Col_" + col_name
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		col.add_theme_constant_override("separation", 4)
+		scroll.add_child(col)
 
 
 ## Fills the NPCs tab with every roster NPC the local stand has met.
@@ -1694,71 +1702,104 @@ func _populate_npc_page() -> void:
 	if page == null:
 		return
 	var header := page.get_node("NpcHeader") as Label
-	var list := page.get_node("NpcScroll/NpcList") as VBoxContainer
-	if header == null or list == null:
+	if header == null:
 		return
-	for c in list.get_children():
-		c.queue_free()
 	var stand := _get_local_stand() as StandUnit
 	var collection: Dictionary = (stand.get_npc_collection() if stand != null else { })
 	header.text = "Regulars met: %d / %d" % [collection.size(), NpcRoster.size()]
-	if collection.is_empty():
-		var empty := Label.new()
-		empty.text = "Nobody yet — talk to the people walking by."
-		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
-		list.add_child(empty)
-		return
 	# Refresh live if the collection changes while the tab is open.
 	if stand != null and not stand.npc_collection_changed.is_connected(_on_npc_collection_changed):
 		stand.npc_collection_changed.connect(_on_npc_collection_changed)
-	var rarity_rank := { "common": 0, "community": 1, "rare": 2, "elite": 3 }
-	var ids := collection.keys()
-	ids.sort_custom(
-		func(a, b):
-			var ea := NpcRoster.get_entry(int(a))
-			var eb := NpcRoster.get_entry(int(b))
-			var ra: int = rarity_rank.get(str(ea.get("rarity", "common")), 0)
-			var rb: int = rarity_rank.get(str(eb.get("rarity", "common")), 0)
-			if ra != rb:
-				return ra > rb # rarest first
-			return str(ea.get("name", "")) < str(eb.get("name", "")),
-	)
-	for raw_id in ids:
-		var entry := NpcRoster.get_entry(int(raw_id))
+
+	var col_common := _npc_column("common")
+	var col_community := _npc_column("community")
+	var col_right := _npc_column("right")
+	if col_common == null or col_community == null or col_right == null:
+		return
+	for col in [col_common, col_community, col_right]:
+		for c in col.get_children():
+			c.queue_free()
+
+	# Group the whole roster by rarity, alphabetical inside each column.
+	# Unmet slots render as dimmed "???" so the tab doubles as a checklist.
+	var by_rarity := { "common": [], "community": [], "rare": [], "elite": [] }
+	for i in NpcRoster.size():
+		var entry := NpcRoster.get_entry(i)
 		var rarity := str(entry.get("rarity", "common"))
-		var affinity := float(collection[raw_id].get("affinity", 0.0))
+		if by_rarity.has(rarity):
+			by_rarity[rarity].append(i)
+	for rarity in by_rarity:
+		by_rarity[rarity].sort_custom(
+			func(a, b):
+				return str(NpcRoster.get_entry(a).get("name", "")) \
+						< str(NpcRoster.get_entry(b).get("name", "")),
+		)
+
+	_npc_fill_column(col_common, "Common", by_rarity["common"], collection)
+	_npc_fill_column(col_community, "Community", by_rarity["community"], collection)
+	_npc_fill_column(col_right, "Rare", by_rarity["rare"], collection)
+	_npc_fill_column(col_right, "Elite", by_rarity["elite"], collection)
+
+
+func _npc_column(col_name: String) -> VBoxContainer:
+	return $MainHBox/Panel/VBox/Content/NpcsPage/NpcColumns \
+			.get_node_or_null("Scroll_%s/Col_%s" % [col_name, col_name]) as VBoxContainer
+
+
+func _npc_fill_column(
+	col: VBoxContainer,
+	title: String,
+	ids: Array,
+	collection: Dictionary,
+) -> void:
+	if ids.is_empty():
+		return
+	var header := Label.new()
+	header.text = title
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
+	col.add_child(header)
+	for raw_id in ids:
+		var id := int(raw_id)
+		var entry := NpcRoster.get_entry(id)
+		var rarity := str(entry.get("rarity", "common"))
+		var met := collection.has(id) or collection.has(str(id))
+		var affinity := 0.0
+		if met:
+			affinity = float(
+				(collection.get(id, collection.get(str(id), { }))).get("affinity", 0.0)
+			)
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
+		row.add_theme_constant_override("separation", 8)
 		var name_lbl := Label.new()
-		name_lbl.text = str(entry.get("name", "???"))
+		name_lbl.text = str(entry.get("name", "")) if met else "???"
 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.add_theme_font_size_override("font_size", 14)
+		name_lbl.add_theme_font_size_override("font_size", 13)
 		name_lbl.add_theme_color_override(
 			"font_color",
-			NpcRoster.RARITY_NAME_COLORS.get(rarity, Color.WHITE),
+			(
+				NpcRoster.RARITY_NAME_COLORS.get(rarity, Color.WHITE)
+				if met
+				else Color(0.45, 0.42, 0.38)
+			),
 		)
 		row.add_child(name_lbl)
-		var rarity_lbl := Label.new()
-		rarity_lbl.text = rarity.capitalize()
-		rarity_lbl.add_theme_font_size_override("font_size", 11)
-		rarity_lbl.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
-		row.add_child(rarity_lbl)
 		var bar := ProgressBar.new()
 		bar.min_value = 0.0
 		bar.max_value = 100.0
 		bar.value = affinity
-		bar.custom_minimum_size = Vector2(110, 10)
+		bar.custom_minimum_size = Vector2(64, 8)
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		bar.show_percentage = false
 		row.add_child(bar)
 		var pct := Label.new()
-		pct.text = "%d%%" % int(affinity)
-		pct.custom_minimum_size = Vector2(34, 0)
-		pct.add_theme_font_size_override("font_size", 11)
+		pct.text = "%d%%" % int(affinity) if met else ""
+		pct.custom_minimum_size = Vector2(30, 0)
+		pct.add_theme_font_size_override("font_size", 10)
 		pct.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
 		row.add_child(pct)
-		list.add_child(row)
+		col.add_child(row)
 
 
 func _on_npc_collection_changed(_collection: Dictionary) -> void:

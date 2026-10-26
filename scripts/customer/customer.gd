@@ -856,7 +856,26 @@ func _record_customer_served(outcome: String) -> void:
 	# sync inside StandUnit.on_customer_served() for the primary stand.
 	if stand != null:
 		stand.request_customer_served(outcome, pop_delta, _served_evaluations.size())
-		stand.record_npc_encounter(npc_id, NPC_AFFINITY_DELTAS.get(outcome, 2.0))
+		stand.record_npc_encounter(npc_id, _affinity_delta(outcome))
+
+
+## Affinity scales with cup quality, not just the outcome label: a 3-cup
+## order where every cup was clean earns more than a single lucky cup.
+## Per cup: clean = 10, 1–2 complaints = 4, worse = 1; averaged across
+## cups. Non-serve outcomes use the flat table in NPC_AFFINITY_DELTAS.
+func _affinity_delta(outcome: String) -> float:
+	if _served_evaluations.is_empty():
+		return NPC_AFFINITY_DELTAS.get(outcome, 2.0)
+	var total := 0.0
+	for eval in _served_evaluations:
+		var complaints: Array = eval.get("complaints", [])
+		if complaints.is_empty():
+			total += 10.0
+		elif complaints.size() <= 2:
+			total += 4.0
+		else:
+			total += 1.0
+	return total / _served_evaluations.size()
 
 
 func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:
