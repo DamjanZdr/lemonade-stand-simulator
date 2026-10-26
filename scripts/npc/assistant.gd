@@ -26,9 +26,6 @@ const SYNC_INTERVAL := 0.1
 const NET_LERP_SPEED := 12.0
 const NET_STALE_MSEC := 8000
 const ROLES: Array[String] = ["server", "brewer", "stocker", "cleaner"]
-## How many filled cups a server pre-stages on the counter when idle —
-## capped by counter grid space (4 per row x 3 rows), not by cups.
-const MAX_PREPARED_CUPS := 12
 
 var assigned_stand: StandUnit = null
 var stand_name: String = ""
@@ -454,7 +451,8 @@ func _build_server_steps() -> void:
 		return
 	# No customers — stock the counter with filled cups so orders can be
 	# served instantly when someone arrives.
-	if _stand_filled_cup_count() >= MAX_PREPARED_CUPS:
+	var tray := _find_tray()
+	if tray == null or not tray.has_free_slot():
 		return
 	var stack := _nearest_cup_stack()
 	var pitcher := _first_pitcher_with_liquid()
@@ -472,7 +470,7 @@ func _build_server_steps() -> void:
 		func():
 			_fill_cup(pitcher),
 	)
-	var spot := _next_counter_cup_spot()
+	var spot := tray.free_slot_position()
 	_steps.append(
 		{
 			"target": spot,
@@ -565,12 +563,11 @@ func _find_filled_cup(fruit: String) -> Cup:
 	return null
 
 
-func _stand_filled_cup_count() -> int:
-	var c := 0
-	for n in _stand_objects("container"):
-		if n is Cup and n.state == Cup.CupState.FILLED:
-			c += 1
-	return c
+func _find_tray() -> CupTray:
+	for n in _stand_objects("cup_tray"):
+		if n is CupTray:
+			return n
+	return null
 
 
 func _first_pitcher_with_liquid() -> Pitcher:
@@ -606,24 +603,6 @@ func _counter_top_center() -> Vector3:
 	return Vector3(aabb.get_center().x, aabb.end.y, aabb.get_center().z)
 
 
-## Slot for the next filled cup: row-major grid on the counter top (4 per
-## row, rows stepping away from the front edge).
-func _next_counter_cup_spot() -> Vector3:
-	var top := _counter_top_center()
-	var idx := _stand_filled_cup_count()
-	var right := assigned_stand.global_transform.basis.x \
-			if assigned_stand != null else Vector3.RIGHT
-	right.y = 0.0
-	right = right.normalized()
-	var fwd := assigned_stand.global_transform.basis.z \
-			if assigned_stand != null else Vector3.FORWARD
-	fwd.y = 0.0
-	fwd = fwd.normalized()
-	var col := idx % 4
-	var row_i := idx / 4
-	return top + right * ((col - 1.5) * 0.26) - fwd * (row_i * 0.26)
-
-
 func _grab_filled_cup(cup: Cup) -> void:
 	if not is_instance_valid(cup) or cup.state != Cup.CupState.FILLED:
 		return
@@ -652,6 +631,11 @@ func _place_held_cup(spot: Vector3) -> void:
 		if cup.physics != null:
 			cup.physics.collision_layer = 1
 			cup.physics.collision_mask = 1
+		# Rest the cup's bottom on the slot — the model pivot is not at its
+		# base, so spawning at the marker sank it into the surface.
+		var mi := cup.find_child("", "MeshInstance3D", true, false) as MeshInstance3D
+		if mi != null and mi.mesh != null:
+			cup.global_position.y -= mi.get_aabb().position.y * cup.scale.y
 	_held_recipe = { }
 
 

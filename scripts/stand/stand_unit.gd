@@ -1092,7 +1092,9 @@ func get_delivery_marker_position() -> Vector3:
 ## purchased node. Spawned at DAY start, removed at EVENING. Host-only
 ## sim; clients receive spawned nodes + transform sync via WorldSync.
 var assistants: Array = []
+var _cup_tray: Node3D = null
 const ASSISTANT_SCENE := "res://scenes/npc/assistant.tscn"
+const CUP_TRAY_SCENE := "res://scenes/objects/cup_tray.tscn"
 
 
 func _on_day_phase_for_assistants(phase: DayManager.Phase, _day: int) -> void:
@@ -1136,6 +1138,48 @@ func _spawn_assistants() -> void:
 		)
 		if a != null:
 			assistants.append(a)
+	if want > 0:
+		_ensure_cup_tray()
+
+
+## The counter tray the server assistant stages filled cups on. Persistent
+## furniture once spawned — it survives day transitions so cups on it
+## don't get stranded.
+func _ensure_cup_tray() -> void:
+	if is_instance_valid(_cup_tray):
+		return
+	for n in get_tree().get_nodes_in_group("cup_tray"):
+		if n.global_position.distance_to(global_position) < 6.0:
+			_cup_tray = n
+			return
+	var counter := find_child("Counter", true, false)
+	if counter == null:
+		return
+	var aabb := AABB()
+	var found := false
+	for c in counter.find_children("", "MeshInstance3D", true, false):
+		var mi := c as MeshInstance3D
+		if mi == null or mi.mesh == null:
+			continue
+		var wa := mi.global_transform * mi.get_aabb()
+		aabb = wa if not found else aabb.merge(wa)
+		found = true
+	if not found:
+		return
+	# Sit the tray on the counter top, nudged to the back edge so staged
+	# cups stay out of the way of the serving spot.
+	var pos := Vector3(aabb.get_center().x, aabb.end.y, aabb.get_center().z)
+	var fwd := global_transform.basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized()
+	pos -= fwd * (aabb.size.z * 0.5 - 0.32)
+	_cup_tray = WorldSync.spawn_networked(
+		CUP_TRAY_SCENE,
+		get_parent(),
+		pos,
+		global_rotation,
+		{ "_net_groups": ["cup_tray"] },
+	)
 
 
 func _despawn_assistants() -> void:
