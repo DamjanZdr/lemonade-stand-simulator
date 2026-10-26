@@ -26,6 +26,8 @@ const SYNC_INTERVAL := 0.1
 const NET_LERP_SPEED := 12.0
 const NET_STALE_MSEC := 8000
 const ROLES: Array[String] = ["server", "brewer", "stocker", "cleaner"]
+## How many filled cups a server pre-stages on the counter when idle.
+const MAX_PREPARED_CUPS := 4
 
 var assigned_stand: StandUnit = null
 var stand_name: String = ""
@@ -75,6 +77,10 @@ func _ready() -> void:
 	if appearance_seed != 0:
 		_npc.appearance_seed = appearance_seed
 		_npc.randomize_appearance()
+	# Kid proportions + higher voice — skin stays default (randomize
+	# doesn't touch skin tones).
+	_npc.apply_kid_proportions()
+	_npc.voice_pitch += 0.3
 	_npc.play_anim("Idle")
 	_home_pos = global_position
 	if not _is_host():
@@ -138,9 +144,11 @@ func _advance() -> void:
 	if _steps.is_empty():
 		_rebuild_steps()
 	if _steps.is_empty():
-		# Nothing to do — linger at the home spot.
-		if global_position.distance_to(_home_pos) > ARRIVE_DIST * 2.0:
-			_step_target = _home_pos
+		# Nothing to do — linger at the role's idle spot (servers wait at
+		# the stand front so they're already near customers).
+		var idle := _idle_spot()
+		if global_position.distance_to(idle) > ARRIVE_DIST * 2.0:
+			_step_target = idle
 			_step_target_node = null
 			_step_act = Callable()
 			_step_wait = 0.5
@@ -152,6 +160,17 @@ func _advance() -> void:
 	_step_act = step.get("act", Callable())
 	_step_wait = step.get("wait", ACTION_WAIT)
 	_moving = true
+
+
+func _idle_spot() -> Vector3:
+	if role == "server" and assigned_stand != null:
+		# In front of the counter at ground level — customers queue here.
+		var c := _counter_top_center()
+		var fwd := assigned_stand.global_transform.basis.z
+		fwd.y = 0.0
+		fwd = fwd.normalized()
+		return Vector3(c.x, global_position.y, c.z) + fwd * 1.0
+	return _home_pos
 
 
 func _abort_steps() -> void:
@@ -416,28 +435,16 @@ func _nearest_cup_stack() -> CupStack:
 
 func _build_server_steps() -> void:
 	var cust := _nearest(_waiting_customers()) as Customer
-	if cust == null:
+	if cust != null:
+		_build_customer_serve_steps(cust)
 		return
-	if not cust.order_ready():
-		# Go take the order first — show_order_to_player only needs a Node3D
-		# position for facing; can_be_served_by passes via assigned_stand.
-		_queue_step(
-			cust,
-			0.8,
-			func():
-				cust.show_order_to_player(self),
-		)
+	# No customers — stock the counter with filled cups so orders can be
+	# served instantly when someone arrives.
+	if _stand_filled_cup_count() >= MAX_PREPARED_CUPS:
 		return
-	var fruit := ""
-	for ft in cust.order.keys():
-		if _find_pitcher_with(ft) != null:
-			fruit = ft
-			break
-	if fruit == "":
-		return # Nothing on order matches an available pitcher — wait.
-	var pitcher := _find_pitcher_with(fruit)
 	var stack := _nearest_cup_stack()
-	if stack == null:
+	var pitcher := _first_pitcher_with_liquid()
+	if stack == null or pitcher == null:
 		return
 	_queue_step(
 		stack,
@@ -451,12 +458,148 @@ func _build_server_steps() -> void:
 		func():
 			_fill_cup(pitcher),
 	)
-	_queue_step(
-		cust,
-		1.2,
-		func():
-			_serve_customer(cust),
+	var spot := _next_counter_cup_spot()
+	_steps.append(
+		{
+			"target": spot,
+			"wait": 0.6,
+			"act": func():
+				_place_held_cup(spot),
+		}
 	)
+
+
+func _build_customer_serve_steps(cust: Customer) -> void:
+	if not cust.order_ready():
+		# Go take the order first — show_order_to_player only needs a Node3D
+		# position for facing; can_be_served_by passes via assigned_stand.
+		_queue_step(
+			cust,
+			0.8,
+			func():
+				cust.show_order_to_player(self),
+		)
+		return
+	# Prefer an already-filled cup sitting on the counter.
+	for ft in cust.order.keys():
+		var cup := _find_filled_cup(ft)
+		if cup != null:
+			_queue_step(
+				cup,
+				0.5,
+				func():
+					_grab_filled_cup(cup),
+			)
+			_queue_step(
+				cust,
+				1.2,
+				func():
+					_serve_customer(cust),
+			)
+			return
+	# Otherwise pour a fresh one from a matching pitcher.
+	var stack := _nearest_cup_stack()
+	for ft in cust.order.keys():
+		var pitcher := _find_pitcher_with(ft)
+		if pitcher != null and stack != null:
+			_queue_step(
+				stack,
+				0.6,
+				func():
+					_take_cup(stack),
+			)
+			_queue_step(
+				pitcher,
+				0.8,
+				func():
+					_fill_cup(pitcher),
+			)
+			_queue_step(
+				cust,
+				1.2,
+				func():
+					_serve_customer(cust),
+			)
+			return
+
+
+func _find_filled_cup(fruit: String) -> Cup:
+	for n in _stand_objects("container"):
+		if n is Cup and n.state == Cup.CupState.FILLED \
+				and str(n.recipe.get("fruit_type", "")) == fruit:
+			return n
+	return null
+
+
+func _stand_filled_cup_count() -> int:
+	var c := 0
+	for n in _stand_objects("container"):
+		if n is Cup and n.state == Cup.CupState.FILLED:
+			c += 1
+	return c
+
+
+func _first_pitcher_with_liquid() -> Pitcher:
+	for n in _stand_objects("pitcher"):
+		if n is Pitcher and n.get_liquid_volume() > 0.0:
+			return n
+	return null
+
+
+func _counter_top_center() -> Vector3:
+	if assigned_stand == null:
+		return global_position
+	var counter := assigned_stand.find_child("Counter", true, false)
+	if counter == null:
+		return assigned_stand.to_global(Vector3(0.0, 1.0, 1.0))
+	var top_y := counter.global_position.y + 0.55
+	var col := counter.find_child("Col", true, false) as CollisionShape3D
+	if col != null and col.shape is BoxShape3D:
+		top_y = col.global_position.y + col.shape.size.y * 0.5
+	return Vector3(counter.global_position.x, top_y, counter.global_position.z)
+
+
+## Slot for the next filled cup: a row across the counter top, spaced so
+## up to MAX_PREPARED_CUPS fit without overlapping.
+func _next_counter_cup_spot() -> Vector3:
+	var top := _counter_top_center()
+	var idx := _stand_filled_cup_count()
+	var right := assigned_stand.global_transform.basis.x \
+			if assigned_stand != null else Vector3.RIGHT
+	right.y = 0.0
+	right = right.normalized()
+	return top + right * ((idx - 1.5) * 0.28)
+
+
+func _grab_filled_cup(cup: Cup) -> void:
+	if not is_instance_valid(cup) or cup.state != Cup.CupState.FILLED:
+		return
+	_held_recipe = cup.recipe.duplicate(true)
+	WorldSync.despawn_networked(cup)
+
+
+func _place_held_cup(spot: Vector3) -> void:
+	if _held_recipe.is_empty():
+		return
+	var cup := WorldSync.spawn_networked(
+		"res://scenes/objects/cup.tscn",
+		get_parent(),
+		spot,
+		Vector3.ZERO,
+		{
+			"recipe": _held_recipe.duplicate(true),
+			"fill_color": _held_recipe.get("color", Color(1.0, 0.9, 0.3)),
+			"state": Cup.CupState.FILLED,
+			"_net_groups": ["container"],
+			"_net_scale": Vector3.ONE * 0.03,
+		},
+	) as Cup
+	if cup != null:
+		cup.add_to_group("container")
+		if cup.physics != null:
+			cup.physics.collision_layer = 1
+			cup.physics.collision_mask = 1
+	_held_recipe = { }
 
 
 func _take_cup(stack: CupStack) -> void:

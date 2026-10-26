@@ -294,6 +294,16 @@ func randomize_appearance() -> void:
 	_tint_clothing_seeded(body, rng)
 
 
+## Shorten the body and enlarge the head so the NPC reads as a kid
+## (player-style proportions). Skin is untouched — assistants call this
+## after randomize_appearance().
+func apply_kid_proportions(height_mult: float = 0.8, head_mult: float = 1.18) -> void:
+	if _base_scale_y < 0.0:
+		_base_scale_y = scale.y
+	scale.y = _base_scale_y * clampf(height_mult, 0.6, 1.0)
+	_apply_body_bones(0.0, clampf(head_mult, 0.85, 1.25))
+
+
 func play_anim(anim_name: String) -> void:
 	if _active_anim == null:
 		return

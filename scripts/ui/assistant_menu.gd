@@ -184,78 +184,99 @@ func _build_brewer_editor(vb: VBoxContainer) -> void:
 	var sep := HSeparator.new()
 	vb.add_child(sep)
 	var hdr := Label.new()
-	hdr.text = "Brew queue — set each slot's fruit + amount:"
+	hdr.text = "Brew queue — click a slot to change its fruit:"
+	hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hdr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vb.add_child(hdr)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	vb.add_child(grid)
 	for i in QUEUE_SLOTS:
-		vb.add_child(_make_slot_row(i))
-	var loop := CheckButton.new()
-	loop.text = "Loop queue"
+		grid.add_child(_make_slot_cell(i))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	vb.add_child(row)
+	var loop := Button.new()
+	loop.text = "↻"
+	loop.tooltip_text = "Loop queue"
+	loop.toggle_mode = true
 	loop.button_pressed = _loop_edit
+	loop.focus_mode = Control.FOCUS_NONE
+	loop.custom_minimum_size = Vector2(52, 52)
+	loop.add_theme_font_size_override("font_size", 28)
+	if _loop_edit:
+		loop.add_theme_color_override("font_color", Color(0.45, 0.95, 0.55))
 	loop.toggled.connect(
 		func(on: bool):
-			_loop_edit = on,
+			_loop_edit = on
+			loop.add_theme_color_override(
+				"font_color",
+				Color(0.45, 0.95, 0.55) if on else Color(1, 1, 1),
+			),
 	)
-	vb.add_child(loop)
+	row.add_child(loop)
+	var btns := HBoxContainer.new()
+	btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	btns.add_theme_constant_override("separation", 10)
+	vb.add_child(btns)
 	var apply := _make_button("Start brewing")
+	apply.custom_minimum_size = Vector2(140, 36)
+	apply.add_theme_color_override("font_color", Color(0.45, 0.95, 0.55))
 	apply.pressed.connect(
 		func():
 			var queue: Array = []
 			for e in _queue_edit:
-				if e["fruit"] != "" and int(e["qty"]) > 0:
-					queue.append({ "fruit": e["fruit"], "qty": int(e["qty"]) })
+				if e["fruit"] != "":
+					queue.append({ "fruit": e["fruit"], "qty": 1 })
 			_assistant.request_assign("brewer", queue, _loop_edit),
 	)
-	vb.add_child(apply)
+	btns.add_child(apply)
 	var back := _make_button("Back")
+	back.custom_minimum_size = Vector2(100, 36)
 	back.pressed.connect(
 		func():
 			_mode = "roles"
 			_rebuild(),
 	)
-	vb.add_child(back)
+	btns.add_child(back)
 
 
-func _make_slot_row(idx: int) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	var num := Label.new()
-	num.text = "%d." % (idx + 1)
-	num.custom_minimum_size = Vector2(18, 0)
-	row.add_child(num)
-	var fruit_btn := _make_button(_slot_label(idx))
-	fruit_btn.custom_minimum_size = Vector2(120, 0)
-	fruit_btn.pressed.connect(
+func _make_slot_cell(idx: int) -> Button:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(96, 96)
+	b.expand_icon = true
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_update_slot_cell(b, idx)
+	b.pressed.connect(
 		func():
 			_cycle_fruit(idx)
-			fruit_btn.text = _slot_label(idx),
+			_update_slot_cell(b, idx),
 	)
-	row.add_child(fruit_btn)
-	var minus := _make_button("-")
-	minus.pressed.connect(
-		func():
-			_queue_edit[idx]["qty"] = maxi(1, int(_queue_edit[idx]["qty"]) - 1)
-			_rebuild(),
-	)
-	row.add_child(minus)
-	var qty := Label.new()
-	qty.text = str(_queue_edit[idx]["qty"])
-	qty.custom_minimum_size = Vector2(20, 0)
-	qty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	row.add_child(qty)
-	var plus := _make_button("+")
-	plus.pressed.connect(
-		func():
-			_queue_edit[idx]["qty"] = mini(9, int(_queue_edit[idx]["qty"]) + 1)
-			_rebuild(),
-	)
-	row.add_child(plus)
-	return row
+	return b
 
 
-func _slot_label(idx: int) -> String:
+func _update_slot_cell(b: Button, idx: int) -> void:
 	var f: String = _queue_edit[idx]["fruit"]
-	return f.capitalize() if f != "" else "—"
+	if f == "":
+		b.icon = null
+		b.text = "+"
+		b.tooltip_text = "Empty — click to set a fruit"
+	else:
+		b.text = ""
+		b.icon = _fruit_icon(f)
+		b.tooltip_text = f.capitalize()
+
+
+func _fruit_icon(fruit: String) -> Texture2D:
+	var p := "res://assets/textures/ui/products/%s.png" % fruit
+	if ResourceLoader.exists(p):
+		return load(p) as Texture2D
+	return null
 
 
 func _cycle_fruit(idx: int) -> void:
