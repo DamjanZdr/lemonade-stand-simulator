@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/objects/cup_tray.gd" id="1_tray"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_tray"]
-size = Vector3(0.9, 0.03, 0.45)
+size = Vector3(0.85, 0.03, 0.62)
 
 [sub_resource type="StandardMaterial3D" id="Mat_tray"]
 albedo_color = Color(0.35, 0.28, 0.2, 1)
@@ -20,19 +20,61 @@ mesh = SubResource("BoxMesh_tray")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
 
 [node name="S1" type="Marker3D" parent="Slots"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.26, 0, -0.11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 0, -0.225)
 
 [node name="S2" type="Marker3D" parent="Slots"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0, -0.225)
 
 [node name="S3" type="Marker3D" parent="Slots"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.26, 0, -0.11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.225)
 
 [node name="S4" type="Marker3D" parent="Slots"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.26, 0, 0.11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0, -0.225)
 
 [node name="S5" type="Marker3D" parent="Slots"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0, -0.225)
 
 [node name="S6" type="Marker3D" parent="Slots"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.26, 0, 0.11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 0, -0.075)
+
+[node name="S7" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0, -0.075)
+
+[node name="S8" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.075)
+
+[node name="S9" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0, -0.075)
+
+[node name="S10" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0, -0.075)
+
+[node name="S11" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 0, 0.075)
+
+[node name="S12" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0, 0.075)
+
+[node name="S13" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.075)
+
+[node name="S14" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0, 0.075)
+
+[node name="S15" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0, 0.075)
+
+[node name="S16" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 0, 0.225)
+
+[node name="S17" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0, 0.225)
+
+[node name="S18" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.225)
+
+[node name="S19" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0, 0.225)
+
+[node name="S20" type="Marker3D" parent="Slots"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0, 0.225)
