@@ -31,6 +31,16 @@ const BUBBLE_UI_SCALE: float = 4.0
 const BUBBLE_PIXEL_SIZE: float = 0.0013
 const BUBBLE_LOCAL_POS := Vector3(0.0, 1.3, 0.0)
 const MOUSE_ICON_PATH := "res://assets/textures/ui/upgrades/mouse indicator.png"
+## How much each serve outcome raises this NPC's affinity for the stand
+## (0–100 bar in the computer's NPCs tab). Paying-but-unhappy outcomes
+## fall through to the .get() default of 2.0.
+const NPC_AFFINITY_DELTAS: Dictionary = {
+	"happy": 10.0,
+	"timeout": 0.0,
+	"too_expensive": 1.0,
+	"wrong_order": 1.0,
+	"scam": 0.5,
+}
 
 ## Recovery: playing Fall in reverse to get back up.
 var _recovering: bool = false
@@ -846,6 +856,7 @@ func _record_customer_served(outcome: String) -> void:
 	# sync inside StandUnit.on_customer_served() for the primary stand.
 	if stand != null:
 		stand.request_customer_served(outcome, pop_delta, _served_evaluations.size())
+		stand.record_npc_encounter(npc_id, NPC_AFFINITY_DELTAS.get(outcome, 2.0))
 
 
 func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:
@@ -1132,6 +1143,10 @@ func show_order_to_player(player: Node) -> void:
 		return
 	if stand != null and not stand.can_be_served_by(player):
 		return
+	# Talking to this customer counts as discovering the NPC. Host-only —
+	# request_show_order's callers both run on the server.
+	if stand != null:
+		stand.record_npc_encounter(npc_id)
 	var was_already_engaged := _engaged_with_player
 	_engaged_with_player = true
 	_engaged_player = player

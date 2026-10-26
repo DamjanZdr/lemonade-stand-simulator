@@ -83,7 +83,7 @@ const DEMO_DISABLE_UPGRADES := true
 ## Matches the main-menu stand-name limit (world_menu.gd NAME_MAX_WEIGHT).
 const STAND_NAME_MAX_WEIGHT := 15.0
 
-var _flow_tabs: Array[String] = ["analytics", "shop", "upgrades"]
+var _flow_tabs: Array[String] = ["analytics", "shop", "upgrades", "npcs"]
 var _demo_upgrades_overlay: Control = null
 var _flow_step: int = 0
 var _cart: Array[Dictionary] = []
@@ -242,6 +242,10 @@ func _ready() -> void:
 			func():
 				_cycle_fence_gradient(1),
 		)
+
+	# NPC collection tab — built at runtime (the editor builder predates
+	# it); the click/hover wiring loop below picks it up automatically.
+	_build_npcs_tab()
 
 	# Make tab labels clickable
 	for tab in _flow_tabs:
@@ -1603,8 +1607,8 @@ func _show_tab(tab_name: String) -> void:
 		_refresh_analytics()
 	elif tab_name == "upgrades":
 		_refresh_upgrades()
-	elif tab_name == "shop":
-		pass
+	elif tab_name == "npcs":
+		_populate_npc_page()
 	if _demo_upgrades_overlay != null:
 		_demo_upgrades_overlay.visible = (tab_name == "upgrades")
 	_update_flow_indicator()
@@ -1640,6 +1644,126 @@ func _update_flow_indicator() -> void:
 			step_pc.add_theme_stylebox_override("panel", inactive_st)
 			if step_lbl:
 				step_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+
+
+## Builds the NPC collection tab button + page at runtime. The scene was
+## authored by the @tool builder before this feature existed, so this
+## page lives in code instead of the .tscn.
+func _build_npcs_tab() -> void:
+	if _flow_indicator == null:
+		return
+	var step_pc := PanelContainer.new()
+	step_pc.name = "StepPC_npcs"
+	var step_lbl := Label.new()
+	step_lbl.name = "StepLbl_npcs"
+	step_lbl.text = "NPCs"
+	step_lbl.add_theme_font_size_override("font_size", 13)
+	step_lbl.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
+	step_pc.add_child(step_lbl)
+	_flow_indicator.add_child(step_pc)
+
+	var content := $MainHBox/Panel/VBox/Content as MarginContainer
+	if content == null:
+		return
+	var page := VBoxContainer.new()
+	page.name = "NpcsPage"
+	page.visible = false
+	page.add_theme_constant_override("separation", 6)
+	content.add_child(page)
+	var header := Label.new()
+	header.name = "NpcHeader"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 15)
+	header.add_theme_color_override("font_color", Color(0.92, 0.72, 0.22))
+	page.add_child(header)
+	var scroll := ScrollContainer.new()
+	scroll.name = "NpcScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	page.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.name = "NpcList"
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 4)
+	scroll.add_child(list)
+
+
+## Fills the NPCs tab with every roster NPC the local stand has met.
+## Rows: rarity-colored name, rarity tag, affinity bar (0–100).
+func _populate_npc_page() -> void:
+	var page := $MainHBox/Panel/VBox/Content.get_node_or_null("NpcsPage")
+	if page == null:
+		return
+	var header := page.get_node("NpcHeader") as Label
+	var list := page.get_node("NpcScroll/NpcList") as VBoxContainer
+	if header == null or list == null:
+		return
+	for c in list.get_children():
+		c.queue_free()
+	var stand := _get_local_stand() as StandUnit
+	var collection: Dictionary = (stand.get_npc_collection() if stand != null else { })
+	header.text = "Regulars met: %d / %d" % [collection.size(), NpcRoster.size()]
+	if collection.is_empty():
+		var empty := Label.new()
+		empty.text = "Nobody yet — talk to the people walking by."
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
+		list.add_child(empty)
+		return
+	# Refresh live if the collection changes while the tab is open.
+	if stand != null and not stand.npc_collection_changed.is_connected(_on_npc_collection_changed):
+		stand.npc_collection_changed.connect(_on_npc_collection_changed)
+	var rarity_rank := { "common": 0, "community": 1, "rare": 2, "elite": 3 }
+	var ids := collection.keys()
+	ids.sort_custom(
+		func(a, b):
+			var ea := NpcRoster.get_entry(int(a))
+			var eb := NpcRoster.get_entry(int(b))
+			var ra: int = rarity_rank.get(str(ea.get("rarity", "common")), 0)
+			var rb: int = rarity_rank.get(str(eb.get("rarity", "common")), 0)
+			if ra != rb:
+				return ra > rb # rarest first
+			return str(ea.get("name", "")) < str(eb.get("name", "")),
+	)
+	for raw_id in ids:
+		var entry := NpcRoster.get_entry(int(raw_id))
+		var rarity := str(entry.get("rarity", "common"))
+		var affinity := float(collection[raw_id].get("affinity", 0.0))
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var name_lbl := Label.new()
+		name_lbl.text = str(entry.get("name", "???"))
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.add_theme_font_size_override("font_size", 14)
+		name_lbl.add_theme_color_override(
+			"font_color",
+			NpcRoster.RARITY_NAME_COLORS.get(rarity, Color.WHITE),
+		)
+		row.add_child(name_lbl)
+		var rarity_lbl := Label.new()
+		rarity_lbl.text = rarity.capitalize()
+		rarity_lbl.add_theme_font_size_override("font_size", 11)
+		rarity_lbl.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
+		row.add_child(rarity_lbl)
+		var bar := ProgressBar.new()
+		bar.min_value = 0.0
+		bar.max_value = 100.0
+		bar.value = affinity
+		bar.custom_minimum_size = Vector2(110, 10)
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bar.show_percentage = false
+		row.add_child(bar)
+		var pct := Label.new()
+		pct.text = "%d%%" % int(affinity)
+		pct.custom_minimum_size = Vector2(34, 0)
+		pct.add_theme_font_size_override("font_size", 11)
+		pct.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
+		row.add_child(pct)
+		list.add_child(row)
+
+
+func _on_npc_collection_changed(_collection: Dictionary) -> void:
+	if _active_tab == "npcs":
+		_populate_npc_page()
 
 
 func _on_tab_hover(step_pc: PanelContainer, tab: String) -> void:

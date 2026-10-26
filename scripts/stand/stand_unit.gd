@@ -39,6 +39,7 @@ signal recipe_changed(fruit_type: String, recipe: Dictionary)
 signal popularity_changed(new_rating: float)
 signal feedback_tier_changed(new_tier: int)
 signal stand_name_changed(new_name: String)
+signal npc_collection_changed(collection: Dictionary)
 
 ## Which peer (network) or debug slot controls this stand. -1 = uncontrolled
 ## (AI/empty). Set by whatever assigns players to stands (lobby, debug
@@ -272,7 +273,11 @@ func _apply_state(
 	perfect_recipes_set = new_perfect_recipes_set.duplicate(true)
 	onboarding_progress = new_onboarding_progress.duplicate(true)
 	last_day_stats = new_last_day_stats.duplicate(true)
+	var old_npc_collection: Dictionary = lifetime_stats.get("npc_collection", { })
 	lifetime_stats = new_lifetime_stats.duplicate(true)
+	var new_npc_collection: Dictionary = lifetime_stats.get("npc_collection", { })
+	if new_npc_collection != old_npc_collection:
+		npc_collection_changed.emit(get_npc_collection())
 	_received_authoritative_state = true
 	# Sync per-stand unlocks. Notify local UI (price/recipe boards) if they changed.
 	var old_unlocks: Dictionary = purchased_upgrade_nodes.duplicate(true)
@@ -835,6 +840,34 @@ func set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 func set_feedback_tier(tier: int) -> void:
 	feedback_tier = clampi(tier, 0, 2)
 	feedback_tier_changed.emit(feedback_tier)
+
+
+## Per-stand NPC collection, stored inside lifetime_stats under
+## "npc_collection" so it rides the existing save + push_state channels:
+## { npc_id: { "affinity": float } }. Presence in the dict = discovered.
+## Host-authoritative — NPC scripts call this on the host only.
+func record_npc_encounter(npc_id: int, affinity_delta: float = 0.0) -> void:
+	if npc_id < 0:
+		return
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
+	var collection := get_npc_collection()
+	var is_new := not collection.has(npc_id)
+	var entry: Dictionary = collection.get(npc_id, { })
+	entry["affinity"] = clampf(float(entry.get("affinity", 0.0)) + affinity_delta, 0.0, 100.0)
+	collection[npc_id] = entry
+	lifetime_stats["npc_collection"] = collection
+	if is_new or affinity_delta != 0.0:
+		npc_collection_changed.emit(collection.duplicate(true))
+		push_state()
+
+
+## Read-side helper — normalizes keys to int (JSON saves stringify them).
+func get_npc_collection() -> Dictionary:
+	var out := { }
+	for k in lifetime_stats.get("npc_collection", { }):
+		out[int(k)] = lifetime_stats["npc_collection"][k]
+	return out
 
 
 func on_customer_served(outcome: String, pop_delta: float, cups_served: int = 1) -> void:

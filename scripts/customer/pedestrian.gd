@@ -777,6 +777,12 @@ func offer_free_lemonade(player: Node) -> void:
 		return
 	_state = PedestrianState.OFFERED
 	_offered_by_player = player as Node3D
+	# Talking counts as discovering the NPC; charge it to the offerer's
+	# stand (matters in versus where two stands exist).
+	var offerer := player as Player
+	if offerer != null and offerer.assigned_stand != null \
+			and is_instance_valid(offerer.assigned_stand):
+		offerer.assigned_stand.record_npc_encounter(npc_id)
 	_resume_waypoint_idx = _waypoint_idx
 	velocity = Vector3.ZERO
 	_offer_patience = _offer_patience_max
@@ -812,6 +818,9 @@ func try_serve(player: Node) -> void:
 	# Free-sample NPCs give deterministic feedback — every off-ideal axis is
 	# named, no unhappy-chance rolls hiding real problems.
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "", true)
+	# Free samples grow affinity too — clean recipe = bigger bump.
+	if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
+		p.assigned_stand.record_npc_encounter(npc_id, 8.0 if result.complaints.is_empty() else 2.0)
 	Analytics.record_batch_feedback(
 		p.assigned_stand,
 		recipe,
