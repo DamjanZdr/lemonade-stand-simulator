@@ -552,7 +552,7 @@ func _counter_top_center() -> Vector3:
 	var counter := assigned_stand.find_child("Counter", true, false)
 	if counter == null:
 		return assigned_stand.to_global(Vector3(0.0, 1.0, 1.0))
-	var top_y := counter.global_position.y + 0.55
+	var top_y: float = counter.global_position.y + 0.55
 	var col := counter.find_child("Col", true, false) as CollisionShape3D
 	if col != null and col.shape is BoxShape3D:
 		top_y = col.global_position.y + col.shape.size.y * 0.5
