@@ -535,10 +535,8 @@ func _physics_process(delta: float) -> void:
 	_is_sprinting = (
 		Input.is_action_pressed("sprint") and direction != Vector3.ZERO and not _player.is_crouching
 	)
-	var speed_bonus := UpgradeManager.get_effect_total("movement_speed")
-	var base_speed := _player.move_speed + speed_bonus
 	# Crouch halves speed; sprint uses the multiplier (now faster).
-	var speed := base_speed * (
+	var speed := _player.move_speed * (
 		(0.5 if _player.is_crouching else 1.0)
 		* (_player.sprint_multiplier if _is_sprinting else 1.0)
 	)

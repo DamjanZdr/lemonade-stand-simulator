@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+
+[ext_resource type="Script" uid="uid://ctcfj2lo46jbr" path="res://scripts/resources/upgrade_definition.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dylmayfmk0i31" path="res://assets/textures/ui/upgrades/assistant.png" id="icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"assistant"
+display_name = "Assistant"
+description = "Hire an assistant to help around the stand."
+category = "equipment"
+icon = ExtResource("icon")
+effect_per_node = 1.0
+costs = Array[float]([50.0, 70.0, 90.0, 110.0, 130.0])
+effects = Array[float]([1.0, 1.0, 1.0, 1.0, 1.0])
