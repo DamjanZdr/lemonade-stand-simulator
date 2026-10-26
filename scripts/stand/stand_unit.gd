@@ -879,17 +879,19 @@ func record_npc_encounter(
 func _notify_regular_unlocked(npc_id: int, notify_peer_id: int) -> void:
 	if not NpcRoster.has_id(npc_id):
 		return
-	var who := str(NpcRoster.get_entry(npc_id).get("name", "Someone"))
+	var entry := NpcRoster.get_entry(npc_id)
+	var who := str(entry.get("name", "Someone"))
+	var rarity := str(entry.get("rarity", "common"))
 	if notify_peer_id == 0 or notify_peer_id == multiplayer.get_unique_id() \
 			or not multiplayer.has_multiplayer_peer():
-		EventBus.npc_regular_unlocked.emit(who)
+		EventBus.npc_regular_unlocked.emit(who, rarity)
 	else:
-		_rpc_npc_regular_unlocked.rpc_id(notify_peer_id, who)
+		_rpc_npc_regular_unlocked.rpc_id(notify_peer_id, who, rarity)
 
 
 @rpc("authority", "reliable")
-func _rpc_npc_regular_unlocked(who: String) -> void:
-	EventBus.npc_regular_unlocked.emit(who)
+func _rpc_npc_regular_unlocked(who: String, rarity: String) -> void:
+	EventBus.npc_regular_unlocked.emit(who, rarity)
 
 
 ## Debug helper: mark every roster NPC as met (used by the dev panel).

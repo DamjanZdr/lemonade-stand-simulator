@@ -954,16 +954,38 @@ func _on_npc_tip(amount: float, npc_name: String) -> void:
 	_animate_floating_label(lbl, start_pos, 20.0)
 
 
-func _on_npc_regular_unlocked(npc_name: String) -> void:
-	## "Became a regular" toast — same spot as the tip toast.
+func _on_npc_regular_unlocked(npc_name: String, rarity: String) -> void:
+	## "Became a regular" toast — pops up from its own center under the
+	## popularity bar, holds, then slowly sinks and fades. Colored by the
+	## NPC's rarity so an elite unlock reads differently from a common one.
 	if _main_panel == null or _pop_panel == null:
 		return
 	var text := "%s is now a regular!" % (npc_name if npc_name != "" else "Someone")
-	var lbl := _make_label(text, 26, AMATIC_FONT, Color(1.0, 0.45, 0.55))
+	var color: Color = NpcRoster.RARITY_NAME_COLORS.get(rarity, Color.WHITE)
+	var lbl := _make_label(text, 26, AMATIC_FONT, color)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var start_pos := Vector2(8.0, _pop_panel.offset_top + POP_BAR_HEIGHT + 8.0)
 	_main_panel.add_child(lbl)
-	_animate_floating_label(lbl, start_pos, 20.0)
+	lbl.pivot_offset = lbl.get_combined_minimum_size() * 0.5
+	lbl.position = start_pos
+	lbl.modulate.a = 0.0
+	lbl.scale = Vector2(0.3, 0.3)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(lbl, "modulate:a", 1.0, 0.15)
+	tw \
+			.tween_property(lbl, "scale", Vector2(1.15, 1.15), 0.3) \
+			.set_trans(Tween.TRANS_BACK) \
+			.set_ease(Tween.EASE_OUT)
+	tw.chain().tween_property(lbl, "scale", Vector2.ONE, 0.15)
+	tw.chain().tween_interval(1.4)
+	tw \
+			.chain() \
+			.tween_property(lbl, "modulate:a", 0.0, 1.0) \
+			.set_trans(Tween.TRANS_QUAD) \
+			.set_ease(Tween.EASE_IN)
+	tw.parallel().tween_property(lbl, "position:y", start_pos.y + 40.0, 1.0)
+	tw.chain().tween_callback(lbl.queue_free)
 
 
 func _show_popularity_change(delta: float) -> void:

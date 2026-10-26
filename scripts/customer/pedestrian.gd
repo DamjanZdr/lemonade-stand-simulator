@@ -1099,9 +1099,9 @@ func show_interact_prompt(player: Node) -> void:
 		action = "talk to %s" % who
 	else:
 		action = "talk"
+	var icon_h := int(12 * BUBBLE_UI_SCALE)
 	if _is_regular(p):
-		action += "  [color=#e84855]♥[/color]"
-	var icon_h := int(9 * BUBBLE_UI_SCALE)
+		action += "  [color=#e84855][font_size=%d]♥[/font_size][/color]" % icon_h
 	var icon: Texture2D = load(MOUSE_ICON_PATH)
 	var icon_w := int(icon_h * float(icon.get_width()) / float(icon.get_height()))
 	_prompt_label.text = "[img=%dx%d]%s[/img]  %s" % [icon_w, icon_h, MOUSE_ICON_PATH, action]
