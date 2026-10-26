@@ -1455,7 +1455,16 @@ func show_interact_prompt(player: Node) -> void:
 	_prompt_active = true
 	_ui_label.visible = false
 	_prompt_label.visible = true
-	_resize_order_panel()
+	# No panel behind the prompt — bare icon + text floating where the
+	# dialogue bubble will appear.
+	var prompt_size := _prompt_label.get_combined_minimum_size()
+	_prompt_label.position = Vector2.ZERO
+	_prompt_label.size = prompt_size
+	_ui_panel.visible = false
+	if _bubble_viewport != null:
+		_bubble_viewport.size = Vector2i(prompt_size.ceil())
+	if _bubble_sprite:
+		_bubble_sprite.visible = true
 
 
 func hide_interact_prompt() -> void:
@@ -1496,7 +1505,7 @@ func _build_order_bubble() -> void:
 	_ui_panel.visible = false
 	_ui_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.0, 0.0, 0.0, 0.97)
+	sb.bg_color = Color(0.0, 0.0, 0.0, 0.78)
 	var corner := int(5 * BUBBLE_UI_SCALE)
 	sb.corner_radius_top_left = corner
 	sb.corner_radius_top_right = corner
