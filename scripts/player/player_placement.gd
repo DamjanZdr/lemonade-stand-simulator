@@ -1640,10 +1640,12 @@ func _update_equipment_box_ghost() -> void:
 		return
 
 	# Trays belong on the stand counter as well as tables — most equipment
-	# is workstation-only.
+	# is workstation-only. Exclude the stand's own ground/palette so the
+	# tray doesn't ghost on the floor.
 	var surface_ok := is_workstation_surface(collider)
 	if equipment_type == "cup_tray":
-		surface_ok = is_stand_or_workstation_surface(collider)
+		surface_ok = is_stand_or_workstation_surface(collider) \
+				and not is_ground_surface(collider)
 	if not on_surface or not surface_ok:
 		_destroy_ghost()
 		_ghost_valid = false

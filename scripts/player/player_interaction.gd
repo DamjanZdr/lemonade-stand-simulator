@@ -706,8 +706,13 @@ func primary_interact() -> void:
 			var valid_equipment_surface := (
 				equipment_type == "workstation"
 				and _player.placement.is_table_floor_surface(collider)
-				or equipment_type != "workstation"
-				and _player.placement.is_workstation_surface(collider)
+				or equipment_type == "cup_tray"
+				and _player.placement.is_stand_or_workstation_surface(collider)
+				and not _player.placement.is_ground_surface(collider)
+				or (
+					equipment_type != "workstation" and equipment_type != "cup_tray"
+					and _player.placement.is_workstation_surface(collider)
+				)
 			)
 			if is_equipment and valid_equipment_surface:
 				_player.placement._place_equipment_from_box()
