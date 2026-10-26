@@ -66,6 +66,7 @@ const CONTAINER_SCENES: Dictionary = {
 	"pitcher": preload("res://scenes/objects/pitcher.tscn"),
 	"press": preload("res://scenes/objects/press.tscn"),
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
+	"cup_tray": preload("res://scenes/objects/cup_tray.tscn"),
 }
 
 const CONTAINER_SCENE_PATHS: Dictionary = {
@@ -1638,7 +1639,12 @@ func _update_equipment_box_ghost() -> void:
 		)
 		return
 
-	if not on_surface or not is_workstation_surface(collider):
+	# Trays belong on the stand counter as well as tables — most equipment
+	# is workstation-only.
+	var surface_ok := is_workstation_surface(collider)
+	if equipment_type == "cup_tray":
+		surface_ok = is_stand_or_workstation_surface(collider)
+	if not on_surface or not surface_ok:
 		_destroy_ghost()
 		_ghost_valid = false
 		_stack_target_id = -1
