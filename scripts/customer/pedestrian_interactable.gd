@@ -43,4 +43,7 @@ func get_hint(player: Node) -> String:
 	var p := player as Player
 	if p != null and p.held_item == HeldItem.CUP_FILLED:
 		return "Pedestrian | LMB: serve lemonade"
-	return "Pedestrian | LMB: offer free lemonade"
+	# Don't spoil the free-lemonade offer — it only comes up in dialogue
+	# after the player stops them.
+	var who: String = ped.npc_display_name()
+	return "Pedestrian | LMB: talk to %s" % who if who != "" else "Pedestrian | LMB: talk"

@@ -1098,7 +1098,7 @@ func show_interact_prompt(player: Node) -> void:
 	elif who != "":
 		action = "talk to %s" % who
 	else:
-		action = "offer free lemonade"
+		action = "talk"
 	if _is_regular(p):
 		action += "  [color=#e84855]♥[/color]"
 	var icon_h := int(9 * BUBBLE_UI_SCALE)
