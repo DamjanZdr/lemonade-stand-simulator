@@ -494,8 +494,8 @@ func _ready() -> void:
 		preview_viewport.world_3d = get_viewport().world_3d
 		preview_viewport.render_target_update_mode = (SubViewport.UPDATE_WHEN_VISIBLE)
 
-	# Dev panel — release builds skip it entirely.
-	if not OS.is_debug_build():
+	# Dev panel — release builds skip it unless launched with --dev.
+	if not _dev_tools_enabled():
 		return
 	var dev_panel := PanelContainer.new()
 	dev_panel.name = "DevPanel"
@@ -543,6 +543,14 @@ func _ready() -> void:
 	spawn_btn.text = "Spawn NPC"
 	spawn_btn.pressed.connect(_on_dev_spawn_npc)
 	dev_vbox.add_child(spawn_btn)
+
+
+## Dev tools are available in editor/debug builds, or in any build
+## launched with --dev (works as a Steam launch option).
+func _dev_tools_enabled() -> bool:
+	return OS.is_debug_build() \
+			or OS.get_cmdline_args().has("--dev") \
+			or OS.get_cmdline_user_args().has("--dev")
 
 
 func _build_shop() -> void:
