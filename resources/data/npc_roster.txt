@@ -129,7 +129,7 @@ Vedinad | m | 1 | black | brown | grey | blue | tan | 0.94 | 0.94
 
 [elite]
 Professor Ludwig | m | 4 | dark_brown | fair | charcoal | charcoal | charcoal | 0.95 | 0.93
-CaseOh | m | 2 | ginger | fair | sky | charcoal | white | 1.04 | 0.95 | 1.0
+CaseOh | m | 1 | ginger | fair | sky | charcoal | white | 1.04 | 0.95 | 1.0
 Sketch | m | 3 | brown | fair | grey | blue | charcoal | 1.01 | 1.12
 DaniDev | m | 2 | brown | blue | white | brown | charcoal | 0.94 | 1.06
 Karlson | m | 1 | dark_brown | fair | orange | navy | charcoal | 1.02 | 0.97
