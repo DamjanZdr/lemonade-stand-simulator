@@ -44,6 +44,7 @@ const HAIR_COLOR_MAP: Dictionary = {
 	"light_brown": Color(0.65, 0.45, 0.15),
 	"blonde": Color(0.88, 0.74, 0.28),
 	"auburn": Color(0.72, 0.20, 0.05),
+	"ginger": Color(0.85, 0.35, 0.05),
 	"grey": Color(0.55, 0.55, 0.55),
 	"white": Color(0.92, 0.92, 0.90),
 }
@@ -79,6 +80,7 @@ const CLOTH_COLOR_MAP: Dictionary = {
 	"orange": Color(0.95, 0.50, 0.05),
 	"charcoal": Color(0.20, 0.20, 0.22),
 	"grey": Color(0.88, 0.88, 0.88),
+	"white": Color(0.95, 0.95, 0.95),
 	"tan": Color(0.72, 0.48, 0.28),
 	"teal": Color(0.05, 0.32, 0.35),
 	"maroon": Color(0.60, 0.15, 0.10),
