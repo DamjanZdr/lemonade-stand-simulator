@@ -516,8 +516,9 @@ func _place_cup_on_tray(tray: CupTray) -> void:
 					child.disabled = false
 		# Rest the cup's bottom on the slot — the model pivot is not at
 		# its base, so spawning at the marker sinks it into the tray.
-		var mi := cup.find_child("", "MeshInstance3D", true, false) as MeshInstance3D
-		if mi != null and mi.mesh != null:
+		var meshes := cup.find_children("*", "MeshInstance3D", true, false)
+		if not meshes.is_empty() and (meshes[0] as MeshInstance3D).mesh != null:
+			var mi := meshes[0] as MeshInstance3D
 			cup.global_position.y -= mi.get_aabb().position.y * cup.scale.y
 
 	_finish_place()
