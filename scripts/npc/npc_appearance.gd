@@ -606,6 +606,24 @@ func apply_appearance(def: Dictionary) -> void:
 			if color_name != "" and CLOTH_COLOR_MAP.has(color_name):
 				_set_surface_color(body, i, CLOTH_COLOR_MAP[color_name])
 
+	# Eyelids: the eye meshes carry a small "Skin" surface around the
+	# eyeball — tint it to match the roster skin tone.
+	var skin_name := str(def.get("skin", ""))
+	if SKIN_COLOR_MAP.has(skin_name):
+		var skin_color: Color = SKIN_COLOR_MAP[skin_name]
+		for eye: MeshInstance3D in [
+			_man_left_eye,
+			_man_right_eye,
+			_woman_left_eye,
+			_woman_right_eye,
+		]:
+			var eye_mesh := eye.mesh as ArrayMesh if eye else null
+			if eye_mesh == null:
+				continue
+			for i in eye_mesh.get_surface_count():
+				if eye_mesh.surface_get_name(i).to_lower() == "skin":
+					_set_surface_color(eye, i, skin_color)
+
 	# Height is a subtle Y-scale multiplier — NPCBody's authored scale is
 	# ~0.09 (the model imports ~11x oversize), so multiply, never assign.
 	if _base_scale_y < 0.0:

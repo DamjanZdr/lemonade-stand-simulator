@@ -1541,7 +1541,9 @@ func _build_order_bubble() -> void:
 	_prompt_label.add_theme_constant_override("outline_size", int(2 * BUBBLE_UI_SCALE))
 	_prompt_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_prompt_label.visible = false
-	_ui_panel.add_child(_prompt_label)
+	# Parented to the viewport, not the panel — the prompt renders with
+	# no panel behind it, so it must outlive _ui_panel being hidden.
+	_bubble_viewport.add_child(_prompt_label)
 
 	_bubble_sprite = Sprite3D.new()
 	_bubble_sprite.name = "OrderBubble"
