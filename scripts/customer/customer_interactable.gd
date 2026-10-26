@@ -34,7 +34,13 @@ func get_hint(player: Node) -> String:
 	var customer := get_parent() as Customer
 	if customer == null or customer.state != Customer.CustomerState.WAITING:
 		return ""
+	# Named roster NPCs introduce themselves through the hint — the
+	# bubble itself stays nameless.
+	var who: String = customer.npc_display_name()
 	var p := player as Player
 	if p != null and p.held_item == HeldItem.CUP_FILLED:
-		return "Customer | LMB: serve lemonade"
+		return "%s | LMB: serve lemonade" % who if who != "" \
+				else "Customer | LMB: serve lemonade"
+	if who != "":
+		return "%s | LMB: talk" % who
 	return ""

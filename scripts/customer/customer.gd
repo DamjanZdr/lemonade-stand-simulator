@@ -115,7 +115,6 @@ var _talk_anim_playing: bool = false
 var _bubble_viewport: SubViewport = null
 var _bubble_sprite: Sprite3D = null
 var _ui_label: Label = null
-var _name_label: Label = null
 var _ui_panel: Panel = null
 
 var _patience_circle: Sprite3D = null
@@ -139,6 +138,14 @@ var appearance_seed: int = 0
 ## Roster index (from npc_roster.txt) set by spawn state. -1 = anonymous
 ## NPC → falls back to seeded random appearance.
 var npc_id: int = -1
+
+
+## Roster name for this NPC, or "" for anonymous NPCs. Used by the
+## interaction hint ("Talk to X").
+func npc_display_name() -> String:
+	if npc_id >= 0 and NpcRoster.has_id(npc_id):
+		return str(NpcRoster.get_entry(npc_id).get("name", ""))
+	return ""
 
 
 func preserve_appearance() -> void:
@@ -1368,24 +1375,10 @@ func _resize_order_panel() -> void:
 	# stale bounds instead of the new (smaller) panel — causing the text to
 	# drift out of alignment with the panel around it.
 	_ui_label.size = label_size
-	# The name row sits above the panel inside the same viewport — a
-	# named NPC's bubble grows upward to fit it, centered over the panel.
-	var vw := _ui_panel.size.x
-	var name_h := 0.0
-	var name_size := Vector2.ZERO
-	if _name_label != null and _name_label.text != "":
-		_name_label.visible = true
-		name_size = _name_label.get_combined_minimum_size()
-		name_h = name_size.y + BUBBLE_UI_SCALE
-		vw = maxf(vw, name_size.x)
-	if _name_label != null and _name_label.visible:
-		_name_label.position = Vector2((vw - name_size.x) * 0.5, 0.0)
-		_name_label.size = name_size
-	_ui_panel.position = Vector2((vw - _ui_panel.size.x) * 0.5, name_h)
 	# The label already renders at BUBBLE_UI_SCALE× font size, so the
-	# viewport matches the panel one-to-one (plus the name strip).
+	# viewport matches the panel one-to-one.
 	if _bubble_viewport != null:
-		_bubble_viewport.size = Vector2i(Vector2(vw, _ui_panel.size.y + name_h).ceil())
+		_bubble_viewport.size = Vector2i(_ui_panel.size.ceil())
 	_ui_panel.visible = true
 	if _bubble_sprite:
 		_bubble_sprite.visible = true
@@ -1465,25 +1458,6 @@ func _build_order_bubble() -> void:
 	_ui_label.add_theme_constant_override("outline_size", int(2 * BUBBLE_UI_SCALE))
 	_ui_label.visible = false
 	_ui_panel.add_child(_ui_label)
-
-	# Roster name — sits above the panel inside the same viewport, so it
-	# shows only while the bubble does. No panel of its own.
-	_name_label = Label.new()
-	_name_label.name = "NameLabel"
-	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_name_label.add_theme_font_size_override("font_size", int(12 * BUBBLE_UI_SCALE))
-	_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	_name_label.add_theme_constant_override("outline_size", int(2 * BUBBLE_UI_SCALE))
-	_name_label.visible = false
-	if npc_id >= 0 and NpcRoster.has_id(npc_id):
-		var entry := NpcRoster.get_entry(npc_id)
-		_name_label.text = str(entry.get("name", ""))
-		_name_label.modulate = NpcRoster.RARITY_NAME_COLORS.get(
-			str(entry.get("rarity", "common")),
-			Color.WHITE,
-		)
-	_bubble_viewport.add_child(_name_label)
 
 	_bubble_sprite = Sprite3D.new()
 	_bubble_sprite.name = "OrderBubble"

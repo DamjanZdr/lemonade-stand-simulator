@@ -35,7 +35,13 @@ func get_hint(player: Node) -> String:
 	var ped := get_parent() as Pedestrian
 	if ped == null or not ped.can_interact():
 		return ""
+	# Named roster NPCs introduce themselves through the hint — the
+	# bubble itself stays nameless.
+	var who: String = ped.npc_display_name()
 	var p := player as Player
 	if p != null and p.held_item == HeldItem.CUP_FILLED:
-		return "Pedestrian | LMB: serve lemonade"
+		return "%s | LMB: serve lemonade" % who if who != "" \
+				else "Pedestrian | LMB: serve lemonade"
+	if who != "":
+		return "%s | LMB: talk" % who
 	return "Pedestrian | LMB: offer free lemonade"
