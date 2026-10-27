@@ -22,6 +22,7 @@ const ACTION_WAIT := 1.0
 const STAND_RADIUS := 30.0
 const STREET_RADIUS := 70.0
 const LOW_STOCK_RATIO := 0.3
+const MAX_STAGED_CUPS := 16
 const SYNC_INTERVAL := 0.1
 const NET_LERP_SPEED := 12.0
 const NET_STALE_MSEC := 8000
@@ -451,8 +452,21 @@ func _build_server_steps() -> void:
 		return
 	# No customers — stock the counter with filled cups so orders can be
 	# served instantly when someone arrives.
+	var staged := 0
+	for n in _stand_objects("container"):
+		if n is Cup and n.state == Cup.CupState.FILLED:
+			staged += 1
+	if staged >= MAX_STAGED_CUPS:
+		return
+	var spot := Vector3.INF
 	var tray := _find_tray()
-	if tray == null or not tray.has_free_slot():
+	if tray != null and tray.has_free_slot():
+		spot = tray.free_slot_position()
+	if spot == Vector3.INF:
+		# No tray (or it's full) — free-scan the counter top for an open
+		# spot, same overlap-probing the player's ghost preview uses.
+		spot = _find_free_counter_spot()
+	if spot == Vector3.INF:
 		return
 	var stack := _nearest_cup_stack()
 	var pitcher := _first_pitcher_with_liquid()
@@ -470,7 +484,6 @@ func _build_server_steps() -> void:
 		func():
 			_fill_cup(pitcher),
 	)
-	var spot := tray.free_slot_position()
 	_steps.append(
 		{
 			"target": spot,
@@ -561,6 +574,56 @@ func _find_filled_cup(fruit: String) -> Cup:
 				and str(n.recipe.get("fruit_type", "")) == fruit:
 			return n
 	return null
+
+
+## Probe the stand's counter top on a small grid and return the first
+## position where a cup-sized shape doesn't overlap anything, or
+## Vector3.INF when the counter is full/absent. Mirrors the player's
+## ghost overlap check: a shape query against world colliders, with the
+## counter's own colliders excluded so the surface itself doesn't count.
+func _find_free_counter_spot() -> Vector3:
+	if assigned_stand == null:
+		return Vector3.INF
+	var counter := assigned_stand.find_child("Counter", true, false)
+	if counter == null:
+		return Vector3.INF
+	var aabb := AABB()
+	var found := false
+	for c in counter.find_children("*", "MeshInstance3D", true, false):
+		var mi := c as MeshInstance3D
+		if mi == null or mi.mesh == null:
+			continue
+		var wa := mi.global_transform * mi.get_aabb()
+		aabb = wa if not found else aabb.merge(wa)
+		found = true
+	if not found:
+		return Vector3.INF
+	var top_y := aabb.end.y
+	var shape := CylinderShape3D.new()
+	shape.radius = 0.035
+	shape.height = 0.05
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.collision_mask = 1
+	var exclude_rids: Array[RID] = []
+	if counter is CollisionObject3D:
+		exclude_rids.append((counter as CollisionObject3D).get_rid())
+	for c in counter.find_children("*", "CollisionObject3D", true, false):
+		exclude_rids.append((c as CollisionObject3D).get_rid())
+	query.exclude = exclude_rids
+	var space := get_world_3d().direct_space_state
+	var margin := 0.05
+	var step := 0.09
+	var z := aabb.position.z + margin
+	while z <= aabb.end.z - margin:
+		var x := aabb.position.x + margin
+		while x <= aabb.end.x - margin:
+			query.transform = Transform3D(Basis(), Vector3(x, top_y + 0.03, z))
+			if space.intersect_shape(query, 1).is_empty():
+				return Vector3(x, top_y, z)
+			x += step
+		z += step
+	return Vector3.INF
 
 
 func _find_tray() -> CupTray:
