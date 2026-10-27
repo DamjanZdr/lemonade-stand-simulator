@@ -113,7 +113,18 @@ func is_fully_empty() -> bool:
 # --- Mutation ---
 
 
+## A fully-drained pitcher is fresh again — stale SERVING/cups_poured
+## left by drain paths that skip _clear_and_return (e.g. direct
+## pour_portion() calls) must not keep the recipe lock forever.
+func _normalize_if_empty() -> void:
+	if is_fully_empty() and (cups_poured > 0 or state == PitcherState.SERVING):
+		cups_poured = 0
+		serving_recipe = { }
+		state = PitcherState.PREPPING
+
+
 func add_ingredient(ingredient_type: String, amount: float) -> bool:
+	_normalize_if_empty()
 	# Can only add ingredients in PREPPING or COMPLETE state
 	if state != PitcherState.PREPPING and state != PitcherState.COMPLETE:
 		return false
@@ -311,6 +322,7 @@ func set_pitcher_visible(v: bool) -> void:
 
 
 func interact(player: Node) -> void:
+	_normalize_if_empty()
 	var p := player as Player
 	if p == null:
 		return
@@ -700,6 +712,7 @@ func tween_color_for_water_addition(water_amount: float, duration: float) -> voi
 
 
 func _can_add_ingredient(ingredient_type: String, amount: float) -> bool:
+	_normalize_if_empty()
 	# Can only add ingredients in PREPPING or COMPLETE state
 	if state != PitcherState.PREPPING and state != PitcherState.COMPLETE:
 		return false
