@@ -314,7 +314,7 @@ func get_branch_progress(branch_id: String, stand: StandUnit) -> Dictionary:
 ## the first threshold above its current value — exactly one claimable
 ## tier per click. Host-gated like every other mutation.
 func debug_fill_to_next(branch_id: String, stand: StandUnit) -> void:
-	if not OS.is_debug_build() or not WorldSync.is_host() or stand == null:
+	if not (OS.is_debug_build() or GameState.DEV_TOOLS) or not WorldSync.is_host() or stand == null:
 		return
 	var b := _branch(branch_id)
 	if b.is_empty():

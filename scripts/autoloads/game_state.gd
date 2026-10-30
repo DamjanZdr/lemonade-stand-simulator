@@ -1,6 +1,10 @@
 extends Node
 ## Holds all live game data. Updated via EventBus signals only.
 
+## TEMP: enables the F1 dev panel + host debug actions in release builds
+## for private-branch testing. Flip back to false before shipping.
+const DEV_TOOLS := true
+
 const FRUIT_TYPES: Array[String] = [
 	"lemon",
 	"raspberry",

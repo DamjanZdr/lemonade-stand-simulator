@@ -980,7 +980,7 @@ func _rpc_npc_regular_unlocked(who: String, rarity: String) -> void:
 ## already verified the sender is assigned to THIS stand. Every action
 ## mutates this stand's authoritative state and pushes it to the peers.
 func apply_debug_action(action: String, params: Dictionary = { }) -> void:
-	if not OS.is_debug_build() or not WorldSync.is_host():
+	if not (OS.is_debug_build() or GameState.DEV_TOOLS) or not WorldSync.is_host():
 		return
 	match action:
 		"add_money":

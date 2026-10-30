@@ -430,7 +430,7 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 		_evaluate_mastery(stand, data)
 	# Dev-panel actions arrive here already host-validated against the
 	# sender's assigned stand (_request_report) — apply on that stand only.
-	if event_name == "debug_action" and OS.is_debug_build():
+	if event_name == "debug_action" and (OS.is_debug_build() or GameState.DEV_TOOLS):
 		stand.apply_debug_action(str(data.get("action", "")), data.get("params", { }))
 	UpgradeManager.record_event(stand, event_name, data)
 	_match_task(stand, event_name, data)
