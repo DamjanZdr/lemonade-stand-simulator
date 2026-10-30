@@ -145,3 +145,9 @@ func _rpc_do_thing(params) -> void:
 
 - Customers and free-sample pedestrians use deterministic ingredient complaints and shared 1 / 2 / 3+ unit wording in `scripts/systems/recipe_evaluator.gd`. Sugar still scales with fruit count; ice still follows current temperature. Mixed-cup orders label different feedback groups rather than presenting contradictory instructions for one drink.
 - Run `tools/godotsteam-editor/godotsteam.471.editor.win64.console.exe --headless --path . --script res://tools/test_recipe_feedback.gd` for feedback regression checks. The standalone harness may also report the existing UpgradeManager missing-current-scene startup error; distinguish that from the explicit test result.
+
+## Exports
+
+- Release preset is `Windows Desktop` → `export/WhenLifeGivesYouLemons.exe`, using the custom GodotSteam templates in `tools/godotsteam-templates/win64/`. Export with `tools/godotsteam-editor/godotsteam.471.editor.win64.console.exe --headless --path . --export-release "Windows Desktop" export/WhenLifeGivesYouLemons.exe`. Keep `steam_api64.dll` and `steam_appid.txt` beside the exe.
+- Export packs `.godot/exported/*.scn` conversions, not the `.tscn`/`.gd` sources. If a shipped build shows old UI or stale behavior despite current sources, delete `.godot/exported` and `.godot/imported` and re-export — cached scene conversions have served stale content.
+- Release builds hide the F1 dev panel (`OS.is_debug_build()`); use `--export-debug` to a separate folder if a built binary needs it.
