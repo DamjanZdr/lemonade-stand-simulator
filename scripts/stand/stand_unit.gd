@@ -705,6 +705,11 @@ func record_disposal_income(amount: float, is_regular_trash: bool) -> void:
 func set_popularity(value: float) -> void:
 	popularity = clampf(value, 0.0, Balancing.MAX_POPULARITY)
 	popularity_changed.emit(popularity)
+	if is_legacy_primary:
+		# Write through to GameState so saves and legacy readers see the
+		# change — the EventBus echo is swallowed by the bridge's
+		# is_equal_approx guard (same pattern as add_money).
+		GameState.set_popularity(popularity)
 
 
 func get_price(fruit_type: String) -> float:
@@ -910,6 +915,12 @@ func set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 func set_feedback_tier(tier: int) -> void:
 	feedback_tier = clampi(tier, 0, 2)
 	feedback_tier_changed.emit(feedback_tier)
+	if is_legacy_primary:
+		# Same write-through as set_popularity — keep GameState coherent
+		# for saves and legacy readers. No EventBus echo loop: the
+		# feedback bridge only listens GameState -> stand.
+		GameState.feedback_tier = feedback_tier
+		EventBus.feedback_tier_changed.emit(feedback_tier)
 
 
 ## Per-stand NPC collection, stored inside lifetime_stats under
@@ -962,6 +973,86 @@ func _notify_regular_unlocked(npc_id: int, notify_peer_id: int) -> void:
 @rpc("authority", "reliable")
 func _rpc_npc_regular_unlocked(who: String, rarity: String) -> void:
 	EventBus.npc_regular_unlocked.emit(who, rarity)
+
+
+## Dev-panel debug actions. Host-only, debug builds only — reached via
+## OnboardingManager.report(stand, "debug_action"), whose _request_report
+## already verified the sender is assigned to THIS stand. Every action
+## mutates this stand's authoritative state and pushes it to the peers.
+func apply_debug_action(action: String, params: Dictionary = { }) -> void:
+	if not OS.is_debug_build() or not WorldSync.is_host():
+		return
+	match action:
+		"add_money":
+			add_money(float(params.get("amount", 0.0)))
+		"set_popularity":
+			set_popularity(
+				clampf(float(params.get("value", popularity)), 0.0, Balancing.MAX_POPULARITY)
+			)
+		"set_feedback_tier":
+			set_feedback_tier(clampi(int(params.get("tier", feedback_tier)), 0, 2))
+		"spawn_npc", "force_spawn_customer":
+			var spawner := _debug_customer_spawner()
+			if spawner != null:
+				spawner.debug_spawn_at_free_slot(int(params.get("npc_id", -1)))
+		"force_happy_serve":
+			var spawner := _debug_customer_spawner()
+			if spawner != null:
+				spawner.debug_force_happy()
+		"set_queue_max":
+			var spawner := _debug_customer_spawner()
+			if spawner != null:
+				spawner.debug_set_queue_max(int(params.get("value", 0)))
+		"refill_bins":
+			_debug_refill_owned_bins()
+		"empty_pitcher":
+			_debug_empty_owned_pitchers()
+		"set_temperature":
+			GameState.temperature = clampf(
+				float(params.get("value", Balancing.TEMP_DEFAULT)),
+				Balancing.TEMP_MIN,
+				Balancing.TEMP_MAX,
+			)
+			EventBus.weather_changed.emit(GameState.temperature)
+		"end_day":
+			DayManager.end_day()
+		_:
+			return
+	push_state()
+
+
+## The CustomerSpawner serving this stand (spawners live at scene root
+## and are bound via set_stand()).
+func _debug_customer_spawner() -> Node:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	for sp in scene.find_children("CustomerSpawner*", "", true, false):
+		if sp.get("stand") == self:
+			return sp
+	return null
+
+
+## Refill this stand's own supply containers (both stands share the
+## "container" group in versus, so ownership must be checked). Unowned
+## containers (no stand_owner, no StandUnit ancestor) are included —
+## skipping them would silently miss default/legacy equipment.
+func _debug_refill_owned_bins() -> void:
+	for node in get_tree().get_nodes_in_group("container"):
+		var owner := OnboardingManager.stand_for_node(node)
+		if owner != null and owner != self:
+			continue
+		if node.has_method("debug_refill"):
+			node.debug_refill()
+
+
+func _debug_empty_owned_pitchers() -> void:
+	for node in get_tree().get_nodes_in_group("pitcher"):
+		var owner := OnboardingManager.stand_for_node(node)
+		if owner != null and owner != self:
+			continue
+		if node.has_method("debug_empty"):
+			node.debug_empty()
 
 
 ## Debug helper: mark every roster NPC as met (used by the dev panel).

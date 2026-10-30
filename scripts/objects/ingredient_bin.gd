@@ -495,6 +495,12 @@ func _make_hand_mesh() -> Node3D:
 	return m
 
 
+## Dev panel (host): refill through the synced mutator so clients see it.
+func debug_refill() -> void:
+	apply_add_amount(max_capacity - current_amount, Vector3.ZERO)
+	sync_state_to_peers(Vector3.ZERO)
+
+
 func _on_debug_refill() -> void:
 	current_amount = max_capacity
 	update_display()

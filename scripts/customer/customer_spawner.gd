@@ -265,6 +265,26 @@ func _on_debug_spawn_npc(npc_id: int) -> void:
 			return
 
 
+## Dev panel (host): spawn into the first free queue slot of THIS spawner.
+## npc_id -1 spawns a generic customer, >= 0 a specific roster NPC.
+func debug_spawn_at_free_slot(npc_id: int = -1) -> void:
+	if npc_id >= 0:
+		_on_debug_spawn_npc(npc_id)
+	else:
+		_on_debug_force_spawn()
+
+
+## Dev panel (host): resolve all waiting customers in this queue as happy.
+func debug_force_happy() -> void:
+	for c in _queue:
+		if c != null and is_instance_valid(c):
+			c._on_debug_force_happy()
+
+
+func debug_set_queue_max(max_size: int) -> void:
+	_on_debug_set_queue_max(max_size)
+
+
 ## Called by PedestrianSpawner when a pedestrian wants to join.
 ## Compacts waiting customers to the front first, then assigns the newcomer and
 ## any already-in-flight pedestrians to the remaining free slots. Existing

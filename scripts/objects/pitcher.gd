@@ -952,5 +952,9 @@ func _apply_liquid_color(color: Color) -> void:
 		eraser.position.y -= 0.0001
 
 
+func debug_empty() -> void:
+	_on_debug_empty_pitcher()
+
+
 func _on_debug_empty_pitcher() -> void:
 	_clear_and_return()

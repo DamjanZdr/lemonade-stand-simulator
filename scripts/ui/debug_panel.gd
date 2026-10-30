@@ -27,23 +27,23 @@ func _ready() -> void:
 	visible = false
 	$Panel/VBox/BtnMoney.pressed.connect(
 		func():
-			EventBus.debug_add_money.emit(1000.0),
+			_debug_action("add_money", { "amount": 1000.0 }),
 	)
 	$Panel/VBox/BtnRefill.pressed.connect(
 		func():
-			EventBus.debug_refill_all_bins.emit(),
+			_debug_action("refill_bins", { }),
 	)
 	$Panel/VBox/BtnEmpty.pressed.connect(
 		func():
-			EventBus.debug_empty_pitcher.emit(),
+			_debug_action("empty_pitcher", { }),
 	)
 	$Panel/VBox/BtnSpawn.pressed.connect(
 		func():
-			EventBus.debug_force_spawn_customer.emit(),
+			_debug_action("force_spawn_customer", { }),
 	)
 	$Panel/VBox/BtnForceHappy.pressed.connect(
 		func():
-			EventBus.debug_force_happy_serve.emit(),
+			_debug_action("force_happy_serve", { }),
 	)
 	$Panel/VBox/BtnTestPayment.pressed.connect(
 		func():
@@ -51,7 +51,7 @@ func _ready() -> void:
 				return
 			_test_payment_cooldown = 1.0
 			# Mirror customer._customer_payment() so the bill reflects the live price.
-			var price := GameState.get_price("lemon")
+			var price := _local_price("lemon")
 			var payment: float
 			if price <= 1.0:
 				payment = 1.0
@@ -64,11 +64,14 @@ func _ready() -> void:
 	)
 	$Panel/VBox/TempSlider.value_changed.connect(
 		func(v: float):
-			EventBus.debug_set_temperature.emit(v),
+			# Weather is world-global, not stand-scoped: apply locally for
+			# instant feedback AND through the host so the global value moves.
+			EventBus.debug_set_temperature.emit(v)
+			_debug_action("set_temperature", { "value": v }),
 	)
 	$Panel/VBox/TierSlider.value_changed.connect(
 		func(v: float):
-			EventBus.debug_set_feedback_tier.emit(int(v)),
+			_debug_action("set_feedback_tier", { "tier": int(v) }),
 	)
 	$Panel/VBox/SpawnSlider.value_changed.connect(
 		func(v: float):
@@ -76,7 +79,7 @@ func _ready() -> void:
 	)
 	$Panel/VBox/QueueMaxSlider.value_changed.connect(
 		func(v: float):
-			EventBus.debug_set_queue_max.emit(int(v)),
+			_debug_action("set_queue_max", { "value": int(v) }),
 	)
 	$Panel/VBox/OutlineWidthSlider.value_changed.connect(
 		func(v: float):
@@ -97,11 +100,12 @@ func _ready() -> void:
 	pop_slider.min_value = 0.0
 	pop_slider.max_value = Balancing.MAX_POPULARITY
 	pop_slider.step = 1.0
-	pop_slider.value = GameState.popularity
+	var stand := _local_stand()
+	pop_slider.value = stand.popularity if stand != null else GameState.popularity
 	pop_slider.custom_minimum_size = Vector2(0, 12)
 	pop_slider.value_changed.connect(
 		func(v: float):
-			EventBus.debug_set_popularity.emit(v),
+			_debug_action("set_popularity", { "value": v }),
 	)
 	vbox.add_child(pop_slider)
 
@@ -186,7 +190,9 @@ func _ready() -> void:
 	end_day_btn.add_theme_font_size_override("font_size", 9)
 	end_day_btn.pressed.connect(
 		func():
-			DayManager.end_day(),
+			# The day is world-global but host-authoritative — route
+			# through the debug funnel so clients can trigger it too.
+			_debug_action("end_day", { }),
 	)
 	vbox.add_child(end_day_btn)
 
@@ -210,9 +216,9 @@ func _ready() -> void:
 		var branch_id := str(branch.get("id", ""))
 		branch_btn.pressed.connect(
 			func():
-				var stand := WorldSync.get_local_stand() as StandUnit
-				if stand != null:
-					OnboardingManager.report(stand, "debug_fill_branch", { "branch": branch_id }),
+				var local := WorldSync.get_local_stand() as StandUnit
+				if local != null:
+					OnboardingManager.report(local, "debug_fill_branch", { "branch": branch_id }),
 		)
 		row.add_child(branch_btn)
 		vbox.add_child(row)
@@ -253,16 +259,39 @@ func _ready() -> void:
 	_refresh()
 
 
-func _on_meet_all_npcs() -> void:
-	for s in get_tree().get_nodes_in_group("stand"):
-		(s as StandUnit).request_meet_all_npcs()
+## The stand this peer's player is assigned to — every stand-scoped
+## debug action targets it (versus: the joiner's own stand, not the
+## host's primary stand).
+func _local_stand() -> StandUnit:
+	return WorldSync.get_local_stand() as StandUnit
+
+
+func _local_price(fruit_type: String) -> float:
+	var stand := _local_stand()
+	return stand.get_price(fruit_type) if stand != null else GameState.get_price(fruit_type)
+
+
+## Route a stand-scoped debug action through the OnboardingManager
+## report funnel: clients send an RPC to the host, the host validates
+## the sender's assigned stand, then StandUnit.apply_debug_action
+## mutates authoritative state and pushes it to all peers.
+func _debug_action(action: String, params: Dictionary) -> void:
+	var stand := _local_stand()
+	if stand == null:
 		return
+	OnboardingManager.report(stand, "debug_action", { "action": action, "params": params })
+
+
+func _on_meet_all_npcs() -> void:
+	var stand := _local_stand()
+	if stand != null:
+		stand.request_meet_all_npcs()
 
 
 func _on_set_all_nine() -> void:
-	for s in get_tree().get_nodes_in_group("stand"):
-		(s as StandUnit).request_set_all_npcs_nine()
-		return
+	var stand := _local_stand()
+	if stand != null:
+		stand.request_set_all_npcs_nine()
 
 
 func _on_spawn_named_npc(edit: LineEdit) -> void:
@@ -274,7 +303,7 @@ func _on_spawn_named_npc(edit: LineEdit) -> void:
 	var npc_name := str(NpcRoster.get_entry(npc_id).get("name", ""))
 	edit.text = ""
 	edit.placeholder_text = "Spawned %s" % npc_name
-	EventBus.debug_spawn_npc.emit(npc_id)
+	_debug_action("spawn_npc", { "npc_id": npc_id })
 
 
 func _process(delta: float) -> void:
@@ -287,7 +316,16 @@ func _process(delta: float) -> void:
 
 
 func _refresh() -> void:
-	var pitcher: Pitcher = get_tree().get_first_node_in_group("pitcher") as Pitcher
+	var stand := _local_stand()
+	# Prefer a pitcher owned by the local stand; fall back to any.
+	var pitcher: Pitcher = null
+	for p in get_tree().get_nodes_in_group("pitcher"):
+		var owner := OnboardingManager.stand_for_node(p)
+		if owner != null and owner != stand:
+			continue
+		pitcher = p as Pitcher
+		if owner == stand:
+			break
 	var recipe: Dictionary = pitcher.get_recipe_snapshot() if pitcher else { }
 	var verdict := (
 		RecipeEvaluator.get_verdict_string(recipe, GameState.temperature)
@@ -295,14 +333,13 @@ func _refresh() -> void:
 		else "No pitcher"
 	)
 
+	var money: float = stand.money if stand != null else GameState.money
+	var popularity: float = (stand.popularity if stand != null else GameState.popularity)
+	var tier: int = (stand.feedback_tier if stand != null else GameState.feedback_tier)
+	var price: float = _local_price("lemon")
+
 	stats_label.text = (
 		"Money: $%.2f\nPop: %d%%\nTemp: %.0fC\nTier: %d\nPrice: $%.2f (lemon)"
-		% [
-			GameState.money,
-			int(GameState.popularity / 10.0),
-			GameState.temperature,
-			GameState.feedback_tier,
-			GameState.get_price("lemon"),
-		]
+		% [money, int(popularity / 10.0), GameState.temperature, tier, price]
 	)
 	verdict_label.text = "Recipe: " + verdict

@@ -415,6 +415,18 @@ func _make_hand_mesh(fruit_type: String) -> Node3D:
 	return m
 
 
+## Dev panel (host): top every fruit grid off through the synced path so
+## the refill reaches clients too.
+func debug_refill() -> void:
+	for fruit_type in fruit_grids.keys():
+		var old_count := mini(roundi(fruit_amounts.get(fruit_type, 0.0)), _get_capacity(fruit_type))
+		fruit_amounts[fruit_type] = get_capacity(fruit_type)
+		_sync_state_to_peers(fruit_type, Vector3.ZERO, old_count, int(fruit_amounts[fruit_type]))
+	update_display()
+	for fruit_type in fruit_grids.keys():
+		EventBus.bin_amount_changed.emit(fruit_type, fruit_amounts[fruit_type])
+
+
 func _on_debug_refill() -> void:
 	for fruit_type in fruit_grids.keys():
 		fruit_amounts[fruit_type] = get_capacity(fruit_type)

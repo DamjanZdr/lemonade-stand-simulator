@@ -18,6 +18,7 @@ const LEMON_MASTERY_TEXT := (
 const CLIENT_REPORTED_EVENTS := [
 	"claim_upgrade",
 	"debug_fill_branch",
+	"debug_action",
 	"equipment_placed",
 	"supply_deposited",
 	"pitcher_placed",
@@ -427,6 +428,10 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 		_match_task(stand, "second_fruit_ordered", d2)
 	if event_name == "customer_feedback":
 		_evaluate_mastery(stand, data)
+	# Dev-panel actions arrive here already host-validated against the
+	# sender's assigned stand (_request_report) — apply on that stand only.
+	if event_name == "debug_action" and OS.is_debug_build():
+		stand.apply_debug_action(str(data.get("action", "")), data.get("params", { }))
 	UpgradeManager.record_event(stand, event_name, data)
 	_match_task(stand, event_name, data)
 	_retro_satisfy_current_task(stand)
