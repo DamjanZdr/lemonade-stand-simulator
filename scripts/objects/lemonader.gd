@@ -422,7 +422,15 @@ func refresh_display() -> void:
 				global_position,
 				float(machine_state["remaining"]),
 			)
-		_apply_preview_contents(pitcher, batch)
+		# For Squeeze-E-Z the batch recipe still carries the water the
+		# stand recipe calls for, but the machine never adds it — show
+		# the liquid rising to the concentrate level (fruit only), or the
+		# preview visually fills to the top and only corrects on take.
+		var preview_batch := batch
+		if not _adds_water():
+			preview_batch = batch.duplicate()
+			preview_batch["water"] = 0.0
+		_apply_preview_contents(pitcher, preview_batch)
 		pitcher.cups_poured = 0
 		pitcher.state = Pitcher.PitcherState.COMPLETE
 		pitcher.update_liquid_color()

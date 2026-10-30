@@ -858,6 +858,10 @@ func sync_fill_display() -> void:
 	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
 	if _lemonade_eraser != null:
 		_lemonade_eraser.position.y = target_y
+		# Keep the tween bookkeeping honest — _update_eraser_position's
+		# early-return compares targets against this, and a stale value
+		# could skip a needed update after this direct write.
+		_last_eraser_target_y = target_y
 	update_liquid_color()
 
 
