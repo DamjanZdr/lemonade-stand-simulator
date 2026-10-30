@@ -498,6 +498,26 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		GameState.recipes.clear()
 		GameState.init_default_recipes()
 	_sync_live_stand_recipes(true)
+	# Per-stand recipes/prices: the flat "recipes"/"prices" keys only ever
+	# held the primary stand's view, so a versus second stand loaded with
+	# defaults every session. Restore each stand's own saved values where
+	# present — absent keys (legacy saves) keep the defaults/primary
+	# assignment _sync_live_stand_recipes already applied.
+	var saved_stand_recipes: Dictionary = data.get("stand_recipes", { })
+	var saved_stand_prices: Dictionary = data.get("stand_prices", { })
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if not stand is StandUnit:
+			continue
+		var sr: Variant = saved_stand_recipes.get(stand.name, null)
+		if sr is Dictionary and not sr.is_empty():
+			stand.recipes = (sr as Dictionary).duplicate(true)
+			for ft in stand.recipes:
+				stand.recipe_changed.emit(ft, stand.recipes[ft])
+		var sp: Variant = saved_stand_prices.get(stand.name, null)
+		if sp is Dictionary and not sp.is_empty():
+			stand.prices = (sp as Dictionary).duplicate(true)
+			for ft in stand.prices:
+				stand.price_changed.emit(ft, stand.prices[ft])
 	GameState.ice_degrees_per_scoop = data.get("ice_degrees_per_scoop", 4.0)
 	GameState.feedback_tier = data.get("feedback_tier", 0)
 	GameState.customers_served_happy = data.get("customers_served_happy", 0)
@@ -607,6 +627,22 @@ func _collect_stand_popularity() -> Dictionary:
 	return pops
 
 
+func _collect_stand_recipes() -> Dictionary:
+	var out := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			out[stand.name] = stand.recipes.duplicate(true)
+	return out
+
+
+func _collect_stand_prices() -> Dictionary:
+	var out := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			out[stand.name] = stand.prices.duplicate(true)
+	return out
+
+
 func _collect_stand_last_day_stats() -> Dictionary:
 	var stats := { }
 	for stand in get_tree().get_nodes_in_group("stand"):
@@ -675,6 +711,8 @@ func _build_save_dict() -> Dictionary:
 		"stand_popularity": _collect_stand_popularity(),
 		"stand_last_day_stats": _collect_stand_last_day_stats(),
 		"stand_lifetime_stats": _collect_stand_lifetime_stats(),
+		"stand_recipes": _collect_stand_recipes(),
+		"stand_prices": _collect_stand_prices(),
 		"game_mode": GameState.game_mode,
 		"creator_steam_id": str(NetworkManager.steam_id),
 		"money": GameState.money,

@@ -583,6 +583,11 @@ func claim_progress_tier(branch_id: String, level: int) -> void:
 func _touch_progress() -> void:
 	onboarding_progress["revision"] = int(onboarding_progress.get("revision", 0)) + 1
 	OnboardingManager.stand_progress_changed.emit(self, onboarding_progress.duplicate(true))
+	# Progress mutations (claims, discoveries, task completions) must
+	# reach peers — claimed tiers gate fruit unlocks, and without a push
+	# the other machines kept the stale unlock state until some unrelated
+	# state change happened to broadcast.
+	push_state()
 	push_state()
 
 
