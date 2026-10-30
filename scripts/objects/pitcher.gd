@@ -853,6 +853,12 @@ func _make_drop_mesh(ingredient_type: String) -> Node3D:
 func sync_fill_display() -> void:
 	## Set fill display directly to current volume without animating.
 	## Call this after placing a pitcher so it doesn't replay 0→N.
+	## Kill any in-flight eraser tween first — _ready()'s empty-volume
+	## tween would otherwise finish after this snap and stomp it.
+	if _eraser_tween and _eraser_tween.is_valid():
+		_eraser_tween.kill()
+	if _press_eraser_tween and _press_eraser_tween.is_valid():
+		_press_eraser_tween.kill()
 	var vol := get_liquid_volume()
 	var t := clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
 	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)

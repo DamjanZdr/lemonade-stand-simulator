@@ -1381,19 +1381,23 @@ func _assign_local_player_stand(peer_id: int, stand_name: String) -> void:
 	if peer_id != multiplayer.get_unique_id():
 		return
 	var p: Player = null
-	for attempt in range(120):
-		p = players_node.get_node_or_null(str(peer_id)) as Player
-		if p != null:
-			break
-		await get_tree().process_frame
-	if p == null:
-		return
 	var stand: StandUnit = null
-	for candidate in [stand_unit, stand_unit2]:
-		if candidate != null and candidate.name == stand_name:
-			stand = candidate
-			break
-	if stand == null:
+	# Wait until BOTH our player node and the target stand exist. On a
+	# fresh join this RPC can arrive while the world is still loading —
+	# giving up at ~2s left the joiner permanently stand-less, which is
+	# why owned-surface placement and the placement ghost broke until
+	# the assignment somehow arrived later.
+	for attempt in range(3600):
+		p = players_node.get_node_or_null(str(peer_id)) as Player if players_node != null else null
+		if p != null:
+			for candidate in [stand_unit, stand_unit2]:
+				if candidate != null and candidate.name == stand_name:
+					stand = candidate
+					break
+			if stand != null:
+				break
+		await get_tree().process_frame
+	if p == null or stand == null:
 		return
 	p.assigned_stand = stand
 	p.assigned_stand_name = stand.name
@@ -1869,6 +1873,15 @@ func _on_local_player_ready(p: Player) -> void:
 		_complete_pending_local_transition()
 		return
 	_local_player = p
+	# Self-heal stand assignment: the host's one-shot
+	# _assign_local_player_stand RPC can be dropped while this peer is
+	# still loading the world. Now that the player is actually ready,
+	# ask the host again if the assignment never arrived.
+	if (
+		multiplayer.has_multiplayer_peer() and not multiplayer.is_server()
+		and p.assigned_stand == null and p.assigned_stand_name == ""
+	):
+		_request_stand_assignment.rpc_id(1)
 	# Ensure the player's camera is current. There's a race condition
 	# during game start: configure_local_player() may have been called
 	# while defer_camera_claim was true (camera not made current), and
@@ -2002,6 +2015,18 @@ func _on_world_snapshot_applied() -> void:
 	# morning sun) in place.
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		_request_world_state.rpc_id(1)
+
+
+## Client→host: a ready local player without a stand asks the host to
+## re-send its assignment (the original one-shot RPC can race scene load).
+@rpc("any_peer", "reliable")
+func _request_stand_assignment() -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	var stand := _stand_for_peer(sender)
+	if stand:
+		_assign_local_player_stand.rpc_id(sender, sender, stand.name)
 
 
 ## Host-first readiness: called after the host's local player is ready
