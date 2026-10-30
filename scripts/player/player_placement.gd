@@ -29,6 +29,13 @@ func update_ghost() -> void:
 	):
 		_ghost_suppressed = false
 	_update_ghost()
+	# Green-or-nothing: an invalid placement shows no ghost at all. The
+	# red blob read as an error whenever the player aimed at a machine or
+	# crate to deposit — a context where they never meant to place. No
+	# ghost already means "can't place here", and clicking still prints
+	# the reason.
+	if _ghost != null and not _ghost_valid:
+		_ghost.visible = false
 	if _ghost_suppressed and _ghost != null:
 		_ghost.visible = false
 
@@ -46,6 +53,10 @@ var _last_ghost_mat: StandardMaterial3D = null
 var _stack_target_id: int = -1
 var _stack_offset: Vector3 = Vector3.ZERO
 var _stack_yaw: float = 0.0
+## Player-controlled rotation applied on top of the auto-facing yaw —
+## mouse wheel turns the placement ghost 15 degrees per notch.
+var _ghost_yaw_offset: float = 0.0
+const GHOST_ROTATE_STEP := PI / 12.0
 
 # --- Cached probe results ---
 # When _probe_tabletop_below() finds a valid surface, these store the
@@ -67,6 +78,8 @@ const CONTAINER_SCENES: Dictionary = {
 	"press": preload("res://scenes/objects/press.tscn"),
 	"water_dispenser": preload("res://scenes/objects/water_dispenser.tscn"),
 	"cup_tray": preload("res://scenes/objects/cup_tray.tscn"),
+	"lemonader": preload("res://scenes/objects/lemonader.tscn"),
+	"fruitomatic": preload("res://scenes/objects/fruitomatic.tscn"),
 }
 
 const CONTAINER_SCENE_PATHS: Dictionary = {
@@ -79,6 +92,8 @@ const CONTAINER_SCENE_PATHS: Dictionary = {
 	"water_dispenser": "res://scenes/objects/water_dispenser.tscn",
 	"workstation": "res://scenes/stand/workstation.tscn",
 	"cup_tray": "res://scenes/objects/cup_tray.tscn",
+	"lemonader": "res://scenes/objects/lemonader.tscn",
+	"fruitomatic": "res://scenes/objects/fruitomatic.tscn",
 }
 
 # Workstation scene is loaded at runtime to avoid compile-time preload issues
@@ -93,11 +108,13 @@ const CONTAINER_PLACEMENT_SCALE: Dictionary = {
 	"sugar_bin": Vector3.ONE * 0.04,
 	"ice_bin": Vector3.ONE * 0.03,
 	"cup_stack": Vector3.ONE * 0.03, # Smaller cups
-	"pitcher": Vector3.ONE * 0.1575,
-	"press": Vector3.ONE * 0.10,
+	"pitcher": Vector3.ONE * 0.1008,
+	"press": Vector3.ONE * 0.07,
 	"water_dispenser": Vector3.ONE * 0.25,
 	"workstation": Vector3.ONE,
 	"cup_tray": Vector3.ONE,
+	"lemonader": Vector3.ONE * 1.3,
+	"fruitomatic": Vector3.ONE * 1.3,
 }
 
 const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.tscn")
@@ -110,11 +127,13 @@ const CONTAINER_HAND_SCALE: Dictionary = {
 	"sugar_bin": Vector3.ONE * 0.02,
 	"ice_bin": Vector3.ONE * 0.015,
 	"cup_stack": Vector3.ONE * 0.015,
-	"pitcher": Vector3.ONE * 0.08,
-	"press": Vector3.ONE * 0.05,
+	"pitcher": Vector3.ONE * 0.0512,
+	"press": Vector3.ONE * 0.035,
 	"water_dispenser": Vector3.ONE * 0.08,
 	"workstation": Vector3.ONE * 0.05,
 	"cup_tray": Vector3.ONE * 0.4,
+	"lemonader": Vector3.ONE * 0.08,
+	"fruitomatic": Vector3.ONE * 0.08,
 }
 
 
@@ -122,6 +141,8 @@ func _get_container_bottom_offset(node: Node, parent_y: float = 0.0) -> float:
 	# Calculate how far the collision extends below the node's origin.
 	if node == null:
 		return 0.0
+	if node is Lemonader:
+		return node.placement_bottom_offset()
 	var node_y := parent_y
 	if node is Node3D:
 		node_y += (node as Node3D).position.y
@@ -229,7 +250,7 @@ func _place_cup_stack_from_box() -> void:
 	look_dir.y = 0
 	var stack_rot := Vector3.ZERO
 	if look_dir.length_squared() > 0.001:
-		stack_rot.y = atan2(look_dir.x, look_dir.z)
+		stack_rot.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 
 	var state: Dictionary = {
 		"starting_count": 1,
@@ -370,7 +391,7 @@ func _update_single_cup_ghost() -> void:
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
 	if look_dir.length_squared() > 0.001:
-		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
+		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 
 	var overlapping := _check_ghost_overlap()
 	_ghost.visible = true
@@ -398,7 +419,7 @@ func _place_single_cup(_filled: bool) -> void:
 	look_dir.y = 0
 	var stack_rot := Vector3.ZERO
 	if look_dir.length_squared() > 0.001:
-		stack_rot.y = atan2(look_dir.x, look_dir.z)
+		stack_rot.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 
 	var state: Dictionary = {
 		"starting_count": 1,
@@ -447,7 +468,7 @@ func _place_filled_cup() -> void:
 	look_dir.y = 0
 	var cup_rot := Vector3.ZERO
 	if look_dir.length_squared() > 0.001:
-		cup_rot.y = atan2(look_dir.x, look_dir.z)
+		cup_rot.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 
 	var state: Dictionary = {
 		"recipe": recipe,
@@ -509,7 +530,7 @@ func _place_cup_on_tray(tray: CupTray) -> void:
 	look_dir.y = 0
 	var cup_rot := Vector3.ZERO
 	if look_dir.length_squared() > 0.001:
-		cup_rot.y = atan2(look_dir.x, look_dir.z)
+		cup_rot.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 
 	var state: Dictionary = {
 		"state": Cup.CupState.FILLED if filled else Cup.CupState.EMPTY,
@@ -623,6 +644,69 @@ func _get_box_stack_y(box: SupplyBox) -> float:
 	return box.global_position.y
 
 
+func _get_bottom_box_in_stack(base: SupplyBox) -> SupplyBox:
+	if not is_instance_valid(base) or not base.is_inside_tree():
+		return base
+	var bottom := base
+	var bottom_y := _get_box_stack_y(base)
+	var base_pos := base.global_position
+	for node in get_tree().get_nodes_in_group("supply_box"):
+		if not is_instance_valid(node) or node == base:
+			continue
+		var box := node as SupplyBox
+		if box == null or not box.is_inside_tree():
+			continue
+		var dx := absf(box.global_position.x - base_pos.x)
+		var dz := absf(box.global_position.z - base_pos.z)
+		if dx < base.stack_radius and dz < base.stack_radius:
+			var box_y := _get_box_stack_y(box)
+			if box_y < bottom_y:
+				bottom = box
+				bottom_y = box_y
+	return bottom
+
+
+## A stack is only as placeable as the surface its bottom box rests on.
+## Upper boxes carry no stand_owner and their ray hit point sits too high
+## for is_ground_surface's 1m probe to reach the palette, so surface checks
+## against the hovered box fail for box 3+ of a stack.
+func _stack_base_is_placeable(hit_box: SupplyBox) -> bool:
+	var bottom := _get_bottom_box_in_stack(hit_box)
+	if bottom == null:
+		return false
+	# Stacks rooted on a delivery grid cell are always valid.
+	if bottom.has_meta("delivery_cell_idx"):
+		return true
+	if _get_placement_owner_stand(bottom) != "":
+		return true
+	# Probe below the stack base, same mask/reach as is_ground_surface but
+	# starting from the bottom box instead of the (much higher) ray hit.
+	var from := bottom.global_position + Vector3.UP * 0.25
+	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 1.5, 8)
+	query.exclude = [_player.get_rid()]
+	var hit := _player.get_world_3d().direct_space_state.intersect_ray(query)
+	var node: Node = hit.get("collider", null)
+	while node != null:
+		if node.name == "PlacableFloor" or node is DeliveryGrid:
+			return true
+		node = node.get_parent()
+	return false
+
+
+## Boxes may only rest on the palette floor — the collider itself (or an
+## ancestor) must literally be PlacableFloor. Unlike is_ground_surface
+## there is no downward probe: props like price boards and dispensers
+## must never borrow the floor beneath them and let a box float on their
+## side face.
+func _is_box_floor_hit(collider: Object) -> bool:
+	var node := collider as Node
+	while node != null:
+		if node.name == "PlacableFloor":
+			return true
+		node = node.get_parent()
+	return false
+
+
 func _get_delivery_grid_from_collider(collider: Node) -> DeliveryGrid:
 	var node: Node = collider
 	while node != null:
@@ -677,7 +761,7 @@ func _place_held_supply_box_on_grid(grid: DeliveryGrid, hit_point: Vector3) -> v
 
 
 func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
-	if not is_any_stand_surface(root):
+	if not _stack_base_is_placeable(root):
 		return
 	root.update_metrics()
 	var top := _get_topmost_box_in_stack(root)
@@ -691,7 +775,7 @@ func _place_held_supply_box_on_stack(root: SupplyBox) -> void:
 		top.stack_height,
 		0,
 	) + _stack_offset
-	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
+	var place_rot := top.global_rotation + Vector3(0, _stack_yaw + _ghost_yaw_offset, 0)
 	# Inherit delivery grid metas from the box we're stacking on so the
 	# new box also knows which grid slot it belongs to.
 	var cell_idx: int = top.get_meta("delivery_cell_idx", -1) as int
@@ -897,7 +981,7 @@ func _place_held_trash_box_on_stack(root: SupplyBox) -> void:
 		top.stack_height,
 		0,
 	) + _stack_offset
-	var place_rot := top.global_rotation + Vector3(0, _stack_yaw, 0)
+	var place_rot := top.global_rotation + Vector3(0, _stack_yaw + _ghost_yaw_offset, 0)
 	var state: Dictionary = {
 		"is_trash_box": true,
 		"ingredient_type": "trash",
@@ -1145,19 +1229,67 @@ func _create_container_hand_mesh(
 		temp.queue_free()
 	elif container_type == "pitcher" and inst is Pitcher:
 		var pitcher := inst as Pitcher
-		var temp := Node3D.new()
-		temp.name = "PitcherHandTemp"
-		temp.visible = false
-		_player.add_child(temp)
-		temp.add_child(pitcher)
-		# Pitcher._ready() sets the fill level, liquid color and label.
-		# We keep the script on the hand mesh because the held pitcher needs
-		# to react to water refills and emptying while held.
+		# Keep the script AND the live LemonadeFill CSG — the held pitcher
+		# must react to refills/emptying, and the press proves a fresh
+		# instance entering the tree once bakes cleanly. The old temp-node
+		# detach/reattach is what made the CSG flash a white box.
+		# Pickupable is queue_free'd (not free()) so Pitcher._ready() can
+		# still wrap its can_pickup_callback before the node dies.
 		var pickupable := pitcher.get_node_or_null("Pickupable")
 		if pickupable != null:
 			pickupable.queue_free()
-		temp.remove_child(pitcher)
-		temp.queue_free()
+		# Hide for the first frame in the tree — entering mid-frame can
+		# render the CSG combiner's child primitives (including the eraser
+		# box) for one frame before the combiner bakes, which is the white
+		# box flash seen on appliance pitcher take. One frame is
+		# imperceptible; the pitcher's own _ready still runs.
+		inst.visible = false
+		pitcher.ready.connect(
+			func() -> void:
+				if not is_instance_valid(pitcher):
+					return
+				# Wait until one full frame has been rendered with the
+				# clone in the tree: frame_post_draw guarantees the CSG's
+				# deferred bake flushed, so the combiner never shows its
+				# raw primitives (the eraser box = white box flash).
+				RenderingServer.frame_post_draw.connect(
+					func() -> void:
+						if is_instance_valid(pitcher):
+							pitcher.visible = true,
+					Object.CONNECT_ONE_SHOT,
+				),
+			Object.CONNECT_ONE_SHOT,
+		)
+		disable_script = false
+	elif container_type in ["lemonader", "fruitomatic"] and inst is Lemonader:
+		var machine := inst as Lemonader
+		var pickupable := machine.get_node_or_null("Pickupable")
+		if pickupable != null:
+			pickupable.queue_free()
+		# Same first-frame guard as the pitcher clone: the slot preview's
+		# live LemonadeFill CSG needs one rendered frame to bake or its
+		# eraser box flashes white. refresh_display is called explicitly so
+		# the carried machine shows its real state (slot pitcher + stock).
+		# A timer, not frame_post_draw: guaranteed to fire even if no frame
+		# renders (headless), and the ~2-frame wait covers the CSG bake.
+		inst.visible = false
+		machine.ready.connect(
+			func() -> void:
+				if not is_instance_valid(machine):
+					return
+				machine.refresh_display()
+				machine.get_tree().create_timer(0.1).timeout.connect(
+					func() -> void:
+						if is_instance_valid(machine):
+							machine.visible = true,
+					Object.CONNECT_ONE_SHOT,
+				),
+			Object.CONNECT_ONE_SHOT,
+		)
+		# Keep the script alive — _disable_scripts() would set_script(null),
+		# which strips refresh_display/configure_model entirely. _process is
+		# harmless: machine_state's batch was folded into output, so the
+		# clone can never tick, finish, or publish state for a non-world node.
 		disable_script = false
 
 	# Apply hand scale for containers (smaller than placed version)
@@ -1199,6 +1331,20 @@ func _set_container_starting_state(
 		"cup_stack":
 			if "starting_count" in inst:
 				inst.starting_count = saved_count
+		"lemonader", "fruitomatic":
+			if inst is Lemonader and not saved_recipe.is_empty():
+				# saved_recipe carries the machine's machine_state — set it
+				# before _ready so refresh_display shows the slot pitcher.
+				var state := saved_recipe.duplicate(true)
+				# A live batch folded into output keeps the held mesh's
+				# visuals honest without letting the clone's _process tick
+				# the batch down and publish state for a non-world node.
+				if not (state["batch"] as Dictionary).is_empty() \
+						and (state["output"] as Dictionary).is_empty():
+					state["output"] = state["batch"]
+				state["batch"] = { }
+				state["remaining"] = 0.0
+				(inst as Lemonader).machine_state = state
 		"pitcher":
 			if inst is Pitcher:
 				var pitcher := inst as Pitcher
@@ -1291,10 +1437,32 @@ func _create_ghost(container_type: String) -> void:
 	var saved_amount: float = _player.held_item_data.get("saved_amount", 0.0)
 	var saved_count: int = _player.held_item_data.get("saved_count", 0)
 	_set_container_starting_state(_ghost, container_type, saved_amount, saved_count)
+	# Ghost the items riding on the held thing (bins on a carried table,
+	# cups on a tray) — rotating the preview is only useful if you can see
+	# where everything sits. Copies keep their transform relative to the
+	# source, so they rotate with the ghost automatically.
+	var source: Node = _player.held_item_data.get("source_node")
+	if source != null and is_instance_valid(source):
+		for child in source.get_children():
+			if child is Node3D and child.is_in_group("container"):
+				var copy := (child as Node3D).duplicate()
+				remove_placement_groups(copy)
+				_ghost.add_child(copy)
+				copy.transform = (child as Node3D).transform
 	# Disable all physics on the ghost so it can't collide or be raycast-hit
 	_disable_physics(_ghost)
 	# Add to ghost group for overlap filtering
 	_mark_ghost(_ghost)
+	# Remove the LemonadeFill CSG before the ghost enters the tree — the
+	# ghost is a fresh instance whose combiner flashes its eraser box for
+	# a frame while baking, and ghost material over a liquid prism reads
+	# as a white blob. Ghosts only show the container anyway (bin contents
+	# are hidden the same way below). find_child (not get_node) so the
+	# Squeeze-E-Z ghost's nested PitcherPoint/PitcherPreview/LemonadeFill
+	# is caught too.
+	var _ghost_fill := _ghost.find_child("LemonadeFill", true, false)
+	if _ghost_fill != null:
+		_ghost_fill.free()
 	_disable_scripts(_ghost)
 	get_tree().current_scene.add_child(_ghost)
 	_hide_ghost_box_ui(_ghost)
@@ -1330,6 +1498,15 @@ func _destroy_ghost() -> void:
 	_ghost = null
 	_last_ghost_mat = null
 	_ghost_valid = false
+	_ghost_yaw_offset = 0.0
+
+
+## Mouse wheel (called by the controller): rotate the placement preview.
+## Only does anything while a valid green ghost is actually showing.
+func rotate_ghost(direction: float) -> void:
+	if _ghost == null or not _ghost.visible or not _ghost_valid:
+		return
+	_ghost_yaw_offset = fposmod(_ghost_yaw_offset + direction * GHOST_ROTATE_STEP, TAU)
 
 
 ## After a successful place the held item often turns into something that
@@ -1459,7 +1636,7 @@ func _update_cup_box_ghost() -> void:
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
 	if look_dir.length_squared() > 0.001:
-		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
+		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 
 	var overlapping := _check_ghost_overlap()
 	_ghost.visible = true
@@ -1518,10 +1695,10 @@ func _update_supply_box_ghost() -> void:
 		node = node.get_parent()
 
 	if target_box != null and target_box.is_inside_tree():
-		# Validate the box actually hit — the click path checks the same
-		# box, so ghost and placement stay consistent even if a stacked
-		# box above lost its stand_owner.
-		if not is_any_stand_surface(hit_box):
+		# Validate the stack's base — the click path checks the same, so
+		# ghost and placement stay consistent. The hovered box itself may
+		# be several boxes up with no owner or floor beneath its hit point.
+		if not _stack_base_is_placeable(hit_box):
 			_ghost.visible = false
 			_ghost_valid = false
 			return
@@ -1537,7 +1714,11 @@ func _update_supply_box_ghost() -> void:
 			target_box.global_position.z,
 		) + Vector3(0, target_box.stack_height, 0)
 		_ghost.global_position = stack_base + _stack_offset
-		_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
+		_ghost.global_rotation = target_box.global_rotation + Vector3(
+			0,
+			_stack_yaw + _ghost_yaw_offset,
+			0,
+		)
 		_ghost.visible = true
 		_ghost_valid = true
 		_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -1567,13 +1748,10 @@ func _update_supply_box_ghost() -> void:
 		_stack_target_id = -1
 		return
 
-	# Supply crates (and trash boxes) can remain boxed on any stand's
-	# floor/ground, or the player's own stand/table/workstation.
-	var on_surface := (
-		is_table_floor_surface(collider)
-		or is_stand_or_workstation_surface(collider) or is_ground_surface(collider)
-	)
-	if not on_surface or not is_box_placeable_surface(collider):
+	# Supply crates (and trash boxes) can remain boxed on the palette
+	# floor only — the ray must hit PlacableFloor directly, not a prop
+	# (price board, dispenser, bin) that merely has floor below it.
+	if not _is_box_floor_hit(collider) or not is_box_placeable_surface(collider):
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
 		_ghost_valid = false
@@ -1583,6 +1761,7 @@ func _update_supply_box_ghost() -> void:
 
 	_stack_target_id = -1
 	_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
+	_ghost.global_rotation = Vector3(0, _ghost_yaw_offset, 0)
 	_ghost.visible = true
 	_ghost_valid = not _check_ghost_overlap()
 	_apply_ghost_material(
@@ -1615,7 +1794,7 @@ func _update_equipment_box_ghost() -> void:
 			var target_box := _get_topmost_box_in_stack(hit_box)
 			if (
 				target_box == null or not target_box.is_inside_tree()
-				or not is_any_stand_surface(hit_box)
+				or not _stack_base_is_placeable(hit_box)
 			):
 				if _ghost != null:
 					_ghost.visible = false
@@ -1630,7 +1809,11 @@ func _update_equipment_box_ghost() -> void:
 			_ensure_box_ghost()
 			var stack_base := target_box.global_position + Vector3(0, target_box.stack_height, 0)
 			_ghost.global_position = stack_base + _stack_offset
-			_ghost.global_rotation = target_box.global_rotation + Vector3(0, _stack_yaw, 0)
+			_ghost.global_rotation = target_box.global_rotation + Vector3(
+				0,
+				_stack_yaw + _ghost_yaw_offset,
+				0,
+			)
 			_ghost.visible = true
 			_ghost_valid = true
 			_apply_ghost_material(_ghost, _get_ghost_mat_valid())
@@ -1681,7 +1864,7 @@ func _update_equipment_box_ghost() -> void:
 		var look_dir := _player.global_position - hit_point
 		look_dir.y = 0
 		if look_dir.length_squared() > 0.001:
-			_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
+			_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 		_ghost.visible = true
 		_ghost_valid = not _check_ghost_overlap()
 		_stack_target_id = -1
@@ -1691,10 +1874,11 @@ func _update_equipment_box_ghost() -> void:
 		)
 		return
 
-	# Only floor-standing equipment (workstation, water dispenser) may be placed
-	# directly on the ground/floor. Other equipment must go on a table/workstation.
-	if equipment_type in ["workstation", "water_dispenser"] \
-			and (is_table_floor_surface(collider) or is_ground_surface(collider)):
+	# Only floor-standing equipment (workstation, water dispenser, Fruit-O-Matic)
+	# may be placed directly on the ground/floor. Other equipment must go on a
+	# table/workstation.
+	if equipment_type in ["workstation", "water_dispenser", "fruitomatic"] \
+			and _is_box_floor_hit(collider):
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
@@ -1729,7 +1913,7 @@ func _update_equipment_box_ghost() -> void:
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
 	if look_dir.length_squared() > 0.001:
-		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
+		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 	_ghost.visible = true
 	_ghost_valid = not _check_ghost_overlap()
 	_stack_target_id = -1
@@ -1825,6 +2009,11 @@ func _update_ghost() -> void:
 		_update_supply_box_ghost()
 		return
 	if _player.held_item != HeldItem.CONTAINER:
+		# Non-container placement paths (machine attach, emptying, trashing)
+		# clear the held item without destroying this ghost — don't leave a
+		# stale translucent ghost floating at its last position.
+		if _ghost != null:
+			_destroy_ghost()
 		return
 
 	var container_type: String = _player.held_item_data.get("container_type", "")
@@ -1862,7 +2051,22 @@ func _update_ghost() -> void:
 				_ghost_valid = true
 				_apply_ghost_material(_ghost, _get_ghost_mat_valid())
 				return
-			# Can't snap ΓÇö fall through to normal placement below
+			# Can't snap — fall through to the machine check / normal placement below
+		var machine: Node = _player.interaction.find_looked_at_lemonader()
+		if machine != null:
+			var _machine_recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
+			# Only show the ghost when the slot can actually take this
+			# pitcher — an always-visible pale translucent blob sitting on
+			# the machine reads as a glitch, not a hint.
+			if machine.can_attach_pitcher(_machine_recipe):
+				_ghost.global_position = machine.get_pitcher_snap_global_position()
+				_ghost.visible = true
+				_ghost_valid = true
+				_apply_ghost_material(_ghost, _get_ghost_mat_valid())
+			else:
+				_ghost.visible = false
+				_ghost_valid = false
+			return
 
 	if not _player.ray.is_colliding():
 		_ghost.visible = false
@@ -1943,7 +2147,7 @@ func _update_ghost() -> void:
 	var look_dir := _player.global_position - hit_point
 	look_dir.y = 0
 	if look_dir.length_squared() > 0.001:
-		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z)
+		_ghost.global_rotation.y = atan2(look_dir.x, look_dir.z) + _ghost_yaw_offset
 
 	# Check for overlap with existing containers
 	var overlapping := _check_ghost_overlap()
@@ -1955,6 +2159,7 @@ func _update_ghost() -> void:
 		and (
 			not (deployed and is_ground) or container_type == "workstation"
 			or container_type == "water_dispenser"
+			or container_type == "lemonader" or container_type == "fruitomatic"
 		)
 	)
 
@@ -1970,8 +2175,12 @@ func _try_place_container() -> Node3D:
 
 	var container_type: String = _player.held_item_data.get("container_type", "")
 	# Move the existing instance instead of creating a new one, so
-	# attached items (workstation items / tray cups) follow.
-	if container_type == "workstation" or container_type == "cup_tray":
+	# attached items (workstation items / tray cups / slot pitcher) follow.
+	if (
+			container_type == "workstation" or container_type == "cup_tray" \
+				or container_type == "lemonader"
+		or container_type == "fruitomatic"
+	):
 		var source_node: Node3D = _player.held_item_data.get("source_node") as Node3D
 		if source_node != null and is_instance_valid(source_node):
 			# Workstation was hidden (not removed from tree) when picked up,
@@ -1979,6 +2188,11 @@ func _try_place_container() -> Node3D:
 			source_node.global_transform = _ghost.global_transform
 			_enable_physics(source_node)
 			source_node.visible = true
+			if source_node is Lemonader:
+				# _enable_physics force-enables the slot preview's collider;
+				# refresh re-syncs it so an empty slot can't swallow clicks
+				# meant for the machine body.
+				(source_node as Lemonader).refresh_display()
 			# The pickup shrink effect hides each MeshInstance3D individually;
 			# visible=true on the root does not restore them.
 			if source_node.has_meta(&"_pickup_hidden_meshes"):
@@ -2021,7 +2235,10 @@ func _try_place_container() -> Node3D:
 			get_tree().create_timer(0.7).timeout.connect(
 				func():
 					GameLog.log(
-						"[WS-PLACE] placer state after 0.7s: node=%s valid=%s visible=%s pos=%s scale=%s"
+						(
+							"[WS-PLACE] placer state after 0.7s: "
+							+ "node=%s valid=%s visible=%s pos=%s scale=%s"
+						)
 						% [
 							placed_ref.name,
 							is_instance_valid(placed_ref),
@@ -2186,13 +2403,24 @@ func _cancel_container_placement() -> void:
 
 
 func pickup_container(interactable: Interactable, container_type: String) -> void:
-	_player.inventory.play_pickup_source(interactable)
-	# Workstations and loaded cup trays keep the original instance so
-	# items/cups on top move with it.
-	if container_type == "workstation" or container_type == "cup_tray":
+	if container_type in ["lemonader", "fruitomatic"]:
+		# No copied-mesh afterimage for the machine — it's the same copy
+		# path that produced the white-box flash, and a giant translucent
+		# machine silhouette reads as a glitch anyway.
+		_player.inventory.suppress_next_pickup_effect()
+	else:
+		_player.inventory.play_pickup_source(interactable)
+	# Workstations, loaded cup trays, and the Squeeze-E-Z keep the original
+	# instance so items/cups/the slot pitcher move with it (the preview is
+	# a scene child, so machine_state and the pitcher ride along for free).
+	if (
+			container_type == "workstation" or container_type == "cup_tray" \
+				or container_type == "lemonader"
+		or container_type == "fruitomatic"
+	):
 		if container_type == "workstation":
 			_attach_items_to_workstation(interactable)
-		else:
+		elif container_type == "cup_tray":
 			_attach_cups_to_tray(interactable)
 		_disable_physics(interactable)
 		var source_parent := interactable.get_parent()
@@ -2217,7 +2445,12 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 		WorldSync.sync_hide_object(interactable)
 		EventBus.container_picked_up.emit(container_type, interactable)
 		AudioManager.play_sfx("table", pickup_pos)
-		hold_container(container_type, 0.0, 0, false, { })
+		var saved_state := { }
+		if container_type in ["lemonader", "fruitomatic"] and interactable is Lemonader:
+			# The hand mesh shows the machine's real state (slot pitcher,
+			# batch, stock); the hidden original keeps processing.
+			saved_state = (interactable as Lemonader).machine_state.duplicate(true)
+		hold_container(container_type, 0.0, 0, false, saved_state)
 		_player.held_item_data["source_node"] = interactable
 		_player.held_item_data["deployed"] = true
 		return
@@ -2583,6 +2816,10 @@ func _get_container_cost(container_type: String) -> float:
 			return Balancing.CONTAINER_COST_WATER_DISPENSER
 		"workstation":
 			return Balancing.CONTAINER_COST_WORKSTATION
+		"lemonader":
+			return Balancing.CONTAINER_COST_LEMONADER
+		"fruitomatic":
+			return Balancing.CONTAINER_COST_FRUITOMATIC
 	return 0.0
 
 
@@ -2619,71 +2856,51 @@ func _get_ghost_mat_invalid() -> StandardMaterial3D:
 
 
 func _check_ghost_overlap() -> bool:
-	# Check if ghost overlaps with any existing placed containers using actual collision shapes.
+	# Real physics overlap: run the ghost's own collision shapes (they
+	# already carry its current transform) through intersect_shape against
+	# the world, so ANY body the ghost would clip — prop, machine, bin,
+	# box, wall — counts, not just container/supply_box group members.
 	if _ghost == null:
 		return false
-
-	# Get ghost's collision shape and _player.transform
-	var ghost_shape := _get_collision_shape(_ghost)
-	if ghost_shape == null:
+	var ghost_shapes: Array[CollisionShape3D] = []
+	_collect_ghost_shapes(_ghost, ghost_shapes)
+	if ghost_shapes.is_empty():
 		return false
-	var ghost_transform := _ghost.global_transform
-	var ghost_bounds_radius := _get_shape_radius(ghost_shape) * maxf(
-		ghost_transform.basis.get_scale().x,
-		ghost_transform.basis.get_scale().z,
-	)
-	var ghost_origin := ghost_transform.origin
-	var max_check_dist := ghost_bounds_radius + 2.0
 
-	# Check against all placed containers and supply boxes
-	var support := _player.ray.get_collider() as Node if _player.ray.is_colliding() else null
-	var checked: Array = get_tree().get_nodes_in_group("container")
-	checked.append_array(get_tree().get_nodes_in_group("supply_box"))
-	for node in checked:
-		if node == _ghost:
-			continue
-		if _is_ancestor_of_node(node, support):
-			continue
-		if node.is_in_group("ghost"):
-			continue # Skip other ghosts
-		if not (node is Node3D):
-			continue
-		# Skip hidden containers (e.g. a workstation being carried by a player)
-		if not (node as Node3D).visible:
-			continue
+	var support: Node = _player.ray.get_collider() if _player.ray.is_colliding() else null
+	var exclude: Array[RID] = [_player.get_rid()]
+	if support is CollisionObject3D:
+		exclude.append((support as CollisionObject3D).get_rid())
 
-		var other_node := node as Node3D
-		var other_origin := other_node.global_position
-		if ghost_origin.distance_to(other_origin) > max_check_dist:
+	var space := _player.get_world_3d().direct_space_state
+	for shape_node in ghost_shapes:
+		if shape_node.shape == null:
 			continue
-
-		# Get this container's collision shape
-		var other_shape := _get_collision_shape(node)
-		if other_shape == null:
-			continue
-
-		var other_transform := (node as Node3D).global_transform
-
-		# Check intersection based on shape type
-		if ghost_shape is BoxShape3D and other_shape is BoxShape3D:
-			if _boxes_intersect(ghost_shape, ghost_transform, other_shape, other_transform):
-				return true
-		elif ghost_shape is CylinderShape3D and other_shape is CylinderShape3D:
-			if _cylinders_intersect(ghost_shape, ghost_transform, other_shape, other_transform):
-				return true
-		else:
-			# Fallback to sphere approximation using shape extents
-			var ghost_radius := _get_shape_radius(ghost_shape) * maxf(
-				ghost_transform.basis.get_scale().x,
-				ghost_transform.basis.get_scale().z,
-			)
-			var other_radius := _get_shape_radius(other_shape) * maxf(
-				other_transform.basis.get_scale().x,
-				other_transform.basis.get_scale().z,
-			)
-			var dist := ghost_transform.origin.distance_to(other_transform.origin)
-			if dist < (ghost_radius + other_radius):
-				return true
+		var query := PhysicsShapeQueryParameters3D.new()
+		query.shape = shape_node.shape
+		query.transform = shape_node.global_transform
+		# Lift slightly: resting flush on the support surface is not a clip.
+		query.transform.origin.y += 0.03
+		query.collision_mask = _player.ray.collision_mask
+		query.exclude = exclude
+		for hit in space.intersect_shape(query, 8):
+			var body := hit.get("collider") as Node
+			if body == null or not body is Node3D:
+				continue
+			if body.is_in_group("ghost"):
+				continue
+			# Bodies inside the ghost preview itself can never count.
+			if _is_ancestor_of_node(_ghost, body):
+				continue
+			# A body that is an ancestor of the support we rest on
+			# (e.g. the stand that owns the counter) is the surface.
+			if _is_ancestor_of_node(body, support):
+				continue
+			# Hidden originals carried by a player keep their physics off,
+			# but guard against any enabled-but-hidden stragglers.
+			if not (body as Node3D).is_visible_in_tree():
+				continue
+			return true
 
 	# Delivery palettes are static meshes, not containers — reject the
 	# placement only when the ghost actually sits over the palette's
@@ -2691,7 +2908,16 @@ func _check_ghost_overlap() -> bool:
 	# edge of the palette's bounding box. Boxes carried away from a
 	# delivery land right next to the palette, and an edge-touching AABB
 	# check made the ghost stay red across the whole surrounding area.
-	var ghost_aabb := _shape_world_aabb(ghost_shape, ghost_transform)
+	var ghost_aabb := AABB()
+	var aabb_found := false
+	for shape_node in ghost_shapes:
+		var a := _shape_world_aabb(shape_node.shape, shape_node.global_transform)
+		if not aabb_found:
+			ghost_aabb = a
+			aabb_found = true
+		else:
+			ghost_aabb = ghost_aabb.merge(a)
+	var ghost_origin := _ghost.global_transform.origin
 	for grid in get_tree().get_nodes_in_group("delivery_grid"):
 		var palette := grid.get_node_or_null("palette")
 		if palette == null:
@@ -2771,6 +2997,16 @@ func _find_collision_shape(node: Node) -> Shape3D:
 		if found != null:
 			return found
 	return null
+
+
+## Every CollisionShape3D inside the ghost — the old overlap check only
+## used the first one, so multi-shape ghosts (table top + legs) clipped
+## through anything the first shape didn't cover.
+func _collect_ghost_shapes(node: Node, out: Array[CollisionShape3D]) -> void:
+	for child in node.get_children():
+		if child is CollisionShape3D:
+			out.append(child)
+		_collect_ghost_shapes(child, out)
 
 
 func _get_shape_radius(shape: Shape3D) -> float:

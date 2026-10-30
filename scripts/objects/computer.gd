@@ -35,7 +35,10 @@ func _ready() -> void:
 	_screen_camera.cull_mask &= ~2
 
 	# Render one frame so the ViewportTexture is allocated before we bind it.
-	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# WHEN_VISIBLE only re-renders while the screen is on camera — cheaper
+	# than ALWAYS, and the texture holds its last frame when off-screen,
+	# which keeps the last UI state on the monitor for immersion.
+	_screen_ui.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	# Smooths jagged panel/text edges in the off-screen UI; without this the
 	# screen looks noticeably worse than plain on-screen UI since it's being
 	# resampled onto a 3D quad at a different pixel density.
@@ -129,7 +132,7 @@ func _enter(player: Node) -> void:
 	_screen_camera.global_transform = _player_camera.global_transform
 	_screen_camera.fov = _player_camera.fov
 
-	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_screen_ui.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	_transitioning = true
 	_zoom_tween = create_tween()
 	_zoom_tween.set_trans(Tween.TRANS_QUAD)
@@ -148,6 +151,10 @@ func _on_zoom_finished() -> void:
 		EventBus.interaction_hint_changed.emit(get_hint(_player))
 
 
+func close_view() -> void:
+	_exit()
+
+
 func _exit() -> void:
 	if _zoom_tween != null and _zoom_tween.is_valid():
 		_zoom_tween.kill()
@@ -156,11 +163,13 @@ func _exit() -> void:
 	_transitioning = false
 	_active = false
 
+	# Keep the hub drawn on the monitor — the screen stays "on" showing
+	# whatever was last open once the player steps away.
 	if _ui_root != null and _ui_root.has_method("_hide_morning_hub"):
-		_ui_root._hide_morning_hub()
-	# Keep rendering always so the texture doesn't fall back to a white placeholder
-	# while the computer is off-screen.
-	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		_ui_root._hide_morning_hub(true)
+	# WHEN_VISIBLE freezes on the last rendered frame while off-camera —
+	# the monitor keeps showing the last UI state rather than going blank.
+	_screen_ui.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 
 	if _player_camera != null and is_instance_valid(_player_camera):
 		_screen_camera.current = false

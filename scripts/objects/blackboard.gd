@@ -332,7 +332,7 @@ func _apply_current_fruit_recipe() -> void:
 		return
 	if label_name == "" or not label_name in StandUnit.FRUIT_TYPES:
 		return
-	var recipe := GameState.get_recipe(label_name).duplicate()
+	var recipe := stand.get_recipe(label_name).duplicate()
 	if v1 != "" and v1.is_valid_float():
 		recipe["fruit_count"] = float(v1)
 	if v2 != "" and v2.is_valid_float():
@@ -463,7 +463,7 @@ func _apply_recipes_to_stand() -> void:
 		# applies it and broadcasts the authoritative state; GameState
 		# is updated by StandUnit.set_recipe on the host and by _apply_state
 		# on clients, so we don't duplicate the write here.
-		var recipe := GameState.get_recipe(label_name).duplicate()
+		var recipe := stand.get_recipe(label_name).duplicate()
 		if v1 != "" and v1.is_valid_float():
 			recipe["fruit_count"] = float(v1)
 		if v2 != "" and v2.is_valid_float():

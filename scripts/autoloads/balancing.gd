@@ -83,6 +83,10 @@ const CONTAINER_COST_PRESS: float = 30.0
 const CONTAINER_COST_WATER_DISPENSER: float = 25.0
 const CONTAINER_COST_WORKSTATION: float = 40.0
 const CONTAINER_COST_CUP_TRAY: float = 15.0
+const CONTAINER_COST_LEMONADER: float = 175.0
+const CONTAINER_COST_FRUITOMATIC: float = 375.0
+const LEMONADER_CAPACITY: float = 100.0
+const LEMONADER_MIX_SECONDS: float = 5.0
 
 # === SUPPLY PRICES (per box) ===
 # Baseline economics: an ideal lemon pitcher (3 lemons + 2 sugar + 4–9 ice

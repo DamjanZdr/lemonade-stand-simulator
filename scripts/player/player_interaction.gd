@@ -317,6 +317,12 @@ func primary_interact() -> void:
 			or _player.held_item_data.get("serve_pending", false):
 		return
 
+	# Duck-typed: naming the Lemonader class here would form a script
+	# dependency cycle (Lemonader -> Pitcher -> Player -> this script).
+	if interactable != null and interactable.has_method("request_action"):
+		interactable.interact(_player)
+		return
+
 	# Walking pedestrians take priority: first click starts the offer no matter
 	# what the player is holding. Subsequent clicks serve lemonade.
 	if interactable is PedestrianInteractable:
@@ -650,11 +656,12 @@ func primary_interact() -> void:
 			# Ground/palette takes priority — the ghost shows the unopened
 			# box there, so the click must place the box, not unpack a
 			# single-cup stack onto the floor.
-			if _player.placement.is_ground_surface(collider):
+			if _player.placement._is_box_floor_hit(collider):
 				if _player.placement.is_box_placeable_surface(collider):
 					_player.placement._place_held_supply_box_on(
 						_player.ray.get_collision_point()
 						+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
+						Vector3(0, _player.placement._ghost_yaw_offset, 0),
 					)
 				return
 			if _player.placement.is_stand_or_workstation_surface(collider):
@@ -691,6 +698,11 @@ func primary_interact() -> void:
 				node = node.get_parent()
 			# Check if looking at a matching ingredient bin or water dispenser
 			if not is_equipment:
+				if interactable != null and interactable.has_method("request_action"):
+					_player.last_interact_hit = _player.ray.get_collider()
+					interactable.interact(_player)
+					_player.last_interact_hit = null
+					return
 				if interactable is IngredientBin:
 					var bin := interactable as IngredientBin
 					if bin.ingredient_type == _player.inventory.held_item_data.get(
@@ -731,23 +743,24 @@ func primary_interact() -> void:
 			if is_equipment and valid_equipment_surface:
 				_player.placement._place_equipment_from_box()
 				return
-			if is_equipment and _player.placement.is_box_placeable_surface(collider):
-				_player.placement._place_held_supply_box_on(
-					_player.ray.get_collision_point()
-					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
-				)
-				return
 			if (
-				not is_equipment
-				and (
-					_player.placement.is_table_floor_surface(collider)
-					or _player.placement.is_stand_or_workstation_surface(collider)
-					or _player.placement.is_box_placeable_surface(collider)
-				)
+				is_equipment and _player.placement._is_box_floor_hit(collider)
+				and _player.placement.is_box_placeable_surface(collider)
 			):
 				_player.placement._place_held_supply_box_on(
 					_player.ray.get_collision_point()
 					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
+					Vector3(0, _player.placement._ghost_yaw_offset, 0),
+				)
+				return
+			if (
+				not is_equipment and _player.placement._is_box_floor_hit(collider)
+				and _player.placement.is_box_placeable_surface(collider)
+			):
+				_player.placement._place_held_supply_box_on(
+					_player.ray.get_collision_point()
+					+ Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0),
+					Vector3(0, _player.placement._ghost_yaw_offset, 0),
 				)
 				return
 		EventBus.interaction_hint_changed.emit("Can only place on a stand area")
@@ -890,6 +903,17 @@ func update_rapid_fire(delta: float) -> void:
 				fbin.interact(_player)
 				_player.last_interact_hit = null
 		return
+	# Duck-typed appliance check (see primary_interact for why no class name).
+	if interactable != null and interactable.has_method("request_action"):
+		var itype: String = _player.inventory.held_item_data.get("ingredient_type", "")
+		if itype in GameState.FRUIT_TYPES or itype in ["sugar", "ice"]:
+			var amt: float = _player.inventory.held_item_data.get("amount", 0.0)
+			if amt > 0.0:
+				_rapid_fire_timer = maxf(_rapid_fire_timer + _player.get_rapid_fire_interval(), 0.0)
+				_player.last_interact_hit = _player.ray.get_collider()
+				interactable.interact(_player)
+				_player.last_interact_hit = null
+		return
 
 
 func get_looked_at_interactable() -> Interactable:
@@ -970,6 +994,24 @@ func find_looked_at_press() -> Press:
 ## Public wrapper for placement code that needs the currently looked-at dispenser.
 func find_looked_at_dispenser() -> WaterDispenser:
 	return _find_looked_at_dispenser()
+
+
+## Public wrapper for placement code that needs the currently looked-at
+## Squeeze-E-Z. Duck-typed via can_attach_pitcher to avoid the
+## Lemonader→Pitcher→Player script dependency cycle.
+func find_looked_at_lemonader() -> Node:
+	var interactable := get_looked_at_interactable()
+	if interactable != null and interactable.has_method("can_attach_pitcher"):
+		return interactable
+	if _player.ray.is_colliding():
+		var node := _player.ray.get_collider()
+		for i in range(6):
+			if node == null:
+				break
+			if node.has_method("can_attach_pitcher"):
+				return node
+			node = node.get_parent()
+	return null
 
 
 ## The rapid-fire cup target is read/written by both interaction and placement.

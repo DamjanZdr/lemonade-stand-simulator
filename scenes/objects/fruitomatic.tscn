@@ -1,0 +1,245 @@
+[gd_scene format=3 uid="uid://bf0m4t1cfru1t"]
+
+[ext_resource type="Script" uid="uid://bhmhicy57eu8q" path="res://scripts/objects/fruitomatic.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://cwg4t7ydr2kq1" path="res://assets/models/fruit-o-matic.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://scenes/objects/lemonader_stock_panel.tscn" id="3_stock_panel"]
+[ext_resource type="PackedScene" uid="uid://pitcher001ls" path="res://scenes/objects/pitcher.tscn" id="4_pitcher"]
+[ext_resource type="Script" uid="uid://cwl1ugs3cxvwc" path="res://scripts/objects/fruitomatic_start_button.gd" id="5_start_button"]
+
+[sub_resource type="BoxShape3D" id="BodyShape"]
+size = Vector3(0.67536, 0.977547, 0.430423)
+
+[sub_resource type="StandardMaterial3D" id="StartButtonMaterial"]
+shading_mode = 0
+albedo_color = Color(0.18, 0.19, 0.22, 1)
+
+[sub_resource type="BoxMesh" id="StartButtonMesh"]
+material = SubResource("StartButtonMaterial")
+size = Vector3(0.1, 0.045, 0.03)
+
+[sub_resource type="BoxShape3D" id="StartButtonShape"]
+size = Vector3(0.16, 0.08, 0.04)
+
+[node name="FruitOMatic" type="Node3D" unique_id=1549580532]
+script = ExtResource("1")
+
+[node name="Physics" type="StaticBody3D" parent="." unique_id=443818675]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Physics" unique_id=90624090]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0005438, 0.488947, 0.0092479)
+shape = SubResource("BodyShape")
+
+[node name="PitcherPoint" type="Marker3D" parent="." unique_id=1947437359]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.162873, 0.268575)
+
+[node name="PitcherPreview" parent="PitcherPoint" unique_id=688369980 instance=ExtResource("4_pitcher")]
+transform = Transform3D(0.0775, 0, 0, 0, 0.0775, 0, 0, 0, 0.0775, 0, 0, 0)
+visible = false
+
+[node name="fruit-o-matic" parent="." unique_id=2052753401 instance=ExtResource("2_model")]
+transform = Transform3D(0.21, 0, 0, 0, 0.21, 0, 0, 0, 0.21, 0, 0.245147, 0)
+
+[node name="FocusCamera" type="Camera3D" parent="." unique_id=1617073499]
+transform = Transform3D(1, 0, 0, 0, 0.999397, 0.0347267, 0, -0.0347267, 0.999397, 0, 0.758727, 1.2101)
+fov = 30.0
+
+[node name="SugarDrop" type="Marker3D" parent="." unique_id=1255122425]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.168111, 0.689537, 0.151306)
+
+[node name="FruitDrop" type="Marker3D" parent="." unique_id=1770738809]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0007855, 0.96078, 0.0229936)
+
+[node name="PitcherPosition" type="Marker3D" parent="." unique_id=538752608]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0007855, 0.165549, 0.268163)
+
+[node name="IceDrop" type="Marker3D" parent="." unique_id=1297389319]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.173359, 0.689537, 0.151306)
+
+[node name="StockPanels" type="Node3D" parent="." unique_id=280663697]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.122581, 0.0964605)
+
+[node name="SugarIce" type="Node3D" parent="StockPanels" unique_id=1468381576]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.511333, 0)
+
+[node name="Sugar" parent="StockPanels/SugarIce" unique_id=1854980345 instance=ExtResource("3_stock_panel")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, -0.165142, 0, 0.108182)
+
+[node name="Ice" parent="StockPanels/SugarIce" unique_id=1582658723 instance=ExtResource("3_stock_panel")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0.167594, 0, 0.108182)
+
+[node name="Fruits" type="Node3D" parent="StockPanels" unique_id=683057995]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.628013, -0.129028)
+
+[node name="Lemon" parent="StockPanels/Fruits" unique_id=1312983810 instance=ExtResource("3_stock_panel")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, -0.256932, 0.14, 0.108182)
+
+[node name="StartLemon" type="Node3D" parent="StockPanels/Fruits" unique_id=1554289408]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, -0.256932, 0.06363642, 0.103838965)
+script = ExtResource("5_start_button")
+fruit = "lemon"
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="StockPanels/Fruits/StartLemon" unique_id=904939928]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.02)
+cast_shadow = 0
+mesh = SubResource("StartButtonMesh")
+
+[node name="Label3D" type="Label3D" parent="StockPanels/Fruits/StartLemon" unique_id=926945832]
+metadata/no_depth_override = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, 0.038)
+pixel_size = 0.001
+double_sided = false
+transparent = false
+alpha_cut = 1
+text = "START"
+font_size = 24
+outline_size = 0
+
+[node name="Physics" type="StaticBody3D" parent="StockPanels/Fruits/StartLemon" unique_id=263473128]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StockPanels/Fruits/StartLemon/Physics" unique_id=1349847115]
+shape = SubResource("StartButtonShape")
+
+[node name="Raspberry" parent="StockPanels/Fruits" unique_id=920565316 instance=ExtResource("3_stock_panel")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, -0.154159, 0.14, 0.108182)
+
+[node name="StartRaspberry" type="Node3D" parent="StockPanels/Fruits" unique_id=1286885490]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, -0.154159, 0.06363642, 0.103838965)
+script = ExtResource("5_start_button")
+fruit = "raspberry"
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="StockPanels/Fruits/StartRaspberry" unique_id=1872620901]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.02)
+cast_shadow = 0
+mesh = SubResource("StartButtonMesh")
+
+[node name="Label3D" type="Label3D" parent="StockPanels/Fruits/StartRaspberry" unique_id=572730268]
+metadata/no_depth_override = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, 0.038)
+pixel_size = 0.001
+double_sided = false
+transparent = false
+alpha_cut = 1
+text = "START"
+font_size = 24
+outline_size = 0
+
+[node name="Physics" type="StaticBody3D" parent="StockPanels/Fruits/StartRaspberry" unique_id=1437346402]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StockPanels/Fruits/StartRaspberry/Physics" unique_id=652706156]
+shape = SubResource("StartButtonShape")
+
+[node name="Strawberry" parent="StockPanels/Fruits" unique_id=239969772 instance=ExtResource("3_stock_panel")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, -0.0513864, 0.14, 0.108182)
+
+[node name="StartStrawberry" type="Node3D" parent="StockPanels/Fruits" unique_id=1196963659]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, -0.0513864, 0.06363642, 0.103838965)
+script = ExtResource("5_start_button")
+fruit = "strawberry"
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="StockPanels/Fruits/StartStrawberry" unique_id=377702909]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.02)
+cast_shadow = 0
+mesh = SubResource("StartButtonMesh")
+
+[node name="Label3D" type="Label3D" parent="StockPanels/Fruits/StartStrawberry" unique_id=174049576]
+metadata/no_depth_override = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, 0.038)
+pixel_size = 0.001
+double_sided = false
+transparent = false
+alpha_cut = 1
+text = "START"
+font_size = 24
+outline_size = 0
+
+[node name="Physics" type="StaticBody3D" parent="StockPanels/Fruits/StartStrawberry" unique_id=1927705720]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StockPanels/Fruits/StartStrawberry/Physics" unique_id=1496829820]
+shape = SubResource("StartButtonShape")
+
+[node name="Blueberry" parent="StockPanels/Fruits" unique_id=784700407 instance=ExtResource("3_stock_panel")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0.0513864, 0.14, 0.108182)
+
+[node name="StartBlueberry" type="Node3D" parent="StockPanels/Fruits" unique_id=1073288462]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0.0513864, 0.06363642, 0.103838965)
+script = ExtResource("5_start_button")
+fruit = "blueberry"
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="StockPanels/Fruits/StartBlueberry" unique_id=210252184]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.02)
+cast_shadow = 0
+mesh = SubResource("StartButtonMesh")
+
+[node name="Label3D" type="Label3D" parent="StockPanels/Fruits/StartBlueberry" unique_id=1995758240]
+metadata/no_depth_override = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, 0.038)
+pixel_size = 0.001
+double_sided = false
+transparent = false
+alpha_cut = 1
+text = "START"
+font_size = 24
+outline_size = 0
+
+[node name="Physics" type="StaticBody3D" parent="StockPanels/Fruits/StartBlueberry" unique_id=592002074]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StockPanels/Fruits/StartBlueberry/Physics" unique_id=1923157923]
+shape = SubResource("StartButtonShape")
+
+[node name="Peach" parent="StockPanels/Fruits" unique_id=377819225 instance=ExtResource("3_stock_panel")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0.154159, 0.14, 0.108182)
+
+[node name="StartPeach" type="Node3D" parent="StockPanels/Fruits" unique_id=1520600070]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0.154159, 0.06363642, 0.103838965)
+script = ExtResource("5_start_button")
+fruit = "peach"
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="StockPanels/Fruits/StartPeach" unique_id=1871460963]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.02)
+cast_shadow = 0
+mesh = SubResource("StartButtonMesh")
+
+[node name="Label3D" type="Label3D" parent="StockPanels/Fruits/StartPeach" unique_id=2101895869]
+metadata/no_depth_override = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, 0.038)
+pixel_size = 0.001
+double_sided = false
+transparent = false
+alpha_cut = 1
+text = "START"
+font_size = 24
+outline_size = 0
+
+[node name="Physics" type="StaticBody3D" parent="StockPanels/Fruits/StartPeach" unique_id=1449209525]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StockPanels/Fruits/StartPeach/Physics" unique_id=155068023]
+shape = SubResource("StartButtonShape")
+
+[node name="Watermelon" parent="StockPanels/Fruits" unique_id=1112491190 instance=ExtResource("3_stock_panel")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0.256932, 0.14, 0.108182)
+
+[node name="StartWatermelon" type="Node3D" parent="StockPanels/Fruits" unique_id=1827441590]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0.256932, 0.06363642, 0.103838965)
+script = ExtResource("5_start_button")
+fruit = "watermelon"
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="StockPanels/Fruits/StartWatermelon" unique_id=984330324]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.02)
+cast_shadow = 0
+mesh = SubResource("StartButtonMesh")
+
+[node name="Label3D" type="Label3D" parent="StockPanels/Fruits/StartWatermelon" unique_id=1974669186]
+metadata/no_depth_override = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, 0.038)
+pixel_size = 0.001
+double_sided = false
+transparent = false
+alpha_cut = 1
+text = "START"
+font_size = 24
+outline_size = 0
+
+[node name="Physics" type="StaticBody3D" parent="StockPanels/Fruits/StartWatermelon" unique_id=1648739047]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StockPanels/Fruits/StartWatermelon/Physics" unique_id=2143126783]
+shape = SubResource("StartButtonShape")

@@ -67,7 +67,8 @@ func _cups_on_tray() -> int:
 
 func _slot_occupied(p: Vector3) -> bool:
 	for n in get_tree().get_nodes_in_group("container"):
-		if n is Cup and is_instance_valid(n) \
-				and n.global_position.distance_to(p) < SLOT_RADIUS:
-			return true
+		if n is Cup and is_instance_valid(n):
+			var offset: Vector3 = n.global_position - p
+			if absf(offset.y) < 0.2 and Vector2(offset.x, offset.z).length() < SLOT_RADIUS:
+				return true
 	return false

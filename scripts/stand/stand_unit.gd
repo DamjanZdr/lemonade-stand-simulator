@@ -119,7 +119,7 @@ var perfect_recipes_set: Dictionary = { }
 @onready var queue_marker_1: Marker3D = $QueueMarker1
 @onready var queue_marker_2: Marker3D = $QueueMarker2
 @onready var price_board: Node3D = $PriceBoard
-@onready var thermometer: Node3D = $Thermometer
+@onready var thermometer: Node3D = get_node_or_null("Thermometer")
 @onready var water_dispenser: Node3D = $WaterDispenser
 @onready var stand_mesh: Node3D = $Stand
 @onready var _sign_label: Label3D = get_node_or_null("Stand/stand/SignLabel")
@@ -282,7 +282,8 @@ func _apply_state(
 	# Sync per-stand unlocks. Notify local UI (price/recipe boards) if they changed.
 	var old_unlocks: Dictionary = purchased_upgrade_nodes.duplicate(true)
 	purchased_upgrade_nodes = new_purchased_upgrade_nodes.duplicate(true)
-	if not old_unlocks.is_empty() and not old_unlocks == purchased_upgrade_nodes:
+	UpgradeManager.set_purchased_for_stand(str(name), purchased_upgrade_nodes.keys())
+	if old_unlocks != purchased_upgrade_nodes:
 		EventBus.upgrade_purchased.emit(0, 0.0)
 	if stand_display_name != new_stand_display_name:
 		stand_display_name = new_stand_display_name
@@ -360,6 +361,7 @@ func reset_to_starting_state() -> void:
 	perfect_recipes_set.clear()
 	last_day_stats = { }
 	lifetime_stats = { }
+	onboarding_progress.erase("progress")
 	reset_daily_stats()
 	init_default_prices()
 	init_default_recipes()
@@ -395,6 +397,7 @@ func _ready() -> void:
 	if not EventBus.upgrade_purchased.is_connected(_on_upgrade_purchased_for_assistants):
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased_for_assistants)
 
+	EventBus.upgrade_purchased.connect(_on_global_upgrade_purchased_bridge)
 	if not is_legacy_primary:
 		# Clean, fully independent stand — no legacy bridge, no GameState
 		# involvement at all. Give it starting money and popularity from Balancing.
@@ -459,7 +462,6 @@ func _ready() -> void:
 	# genuinely need to diverge per stand, UpgradeManager's purchase logic
 	# itself should be parameterized by stand instead of this mirror.
 	purchased_upgrade_nodes = UpgradeManager.get_purchased_for_stand(name).duplicate()
-	EventBus.upgrade_purchased.connect(_on_global_upgrade_purchased_bridge)
 
 
 ## True when this peer is a connected client. Checked inside the bridge
@@ -524,14 +526,64 @@ func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void
 ## should use this instead of the global UpgradeManager active set, which
 ## can temporarily belong to another stand during a remote purchase.
 func is_fruit_unlocked(fruit: String) -> bool:
-	if fruit == "lemon":
-		return true
-	var unlock_id := fruit + "_unlock"
-	for node_name in purchased_upgrade_nodes.keys():
-		var data: Dictionary = UpgradeManager.tree_nodes.get(node_name, { })
-		if data.get("upgrade_id", "") == unlock_id:
-			return true
-	return false
+	return UpgradeManager.is_fruit_unlocked_for_stand(fruit, self)
+
+
+## Bar-progression counters. Stored inside onboarding_progress so they
+## sync, save, and reset with the rest of the per-stand state (the RPC
+## signature stays untouched). Host-authoritative: callers go through
+## OnboardingManager.report, which already routes to the host.
+func record_progress(key: String, amount: float = 1.0) -> void:
+	if not WorldSync.is_host():
+		return
+	var p: Dictionary = onboarding_progress.get("progress", { })
+	p[key] = float(p.get(key, 0.0)) + amount
+	onboarding_progress["progress"] = p
+	_touch_progress()
+
+
+func get_progress(key: String) -> float:
+	return float(onboarding_progress.get("progress", { }).get(key, 0.0))
+
+
+func record_perfect_serve(fruit: String) -> void:
+	if not WorldSync.is_host():
+		return
+	var p: Dictionary = onboarding_progress.get("progress", { })
+	var serves: Dictionary = p.get("perfect_serves", { })
+	serves[fruit] = int(serves.get(fruit, 0)) + 1
+	p["perfect_serves"] = serves
+	onboarding_progress["progress"] = p
+	_touch_progress()
+
+
+func get_perfect_serves(fruit: String) -> int:
+	var serves: Dictionary = onboarding_progress.get("progress", { }).get("perfect_serves", { })
+	return int(serves.get(fruit, 0))
+
+
+## Claimed bar tiers per branch — the counter reaching a threshold only
+## makes the tier claimable; the level (and its effect) applies once the
+## player clicks the badge. Stored in onboarding_progress like the rest.
+func get_claimed(branch_id: String) -> int:
+	return int(onboarding_progress.get("progress", { }).get("claimed", { }).get(branch_id, 0))
+
+
+func claim_progress_tier(branch_id: String, level: int) -> void:
+	if not WorldSync.is_host():
+		return
+	var p: Dictionary = onboarding_progress.get("progress", { })
+	var claimed: Dictionary = p.get("claimed", { })
+	claimed[branch_id] = level
+	p["claimed"] = claimed
+	onboarding_progress["progress"] = p
+	_touch_progress()
+
+
+func _touch_progress() -> void:
+	onboarding_progress["revision"] = int(onboarding_progress.get("revision", 0)) + 1
+	OnboardingManager.stand_progress_changed.emit(self, onboarding_progress.duplicate(true))
+	push_state()
 
 
 func init_default_prices() -> void:
@@ -590,11 +642,13 @@ func add_money_from_sale(amount: float) -> void:
 	push_state()
 
 
-func spend_money(amount: float) -> bool:
+func spend_money(amount: float, category: String = "") -> bool:
 	if money < amount:
 		return false
 	money -= amount
 	total_money_spent += amount
+	# Negotiation counts all money spent — supplies, equipment, wages.
+	record_progress("supply_spend", amount)
 	day_costs += amount
 	money_changed.emit(money)
 	if is_legacy_primary:
@@ -763,6 +817,18 @@ func consume_grace_conversion() -> void:
 	push_state()
 
 
+func _sender_can_edit_fruit(fruit_type: String) -> bool:
+	if fruit_type not in FRUIT_TYPES or not is_fruit_unlocked(fruit_type):
+		return false
+	var sender := multiplayer.get_remote_sender_id()
+	if sender == 0:
+		return true
+	for player in get_tree().get_nodes_in_group("player"):
+		if player.get_multiplayer_authority() == sender:
+			return player.get("assigned_stand") == self
+	return false
+
+
 func request_set_price(fruit_type: String, new_price: float) -> void:
 	if multiplayer.has_multiplayer_peer():
 		_rpc_set_price.rpc_id(1, fruit_type, new_price)
@@ -772,7 +838,7 @@ func request_set_price(fruit_type: String, new_price: float) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _rpc_set_price(fruit_type: String, new_price: float) -> void:
-	if not is_multiplayer_authority():
+	if not is_multiplayer_authority() or not _sender_can_edit_fruit(fruit_type):
 		return
 	set_price(fruit_type, new_price)
 	push_state()
@@ -787,7 +853,7 @@ func request_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _rpc_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
-	if not is_multiplayer_authority():
+	if not is_multiplayer_authority() or not _sender_can_edit_fruit(fruit_type):
 		return
 	set_recipe(fruit_type, recipe)
 	push_state()

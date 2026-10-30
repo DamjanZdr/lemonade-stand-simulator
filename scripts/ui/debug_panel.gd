@@ -190,6 +190,33 @@ func _ready() -> void:
 	)
 	vbox.add_child(end_day_btn)
 
+	# Upgrade branches — "+1" fills the bar to its next threshold so
+	# each click makes exactly one tier claimable.
+	vbox.add_child(HSeparator.new())
+	var up_label := Label.new()
+	up_label.text = "Upgrades (+1 tier):"
+	up_label.add_theme_font_size_override("font_size", 8)
+	vbox.add_child(up_label)
+	for branch in UpgradeManager.get_branches():
+		var row := HBoxContainer.new()
+		var branch_lbl := Label.new()
+		branch_lbl.text = str(branch.get("name", branch.get("id", "?")))
+		branch_lbl.add_theme_font_size_override("font_size", 8)
+		branch_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(branch_lbl)
+		var branch_btn := Button.new()
+		branch_btn.text = "+1"
+		branch_btn.add_theme_font_size_override("font_size", 9)
+		var branch_id := str(branch.get("id", ""))
+		branch_btn.pressed.connect(
+			func():
+				var stand := WorldSync.get_local_stand() as StandUnit
+				if stand != null:
+					OnboardingManager.report(stand, "debug_fill_branch", { "branch": branch_id }),
+		)
+		row.add_child(branch_btn)
+		vbox.add_child(row)
+
 	# NPC roster tools
 	vbox.add_child(HSeparator.new())
 	var meet_btn := Button.new()

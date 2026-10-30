@@ -16,6 +16,8 @@ const LEMON_MASTERY_TEXT := (
 	+ "and adjust your recipe when you make your next batches."
 )
 const CLIENT_REPORTED_EVENTS := [
+	"claim_upgrade",
+	"debug_fill_branch",
 	"equipment_placed",
 	"supply_deposited",
 	"pitcher_placed",
@@ -425,6 +427,7 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 		_match_task(stand, "second_fruit_ordered", d2)
 	if event_name == "customer_feedback":
 		_evaluate_mastery(stand, data)
+	UpgradeManager.record_event(stand, event_name, data)
 	_match_task(stand, event_name, data)
 	_retro_satisfy_current_task(stand)
 
@@ -652,16 +655,17 @@ func _evaluate_mastery(stand: StandUnit, data: Dictionary) -> void:
 			"sugar": snap.get("sugar", 0.0),
 		}
 		var state: Dictionary = p.active_recipe_candidates.get(fruit, { })
-		state = _advance_candidate(
-			state,
-			candidate,
-			complaints.any(
-				func(c):
-					return c in FRUIT_COMPLAINTS,
-			),
-			_fruit_is_perfect(fruit, candidate),
+		var had_fruit_complaint: bool = complaints.any(
+			func(c):
+				return c in FRUIT_COMPLAINTS,
 		)
+		var is_perfect := _fruit_is_perfect(fruit, candidate)
+		state = _advance_candidate(state, candidate, had_fruit_complaint, is_perfect)
 		p.active_recipe_candidates[fruit] = state
+		# Cumulative perfect serves drive the Fruit unlock bar — one number,
+		# no streak resets.
+		if is_perfect and not had_fruit_complaint:
+			stand.record_perfect_serve(fruit)
 		if state.streak >= 5 and state.perfect:
 			p.discovered_recipes[fruit] = candidate
 			p.active_recipe_candidates.erase(fruit)

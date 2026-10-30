@@ -16,6 +16,8 @@ const CONTAINER_NAMES := {
 	"sugar_bin": "Bowl",
 	"ice_bin": "Bucket",
 	"workstation": "Table",
+	"lemonader": "Squeeze-E-Z",
+	"fruitomatic": "Fruit-O-Matic",
 }
 
 

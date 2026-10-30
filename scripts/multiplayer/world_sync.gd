@@ -131,10 +131,10 @@ static func get_local_stand() -> Node:
 ## Spend money from the local player's assigned stand.
 ## Falls back to GameState for single-player / legacy primary stand.
 ## Returns true if the money was spent successfully.
-static func spend_local_money(amount: float) -> bool:
+static func spend_local_money(amount: float, category: String = "") -> bool:
 	var stand := get_local_stand()
 	if stand != null and stand.has_method("spend_money"):
-		return stand.spend_money(amount)
+		return stand.spend_money(amount, category)
 	return GameState.spend_money(amount)
 
 
@@ -362,6 +362,12 @@ func _serialize_container(node: Node) -> Dictionary:
 			scene_path = "res://scenes/stand/workstation.tscn"
 		"cup":
 			scene_path = "res://scenes/objects/cup.tscn"
+		"cup_tray":
+			scene_path = "res://scenes/objects/cup_tray.tscn"
+		"lemonader":
+			scene_path = "res://scenes/objects/lemonader.tscn"
+		"fruitomatic":
+			scene_path = "res://scenes/objects/fruitomatic.tscn"
 		_:
 			return { }
 	var net_id := _get_net_id(node)
@@ -405,6 +411,8 @@ func _serialize_container(node: Node) -> Dictionary:
 		entry["fill_color"] = c.fill_color
 	elif node is CupStack:
 		entry["current_count"] = (node as CupStack).current_count
+	elif node is Lemonader:
+		entry["machine_state"] = node.machine_state.duplicate(true)
 	elif node is WaterDispenser:
 		entry["water_fillings"] = (node as WaterDispenser).max_fillings
 	elif node is Press:
@@ -547,6 +555,8 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 		_update_container_from_snapshot(existing, entry)
 		return
 	var instance := scene.instantiate()
+	if instance is Lemonader:
+		instance.machine_state = entry.get("machine_state", instance.machine_state).duplicate(true)
 	# Set state BEFORE add_child so _ready() sees correct values
 	var ctype: String = entry.get("ctype", "")
 	if instance is CupStack:
@@ -681,6 +691,9 @@ func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
 		)
 	elif existing is CupStack:
 		existing.starting_count = int(entry.get("current_count", existing.starting_count))
+	elif existing is Lemonader:
+		existing.machine_state = entry.get("machine_state", existing.machine_state).duplicate(true)
+		existing.refresh_display()
 	elif existing is WaterDispenser:
 		existing.water_fillings = int(entry.get("water_fillings", existing.water_fillings))
 	elif existing is Press:

@@ -30,6 +30,8 @@ const DEFAULT_ENHANCED_LIGHTING := true
 const DEFAULT_FPS_COUNTER := false
 const DEFAULT_AUTOSAVE_MINUTES := 5.0
 const DEFAULT_GRAPHICS_QUALITY := "high"
+const DEFAULT_FPS_CAP := 120
+const FPS_CAP_OPTIONS: Array[int] = [60, 120, 240, 0] # 0 = uncapped
 const AUTOSAVE_MIN_MINUTES := 2.0
 const AUTOSAVE_MAX_MINUTES := 15.0
 const DEFAULT_MOUSE_SENSITIVITY := 1.0
@@ -48,6 +50,9 @@ const GRAPHICS_PRESETS := {
 		"grass_multiplier": 2.0,
 		"grass_draw_mult": 1.6,
 		"grass_max_blades": 8000,
+		"grass_view_distance": 80.0,
+		"house_lod_distance": 200.0,
+		"lighting_level": 3,
 		"ssao": true,
 		"ssil": true,
 		"glow": true,
@@ -57,9 +62,12 @@ const GRAPHICS_PRESETS := {
 		"soft_shadow": 2,
 		"msaa": 2,
 		"fxaa": true,
-		"grass_multiplier": 1.0,
-		"grass_draw_mult": 1.3,
-		"grass_max_blades": 6000,
+		"grass_multiplier": 0.6,
+		"grass_draw_mult": 1.1,
+		"grass_max_blades": 4000,
+		"grass_view_distance": 66.7,
+		"house_lod_distance": 140.0,
+		"lighting_level": 2,
 		"ssao": true,
 		"ssil": false,
 		"glow": true,
@@ -69,9 +77,12 @@ const GRAPHICS_PRESETS := {
 		"soft_shadow": 1,
 		"msaa": 0,
 		"fxaa": true,
-		"grass_multiplier": 0.7,
-		"grass_draw_mult": 1.0,
-		"grass_max_blades": 4000,
+		"grass_multiplier": 0.3,
+		"grass_draw_mult": 0.8,
+		"grass_max_blades": 1800,
+		"grass_view_distance": 53.3,
+		"house_lod_distance": 90.0,
+		"lighting_level": 1,
 		"ssao": false,
 		"ssil": false,
 		"glow": true,
@@ -81,9 +92,12 @@ const GRAPHICS_PRESETS := {
 		"soft_shadow": 0,
 		"msaa": 0,
 		"fxaa": false,
-		"grass_multiplier": 0.5,
-		"grass_draw_mult": 0.7,
-		"grass_max_blades": 2500,
+		"grass_multiplier": 0.12,
+		"grass_draw_mult": 0.5,
+		"grass_max_blades": 700,
+		"grass_view_distance": 40.0,
+		"house_lod_distance": 55.0,
+		"lighting_level": 0,
 		"ssao": false,
 		"ssil": false,
 		"glow": false,
@@ -109,6 +123,9 @@ func load_settings() -> void:
 	# Always launch fullscreen. The Settings fullscreen toggle still works
 	# for the current session, but every launch starts fullscreen.
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	# FPS cap defaults on (saves power on high-refresh machines) even
+	# before a config exists — a saved value overrides it below.
+	Engine.max_fps = DEFAULT_FPS_CAP
 	if err != OK:
 		# No config file yet — use defaults (already set by AudioManager).
 		settings_loaded.emit()
@@ -136,10 +153,10 @@ func load_settings() -> void:
 		MOUSE_SENSITIVITY_MAX,
 	)
 	_fov = clampf(cfg.get_value(SECTION_GAMEPLAY, "fov", DEFAULT_FOV) as float, FOV_MIN, FOV_MAX)
-	# Remove any hard FPS cap so the game can run above the monitor refresh
-	# rate when VSync is off. The default is unlimited, but force it here
-	# in case project settings or an old config changed it.
-	Engine.max_fps = 0
+	var cap := cfg.get_value(SECTION_GRAPHICS, "fps_cap", DEFAULT_FPS_CAP) as int
+	if cap > 0 and cap not in FPS_CAP_OPTIONS:
+		cap = DEFAULT_FPS_CAP
+	Engine.max_fps = cap
 	# Keybinds
 	apply_saved_keybinds()
 	settings_loaded.emit()
@@ -174,9 +191,17 @@ func apply_graphics_quality(quality: String) -> void:
 			env.ssao_enabled = preset["ssao"]
 			env.ssil_enabled = preset["ssil"]
 			env.glow_enabled = preset["glow"]
-	# Tell grass scatterers to regenerate with the new density multiplier.
+	# Tell grass scatterers to regenerate with the new density multiplier,
+	# baked grass patches to thin out, and houses to re-evaluate their
+	# LOD swap distance.
 	if tree != null:
 		tree.call_group("grass_scatterer", "regenerate")
+		tree.call_group("neighborhood", "apply_grass_quality")
+		tree.call_group(
+			"neighborhood",
+			"apply_house_lod_distance",
+			float(preset.get("house_lod_distance", 200.0)),
+		)
 	graphics_quality_applied.emit()
 
 
@@ -208,6 +233,7 @@ func save_settings() -> void:
 		DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED,
 	)
 	cfg.set_value(SECTION_GRAPHICS, "graphics_quality", get_graphics_quality())
+	cfg.set_value(SECTION_GRAPHICS, "fps_cap", get_fps_cap())
 	cfg.save(CONFIG_PATH)
 
 
@@ -231,6 +257,24 @@ func set_graphics_quality(quality: String) -> void:
 	apply_graphics_quality(quality)
 
 
+func get_fps_cap() -> int:
+	var cfg := ConfigFile.new()
+	if cfg.load(CONFIG_PATH) != OK:
+		return DEFAULT_FPS_CAP
+	var cap := cfg.get_value(SECTION_GRAPHICS, "fps_cap", DEFAULT_FPS_CAP) as int
+	return cap if cap in FPS_CAP_OPTIONS else DEFAULT_FPS_CAP
+
+
+func set_fps_cap(cap: int) -> void:
+	if cap not in FPS_CAP_OPTIONS:
+		cap = DEFAULT_FPS_CAP
+	var cfg := ConfigFile.new()
+	cfg.load(CONFIG_PATH)
+	cfg.set_value(SECTION_GRAPHICS, "fps_cap", cap)
+	cfg.save(CONFIG_PATH)
+	Engine.max_fps = cap
+
+
 func get_grass_density_multiplier() -> float:
 	return GRAPHICS_PRESETS[get_graphics_quality()].grass_multiplier
 
@@ -241,6 +285,26 @@ func get_grass_draw_multiplier() -> float:
 
 func get_grass_max_blades() -> int:
 	return GRAPHICS_PRESETS[get_graphics_quality()].grass_max_blades
+
+
+## Draw radius for baked grass patches — Epic keeps the authored 80m,
+## Low halves it, tiers interpolate.
+func get_grass_view_distance() -> float:
+	return GRAPHICS_PRESETS[get_graphics_quality()].grass_view_distance
+
+
+## Enhanced-lighting tier for the current preset: 0=off (Low), 1=light
+## (Medium), 2=reduced (High), 3=full (Epic). The user's manual toggle
+## floors it at 0 — on Low it's forced off regardless.
+func get_lighting_level() -> int:
+	if not get_graphics_bool("enhanced_lighting", DEFAULT_ENHANCED_LIGHTING):
+		return 0
+	return int(GRAPHICS_PRESETS[get_graphics_quality()].lighting_level)
+
+
+## Distance at which full house meshes swap to the cheap LOD shell.
+func get_house_lod_distance() -> float:
+	return float(GRAPHICS_PRESETS[get_graphics_quality()].get("house_lod_distance", 200.0))
 
 
 ## Save a single graphics toggle value (for enhanced_lighting / fps_counter,

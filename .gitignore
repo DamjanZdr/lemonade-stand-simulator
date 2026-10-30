@@ -38,3 +38,8 @@ tools/_upload_out.log
 
 # Local analytics report dumps (pasted from Discord, not for git/export)
 player_reports.md
+_sheet_*.json
+
+# Scratch/debug artifacts (probes, screenshot captures, one-off patchers)
+/_*
+/tools/_*

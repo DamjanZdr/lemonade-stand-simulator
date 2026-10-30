@@ -47,6 +47,8 @@ var _step_wait := 0.0
 var _moving := false
 var _step_target := Vector3.ZERO
 var _step_target_node: Node3D = null
+var _step_workstation: Workstation = null
+var _step_access_marker: Marker3D = null
 var _step_act: Callable = Callable()
 var _brewer_idx := 0
 var _carried: Node3D = null
@@ -120,16 +122,33 @@ func _tick_move(delta: float) -> void:
 			_abort_steps()
 			return
 		target = _step_target_node.global_position
+	if is_instance_valid(_step_access_marker):
+		target = _step_access_marker.global_position
 	var delta2d := target - global_position
 	delta2d.y = 0.0
 	var dist := delta2d.length()
-	if dist <= ARRIVE_DIST:
+	var precise_arrival := role == "server" or is_instance_valid(_step_access_marker)
+	var arrive_dist := 0.05 if precise_arrival else ARRIVE_DIST
+	if dist <= arrive_dist:
 		_moving = false
 		_wait_left = _step_wait
+		if role == "server" and assigned_stand != null:
+			var marker := assigned_stand.find_child("ServerSpot", true, false) as Node3D
+			global_rotation.y = (
+				marker.global_rotation.y
+				if marker != null
+				else assigned_stand \
+						.global_rotation \
+						.y
+			) + PI
+		if is_instance_valid(_step_workstation):
+			var center := _step_workstation.global_position
+			center.y = global_position.y
+			if global_position.distance_squared_to(center) > 0.001:
+				look_at(center, Vector3.UP)
 		_play("Idle")
 		return
-	var step := delta2d.normalized() * WALK_SPEED
-	global_position += step * delta
+	global_position += delta2d.normalized() * minf(WALK_SPEED * delta, dist)
 	# Face movement direction.
 	var target_basis := Basis.looking_at(delta2d.normalized(), Vector3.UP)
 	var q := basis.get_rotation_quaternion().slerp(
@@ -141,13 +160,16 @@ func _tick_move(delta: float) -> void:
 
 
 func _advance() -> void:
+	_step_workstation = null
+	_step_access_marker = null
 	if _steps.is_empty():
 		_rebuild_steps()
 	if _steps.is_empty():
 		# Nothing to do — linger at the role's idle spot (servers wait at
 		# the stand front so they're already near customers).
 		var idle := _idle_spot()
-		if global_position.distance_to(idle) > ARRIVE_DIST * 2.0:
+		var idle_dist := 0.05 if role == "server" else ARRIVE_DIST * 2.0
+		if global_position.distance_to(idle) > idle_dist:
 			_step_target = idle
 			_step_target_node = null
 			_step_act = Callable()
@@ -156,14 +178,39 @@ func _advance() -> void:
 		return
 	var step: Dictionary = _steps.pop_front()
 	_step_target = step.get("target", global_position)
-	_step_target_node = step.get("node", null)
+	var target_node = step.get("node", null)
+	if not is_instance_valid(target_node) and typeof(target_node) == TYPE_OBJECT:
+		_abort_steps()
+		return
+	_step_target_node = target_node
 	_step_act = step.get("act", Callable())
 	_step_wait = step.get("wait", ACTION_WAIT)
+	if role == "server":
+		_step_target = _idle_spot()
+		_step_target_node = null
+	elif is_instance_valid(_step_target_node):
+		for node in get_tree().get_nodes_in_group("container"):
+			if (
+				node is Workstation and node.is_visible_in_tree()
+				and node.supports_item(_step_target_node)
+			):
+				var marker: Marker3D = (node as Workstation).nearest_access_marker(global_position)
+				if marker != null:
+					_step_workstation = node
+					_step_access_marker = marker
+					break
 	_moving = true
 
 
 func _idle_spot() -> Vector3:
 	if role == "server" and assigned_stand != null:
+		var server_spot := assigned_stand.find_child("ServerSpot", true, false) as Node3D
+		if server_spot != null:
+			return Vector3(
+				server_spot.global_position.x,
+				global_position.y,
+				server_spot.global_position.z,
+			)
 		# In front of the counter at ground level — customers queue here.
 		var c := _counter_top_center()
 		var fwd := assigned_stand.global_transform.basis.z
@@ -322,8 +369,43 @@ func _stand_objects(group: String, radius: float = STAND_RADIUS) -> Array:
 	for n in get_tree().get_nodes_in_group(group):
 		if n is Node3D and not n.is_queued_for_deletion() \
 				and n.global_position.distance_to(assigned_stand.global_position) < radius:
+			if role == "server" and group in ["container", "pitcher", "cup_tray"]:
+				if not _on_server_counter(n):
+					continue
 			out.append(n)
 	return out
+
+
+func _on_server_counter(item: Node3D) -> bool:
+	if not is_instance_valid(item) or assigned_stand == null or not item.is_visible_in_tree():
+		return false
+	if item is Interactable and not item.can_player_use(self):
+		return false
+	var counter := assigned_stand.find_child("Counter", true, false) as Node3D
+	if counter == null:
+		return false
+	var ancestor := item.get_parent()
+	while ancestor != null:
+		if ancestor is WaterDispenser or ancestor is Press:
+			return false
+		ancestor = ancestor.get_parent()
+	var bounds := AABB()
+	var found := false
+	for node in counter.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		if mesh.mesh == null:
+			continue
+		var box := mesh.global_transform * mesh.get_aabb()
+		bounds = bounds.merge(box) if found else box
+		found = true
+	if not found:
+		return false
+	var position := item.global_position
+	return (
+		position.x >= bounds.position.x and position.x <= bounds.end.x
+		and position.z >= bounds.position.z and position.z <= bounds.end.z
+		and position.y >= bounds.end.y - 0.08 and position.y <= bounds.end.y + 0.3
+	)
 
 
 func _nearest(nodes: Array) -> Node3D:
@@ -446,6 +528,14 @@ func _nearest_cup_stack() -> CupStack:
 
 
 func _build_server_steps() -> void:
+	if not _held_recipe.is_empty():
+		var tray := _find_tray()
+		var spot := tray.free_slot_position() if tray != null else Vector3.INF
+		if spot == Vector3.INF:
+			spot = _find_free_counter_spot()
+		if spot != Vector3.INF:
+			_place_held_cup(spot)
+		return
 	var cust := _nearest(_waiting_customers()) as Customer
 	if cust != null:
 		_build_customer_serve_steps(cust)
@@ -581,7 +671,7 @@ func _find_filled_cup(fruit: String) -> Cup:
 ## Vector3.INF when the counter is full/absent. Mirrors the player's
 ## ghost overlap check: a shape query against world colliders, with the
 ## counter's own colliders excluded so the surface itself doesn't count.
-func _find_free_counter_spot() -> Vector3:
+func _find_free_counter_spot(footprint: float = 0.04, height: float = 0.05) -> Vector3:
 	if assigned_stand == null:
 		return Vector3.INF
 	var counter := assigned_stand.find_child("Counter", true, false)
@@ -600,8 +690,8 @@ func _find_free_counter_spot() -> Vector3:
 		return Vector3.INF
 	var top_y := aabb.end.y
 	var shape := CylinderShape3D.new()
-	shape.radius = 0.035
-	shape.height = 0.05
+	shape.radius = footprint
+	shape.height = height
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = shape
 	query.collision_mask = 1
@@ -612,17 +702,50 @@ func _find_free_counter_spot() -> Vector3:
 		exclude_rids.append((c as CollisionObject3D).get_rid())
 	query.exclude = exclude_rids
 	var space := get_world_3d().direct_space_state
-	var margin := 0.05
-	var step := 0.09
-	var z := aabb.position.z + margin
-	while z <= aabb.end.z - margin:
-		var x := aabb.position.x + margin
-		while x <= aabb.end.x - margin:
-			query.transform = Transform3D(Basis(), Vector3(x, top_y + 0.03, z))
+	var center := aabb.get_center()
+	var max_radius := Vector2(aabb.size.x, aabb.size.z).length() * 0.5
+	var rings := ceili(max_radius / 0.08)
+	for ring in range(rings + 1):
+		var radius := ring * 0.08
+		var samples := maxi(1, ceili(TAU * radius / 0.08))
+		for sample in range(samples):
+			var angle := TAU * sample / samples
+			var candidate := Vector3(
+				center.x + cos(angle) * radius,
+				top_y,
+				center.z + sin(angle) * radius,
+			)
+			var surface_y := INF
+			var supported := true
+			for point in range(17):
+				var offset := Vector3.ZERO
+				if point > 0:
+					var perimeter_angle := TAU * (point - 1) / 16.0
+					offset = Vector3(cos(perimeter_angle), 0, sin(perimeter_angle)) * footprint
+				var origin := candidate + offset
+				var ray := PhysicsRayQueryParameters3D.create(
+					origin + Vector3.UP * 0.1,
+					origin + Vector3.DOWN * aabb.size.y,
+					1,
+				)
+				var hit := space.intersect_ray(ray)
+				if hit.is_empty() or not exclude_rids.has(hit.get("rid")):
+					supported = false
+					break
+				var normal: Vector3 = hit["normal"]
+				var position: Vector3 = hit["position"]
+				if normal.y < 0.99 or (surface_y != INF and absf(position.y - surface_y) > 0.002):
+					supported = false
+					break
+				surface_y = position.y
+			if not supported:
+				continue
+			candidate.y = surface_y
+			if _cup_spot_occupied(candidate):
+				continue
+			query.transform = Transform3D(Basis(), candidate + Vector3.UP * (height * 0.5 + 0.005))
 			if space.intersect_shape(query, 1).is_empty():
-				return Vector3(x, top_y, z)
-			x += step
-		z += step
+				return candidate
 	return Vector3.INF
 
 
@@ -669,13 +792,33 @@ func _counter_top_center() -> Vector3:
 func _grab_filled_cup(cup: Cup) -> void:
 	if not is_instance_valid(cup) or cup.state != Cup.CupState.FILLED:
 		return
+	if role == "server" and not _on_server_counter(cup):
+		_abort_steps()
+		return
 	_held_recipe = cup.recipe.duplicate(true)
 	WorldSync.despawn_networked(cup)
+
+
+func _cup_spot_occupied(spot: Vector3) -> bool:
+	for node in get_tree().get_nodes_in_group("container"):
+		if not node is Cup or not is_instance_valid(node):
+			continue
+		var offset: Vector3 = node.global_position - spot
+		if absf(offset.y) < 0.2 and Vector2(offset.x, offset.z).length() < 0.075:
+			return true
+	return false
 
 
 func _place_held_cup(spot: Vector3) -> void:
 	if _held_recipe.is_empty():
 		return
+	if _cup_spot_occupied(spot):
+		var tray := _find_tray()
+		spot = tray.free_slot_position() if tray != null else Vector3.INF
+		if spot == Vector3.INF or _cup_spot_occupied(spot):
+			spot = _find_free_counter_spot()
+		if spot == Vector3.INF:
+			return
 	var cup := WorldSync.spawn_networked(
 		"res://scenes/objects/cup.tscn",
 		get_parent(),
@@ -721,6 +864,9 @@ static func _seat_cup_on(cup: Node3D, surface_y: float) -> void:
 func _take_cup(stack: CupStack) -> void:
 	if not is_instance_valid(stack) or stack.current_count <= 0:
 		return
+	if role == "server" and not _on_server_counter(stack):
+		_abort_steps()
+		return
 	stack.current_count -= 1
 	stack._update_display()
 	WorldSync.sync_property(stack, "current_count", stack.current_count)
@@ -729,6 +875,9 @@ func _take_cup(stack: CupStack) -> void:
 
 func _fill_cup(pitcher: Pitcher) -> void:
 	if not is_instance_valid(pitcher) or pitcher.get_liquid_volume() <= 0.0:
+		return
+	if role == "server" and not _on_server_counter(pitcher):
+		_abort_steps()
 		return
 	_held_recipe = pitcher.pour_portion()
 	# Player pours reset the drained pitcher via _fill_cup_for_player;
@@ -851,6 +1000,9 @@ func _find_ingredient_bin(itype: String) -> IngredientBin:
 func _find_water_source() -> Node3D:
 	# Stand-owned fixtures first (dispenser is a StandUnit child; the tap
 	# is a scene fixture and may live outside the container group).
+	for node in _stand_objects("container"):
+		if node is WaterDispenser and node.is_available_for_brewing():
+			return node
 	if assigned_stand != null:
 		for n in assigned_stand.find_children("", "WaterTap", true, false):
 			return n
@@ -890,6 +1042,8 @@ func _build_brewer_steps() -> void:
 	var ice_bin := _find_ingredient_bin("ice") if ice_amt > 0.0 else null
 	var sugar_bin := _find_ingredient_bin("sugar") if sugar_amt > 0.0 else null
 	var water_src := _find_water_source()
+	if water_src == null:
+		return
 
 	_queue_step(
 		pitcher,
@@ -935,13 +1089,34 @@ func _build_brewer_steps() -> void:
 			press._start_press(),
 	)
 	_steps.append({ "node": press, "wait": press_dur + 1.5, "act": Callable() })
-	if water_src != null:
-		_queue_step(
-			water_src,
-			2.0,
-			func():
+	_queue_step(
+		press,
+		0.2,
+		func():
+			_release_brewer_pitcher(press, pitcher),
+	)
+	_queue_step(
+		water_src,
+		0.5,
+		func():
+			if water_src is WaterDispenser:
+				var dispenser := water_src as WaterDispenser
+				if not dispenser.can_snap_pitcher(pitcher) or dispenser.water_fillings <= 0:
+					_abort_steps()
+					return
+				pitcher.set_pitcher_visible(true)
+				dispenser.snap_pitcher(pitcher, assigned_stand)
+				dispenser.start_fill(Balancing.PITCHER_MAX_LIQUID - pitcher.get_liquid_volume())
+			else:
 				_fill_water(pitcher, fruit),
-		)
+	)
+	_queue_step(
+		water_src,
+		water_src.fill_time_per_pitcher + 0.5 if water_src is WaterDispenser else 2.0,
+		func():
+			if water_src is WaterDispenser:
+				_release_brewer_pitcher(water_src, pitcher),
+	)
 	if sugar_bin != null:
 		_queue_step(
 			sugar_bin,
@@ -956,11 +1131,13 @@ func _build_brewer_steps() -> void:
 			func():
 				_add_scoop(ice_bin, pitcher, "ice", ice_amt),
 		)
-	_queue_step(
-		press,
-		ACTION_WAIT,
-		func():
-			_deliver_pitcher(press, pitcher),
+	_steps.append(
+		{
+			"target": _counter_top_center(),
+			"wait": ACTION_WAIT,
+			"act": func():
+				_deliver_pitcher(press, pitcher),
+		}
 	)
 	_steps.append(
 		{
@@ -1035,25 +1212,38 @@ func _add_scoop(bin: IngredientBin, pitcher: Pitcher, itype: String, amt: float)
 	pitcher._sync_state_to_peers()
 
 
-func _deliver_pitcher(press: Press, pitcher: Pitcher) -> void:
-	if not is_instance_valid(pitcher) or not is_instance_valid(press):
+func _release_brewer_pitcher(appliance: Node3D, pitcher: Pitcher) -> void:
+	if not is_instance_valid(appliance) or not is_instance_valid(pitcher):
+		_abort_steps()
 		return
-	press._snapped_pitcher = null
-	press._pending_snap_pitcher_net_id = -1
-	WorldSync.sync_property(press, "_pending_snap_pitcher_net_id", -1)
-	# Find a free spot in front of the stand — nudge right until clear.
-	var spot := assigned_stand.to_global(Vector3(1.2, 0.0, 1.6))
-	for i in range(8):
-		var candidate := spot + assigned_stand.global_basis.x * (i * 0.6)
-		var blocked := false
-		for n in _stand_objects("container", 6.0):
-			if n != pitcher and n.global_position.distance_to(candidate) < 0.5:
-				blocked = true
-				break
-		if not blocked:
-			spot = candidate
-			break
-	pitcher.global_position = Vector3(spot.x, assigned_stand.global_position.y, spot.z)
+	if appliance.get("_snapped_pitcher") != pitcher:
+		_abort_steps()
+		return
+	appliance.set("_snapped_pitcher", null)
+	appliance.set("_pending_snap_pitcher_net_id", -1)
+	WorldSync.sync_property(appliance, "_pending_snap_pitcher_net_id", -1)
+	pitcher.locked_by_dispenser = false
+	WorldSync.sync_property(pitcher, "locked_by_dispenser", false)
+	_carry_pitcher(pitcher)
+
+
+func _deliver_pitcher(press: Press, pitcher: Pitcher) -> void:
+	if not is_instance_valid(pitcher):
+		return
+	var spot := _find_free_counter_spot(0.16, 0.35)
+	if spot == Vector3.INF:
+		_steps.push_front(
+			{
+				"target": _idle_spot(),
+				"wait": 1.0,
+				"act": func():
+					_deliver_pitcher(press, pitcher),
+			}
+		)
+		return
+	pitcher.global_position = spot
+	_seat_cup_on(pitcher, spot.y)
+	_carried_pitcher = null
 	pitcher.prep_position = pitcher.global_position
 	pitcher.set_pitcher_visible(true)
 	pitcher._sync_state_to_peers()

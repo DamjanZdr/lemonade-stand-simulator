@@ -1,0 +1,122 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/ui/products/sugar.png" id="1"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/products/ice.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/products/lemon.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/products/raspberry.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/products/strawberry.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/products/blueberry.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/products/peach.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui/products/watermelon.png" id="8"]
+
+[sub_resource type="StandardMaterial3D" id="PanelMaterial"]
+shading_mode = 0
+albedo_color = Color(0.08, 0.09, 0.11, 1)
+
+[sub_resource type="QuadMesh" id="PanelMesh"]
+material = SubResource("PanelMaterial")
+size = Vector2(0.14, 0.17)
+
+[node name="StockPanel" type="Node3D"]
+
+[node name="Background" type="MeshInstance3D" parent="."]
+mesh = SubResource("PanelMesh")
+cast_shadow = 0
+
+[node name="Icons" type="Node3D" parent="."]
+position = Vector3(0, 0.02, 0.002)
+
+[node name="sugar" type="Sprite3D" parent="Icons"]
+visible = false
+double_sided = false
+transparent = false
+alpha_cut = 1
+shaded = false
+texture = ExtResource("1")
+pixel_size = 0.0001
+
+[node name="ice" type="Sprite3D" parent="Icons"]
+visible = false
+double_sided = false
+transparent = false
+alpha_cut = 1
+shaded = false
+texture = ExtResource("2")
+pixel_size = 0.0001
+
+[node name="lemon" type="Sprite3D" parent="Icons"]
+visible = false
+double_sided = false
+transparent = false
+alpha_cut = 1
+shaded = false
+texture = ExtResource("3")
+pixel_size = 0.0001
+
+[node name="raspberry" type="Sprite3D" parent="Icons"]
+visible = false
+double_sided = false
+transparent = false
+alpha_cut = 1
+shaded = false
+texture = ExtResource("4")
+pixel_size = 0.0001
+
+[node name="strawberry" type="Sprite3D" parent="Icons"]
+visible = false
+double_sided = false
+transparent = false
+alpha_cut = 1
+shaded = false
+texture = ExtResource("5")
+pixel_size = 0.0001
+
+[node name="blueberry" type="Sprite3D" parent="Icons"]
+visible = false
+double_sided = false
+transparent = false
+alpha_cut = 1
+shaded = false
+texture = ExtResource("6")
+pixel_size = 0.0001
+
+[node name="peach" type="Sprite3D" parent="Icons"]
+visible = false
+double_sided = false
+transparent = false
+alpha_cut = 1
+shaded = false
+texture = ExtResource("7")
+pixel_size = 0.0001
+
+[node name="watermelon" type="Sprite3D" parent="Icons"]
+visible = false
+double_sided = false
+transparent = false
+alpha_cut = 1
+shaded = false
+texture = ExtResource("8")
+pixel_size = 0.0001
+
+[node name="Empty" type="Label3D" parent="."]
+metadata/no_depth_override = true
+position = Vector3(0, 0.02, 0.003)
+modulate = Color(1, 0.12, 0.12, 1)
+double_sided = false
+transparent = false
+alpha_cut = 1
+text = "X"
+font_size = 64
+pixel_size = 0.0013
+outline_size = 0
+
+[node name="Quantity" type="Label3D" parent="."]
+metadata/no_depth_override = true
+double_sided = false
+transparent = false
+alpha_cut = 1
+position = Vector3(0, -0.055, 0.003)
+text = "0"
+font_size = 40
+pixel_size = 0.0009
+outline_size = 0

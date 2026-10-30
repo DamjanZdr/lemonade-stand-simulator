@@ -127,6 +127,13 @@ func play_pickup_source(source: Node, single_mesh: bool = false) -> void:
 	_pickup_effect_preplayed = true
 
 
+## Skip the source-shrink afterimage for the next set_held(). Used when
+## the caller provides its own take feedback — e.g. the Squeeze-E-Z
+## shrinks the real slot preview instead of spawning mesh copies.
+func suppress_next_pickup_effect() -> void:
+	_pickup_effect_preplayed = true
+
+
 func _play_source_shrink(
 	data: Dictionary,
 	explicit_source: Node = null,
@@ -151,7 +158,18 @@ func _play_source_shrink(
 		meshes.append(source_3d as MeshInstance3D)
 	for child in source_3d.find_children("*", "MeshInstance3D", true, false):
 		var mesh := child as MeshInstance3D
-		if mesh.visible and mesh.mesh != null and mesh.name != "_Outline":
+		if not (mesh.visible and mesh.mesh != null and mesh.name != "_Outline"):
+			continue
+		# Skip meshes baked inside CSG nodes — copying them shows an
+		# unmaterialized primitive (white box) in the afterimage.
+		var node := mesh.get_parent()
+		var in_csg := false
+		while node != null:
+			if node is CSGShape3D:
+				in_csg = true
+				break
+			node = node.get_parent()
+		if not in_csg:
 			meshes.append(mesh)
 	if meshes.is_empty():
 		return
@@ -169,6 +187,7 @@ func _play_source_shrink(
 	var afterimage := Node3D.new()
 	scene.add_child(afterimage)
 	afterimage.global_position = _get_transfer_world_position()
+	afterimage.reset_physics_interpolation()
 	var hidden_meshes: Array[MeshInstance3D] = []
 	for source_mesh in meshes:
 		var copy := MeshInstance3D.new()
@@ -177,9 +196,33 @@ func _play_source_shrink(
 		copy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		afterimage.add_child(copy)
 		copy.global_transform = source_mesh.global_transform
+		# New mesh nodes spawn mid-frame — reset interpolation so they don't
+		# render one frame at a stale identity transform (a scale-1.0 copy of
+		# the pale glass reads as a white box flash on appliance takes).
+		copy.reset_physics_interpolation()
 		if data.get("source", "") != "bin_scoop" and not single_mesh:
 			source_mesh.visible = false
 			hidden_meshes.append(source_mesh)
+	# CSG fills (the pitcher's lemonade) produce no MeshInstance3D children
+	# to copy, so without this the afterimage is just the pale empty glass —
+	# a whitish blob at the slot. Copy the combiner's already-baked mesh
+	# instead: it carries the liquid color and needs no rebake.
+	for csg_node in source_3d.find_children("*", "CSGShape3D", true, false):
+		var csg := csg_node as CSGShape3D
+		if not csg.is_root_shape() or not csg.is_visible_in_tree():
+			continue
+		var baked := csg.get_meshes()
+		if baked.size() < 2 or not baked[1] is ArrayMesh:
+			continue
+		var baked_mesh := baked[1] as ArrayMesh
+		if baked_mesh.get_surface_count() == 0:
+			continue
+		var fill_copy := MeshInstance3D.new()
+		fill_copy.mesh = baked_mesh
+		fill_copy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		afterimage.add_child(fill_copy)
+		fill_copy.global_transform = csg.global_transform
+		fill_copy.reset_physics_interpolation()
 	# Remember the meshes this effect hid so the placement code can restore
 	# them — for reused nodes (workstation) setting the root's visible flag
 	# is not enough because each child keeps its own hidden state.

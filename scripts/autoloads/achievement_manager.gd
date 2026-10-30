@@ -147,8 +147,14 @@ func _unlock(id: String) -> void:
 		return
 	_unlocked[id] = true
 
-	var running: bool = Steam.isSteamRunning()
-	GameLog.log("[Ach] attempting %s, Steam running=%s" % [id, running])
+	# isSteamRunning() can be true even when steamInit failed (e.g. Steam
+	# client up but the app not registered) — UserStats is nullptr then and
+	# setAchievement/storeStats error out. is_steam_initialized tracks the
+	# actual init result.
+	var inited: bool = NetworkManager.is_steam_initialized()
+	GameLog.log("[Ach] attempting %s, Steam initialized=%s" % [id, inited])
+	if not inited:
+		return
 
 	var set_ok: bool = Steam.setAchievement(id)
 	var store_ok: bool = Steam.storeStats()
@@ -177,7 +183,7 @@ func reset_all_achievements() -> void:
 		ACH_HE_WAS_HERE,
 	]
 	_unlocked.clear()
-	if not Steam.isSteamRunning():
+	if not NetworkManager.is_steam_initialized():
 		GameLog.log("[Ach] Steam not running; achievements only cleared locally.")
 		return
 	for id in ids:

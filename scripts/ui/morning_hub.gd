@@ -19,6 +19,8 @@ const PRODUCT_IMAGES: Dictionary = {
 	"press": "res://assets/textures/ui/products/press.png",
 	"workstation": "res://assets/textures/ui/products/table.png",
 	"cup_tray": "res://assets/textures/ui/products/cup.png",
+	"lemonader": "res://assets/textures/ui/products/press.png",
+	"fruitomatic": "res://assets/textures/ui/products/press.png",
 }
 
 const BRANCH_COLORS: Array[Color] = [
@@ -34,19 +36,29 @@ const BRANCH_COLORS: Array[Color] = [
 	Color(0.95, 0.45, 0.55),
 ]
 
-@onready var panel: PanelContainer = $MainHBox/Panel
-@onready var vbox: VBoxContainer = $MainHBox/Panel/VBox
+@onready var panel: PanelContainer = $RootVBox/MainHBox/Panel
+@onready var vbox: VBoxContainer = $RootVBox/MainHBox/Panel/VBox
 @onready var backdrop: ColorRect = $Backdrop
 
-@onready var _status_lbl: Label = $MainHBox/Panel/VBox/BottomBar/StatusLbl
-@onready var _flow_indicator: HBoxContainer = $MainHBox/Panel/VBox/FlowIndicator
-@onready var _stand_name_edit: LineEdit = ($MainHBox/RightPanel/RightVBox/StandNameRow/NameEdit)
-@onready var _stand_name_button: Button = ($MainHBox/RightPanel/RightVBox/StandNameRow/SaveButton)
-@onready var _wall_color_btn: Button = ($MainHBox/RightPanel/RightVBox/WallColorRow/WallColorBtn)
-@onready var _roof_color_btn: Button = ($MainHBox/RightPanel/RightVBox/RoofColorRow/RoofColorBtn)
-@onready var _fence_prev: Button = ($MainHBox/RightPanel/RightVBox/FenceRow/FencePrev)
-@onready var _fence_next: Button = ($MainHBox/RightPanel/RightVBox/FenceRow/FenceNext)
-@onready var _fence_preview: TextureRect = ($MainHBox/RightPanel/RightVBox/FenceRow/FencePreview)
+@onready var _status_lbl: Label = $RootVBox/MainHBox/Panel/VBox/BottomBar/StatusLbl
+@onready var _flow_indicator: HBoxContainer = $RootVBox/FlowIndicator
+@onready var _stand_name_edit: LineEdit = (
+	$RootVBox/MainHBox/RightPanel/RightVBox/StandNameRow/NameEdit
+)
+@onready var _stand_name_button: Button = (
+	$RootVBox/MainHBox/RightPanel/RightVBox/StandNameRow/SaveButton
+)
+@onready var _wall_color_btn: Button = (
+	$RootVBox/MainHBox/RightPanel/RightVBox/WallColorRow/WallColorBtn
+)
+@onready var _roof_color_btn: Button = (
+	$RootVBox/MainHBox/RightPanel/RightVBox/RoofColorRow/RoofColorBtn
+)
+@onready var _fence_prev: Button = ($RootVBox/MainHBox/RightPanel/RightVBox/FenceRow/FencePrev)
+@onready var _fence_next: Button = ($RootVBox/MainHBox/RightPanel/RightVBox/FenceRow/FenceNext)
+@onready var _fence_preview: TextureRect = (
+	$RootVBox/MainHBox/RightPanel/RightVBox/FenceRow/FencePreview
+)
 var _wall_swatch: ColorRect = null
 var _roof_swatch: ColorRect = null
 # The fence texture is a 13-band gradient atlas, 20px per band; the fence
@@ -61,26 +73,33 @@ const FENCE_TEX_HEIGHT: float = 160.0
 var _fence_band: int = FENCE_DEFAULT_BAND
 
 @onready var _cart_list: VBoxContainer = (
-	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll/CartList
+	$RootVBox/MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartScroll/CartList
 )
 @onready var _cart_total_lbl: Label = (
-	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartTotal
+	$RootVBox/MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CartTotal
 )
 @onready var _checkout_btn: Button = (
-	$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CheckoutBtn
+	$RootVBox/MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/CartPC/CartPanel/CheckoutBtn
 )
 
-@onready var _right_panel: PanelContainer = $MainHBox/RightPanel
+@onready var _right_panel: PanelContainer = $RootVBox/MainHBox/RightPanel
+# Cached before _add_scroll_indicator() reparents it under ScrollWrap_* —
+# the reference stays valid, the path would not.
+@onready var _shop_scroll: ScrollContainer = (
+	$RootVBox/MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2
+)
 @onready var _preview_camera: Camera3D = (
-	$MainHBox/RightPanel/RightVBox/PreviewContainer/
-		AspectRatioContainer/SubViewportContainer/
+	$RootVBox/MainHBox/RightPanel/RightVBox/PreviewContainer/
+		SubViewportContainer/
 		PreviewViewport/PreviewCamera
 )
-@onready var _stats_vbox: VBoxContainer = ($MainHBox/RightPanel/RightVBox/StatsScroll/StatsVBox)
+@onready var _stats_vbox: VBoxContainer = (
+	$RootVBox/MainHBox/RightPanel/RightVBox/StatsScroll/StatsVBox
+)
 
 var _active_tab: String = "analytics"
 ## Demo build: upgrades tab is blocked by a "Not Available in Demo" overlay.
-const DEMO_DISABLE_UPGRADES := true
+const DEMO_DISABLE_UPGRADES := false
 ## Matches the main-menu stand-name limit (world_menu.gd NAME_MAX_WEIGHT).
 const STAND_NAME_MAX_WEIGHT := 15.0
 
@@ -95,68 +114,9 @@ var _equipment_counts: Dictionary = { }
 var _ice_spin: SpinBox = null
 var _ice_unit: String = "C"
 
-# Upgrade tree pan state
-var _tree_pan_offset: Vector2 = Vector2.ZERO
-var _tree_dragging: bool = false
-var _tree_drag_start: Vector2 = Vector2.ZERO
-var _tree_scale: float = 2.5
-var _tree_tooltip: PanelContainer = null
-var _icon_material: ShaderMaterial = null
-var _tree_content: Control = null
-var _tree_centered: bool = false
-var _tree_laid_out: bool = false
-var _tree_layout_pending: bool = false
-var _animating_lines: Dictionary = { }
-var _animating_children: Dictionary = { }
-
-
-class CircleNode extends Control:
-	var fill_color: Color = Color.WHITE
-	var border_color: Color = Color.BLACK
-	var border_width: float = 2.0
-	var is_square: bool = false
-	var _square_style: StyleBoxFlat = null
-
-
-	func _init() -> void:
-		_square_style = StyleBoxFlat.new()
-		custom_minimum_size = Vector2(60, 60)
-		size = Vector2(60, 60)
-		mouse_filter = Control.MOUSE_FILTER_PASS
-		size_flags_horizontal = 0
-		size_flags_vertical = 0
-
-
-	func _draw() -> void:
-		var radius: float = minf(size.x, size.y) / 2.0
-		var center: Vector2 = size / 2.0
-		if is_square:
-			_square_style.bg_color = fill_color
-			_square_style.border_color = border_color
-			_square_style.border_width_bottom = int(border_width)
-			var side_width: int = roundi(border_width * 0.7)
-			_square_style.border_width_top = side_width
-			_square_style.border_width_left = side_width
-			_square_style.border_width_right = side_width
-			_square_style.corner_radius_top_left = 6
-			_square_style.corner_radius_top_right = 6
-			_square_style.corner_radius_bottom_left = 6
-			_square_style.corner_radius_bottom_right = 6
-			_square_style.draw(get_canvas_item(), Rect2(Vector2.ZERO, size))
-		else:
-			draw_circle(center, radius, fill_color)
-			if border_width > 0.0:
-				draw_arc(
-					center,
-					radius - border_width / 2.0,
-					0.0,
-					2.0 * PI,
-					32,
-					border_color,
-					border_width,
-					true,
-				)
-
+# Bar-based upgrade page columns, keyed by branch id
+const UpgradeBarColumnScript := preload("res://scripts/ui/upgrade_bar_column.gd")
+var _upgrade_columns: Dictionary = { }
 
 var shop_items: Array[Dictionary] = [
 	{ "id": "lemon", "name": "Lemons", "cost": Balancing.SUPPLY_COST_LEMON, "qty": 10 },
@@ -193,13 +153,15 @@ var container_items: Array[Dictionary] = [
 	{ "id": "pitcher", "name": "Pitcher", "cost": Balancing.CONTAINER_COST_PITCHER },
 	{ "id": "press", "name": "Fruit Press", "cost": Balancing.CONTAINER_COST_PRESS },
 	{ "id": "workstation", "name": "Table", "cost": Balancing.CONTAINER_COST_WORKSTATION },
-	{ "id": "cup_tray", "name": "Cup Tray", "cost": Balancing.CONTAINER_COST_CUP_TRAY },
+	{ "id": "lemonader", "name": "Squeeze-E-Z", "cost": Balancing.CONTAINER_COST_LEMONADER },
+	{ "id": "fruitomatic", "name": "Fruit-O-Matic", "cost": Balancing.CONTAINER_COST_FRUITOMATIC },
 ]
 
 
 func _ready() -> void:
 	panel.visible = false
 	backdrop.visible = false
+	_flow_indicator.visible = false
 	if _right_panel:
 		_right_panel.visible = false
 
@@ -249,6 +211,35 @@ func _ready() -> void:
 	# it); the click/hover wiring loop below picks it up automatically.
 	_build_npcs_tab()
 
+	# The status line floats over the panel's bottom edge instead of
+	# holding a layout row — gives that ~35px back to the page lists.
+	var bottom_bar := get_node_or_null("RootVBox/MainHBox/Panel/VBox/BottomBar")
+	if bottom_bar != null:
+		_status_lbl.get_parent().remove_child(_status_lbl)
+		panel.add_child(_status_lbl)
+		_status_lbl.top_level = true
+		_status_lbl.z_index = 10
+		_status_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bottom_bar.visible = false
+		var place_status := func():
+			_status_lbl.size = Vector2(panel.size.x - 48.0, 24.0)
+			_status_lbl.global_position = (
+				panel.global_position + Vector2(24.0, panel.size.y - 40.0)
+			)
+		place_status.call()
+		panel.resized.connect(place_status)
+
+	# Floating "more below" arrows for lists that can overflow.
+	for scroll_path in [
+		"RootVBox/MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll",
+		"RootVBox/MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2",
+		"RootVBox/MainHBox/Panel/VBox/Content/PricesPage/PriceListScroll",
+		"RootVBox/MainHBox/RightPanel/RightVBox/StatsScroll",
+	]:
+		var sc := get_node_or_null(scroll_path) as ScrollContainer
+		if sc != null:
+			_add_scroll_indicator(sc)
+
 	# Make tab labels clickable
 	for tab in _flow_tabs:
 		var step_pc := _flow_indicator.get_node_or_null("StepPC_" + tab) as PanelContainer
@@ -276,10 +267,12 @@ func _ready() -> void:
 					_on_tab_unhover(step_pc, t),
 			)
 
-	var price_slider := ($MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
+	var price_slider := ($RootVBox/MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
 	if price_slider:
 		pass
 
+	EventBus.upgrade_purchased.connect(_on_fruit_research_changed, CONNECT_DEFERRED)
+	OnboardingManager.stand_progress_changed.connect(_on_stand_progress_changed, CONNECT_DEFERRED)
 	EventBus.price_changed.connect(_on_price_changed)
 	EventBus.day_phase_changed.connect(_on_day_phase_changed)
 	EventBus.money_changed.connect(_on_money_changed)
@@ -289,14 +282,15 @@ func _ready() -> void:
 	# upgrades stay testable without shipping them in the release demo.
 	if _demo_upgrades_blocked():
 		_build_demo_upgrades_overlay()
-	# Exit button along the bottom edge — the HUD is hidden while the hub
-	# is open, so this lives inside the computer screen itself. Clicking it
-	# exits the computer view, same as pressing ESC.
+	# Exit button lives at the right end of the tab strip, after
+	# Customers — the HUD is hidden while the hub is open, so it stays
+	# inside the computer screen. Clicking it exits, same as ESC.
 	var exit_btn := Button.new()
+	exit_btn.name = "ExitTab"
 	exit_btn.text = "X"
 	exit_btn.tooltip_text = "Exit computer (ESC)"
-	exit_btn.custom_minimum_size = Vector2(72, 60)
-	exit_btn.add_theme_font_size_override("font_size", 32)
+	exit_btn.custom_minimum_size = Vector2(64, 56)
+	exit_btn.add_theme_font_size_override("font_size", 28)
 	exit_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 	var btn_style := StyleBoxFlat.new()
 	btn_style.bg_color = Color(0.12, 0.13, 0.16, 1)
@@ -314,22 +308,14 @@ func _ready() -> void:
 	exit_btn.add_theme_stylebox_override("normal", btn_style)
 	exit_btn.add_theme_stylebox_override("hover", btn_hover)
 	exit_btn.add_theme_stylebox_override("pressed", btn_pressed)
-	# Sits in the strip below the panels (MainHBox bottom margin is 80px):
-	# panel edge at -80, 8px gap, then the button.
-	exit_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	exit_btn.offset_left = -36.0
-	exit_btn.offset_right = 36.0
-	exit_btn.offset_top = -72.0
-	exit_btn.offset_bottom = -12.0
-	exit_btn.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	exit_btn.pressed.connect(_on_exit_button_pressed)
-	add_child(exit_btn)
+	_flow_indicator.add_child(exit_btn)
 
 	# Employees tab removed in the demo.
 	var emp_tab := _flow_indicator.get_node_or_null("StepPC_employees")
 	if emp_tab:
 		emp_tab.hide()
-	var emp_page := $MainHBox/Panel/VBox/Content.get_node_or_null("EmployeesPage")
+	var emp_page := $RootVBox/MainHBox/Panel/VBox/Content.get_node_or_null("EmployeesPage")
 	if emp_page:
 		emp_page.hide()
 	EventBus.container_placed.connect(
@@ -349,150 +335,13 @@ func _ready() -> void:
 	# Build shop cards with section headers
 	_build_shop()
 
-	# Build upgrade skill tree (uses pre-existing UpgradeTree Control from scene)
-	var tree_ctrl := ($MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree as Control)
-	if tree_ctrl:
-		_tree_tooltip = tree_ctrl.get_node("Tooltip") as PanelContainer
-		_tree_tooltip.z_index = 100
-		_tree_tooltip.top_level = false
-		tree_ctrl.remove_child(_tree_tooltip)
-		self.add_child(_tree_tooltip)
-
-		var content := Control.new()
-		content.name = "TreeContent"
-		content.mouse_filter = Control.MOUSE_FILTER_PASS
-		content.clip_contents = false
-		content.z_index = 0
-		content.custom_minimum_size = Vector2(4000, 4000)
-		content.size = Vector2(4000, 4000)
-		tree_ctrl.add_child(content)
-		tree_ctrl.move_child(content, 0)
-		_tree_content = content
-
-		var root_name := UpgradeManager.root_node_name
-		for id in UpgradeManager.tree_positions:
-			var node: CircleNode
-			if id == root_name:
-				node = _create_tree_root_node(root_name)
-			else:
-				var data := UpgradeManager.get_node_data(id)
-				node = _create_tree_node(id, data)
-			content.add_child(node)
-
-		# Ensure the tree control itself gets enough space from the VBox
-		# and can receive mouse input even before layout runs.
-		tree_ctrl.custom_minimum_size = Vector2(300, 200)
-		tree_ctrl.mouse_filter = Control.MOUSE_FILTER_PASS
-		_update_tree_visibility(tree_ctrl)
-
-		tree_ctrl.gui_input.connect(
-			func(event: InputEvent):
-				if event is InputEventMouseButton:
-					if event.button_index == MOUSE_BUTTON_LEFT:
-						_tree_dragging = event.pressed
-						_tree_drag_start = event.position - _tree_pan_offset
-						tree_ctrl.accept_event()
-					elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
-						var mb_event_up := event as InputEventMouseButton
-						var new_scale_up := clampf(_tree_scale * 1.1, 0.5, 1.2)
-						var center_up := tree_ctrl.size / 2.0
-						var local_up := (
-							(mb_event_up.position - center_up - _tree_pan_offset) / _tree_scale
-						)
-						_tree_pan_offset = (
-							mb_event_up.position - center_up - new_scale_up * local_up
-						)
-						_tree_scale = new_scale_up
-						_layout_upgrade_tree(tree_ctrl)
-						tree_ctrl.accept_event()
-					elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-						var mb_event_down := event as InputEventMouseButton
-						var new_scale_down := clampf(_tree_scale / 1.1, 0.5, 1.2)
-						var center_down := tree_ctrl.size / 2.0
-						var local_down := (
-							(mb_event_down.position - center_down - _tree_pan_offset) / _tree_scale
-						)
-						_tree_pan_offset = (
-							mb_event_down.position - center_down - new_scale_down * local_down
-						)
-						_tree_scale = new_scale_down
-						_layout_upgrade_tree(tree_ctrl)
-						tree_ctrl.accept_event()
-				elif event is InputEventMouseMotion and _tree_dragging:
-					_tree_pan_offset = event.position - _tree_drag_start
-					_layout_upgrade_tree(tree_ctrl)
-					tree_ctrl.accept_event(),
-		)
-
-		tree_ctrl.draw.connect(
-			func():
-				var border_style := StyleBoxFlat.new()
-				border_style.bg_color = Color.TRANSPARENT
-				border_style.border_color = Color(0.4, 0.35, 0.25, 0.8)
-				border_style.border_width_bottom = 2
-				border_style.border_width_top = 2
-				border_style.border_width_left = 2
-				border_style.border_width_right = 2
-				border_style.corner_radius_top_left = 6
-				border_style.corner_radius_top_right = 6
-				border_style.corner_radius_bottom_left = 6
-				border_style.corner_radius_bottom_right = 6
-				border_style.draw(tree_ctrl.get_canvas_item(), Rect2(Vector2.ZERO, tree_ctrl.size))
-				if not _tree_laid_out or _tree_content == null:
-					return
-				for from_id in UpgradeManager.tree_connections:
-					var from_node := (
-						_tree_content.get_node_or_null("TreeNode_" + from_id) as CircleNode
-					)
-					if from_node == null or not from_node.visible:
-						continue
-					var from_center_local := from_node.position + from_node.size / 2.0
-					var from_pos := (
-						_tree_content.position + _tree_content.scale * from_center_local
-					)
-					for to_id in UpgradeManager.tree_connections[from_id]:
-						var line_key: String = from_id + "|" + to_id
-						var to_node := (
-							_tree_content.get_node_or_null("TreeNode_" + to_id) as CircleNode
-						)
-						if to_node == null:
-							continue
-						var to_center_local := to_node.position + to_node.size / 2.0
-						var to_pos := (
-							_tree_content.position + _tree_content.scale * to_center_local
-						)
-						var to_purchased: bool = (UpgradeManager.is_node_purchased(to_id))
-						var to_color := (to_node.fill_color
-							if to_purchased
-							else to_node.border_color)
-						if _animating_lines.has(line_key):
-							var progress: float = _animating_lines[line_key]
-							var anim_end: Vector2 = (from_pos + progress * (to_pos - from_pos))
-							tree_ctrl.draw_line(
-								from_pos,
-								anim_end,
-								to_color,
-								12.0 * _tree_scale,
-								true,
-							)
-							continue
-						if not to_node.visible:
-							continue
-						var from_purchased: bool = (
-							from_id == UpgradeManager.root_node_name
-							or UpgradeManager.is_node_purchased(from_id)
-						)
-						var line_color := to_color
-						var line_width := 6.0 * _tree_scale
-						if from_purchased and to_purchased:
-							line_width = 7.5 * _tree_scale
-						tree_ctrl.draw_line(from_pos, to_pos, line_color, line_width, true),
-		)
+	# Build the bar-based upgrades page (replaces the old node tree)
+	_build_upgrades_page()
 
 	# Fix preview viewport to share the game world
 	var preview_viewport := (
-		$MainHBox/RightPanel/RightVBox/PreviewContainer/
-			AspectRatioContainer/SubViewportContainer/PreviewViewport
+		$RootVBox/MainHBox/RightPanel/RightVBox/PreviewContainer/
+			SubViewportContainer/PreviewViewport
 		as SubViewport
 	)
 	if preview_viewport:
@@ -550,11 +399,9 @@ func _dev_tools_enabled() -> bool:
 
 
 func _build_shop() -> void:
-	var shop_scroll := (
-		$MainHBox/Panel/VBox/Content/ShopPage/ShopSplit/ScrollContainer2 as ScrollContainer
-	)
-	if shop_scroll == null:
+	if _shop_scroll == null:
 		return
+	var shop_scroll := _shop_scroll
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	shop_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	# Detach before freeing: queue_free() leaves the node in the tree until
@@ -568,7 +415,14 @@ func _build_shop() -> void:
 	shop_vbox.name = "ShopList"
 	shop_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	shop_vbox.add_theme_constant_override("separation", 12)
-	shop_scroll.add_child(shop_vbox)
+	# Right margin keeps the second card column off the scroll edge;
+	# matching left margin keeps the list optically centered.
+	var shop_margin := MarginContainer.new()
+	shop_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_margin.add_theme_constant_override("margin_left", 4)
+	shop_margin.add_theme_constant_override("margin_right", 12)
+	shop_margin.add_child(shop_vbox)
+	shop_scroll.add_child(shop_margin)
 	# Consumables section
 	var consumables_header := Label.new()
 	consumables_header.text = "Consumables"
@@ -607,582 +461,6 @@ func _build_shop() -> void:
 	for item in container_items:
 		equipment_grid.add_child(_create_equipment_card(item))
 	shop_vbox.add_child(equipment_grid)
-
-
-func _show_tree_tooltip(node_id: String, anchor_pos: Vector2) -> void:
-	if _tree_tooltip == null:
-		return
-	_build_upgrade_tooltip(node_id, anchor_pos)
-	if _tree_tooltip != null:
-		return
-	var data := UpgradeManager.get_node_data(node_id)
-	var tip_vbox := _tree_tooltip.get_node("TipContent")
-	var title := tip_vbox.get_node("TipTitle") as Label
-	var price := tip_vbox.get_node("TipPrice") as Label
-	var desc := tip_vbox.get_node("TipDesc") as Label
-	var effect := tip_vbox.get_node("TipEffect") as Label
-	title.text = data.get("name", "???")
-	price.text = "$%.0f" % data.get("cost", 0.0)
-	price.visible = not data.get("purchased", false)
-	desc.text = data.get("description", "")
-	var upgrade_id: String = data.get("upgrade_id", "")
-	var eff_total: float = UpgradeManager.get_effect_total(upgrade_id)
-	if eff_total > 0:
-		effect.text = "Current bonus: +%.0f%%" % (eff_total * 100)
-		effect.visible = true
-	else:
-		effect.visible = false
-	if data.get("purchased", false):
-		title.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
-	else:
-		title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-	_tree_tooltip.visible = true
-	_tree_tooltip.reset_size()
-	_tree_tooltip.position = anchor_pos - Vector2(
-		_tree_tooltip.size.x / 2.0,
-		_tree_tooltip.size.y + 10.0,
-	)
-
-
-func _build_upgrade_tooltip(node_id: String, anchor_pos: Vector2) -> void:
-	var data := UpgradeManager.get_node_data(node_id)
-	var tip_vbox := _tree_tooltip.get_node("TipContent") as VBoxContainer
-	for child in tip_vbox.get_children():
-		tip_vbox.remove_child(child)
-		child.queue_free()
-	_tree_tooltip.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	tip_vbox.add_theme_constant_override("separation", -16)
-
-	var title_style := StyleBoxFlat.new()
-	title_style.bg_color = _get_node_color(data).lightened(0.12)
-	title_style.set_corner_radius_all(6)
-	title_style.content_margin_left = 10
-	title_style.content_margin_top = 7
-	title_style.content_margin_right = 10
-	title_style.content_margin_bottom = 7
-	var title_panel := PanelContainer.new()
-	title_panel.custom_minimum_size = Vector2(205, 0)
-	title_panel.z_index = 1
-	title_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	title_panel.add_theme_stylebox_override("panel", title_style)
-	var title_vbox := VBoxContainer.new()
-	title_vbox.add_theme_constant_override("separation", 2)
-	title_panel.add_child(title_vbox)
-	var title_lbl := Label.new()
-	title_lbl.text = data.get("name", "???")
-	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title_lbl.max_lines_visible = 2
-	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_lbl.custom_minimum_size = Vector2(0, 56)
-	title_lbl.add_theme_font_size_override("font_size", 20)
-	title_lbl.add_theme_color_override("font_color", Color.WHITE)
-	title_vbox.add_child(title_lbl)
-	tip_vbox.add_child(title_panel)
-
-	var upgrade_id: String = data.get("upgrade_id", "")
-	var current_effect: float = UpgradeManager.get_effect_total(upgrade_id)
-	var increase: float = data.get("effect", 0.0)
-	var is_unlock := upgrade_id.ends_with("_unlock")
-	var stat_style := StyleBoxFlat.new()
-	stat_style.bg_color = Color(0.16, 0.16, 0.16)
-	stat_style.border_color = Color(0.35, 0.35, 0.35)
-	stat_style.border_width_left = 2
-	stat_style.border_width_top = 2
-	stat_style.border_width_right = 2
-	stat_style.border_width_bottom = 3
-	stat_style.set_corner_radius_all(6)
-	stat_style.content_margin_left = 10
-	stat_style.content_margin_top = 15
-	stat_style.content_margin_right = 10
-	stat_style.content_margin_bottom = 12
-	var stat_panel := PanelContainer.new()
-	stat_panel.custom_minimum_size = Vector2(260, 0)
-	stat_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stat_panel.add_theme_stylebox_override("panel", stat_style)
-	var stat_box := VBoxContainer.new()
-	stat_box.add_theme_constant_override("separation", 0)
-	var increase_label := Label.new()
-	increase_label.text = (
-		upgrade_id.replace("_unlock", "").capitalize()
-		if is_unlock
-		else "%+.0f%%" % (increase * 100)
-	)
-	increase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	increase_label.add_theme_font_size_override("font_size", 30)
-	increase_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	stat_box.add_child(increase_label)
-	var change_label := Label.new()
-	change_label.text = "(%+.0f%% → %+.0f%%)" % [
-		current_effect * 100,
-		(current_effect + increase) * 100,
-	]
-	change_label.visible = not is_unlock
-	change_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	change_label.add_theme_font_size_override("font_size", 16)
-	change_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
-	stat_box.add_child(change_label)
-	var divider := HSeparator.new()
-	stat_box.add_child(divider)
-	var price := Label.new()
-	price.text = "$%.0f" % data.get("cost", 0.0)
-	price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	price.add_theme_font_size_override("font_size", 30)
-	price.add_theme_color_override(
-		"font_color",
-		(
-			Color(0.35, 0.9, 0.45)
-			if UpgradeManager.can_afford_node(node_id)
-			else Color(1.0, 0.45, 0.45)
-		),
-	)
-	price.add_theme_color_override("font_shadow_color", Color(0.05, 0.05, 0.05, 0.65))
-	price.add_theme_constant_override("shadow_offset_x", 0)
-	price.add_theme_constant_override("shadow_offset_y", 1)
-	price.visible = not data.get("purchased", false)
-	stat_box.add_child(price)
-	stat_panel.add_child(stat_box)
-	tip_vbox.add_child(stat_panel)
-
-	_tree_tooltip.visible = true
-	_tree_tooltip.reset_size()
-	var tree_ctrl := _tree_content.get_parent() as Control
-	var tip_offset := Vector2(_tree_tooltip.size.x / 2.0, _tree_tooltip.size.y + 10.0)
-	if tree_ctrl != null:
-		_tree_tooltip.position = tree_ctrl.get_global_transform() * (anchor_pos - tip_offset)
-	else:
-		_tree_tooltip.position = anchor_pos - tip_offset
-
-
-func _hide_tree_tooltip() -> void:
-	if _tree_tooltip != null:
-		_tree_tooltip.visible = false
-
-
-func _is_tree_node_visible(id: String) -> bool:
-	if id == UpgradeManager.root_node_name:
-		return true
-	if _animating_children.has(id):
-		return false
-	var data := UpgradeManager.get_node_data(id)
-	if data.get("purchased", false):
-		return true
-	if data.get("can_unlock", false):
-		return true
-	return false
-
-
-func _update_tree_visibility(tree_ctrl: Control) -> void:
-	if _tree_content == null:
-		return
-	var root_name := UpgradeManager.root_node_name
-	for id in UpgradeManager.tree_positions:
-		var node := _tree_content.get_node_or_null("TreeNode_" + id)
-		if node == null:
-			continue
-		node.visible = _is_tree_node_visible(id)
-	tree_ctrl.queue_redraw()
-
-
-func _update_root_counter(circle: CircleNode) -> void:
-	var root_name := UpgradeManager.root_node_name
-	var purchased := 0
-	var total := 0
-	for id in UpgradeManager.tree_nodes:
-		if id == root_name:
-			continue
-		total += 1
-		if UpgradeManager.is_node_purchased(id):
-			purchased += 1
-	var sym := circle.get_node_or_null("Symbol") as Label
-	if sym != null:
-		sym.text = "%d/%d" % [purchased, total]
-
-
-func _create_tree_root_node(root_name: String) -> CircleNode:
-	var circle := CircleNode.new()
-	circle.name = "TreeNode_" + root_name
-	circle.fill_color = Color(0.88, 0.65, 0.12)
-	circle.border_color = Color(0.95, 0.82, 0.25)
-	circle.border_width = 0.0
-	circle.size = Vector2(70, 70)
-	circle.custom_minimum_size = Vector2(70, 70)
-	circle.anchor_left = 0
-	circle.anchor_top = 0
-	circle.anchor_right = 0
-	circle.anchor_bottom = 0
-	var sym := Label.new()
-	sym.name = "Symbol"
-	sym.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sym.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	sym.add_theme_font_size_override("font_size", 20)
-	sym.add_theme_color_override("font_color", Color(0.05, 0.05, 0.05))
-	sym.position = Vector2(0, 0)
-	sym.size = Vector2(70, 70)
-	sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sym.self_modulate = Color(1, 1, 1, 0.6)
-	circle.add_child(sym)
-	_update_root_counter(circle)
-	var data := UpgradeManager.get_node_data(root_name)
-	_style_tree_node(circle, data)
-	circle.mouse_entered.connect(
-		func():
-			AudioManager.play_sfx_ui("hover")
-			_hover_tree_node(circle, true),
-	)
-	circle.mouse_exited.connect(
-		func():
-			_hover_tree_node(circle, false),
-	)
-	return circle
-
-
-func _hover_tree_node(node: CircleNode, hovered: bool) -> void:
-	node.pivot_offset = node.size / 2.0
-	var target := Vector2(1.08, 1.08) if hovered else Vector2(1.0, 1.0)
-	var tween := create_tween()
-	tween.tween_property(node, "scale", target, 0.08)
-
-
-func _create_tree_node(id: String, data: Dictionary) -> CircleNode:
-	var circle := CircleNode.new()
-	circle.name = "TreeNode_" + id
-	circle.anchor_left = 0
-	circle.anchor_top = 0
-	circle.anchor_right = 0
-	circle.anchor_bottom = 0
-	_style_tree_node(circle, data)
-	var is_hovered := false
-	circle.mouse_entered.connect(
-		func():
-			is_hovered = true
-			AudioManager.play_sfx_ui("hover")
-			var top_center_local := (circle.position + Vector2(circle.size.x / 2.0, 0.0))
-			var anchor := _tree_content.position + _tree_content.scale * top_center_local
-			_show_tree_tooltip(id, anchor)
-			_hover_tree_node(circle, true),
-	)
-	circle.mouse_exited.connect(
-		func():
-			is_hovered = false
-			_hide_tree_tooltip()
-			_hover_tree_node(circle, false),
-	)
-	circle.gui_input.connect(
-		func(event: InputEvent):
-			if event is InputEventMouseButton and event.pressed:
-				if event.button_index == MOUSE_BUTTON_LEFT:
-					var end_scale := Vector2(1.08, 1.08) if is_hovered else Vector2(1.0, 1.0)
-					_buy_tree_upgrade(id, circle, end_scale)
-					circle.accept_event(),
-	)
-	return circle
-
-
-func _style_tree_node(circle: CircleNode, data: Dictionary) -> void:
-	var purchased: bool = data.get("purchased", false)
-	var can_buy: bool = data.get("can_buy", false)
-	if data.get("is_root", false):
-		circle.fill_color = Color(0.18, 0.18, 0.18)
-		circle.is_square = false
-		circle.border_color = Color(0.7, 0.7, 0.7)
-		circle.border_width = 4.0
-	elif purchased:
-		circle.fill_color = _get_node_color(data).lightened(0.15)
-		circle.is_square = false
-		circle.border_width = 0.0
-	else:
-		circle.fill_color = Color(0.18, 0.18, 0.18)
-		circle.is_square = true
-		circle.border_color = _get_node_color(data).lightened(0.25)
-		circle.border_width = 4.0
-	var base_size: int = 70
-	var node_size: int = base_size
-	circle.size_flags_horizontal = 0
-	circle.size_flags_vertical = 0
-	circle.custom_minimum_size = Vector2(node_size, node_size)
-	circle.size = Vector2(node_size, node_size)
-	circle.mouse_default_cursor_shape = (
-		Control.CURSOR_POINTING_HAND
-		if (not purchased and can_buy)
-		else Control.CURSOR_ARROW
-	)
-	var icon := _get_node_icon(data)
-	var sym := circle.get_node_or_null("Symbol") as Control
-	if (
-		sym != null
-		and ((icon != null and not sym is TextureRect) or (icon == null and not sym is Label))
-	):
-		sym.queue_free()
-		sym = null
-	if icon != null:
-		if sym == null:
-			sym = TextureRect.new()
-			sym.name = "Symbol"
-			sym.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			sym.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			sym.position = Vector2(0, 0)
-			circle.add_child(sym)
-		var tex: TextureRect = sym as TextureRect
-		var icon_size: int = mini(int(node_size * 0.7), 40)
-		tex.texture = icon
-		if _icon_material == null:
-			_icon_material = ShaderMaterial.new()
-			var sh := Shader.new()
-			sh.code = (
-				"shader_type canvas_item; void fragment() { " + "vec4 c = texture(TEXTURE, UV); "
-				+ "COLOR = vec4(vec3(1.0 - c.rgb), c.a); }"
-			)
-			_icon_material.shader = sh
-		tex.material = _icon_material
-		tex.self_modulate = Color(0.75, 0.75, 0.75, 1.0 if purchased else 0.85)
-		tex.size = Vector2(icon_size, icon_size)
-		tex.position = Vector2((node_size - icon_size) / 2.0, (node_size - icon_size) / 2.0)
-	else:
-		if sym == null:
-			sym = Label.new()
-			sym.name = "Symbol"
-			sym.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			sym.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			sym.position = Vector2(0, 0)
-			circle.add_child(sym)
-		var lbl: Label = sym as Label
-		if not data.get("is_root", false):
-			lbl.text = _get_node_symbol(data)
-		lbl.size = Vector2(node_size, node_size)
-		lbl.position = Vector2(0, 0)
-		var font_size: int = 16 if data.get("is_root", false) else maxi(node_size / 2, 10)
-		var font_color := Color(0.92, 0.90, 0.82)
-		if data.get("is_root", false):
-			font_color = Color.WHITE
-			lbl.self_modulate = Color.WHITE
-		lbl.add_theme_font_size_override("font_size", font_size)
-		lbl.add_theme_color_override("font_color", font_color)
-	circle.queue_redraw()
-
-
-func _get_node_icon(data: Dictionary) -> Texture2D:
-	var id: String = data.get("upgrade_id", "")
-	var cat: String = data.get("category", "")
-	var icon_name := ""
-	if id == "sunroof":
-		icon_name = "patience"
-	elif cat == "recipe" or id.ends_with("_unlock"):
-		icon_name = "fruitunlock"
-	else:
-		icon_name = id.replace("_", "")
-	var path := "res://assets/textures/ui/upgrades/" + icon_name + ".png"
-	if ResourceLoader.exists(path):
-		return load(path) as Texture2D
-	return null
-
-
-func _get_node_symbol(data: Dictionary) -> String:
-	var name: String = data.get("name", "").to_lower()
-	if "press" in name or "speed" in name:
-		return "⚙"
-	if "sunroof" in name or "sun" in name:
-		return "☀"
-	if "lemon" in name:
-		return "🍋"
-	if "raspberry" in name:
-		return "🍒"
-	if "strawberry" in name:
-		return "🍓"
-	if "blueberry" in name:
-		return "🫐"
-	if "peach" in name:
-		return "🍑"
-	if "watermelon" in name:
-		return "🍉"
-	if "negotiation" in name:
-		return "�"
-	if "nimbleness" in name or "nimb" in name:
-		return "👟"
-	if "water" in name or "dispenser" in name:
-		return "💧"
-	var upgrade_id: String = data.get("upgrade_id", "")
-	return upgrade_id.left(1).to_upper() if not upgrade_id.is_empty() else "?"
-
-
-func _get_branch_color(branch_idx: int) -> Color:
-	return BRANCH_COLORS[branch_idx % BRANCH_COLORS.size()]
-
-
-func _get_node_color(data: Dictionary) -> Color:
-	if data.get("is_root", false):
-		return Color(0.92, 0.90, 0.82)
-	var branch_idx: int = data.get("branch_index", 0)
-	var hue: float = fposmod(branch_idx * 0.618, 1.0)
-	return Color.from_hsv(hue, 0.55, 0.72)
-
-
-func _layout_upgrade_tree(tree_ctrl: Control) -> void:
-	var area := _tree_available_area(tree_ctrl)
-	if area.x <= 10 or area.y <= 10:
-		if _tree_layout_pending:
-			return
-		_tree_layout_pending = true
-		await RenderingServer.frame_post_draw
-		await RenderingServer.frame_post_draw
-		_tree_layout_pending = false
-		area = _tree_available_area(tree_ctrl)
-		if area.x <= 10 or area.y <= 10:
-			return
-	if _tree_content == null:
-		return
-	var root_name := UpgradeManager.root_node_name
-	var root_pos: Vector2 = UpgradeManager.tree_positions.get(root_name, Vector2.ZERO)
-	var half_content: Vector2 = _tree_content.size / 2.0
-	for id in UpgradeManager.tree_positions:
-		var gp: Vector2 = UpgradeManager.tree_positions[id]
-		var node := _tree_content.get_node_or_null("TreeNode_" + id) as CircleNode
-		if node == null:
-			continue
-		var sz: Vector2 = node.size
-		var rel: Vector2 = gp - root_pos
-		var px: float = half_content.x + rel.x - sz.x / 2.0
-		var py: float = half_content.y + rel.y - sz.y / 2.0
-		node.position = Vector2(px, py)
-		node.scale = Vector2(1.0, 1.0)
-		node.anchor_left = 0
-		node.anchor_top = 0
-		node.anchor_right = 0
-		node.anchor_bottom = 0
-		node.offset_left = px
-		node.offset_top = py
-		node.offset_right = px + sz.x
-		node.offset_bottom = py + sz.y
-	_tree_content.scale = Vector2(_tree_scale, _tree_scale)
-	var center: Vector2 = area / 2.0
-	var half_scaled: Vector2 = half_content * _tree_scale
-	_tree_pan_offset.x = clampf(_tree_pan_offset.x, -center.x, center.x)
-	_tree_pan_offset.y = clampf(_tree_pan_offset.y, -center.y, center.y)
-	_tree_content.position = center + _tree_pan_offset - half_scaled
-	tree_ctrl.custom_minimum_size = area
-	tree_ctrl.size = area
-	var parent_vbox := tree_ctrl.get_parent() as Container
-	if parent_vbox:
-		parent_vbox.queue_sort()
-	_tree_laid_out = true
-	tree_ctrl.queue_redraw()
-
-
-func _tree_available_area(tree_ctrl: Control) -> Vector2:
-	var sz := tree_ctrl.size
-	if sz.x > 10 and sz.y > 10:
-		return sz
-	var parent := tree_ctrl.get_parent() as Control
-	if parent != null:
-		sz = parent.size
-	if sz.x > 10 and sz.y > 10:
-		return sz
-	if panel != null and panel.size.x > 10 and panel.size.y > 10:
-		return panel.size
-	return Vector2(640, 480)
-
-
-func _buy_tree_upgrade(
-	id: String,
-	node: CircleNode,
-	end_scale: Vector2 = Vector2(1.0, 1.0),
-) -> void:
-	var data := UpgradeManager.get_node_data(id)
-	# Demo build: upgrades are disabled entirely.
-	if _demo_upgrades_blocked():
-		_status_lbl.text = "Not Available in Demo"
-		_animate_status(true)
-		return
-	if data.get("purchased", false):
-		return
-	if _shop_closed():
-		_status_lbl.text = "Shop is closed for today"
-		_animate_status(true)
-		return
-	if not data.get("can_buy", false):
-		_status_lbl.text = "Not enough money!"
-		_animate_status(true)
-		var tween := create_tween()
-		var orig := node.position
-		tween.tween_property(node, "position", orig + Vector2(4, 0), 0.05)
-		tween.tween_property(node, "position", orig - Vector2(4, 0), 0.05)
-		tween.tween_property(node, "position", orig + Vector2(2, 0), 0.05)
-		tween.tween_property(node, "position", orig, 0.05)
-		return
-	# Route upgrade purchases through the host.
-	if not WorldSync.is_host():
-		_request_purchase.rpc_id(1, "upgrade_node", id, 0.0, 0.0, WorldSync.get_local_stand_name())
-		_status_lbl.text = "Upgrade purchased!"
-		_animate_status()
-		return
-	if UpgradeManager.purchase_node(id):
-		AudioManager.play_sfx_ui("upgrade_bought")
-		_status_lbl.text = "Upgrade purchased!"
-		_animate_status()
-		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(id, { })
-		var uid: String = purchased_data.get("upgrade_id", "")
-		if uid.ends_with("_unlock"):
-			var fruit := uid.substr(0, uid.length() - 7)
-			if fruit in GameState.FRUIT_TYPES:
-				_build_shop()
-		var newly_visible: Array[String] = []
-		for child_id in UpgradeManager.tree_connections.get(id, []):
-			var child_node := _tree_content.get_node_or_null("TreeNode_" + child_id) as CircleNode
-			if child_node != null and not child_node.visible:
-				newly_visible.append(child_id)
-				_animating_lines[id + "|" + child_id] = 0.0
-				_animating_children[child_id] = true
-		_refresh_upgrades()
-		node.pivot_offset = node.size / 2.0
-		var tween := create_tween()
-		tween.tween_property(node, "scale", Vector2(1.3, 1.3), 0.1)
-		tween.tween_property(node, "scale", end_scale, 0.3).set_ease(Tween.EASE_OUT).set_trans(
-			Tween.TRANS_ELASTIC
-		)
-		_animate_next_node_unlock(id, newly_visible)
-
-
-func _animate_next_node_unlock(parent_id: String, newly_visible: Array[String]) -> void:
-	if newly_visible.is_empty() or _tree_content == null:
-		return
-	var tree_ctrl := _tree_content.get_parent() as Control
-	if tree_ctrl == null:
-		return
-	for child_id in newly_visible:
-		var child_node := _tree_content.get_node_or_null("TreeNode_" + child_id) as CircleNode
-		if child_node == null:
-			continue
-		var line_key: String = parent_id + "|" + child_id
-		var line_tween := create_tween()
-		line_tween.tween_method(
-			func(p: float):
-				_animating_lines[line_key] = p
-				tree_ctrl.queue_redraw(),
-			0.0,
-			1.0,
-			0.2,
-		)
-		line_tween.tween_callback(
-			func():
-				_animating_lines.erase(line_key)
-				_animating_children.erase(child_id)
-				_update_tree_visibility(tree_ctrl)
-				child_node.pivot_offset = child_node.size / 2.0
-				child_node.scale = Vector2(0.05, 0.05)
-				var child_tween := create_tween()
-				child_tween \
-						.tween_property(child_node, "scale", Vector2(1.0, 1.0), 0.5) \
-						.set_ease(Tween.EASE_OUT) \
-						.set_trans(Tween.TRANS_BOUNCE),
-		)
-
-
-func _refresh_tree_node(id: String, node: CircleNode) -> void:
-	var data := UpgradeManager.get_node_data(id)
-	_style_tree_node(node, data)
 
 
 func _process(_delta: float) -> void:
@@ -1225,6 +503,8 @@ func _create_item_card(
 ) -> PanelContainer:
 	var id: String = item["id"]
 	var is_locked_fruit: bool = (id in GameState.FRUIT_TYPES and not _is_local_fruit_unlocked(id))
+	var is_locked_machine: bool = not UpgradeManager.is_item_unlocked(id, _get_local_stand())
+	var is_locked: bool = is_locked_fruit or is_locked_machine
 	var card := PanelContainer.new()
 	card.name = name_prefix + id
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1270,7 +550,7 @@ func _create_item_card(
 	# Show product image — locked items stay hidden behind a "?" so the
 	# player can't see what they'll unlock.
 	var img_path: String = PRODUCT_IMAGES.get(id, "")
-	if is_locked_fruit:
+	if is_locked:
 		var q_lbl := Label.new()
 		q_lbl.text = "?"
 		q_lbl.add_theme_font_size_override("font_size", 56)
@@ -1300,15 +580,15 @@ func _create_item_card(
 	name_lbl.add_theme_font_size_override("font_size", 18)
 	name_lbl.add_theme_color_override(
 		"font_color",
-		Color(0.45, 0.45, 0.45) if is_locked_fruit else Color(0.92, 0.90, 0.82),
+		Color(0.45, 0.45, 0.45) if is_locked else Color(0.92, 0.90, 0.82),
 	)
-	if is_locked_fruit:
+	if is_locked:
 		# Locked cards show only the title — center it next to the "?" icon.
 		name_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	right_box.add_child(name_lbl)
 
-	if not is_locked_fruit:
+	if not is_locked:
 		var pack_qty: int = int(item.get("qty", 1))
 		var pack_lbl := Label.new()
 		pack_lbl.text = "%d unit%s" % [pack_qty, "" if pack_qty == 1 else "s"]
@@ -1316,7 +596,7 @@ func _create_item_card(
 		pack_lbl.add_theme_color_override("font_color", Color(0.65, 0.68, 0.75))
 		right_box.add_child(pack_lbl)
 
-		var per_unit: float = item["cost"] / maxi(1, pack_qty)
+		var per_unit: float = _negotiated_cost(item["cost"]) / maxi(1, pack_qty)
 		var per_unit_lbl := Label.new()
 		per_unit_lbl.text = "$%.2f / unit" % per_unit
 		per_unit_lbl.add_theme_font_size_override("font_size", 14)
@@ -1330,7 +610,7 @@ func _create_item_card(
 		right_box.add_child(bottom_row)
 
 		var total_lbl := Label.new()
-		total_lbl.text = "$%.2f" % item["cost"]
+		total_lbl.text = "$%.2f" % _negotiated_cost(item["cost"])
 		total_lbl.add_theme_font_size_override("font_size", 18)
 		total_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
 		total_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1369,7 +649,7 @@ func _shop_closed() -> bool:
 ## MarginContainer, so every child fills the same rect — the overlay
 ## covers whichever page is active; we only show it on the shop tab.
 func _build_closed_overlay() -> void:
-	var content := $MainHBox/Panel/VBox/Content as MarginContainer
+	var content := $RootVBox/MainHBox/Panel/VBox/Content as MarginContainer
 	if content == null:
 		return
 	_closed_overlay = Panel.new()
@@ -1614,7 +894,7 @@ func _set_fence_gradient(band: int) -> void:
 
 func _show_tab(tab_name: String) -> void:
 	_active_tab = tab_name
-	var content := $MainHBox/Panel/VBox/Content as MarginContainer
+	var content := $RootVBox/MainHBox/Panel/VBox/Content as MarginContainer
 	if content:
 		for child in content.get_children():
 			if child == _closed_overlay or child == _demo_upgrades_overlay:
@@ -1629,10 +909,20 @@ func _show_tab(tab_name: String) -> void:
 		_refresh_analytics()
 	elif tab_name == "upgrades":
 		_refresh_upgrades()
+		# The player is looking — pour each bar from its last-seen level.
+		for branch_id in _upgrade_columns:
+			_upgrade_columns[branch_id].on_viewed()
+	elif tab_name == "shop":
+		# Rebuild so freshly-claimed fruits/machines unlock their cards —
+		# lock state is baked into each card at build time.
+		_build_shop()
 	elif tab_name == "npcs":
 		_populate_npc_page()
 	if _demo_upgrades_overlay != null:
 		_demo_upgrades_overlay.visible = (tab_name == "upgrades")
+	# The "Your Stand" panel belongs to the Stats and Shop tabs only.
+	if _right_panel:
+		_right_panel.visible = tab_name in ["analytics", "shop"]
 	_update_flow_indicator()
 	_update_closed_overlay()
 
@@ -1686,7 +976,7 @@ func _build_npcs_tab() -> void:
 	step_pc.add_child(step_lbl)
 	_flow_indicator.add_child(step_pc)
 
-	var content := $MainHBox/Panel/VBox/Content as MarginContainer
+	var content := $RootVBox/MainHBox/Panel/VBox/Content as MarginContainer
 	if content == null:
 		return
 	var page := VBoxContainer.new()
@@ -1698,7 +988,7 @@ func _build_npcs_tab() -> void:
 	var title := Label.new()
 	title.text = "Customers"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color(0.92, 0.72, 0.22))
 	page.add_child(title)
 
@@ -1707,7 +997,7 @@ func _build_npcs_tab() -> void:
 	var header := Label.new()
 	header.name = "NpcHeader"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 14)
+	header.add_theme_font_size_override("font_size", 17)
 	header.add_theme_color_override("font_color", Color(0.75, 0.75, 0.80))
 	page.add_child(header)
 
@@ -1715,7 +1005,7 @@ func _build_npcs_tab() -> void:
 	desc.bbcode_enabled = true
 	desc.fit_content = true
 	desc.scroll_active = false
-	desc.add_theme_font_size_override("normal_font_size", 12)
+	desc.add_theme_font_size_override("normal_font_size", 15)
 	desc.add_theme_color_override("default_color", Color(0.60, 0.60, 0.66))
 	var tip_parts: Array[String] = []
 	for rarity in ["common", "community", "rare", "elite"]:
@@ -1728,15 +1018,18 @@ func _build_npcs_tab() -> void:
 			+ " leave a tip on every sale:  %s[/center]" % " · ".join(tip_parts)
 	page.add_child(desc)
 
-	# Three columns: common | community | rare + elite (stacked).
-	# Scrollbars are hidden — mouse wheel still scrolls, and nothing
-	# overlaps the cards.
+	# Four columns: common | community | rare | elite.
+	# Scrollbars are hidden — mouse wheel still scrolls, a floating ▼
+	# indicator shows when more rows exist below, and nothing overlaps
+	# the cards.
 	var cols := HBoxContainer.new()
 	cols.name = "NpcColumns"
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	cols.add_theme_constant_override("separation", 14)
 	page.add_child(cols)
-	for col_name in ["common", "community", "right"]:
+	var col_names := ["common", "community", "rare", "elite"]
+	for i in col_names.size():
+		var col_name: String = col_names[i]
 		var scroll := ScrollContainer.new()
 		scroll.name = "Scroll_" + col_name
 		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1744,17 +1037,89 @@ func _build_npcs_tab() -> void:
 		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 		cols.add_child(scroll)
+		_add_scroll_indicator(scroll)
 		var col := VBoxContainer.new()
 		col.name = "Col_" + col_name
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		col.add_theme_constant_override("separation", 4)
 		scroll.add_child(col)
+		if i < col_names.size() - 1:
+			var sep := VSeparator.new()
+			sep.modulate = Color(1, 1, 1, 0.25)
+			cols.add_child(sep)
+
+
+## Wraps a ScrollContainer in a VBox that shows a small "▼" row centered
+## just under the list whenever more content exists below the visible
+## area. Used where scrollbars are hidden (SCROLL_MODE_SHOW_NEVER).
+func _add_scroll_indicator(scroll: ScrollContainer) -> void:
+	var parent := scroll.get_parent()
+	if parent == null:
+		return
+	var wrap := VBoxContainer.new()
+	wrap.name = "ScrollWrap_" + scroll.name
+	wrap.size_flags_horizontal = scroll.size_flags_horizontal
+	wrap.size_flags_vertical = scroll.size_flags_vertical
+	wrap.size_flags_stretch_ratio = scroll.size_flags_stretch_ratio
+	wrap.custom_minimum_size = scroll.custom_minimum_size
+	wrap.add_theme_constant_override("separation", 0)
+	var idx := scroll.get_index()
+	parent.add_child(wrap)
+	parent.move_child(wrap, idx)
+	scroll.reparent(wrap)
+	scroll.custom_minimum_size = Vector2.ZERO
+
+	var arrow := Label.new()
+	arrow.text = "▼"
+	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	arrow.add_theme_font_size_override("font_size", 14)
+	arrow.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.45))
+	arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	arrow.visible = false
+	wrap.add_child(arrow)
+
+	var bar := scroll.get_v_scroll_bar()
+	var update := func(_v := 0.0) -> void:
+		if not is_instance_valid(bar) or not is_instance_valid(arrow):
+			return
+		var scrollable := bar.max_value - bar.page
+		arrow.visible = (bar.page > 1.0 and scrollable > 4.0 and bar.value < scrollable - 4.0)
+	bar.value_changed.connect(
+		func(_v):
+			update.call(),
+	)
+	bar.changed.connect(
+		func():
+			update.call(),
+	)
+	# Lists populate/empty after this runs — re-check whenever content
+	# changes or the view resizes, not just on scrollbar signals.
+	scroll.child_entered_tree.connect(
+		func(_c):
+			update.call_deferred(),
+	)
+	scroll.child_exiting_tree.connect(
+		func(_c):
+			update.call(),
+	)
+	scroll.resized.connect(
+		func():
+			update.call(),
+	)
+	wrap.resized.connect(
+		func():
+			update.call(),
+	)
+	# Empty/short lists never trigger scrollbar changes — evaluate once
+	# after layout so the arrow doesn't linger on them.
+	update.call_deferred()
+	update.call()
 
 
 ## Fills the NPCs tab with every roster NPC the local stand has met.
 ## Rows: rarity-colored name, rarity tag, affinity bar (0–100).
 func _populate_npc_page() -> void:
-	var page := $MainHBox/Panel/VBox/Content.get_node_or_null("NpcsPage")
+	var page := $RootVBox/MainHBox/Panel/VBox/Content.get_node_or_null("NpcsPage")
 	if page == null:
 		return
 	var header := page.get_node("NpcHeader") as Label
@@ -1773,10 +1138,11 @@ func _populate_npc_page() -> void:
 
 	var col_common := _npc_column("common")
 	var col_community := _npc_column("community")
-	var col_right := _npc_column("right")
-	if col_common == null or col_community == null or col_right == null:
+	var col_rare := _npc_column("rare")
+	var col_elite := _npc_column("elite")
+	if col_common == null or col_community == null or col_rare == null or col_elite == null:
 		return
-	for col in [col_common, col_community, col_right]:
+	for col in [col_common, col_community, col_rare, col_elite]:
 		for c in col.get_children():
 			c.queue_free()
 
@@ -1811,13 +1177,15 @@ func _populate_npc_page() -> void:
 
 	_npc_fill_column(col_common, "Common", by_rarity["common"], collection)
 	_npc_fill_column(col_community, "Community", by_rarity["community"], collection)
-	_npc_fill_column(col_right, "Rare", by_rarity["rare"], collection)
-	_npc_fill_column(col_right, "Elite", by_rarity["elite"], collection)
+	_npc_fill_column(col_rare, "Rare", by_rarity["rare"], collection)
+	_npc_fill_column(col_elite, "Elite", by_rarity["elite"], collection)
 
 
 func _npc_column(col_name: String) -> VBoxContainer:
-	return $MainHBox/Panel/VBox/Content/NpcsPage/NpcColumns \
-			.get_node_or_null("Scroll_%s/Col_%s" % [col_name, col_name]) as VBoxContainer
+	var page := $RootVBox/MainHBox/Panel/VBox/Content.get_node_or_null("NpcsPage")
+	if page == null:
+		return null
+	return page.find_child("Col_" + col_name, true, false) as VBoxContainer
 
 
 func _npc_fill_column(
@@ -1836,7 +1204,7 @@ func _npc_fill_column(
 	var header := Label.new()
 	header.text = "%s  ·  %d/%d" % [title, met_count, ids.size()]
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 17)
+	header.add_theme_font_size_override("font_size", 20)
 	header.add_theme_color_override(
 		"font_color",
 		NpcRoster.RARITY_NAME_COLORS.get(rarity_key, Color(0.65, 0.58, 0.48)),
@@ -1877,11 +1245,11 @@ func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
 	name_lbl.clip_text = true
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# Shrink long names so they fit inside the card on a single line.
-	var name_size := 14
+	var name_size := 18
 	if npc_name.length() > 28:
-		name_size = 8
-	elif npc_name.length() > 20:
 		name_size = 12
+	elif npc_name.length() > 20:
+		name_size = 15
 	name_lbl.add_theme_font_size_override("font_size", name_size)
 	name_lbl.add_theme_color_override(
 		"font_color",
@@ -1897,7 +1265,7 @@ func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
 	pips.add_theme_constant_override("separation", 3)
 	for i in 10:
 		var pip := Panel.new()
-		pip.custom_minimum_size = Vector2(13, 13)
+		pip.custom_minimum_size = Vector2(15, 15)
 		var pip_st := StyleBoxFlat.new()
 		pip_st.bg_color = Color(0.88, 0.65, 0.12) if i < cups \
 				else Color(0.16, 0.17, 0.21)
@@ -1943,7 +1311,7 @@ func _demo_upgrades_blocked() -> bool:
 ## Demo overlay over the Upgrades page: semi-transparent so the tree stays
 ## visible, but blocks all mouse interaction and purchasing.
 func _build_demo_upgrades_overlay() -> void:
-	var content := $MainHBox/Panel/VBox/Content as MarginContainer
+	var content := $RootVBox/MainHBox/Panel/VBox/Content as MarginContainer
 	if content == null:
 		return
 	_demo_upgrades_overlay = Control.new()
@@ -1971,10 +1339,10 @@ func _build_demo_upgrades_overlay() -> void:
 
 
 func _build_prices_page() -> void:
-	var prices_page := ($MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
+	var prices_page := ($RootVBox/MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
 	if prices_page == null:
 		return
-	var container := prices_page.get_node_or_null("PriceListScroll/PriceList") as VBoxContainer
+	var container := prices_page.find_child("PriceList", true, false) as VBoxContainer
 	if container == null:
 		return
 	for child in container.get_children():
@@ -2020,7 +1388,7 @@ func _build_prices_page() -> void:
 
 
 func _refresh_prices_page() -> void:
-	var prices_page := ($MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
+	var prices_page := ($RootVBox/MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
 	if prices_page == null:
 		return
 	var temp_info := prices_page.get_node_or_null("WeatherRow/TempInfo") as Label
@@ -2035,17 +1403,16 @@ func _refresh_prices_page() -> void:
 ## daily mail report's layout (People / Money sections).
 ## Populate the Stats tab: two columns — People (left) and Money (right).
 func _refresh_analytics() -> void:
+	var cols_node := get_node_or_null("RootVBox/MainHBox/Panel/VBox/Content/AnalyticsPage/Columns")
 	var people_col := (
-		get_node_or_null(
-			"MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCols/PeopleCol"
-		)
-		as VBoxContainer
+		cols_node.find_child("PeopleCol", true, false) as VBoxContainer
+		if cols_node != null
+		else null
 	)
 	var money_col := (
-		get_node_or_null(
-			"MainHBox/Panel/VBox/Content/AnalyticsPage/Columns/StatsScroll/StatsCols/MoneyCol"
-		)
-		as VBoxContainer
+		cols_node.find_child("MoneyCol", true, false) as VBoxContainer
+		if cols_node != null
+		else null
 	)
 	if people_col == null or money_col == null:
 		return
@@ -2170,84 +1537,47 @@ func _add_stat_row(
 
 
 func _refresh_upgrades() -> void:
-	var upg_page := ($MainHBox/Panel/VBox/Content/UpgradesPage as VBoxContainer)
-	if upg_page == null:
-		return
-	var tree_ctrl := upg_page.get_node_or_null("UpgradeTree") as Control
+	var stand := _get_local_stand() as StandUnit
+	for branch_id in _upgrade_columns:
+		_upgrade_columns[branch_id].refresh(stand)
+
+
+func _build_upgrades_page() -> void:
+	var tree_ctrl := ($RootVBox/MainHBox/Panel/VBox/Content/UpgradesPage/UpgradeTree as Control)
 	if tree_ctrl == null:
 		return
-	# Update all tree nodes and visibility
-	if _tree_content == null:
-		return
-	var root_name := UpgradeManager.root_node_name
-	for id in UpgradeManager.tree_positions:
-		if id == root_name:
-			continue
-		var node := _tree_content.get_node_or_null("TreeNode_" + id) as CircleNode
-		if node == null:
-			continue
-		_refresh_tree_node(id, node)
-	_update_tree_visibility(tree_ctrl)
-	var root_node := _tree_content.get_node_or_null("TreeNode_" + root_name) as CircleNode
-	if root_node != null:
-		_update_root_counter(root_node)
-	# Wait until the tree control has its real size before centering.
-	var parent_vbox := tree_ctrl.get_parent() as Container
-	var attempts := 0
-	while (tree_ctrl.size.x <= 10 or tree_ctrl.size.y <= 10) and attempts < 20:
-		if parent_vbox:
-			parent_vbox.queue_sort()
-		await RenderingServer.frame_post_draw
-		attempts += 1
+	var hbox := HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_theme_constant_override("separation", 14)
+	tree_ctrl.add_child(hbox)
+	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	# Force the top-level VBox to relayout so Content gets its proper size.
-	var panel_vbox := $MainHBox/Panel/VBox as VBoxContainer
-	if panel_vbox:
-		panel_vbox.queue_sort()
-		await RenderingServer.frame_post_draw
-
-	var area := _tree_available_area(tree_ctrl)
-
-	# Fit the visible tree inside the available area, then center the root.
-	if not _tree_centered and area.x > 10 and area.y > 10:
-		_fit_tree_scale(tree_ctrl, area)
-		var root_gp: Vector2 = UpgradeManager.tree_positions[root_name]
-		_tree_pan_offset = -root_gp * _tree_scale
-		_tree_centered = true
-	_layout_upgrade_tree(tree_ctrl)
-
-
-func _fit_tree_scale(_tree_ctrl: Control, area: Vector2) -> void:
-	if _tree_content == null:
-		return
-	var root_name := UpgradeManager.root_node_name
-	var root_gp: Vector2 = UpgradeManager.tree_positions[root_name]
-	var max_extent := Vector2.ZERO
-	var max_node_size := Vector2(40, 40)
-	for id in UpgradeManager.tree_positions:
-		var node := _tree_content.get_node_or_null("TreeNode_" + id)
-		if node == null or not node.visible:
-			continue
-		var gp: Vector2 = UpgradeManager.tree_positions[id]
-		max_extent.x = max(max_extent.x, abs(gp.x - root_gp.x))
-		max_extent.y = max(max_extent.y, abs(gp.y - root_gp.y))
-		max_node_size.x = max(max_node_size.x, node.size.x)
-		max_node_size.y = max(max_node_size.y, node.size.y)
-	if max_extent.x <= 0.001 or max_extent.y <= 0.001:
-		return
-	var padding: float = 40.0
-	var avail_x: float = maxf(0.0, area.x - max_node_size.x - padding * 2.0)
-	var avail_y: float = maxf(0.0, area.y - max_node_size.y - padding * 2.0)
-	var scale_x: float = avail_x / (max_extent.x * 2.0)
-	var scale_y: float = avail_y / (max_extent.y * 2.0)
-	var fit_scale: float = min(scale_x, scale_y)
-	_tree_scale = clampf(fit_scale, 0.5, 1.2)
+	var branches := UpgradeManager.get_branches()
+	for i in range(branches.size()):
+		if i > 0:
+			# Full-height divider between columns.
+			var sep := VSeparator.new()
+			sep.modulate = Color(1, 1, 1, 0.25)
+			hbox.add_child(sep)
+		var col := UpgradeBarColumnScript.new()
+		col.setup(branches[i])
+		hbox.add_child(col)
+		_upgrade_columns[str(branches[i]["id"])] = col
+	_refresh_upgrades()
 
 
 func _add_to_cart(item: Dictionary) -> void:
 	_cart.append(item)
 	_update_cart_ui()
 	_animate_status_text("Added to cart!")
+
+
+## Negotiation discount for the local player's stand — applied to every
+## shop price shown or charged through this hub.
+func _negotiated_cost(base: float) -> float:
+	var neg := clampf(UpgradeManager.get_effect_total("negotiation"), 0.0, 0.9)
+	return base * (1.0 - neg)
 
 
 func _remove_cart_entry(index: int) -> void:
@@ -2267,7 +1597,7 @@ func _update_cart_ui() -> void:
 	for i in _cart.size():
 		var item: Dictionary = _cart[i]
 		var idx: int = i
-		total += item["cost"]
+		total += _negotiated_cost(item["cost"])
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_constant_override("separation", 6)
@@ -2278,7 +1608,7 @@ func _update_cart_ui() -> void:
 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_lbl)
 		var price_lbl := Label.new()
-		price_lbl.text = "$%.2f" % item["cost"]
+		price_lbl.text = "$%.2f" % _negotiated_cost(item["cost"])
 		price_lbl.add_theme_font_size_override("font_size", 16)
 		price_lbl.add_theme_color_override("font_color", Color(0.65, 0.80, 0.45))
 		row.add_child(price_lbl)
@@ -2332,7 +1662,7 @@ func _checkout_cart() -> void:
 			_buy_ingredient(item, qty)
 		else:
 			for i in range(qty):
-				_buy_container(id, item["cost"])
+				_buy_container(id, _negotiated_cost(item["cost"]))
 	_update_cart_ui()
 	# Only the host should emit checkout_completed (triggers truck delivery).
 	# Clients' purchases are routed to the host via _request_purchase RPC,
@@ -2376,16 +1706,33 @@ func _animate_status_text(msg: String, error := false) -> void:
 	tween.tween_property(_status_lbl, "modulate", Color(1, 1, 1, 0), 0.5)
 
 
+func _on_fruit_research_changed(_id: int, _cost: float) -> void:
+	if visible:
+		_build_shop()
+		_refresh_upgrades()
+
+
+func _on_stand_progress_changed(_stand: StandUnit, _progress: Dictionary) -> void:
+	if visible:
+		_refresh_upgrades()
+		# Claims land here too — keep the shop's lock state fresh while
+		# it's the tab being viewed.
+		if _active_tab == "shop":
+			_build_shop()
+
+
 func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
+	if item["id"] in GameState.FRUIT_TYPES and not _is_local_fruit_unlocked(item["id"]):
+		return
 	if _shop_closed():
 		_status_lbl.text = "Shop is closed for today"
 		_animate_status(true)
 		return
-	var total: float = qty * item["cost"]
+	var total: float = qty * _negotiated_cost(item["cost"])
 	# Route purchases through the host. Clients send an RPC; the host
 	# validates money and emits the signal that triggers delivery.
 	if WorldSync.is_host():
-		if not WorldSync.spend_local_money(total):
+		if not WorldSync.spend_local_money(total, "supplies"):
 			return
 		var sn := WorldSync.get_local_stand_name()
 		for i in range(qty):
@@ -2406,6 +1753,10 @@ func _buy_ingredient(item: Dictionary, qty: int = 1) -> void:
 func _buy_container(container_type: String, cost: float) -> void:
 	if _shop_closed():
 		_status_lbl.text = "Shop is closed for today"
+		_animate_status(true)
+		return
+	if not UpgradeManager.is_item_unlocked(container_type, _get_local_stand()):
+		_status_lbl.text = "Locked — check the Upgrades page"
 		_animate_status(true)
 		return
 	if WorldSync.is_host():
@@ -2452,80 +1803,62 @@ func _request_purchase(
 	)
 	# Find the requesting player's stand by name and spend from it
 	var stand := _find_stand_by_name(stand_name)
+	if stand == null:
+		return
+	var authorized := false
+	for player in get_tree().get_nodes_in_group("player"):
+		if (
+			player.get_multiplayer_authority() == sender_id
+			and player.get("assigned_stand") == stand
+		):
+			authorized = true
+			break
+	if not authorized:
+		return
 	match category:
 		"supply":
-			if not _spend_from_stand(stand, cost):
+			if qty < 1.0 or qty != floorf(qty) or qty > 100.0:
+				return
+			if item_id in GameState.FRUIT_TYPES and not stand.is_fruit_unlocked(item_id):
 				return
 			# Find the item to get its per-box quantity
-			var per_box: float = qty
+			var supply: Dictionary = { }
 			for item in shop_items:
 				if item.get("id", "") == item_id:
-					per_box = item.get("qty", qty)
+					supply = item
 					break
+			if supply.is_empty():
+				return
+			var box_cost: float = supply["cost"]
+			var neg := clampf(
+				UpgradeManager.get_effect_total_for_stand("negotiation", stand_name),
+				0.0,
+				0.9,
+			)
+			box_cost *= 1.0 - neg
+			if not _spend_from_stand(stand, box_cost * qty, "supplies"):
+				return
 			for i in range(int(qty)):
-				EventBus.supply_order_placed.emit(item_id, per_box, cost / qty, stand_name)
+				EventBus.supply_order_placed.emit(item_id, supply["qty"], box_cost, stand_name)
 		"equipment":
-			if not _spend_from_stand(stand, cost):
+			if not UpgradeManager.is_item_unlocked(item_id, stand):
+				return
+			var catalog_cost := -1.0
+			for item in container_items:
+				if item["id"] == item_id:
+					catalog_cost = float(item["cost"])
+					break
+			var neg := clampf(
+				UpgradeManager.get_effect_total_for_stand("negotiation", stand_name),
+				0.0,
+				0.9,
+			)
+			var expected := catalog_cost * (1.0 - neg)
+			if catalog_cost < 0.0 or not is_equal_approx(cost, expected):
+				return
+			if not _spend_from_stand(stand, expected):
 				return
 			EventBus.equipment_order_placed.emit(item_id, stand_name)
-		"upgrade_node":
-			# Set the buyer's stand active so the purchase is recorded
-			# against their stand and money is spent from their stand.
-			if stand_name != "":
-				UpgradeManager.set_active_stand(stand_name)
-			if UpgradeManager.purchase_node(item_id):
-				GameLog.log(
-					"[MorningHub] Host purchased upgrade node %s for peer %d (stand=%s)"
-					% [item_id, sender_id, stand_name]
-				)
-				# Sync the purchase back to the buyer so their UI updates.
-				_sync_upgrade_node_purchased.rpc_id(sender_id, item_id, stand_name)
-
-
-## Host → buyer: sync that an upgrade node was purchased so the
-## joiner's upgrade tree UI updates (shows next node, animates, etc.).
-@rpc("authority", "reliable")
-func _sync_upgrade_node_purchased(node_id: String, stand_name: String) -> void:
-	# Only apply to the client whose stand matches.
-	var local_sn := WorldSync.get_local_stand_name()
-	if stand_name != "" and local_sn != stand_name:
-		return
-	# Set the active stand and mark the node as purchased locally.
-	UpgradeManager.set_active_stand(stand_name)
-	UpgradeManager.mark_node_purchased_for_stand(stand_name, node_id)
-	# Re-apply effects so fruit unlocks and other effects take effect.
-	UpgradeManager.apply_all_effects()
-	# Refresh the upgrade tree UI if it's open.
-	_refresh_upgrades()
-	# Play the purchase sound and animate the node.
-	AudioManager.play_sfx_ui("upgrade_bought")
-	_status_lbl.text = "Upgrade purchased!"
-	_animate_status()
-	# Animate the purchased node and reveal newly visible children.
-	var purchased_node_name := "TreeNode_" + node_id
-	var node := _tree_content.get_node_or_null(purchased_node_name) as CircleNode
-	if node != null:
-		var purchased_data: Dictionary = UpgradeManager.tree_nodes.get(node_id, { })
-		var uid: String = purchased_data.get("upgrade_id", "")
-		if uid.ends_with("_unlock"):
-			var fruit := uid.substr(0, uid.length() - 7)
-			if fruit in GameState.FRUIT_TYPES:
-				_build_shop()
-		var newly_visible: Array[String] = []
-		for child_id in UpgradeManager.tree_connections.get(node_id, []):
-			var child_node_name: String = "TreeNode_" + str(child_id)
-			var child_node := _tree_content.get_node_or_null(child_node_name) as CircleNode
-			if child_node != null and not child_node.visible:
-				newly_visible.append(child_id)
-				_animating_lines[node_id + "|" + child_id] = 0.0
-				_animating_children[child_id] = true
-		node.pivot_offset = node.size / 2.0
-		var tween := create_tween()
-		tween.tween_property(node, "scale", Vector2(1.3, 1.3), 0.1)
-		tween.tween_property(node, "scale", Vector2(1.0, 1.0), 0.3) \
-				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
-		_animate_next_node_unlock(node_id, newly_visible)
-	EventBus.upgrade_purchased.emit(0, 0.0)
 
 
 func _find_stand_by_name(stand_name: String) -> Node:
@@ -2540,9 +1873,9 @@ func _find_stand_by_name(stand_name: String) -> Node:
 	return null
 
 
-func _spend_from_stand(stand: Node, amount: float) -> bool:
+func _spend_from_stand(stand: Node, amount: float, category: String = "") -> bool:
 	if stand != null and stand.has_method("spend_money"):
-		return stand.spend_money(amount)
+		return stand.spend_money(amount, category)
 	return GameState.spend_money(amount)
 
 
@@ -2559,10 +1892,10 @@ func _animate_status(error := false) -> void:
 
 
 func _on_price_changed(_fruit_type: String, new_price: float) -> void:
-	var prices_page := ($MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
+	var prices_page := ($RootVBox/MainHBox/Panel/VBox/Content/PricesPage as VBoxContainer)
 	if prices_page == null:
 		return
-	var container := prices_page.get_node_or_null("PriceListScroll/PriceList") as VBoxContainer
+	var container := prices_page.find_child("PriceList", true, false) as VBoxContainer
 	if container == null:
 		return
 	for row in container.get_children():
@@ -2619,21 +1952,16 @@ func _on_day_phase_changed(phase: int, day: int) -> void:
 
 
 func _update_morning_data(day: int) -> void:
-	# Reset pan/centering so the tree re-centers each morning
-	# (the hub may persist across days).
-	_tree_centered = false
-	_tree_pan_offset = Vector2.ZERO
-	_tree_laid_out = false
-	var day_lbl := get_node_or_null("MainHBox/Panel/VBox/Header/DayLabel") as Label
+	var day_lbl := get_node_or_null("RootVBox/MainHBox/Panel/VBox/Header/DayLabel") as Label
 	if day_lbl:
 		day_lbl.text = "Day %d" % day
-	var temp_lbl := get_node_or_null("MainHBox/Panel/VBox/Header/TempLabel") as Label
+	var temp_lbl := get_node_or_null("RootVBox/MainHBox/Panel/VBox/Header/TempLabel") as Label
 	if temp_lbl:
 		temp_lbl.text = "%.0fC" % GameState.temperature
-	var money_lbl := get_node_or_null("MainHBox/Panel/VBox/Header/MoneyLabel") as Label
+	var money_lbl := get_node_or_null("RootVBox/MainHBox/Panel/VBox/Header/MoneyLabel") as Label
 	if money_lbl:
 		money_lbl.text = "Money: $%.2f" % _get_local_money()
-	var price_slider := ($MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
+	var price_slider := ($RootVBox/MainHBox/Panel/VBox/Content/PricesPage/PriceSlider as HSlider)
 	if price_slider:
 		pass
 
@@ -2656,8 +1984,7 @@ func _show_morning_hub() -> void:
 	_show_tab(_active_tab)
 	panel.visible = true
 	backdrop.visible = true
-	if _right_panel:
-		_right_panel.visible = true
+	_flow_indicator.visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("set_hud_visible"):
@@ -2665,10 +1992,12 @@ func _show_morning_hub() -> void:
 	var tween := create_tween()
 	panel.modulate = Color(1, 1, 1, 0)
 	backdrop.modulate = Color(1, 1, 1, 0)
+	_flow_indicator.modulate = Color(1, 1, 1, 0)
 	if _right_panel:
 		_right_panel.modulate = Color(1, 1, 1, 0)
 	tween.tween_property(backdrop, "modulate", Color(1, 1, 1, 1), 0.2)
 	tween.parallel().tween_property(panel, "modulate", Color(1, 1, 1, 1), 0.3)
+	tween.parallel().tween_property(_flow_indicator, "modulate", Color(1, 1, 1, 1), 0.3)
 	if _right_panel:
 		tween.parallel().tween_property(_right_panel, "modulate", Color(1, 1, 1, 1), 0.3)
 
@@ -2681,19 +2010,25 @@ func _on_exit_button_pressed() -> void:
 	while computer != null and not computer is Computer:
 		computer = computer.get_parent()
 	if computer != null:
-		computer._exit()
+		(computer as Computer).close_view()
 
 
-func _hide_morning_hub() -> void:
+## keep_on_screen: leave the hub drawn on the monitor (the SubViewport
+## holds whatever was last rendered — the screen looks "left on").
+## HUD is always restored either way.
+func _hide_morning_hub(keep_on_screen := false) -> void:
 	# Reset modulate so the next fade-in starts from fully opaque.
 	panel.modulate = Color(1, 1, 1, 1)
 	backdrop.modulate = Color(1, 1, 1, 1)
+	_flow_indicator.modulate = Color(1, 1, 1, 1)
 	if _right_panel:
 		_right_panel.modulate = Color(1, 1, 1, 1)
-	panel.visible = false
-	backdrop.visible = false
-	if _right_panel:
-		_right_panel.visible = false
+	if not keep_on_screen:
+		panel.visible = false
+		backdrop.visible = false
+		_flow_indicator.visible = false
+		if _right_panel:
+			_right_panel.visible = false
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("set_hud_visible"):
 		hud.set_hud_visible(true)
@@ -2724,10 +2059,9 @@ func _bind_stand_money() -> void:
 
 func _on_money_changed(_amount: float) -> void:
 	_bind_stand_money()
-	_hide_tree_tooltip()
 	if not panel.visible:
 		return
-	var money_lbl := get_node_or_null("MainHBox/Panel/VBox/Header/MoneyLabel") as Label
+	var money_lbl := get_node_or_null("RootVBox/MainHBox/Panel/VBox/Header/MoneyLabel") as Label
 	if money_lbl:
 		money_lbl.text = "Money: $%.2f" % _get_local_money()
 	if _active_tab == "shop":
@@ -2861,7 +2195,7 @@ func _refresh_stats() -> void:
 
 	var day_lbl := Label.new()
 	day_lbl.text = "Day: %d" % DayManager.day_number
-	day_lbl.add_theme_font_size_override("font_size", 18)
+	day_lbl.add_theme_font_size_override("font_size", 24)
 	day_lbl.add_theme_color_override("font_color", Color(0.9, 0.87, 0.78))
 	header.add_child(day_lbl)
 
@@ -2869,7 +2203,7 @@ func _refresh_stats() -> void:
 	money_lbl.text = "$%.2f" % _get_local_money()
 	money_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	money_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	money_lbl.add_theme_font_size_override("font_size", 18)
+	money_lbl.add_theme_font_size_override("font_size", 24)
 	money_lbl.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	header.add_child(money_lbl)
 
@@ -2877,7 +2211,7 @@ func _refresh_stats() -> void:
 	var temp_lbl := Label.new()
 	temp_lbl.text = "%.0fC / %.0fF" % [temp_c, temp_c * 9.0 / 5.0 + 32.0]
 	temp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	temp_lbl.add_theme_font_size_override("font_size", 18)
+	temp_lbl.add_theme_font_size_override("font_size", 24)
 	temp_lbl.add_theme_color_override("font_color", Color(0.7, 0.8, 0.95))
 	header.add_child(temp_lbl)
 
@@ -2897,7 +2231,7 @@ func _refresh_stats() -> void:
 	var equip_hdr := Label.new()
 	equip_hdr.text = "Equipment"
 	equip_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equip_hdr.add_theme_font_size_override("font_size", 18)
+	equip_hdr.add_theme_font_size_override("font_size", 14)
 	equip_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	equip_col.add_child(equip_hdr)
 	if _equipment_counts.is_empty():
@@ -2918,7 +2252,7 @@ func _refresh_stats() -> void:
 	var cons_hdr := Label.new()
 	cons_hdr.text = "Consumables"
 	cons_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cons_hdr.add_theme_font_size_override("font_size", 18)
+	cons_hdr.add_theme_font_size_override("font_size", 14)
 	cons_hdr.add_theme_color_override("font_color", Color(0.92, 0.78, 0.25))
 	cons_col.add_child(cons_hdr)
 	var shown_any := false
@@ -2940,13 +2274,13 @@ func _stats_row(label_text: String, value_text: String, color: Color) -> HBoxCon
 	var name_lbl := Label.new()
 	name_lbl.text = label_text
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 18)
+	name_lbl.add_theme_font_size_override("font_size", 13)
 	name_lbl.add_theme_color_override("font_color", color)
 	row.add_child(name_lbl)
 	var val_lbl := Label.new()
 	val_lbl.text = value_text
 	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	val_lbl.add_theme_font_size_override("font_size", 18)
+	val_lbl.add_theme_font_size_override("font_size", 13)
 	val_lbl.add_theme_color_override("font_color", color)
 	row.add_child(val_lbl)
 	return row
@@ -2992,7 +2326,7 @@ func _on_dev_reset() -> void:
 
 
 func _build_recipes_page() -> void:
-	var recipes_page := $MainHBox/Panel/VBox/Content/RecipesPage as VBoxContainer
+	var recipes_page := $RootVBox/MainHBox/Panel/VBox/Content/RecipesPage as VBoxContainer
 	if recipes_page == null:
 		return
 	for child in recipes_page.get_children():

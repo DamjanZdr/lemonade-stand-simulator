@@ -19,8 +19,12 @@ const _FALLBACK_ROOF_DEFAULT: Color = Color(0.36220014, 0.34826168, 0.34491053)
 const _FALLBACK_WALL_DEFAULT: Color = Color(0.78626776, 0.76280415, 0.6887659)
 
 const HOUSE_LOD_SCENE: PackedScene = preload("res://assets/models/environment/houses/house lod.glb")
+## Fallback LOD swap distance (epic default). The graphics preset
+## overrides this via SettingsManager.get_house_lod_distance().
 const HOUSE_LOD_DISTANCE: float = 200.0
 const HOUSE_LOD_OVERLAP: float = 2.0
+
+var _house_lod_distance: float = HOUSE_LOD_DISTANCE
 
 # The fence texture (White*_mailboxmaterialgrid.png) is a horizontal atlas
 # of 13 gradient bands, 20px each. The fence models' UVs sit on band 12
@@ -144,6 +148,11 @@ func _on_day_timer_updated(time_left: float, total_time: float) -> void:
 func _apply_grass_shader() -> void:
 	if Engine.is_editor_hint():
 		return
+	# The fading "grass circle" is driven by these shader params — scale
+	# them with the preset view distance (authored ratios: 10/40 at 80m).
+	var view_distance := 80.0
+	if has_node("/root/SettingsManager"):
+		view_distance = SettingsManager.get_grass_view_distance()
 	var grass_root := get_node_or_null("Grass")
 	if grass_root == null:
 		return
@@ -158,8 +167,8 @@ func _apply_grass_shader() -> void:
 		mat.set_shader_parameter("sway_strength", 0.1)
 		mat.set_shader_parameter("wind_speed", 0.75)
 		mat.set_shader_parameter("wind_frequency", 0.5)
-		mat.set_shader_parameter("fade_start", 10.0)
-		mat.set_shader_parameter("fade_end", 40.0)
+		mat.set_shader_parameter("fade_start", view_distance * 0.125)
+		mat.set_shader_parameter("fade_end", view_distance * 0.5)
 
 
 func _process(_delta: float) -> void:
@@ -169,6 +178,11 @@ func _process(_delta: float) -> void:
 func _apply_grass_lod() -> void:
 	if Engine.is_editor_hint():
 		return
+	var density_mult := 1.0
+	var view_distance := 80.0
+	if has_node("/root/SettingsManager"):
+		density_mult = SettingsManager.get_grass_density_multiplier()
+		view_distance = SettingsManager.get_grass_view_distance()
 	var grass_root := get_node_or_null("Grass")
 	if grass_root == null:
 		return
@@ -179,13 +193,39 @@ func _apply_grass_lod() -> void:
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 		mmi.visible = true
-		mmi.visibility_range_end = 80.0
+		mmi.visibility_range_end = view_distance
 		mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+		# Grass here is baked MultiMeshes, not GrassScatterer output — thin it
+		# via visible_instance_count against the remembered full count so
+		# quality changes can be re-applied without compounding the loss.
+		if not mmi.has_meta("grass_full_count"):
+			mmi.set_meta("grass_full_count", mmi.multimesh.instance_count)
+		var full: int = mmi.get_meta("grass_full_count")
+		mmi.multimesh.visible_instance_count = mini(full, int(round(full * density_mult)))
+
+
+## Graphics-quality hook: baked grass density + draw distance + the
+## shader fade radius follow the active preset. Safe to re-call on
+## quality changes.
+func apply_grass_quality() -> void:
+	_apply_grass_shader()
+	_apply_grass_lod()
+
+
+## Graphics-quality hook: re-evaluate the LOD swap distance (presets
+## shrink it at lower tiers). Re-runs the setup — existing LOD children
+## just get their ranges updated.
+func apply_house_lod_distance(d: float) -> void:
+	_house_lod_distance = d
+	_setup_house_lod()
 
 
 func _setup_house_lod() -> void:
 	if Engine.is_editor_hint():
 		return
+	# Autoload settings load before the scene — read the live preset so
+	# the first apply is already correct for non-epic tiers.
+	_house_lod_distance = SettingsManager.get_house_lod_distance()
 	var houses_groups: Array[Node] = []
 	var local_houses := get_node_or_null("Houses")
 	if local_houses != null:
@@ -206,21 +246,37 @@ func _setup_house_lod() -> void:
 				continue
 			if child.name in SKIP_RECOLOR_HOUSES:
 				continue
-			if child.has_node("LOD"):
-				continue
-			# Collect original meshes before adding LOD child
-			var original_meshes := _find_mesh_instances(child)
-			# Instance LOD at the same position (child of the house, zero offset)
-			var lod_instance := HOUSE_LOD_SCENE.instantiate()
-			lod_instance.name = "LOD"
-			child.add_child(lod_instance)
+			var lod_instance := child.get_node_or_null("LOD")
+			# Original meshes exclude the LOD subtree itself.
+			var original_meshes: Array = []
+			for mi in _find_mesh_instances(child):
+				if lod_instance == null or not lod_instance.is_ancestor_of(mi):
+					original_meshes.append(mi)
+			if lod_instance == null:
+				# Instance LOD at the same position (child of the house, zero offset)
+				lod_instance = HOUSE_LOD_SCENE.instantiate()
+				lod_instance.name = "LOD"
+				child.add_child(lod_instance)
+				# The LOD is a foreign instance — _apply_house_colors skips it,
+				# so paint it with this house's palette on creation.
+				var house_idx := _lod_color_index(child)
+				var wall_idx: int = child.get_meta("house_wall_index", house_idx)
+				_recolor_house_lod(
+					child,
+					(_roof_color(house_idx)
+						if GameState.color_roofs
+						else _roof_default_color()),
+					(_wall_color(wall_idx)
+						if GameState.color_walls
+						else _wall_default_color()),
+				)
 			# Original meshes: hide beyond LOD distance
 			for mi in original_meshes:
-				mi.visibility_range_end = HOUSE_LOD_DISTANCE
+				mi.visibility_range_end = _house_lod_distance
 				mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 			# LOD meshes: show slightly before LOD distance so there's no gap
 			for mi in _find_mesh_instances(lod_instance):
-				mi.visibility_range_begin = HOUSE_LOD_DISTANCE - HOUSE_LOD_OVERLAP
+				mi.visibility_range_begin = _house_lod_distance - HOUSE_LOD_OVERLAP
 				mi.visibility_range_end = 0.0
 				mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 
@@ -309,6 +365,7 @@ func _apply_house_colors(
 				else:
 					wall_color = _wall_default_color()
 				_recolor_house(child, roof_color, wall_color)
+				_recolor_house_lod(child, roof_color, wall_color)
 
 
 func randomize_house_colors(target: String = "both") -> void:
@@ -497,6 +554,24 @@ func _is_foreign_instance(node: Node, stop_at: Node) -> bool:
 			return true
 		p = p.get_parent()
 	return false
+
+
+## House palette index used for LOD shells — mirrors the meta/fallback
+## resolution in _apply_house_colors.
+func _lod_color_index(house: Node) -> int:
+	var house_index: int = house.get_meta("house_color_index", -1)
+	if house_index < 0:
+		house_index = _house_name_index(house.name)
+		house.set_meta("house_color_index", house_index)
+	return house_index
+
+
+## The LOD child is an instanced scene, so _recolor_house treats it as a
+## foreign instance and skips it — recolor its own subtree explicitly.
+func _recolor_house_lod(house: Node, roof_color: Color, wall_color: Color) -> void:
+	var lod := house.get_node_or_null("LOD")
+	if lod != null:
+		_recolor_house(lod, roof_color, wall_color)
 
 
 func _recolor_house(root: Node, roof_color: Color, wall_color: Color) -> void:

@@ -24,7 +24,7 @@ mesh = SubResource("QuadMesh_computer")
 [node name="ScreenUI" type="SubViewport" parent="." unique_id=759285602]
 disable_3d = true
 size = Vector2i(1680, 1053)
-render_target_update_mode = 4
+render_target_update_mode = 2
 
 [node name="BG" type="ColorRect" parent="ScreenUI" unique_id=27104261]
 anchors_preset = 15
@@ -32,12 +32,12 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.02, 0.022, 0.028, 1)
+color = Color(0.14, 0.17, 0.24, 1)
 
 [node name="MorningHub" parent="ScreenUI" unique_id=2095995234 instance=ExtResource("3_ui")]
 
 [node name="ScreenCamera" type="Camera3D" parent="." unique_id=48626850]
-transform = Transform3D(1, 0, 0, 0, 0.9961947, 0.08715574, 0, -0.08715574, 0.9961947, -0.008969113, 1.3537514, 1.6722465)
+transform = Transform3D(1, 0, 0, 0, 0.9961947, 0.08715574, 0, -0.08715574, 0.9961947, -0.008969113, 1.332084, 1.3204398)
 fov = 40.0
 metadata/_edit_group_ = true
 

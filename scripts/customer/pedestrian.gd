@@ -825,6 +825,7 @@ func try_serve(player: Node) -> void:
 			1.0 if result.complaints.is_empty() else 0.0,
 			p.get_multiplayer_authority(),
 		)
+		OnboardingManager.report(p.assigned_stand, "sample_served")
 	Analytics.record_batch_feedback(
 		p.assigned_stand,
 		recipe,

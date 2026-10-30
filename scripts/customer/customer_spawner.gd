@@ -316,7 +316,13 @@ func _order_cup_range() -> Vector2i:
 
 
 func _random_order() -> Dictionary:
-	var unlocked := UpgradeManager.get_unlocked_fruits()
+	var unlocked: Array[String] = []
+	if is_instance_valid(stand):
+		for fruit in GameState.FRUIT_TYPES:
+			if stand.is_fruit_unlocked(fruit):
+				unlocked.append(fruit)
+	else:
+		unlocked = UpgradeManager.get_unlocked_fruits()
 	if unlocked.is_empty():
 		return { "lemon": 1 }
 	var fruit_type: String = unlocked[randi() % unlocked.size()]
@@ -327,7 +333,13 @@ func _random_order() -> Dictionary:
 ## Randomly builds an order: 1-5 distinct fruit types (capped by how many are
 ## unlocked), each wanting 1-5 cups.
 func _random_order_full() -> Dictionary:
-	var unlocked := UpgradeManager.get_unlocked_fruits()
+	var unlocked: Array[String] = []
+	if is_instance_valid(stand):
+		for fruit in GameState.FRUIT_TYPES:
+			if stand.is_fruit_unlocked(fruit):
+				unlocked.append(fruit)
+	else:
+		unlocked = UpgradeManager.get_unlocked_fruits()
 	if unlocked.is_empty():
 		return { "lemon": 1 }
 	var shuffled := unlocked.duplicate()

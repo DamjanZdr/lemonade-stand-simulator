@@ -182,7 +182,13 @@ func _process(delta: float) -> void:
 			_snapped_pitcher = pitcher as Pitcher
 			_snapped_pitcher.global_position = _snap_point.global_position
 	if _is_filling and _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
-		_fill_progress += delta
+		# Water Dispenser branch speeds up filling for the stand that
+		# owns this appliance.
+		var fill_rate := 1.0 + UpgradeManager.get_effect_total_for_stand(
+			"water_dispenser",
+			stand_owner,
+		)
+		_fill_progress += delta * fill_rate
 		var t := _fill_progress / fill_time_per_pitcher
 		if t >= 1.0:
 			_finish_fill()
@@ -393,6 +399,10 @@ func get_hint(player: Node) -> String:
 
 
 @warning_ignore("unused_parameter")
+func is_available_for_brewing() -> bool:
+	return water_fillings > 0 and not _is_filling and not is_instance_valid(_snapped_pitcher)
+
+
 func snap_pitcher(pitcher: Pitcher, onboarding_stand: StandUnit = null) -> void:
 	_snapped_pitcher = pitcher
 	_pending_snap_pitcher_net_id = WorldSync.get_net_id(pitcher)
@@ -454,7 +464,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	var snap_rot := Vector3.ZERO
 	var state: Dictionary = {
 		"_net_groups": ["container", "pitcher"],
-		"_net_scale": Vector3.ONE * 0.1575,
+		"_net_scale": Vector3.ONE * 0.1008,
 		"fruit_type": recipe.get("fruit_type", ""),
 		"fruit_count": recipe.get("fruit_count", recipe.get("lemons", 0.0)),
 		"sugar": recipe.get("sugar", 0.0),
@@ -473,7 +483,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	if pitcher == null:
 		return false
 	# Apply the placement scale so the host's pitcher matches clients.
-	pitcher.scale = Vector3.ONE * 0.1575
+	pitcher.scale = Vector3.ONE * 0.1008
 	# Apply recipe state (request_spawn on host returns the instance, but
 	# _ready() has already run with defaults, so we re-apply the recipe).
 	pitcher.fruit_type = recipe.get("fruit_type", "")

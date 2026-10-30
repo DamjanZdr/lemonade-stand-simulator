@@ -69,6 +69,8 @@ const INGREDIENT_ICONS: Dictionary = {
 	"press": "res://assets/textures/ui/products/press.png",
 	"workstation": "res://assets/textures/ui/products/table.png",
 	"cup_tray": "res://assets/textures/ui/products/cup.png",
+	"lemonader": "res://assets/textures/ui/products/press.png",
+	"fruitomatic": "res://assets/textures/ui/products/press.png",
 	"trash": "res://assets/textures/ui/products/trashcan.png",
 }
 const ICON_SIZE := 128

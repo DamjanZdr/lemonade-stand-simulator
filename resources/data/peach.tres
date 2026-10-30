@@ -6,8 +6,5 @@
 script = ExtResource("1_ingredient_data")
 id = &"peach"
 display_name = "Peach"
-ideal_fruit_count = 4
-ideal_water = 6.0
-ideal_sugar = 1.5
 press_time_per_fruit = 1.5
-ideal_price = 2.25
+ideal_price = 2.6

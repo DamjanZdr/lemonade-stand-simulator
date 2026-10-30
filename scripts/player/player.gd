@@ -77,8 +77,12 @@ func set_money_mode(active: bool) -> void:
 # ---------------------------------------------------------------------------
 
 
-func enter_priceboard_focus(focus_transform: Transform3D) -> void:
-	controller.enter_priceboard_focus(focus_transform)
+func enter_priceboard_focus(
+	focus_transform: Transform3D,
+	focus_fov: float = -1.0,
+	hide_hud: bool = true,
+) -> void:
+	controller.enter_priceboard_focus(focus_transform, focus_fov, hide_hud)
 
 
 func is_in_priceboard_mode() -> bool:
@@ -310,7 +314,12 @@ func _on_roster_changed() -> void:
 ## Rapid-fire interval adjusted by the nimbleness upgrade. Used by
 ## PlayerInteraction to throttle held-mouse deposits.
 func get_rapid_fire_interval() -> float:
-	var nimble_bonus: float = UpgradeManager.get_effect_total("nimbleness")
+	# Nimbleness belongs to the acting player's own stand, so each
+	# teammate's deposit speed tracks their own progression.
+	var nimble_bonus: float = UpgradeManager.get_effect_total_for_stand(
+		"nimbleness",
+		assigned_stand.name if assigned_stand != null else "",
+	)
 	if nimble_bonus > 0.0:
 		return rapid_fire_interval * (1.0 - nimble_bonus)
 	return rapid_fire_interval

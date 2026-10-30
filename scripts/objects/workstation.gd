@@ -12,6 +12,32 @@ func get_hint(_player: Node) -> String:
 	return "Table"
 
 
+func supports_item(item: Node3D) -> bool:
+	if item == self:
+		return false
+	if is_ancestor_of(item):
+		return true
+	var local := to_local(item.global_position)
+	return local.y >= 0.8 and local.y <= 1.5 and absf(local.x) <= 0.8 and absf(local.z) <= 0.8
+
+
+func nearest_access_marker(from: Vector3) -> Marker3D:
+	var best: Marker3D = null
+	var best_distance := INF
+	for marker_name in ["1", "2", "3", "4"]:
+		var marker := get_node_or_null(marker_name) as Marker3D
+		if marker == null:
+			continue
+		var distance := Vector2(
+			marker.global_position.x - from.x,
+			marker.global_position.z - from.z,
+		).length_squared()
+		if distance < best_distance:
+			best = marker
+			best_distance = distance
+	return best
+
+
 ## True when a container is sitting on this table — either already
 ## reparented to it (after a pickup) or resting on its surface in the
 ## world. Items placed on a table live as world siblings, so children

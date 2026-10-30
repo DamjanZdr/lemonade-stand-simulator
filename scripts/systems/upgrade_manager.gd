@@ -1,135 +1,14 @@
 extends Node
-## Node-based upgrade tree (Nodebuster-style).
-## Each node is a single purchase. The tree layout is defined in a scene file
-## (res://scenes/tools/upgrade_tree.tscn) using UpgradeTreeNode instances.
-## UpgradeDefinition resources define what each upgrade type does.
 
-const TREE_SCENE_PATH := "res://scenes/tools/upgrade_tree.tscn"
+## Bar-based progression. Each branch tracks ONE cumulative counter stored
+## per stand in stand.onboarding_progress["progress"] — tiers unlock
+## automatically when the counter crosses a threshold. Play is the cost;
+## money stays for equipment and supplies. See docs/progression-bars.md.
 
-## node_name -> { upgrade_id, cost, position, connections[], is_root }
-var tree_nodes: Dictionary = { }
-## node_name -> Array[node_name] (adjacency for rendering)
-var tree_connections: Dictionary = { }
-## node_name -> Vector2 (pixel position from the scene)
-var tree_positions: Dictionary = { }
-## upgrade_id -> UpgradeDefinition resource
-var definitions: Dictionary = { }
-## Set of purchased node names for the currently active stand.
-## Use set_active_stand() to switch between stands' research trees.
-var purchased_nodes: Dictionary = { } # node_name -> true
-## Per-stand research: stand_name -> Dictionary (node_name -> true)
-var stand_purchased_nodes: Dictionary = { }
-## Which stand's research is currently active (loaded into purchased_nodes).
-var _active_stand: String = ""
-## Root node name
-var root_node_name: String = ""
+signal progress_changed(stand: StandUnit)
+signal tier_reached(stand: StandUnit, branch_id: String, level: int)
 
-
-func _ready() -> void:
-	_load_tree()
-	_apply_radial_layout()
-	# Auto-purchase the lemon unlock node so the first fruit in the
-	# recipe branch shows as unlocked by default.
-	for node_name in tree_nodes:
-		var data: Dictionary = tree_nodes[node_name]
-		if data.get("upgrade_id", "") == "lemon_unlock":
-			purchased_nodes[node_name] = true
-			break
-	# Override definitions from UpgradeConfigManager if present.
-	var scene: Node = Engine.get_main_loop().current_scene
-	var cfg: Node = scene.find_child("UpgradeConfigManager", true, false)
-	if cfg != null and cfg.has_method("get_upgrades"):
-		for def in cfg.get_upgrades():
-			if def != null:
-				definitions[str(def.id)] = def
-	_apply_definition_values()
-	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
-
-
-## Set the active stand for research operations. Loads that stand's
-## purchased nodes into purchased_nodes. Call this before showing the
-## upgrade UI or purchasing nodes for a specific stand.
-func set_active_stand(stand_name: String) -> void:
-	# Save the current stand's research first.
-	if _active_stand != "" and stand_purchased_nodes.has(_active_stand):
-		stand_purchased_nodes[_active_stand] = purchased_nodes.duplicate()
-	_active_stand = stand_name
-	purchased_nodes = stand_purchased_nodes.get(stand_name, { }).duplicate()
-	# Re-apply the lemon unlock default if this is a fresh stand.
-	if purchased_nodes.is_empty():
-		for node_name in tree_nodes:
-			var data: Dictionary = tree_nodes[node_name]
-			if data.get("upgrade_id", "") == "lemon_unlock":
-				purchased_nodes[node_name] = true
-				break
-	apply_all_effects()
-
-
-## Get the active stand name.
-func get_active_stand() -> String:
-	return _active_stand
-
-
-## Save the current purchased_nodes back to the per-stand storage.
-func flush_active_stand() -> void:
-	if _active_stand != "":
-		stand_purchased_nodes[_active_stand] = purchased_nodes.duplicate()
-
-
-## Get purchased nodes for a specific stand (without switching active).
-func get_purchased_for_stand(stand_name: String) -> Dictionary:
-	return stand_purchased_nodes.get(stand_name, { })
-
-
-## Set purchased nodes for a specific stand (used during save load).
-func set_purchased_for_stand(stand_name: String, node_names: Array) -> void:
-	var d: Dictionary = { }
-	for n in node_names:
-		var ns: String = str(n)
-		if tree_nodes.has(ns):
-			d[ns] = true
-	stand_purchased_nodes[stand_name] = d
-	if stand_name == _active_stand:
-		purchased_nodes = d.duplicate()
-		apply_all_effects()
-
-
-## Mark a single node as purchased for a stand (used by client-side
-## sync after the host processes a remote purchase). Does NOT spend
-## money — the host already did that.
-func mark_node_purchased_for_stand(stand_name: String, node_name: String) -> void:
-	if not tree_nodes.has(node_name):
-		return
-	if not stand_purchased_nodes.has(stand_name):
-		stand_purchased_nodes[stand_name] = { }
-	stand_purchased_nodes[stand_name][node_name] = true
-	if stand_name == _active_stand:
-		purchased_nodes[node_name] = true
-	apply_all_effects()
-
-
-## Get save data for the active stand.
-func get_save_data_for_stand(stand_name: String) -> Array:
-	var d: Dictionary = stand_purchased_nodes.get(stand_name, purchased_nodes)
-	return d.keys()
-
-
-## Get effect total for a specific stand (without switching active).
-func get_effect_total_for_stand(upgrade_id: String, stand_name: String) -> float:
-	var def: UpgradeDefinition = definitions.get(upgrade_id)
-	if def == null:
-		return 0.0
-	var nodes: Dictionary = stand_purchased_nodes.get(stand_name, purchased_nodes)
-	var total := 0.0
-	for node_name in nodes:
-		var data: Dictionary = tree_nodes.get(node_name, { })
-		if data.get("upgrade_id", "") == upgrade_id:
-			var effect: float = data.get("effect", def.effect_per_node)
-			total += effect
-	return total
-
-
-const RECIPE_ORDER: Array[String] = [
+const FRUIT_ORDER: Array[String] = [
 	"lemon",
 	"raspberry",
 	"strawberry",
@@ -137,517 +16,469 @@ const RECIPE_ORDER: Array[String] = [
 	"peach",
 	"watermelon",
 ]
+## Perfect-recipe serves of the PREVIOUS fruit needed to unlock each tier.
+const FRUIT_THRESHOLDS: Array[float] = [8.0, 20.0, 35.0, 55.0, 80.0]
+
+## kind "" = plain counter bar; "fruit" = per-fruit perfect-serve chain;
+## "machines" = thresholds grant shop unlocks (lemonader, fruitomatic).
+const BRANCHES: Array[Dictionary] = [
+	{
+		"id": "fruit",
+		"color": Color(0.90, 0.78, 0.22),
+		"icon": "res://assets/textures/ui/upgrades/fruitunlock.png",
+		"action": "Serve perfect-recipe cups",
+		"rewards": [
+			"Unlock Raspberry",
+			"Unlock Strawberry",
+			"Unlock Blueberry",
+			"Unlock Peach",
+			"Unlock Watermelon",
+		],
+		"name": "Fruit",
+		"description": "Perfect a fruit's recipe to unlock the next fruit.",
+		"kind": "fruit",
+	},
+	{
+		"id": "technology",
+		"color": Color(0.56, 0.45, 0.90),
+		"icon": "res://assets/textures/ui/upgrades/technology.png",
+		"action": "Serve cups",
+		"rewards": ["Squeeze-E-Z in shop", "Fruit-O-Matic in shop"],
+		"name": "Technology",
+		"description": "Serve cups to unlock machines in the shop.",
+		"counter": "cups_served",
+		"thresholds": [50.0, 200.0],
+		"kind": "machines",
+	},
+	{
+		"id": "squeeze_speed",
+		"color": Color(0.93, 0.47, 0.15),
+		"icon": "res://assets/textures/ui/upgrades/pressspeed.png",
+		"action": "Press fruit by hand",
+		"rewards": [
+			"+20% juice speed",
+			"+40% juice speed",
+			"+60% juice speed",
+			"+80% juice speed",
+			"+100% juice speed",
+		],
+		"name": "Squeeze Speed",
+		"description": "Juice faster — hand press and machines.",
+		"counter": "hand_presses",
+		"thresholds": [30.0, 90.0, 180.0, 320.0, 500.0],
+		"effect": "press_speed",
+		"per": 0.2,
+	},
+	{
+		"id": "nimbleness",
+		"color": Color(0.40, 0.72, 0.28),
+		"icon": "res://assets/textures/ui/upgrades/nimbleness.png",
+		"action": "Deposit from supply boxes",
+		"rewards": [
+			"+20% deposit speed",
+			"+40% deposit speed",
+			"+60% deposit speed",
+			"+80% deposit speed",
+			"+100% deposit speed",
+		],
+		"name": "Nimbleness",
+		"description": "Place ingredients faster.",
+		"counter": "box_deposits",
+		"thresholds": [25.0, 70.0, 150.0, 260.0, 420.0],
+		"effect": "nimbleness",
+		"per": 0.2,
+	},
+	{
+		"id": "sunroof",
+		"color": Color(0.93, 0.62, 0.33),
+		"icon": "res://assets/textures/ui/upgrades/patience.png",
+		"action": "Lose customers to impatience",
+		"rewards": [
+			"+20% patience",
+			"+40% patience",
+			"+60% patience",
+			"+80% patience",
+			"+100% patience",
+		],
+		"name": "Sunroof",
+		"description": "Every lost customer teaches patience — yours and theirs.",
+		"counter": "customers_lost",
+		"thresholds": [5.0, 15.0, 35.0, 65.0, 100.0],
+		"effect": "sunroof",
+		"per": 0.2,
+	},
+	{
+		"id": "water_dispenser",
+		"color": Color(0.25, 0.65, 0.88),
+		"icon": "res://assets/textures/ui/upgrades/waterdispenser.png",
+		"action": "Fill pitchers with water",
+		"rewards": [
+			"+20% fill speed",
+			"+40% fill speed",
+			"+60% fill speed",
+			"+80% fill speed",
+			"+100% fill speed",
+		],
+		"name": "Water Dispenser",
+		"description": "Fill water faster.",
+		"counter": "water_fills",
+		"thresholds": [10.0, 30.0, 65.0, 115.0, 180.0],
+		"effect": "water_dispenser",
+		"per": 0.2,
+	},
+	{
+		"id": "trash_rebate",
+		"color": Color(0.28, 0.75, 0.60),
+		"icon": "res://assets/textures/ui/upgrades/trashrebate.png",
+		"action": "Throw away street litter",
+		"rewards": [
+			"+10% litter refund",
+			"+20% litter refund",
+			"+30% litter refund",
+			"+40% litter refund",
+			"+50% litter refund",
+		],
+		"name": "Trash Rebate",
+		"description": "Street litter refunds pay more.",
+		"counter": "litter_trashed",
+		"thresholds": [15.0, 40.0, 80.0, 140.0, 220.0],
+		"effect": "trash_rebate",
+		"per": 0.1,
+	},
+	{
+		"id": "negotiation",
+		"color": Color(0.88, 0.35, 0.52),
+		"icon": "res://assets/textures/ui/upgrades/negotiation.png",
+		"action": "Spend money",
+		"rewards": ["-10% prices", "-20% prices", "-30% prices", "-40% prices", "-50% prices"],
+		"name": "Negotiation",
+		"description": "Spending teaches haggling — lower prices.",
+		"counter": "supply_spend",
+		"unit": "$",
+		"thresholds": [50.0, 130.0, 250.0, 420.0, 650.0],
+		"effect": "negotiation",
+		"per": 0.1,
+	},
+]
+
+## Shop item ids gated behind technology tiers (tier index + 1).
+const MACHINE_ITEMS: Array[String] = ["lemonader", "fruitomatic"]
+
+var _active_stand: String = ""
 
 
-func _load_tree() -> void:
-	var scene := load(TREE_SCENE_PATH) as PackedScene
-	if scene == null:
-		push_error("UpgradeManager: Could not load tree scene at %s" % TREE_SCENE_PATH)
+## Which stand's bars the local UI is showing.
+func set_active_stand(stand_name: String) -> void:
+	_active_stand = stand_name
+
+
+func flush_active_stand() -> void:
+	_active_stand = ""
+
+
+func reset() -> void:
+	_active_stand = ""
+
+
+## Find a stand by name; falls back to active stand, then the primary stand.
+func _find_stand(stand_name: String = "") -> StandUnit:
+	var target := stand_name if stand_name != "" else _active_stand
+	var fallback: StandUnit = null
+	for node in get_tree().get_nodes_in_group("stand"):
+		var s := node as StandUnit
+		if s == null:
+			continue
+		if fallback == null or s.is_legacy_primary:
+			fallback = s
+		if target != "" and s.name == target:
+			return s
+	return fallback
+
+
+## Event → counter. Called by OnboardingManager._apply_report, which is
+## host-routed, so counters only ever mutate on the host.
+func record_event(stand: StandUnit, event_name: String, _data: Dictionary) -> void:
+	if stand == null:
 		return
-	var instance := scene.instantiate()
-	var recipe_candidates: Dictionary = { } # upgrade_id -> { node_name, cost, data, pos, conns }
-	for child in instance.get_children():
-		if not child is UpgradeTreeNode:
-			continue
-		var node: UpgradeTreeNode = child
-		var node_name: String = node.name
-		var upgrade_id: String = ""
-		var category: String = ""
-		if node.upgrade != null:
-			upgrade_id = str(node.upgrade.id)
-			category = node.upgrade.category
-			if not definitions.has(upgrade_id):
-				definitions[upgrade_id] = node.upgrade
-		var connections: Array[String] = []
-		var dir_paths := [
-			node.connection_up,
-			node.connection_down,
-			node.connection_left,
-			node.connection_right,
-		]
-		for path in dir_paths:
-			if path == NodePath(""):
-				continue
-			var target := node.get_node_or_null(path)
-			if target != null:
-				connections.append(str(target.name))
-		var node_data := {
-			"upgrade_id": upgrade_id,
-			"cost": node.cost,
-			"position": node.position,
-			"connections": connections,
-			"is_root": node.is_root,
-			"category": category,
-		}
-		if node.is_root:
-			root_node_name = node_name
-			tree_nodes[node_name] = node_data
-			tree_positions[node_name] = node.position
-			continue
-		if category == "recipe":
-			var cost: float = node.cost
-			if not recipe_candidates.has(upgrade_id) or cost < recipe_candidates[upgrade_id].cost:
-				recipe_candidates[upgrade_id] = {
-					"node_name": node_name,
-					"cost": cost,
-					"data": node_data,
-					"pos": node.position,
-					"conns": connections,
-				}
-			continue
-		tree_nodes[node_name] = node_data
-		tree_positions[node_name] = node.position
-		if not connections.is_empty():
-			tree_connections[node_name] = connections
-		if node.is_root:
-			root_node_name = node_name
-	for upgrade_id in recipe_candidates:
-		var c: Dictionary = recipe_candidates[upgrade_id]
-		tree_nodes[c["node_name"]] = c["data"]
-		tree_positions[c["node_name"]] = c["pos"]
-		if not c["conns"].is_empty():
-			tree_connections[c["node_name"]] = c["conns"]
-	instance.free()
+	match event_name:
+		"claim_upgrade":
+			try_claim(str(_data.get("branch", "")), stand)
+			return
+		"debug_fill_branch":
+			debug_fill_to_next(str(_data.get("branch", "")), stand)
+			return
+		"pitcher_prepared", "pitcher_made":
+			stand.record_progress("pitchers_made")
+		"customer_served":
+			stand.record_progress("cups_served")
+		"fruit_pressed":
+			stand.record_progress("hand_presses")
+		"supply_deposited":
+			stand.record_progress("box_deposits")
+		"sample_served":
+			stand.record_progress("samples_given")
+			# A free cup is still a cup — feeds the Technology bar too.
+			stand.record_progress("cups_served")
+		"customer_lost":
+			stand.record_progress("customers_lost")
+		"pitcher_water_filled":
+			stand.record_progress("water_fills")
+		"litter_trashed":
+			stand.record_progress("litter_trashed")
+		_:
+			return
+	progress_changed.emit(stand)
 
 
-func _apply_radial_layout() -> void:
-	## Reorganize the tree into one spoke per upgrade type.
-	if root_node_name.is_empty() or tree_nodes.is_empty():
-		return
-	var root_pos: Vector2 = tree_positions.get(root_node_name, Vector2.ZERO)
-
-	# Group nodes by their upgrade_id.
-	var groups: Dictionary = { } # upgrade_id -> Array[node_name]
-	for node_name in tree_nodes:
-		if node_name == root_node_name:
-			continue
-		var data: Dictionary = tree_nodes[node_name]
-		var upgrade_id: String = data.get("upgrade_id", "")
-		if upgrade_id.is_empty():
-			continue
-		if not groups.has(upgrade_id):
-			groups[upgrade_id] = []
-		groups[upgrade_id].append(node_name)
-
-	# Collapse the recipe fruit unlocks into one ordered branch.
-	var recipe_branch: Array[String] = []
-	for fruit in RECIPE_ORDER:
-		var recipe_id: String = fruit + "_unlock"
-		if not groups.has(recipe_id):
-			continue
-		var list: Array = groups[recipe_id]
-		if not list.is_empty():
-			recipe_branch.append(list[0])
-		groups.erase(recipe_id)
-	if not recipe_branch.is_empty():
-		groups["recipe_unlock"] = recipe_branch
-
-	if groups.is_empty():
-		return
-
-	# Order each group from the node closest to the root outward.
-	# Recipe branch is already ordered and should not be resorted.
-	for id in groups:
-		if id == "recipe_unlock":
-			continue
-		var list: Array = groups[id]
-		list.sort_custom(
-			func(a: String, b: String) -> bool:
-				var da: float = tree_positions[a].distance_to(root_pos)
-				var db: float = tree_positions[b].distance_to(root_pos)
-				return da < db,
-		)
-		groups[id] = list
-
-	# Assign an even angle to each unique upgrade type.
-	var ids: Array = groups.keys()
-	ids.sort()
-	var angles: Dictionary = { }
-	for branch_idx in range(ids.size()):
-		angles[ids[branch_idx]] = 2.0 * PI * branch_idx / ids.size()
-
-	# Place nodes along their type spoke with shorter gaps the further out they go.
-	var base_spacing: float = 150.0
-	tree_connections.clear()
-	for branch_idx in range(ids.size()):
-		var id: String = ids[branch_idx]
-		var angle: float = angles[id]
-		var dir := Vector2(cos(angle), sin(angle))
-		var list: Array = groups[id]
-		var dist: float = 0.0
-		for i in range(list.size()):
-			var node_name: String = list[i]
-			var step: float = base_spacing
-			dist += step
-			tree_positions[node_name] = root_pos + dir * dist
-
-			var data: Dictionary = tree_nodes[node_name]
-			data["spoke_index"] = i
-			data["branch_index"] = branch_idx
-			var conns: Array[String] = []
-			var prev_name: String = root_node_name if i == 0 else list[i - 1]
-			conns.append(prev_name)
-			data["connections"] = conns
-
-			# Rendering adjacency: root -> 1 -> 2 -> 3 ...
-			if i == 0:
-				if not tree_connections.has(root_node_name):
-					tree_connections[root_node_name] = []
-				tree_connections[root_node_name].append(node_name)
-			else:
-				var prev: String = list[i - 1]
-				if not tree_connections.has(prev):
-					tree_connections[prev] = []
-				tree_connections[prev].append(node_name)
+func get_counter(key: String, stand: StandUnit) -> float:
+	return stand.get_progress(key) if stand != null else 0.0
 
 
-## Check if a node can be purchased (adjacent to a purchased node or root).
-func can_unlock(node_name: String) -> bool:
-	var candidate: Dictionary = tree_nodes.get(node_name, { })
-	var candidate_id: String = candidate.get("upgrade_id", "")
-	if (
-		OS.has_feature("demo") and candidate_id.ends_with("_unlock")
-		and candidate_id != "lemon_unlock"
-	):
-		var unlocked_extra := 0
-		for fruit in RECIPE_ORDER:
-			if fruit != "lemon" and is_fruit_unlocked(fruit):
-				unlocked_extra += 1
-		if unlocked_extra >= 1:
-			return false
-	if node_name == root_node_name:
-		return true
-	if is_node_purchased(node_name):
+func get_perfect_serves(fruit: String, stand: StandUnit) -> int:
+	return stand.get_perfect_serves(fruit) if stand != null else 0
+
+
+func _branch(branch_id: String) -> Dictionary:
+	for b in BRANCHES:
+		if b.get("id") == branch_id:
+			return b
+	return { }
+
+
+func get_branches() -> Array[Dictionary]:
+	return BRANCHES
+
+
+## How many tiers the player has CLAIMED on this branch — the counter
+## reaching a threshold only makes the badge claimable; effects and
+## unlocks apply once the tier is claimed from the Upgrades page.
+func get_branch_level(branch_id: String, stand: StandUnit) -> int:
+	if stand == null or _branch(branch_id).is_empty():
+		return 0
+	return stand.get_claimed(branch_id)
+
+
+## The raw counter the bar measures — perfect serves of the gating
+## fruit, or the branch's plain progress counter.
+func get_branch_value(branch_id: String, stand: StandUnit) -> float:
+	var b := _branch(branch_id)
+	if b.is_empty() or stand == null:
+		return 0.0
+	if b.get("kind") == "fruit":
+		var gate_idx := mini(get_branch_level(branch_id, stand), FRUIT_ORDER.size() - 2)
+		return float(get_perfect_serves(FRUIT_ORDER[gate_idx], stand))
+	return get_counter(str(b.get("counter", "")), stand)
+
+
+## Click-to-claim: the next tier unlocks only when the counter has
+## reached its threshold AND the player claims it from the Upgrades page.
+func try_claim(branch_id: String, stand: StandUnit) -> bool:
+	var b := _branch(branch_id)
+	if b.is_empty() or stand == null:
 		return false
-	var data: Dictionary = tree_nodes.get(node_name, { })
-	var connections: Array = data.get("connections", [])
-	for adj_name in connections:
-		if adj_name == root_node_name or is_node_purchased(adj_name):
-			return true
-	return false
-
-
-func can_afford_node(node_name: String) -> bool:
-	var data: Dictionary = tree_nodes.get(node_name, { })
-	var cost: float = data.get("cost", 0.0) * (1.0 - _negotiation_discount())
-	# Check the active stand's money if set, otherwise GameState.
-	if _active_stand != "":
-		var tree := Engine.get_main_loop() as SceneTree
-		if tree != null and tree.current_scene != null:
-			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
-				var matches: bool = s.name == _active_stand
-				if not matches and s.get("is_legacy_primary") == true:
-					matches = GameState.stand_name == _active_stand
-				if matches and "money" in s:
-					return s.money >= cost
-	return GameState.money >= cost
-
-
-func is_node_purchased(node_name: String) -> bool:
-	return purchased_nodes.has(node_name)
-
-
-func get_node_data(node_name: String) -> Dictionary:
-	var data: Dictionary = tree_nodes.get(node_name, { }).duplicate()
-	data["node_name"] = node_name
-	data["purchased"] = is_node_purchased(node_name)
-	data["can_unlock"] = can_unlock(node_name)
-	data["can_buy"] = can_unlock(node_name) and can_afford_node(node_name)
-	var upgrade_id: String = data.get("upgrade_id", "")
-	if definitions.has(upgrade_id):
-		var def: UpgradeDefinition = definitions[upgrade_id]
-		data["name"] = def.display_name
-		data["description"] = def.description
-		data["icon"] = def.icon
-		if not data.has("effect"):
-			data["effect"] = def.effect_per_node
-	else:
-		data["name"] = "Root" if data.get("is_root", false) else "???"
-		data["description"] = ""
-		data["icon"] = null
-	if OS.has_feature("demo") and upgrade_id.ends_with("_unlock") and not data.can_unlock:
-		var has_extra_fruit := false
-		for fruit in RECIPE_ORDER:
-			if fruit != "lemon" and is_fruit_unlocked(fruit):
-				has_extra_fruit = true
-				break
-		if has_extra_fruit and not data.purchased:
-			data["name"] = "%s — Full Game" % data.name
-			data["description"] = "Additional fruit research is available in the Full Game."
-	return data
-
-
-func purchase_node(node_name: String) -> bool:
-	if not can_unlock(node_name):
+	var thresholds: Array = b.get("thresholds", FRUIT_THRESHOLDS)
+	var level := get_branch_level(branch_id, stand)
+	if level >= thresholds.size():
 		return false
-	var data: Dictionary = tree_nodes.get(node_name, { })
-	var cost: float = data.get("cost", 0.0) * (1.0 - _negotiation_discount())
-	# Spend from the active stand if set, otherwise from local stand.
-	if not _spend_from_active_stand(cost):
+	if get_branch_value(branch_id, stand) < float(thresholds[level]):
 		return false
-	purchased_nodes[node_name] = true
-	# Flush to per-stand storage so research persists per stand.
-	if _active_stand != "":
-		stand_purchased_nodes[_active_stand] = purchased_nodes.duplicate()
-	var upgrade_id: String = data.get("upgrade_id", "")
-	_apply_effect(upgrade_id)
-	if upgrade_id.ends_with("_unlock") and upgrade_id != "lemon_unlock":
-		var fruit := upgrade_id.trim_suffix("_unlock")
-		var stand := OnboardingManager.find_stand(_active_stand)
-		if stand != null:
-			stand.onboarding_progress.selected_demo_fruit = fruit
-			OnboardingManager.report(
-				stand,
-				"fruit_unlocked",
-				{ "type": "fruit", "fruit_type": fruit },
-			)
-	EventBus.upgrade_purchased.emit(data.get("id", 0), cost)
-	EventBus.game_saved.emit()
+	stand.claim_progress_tier(branch_id, level + 1)
+	progress_changed.emit(stand)
 	return true
 
 
-## Spend money from the active stand (if set) or fall back to local stand.
-## This ensures the host spends from the correct joiner's stand when
-## processing an upgrade purchase request from a joiner.
-func _spend_from_active_stand(amount: float) -> bool:
-	if _active_stand != "":
-		var tree := Engine.get_main_loop() as SceneTree
-		if tree != null and tree.current_scene != null:
-			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
-				# Match by node name (e.g. "StandUnit2") or by save name
-				# (e.g. "Testing") stored in GameState.stand_name for the
-				# legacy primary stand.
-				var matches: bool = s.name == _active_stand
-				if not matches and s.get("is_legacy_primary") == true:
-					matches = GameState.stand_name == _active_stand
-				if matches and s.has_method("spend_money"):
-					return s.spend_money(amount)
-	# Fallback: spend from local player's stand or GameState.
-	return WorldSync.spend_local_money(amount)
-
-
-## Get the total stacked effect for an upgrade type (sum across all purchased nodes of that type).
-func get_effect_total(upgrade_id: String) -> float:
-	var def: UpgradeDefinition = definitions.get(upgrade_id)
-	if def == null:
-		return 0.0
-	var total := 0.0
-	for node_name in purchased_nodes:
-		var data: Dictionary = tree_nodes.get(node_name, { })
-		if data.get("upgrade_id", "") == upgrade_id:
-			var effect: float = data.get("effect", def.effect_per_node)
-			total += effect
-	return total
-
-
-## Get how many nodes of a given upgrade type are purchased.
-func get_purchased_count(upgrade_id: String) -> int:
-	var count := 0
-	for node_name in purchased_nodes:
-		var data: Dictionary = tree_nodes.get(node_name, { })
-		if data.get("upgrade_id", "") == upgrade_id:
-			count += 1
-	return count
-
-
-## Get total nodes of a given upgrade type in the tree.
-func get_total_nodes_for(upgrade_id: String) -> int:
-	var count := 0
-	for node_name in tree_nodes:
-		if tree_nodes[node_name].get("upgrade_id", "") == upgrade_id:
-			count += 1
-	return count
-
-
-func get_category_color(category: String) -> Color:
-	match category:
-		"equipment":
-			return Color(0.30, 0.55, 0.30)
-		"customer":
-			return Color(0.55, 0.35, 0.25)
-		"recipe":
-			return Color(0.30, 0.45, 0.55)
-		"economy":
-			return Color(0.55, 0.50, 0.25)
-		_:
-			return Color(0.50, 0.50, 0.50)
-
-
-func get_all_node_names() -> Array:
-	return tree_nodes.keys()
-
-
-func get_total_purchased() -> int:
-	return purchased_nodes.size()
-
-## --- Compatibility layer for existing code that uses old API ---
-
-
-func get_level(id: String) -> int:
-	return get_purchased_count(id)
-
-
-func get_cost(id: String) -> float:
-	# Return cost of the cheapest unpurchased node of this type
-	var cheapest := 999999.0
-	for node_name in tree_nodes:
-		var data: Dictionary = tree_nodes[node_name]
-		if data.get("upgrade_id", "") == id and not is_node_purchased(node_name):
-			if can_unlock(node_name):
-				cheapest = minf(cheapest, data.get("cost", 0.0))
-	if cheapest >= 999999.0:
-		return 0.0
-	return cheapest * (1.0 - _negotiation_discount())
-
-
-func is_maxed(id: String) -> bool:
-	return get_purchased_count(id) >= get_total_nodes_for(id)
-
-
-func can_afford(id: String) -> bool:
-	var cost := get_cost(id)
-	# Check the active stand's money if set, otherwise GameState.
-	if _active_stand != "":
-		var tree := Engine.get_main_loop() as SceneTree
-		if tree != null and tree.current_scene != null:
-			for s in tree.current_scene.find_children("*", "StandUnit", true, false):
-				var matches: bool = s.name == _active_stand
-				if not matches and s.get("is_legacy_primary") == true:
-					matches = GameState.stand_name == _active_stand
-				if matches and "money" in s:
-					return s.money >= cost
-	return GameState.money >= cost
-
-
-func purchase(id: String) -> bool:
-	# Purchase the next available node of this upgrade type
-	for node_name in tree_nodes:
-		var data: Dictionary = tree_nodes[node_name]
-		if data.get("upgrade_id", "") == id and not is_node_purchased(node_name):
-			if can_unlock(node_name):
-				return purchase_node(node_name)
-	return false
-
-
-func get_categories() -> Array:
-	var cats: Dictionary = { }
-	for def in definitions.values():
-		cats[def.category] = true
-	return cats.keys()
-
-
-func get_upgrades_in_category(category: String) -> Array:
-	var result: Array = []
-	for id in definitions:
-		if definitions[id].category == category:
-			result.append(id)
-	return result
-
-
-func get_upgrade_data(id: String) -> Dictionary:
-	var def: UpgradeDefinition = definitions.get(id)
-	if def == null:
-		return { "id": id, "name": "???", "level": 0, "cost": 0.0, "maxed": true }
-	return {
-		"id": id,
-		"name": def.display_name,
-		"description": def.description,
-		"category": def.category,
-		"level": get_purchased_count(id),
-		"max_level": get_total_nodes_for(id),
-		"cost": get_cost(id),
-		"maxed": is_maxed(id),
+## Display data for one bar: current fill, next threshold, max, level, and
+## (for the fruit branch) which fruit the bar is currently measuring.
+func get_branch_progress(branch_id: String, stand: StandUnit) -> Dictionary:
+	var b := _branch(branch_id)
+	if b.is_empty():
+		return { }
+	var level := get_branch_level(branch_id, stand)
+	var thresholds: Array = b.get("thresholds", FRUIT_THRESHOLDS)
+	var out := {
+		"level": level,
+		"max_level": thresholds.size(),
+		"max_value": float(thresholds[thresholds.size() - 1]),
+		"next_threshold": float(thresholds[level]) if level < thresholds.size() else -1.0,
 	}
+	if b.get("kind") == "fruit":
+		# The bar measures perfect serves of the fruit that gates the NEXT tier.
+		var gate_idx := mini(level, FRUIT_ORDER.size() - 2)
+		out["target_fruit"] = FRUIT_ORDER[gate_idx]
+	out["value"] = get_branch_value(branch_id, stand)
+	out["claimable"] = (level < thresholds.size() and out["value"] >= float(thresholds[level]))
+	return out
 
 
-func _apply_effect(upgrade_id: String) -> void:
-	match upgrade_id:
-		"psychology":
-			GameState.feedback_tier = 2
-			EventBus.feedback_tier_changed.emit(2)
+## Dev tool (F1 panel, debug builds): bumps the branch's counter up to
+## the first threshold above its current value — exactly one claimable
+## tier per click. Host-gated like every other mutation.
+func debug_fill_to_next(branch_id: String, stand: StandUnit) -> void:
+	if not OS.is_debug_build() or not WorldSync.is_host() or stand == null:
+		return
+	var b := _branch(branch_id)
+	if b.is_empty():
+		return
+	var thresholds: Array = b.get("thresholds", FRUIT_THRESHOLDS)
+	var value := get_branch_value(branch_id, stand)
+	# Start at the CLAIMED level, not index 0 — the fruit bar's counter
+	# resets per fruit, so scanning from 0 would only ever fill the
+	# first threshold and never make later tiers claimable.
+	var k := get_branch_level(branch_id, stand)
+	while k < thresholds.size() and value >= float(thresholds[k]):
+		k += 1
+	if k >= thresholds.size():
+		return
+	var target := float(thresholds[k])
+	if b.get("kind") == "fruit":
+		var gate_idx := mini(get_branch_level(branch_id, stand), FRUIT_ORDER.size() - 2)
+		var fruit: String = FRUIT_ORDER[gate_idx]
+		for i in range(int(target - value)):
+			stand.record_perfect_serve(fruit)
+	else:
+		stand.record_progress(str(b.get("counter", "")), target - value)
+	progress_changed.emit(stand)
+
+
+func is_fruit_unlocked_for_stand(fruit: String, stand: StandUnit) -> bool:
+	var idx := FRUIT_ORDER.find(fruit)
+	if idx <= 0:
+		return fruit == "lemon"
+	return get_branch_level("fruit", stand) >= idx
 
 
 func is_fruit_unlocked(fruit: String) -> bool:
-	if fruit == "lemon":
-		return true
-	return get_purchased_count(fruit + "_unlock") > 0
+	return is_fruit_unlocked_for_stand(fruit, _find_stand())
 
 
 func get_unlocked_fruits() -> Array[String]:
 	var result: Array[String] = []
+	var stand := _find_stand()
 	for ft in GameState.FRUIT_TYPES:
-		if is_fruit_unlocked(ft):
+		if is_fruit_unlocked_for_stand(ft, stand):
 			result.append(ft)
 	return result
 
 
+## Shop-item gating: machines need technology tiers; everything else open.
+func is_item_unlocked(item_id: String, stand: StandUnit) -> bool:
+	var idx := MACHINE_ITEMS.find(item_id)
+	if idx < 0:
+		return true
+	return get_branch_level("technology", stand) > idx
+
+
+## Sum of a numeric effect for a stand: branch level × per-level effect.
+func get_effect_total_for_stand(upgrade_id: String, stand_name: String) -> float:
+	var stand := _find_stand(stand_name)
+	if stand == null:
+		return 0.0
+	var total := 0.0
+	for b in BRANCHES:
+		if b.get("effect", "") == upgrade_id:
+			total += float(b.get("per", 0.0)) * get_branch_level(b["id"], stand)
+	return total
+
+
+func get_effect_total(upgrade_id: String) -> float:
+	return get_effect_total_for_stand(upgrade_id, _active_stand)
+
+
+## Effect lookup scoped to whatever stand owns a node (press, lemonader,
+## dispenser…). Falls back to the active stand when the node is unclaimed.
+func get_effect_total_for_node(upgrade_id: String, node: Node) -> float:
+	var stand := OnboardingManager.stand_for_node(node)
+	if stand == null:
+		return get_effect_total(upgrade_id)
+	return get_effect_total_for_stand(upgrade_id, stand.name)
+
+
+## Effects are computed on demand — nothing to re-apply on load.
 func apply_all_effects() -> void:
-	for node_name in purchased_nodes:
-		var data: Dictionary = tree_nodes.get(node_name, { })
-		_apply_effect(data.get("upgrade_id", ""))
+	pass
+
+# ---------------------------------------------------------------------------
+# Legacy node-tree API shims. The tree is gone — these exist only so old
+# callers (phone menu, save migration paths) degrade gracefully instead of
+# crashing. Purchases no longer exist: bars auto-unlock.
+# ---------------------------------------------------------------------------
 
 
-func _apply_definition_values() -> void:
-	for node_name in tree_nodes:
-		var data: Dictionary = tree_nodes[node_name]
-		var upgrade_id: String = data.get("upgrade_id", "")
-		var def: UpgradeDefinition = definitions.get(upgrade_id)
-		if def == null:
-			continue
-		var idx: int = data.get("spoke_index", 0)
-		if def.costs.size() > 0:
-			var cost_idx := mini(idx, def.costs.size() - 1)
-			data["cost"] = def.costs[cost_idx]
-		if def.effects.size() > 0:
-			var effect_idx := mini(idx, def.effects.size() - 1)
-			data["effect"] = def.effects[effect_idx]
+func purchase(_upgrade_id: String) -> bool:
+	return false
 
 
-func _on_upgrade_purchased(_id: int, _cost: float) -> void:
-	pass # Legacy signal compatibility
+func purchase_node(_node_name: String) -> bool:
+	return false
 
 
-func load_legacy_upgrades(owned_list: Array) -> void:
-	# Convert old level-based upgrades to node purchases
-	var legacy_map := {
-		0: "press_speed",
-		1: "nimbleness",
-		2: "sunroof",
-		3: "larger_crates",
-		5: "price_flex",
-		6: "psychology",
-	}
-	for u in owned_list:
-		if u is int and legacy_map.has(u):
-			purchase(legacy_map[u])
+func can_afford(_upgrade_id: String) -> bool:
+	return false
 
 
-func load_purchased_nodes(node_names: Array) -> void:
-	purchased_nodes.clear()
-	for n in node_names:
-		if tree_nodes.has(str(n)):
-			purchased_nodes[str(n)] = true
+func can_afford_node(_node_name: String) -> bool:
+	return false
+
+
+func can_unlock(_node_name: String) -> bool:
+	return false
+
+
+func is_node_purchased(_node_name: String) -> bool:
+	return false
+
+
+func get_categories() -> Array:
+	return []
+
+
+func get_upgrades_in_category(_cat: String) -> Array:
+	return []
+
+
+func get_upgrade_data(_id: String) -> Dictionary:
+	return { }
+
+
+func get_node_data(_node_name: String) -> Dictionary:
+	return { }
+
+
+func get_cost(_id: String) -> float:
+	return 0.0
+
+
+func get_purchased_count(_upgrade_id: String) -> int:
+	return 0
+
+
+func get_total_nodes_for(_upgrade_id: String) -> int:
+	return 0
+
+
+func get_purchased_for_stand(_stand_name: String) -> Dictionary:
+	return { }
+
+
+func mark_node_purchased_for_stand(_stand_name: String, _node_name: String) -> void:
+	pass
+
+
+func set_purchased_for_stand(_stand_name: String, _node_names: Array) -> void:
+	pass
+
+
+func load_purchased_nodes(_node_names: Array) -> void:
+	pass
+
+
+func load_legacy_upgrades(_owned_list: Array) -> void:
+	pass
 
 
 func get_save_data() -> Array:
-	# Return the active stand's purchased nodes, or the global set if no
-	# active stand is set (backward compat for solo mode).
-	if _active_stand != "" and stand_purchased_nodes.has(_active_stand):
-		return stand_purchased_nodes[_active_stand].keys()
-	return purchased_nodes.keys()
+	return []
 
 
-func reset() -> void:
-	purchased_nodes.clear()
-	stand_purchased_nodes.clear()
-	_active_stand = ""
-	# Re-apply the lemon unlock default.
-	for node_name in tree_nodes:
-		var data: Dictionary = tree_nodes[node_name]
-		if data.get("upgrade_id", "") == "lemon_unlock":
-			purchased_nodes[node_name] = true
-			break
-
-
-func _negotiation_discount() -> float:
-	return clampf(get_effect_total("negotiation"), 0.0, 0.9)
+func get_save_data_for_stand(_stand_name: String) -> Array:
+	return []

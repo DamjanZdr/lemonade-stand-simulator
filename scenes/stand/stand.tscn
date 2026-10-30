@@ -148,3 +148,6 @@ font = ExtResource("2_tteb1")
 font_size = 73
 outline_size = 0
 metadata/no_depth_override = true
+
+[node name="ServerSpot" type="Marker3D" parent="." unique_id=524206670]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.5)

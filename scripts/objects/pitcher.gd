@@ -39,6 +39,7 @@ var _press_eraser_tween: Tween = null
 var _suppress_eraser_updates: bool = false
 var _last_liquid_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 var _last_eraser_target_y: float = -1000.0
+
 var _fill_request_pending: bool = false
 var _fill_request_msec: int = 0
 
@@ -249,7 +250,8 @@ func pour_portion() -> Dictionary:
 	ice -= float(serving_recipe.get("ice", ice)) * portion_ratio
 	cups_poured += 1 # Track that a cup was poured
 	GameLog.log(
-		"[Pitcher] pour %s: liq %.2f->%.2f cups=%d init_vol=%.2f fruit=%.2f water=%.2f sugar=%.2f ice=%.2f host=%s"
+		"[Pitcher] pour %s: liq %.2f->%.2f cups=%d init_vol=%.2f " \
+				+ "fruit=%.2f water=%.2f sugar=%.2f ice=%.2f host=%s"
 		% [
 			str(name),
 			liquid,
@@ -318,6 +320,27 @@ func set_pitcher_visible(v: bool) -> void:
 	_lemonade_node.visible = v
 	physics.collision_layer = 1 if v else 0
 
+
+## If this instance is embedded inside a fixed appliance as a slot preview
+## (e.g. the Squeeze-E-Z pitcher slot), interactions route to that appliance
+## instead of treating the preview as a real world container.
+## Kept untyped: naming the Lemonader class here would create a script
+## dependency cycle (Lemonader already references Pitcher).
+func _appliance_host() -> Node:
+	if not has_meta("lemonader_host"):
+		return null
+	var host: Variant = get_meta("lemonader_host")
+	if host is Node and is_instance_valid(host):
+		return host
+	return null
+
+
+func can_player_use(player: Node) -> bool:
+	var host := _appliance_host()
+	if host != null:
+		return host.can_player_use(player)
+	return super.can_player_use(player)
+
 # --- Interaction ---
 
 
@@ -325,6 +348,15 @@ func interact(player: Node) -> void:
 	_normalize_if_empty()
 	var p := player as Player
 	if p == null:
+		return
+	var host := _appliance_host()
+	if host != null:
+		# Clicking the slot pitcher takes it out with an empty hand; with
+		# something held, behave like clicking the machine itself.
+		if p.held_item == HeldItem.NONE:
+			host.call("request_action", p, "take")
+		else:
+			host.interact(p)
 		return
 	# Only the stand that owns this pitcher can interact with it.
 	if not can_player_use(player):
@@ -577,7 +609,16 @@ func get_contents_string() -> String:
 	return " ".join(parts)
 
 
+func interact_secondary(player: Node) -> void:
+	var host := _appliance_host()
+	if host != null:
+		host.interact_secondary(player)
+
+
 func get_hint(player: Node) -> String:
+	var host := _appliance_host()
+	if host != null:
+		return host.get_hint(player)
 	var p := player as Player
 	if p == null:
 		return ""
@@ -618,7 +659,7 @@ func get_hint(player: Node) -> String:
 func _make_hand_mesh() -> Node3D:
 	var container := Node3D.new()
 	# Scale to match the world display scale (pitcher is placed at 0.105 in world.tscn)
-	container.scale = Vector3.ONE * 0.105
+	container.scale = Vector3.ONE * 0.0672
 	# Duplicate the existing glass visual; material_override already has transparency fixed.
 	# Force visible=true since _set_visible(false) is called before this on pickup.
 	var glass_dup := _body_mesh.duplicate() as Node3D
@@ -657,9 +698,9 @@ func _update_eraser_position(duration: float = 0.15) -> void:
 	if abs(target_y - _last_eraser_target_y) < 0.05:
 		return
 	_last_eraser_target_y = target_y
+	if _eraser_tween and _eraser_tween.is_valid():
+		_eraser_tween.kill()
 	if _lemonade_eraser != null:
-		if _eraser_tween and _eraser_tween.is_valid():
-			_eraser_tween.kill()
 		_eraser_tween = create_tween()
 		_eraser_tween.tween_property(_lemonade_eraser, "position:y", target_y, duration) \
 				.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_OUT)
@@ -700,8 +741,7 @@ func fill_water_slow(amount: float, duration: float = 2.0) -> void:
 		EventBus.pitcher_state_changed.emit(int(state))
 
 
-@warning_ignore("unused_parameter")
-func tween_color_for_water_addition(water_amount: float, duration: float) -> void:
+func tween_color_for_water_addition(water_amount: float, _duration: float) -> void:
 	# Show the post-fill color immediately — color is categorical so
 	# there's nothing to animate (and per-frame CSG rebuilds tanked FPS).
 	var original_water := water
@@ -879,7 +919,7 @@ func _apply_liquid_color(color: Color) -> void:
 	if color == _last_liquid_color:
 		return
 	_last_liquid_color = color
-	var mesh := $LemonadeFill/LemonadeMesh as CSGMesh3D
+	var mesh := get_node_or_null("LemonadeFill/LemonadeMesh") as CSGMesh3D
 	if mesh == null or mesh.mesh == null:
 		return
 	var base_mat: Material = mesh.mesh.surface_get_material(0)
@@ -896,7 +936,7 @@ func _apply_liquid_color(color: Color) -> void:
 
 	# The CSG subtractive eraser defines the material of the exposed top surface.
 	# Update its material so the liquid level shows the correct color.
-	var eraser := $LemonadeFill/LemonadeEraser as CSGBox3D
+	var eraser := get_node_or_null("LemonadeFill/LemonadeEraser") as CSGBox3D
 	if eraser != null:
 		var eraser_mat: Material = eraser.material
 		if eraser_mat != null:

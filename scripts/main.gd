@@ -89,10 +89,12 @@ var _orig_ambient_source: int = 0
 var _orig_ambient_color: Color = Color.WHITE
 var _orig_ambient_sky: float = 0.0
 var _orig_glow: bool = false
-var _orig_shadow_blur: float = 1.0
-var _orig_shadow_normal_bias: float = 1.0
-var _orig_shadow_bias: float = 1.0
-var _orig_fill_energy: float = 0.5
+## -1 = not captured yet. Captured on the FIRST enhanced-lighting apply so
+## re-applying a different tier can't store enhanced values as "originals".
+var _orig_shadow_blur: float = -1.0
+var _orig_shadow_normal_bias: float = -1.0
+var _orig_shadow_bias: float = -1.0
+var _orig_fill_energy: float = -1.0
 
 ## Lobby phase: true while in the lobby, false once the game starts.
 ## During lobby, the LobbyCamera is active and game systems are paused.
@@ -203,10 +205,7 @@ func _ready() -> void:
 		SettingsManager.graphics_quality_applied.connect(_on_graphics_quality_applied)
 	# Load enhanced_lighting / fps_counter from saved settings.
 	_enhanced_lighting = SettingsManager.get_graphics_bool("enhanced_lighting", true)
-	if _enhanced_lighting:
-		_enable_enhanced_lighting()
-	else:
-		_disable_enhanced_lighting()
+	_apply_lighting()
 
 	# Create FPS counter label (toggled with F key)
 	_fps_label = Label.new()
@@ -625,18 +624,25 @@ func _on_vsync_toggled(enabled: bool) -> void:
 
 func _on_enhanced_lighting_toggled(enabled: bool) -> void:
 	_enhanced_lighting = enabled
-	if enabled:
-		_enable_enhanced_lighting()
-	else:
-		_disable_enhanced_lighting()
+	_apply_lighting()
 
 
 func _on_graphics_quality_applied() -> void:
-	# Re-apply enhanced lighting so its env overrides win over the preset.
-	# (When off, the env keeps the values the preset just wrote.)
-	if _world_env == null or not _enhanced_lighting:
+	# Re-apply so the new preset's lighting tier wins over what the preset
+	# just wrote to the env.
+	_apply_lighting()
+
+
+## Enhanced lighting is tiered by graphics preset (0=off … 3=full).
+## The saved user toggle only gates it — the preset decides the strength.
+func _apply_lighting() -> void:
+	if _world_env == null:
 		return
-	_enable_enhanced_lighting()
+	var level := SettingsManager.get_lighting_level()
+	if level > 0:
+		_enable_enhanced_lighting(level)
+	else:
+		_disable_enhanced_lighting()
 
 
 func _on_fps_toggled(enabled: bool) -> void:
@@ -1007,7 +1013,7 @@ func _on_return_to_menu() -> void:
 	# Reset lighting to enhanced defaults so the menu/lobby isn't
 	# dark from the previous game's day-cycle exposure.
 	if _enhanced_lighting:
-		_enable_enhanced_lighting()
+		_apply_lighting()
 		var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
 		if sun_node and sun_node.has_method("update_for_time"):
 			sun_node.update_for_time(0.0)
@@ -2154,9 +2160,6 @@ func _notification(what: int) -> void:
 
 
 func _on_window_close_requested() -> void:
-	# The window already wants to close — hide it now so save/report/
-	# teardown happen invisibly instead of the window lingering open.
-	get_window().hide()
 	# Window X (OS close) bypasses the ESC menu entirely — checkpoint here
 	# too. No-op outside a session (no active slot / not host).
 	var t0 := Time.get_ticks_msec()
@@ -2314,7 +2317,7 @@ func _on_esc_back_to_menu() -> void:
 	tw.tween_callback(
 		func():
 			_enhanced_lighting = true
-			_enable_enhanced_lighting()
+			_apply_lighting()
 			var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
 			if sun_node and sun_node.has_method("update_for_time"):
 				sun_node.update_for_time(0.0),
@@ -2334,10 +2337,11 @@ func _on_esc_back_to_menu() -> void:
 
 ## ESC menu: Quit Game.
 func _on_esc_quit_game() -> void:
-	# Hide the window immediately: the player already chose to leave, so
+	# Minimize the window immediately: the player already chose to leave, so
 	# save + report delivery + teardown run invisibly instead of freezing
-	# the menu for seconds.
-	get_window().hide()
+	# the menu for seconds. (The root window can't be hidden — minimized
+	# is the closest equivalent.)
+	get_window().mode = Window.MODE_MINIMIZED
 	# Checkpoint before exiting — must be a synchronous write: the debounced
 	# save_game() timer never fires because get_tree().quit() destroys the
 	# tree first. _do_save() still gates on is_host(), so clients write nothing.
@@ -2351,16 +2355,21 @@ func _on_esc_quit_game() -> void:
 	get_tree().quit()
 
 
-func _enable_enhanced_lighting() -> void:
+## Tier-scaled enhanced lighting: 1=light (Medium), 2=reduced (High),
+## 3=full (Epic). Scales SSAO depth, sun shadow distance, volumetric fog
+## and VoxelGI — the look (filmic, low ambient, no fill) stays the same.
+func _enable_enhanced_lighting(level: int = 3) -> void:
+	level = clampi(level, 1, 3)
 	if _world_env and _world_env.environment:
 		var env := _world_env.environment
 		env.ssr_enabled = false
 		env.ssil_enabled = false
-		# High contrast: deep SSAO for dark corners and crevices
+		# High contrast: SSAO for dark corners and crevices (depth scales
+		# with the tier — deep AO is the most expensive piece here)
 		env.ssao_enabled = true
 		env.ssao_radius = 0.5
-		env.ssao_intensity = 4.0
-		env.ssao_power = 2.0
+		env.ssao_intensity = [1.5, 2.5, 4.0][level - 1]
+		env.ssao_power = [1.2, 1.8, 2.0][level - 1]
 		# VoxelGI only (not SDFGI) — VoxelGI respects gi_mode=DISABLED so grass
 		# ground plane won't contribute green bounced light.
 		env.sdfgi_enabled = false
@@ -2373,15 +2382,16 @@ func _enable_enhanced_lighting() -> void:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 		env.ambient_light_color = Color(0.18, 0.18, 0.20, 1)
 		env.ambient_light_sky_contribution = 0.4
-		# Shorter fog for atmosphere without flattening
-		env.volumetric_fog_density = 0.002
-		env.volumetric_fog_length = 64.0
+		# Volumetric fog only on High+ — it costs every frame
+		env.volumetric_fog_density = 0.002 if level >= 2 else 0.001
+		env.volumetric_fog_length = 64.0 if level >= 2 else 333.13
 	# Sun: sharper, stronger shadows for clear definition
 	var sun := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
 	if sun:
-		_orig_shadow_blur = sun.shadow_blur
-		_orig_shadow_normal_bias = sun.shadow_normal_bias
-		_orig_shadow_bias = sun.shadow_bias
+		if _orig_shadow_blur < 0.0:
+			_orig_shadow_blur = sun.shadow_blur
+			_orig_shadow_normal_bias = sun.shadow_normal_bias
+			_orig_shadow_bias = sun.shadow_bias
 		sun.shadow_enabled = true
 		sun.shadow_blur = 1.2
 		sun.shadow_normal_bias = 1.0
@@ -2391,22 +2401,29 @@ func _enable_enhanced_lighting() -> void:
 		sun.directional_shadow_split_3 = 0.6
 		sun.directional_shadow_blend_splits = true
 		sun.directional_shadow_fade_start = 0.9
-		sun.directional_shadow_max_distance = 60.0
+		sun.directional_shadow_max_distance = [30.0, 45.0, 60.0][level - 1]
 	# Kill the fill light — we want dark shadows, not flat fill
 	var fill := world.find_child("FillLight", true, false) as DirectionalLight3D
 	if fill:
-		_orig_fill_energy = fill.light_energy
+		if _orig_fill_energy < 0.0:
+			_orig_fill_energy = fill.light_energy
 		fill.visible = false
 	# No warm fill point light — let shadows be shadows
-	# VoxelGI: small volume, only for dynamic objects near stand
+	# VoxelGI: small volume, only for dynamic objects near stand. Only on
+	# High+ — the subdiv bake is one of the pricier parts of this bundle.
 	if _voxel_gi == null:
 		_voxel_gi = VoxelGI.new()
 		_voxel_gi.position = Vector3(2, 2, -2)
 		_voxel_gi.size = Vector3(16, 6, 12)
-		_voxel_gi.subdiv = VoxelGI.SUBDIV_256
 		world.add_child(_voxel_gi)
-	_voxel_gi.visible = true
-	# Reflection probe: subtle, just for a hint of reflection on surfaces
+	var target_subdiv := (VoxelGI.SUBDIV_128 if level == 2 else VoxelGI.SUBDIV_256)
+	if level >= 2:
+		if _voxel_gi.subdiv != target_subdiv:
+			_voxel_gi.subdiv = target_subdiv
+			_voxel_gi.bake()
+	_voxel_gi.visible = level >= 2
+	# Reflection probe: subtle, just for a hint of reflection on surfaces.
+	# UPDATE_ONCE — cheap, so it stays on at every enhanced tier.
 	if _reflection_probe == null:
 		_reflection_probe = ReflectionProbe.new()
 		_reflection_probe.position = Vector3(2, 2.5, -2)
@@ -2419,35 +2436,41 @@ func _enable_enhanced_lighting() -> void:
 	_reflection_probe.visible = true
 	# Disable GI contribution on grass surfaces to prevent green color bleeding
 	_set_grass_gi(false)
-	print("[Lighting] Enhanced mode ON — High contrast: deep shadows + VoxelGI")
+	print("[Lighting] Enhanced mode ON (tier %d)" % level)
 
 
 func _disable_enhanced_lighting() -> void:
 	if _world_env and _world_env.environment:
 		var env := _world_env.environment
+		# SSAO/SSIL/glow belong to the graphics preset — restore the
+		# preset's values, not the pre-preset originals.
+		var preset: Dictionary = (
+			SettingsManager.GRAPHICS_PRESETS[SettingsManager.get_graphics_quality()]
+		)
 		env.ssr_enabled = _orig_ssr
-		env.ssao_enabled = _orig_ssao
-		env.ssil_enabled = _orig_ssil
+		env.ssao_enabled = preset["ssao"]
+		env.ssil_enabled = preset["ssil"]
+		env.glow_enabled = preset["glow"]
 		env.sdfgi_enabled = _orig_sdfgi
 		env.sdfgi_energy = _orig_sdfgi_energy
 		env.tonemap_mode = _orig_tonemap_mode as Environment.ToneMapper
 		env.tonemap_white = _orig_tonemap_white
 		env.tonemap_exposure = _orig_tonemap_exposure
-		env.glow_enabled = _orig_glow
 		env.ambient_light_source = _orig_ambient_source as Environment.AmbientSource
 		env.ambient_light_color = _orig_ambient_color
 		env.ambient_light_sky_contribution = _orig_ambient_sky
 		env.volumetric_fog_density = 0.001
 		env.volumetric_fog_length = 333.13
 	var sun := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
-	if sun:
+	if sun and _orig_shadow_blur >= 0.0:
 		sun.shadow_blur = _orig_shadow_blur
 		sun.shadow_normal_bias = _orig_shadow_normal_bias
 		sun.shadow_bias = _orig_shadow_bias
 	var fill := world.find_child("FillLight", true, false) as DirectionalLight3D
 	if fill:
 		fill.visible = true
-		fill.light_energy = _orig_fill_energy
+		if _orig_fill_energy >= 0.0:
+			fill.light_energy = _orig_fill_energy
 	if _voxel_gi:
 		_voxel_gi.visible = false
 	if _reflection_probe:
