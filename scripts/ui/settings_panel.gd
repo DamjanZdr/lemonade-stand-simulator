@@ -6,7 +6,6 @@ const MENU_THEME := preload("res://assets/themes/menu_theme.tres")
 signal back_pressed
 signal fullscreen_toggled(enabled: bool)
 signal vsync_toggled(enabled: bool)
-signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
 
 const _TAB_NAMES: Array[String] = ["Gameplay", "Graphics", "Audio", "Controls"]
@@ -42,7 +41,6 @@ var _quality_option: OptionButton
 var _fps_cap_option: OptionButton
 var _fs_check: CheckBox
 var _vsync_check: CheckBox
-var _lighting_check: CheckBox
 var _fps_check: CheckBox
 
 var _autosave_slider: HSlider
@@ -253,7 +251,6 @@ func _build_graphics_tab() -> Control:
 		func(_idx: int):
 			var q := _quality_option.get_item_text(_idx).to_lower()
 			SettingsManager.set_graphics_quality(q)
-			_sync_lighting_check()
 			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03),
 	)
 	q_row.add_child(_quality_option)
@@ -298,16 +295,6 @@ func _build_graphics_tab() -> Control:
 			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03),
 	)
 	cap_row.add_child(_fps_cap_option)
-
-	_lighting_check = _add_checkbox_row(tab, "Enhanced Lighting")
-	_lighting_check.toggled.connect(
-		func(on: bool):
-			# Save BEFORE emitting — _apply_lighting reads the saved
-			# value via get_lighting_level(), so emitting first would
-			# re-apply the stale state and the toggle would look dead.
-			SettingsManager.save_graphics_bool("enhanced_lighting", on)
-			enhanced_lighting_toggled.emit(on),
-	)
 
 	_fps_check = _add_checkbox_row(tab, "Show FPS")
 	_fps_check.toggled.connect(
@@ -556,7 +543,6 @@ func sync_state() -> void:
 	_vsync_check.button_pressed = (
 		DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
 	)
-	_sync_lighting_check()
 	_fps_check.button_pressed = SettingsManager.get_graphics_bool(
 		"fps_counter",
 		SettingsManager.DEFAULT_FPS_COUNTER,
@@ -577,25 +563,6 @@ func sync_state() -> void:
 	var cap_idx := SettingsManager.FPS_CAP_OPTIONS.find(SettingsManager.get_fps_cap())
 	_fps_cap_option.select(maxi(cap_idx, 0))
 
-
-## Enhanced lighting follows the preset tier — on Low it's forced off,
-## so the checkbox is disabled (the saved pref stays for higher tiers).
-func _sync_lighting_check() -> void:
-	if _lighting_check == null:
-		return
-	var low := SettingsManager.get_graphics_quality() == "low"
-	_lighting_check.disabled = low
-	_lighting_check.tooltip_text = ("Not available on Low quality" if low else "")
-	_lighting_check.set_pressed_no_signal(
-		(
-			false
-			if low
-			else SettingsManager.get_graphics_bool(
-				"enhanced_lighting",
-				SettingsManager.DEFAULT_ENHANCED_LIGHTING,
-			)
-		)
-	)
 
 
 func _add_slider_row(parent: Node, label_text: String) -> Array:

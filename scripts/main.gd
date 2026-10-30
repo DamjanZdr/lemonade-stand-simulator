@@ -73,7 +73,6 @@ var _world_env: WorldEnvironment
 var _default_ambient_color: Color
 var _default_exposure: float
 
-var _enhanced_lighting: bool = true
 var _voxel_gi: VoxelGI = null
 var _reflection_probe: ReflectionProbe = null
 var _fill_light: OmniLight3D = null
@@ -203,8 +202,7 @@ func _ready() -> void:
 	SettingsManager.apply_graphics_quality(SettingsManager.get_graphics_quality())
 	if not SettingsManager.graphics_quality_applied.is_connected(_on_graphics_quality_applied):
 		SettingsManager.graphics_quality_applied.connect(_on_graphics_quality_applied)
-	# Load enhanced_lighting / fps_counter from saved settings.
-	_enhanced_lighting = SettingsManager.get_graphics_bool("enhanced_lighting", true)
+	# Apply the lighting tier implied by the active graphics preset.
 	_apply_lighting()
 
 	# Create FPS counter label (toggled with F key)
@@ -445,9 +443,9 @@ func _log_lighting_state(tag: String) -> void:
 			"lightmap: data=%s" % (lgi.light_data.resource_path if lgi.light_data else "null")
 		)
 	lines.append(
-		"enhanced=%s quality=%s mode=%s"
+		"lighting_tier=%d quality=%s mode=%s"
 		% [
-			_enhanced_lighting,
+			SettingsManager.get_lighting_level(),
 			SettingsManager.get_graphics_quality(),
 			"versus" if _is_versus_mode() else "coop",
 		]
@@ -489,7 +487,6 @@ func _enter_main_menu() -> void:
 		_world_menu.load_stand_requested.connect(_on_menu_load_stand)
 		_world_menu.fullscreen_toggled.connect(_on_fullscreen_toggled)
 		_world_menu.vsync_toggled.connect(_on_vsync_toggled)
-		_world_menu.enhanced_lighting_toggled.connect(_on_enhanced_lighting_toggled)
 		_world_menu.fps_toggled.connect(_on_fps_toggled)
 	_world_menu.show_menu()
 	# Instantiate the in-game ESC menu.
@@ -503,7 +500,6 @@ func _enter_main_menu() -> void:
 		_esc_menu.quit_game.connect(_on_esc_quit_game)
 		_esc_menu.fullscreen_toggled.connect(_on_fullscreen_toggled)
 		_esc_menu.vsync_toggled.connect(_on_vsync_toggled)
-		_esc_menu.enhanced_lighting_toggled.connect(_on_enhanced_lighting_toggled)
 		_esc_menu.fps_toggled.connect(_on_fps_toggled)
 	# If no save has been loaded yet (current_slot is empty), peek at
 	# the most recent save's stand name so the sign shows the right
@@ -620,11 +616,6 @@ func _on_vsync_toggled(enabled: bool) -> void:
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if enabled else DisplayServer.VSYNC_DISABLED
 	)
-
-
-func _on_enhanced_lighting_toggled(enabled: bool) -> void:
-	_enhanced_lighting = enabled
-	_apply_lighting()
 
 
 func _on_graphics_quality_applied() -> void:
@@ -1010,13 +1001,12 @@ func _on_return_to_menu() -> void:
 	# _setup_world_systems() is a no-op on the second game and the
 	# previous game's containers/supply boxes persist.
 	_world_setup_done = false
-	# Reset lighting to enhanced defaults so the menu/lobby isn't
+	# Reset lighting to the preset tier so the menu/lobby isn't
 	# dark from the previous game's day-cycle exposure.
-	if _enhanced_lighting:
-		_apply_lighting()
-		var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
-		if sun_node and sun_node.has_method("update_for_time"):
-			sun_node.update_for_time(0.0)
+	_apply_lighting()
+	var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
+	if sun_node and sun_node.has_method("update_for_time"):
+		sun_node.update_for_time(0.0)
 	# Fade out lobby UI.
 	if lobby_ui:
 		var fade_tw := create_tween()
@@ -2316,7 +2306,6 @@ func _on_esc_back_to_menu() -> void:
 	tw.tween_interval(0.1)
 	tw.tween_callback(
 		func():
-			_enhanced_lighting = true
 			_apply_lighting()
 			var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
 			if sun_node and sun_node.has_method("update_for_time"):

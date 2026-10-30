@@ -294,11 +294,9 @@ func get_grass_view_distance() -> float:
 
 
 ## Enhanced-lighting tier for the current preset: 0=off (Low), 1=light
-## (Medium), 2=reduced (High), 3=full (Epic). The user's manual toggle
-## floors it at 0 — on Low it's forced off regardless.
+## (Medium), 2=reduced (High), 3=full (Epic). Lighting strength follows
+## the preset — there is no separate user toggle.
 func get_lighting_level() -> int:
-	if not get_graphics_bool("enhanced_lighting", DEFAULT_ENHANCED_LIGHTING):
-		return 0
 	return int(GRAPHICS_PRESETS[get_graphics_quality()].lighting_level)
 
 
