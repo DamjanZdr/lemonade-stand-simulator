@@ -2,7 +2,18 @@
 
 Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 
-## ACTIVE INVESTIGATION — interaction frame spikes (handoff, 2026-10-31)
+## ACTIVE INVESTIGATION — interaction frame spikes (handoff, 2026-10-31 v2)
+
+**BISECT RESULT:** culprit commit = `6a19689` "Tiered graphics presets, automation rebalance, upgrade bar polish" (Oct 30). Proven via exported worktree builds played by user:
+- `ac440f4` (Oct 22) SMOOTH, `09708d3` (Oct 26) SMOOTH, `b41a20b` (Oct 27) SMOOTH, `6a19689` (Oct 30) STUTTERS. `c0439dd` (untested) is 13 lines of pitcher guard — trivial.
+- Bisect worktrees: `../wlgl-bisect-1022`, `../wlgl-bisect-1027`, `../wlgl-bisect-head` (copy `tools/godotsteam-templates/win64/*` + `mkdir export`, then headless `--export-release "Windows Desktop" export/WhenLifeGivesYouLemons.exe`; add `steam_api64.dll` + `steam_appid.txt` beside exe).
+- Steam uploads do NOT set a branch live (VDF has no setlive) — user sets BuildID live on test branch in Steamworks manually.
+
+**RULED OUT (tested builds):** pipeline warmup (WARMUP_SCENES still in world_sync — keep or remove), fps cap unlimited, graphics=low, house-LOD disabled, enhanced lighting disabled, PreviewViewport WHEN_VISIBLE, physics catch-up (`max_physics_steps_per_frame=1` still stutters — REVERT that project.godot line before release), fullscreen (predates), Discord/mouse (old build smooth same env).
+
+**SIGNAL:** `adraw`≈frame on big stalls (post_draw→next _process = present/vsync + OS events + process lead-in); proc≈10ms phys≈1ms rblock≈5ms pticks=1, nodes static even in 4.5s frames. One frame showed adraw=4 (sync-block variant). Not script, not physics, not measured draw block.
+
+**REMAINING SUSPECTS in 6a19689:** computer `_screen_ui` SubViewport UPDATE_WHEN_VISIBLE re-rendering heavy new morning_hub UI per frame while on-camera (TEST BUILD READY: `../wlgl-bisect-head/export` = HEAD + `_screen_ui` UPDATE_DISABLED). Then: `player_placement.gd` +464, `morning_hub.gd` +1394 rewrite, `upgrade_bar_column.gd` +562 new, `customer.gd` +125 order indicators, `assistant.gd` +282, `upgrade_manager.gd` rewrite, `stand_unit.gd` +94.
 
 **Symptom:** 30-3800ms hitches on nearly every interaction — shop buy button, all placements (table/press/Squeeze-E-Z/crate/cup stack), trashcan, pitcher↔dispenser/table/stand, cup fills, NPC serve/order — solo AND multiplayer.
 

@@ -27,6 +27,9 @@ var _post_draw_us: int = 0
 # Physics tick counter sampled at post_draw — how many catch-up ticks ran
 # inside the post-draw→next-process window (physics_max_steps_per_frame).
 var _phys_at_post_draw: int = -1
+# idle_frame fires before _process callbacks — bgap = post_draw→idle =
+# present/vsync + OS events + physics + lead-in (the true mystery window).
+var _idle_us: int = 0
 
 
 func mark(label: String) -> void:
@@ -61,6 +64,7 @@ func _ready() -> void:
 			_post_draw_us = Time.get_ticks_usec()
 			_phys_at_post_draw = Engine.get_physics_frames()
 	)
+	get_tree().process_frame.connect(func() -> void: _idle_us = Time.get_ticks_usec())
 
 
 func _process(delta: float) -> void:
@@ -93,11 +97,12 @@ func _process(delta: float) -> void:
 			# pticks = physics ticks executed inside the adraw window —
 			# a catch-up spiral would show many ticks per stalled frame.
 			var pticks := Engine.get_physics_frames() - _phys_at_post_draw if _phys_at_post_draw >= 0 else -1
+			var bgap := float(_idle_us - _post_draw_us) / 1000.0 if _idle_us > _post_draw_us else -1.0
 			self.log(
-				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f pticks=%.0f draw=%.0f nodes=%.0f marks=%s"
+				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f bgap=%.0f pticks=%.0f draw=%.0f nodes=%.0f marks=%s"
 				% [
 					frame_ms, proc_ms, phys_ms, nav_ms, rcpu, rgpu,
-					rblock, adraw, pticks, draws, nodes, ", ".join(recent),
+					rblock, adraw, bgap, pticks, draws, nodes, ", ".join(recent),
 				]
 			)
 	_last_frame_usec = now
