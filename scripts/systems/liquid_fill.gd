@@ -14,9 +14,10 @@ const CAP_HEIGHT: float = 0.02
 const CAP_INSET: float = 0.97
 
 
-static func make_material() -> ShaderMaterial:
+static func make_material(color := Color(1.0, 0.9, 0.3, 1.0)) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = SHADER
+	m.set_shader_parameter("albedo", color)
 	return m
 
 
@@ -69,12 +70,14 @@ static func radius_at(profile: PackedVector2Array, y: float) -> float:
 	return profile[profile.size() - 1].y
 
 
-## Apply a fill fraction: clip the mesh at its local height, place the cap
-## disc there, set the color. cap_* params map mesh-local units into the
-## cap's parent space when the mesh node carries a non-identity transform.
+## Apply a fill fraction: set the clip height + color on the object's own
+## material, place the cap disc at the clip height. cap_* params map
+## mesh-local units into the cap's parent space when the mesh node carries
+## a non-identity transform.
 static func apply(
 	mesh_i: MeshInstance3D,
 	cap_i: MeshInstance3D,
+	mat: ShaderMaterial,
 	profile: PackedVector2Array,
 	bottom: float,
 	top: float,
@@ -86,15 +89,14 @@ static func apply(
 ) -> void:
 	var vis := t > 0.001
 	var y := lerpf(bottom, top, clampf(t, 0.0, 1.0))
+	if mat != null:
+		mat.set_shader_parameter("fill_y", y)
+		if color.a >= 0.0:
+			mat.set_shader_parameter("albedo", color)
 	if mesh_i != null:
 		mesh_i.visible = vis
-		mesh_i.set_instance_shader_parameter("fill_y", y)
-		if color.a >= 0.0:
-			mesh_i.set_instance_shader_parameter("albedo", color)
 	if cap_i != null:
 		cap_i.visible = vis
 		cap_i.position.y = y * cap_y_scale + cap_y_offset + CAP_HEIGHT * 0.5
 		var r := maxf(radius_at(profile, y) * CAP_INSET * cap_r_scale, 0.01)
 		cap_i.scale = Vector3(r, 1.0, r)
-		if color.a >= 0.0:
-			cap_i.set_instance_shader_parameter("albedo", color)

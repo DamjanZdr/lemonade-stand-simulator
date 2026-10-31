@@ -709,7 +709,7 @@ func _make_hand_mesh() -> Node3D:
 		var lmesh := fill_dup.get_node_or_null("LemonadeMesh") as MeshInstance3D
 		var lcap := fill_dup.get_node_or_null("LiquidCap") as MeshInstance3D
 		LiquidFill.apply(
-			lmesh, lcap, _liquid_profile, _liquid_bottom, _liquid_top,
+			lmesh, lcap, _liquid_mat, _liquid_profile, _liquid_bottom, _liquid_top,
 			clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0), _get_current_liquid_color()
 		)
 		container.add_child(fill_dup)
@@ -757,7 +757,7 @@ func _set_fill_level(t: float) -> void:
 func _apply_fill(t: float) -> void:
 	_fill_display = t
 	LiquidFill.apply(
-		_lemonade_mesh, _lemonade_cap, _liquid_profile,
+		_lemonade_mesh, _lemonade_cap, _liquid_mat, _liquid_profile,
 		_liquid_bottom, _liquid_top, t, _last_liquid_color
 	)
 
@@ -926,6 +926,11 @@ func sync_fill_display() -> void:
 	## Call this after placing a pitcher so it doesn't replay 0→N.
 	## Kill any in-flight eraser tween first — _ready()'s empty-volume
 	## tween would otherwise finish after this snap and stomp it.
+	# Skip while a press fill animation owns the display: a mid-press state
+	# sync would snap the liquid to the final level, then the still-running
+	# tween would drain it back and fill again (snap + double fill).
+	if _suppress_eraser_updates:
+		return
 	if _eraser_tween and _eraser_tween.is_valid():
 		_eraser_tween.kill()
 	if _press_eraser_tween and _press_eraser_tween.is_valid():
@@ -1000,12 +1005,10 @@ func _apply_liquid_color(color: Color) -> void:
 	_last_liquid_color = color
 	if _lemonade_mesh == null or _lemonade_mesh.mesh == null:
 		return
-	# Per-instance shader params — no material duplication, no rebuild, and
-	# safe across duplicated hand meshes and synced copies.
-	if _lemonade_mesh != null:
-		_lemonade_mesh.set_instance_shader_parameter("albedo", color)
-	if _lemonade_cap != null:
-		_lemonade_cap.set_instance_shader_parameter("albedo", color)
+	# Base uniform on this pitcher's own material — no mesh duplication, no
+	# rebuild; dup'd fill nodes share it (same liquid anyway).
+	if _liquid_mat != null:
+		_liquid_mat.set_shader_parameter("albedo", color)
 
 
 func debug_empty() -> void:

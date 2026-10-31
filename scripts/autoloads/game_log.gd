@@ -22,6 +22,8 @@ const HOT_PATH_US := 3000.0
 var _marks: Array = []
 var _last_frame_usec: int = 0
 var _root_vp: RID
+var _pre_draw_us: int = 0
+var _post_draw_us: int = 0
 
 
 func mark(label: String) -> void:
@@ -50,6 +52,8 @@ func _ready() -> void:
 	# submission (rcpu) from actual GPU time (rgpu) and compositor waits.
 	_root_vp = get_viewport().get_viewport_rid()
 	RenderingServer.viewport_set_measure_render_time(_root_vp, true)
+	RenderingServer.frame_pre_draw.connect(func() -> void: _pre_draw_us = Time.get_ticks_usec())
+	RenderingServer.frame_post_draw.connect(func() -> void: _post_draw_us = Time.get_ticks_usec())
 
 
 func _process(delta: float) -> void:
@@ -75,9 +79,16 @@ func _process(delta: float) -> void:
 			var nodes := Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
 			var rcpu := RenderingServer.viewport_get_measured_render_time_cpu(_root_vp) / 1000.0
 			var rgpu := RenderingServer.viewport_get_measured_render_time_gpu(_root_vp) / 1000.0
+			# rblock = last completed draw-block duration (pre_draw→post_draw);
+			# adraw = time since post_draw — the present/vsync/OS tail.
+			var rblock := float(_post_draw_us - _pre_draw_us) / 1000.0
+			var adraw := float(now - _post_draw_us) / 1000.0 if _post_draw_us > 0 else -1.0
 			self.log(
-				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f draw=%.0f nodes=%.0f marks=%s"
-				% [frame_ms, proc_ms, phys_ms, nav_ms, rcpu, rgpu, draws, nodes, ", ".join(recent)]
+				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f draw=%.0f nodes=%.0f marks=%s"
+				% [
+					frame_ms, proc_ms, phys_ms, nav_ms, rcpu, rgpu,
+					rblock, adraw, draws, nodes, ", ".join(recent),
+				]
 			)
 	_last_frame_usec = now
 

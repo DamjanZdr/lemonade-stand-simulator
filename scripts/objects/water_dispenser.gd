@@ -54,7 +54,7 @@ func _ready() -> void:
 		_water_node_pos = _water_mesh.position
 		_water_mesh.scale = _water_node_scale # undo any stale runtime squash
 		_water_mesh.position = _water_node_pos
-		_water_mat = LiquidFill.make_material()
+		_water_mat = LiquidFill.make_material(WATER_COLOR)
 		_water_mesh.material_override = _water_mat
 		_water_cap = _water_mesh.get_parent().get_node_or_null("WaterCap") as MeshInstance3D
 		if _water_cap == null:
@@ -71,7 +71,7 @@ func _set_water_level(t: float) -> void:
 		return
 	_water_display = clampf(t, 0.0, 1.0)
 	LiquidFill.apply(
-		_water_mesh, _water_cap, _water_profile,
+		_water_mesh, _water_cap, _water_mat, _water_profile,
 		_water_bottom, _water_top, _water_display, WATER_COLOR,
 		_water_node_scale.y, _water_node_pos.y, _water_node_scale.x
 	)
