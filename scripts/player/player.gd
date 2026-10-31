@@ -219,6 +219,9 @@ func _ready() -> void:
 	_setup_visuals()
 	if is_multiplayer_authority():
 		configure_local_player()
+		# Compile every spawnable's render pipelines up front — per-action
+		# stall attribution (rblock/adraw) pointed at driver-side work.
+		WorldSync.warmup_pipelines(self)
 	else:
 		# This is another peer's player, replicated here so we can see
 		# them ΓÇö not ours to control. Skip capturing input/camera/audio,

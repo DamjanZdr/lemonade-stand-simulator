@@ -2412,6 +2412,64 @@ func _find_node_by_name_only(obj_name: String) -> Node:
 	return found
 
 
+## Every spawnable/NPC scene — rendered once at join so Forward+ compiles
+## their pipelines during load instead of stalling the first interaction.
+const WARMUP_SCENES := [
+	"res://scenes/objects/fruit_bin.tscn",
+	"res://scenes/objects/sugar_bin.tscn",
+	"res://scenes/objects/ice_bin.tscn",
+	"res://scenes/objects/cup_stack.tscn",
+	"res://scenes/objects/pitcher.tscn",
+	"res://scenes/objects/press.tscn",
+	"res://scenes/objects/water_dispenser.tscn",
+	"res://scenes/stand/workstation.tscn",
+	"res://scenes/objects/cup.tscn",
+	"res://scenes/objects/cup_tray.tscn",
+	"res://scenes/objects/lemonader.tscn",
+	"res://scenes/objects/fruitomatic.tscn",
+	"res://scenes/objects/supply_box.tscn",
+	"res://scenes/objects/thrown_trash.tscn",
+	"res://scenes/objects/trash_apple.tscn",
+	"res://scenes/objects/trash_banana.tscn",
+	"res://scenes/objects/trash_can.tscn",
+	"res://scenes/objects/trash_cigarettes.tscn",
+	"res://scenes/objects/trash_cup.tscn",
+	"res://scenes/customer/customer.tscn",
+	"res://scenes/customer/pedestrian.tscn",
+	"res://scenes/delivery_truck.tscn",
+]
+
+
+## Extract each scene's meshes (no _ready side effects — the scene itself
+## never enters the tree) and flash them tiny in front of the camera for a
+## couple frames so the driver compiles their pipelines up front.
+func warmup_pipelines(player: Node) -> void:
+	var cams := player.find_children("*", "Camera3D", true, false)
+	if cams.is_empty():
+		return
+	var cam := cams[0] as Camera3D
+	if cam == null:
+		return
+	var holder := Node3D.new()
+	holder.name = "PipelineWarmup"
+	cam.add_child(holder)
+	holder.position = Vector3(0, 0, -0.6)
+	holder.scale = Vector3.ONE * 0.02
+	for path in WARMUP_SCENES:
+		var packed := _get_scene(path)
+		if packed == null:
+			continue
+		var inst := packed.instantiate()
+		for m in inst.find_children("*", "MeshInstance3D", true, false):
+			(m as MeshInstance3D).get_parent().remove_child(m)
+			holder.add_child(m)
+		inst.free()
+	GameLog.log("[Warmup] pipelines rendering %d scenes" % holder.get_child_count())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	holder.free()
+
+
 func _get_scene(path: String) -> PackedScene:
 	if _scene_cache.has(path):
 		return _scene_cache[path] as PackedScene

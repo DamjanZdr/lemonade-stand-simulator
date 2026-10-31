@@ -11,7 +11,10 @@ extends RefCounted
 
 const SHADER: Shader = preload("res://shaders/liquid_clip.gdshader")
 const CAP_HEIGHT: float = 0.02
-const CAP_INSET: float = 0.97
+# The cap samples the mesh's OUTER silhouette at clip height — keep it well
+# inside so the disc edge can't poke through the glass where the profile
+# curves inward just below the surface.
+const CAP_INSET: float = 0.90
 
 
 static func make_material(color := Color(1.0, 0.9, 0.3, 1.0)) -> ShaderMaterial:
