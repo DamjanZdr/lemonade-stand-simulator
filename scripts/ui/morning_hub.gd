@@ -1707,13 +1707,13 @@ func _animate_status_text(msg: String, error := false) -> void:
 
 
 func _on_fruit_research_changed(_id: int, _cost: float) -> void:
-	if visible:
+	if panel.visible:
 		_build_shop()
 		_refresh_upgrades()
 
 
 func _on_stand_progress_changed(_stand: StandUnit, _progress: Dictionary) -> void:
-	if visible:
+	if panel.visible:
 		_refresh_upgrades()
 		# Claims land here too — keep the shop's lock state fresh while
 		# it's the tab being viewed.

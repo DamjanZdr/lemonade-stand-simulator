@@ -33,6 +33,9 @@ var _idle_us: int = 0
 # End of this autoload's _process — xgap = process_end→pre_draw covers
 # deferred-queue/queue_free flush + RenderingServer.sync + trailing nodes.
 var _proc_end_us: int = 0
+# physics_frame fires at the top of SceneTree::process — pgap = post_draw→
+# physics_frame = present/swap + OS event dispatch only.
+var _phys_frame_us: int = 0
 
 
 func mark(label: String) -> void:
@@ -68,6 +71,7 @@ func _ready() -> void:
 			_phys_at_post_draw = Engine.get_physics_frames()
 	)
 	get_tree().process_frame.connect(func() -> void: _idle_us = Time.get_ticks_usec())
+	get_tree().physics_frame.connect(func() -> void: _phys_frame_us = Time.get_ticks_usec())
 	if OS.get_environment("LEMON_AUTOPLAY") == "1":
 		_autoplay_ready()
 
@@ -104,11 +108,12 @@ func _process(delta: float) -> void:
 			var pticks := Engine.get_physics_frames() - _phys_at_post_draw if _phys_at_post_draw >= 0 else -1
 			var bgap := float(_idle_us - _post_draw_us) / 1000.0 if _idle_us > _post_draw_us else -1.0
 			var xgap := float(_pre_draw_us - _proc_end_us) / 1000.0 if _pre_draw_us > _proc_end_us else -1.0
+			var pgap := float(_phys_frame_us - _post_draw_us) / 1000.0 if _phys_frame_us > _post_draw_us else -1.0
 			self.log(
-				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f bgap=%.0f xgap=%.0f pticks=%.0f draw=%.0f nodes=%.0f marks=%s"
+				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f bgap=%.0f xgap=%.0f pgap=%.0f pticks=%.0f draw=%.0f nodes=%.0f marks=%s"
 				% [
 					frame_ms, proc_ms, phys_ms, nav_ms, rcpu, rgpu,
-					rblock, adraw, bgap, xgap, pticks, draws, nodes, ", ".join(recent),
+					rblock, adraw, bgap, xgap, pgap, pticks, draws, nodes, ", ".join(recent),
 				]
 			)
 	_last_frame_usec = now
@@ -137,6 +142,15 @@ func _autoplay_ready() -> void:
 		_write("[AUTOPLAY] load_existing_game + host_game")
 		SaveManager.load_existing_game("AUTO")
 		NetworkManager.host_game()
+		var go := Timer.new()
+		go.wait_time = 6.0
+		go.one_shot = true
+		go.timeout.connect(func() -> void:
+			_write("[AUTOPLAY] start_game")
+			LobbyManager.start_game()
+		)
+		go.autostart = true
+		add_child(go)
 	)
 	start_timer.autostart = true
 	add_child(start_timer)

@@ -181,6 +181,8 @@ func interact(player: Node) -> void:
 
 
 func _finish_held_disposal(player: Player) -> void:
+	var _t0 := Time.get_ticks_usec()
+	GameLog.mark("trash_dispose")
 	var mesh := player.inventory.release_hand_mesh()
 	# Pull the mesh out of hand_slot BEFORE clear_held — set_held() frees
 	# every hand_slot child, which would kill the mesh before the arc runs.
@@ -211,6 +213,7 @@ func _finish_held_disposal(player: Player) -> void:
 	if arc != null:
 		done.tween_interval(0.45)
 	done.tween_callback(mesh.queue_free)
+	GameLog.time_log("_finish_held_disposal", _t0)
 
 
 ## Host-side: apply money refund. The disposable visual was removed — the

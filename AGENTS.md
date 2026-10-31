@@ -2,10 +2,14 @@
 
 Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 
-## ACTIVE INVESTIGATION — interaction frame spikes (handoff, 2026-10-31 v2)
+## RESOLVED — interaction frame spikes (2026-10-31)
 
-**BISECT RESULT:** culprit commit = `6a19689` "Tiered graphics presets, automation rebalance, upgrade bar polish" (Oct 30). Proven via exported worktree builds played by user:
-- `ac440f4` (Oct 22) SMOOTH, `09708d3` (Oct 26) SMOOTH, `b41a20b` (Oct 27) SMOOTH, `6a19689` (Oct 30) STUTTERS. `c0439dd` (untested) is 13 lines of pitcher guard — trivial.
+**ROOT CAUSE:** `morning_hub.gd`'s `_on_stand_progress_changed` + `_on_fruit_research_changed` handlers (connected via `CONNECT_DEFERRED`) rebuilt the entire shop/upgrades UI (`_build_shop` + `_refresh_upgrades`) on **every action** — buys, placements, trash, serves — because the gate was `visible` on the script root. `visible` on that Control stays `true` when the computer is closed (the `_screen_ui` SubViewport hides, the Control doesn't) → every `stand_progress_changed`/`upgrade_purchased` emit ran a full Control-tree rebuild inside the deferred-queue flush — engine-side window invisible to `proc` timing. **Fix applied (HEAD):** gate on `panel.visible` (the actual hub-open flag). Bisect path: `6a19689` → clean-port features onto `b41a20b` → `morning_hub` isolated → subscriptions cut one-by-one → `stand_progress_changed` alone reproduced it.
+
+**Resolved details:**
+- `visible` vs `panel.visible` on hub handlers is the definitive fix; user confirmed smooth.
+- Residual: pitcher-from-box placement still has a small drop — separate, un-investigated.
+- Prior investigation data preserved below.
 - Bisect worktrees: `../wlgl-bisect-1022`, `../wlgl-bisect-1027`, `../wlgl-bisect-head` (copy `tools/godotsteam-templates/win64/*` + `mkdir export`, then headless `--export-release "Windows Desktop" export/WhenLifeGivesYouLemons.exe`; add `steam_api64.dll` + `steam_appid.txt` beside exe).
 - Steam uploads do NOT set a branch live (VDF has no setlive) — user sets BuildID live on test branch in Steamworks manually.
 

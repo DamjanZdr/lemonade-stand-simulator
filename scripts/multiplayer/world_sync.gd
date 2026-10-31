@@ -1490,6 +1490,7 @@ static func play_place_pop(node: Node3D) -> void:
 ## If the object is a SupplyBox, also makes boxes above fall on the host
 ## and tells clients to do the same.
 func despawn_networked(obj: Node) -> void:
+	var _t0 := Time.get_ticks_usec()
 	if not is_host():
 		return
 	if obj == null or not is_instance_valid(obj):
@@ -1511,6 +1512,7 @@ func despawn_networked(obj: Node) -> void:
 		_broadcast(&"_sync_boxes_fall", [obj.global_position])
 	obj.queue_free()
 	_broadcast(&"_despawn_on_clients", [parent_path, obj_name, net_id])
+	GameLog.time_log("despawn_networked", _t0)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -2460,11 +2462,49 @@ func warmup_pipelines(player: Node) -> void:
 		if packed == null:
 			continue
 		var inst := packed.instantiate()
+		# Skinned meshes need their skeleton/armature context to compile the
+		# skinned pipeline variant — move whole skeletons, not loose meshes.
+		var moved_skel := false
+		for skel in inst.find_children("*", "Skeleton3D", true, false):
+			skel.get_parent().remove_child(skel)
+			holder.add_child(skel)
+			moved_skel = true
 		for m in inst.find_children("*", "MeshInstance3D", true, false):
+			if moved_skel and m is MeshInstance3D and m.skin != null:
+				continue # already carried inside the skeleton
 			(m as MeshInstance3D).get_parent().remove_child(m)
 			holder.add_child(m)
 		inst.free()
-	GameLog.log("[Warmup] pipelines rendering %d scenes" % holder.get_child_count())
+	# Ghost/placement material variant — semi-transparent green like the
+	# real ghost, so the alpha-blend pipeline compiles up front.
+	var ghost_mat := StandardMaterial3D.new()
+	ghost_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ghost_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ghost_mat.albedo_color = Color(0.2, 0.9, 0.3, 0.45)
+	var ghost_probe := MeshInstance3D.new()
+	ghost_probe.mesh = BoxMesh.new()
+	ghost_probe.material_override = ghost_mat
+	holder.add_child(ghost_probe)
+	# Outline layer: the highlight overlay renders layer-2 `_Outline` fill
+	# meshes through its own SubViewport — compile that variant too.
+	var outline_probe := MeshInstance3D.new()
+	outline_probe.name = "_Outline"
+	outline_probe.mesh = BoxMesh.new()
+	outline_probe.layers = 2
+	var outline_mat := StandardMaterial3D.new()
+	outline_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	outline_mat.albedo_color = Color(1.0, 0.9, 0.2, 1.0)
+	outline_mat.cull_mode = BaseMaterial3D.CULL_FRONT
+	outline_probe.material_override = outline_mat
+	holder.add_child(outline_probe)
+	# Label3D text/emoji pipeline — order indicators and hints rasterize
+	# new glyph runs mid-game.
+	var label_probe := Label3D.new()
+	label_probe.text = "🍋❓99 $123.45"
+	label_probe.pixel_size = 0.002
+	holder.add_child(label_probe)
+	GameLog.log("[Warmup] pipelines rendering %d nodes" % holder.get_child_count())
+	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().process_frame
 	holder.free()
