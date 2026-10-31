@@ -1229,6 +1229,13 @@ func _create_container_hand_mesh(
 		temp.queue_free()
 	elif container_type == "pitcher" and inst is Pitcher:
 		var pitcher := inst as Pitcher
+		# Held copies must not be findable as world pitchers: keep them out
+		# of the "pitcher"/"container" groups (skipped inside _ready via
+		# is_held_copy) and give them a unique name so WorldSync's name-only
+		# fallbacks can't resolve despawn/property/method syncs to the hand
+		# mesh instead of the real world pitcher.
+		pitcher.is_held_copy = true
+		inst.name = "HeldPitcher"
 		GameLog.log(
 			"[DIAG] hand pitcher: vol=%.2f fruit=%.2f water=%.2f recipe=%s"
 			% [pitcher.get_liquid_volume(), pitcher.fruit_count, pitcher.water, str(saved_recipe)]

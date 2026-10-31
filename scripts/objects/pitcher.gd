@@ -18,6 +18,13 @@ var fruit_count: float = 0.0 ## How many fruits worth of juice in the pitcher.
 var water: float = 0.0
 var sugar: float = 0.0
 var ice: float = 0.0
+
+## True for first-person hand copies — set by PlayerPlacement BEFORE the
+## node enters the tree. Held copies must not register as world pitchers:
+## _ready() would re-add them to the "pitcher"/"container" groups where
+## water-tap scans, debug empties, save sweeps, and WorldSync name
+## fallbacks can find them and stomp or despawn the wrong node.
+var is_held_copy := false
 var cups_poured: int = 0 # Once > 0, can no longer add sugar/ice
 ## Recipe frozen at the first pour — every cup from this batch carries it.
 ## Without this, later cups get the proportionally-drained totals, which the
@@ -64,21 +71,22 @@ const MAX_FILL_VOLUME: float = 10.0
 
 
 func _ready() -> void:
-	add_to_group("pitcher")
-	add_to_group("container")
-	var pickupable := Pickupable.setup_for_container(self, "pitcher")
-	# Wrap the default container pickup check so a pitcher that is locked
-	# to a water dispenser cannot be pulled out mid-fill by clicking the
-	# pitcher itself (which would bypass the dispenser's own lock check).
-	var base_can_pickup := pickupable.can_pickup_callback
-	pickupable.can_pickup_callback = func(player: Node) -> bool:
-		if locked_by_dispenser:
-			EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
-			return false
-		return base_can_pickup.call(player) as bool
+	if not is_held_copy:
+		add_to_group("pitcher")
+		add_to_group("container")
+		var pickupable := Pickupable.setup_for_container(self, "pitcher")
+		# Wrap the default container pickup check so a pitcher that is locked
+		# to a water dispenser cannot be pulled out mid-fill by clicking the
+		# pitcher itself (which would bypass the dispenser's own lock check).
+		var base_can_pickup := pickupable.can_pickup_callback
+		pickupable.can_pickup_callback = func(player: Node) -> bool:
+			if locked_by_dispenser:
+				EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
+				return false
+			return base_can_pickup.call(player) as bool
+		EventBus.debug_empty_pitcher.connect(_on_debug_empty_pitcher)
 	prep_position = global_position
 	_prep_scale = scale
-	EventBus.debug_empty_pitcher.connect(_on_debug_empty_pitcher)
 	# Hide the original GLB lemonade cylinders (the CSG fill is used instead).
 	for n in ["Cylinder_002", "Cylinder_003"]:
 		var orig := _lemonade_node.get_node_or_null(n) as MeshInstance3D

@@ -89,8 +89,9 @@ func _pressed_fruits(stand: StandUnit) -> Dictionary:
 
 func _regulars_count(stand: StandUnit) -> int:
 	var n := 0
-	for id in stand.get_npc_collection():
-		if float(stand.get_npc_collection()[id].get("affinity", 0.0)) >= 10.0:
+	var collection := stand.get_npc_collection()
+	for id in collection:
+		if float(collection[id].get("affinity", 0.0)) >= 10.0:
 			n += 1
 	return n
 
@@ -122,9 +123,6 @@ func check_stand_thresholds(stand: StandUnit) -> void:
 		GameLog.log("[Ach] check skipped: stand is null")
 		return
 	var local_stand: Node = WorldSync.get_local_stand()
-	GameLog.log(
-		"[Ach] local_stand=%s stand=%s match=%s" % [local_stand, stand, local_stand == stand]
-	)
 	if local_stand == null or local_stand != stand:
 		return
 

@@ -258,15 +258,18 @@ func get_branch_level(branch_id: String, stand: StandUnit) -> int:
 	return stand.get_claimed(branch_id)
 
 
-## The raw counter the bar measures — perfect serves of the gating
-## fruit, or the branch's plain progress counter.
+## The raw counter the bar measures — cumulative perfect serves across
+## ALL fruits (so each unlock doesn't zero the bar), or the branch's
+## plain progress counter.
 func get_branch_value(branch_id: String, stand: StandUnit) -> float:
 	var b := _branch(branch_id)
 	if b.is_empty() or stand == null:
 		return 0.0
 	if b.get("kind") == "fruit":
-		var gate_idx := mini(get_branch_level(branch_id, stand), FRUIT_ORDER.size() - 2)
-		return float(get_perfect_serves(FRUIT_ORDER[gate_idx], stand))
+		var total := 0.0
+		for ft in FRUIT_ORDER:
+			total += float(get_perfect_serves(ft, stand))
+		return total
 	return get_counter(str(b.get("counter", "")), stand)
 
 

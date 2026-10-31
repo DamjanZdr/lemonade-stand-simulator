@@ -167,7 +167,31 @@ func _setup_replication() -> void:
 ## update their local copy + emit signals so UI (HUD, price board, etc.)
 ## refreshes. Only the host calls this; only clients apply it (the host
 ## already has the correct values locally).
+## Broadcasts are coalesced one per frame: a single serve can mutate the
+## stand four+ times (popularity, money, npc encounter, perfect serve)
+## and each used to serialize + broadcast + reapply the full state. The
+## values are absolute, so pushing once at frame end loses nothing.
+var _push_scheduled := false
+
+
 func push_state(peer_id: int = 0) -> void:
+	# Targeted pushes (late-joiner re-pull) always go out immediately.
+	if peer_id != 0:
+		_push_state_now(peer_id)
+		return
+	if _push_scheduled:
+		return
+	_push_scheduled = true
+	call_deferred("_flush_push_state")
+
+
+func _flush_push_state() -> void:
+	_push_scheduled = false
+	if is_inside_tree():
+		_push_state_now(0)
+
+
+func _push_state_now(peer_id: int = 0) -> void:
 	# Guard: if no multiplayer peer is assigned (e.g. loading a save
 	# from the main menu before hosting), skip the RPC entirely.
 	if not multiplayer.has_multiplayer_peer():
@@ -270,11 +294,16 @@ func _apply_state(
 	highest_purchase = new_highest_purchase
 	highest_money = new_highest_money
 	total_fruit_pressed = new_total_fruit_pressed
-	perfect_recipes_set = new_perfect_recipes_set.duplicate(true)
-	onboarding_progress = new_onboarding_progress.duplicate(true)
-	last_day_stats = new_last_day_stats.duplicate(true)
+	# The dict args are already exclusive copies — push_state() duplicates
+	# the live dicts before broadcasting, and RPC deserialization gives
+	# clients fresh objects. Re-duplicating here burned a full deep-copy of
+	# lifetime_stats (incl. the 100-entry npc_collection) on every synced
+	# state change — a real frame spike on weak machines.
+	perfect_recipes_set = new_perfect_recipes_set
+	onboarding_progress = new_onboarding_progress
+	last_day_stats = new_last_day_stats
 	var old_npc_collection: Dictionary = lifetime_stats.get("npc_collection", { })
-	lifetime_stats = new_lifetime_stats.duplicate(true)
+	lifetime_stats = new_lifetime_stats
 	var new_npc_collection: Dictionary = lifetime_stats.get("npc_collection", { })
 	if new_npc_collection != old_npc_collection:
 		npc_collection_changed.emit(get_npc_collection())
