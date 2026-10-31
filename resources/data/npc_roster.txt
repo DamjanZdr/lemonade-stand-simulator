@@ -115,7 +115,11 @@ Yuhroon | m | 1 | grey | fair | maroon | charcoal | charcoal | 1.04 | 0.93
 
 [rare]
 Grzegorz Brzeczyszczykiewicz | m | 3 | brown | fair | grey | navy | charcoal | 1.02 | 1.00
-Monkey D Goofy | m | 2 | black | tan | red | blue | tan | 1.00 | 1.11
+[community]
+# Community NPC parked in this slot to keep every other NPC's roster
+# index stable (replaced Monkey D Goofy).
+Demitrius Demarcus James George Junior III | m | 3 | auburn | brown | purple | navy | charcoal | 1.04 | 1.06
+[rare]
 McLovin | m | 4 | dark_brown | pale | teal | charcoal | charcoal | 0.95 | 1.05
 Pickle Rick | m | 1 | grey | pale | green | green | charcoal | 0.97 | 1.11
 Morty | m | 2 | brown | fair | yellow | blue | tan | 0.94 | 0.95

@@ -364,9 +364,6 @@ func _convert_chance_for(stand: StandUnit) -> float:
 	var chance := Balancing.pedestrian_convert_chance(stand.popularity)
 	if _ensure_people_manager():
 		chance = _people_manager.call("get_pedestrian_convert_chance", stand.popularity)
-	var marketing_bonus: float = UpgradeManager.get_effect_total("marketing")
-	if marketing_bonus > 0.0:
-		chance = clampf(chance + marketing_bonus, 0.0, 1.0)
 	# A stand with no lemonade to sell only frustrates customers — halve
 	# conversions until the player has stock near the stand again.
 	if chance > 0.0 and not _stand_has_lemonade(stand):
@@ -432,9 +429,5 @@ func _resume(ped: Pedestrian) -> void:
 
 
 func _update_spawner() -> void:
-	var traffic: float = UpgradeManager.get_effect_total("foot_traffic")
-	max_pedestrians = 10 + int(10.0 * traffic)
-	var new_interval: float = spawn_interval / (1.0 + traffic)
-	if new_interval < 0.5:
-		new_interval = 0.5
-	_spawn_timer.wait_time = new_interval
+	max_pedestrians = 10
+	_spawn_timer.wait_time = maxf(0.5, spawn_interval)

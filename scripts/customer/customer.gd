@@ -126,6 +126,10 @@ var _ui_panel: Panel = null
 
 var _patience_circle: Sprite3D = null
 var _patience_progress: TextureProgressBar = null
+var _order_icon: TextureRect = null
+var _order_count_label: Label = null
+var _order_unknown_label: Label = null
+var _order_dialogue_left: float = 0.0
 var _last_patience_percent: int = -1
 
 # Throttle patience-bar network sync: only send when the ratio changes by
@@ -169,7 +173,11 @@ func _ready() -> void:
 	floor_constant_speed = true
 	floor_stop_on_slope = false
 	floor_block_on_wall = false
-	var sunroof_bonus: float = UpgradeManager.get_effect_total("sunroof")
+	# Sunroof belongs to the stand this customer is headed to.
+	var sunroof_bonus: float = UpgradeManager.get_effect_total_for_stand(
+		"sunroof",
+		stand.name if stand != null else "",
+	)
 	var bonus: float = 1.0 + sunroof_bonus
 	serve_patience_max = Balancing.PATIENCE_BASE * bonus # Phase 2
 	patience_max = Balancing.PATIENCE_BASE * bonus * 0.5 # Phase 1
@@ -226,6 +234,7 @@ func _exit_tree() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_tick_order_dialogue(delta)
 	# Server-authoritative: only the host runs customer simulation.
 	# Clients interpolate toward synced positions.
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
@@ -902,6 +911,8 @@ func _record_customer_served(outcome: String) -> void:
 	if stand != null:
 		stand.request_customer_served(outcome, pop_delta, _served_evaluations.size())
 		stand.record_npc_encounter(npc_id, _affinity_delta(outcome), _serving_peer_id)
+		if outcome == "timeout":
+			OnboardingManager.report(stand, "customer_lost")
 
 
 ## The bar counts perfect cups: +1 for each clean (zero-complaint) cup,
@@ -1255,6 +1266,9 @@ func show_order_to_player(player: Node) -> void:
 		patience_max = serve_patience_max
 		patience = patience_max
 		_refresh_patience_bar(1.0)
+	_refresh_order_indicator()
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_sync_patience.rpc(patience / patience_max, order, _order_taken)
 
 
 func _disengage_player() -> void:
@@ -1310,19 +1324,56 @@ func sync_patience(ratio: float) -> void:
 	_last_patience_sync_ratio = ratio
 	_last_patience_sync_ms = now
 	if multiplayer.has_multiplayer_peer():
-		_sync_patience.rpc(ratio)
+		_sync_patience.rpc(ratio, order, _order_taken)
 
 
 @rpc("authority", "call_local", "reliable")
-func _sync_patience(ratio: float) -> void:
+func _sync_patience(ratio: float, remaining: Dictionary = { }, revealed: bool = false) -> void:
 	if multiplayer.is_server():
 		return
+	order = remaining.duplicate(true)
+	_order_taken = revealed
+	_refresh_order_indicator()
 	if _patience_progress != null:
 		_patience_progress.value = ratio * _patience_progress.max_value
 	_last_patience_percent = int(ratio * 100.0)
 
 
-func _set_order_text(text: String, with_voice: bool = true) -> void:
+func _tick_order_dialogue(delta: float) -> void:
+	if _order_dialogue_left <= 0.0:
+		return
+	_order_dialogue_left = maxf(0.0, _order_dialogue_left - delta)
+	var player := WorldSync.get_local_player() as Node3D
+	if player != null and player.global_position.distance_to(global_position) > _ENGAGE_LOOK_RANGE:
+		_order_dialogue_left = 0.0
+	if _order_dialogue_left <= 0.0:
+		if _ui_panel != null:
+			_ui_panel.visible = false
+		if _bubble_sprite != null:
+			_bubble_sprite.visible = false
+
+
+func _refresh_order_indicator() -> void:
+	if _order_icon == null:
+		return
+	_order_unknown_label.visible = not _order_taken
+	_order_icon.visible = _order_taken and not order.is_empty()
+	_order_count_label.visible = _order_icon.visible
+	if not _order_icon.visible:
+		return
+	var fruit: String = str(order.keys()[0])
+	var path := "res://assets/textures/ui/products/" + fruit + ".png"
+	if ResourceLoader.exists(path):
+		var texture := load(path) as Texture2D
+		if _order_icon.texture != texture:
+			_order_icon.texture = texture
+	else:
+		_order_icon.texture = null
+	_order_count_label.text = str(int(order[fruit]))
+
+
+func _set_order_text(text: String, with_voice: bool = true, temporary: bool = false) -> void:
+	_order_dialogue_left = 5.0 if temporary else 0.0
 	if _ui_label == null:
 		return
 	_prompt_active = false
@@ -1339,10 +1390,11 @@ func _set_order_text(text: String, with_voice: bool = true) -> void:
 		_resize_order_panel()
 	# Sync any bubble text change to clients so they see change/feedback/wrong-item messages.
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		sync_show_order(text, with_voice)
+		sync_show_order(text, with_voice, temporary)
 
 
 func _show_order() -> void:
+	_refresh_order_indicator()
 	if order.is_empty():
 		_set_order_text("")
 		return
@@ -1354,21 +1406,31 @@ func _show_order() -> void:
 		else:
 			parts.append("%d of %s lemonade" % [qty, fruit_type.capitalize()])
 	var text := "Can I please have %s?" % " and ".join(parts)
-	_set_order_text(text)
+	_set_order_text(text, true, true)
 
 
 ## Host: sync the order bubble text to clients so they see it too.
-func sync_show_order(text: String, with_voice: bool = true) -> void:
+func sync_show_order(text: String, with_voice: bool = true, temporary: bool = false) -> void:
 	if not multiplayer.has_multiplayer_peer():
 		return
-	_sync_show_order.rpc(text, with_voice)
+	_sync_show_order.rpc(text, with_voice, temporary, order, _order_taken)
 
 
 @rpc("authority", "call_local", "reliable")
-func _sync_show_order(text: String, with_voice: bool = true) -> void:
+func _sync_show_order(
+	text: String,
+	with_voice: bool = true,
+	temporary: bool = false,
+	remaining: Dictionary = { },
+	revealed: bool = false,
+) -> void:
 	if multiplayer.is_server():
 		return
+	order = remaining.duplicate(true)
+	_order_taken = revealed
+	_refresh_order_indicator()
 	if text == "":
+		_order_dialogue_left = 0.0
 		# Hide directly — do NOT call _hide_order_bubble() because that
 		# would call sync_show_order("") again → infinite recursion
 		_prompt_active = false
@@ -1381,7 +1443,7 @@ func _sync_show_order(text: String, with_voice: bool = true) -> void:
 		if _bubble_sprite:
 			_bubble_sprite.visible = false
 	else:
-		_set_order_text(text, with_voice)
+		_set_order_text(text, with_voice, temporary)
 
 
 func _run_price_check_and_show_order() -> void:
@@ -1674,14 +1736,16 @@ func _build_patience_circle() -> void:
 	viewport.transparent_bg = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	viewport.disable_3d = true
-	viewport.size = Vector2i(128, 128)
+	viewport.size = Vector2i(192, 192)
 	add_child(viewport)
 
-	var tex := _create_ring_texture(128, 0.15)
+	var tex := _create_ring_texture(192, 0.84)
 
 	_patience_progress = TextureProgressBar.new()
 	_patience_progress.name = "PatienceProgress"
-	_patience_progress.size = Vector2(128, 128)
+	_patience_progress.size = Vector2(192, 192)
+	_patience_progress.texture_under = _create_ring_texture(192, 0.0)
+	_patience_progress.tint_under = Color(0.08, 0.09, 0.11, 1.0)
 	_patience_progress.fill_mode = TextureProgressBar.FILL_CLOCKWISE
 	_patience_progress.nine_patch_stretch = false
 	_patience_progress.texture_progress = tex
@@ -1691,6 +1755,35 @@ func _build_patience_circle() -> void:
 	_patience_progress.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	viewport.add_child(_patience_progress)
 
+	_order_icon = TextureRect.new()
+	_order_icon.position = Vector2(32, 44)
+	_order_icon.size = Vector2(128, 128)
+	_order_icon.self_modulate = Color.WHITE
+	_order_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_order_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	viewport.add_child(_order_icon)
+	_order_count_label = Label.new()
+	_order_count_label.position = Vector2(108, 24)
+	_order_count_label.size = Vector2(52, 60)
+	_order_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var count_font := FontVariation.new()
+	count_font.base_font = ThemeDB.fallback_font
+	count_font.variation_embolden = 1.2
+	_order_count_label.add_theme_font_override("font", count_font)
+	_order_count_label.add_theme_font_size_override("font_size", 56)
+	_order_count_label.add_theme_constant_override("outline_size", 0)
+	viewport.add_child(_order_count_label)
+	_order_unknown_label = Label.new()
+	_order_unknown_label.text = "?"
+	_order_unknown_label.position = Vector2(32, 32)
+	_order_unknown_label.size = Vector2(128, 128)
+	_order_unknown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_order_unknown_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_order_unknown_label.add_theme_font_size_override("font_size", 88)
+	_order_unknown_label.add_theme_constant_override("outline_size", 0)
+	viewport.add_child(_order_unknown_label)
+	_refresh_order_indicator()
+
 	_patience_circle = Sprite3D.new()
 	_patience_circle.name = "PatienceCircle"
 	_patience_circle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -1699,7 +1792,7 @@ func _build_patience_circle() -> void:
 	_patience_circle.render_priority = 127
 	_patience_circle.shaded = false
 	_patience_circle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_patience_circle.pixel_size = 0.0012
+	_patience_circle.pixel_size = 0.00165
 	_patience_circle.position = Vector3(0, 2.2, 0)
 	_patience_circle.texture = viewport.get_texture()
 	add_child(_patience_circle)
@@ -1765,8 +1858,8 @@ static func get_ui_tonemap_shader() -> Shader:
 		_ui_tonemap_shader = Shader.new()
 		_ui_tonemap_shader.code = (
 			"shader_type spatial;\n"
-			+ "render_mode unshaded, cull_disabled, depth_test_disabled;\n"
-			+ "uniform sampler2D tex;\n"
+			+ "render_mode unshaded, cull_disabled, depth_test_disabled, fog_disabled;\n"
+			+ "uniform sampler2D tex : source_color;\n"
 			+ "uniform float boost = 1.0;\n"
 			# Billboard manually — material_override drops Sprite3D's own
 			# billboard flag, leaving the quad mirrored when seen from behind.
