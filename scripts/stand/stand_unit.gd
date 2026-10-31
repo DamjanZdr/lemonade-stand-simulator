@@ -119,7 +119,7 @@ var perfect_recipes_set: Dictionary = { }
 @onready var queue_marker_1: Marker3D = $QueueMarker1
 @onready var queue_marker_2: Marker3D = $QueueMarker2
 @onready var price_board: Node3D = $PriceBoard
-@onready var thermometer: Node3D = get_node_or_null("Thermometer")
+@onready var thermometer: Node3D = $Thermometer
 @onready var water_dispenser: Node3D = $WaterDispenser
 @onready var stand_mesh: Node3D = $Stand
 @onready var _sign_label: Label3D = get_node_or_null("Stand/stand/SignLabel")
@@ -167,31 +167,7 @@ func _setup_replication() -> void:
 ## update their local copy + emit signals so UI (HUD, price board, etc.)
 ## refreshes. Only the host calls this; only clients apply it (the host
 ## already has the correct values locally).
-## Broadcasts are coalesced one per frame: a single serve can mutate the
-## stand four+ times (popularity, money, npc encounter, perfect serve)
-## and each used to serialize + broadcast + reapply the full state. The
-## values are absolute, so pushing once at frame end loses nothing.
-var _push_scheduled := false
-
-
 func push_state(peer_id: int = 0) -> void:
-	# Targeted pushes (late-joiner re-pull) always go out immediately.
-	if peer_id != 0:
-		_push_state_now(peer_id)
-		return
-	if _push_scheduled:
-		return
-	_push_scheduled = true
-	call_deferred("_flush_push_state")
-
-
-func _flush_push_state() -> void:
-	_push_scheduled = false
-	if is_inside_tree():
-		_push_state_now(0)
-
-
-func _push_state_now(peer_id: int = 0) -> void:
 	# Guard: if no multiplayer peer is assigned (e.g. loading a save
 	# from the main menu before hosting), skip the RPC entirely.
 	if not multiplayer.has_multiplayer_peer():
@@ -259,7 +235,6 @@ func _apply_state(
 ) -> void:
 	if is_multiplayer_authority():
 		return # Host already has correct values; don't overwrite
-	var _t0 := Time.get_ticks_usec()
 	var first_apply := not _received_authoritative_state
 	var changed_money := not is_equal_approx(money, new_money)
 	var changed_pop := not is_equal_approx(popularity, new_popularity)
@@ -295,16 +270,11 @@ func _apply_state(
 	highest_purchase = new_highest_purchase
 	highest_money = new_highest_money
 	total_fruit_pressed = new_total_fruit_pressed
-	# The dict args are already exclusive copies — push_state() duplicates
-	# the live dicts before broadcasting, and RPC deserialization gives
-	# clients fresh objects. Re-duplicating here burned a full deep-copy of
-	# lifetime_stats (incl. the 100-entry npc_collection) on every synced
-	# state change — a real frame spike on weak machines.
-	perfect_recipes_set = new_perfect_recipes_set
-	onboarding_progress = new_onboarding_progress
-	last_day_stats = new_last_day_stats
+	perfect_recipes_set = new_perfect_recipes_set.duplicate(true)
+	onboarding_progress = new_onboarding_progress.duplicate(true)
+	last_day_stats = new_last_day_stats.duplicate(true)
 	var old_npc_collection: Dictionary = lifetime_stats.get("npc_collection", { })
-	lifetime_stats = new_lifetime_stats
+	lifetime_stats = new_lifetime_stats.duplicate(true)
 	var new_npc_collection: Dictionary = lifetime_stats.get("npc_collection", { })
 	if new_npc_collection != old_npc_collection:
 		npc_collection_changed.emit(get_npc_collection())
@@ -312,8 +282,7 @@ func _apply_state(
 	# Sync per-stand unlocks. Notify local UI (price/recipe boards) if they changed.
 	var old_unlocks: Dictionary = purchased_upgrade_nodes.duplicate(true)
 	purchased_upgrade_nodes = new_purchased_upgrade_nodes.duplicate(true)
-	UpgradeManager.set_purchased_for_stand(str(name), purchased_upgrade_nodes.keys())
-	if old_unlocks != purchased_upgrade_nodes:
+	if not old_unlocks.is_empty() and not old_unlocks == purchased_upgrade_nodes:
 		EventBus.upgrade_purchased.emit(0, 0.0)
 	if stand_display_name != new_stand_display_name:
 		stand_display_name = new_stand_display_name
@@ -366,7 +335,6 @@ func _apply_state(
 	# state arrives. On the first push after joining, the synced totals are
 	# recorded as the baseline instead — only progress made while this
 	# player is present counts toward their unlocks.
-	GameLog.time_log("stand._apply_state", _t0)
 	if first_apply:
 		AchievementManager.set_stand_baseline(self)
 	else:
@@ -392,7 +360,6 @@ func reset_to_starting_state() -> void:
 	perfect_recipes_set.clear()
 	last_day_stats = { }
 	lifetime_stats = { }
-	onboarding_progress.erase("progress")
 	reset_daily_stats()
 	init_default_prices()
 	init_default_recipes()
@@ -428,7 +395,6 @@ func _ready() -> void:
 	if not EventBus.upgrade_purchased.is_connected(_on_upgrade_purchased_for_assistants):
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased_for_assistants)
 
-	EventBus.upgrade_purchased.connect(_on_global_upgrade_purchased_bridge)
 	if not is_legacy_primary:
 		# Clean, fully independent stand — no legacy bridge, no GameState
 		# involvement at all. Give it starting money and popularity from Balancing.
@@ -493,6 +459,7 @@ func _ready() -> void:
 	# genuinely need to diverge per stand, UpgradeManager's purchase logic
 	# itself should be parameterized by stand instead of this mirror.
 	purchased_upgrade_nodes = UpgradeManager.get_purchased_for_stand(name).duplicate()
+	EventBus.upgrade_purchased.connect(_on_global_upgrade_purchased_bridge)
 
 
 ## True when this peer is a connected client. Checked inside the bridge
@@ -557,69 +524,14 @@ func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void
 ## should use this instead of the global UpgradeManager active set, which
 ## can temporarily belong to another stand during a remote purchase.
 func is_fruit_unlocked(fruit: String) -> bool:
-	return UpgradeManager.is_fruit_unlocked_for_stand(fruit, self)
-
-
-## Bar-progression counters. Stored inside onboarding_progress so they
-## sync, save, and reset with the rest of the per-stand state (the RPC
-## signature stays untouched). Host-authoritative: callers go through
-## OnboardingManager.report, which already routes to the host.
-func record_progress(key: String, amount: float = 1.0) -> void:
-	if not WorldSync.is_host():
-		return
-	var p: Dictionary = onboarding_progress.get("progress", { })
-	p[key] = float(p.get(key, 0.0)) + amount
-	onboarding_progress["progress"] = p
-	_touch_progress()
-
-
-func get_progress(key: String) -> float:
-	return float(onboarding_progress.get("progress", { }).get(key, 0.0))
-
-
-func record_perfect_serve(fruit: String) -> void:
-	if not WorldSync.is_host():
-		return
-	var p: Dictionary = onboarding_progress.get("progress", { })
-	var serves: Dictionary = p.get("perfect_serves", { })
-	serves[fruit] = int(serves.get(fruit, 0)) + 1
-	p["perfect_serves"] = serves
-	onboarding_progress["progress"] = p
-	_touch_progress()
-
-
-func get_perfect_serves(fruit: String) -> int:
-	var serves: Dictionary = onboarding_progress.get("progress", { }).get("perfect_serves", { })
-	return int(serves.get(fruit, 0))
-
-
-## Claimed bar tiers per branch — the counter reaching a threshold only
-## makes the tier claimable; the level (and its effect) applies once the
-## player clicks the badge. Stored in onboarding_progress like the rest.
-func get_claimed(branch_id: String) -> int:
-	return int(onboarding_progress.get("progress", { }).get("claimed", { }).get(branch_id, 0))
-
-
-func claim_progress_tier(branch_id: String, level: int) -> void:
-	if not WorldSync.is_host():
-		return
-	var p: Dictionary = onboarding_progress.get("progress", { })
-	var claimed: Dictionary = p.get("claimed", { })
-	claimed[branch_id] = level
-	p["claimed"] = claimed
-	onboarding_progress["progress"] = p
-	_touch_progress()
-
-
-func _touch_progress() -> void:
-	onboarding_progress["revision"] = int(onboarding_progress.get("revision", 0)) + 1
-	OnboardingManager.stand_progress_changed.emit(self, onboarding_progress.duplicate(true))
-	# Progress mutations (claims, discoveries, task completions) must
-	# reach peers — claimed tiers gate fruit unlocks, and without a push
-	# the other machines kept the stale unlock state until some unrelated
-	# state change happened to broadcast.
-	push_state()
-	AchievementManager.check_stand_thresholds(self)
+	if fruit == "lemon":
+		return true
+	var unlock_id := fruit + "_unlock"
+	for node_name in purchased_upgrade_nodes.keys():
+		var data: Dictionary = UpgradeManager.tree_nodes.get(node_name, { })
+		if data.get("upgrade_id", "") == unlock_id:
+			return true
+	return false
 
 
 func init_default_prices() -> void:
@@ -683,8 +595,6 @@ func spend_money(amount: float, _category: String = "") -> bool:
 		return false
 	money -= amount
 	total_money_spent += amount
-	# Negotiation counts all money spent — supplies, equipment, wages.
-	record_progress("supply_spend", amount)
 	day_costs += amount
 	money_changed.emit(money)
 	if is_legacy_primary:
@@ -741,11 +651,6 @@ func record_disposal_income(amount: float, is_regular_trash: bool) -> void:
 func set_popularity(value: float) -> void:
 	popularity = clampf(value, 0.0, Balancing.MAX_POPULARITY)
 	popularity_changed.emit(popularity)
-	if is_legacy_primary:
-		# Write through to GameState so saves and legacy readers see the
-		# change — the EventBus echo is swallowed by the bridge's
-		# is_equal_approx guard (same pattern as add_money).
-		GameState.set_popularity(popularity)
 
 
 func get_price(fruit_type: String) -> float:
@@ -811,36 +716,14 @@ func _rpc_add_money_from_sale(amount: float) -> void:
 	push_state()
 
 
-func record_fruit_pressed(fruit_type: String = "") -> void:
+func record_fruit_pressed() -> void:
 	total_fruit_pressed += 1
-	if fruit_type != "":
-		var pressed: Dictionary = lifetime_stats.get("pressed_fruits", { }).duplicate()
-		pressed[fruit_type] = true
-		lifetime_stats["pressed_fruits"] = pressed
 	AchievementManager.check_stand_thresholds(self)
 	push_state()
 
 
 func record_perfect_recipe_set(fruit_type: String) -> void:
 	perfect_recipes_set[fruit_type] = true
-	AchievementManager.check_stand_thresholds(self)
-	push_state()
-
-
-## Host-side counter for achievement input: any trash deposited in a can
-## owned by this stand — held litter, supply boxes, physics-landed junk.
-func record_trash_thrown() -> void:
-	lifetime_stats["trash_thrown"] = int(lifetime_stats.get("trash_thrown", 0)) + 1
-	AchievementManager.check_stand_thresholds(self)
-	push_state()
-
-
-## Host-side counter: a machine produced a finished pitcher (concentrate
-## or full lemonade). machine_type is lemonader/fruitomatic.
-func record_machine_pitcher(machine_type: String) -> void:
-	var m: Dictionary = lifetime_stats.get("machine_pitchers", { }).duplicate()
-	m[machine_type] = int(m.get(machine_type, 0)) + 1
-	lifetime_stats["machine_pitchers"] = m
 	AchievementManager.check_stand_thresholds(self)
 	push_state()
 
@@ -880,18 +763,6 @@ func consume_grace_conversion() -> void:
 	push_state()
 
 
-func _sender_can_edit_fruit(fruit_type: String) -> bool:
-	if fruit_type not in FRUIT_TYPES or not is_fruit_unlocked(fruit_type):
-		return false
-	var sender := multiplayer.get_remote_sender_id()
-	if sender == 0:
-		return true
-	for player in get_tree().get_nodes_in_group("player"):
-		if player.get_multiplayer_authority() == sender:
-			return player.get("assigned_stand") == self
-	return false
-
-
 func request_set_price(fruit_type: String, new_price: float) -> void:
 	if multiplayer.has_multiplayer_peer():
 		_rpc_set_price.rpc_id(1, fruit_type, new_price)
@@ -901,7 +772,7 @@ func request_set_price(fruit_type: String, new_price: float) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _rpc_set_price(fruit_type: String, new_price: float) -> void:
-	if not is_multiplayer_authority() or not _sender_can_edit_fruit(fruit_type):
+	if not is_multiplayer_authority():
 		return
 	set_price(fruit_type, new_price)
 	push_state()
@@ -916,7 +787,7 @@ func request_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _rpc_set_recipe(fruit_type: String, recipe: Dictionary) -> void:
-	if not is_multiplayer_authority() or not _sender_can_edit_fruit(fruit_type):
+	if not is_multiplayer_authority():
 		return
 	set_recipe(fruit_type, recipe)
 	push_state()
@@ -973,12 +844,6 @@ func set_recipe(fruit_type: String, recipe: Dictionary) -> void:
 func set_feedback_tier(tier: int) -> void:
 	feedback_tier = clampi(tier, 0, 2)
 	feedback_tier_changed.emit(feedback_tier)
-	if is_legacy_primary:
-		# Same write-through as set_popularity — keep GameState coherent
-		# for saves and legacy readers. No EventBus echo loop: the
-		# feedback bridge only listens GameState -> stand.
-		GameState.feedback_tier = feedback_tier
-		EventBus.feedback_tier_changed.emit(feedback_tier)
 
 
 ## Per-stand NPC collection, stored inside lifetime_stats under
@@ -1010,7 +875,6 @@ func record_npc_encounter(
 	if is_new or affinity_delta != 0.0:
 		npc_collection_changed.emit(collection.duplicate(true))
 		push_state()
-		AchievementManager.check_stand_thresholds(self)
 
 
 ## An NPC crossed to 10/10 — tell the serving/interacting peer's HUD so
@@ -1032,86 +896,6 @@ func _notify_regular_unlocked(npc_id: int, notify_peer_id: int) -> void:
 @rpc("authority", "reliable")
 func _rpc_npc_regular_unlocked(who: String, rarity: String) -> void:
 	EventBus.npc_regular_unlocked.emit(who, rarity)
-
-
-## Dev-panel debug actions. Host-only, debug builds only — reached via
-## OnboardingManager.report(stand, "debug_action"), whose _request_report
-## already verified the sender is assigned to THIS stand. Every action
-## mutates this stand's authoritative state and pushes it to the peers.
-func apply_debug_action(action: String, params: Dictionary = { }) -> void:
-	if not (OS.is_debug_build() or GameState.DEV_TOOLS) or not WorldSync.is_host():
-		return
-	match action:
-		"add_money":
-			add_money(float(params.get("amount", 0.0)))
-		"set_popularity":
-			set_popularity(
-				clampf(float(params.get("value", popularity)), 0.0, Balancing.MAX_POPULARITY)
-			)
-		"set_feedback_tier":
-			set_feedback_tier(clampi(int(params.get("tier", feedback_tier)), 0, 2))
-		"spawn_npc", "force_spawn_customer":
-			var spawner := _debug_customer_spawner()
-			if spawner != null:
-				spawner.debug_spawn_at_free_slot(int(params.get("npc_id", -1)))
-		"force_happy_serve":
-			var spawner := _debug_customer_spawner()
-			if spawner != null:
-				spawner.debug_force_happy()
-		"set_queue_max":
-			var spawner := _debug_customer_spawner()
-			if spawner != null:
-				spawner.debug_set_queue_max(int(params.get("value", 0)))
-		"refill_bins":
-			_debug_refill_owned_bins()
-		"empty_pitcher":
-			_debug_empty_owned_pitchers()
-		"set_temperature":
-			GameState.temperature = clampf(
-				float(params.get("value", Balancing.TEMP_DEFAULT)),
-				Balancing.TEMP_MIN,
-				Balancing.TEMP_MAX,
-			)
-			EventBus.weather_changed.emit(GameState.temperature)
-		"end_day":
-			DayManager.end_day()
-		_:
-			return
-	push_state()
-
-
-## The CustomerSpawner serving this stand (spawners live at scene root
-## and are bound via set_stand()).
-func _debug_customer_spawner() -> Node:
-	var scene := get_tree().current_scene
-	if scene == null:
-		return null
-	for sp in scene.find_children("CustomerSpawner*", "", true, false):
-		if sp.get("stand") == self:
-			return sp
-	return null
-
-
-## Refill this stand's own supply containers (both stands share the
-## "container" group in versus, so ownership must be checked). Unowned
-## containers (no stand_owner, no StandUnit ancestor) are included —
-## skipping them would silently miss default/legacy equipment.
-func _debug_refill_owned_bins() -> void:
-	for node in get_tree().get_nodes_in_group("container"):
-		var owner := OnboardingManager.stand_for_node(node)
-		if owner != null and owner != self:
-			continue
-		if node.has_method("debug_refill"):
-			node.debug_refill()
-
-
-func _debug_empty_owned_pitchers() -> void:
-	for node in get_tree().get_nodes_in_group("pitcher"):
-		var owner := OnboardingManager.stand_for_node(node)
-		if owner != null and owner != self:
-			continue
-		if node.has_method("debug_empty"):
-			node.debug_empty()
 
 
 ## Debug helper: mark every roster NPC as met (used by the dev panel).
@@ -1425,3 +1209,18 @@ func get_stand_name() -> String:
 	if _sign_label:
 		return _sign_label.text
 	return ""
+
+func record_progress(_key: String, _amount: float = 1.0) -> void:
+	pass
+func record_perfect_serve(_fruit_id: String, _count: int = 1) -> void:
+	pass
+func get_progress(_key: String) -> float:
+	return 0.0
+func get_claimed(_key: String) -> int:
+	return 0
+func claim_progress_tier(_branch_id: String, _level: int) -> void:
+	pass
+func is_fruit_unlocked_for_stand(_fruit_id: String) -> bool:
+	return true
+func get_perfect_serves(_fruit_id: String) -> int:
+	return 0

@@ -16,9 +16,6 @@ const LEMON_MASTERY_TEXT := (
 	+ "and adjust your recipe when you make your next batches."
 )
 const CLIENT_REPORTED_EVENTS := [
-	"claim_upgrade",
-	"debug_fill_branch",
-	"debug_action",
 	"equipment_placed",
 	"supply_deposited",
 	"pitcher_placed",
@@ -373,8 +370,6 @@ func _request_report(stand_name: String, event_name: String, data: Dictionary) -
 
 
 func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> void:
-	var _t0 := Time.get_ticks_usec()
-	GameLog.mark("report:" + event_name)
 	initialize_stand(stand)
 	# Record every gameplay event so work done before its task arrives can
 	# still count (see _retro_satisfy_current_task). customer_feedback is
@@ -383,14 +378,7 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 	if event_name != "customer_feedback":
 		_record_event(stand, event_name, data)
 	if event_name == "fruit_pressed":
-		stand.record_fruit_pressed(str(data.get("type", "")))
-	if event_name == "pitcher_made" and str(data.get("machine", "")) != "":
-		stand.record_machine_pitcher(str(data["machine"]))
-		# Machines squeeze fruit too — count the batch's fruit toward the
-		# "squeezed every fruit" set alongside manual presses.
-		var batch_fruit := str((data.get("snapshot", { }) as Dictionary).get("fruit_type", ""))
-		if batch_fruit != "":
-			stand.record_fruit_pressed(batch_fruit)
+		stand.record_fruit_pressed()
 	if event_name == "perfect_recipe_set":
 		stand.record_perfect_recipe_set(data.get("fruit_type", ""))
 	if (
@@ -437,14 +425,8 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 		_match_task(stand, "second_fruit_ordered", d2)
 	if event_name == "customer_feedback":
 		_evaluate_mastery(stand, data)
-	# Dev-panel actions arrive here already host-validated against the
-	# sender's assigned stand (_request_report) — apply on that stand only.
-	if event_name == "debug_action" and (OS.is_debug_build() or GameState.DEV_TOOLS):
-		stand.apply_debug_action(str(data.get("action", "")), data.get("params", { }))
-	UpgradeManager.record_event(stand, event_name, data)
 	_match_task(stand, event_name, data)
 	_retro_satisfy_current_task(stand)
-	GameLog.time_log("_apply_report:" + event_name, _t0)
 
 
 func _match_task(stand: StandUnit, event_name: String, data: Dictionary) -> void:
@@ -670,17 +652,16 @@ func _evaluate_mastery(stand: StandUnit, data: Dictionary) -> void:
 			"sugar": snap.get("sugar", 0.0),
 		}
 		var state: Dictionary = p.active_recipe_candidates.get(fruit, { })
-		var had_fruit_complaint: bool = complaints.any(
-			func(c):
-				return c in FRUIT_COMPLAINTS,
+		state = _advance_candidate(
+			state,
+			candidate,
+			complaints.any(
+				func(c):
+					return c in FRUIT_COMPLAINTS,
+			),
+			_fruit_is_perfect(fruit, candidate),
 		)
-		var is_perfect := _fruit_is_perfect(fruit, candidate)
-		state = _advance_candidate(state, candidate, had_fruit_complaint, is_perfect)
 		p.active_recipe_candidates[fruit] = state
-		# Cumulative perfect serves drive the Fruit unlock bar — one number,
-		# no streak resets.
-		if is_perfect and not had_fruit_complaint:
-			stand.record_perfect_serve(fruit)
 		if state.streak >= 5 and state.perfect:
 			p.discovered_recipes[fruit] = candidate
 			p.active_recipe_candidates.erase(fruit)

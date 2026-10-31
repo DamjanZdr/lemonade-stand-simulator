@@ -485,3 +485,7 @@ func get_save_data() -> Array:
 
 func get_save_data_for_stand(_stand_name: String) -> Array:
 	return []
+
+var tree_nodes: Dictionary = { }
+var tree_positions: Dictionary = { }
+var root_node_name: String = ""

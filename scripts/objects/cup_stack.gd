@@ -270,11 +270,6 @@ func get_hint(player: Node) -> String:
 	return ""
 
 
-## Dev panel (host): refill through the synced mutator so clients see it.
-func debug_refill() -> void:
-	add_cups(max_capacity - current_count)
-
-
 func _on_debug_refill() -> void:
 	current_count = max_capacity
 	_update_display()

@@ -16,26 +16,14 @@ var _pending_snap_pitcher_net_id: int = -1
 var _tap_tween: Tween = null
 var _last_display_fillings: float = -1000.0
 
-@onready var _water_mesh: MeshInstance3D = $CSGCombiner3D/Water
+@onready var _water_eraser: CSGBox3D = $CSGCombiner3D/WaterEraser
 @onready var _tap_mesh: MeshInstance3D = $"water dispenser/TapObject"
 @onready var _snap_point: Marker3D = $Marker3D
 
 const TAP_Y_CLOSED: float = 110.0
 const TAP_Y_OPEN: float = 250.0
-const WATER_COLOR: Color = Color(0.29411766, 0.5411765, 1.0, 1.0)
-
-## Water level is shown by clipping the tank mesh at a local height via the
-## liquid_clip shader + a cap disc — the CSG-eraser look without rebuilds.
-## scale.y would squash the tank's shaped profile and float mid-mesh (its
-## pivot is near the center, not the bottom).
-var _water_bottom: float = 0.0
-var _water_top: float = 1.0
-var _water_profile: PackedVector2Array
-var _water_mat: ShaderMaterial = null
-var _water_cap: MeshInstance3D = null
-var _water_display: float = 0.0
-var _water_node_scale: Vector3 = Vector3.ONE
-var _water_node_pos: Vector3 = Vector3.ZERO
+const WATER_Y_FULL: float = 3.9
+const WATER_Y_EMPTY: float = 0.74
 
 
 func _ready() -> void:
@@ -45,40 +33,7 @@ func _ready() -> void:
 	var parent := get_parent()
 	if parent != null and parent is StandUnit:
 		stand_owner = parent.name
-	if _water_mesh != null and _water_mesh.mesh != null:
-		var aabb := _water_mesh.mesh.get_aabb()
-		_water_bottom = aabb.position.y
-		_water_top = aabb.end.y
-		_water_profile = LiquidFill.build_profile(_water_mesh.mesh)
-		_water_node_scale = _water_mesh.scale
-		_water_node_pos = _water_mesh.position
-		_water_mesh.scale = _water_node_scale # undo any stale runtime squash
-		_water_mesh.position = _water_node_pos
-		_water_mat = LiquidFill.make_material(WATER_COLOR)
-		_water_mesh.material_override = _water_mat
-		_water_cap = _water_mesh.get_parent().get_node_or_null("WaterCap") as MeshInstance3D
-		if _water_cap == null:
-			_water_cap = LiquidFill.make_cap(_water_mat)
-			_water_cap.name = "WaterCap"
-			_water_mesh.get_parent().add_child(_water_cap)
-		_water_cap.material_override = _water_mat
 	_update_water_visual()
-
-
-## Sets the displayed fill fraction in one write (mesh-local clip + cap).
-func _set_water_level(t: float) -> void:
-	if _water_mesh == null:
-		return
-	_water_display = clampf(t, 0.0, 1.0)
-	LiquidFill.apply(
-		_water_mesh, _water_cap, _water_mat, _water_profile,
-		_water_bottom, _water_top, _water_display, WATER_COLOR,
-		_water_node_scale.y, _water_node_pos.y, _water_node_scale.x
-	)
-
-
-func _apply_water_display(t: float) -> void:
-	_set_water_level(t)
 
 
 ## Host-only: apply a refill and sync to all clients.
@@ -227,13 +182,7 @@ func _process(delta: float) -> void:
 			_snapped_pitcher = pitcher as Pitcher
 			_snapped_pitcher.global_position = _snap_point.global_position
 	if _is_filling and _snapped_pitcher != null and is_instance_valid(_snapped_pitcher):
-		# Water Dispenser branch speeds up filling for the stand that
-		# owns this appliance.
-		var fill_rate := 1.0 + UpgradeManager.get_effect_total_for_stand(
-			"water_dispenser",
-			stand_owner,
-		)
-		_fill_progress += delta * fill_rate
+		_fill_progress += delta
 		var t := _fill_progress / fill_time_per_pitcher
 		if t >= 1.0:
 			_finish_fill()
@@ -265,7 +214,7 @@ func _update_snap() -> void:
 
 
 func _update_water_visual(display_fillings: float = -1.0) -> void:
-	if _water_mesh == null:
+	if _water_eraser == null:
 		return
 	if display_fillings >= 0.0 and abs(display_fillings - _last_display_fillings) < 0.05:
 		return
@@ -275,7 +224,8 @@ func _update_water_visual(display_fillings: float = -1.0) -> void:
 		t = display_fillings / float(max_fillings)
 	else:
 		t = float(water_fillings) / float(max_fillings)
-	_set_water_level(t)
+	var target_y := lerpf(WATER_Y_EMPTY, WATER_Y_FULL, t)
+	_water_eraser.position.y = target_y
 
 
 func _reset_tap() -> void:
@@ -443,10 +393,6 @@ func get_hint(player: Node) -> String:
 
 
 @warning_ignore("unused_parameter")
-func is_available_for_brewing() -> bool:
-	return water_fillings > 0 and not _is_filling and not is_instance_valid(_snapped_pitcher)
-
-
 func snap_pitcher(pitcher: Pitcher, onboarding_stand: StandUnit = null) -> void:
 	_snapped_pitcher = pitcher
 	_pending_snap_pitcher_net_id = WorldSync.get_net_id(pitcher)
@@ -508,7 +454,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	var snap_rot := Vector3.ZERO
 	var state: Dictionary = {
 		"_net_groups": ["container", "pitcher"],
-		"_net_scale": Vector3.ONE * 0.1008,
+		"_net_scale": Vector3.ONE * 0.1575,
 		"fruit_type": recipe.get("fruit_type", ""),
 		"fruit_count": recipe.get("fruit_count", recipe.get("lemons", 0.0)),
 		"sugar": recipe.get("sugar", 0.0),
@@ -527,7 +473,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	if pitcher == null:
 		return false
 	# Apply the placement scale so the host's pitcher matches clients.
-	pitcher.scale = Vector3.ONE * 0.1008
+	pitcher.scale = Vector3.ONE * 0.1575
 	# Apply recipe state (request_spawn on host returns the instance, but
 	# _ready() has already run with defaults, so we re-apply the recipe).
 	pitcher.fruit_type = recipe.get("fruit_type", "")
@@ -624,8 +570,8 @@ func _animate_water_drop(start_pos: Vector3, to_add: int) -> void:
 	var drop_mesh := _make_water_drop_mesh()
 	add_child(drop_mesh)
 	var target_local := Vector3.ZERO
-	if _water_mesh:
-		target_local = to_local(_water_mesh.global_position)
+	if _water_eraser:
+		target_local = to_local(_water_eraser.global_position)
 	var tween := _animate_throw_arc(drop_mesh, start_pos, target_local)
 	if tween:
 		tween.finished.connect(
@@ -633,15 +579,20 @@ func _animate_water_drop(start_pos: Vector3, to_add: int) -> void:
 				drop_mesh.queue_free()
 				var prev_fillings := water_fillings
 				water_fillings += to_add
-				var start_t := clampf(float(prev_fillings) / float(max_fillings), 0.0, 1.0)
-				var end_t := clampf(float(water_fillings) / float(max_fillings), 0.0, 1.0)
-				_set_water_level(start_t)
-				if _water_mesh != null:
-					var wt := create_tween()
-					wt \
-							.tween_method(_apply_water_display, start_t, end_t, 0.35) \
-							.set_ease(Tween.EASE_OUT) \
-							.set_trans(Tween.TRANS_CUBIC)
+				var start_y := lerpf(
+					WATER_Y_EMPTY,
+					WATER_Y_FULL,
+					float(prev_fillings) / float(max_fillings),
+				)
+				var end_y := lerpf(
+					WATER_Y_EMPTY,
+					WATER_Y_FULL,
+					float(water_fillings) / float(max_fillings),
+				)
+				_water_eraser.position.y = start_y
+				var wt := create_tween()
+				wt.tween_property(_water_eraser, "position:y", end_y, 0.35) \
+						.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 				EventBus.supply_box_deposited.emit("water", float(to_add))
 				EventBus.interaction_hint_changed.emit(
 					"Dispenser: %d/%d" % [water_fillings, max_fillings],

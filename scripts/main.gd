@@ -73,6 +73,7 @@ var _world_env: WorldEnvironment
 var _default_ambient_color: Color
 var _default_exposure: float
 
+var _enhanced_lighting: bool = true
 var _voxel_gi: VoxelGI = null
 var _reflection_probe: ReflectionProbe = null
 var _fill_light: OmniLight3D = null
@@ -88,12 +89,10 @@ var _orig_ambient_source: int = 0
 var _orig_ambient_color: Color = Color.WHITE
 var _orig_ambient_sky: float = 0.0
 var _orig_glow: bool = false
-## -1 = not captured yet. Captured on the FIRST enhanced-lighting apply so
-## re-applying a different tier can't store enhanced values as "originals".
-var _orig_shadow_blur: float = -1.0
-var _orig_shadow_normal_bias: float = -1.0
-var _orig_shadow_bias: float = -1.0
-var _orig_fill_energy: float = -1.0
+var _orig_shadow_blur: float = 1.0
+var _orig_shadow_normal_bias: float = 1.0
+var _orig_shadow_bias: float = 1.0
+var _orig_fill_energy: float = 0.5
 
 ## Lobby phase: true while in the lobby, false once the game starts.
 ## During lobby, the LobbyCamera is active and game systems are paused.
@@ -202,8 +201,12 @@ func _ready() -> void:
 	SettingsManager.apply_graphics_quality(SettingsManager.get_graphics_quality())
 	if not SettingsManager.graphics_quality_applied.is_connected(_on_graphics_quality_applied):
 		SettingsManager.graphics_quality_applied.connect(_on_graphics_quality_applied)
-	# Apply the lighting tier implied by the active graphics preset.
-	_apply_lighting()
+	# Load enhanced_lighting / fps_counter from saved settings.
+	_enhanced_lighting = SettingsManager.get_graphics_bool("enhanced_lighting", true)
+	if _enhanced_lighting:
+		_enable_enhanced_lighting()
+	else:
+		_disable_enhanced_lighting()
 
 	# Create FPS counter label (toggled with F key)
 	_fps_label = Label.new()
@@ -443,9 +446,9 @@ func _log_lighting_state(tag: String) -> void:
 			"lightmap: data=%s" % (lgi.light_data.resource_path if lgi.light_data else "null")
 		)
 	lines.append(
-		"lighting_tier=%d quality=%s mode=%s"
+		"enhanced=%s quality=%s mode=%s"
 		% [
-			SettingsManager.get_lighting_level(),
+			_enhanced_lighting,
 			SettingsManager.get_graphics_quality(),
 			"versus" if _is_versus_mode() else "coop",
 		]
@@ -487,6 +490,7 @@ func _enter_main_menu() -> void:
 		_world_menu.load_stand_requested.connect(_on_menu_load_stand)
 		_world_menu.fullscreen_toggled.connect(_on_fullscreen_toggled)
 		_world_menu.vsync_toggled.connect(_on_vsync_toggled)
+		_world_menu.enhanced_lighting_toggled.connect(_on_enhanced_lighting_toggled)
 		_world_menu.fps_toggled.connect(_on_fps_toggled)
 	_world_menu.show_menu()
 	# Instantiate the in-game ESC menu.
@@ -500,6 +504,7 @@ func _enter_main_menu() -> void:
 		_esc_menu.quit_game.connect(_on_esc_quit_game)
 		_esc_menu.fullscreen_toggled.connect(_on_fullscreen_toggled)
 		_esc_menu.vsync_toggled.connect(_on_vsync_toggled)
+		_esc_menu.enhanced_lighting_toggled.connect(_on_enhanced_lighting_toggled)
 		_esc_menu.fps_toggled.connect(_on_fps_toggled)
 	# If no save has been loaded yet (current_slot is empty), peek at
 	# the most recent save's stand name so the sign shows the right
@@ -618,22 +623,20 @@ func _on_vsync_toggled(enabled: bool) -> void:
 	)
 
 
-func _on_graphics_quality_applied() -> void:
-	# Re-apply so the new preset's lighting tier wins over what the preset
-	# just wrote to the env.
-	_apply_lighting()
-
-
-## Enhanced lighting is tiered by graphics preset (0=off … 3=full).
-## The saved user toggle only gates it — the preset decides the strength.
-func _apply_lighting() -> void:
-	if _world_env == null:
-		return
-	var level := SettingsManager.get_lighting_level()
-	if level > 0:
-		_enable_enhanced_lighting(level)
+func _on_enhanced_lighting_toggled(enabled: bool) -> void:
+	_enhanced_lighting = enabled
+	if enabled:
+		_enable_enhanced_lighting()
 	else:
 		_disable_enhanced_lighting()
+
+
+func _on_graphics_quality_applied() -> void:
+	# Re-apply enhanced lighting so its env overrides win over the preset.
+	# (When off, the env keeps the values the preset just wrote.)
+	if _world_env == null or not _enhanced_lighting:
+		return
+	_enable_enhanced_lighting()
 
 
 func _on_fps_toggled(enabled: bool) -> void:
@@ -1001,12 +1004,13 @@ func _on_return_to_menu() -> void:
 	# _setup_world_systems() is a no-op on the second game and the
 	# previous game's containers/supply boxes persist.
 	_world_setup_done = false
-	# Reset lighting to the preset tier so the menu/lobby isn't
+	# Reset lighting to enhanced defaults so the menu/lobby isn't
 	# dark from the previous game's day-cycle exposure.
-	_apply_lighting()
-	var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
-	if sun_node and sun_node.has_method("update_for_time"):
-		sun_node.update_for_time(0.0)
+	if _enhanced_lighting:
+		_enable_enhanced_lighting()
+		var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
+		if sun_node and sun_node.has_method("update_for_time"):
+			sun_node.update_for_time(0.0)
 	# Fade out lobby UI.
 	if lobby_ui:
 		var fade_tw := create_tween()
@@ -1381,23 +1385,19 @@ func _assign_local_player_stand(peer_id: int, stand_name: String) -> void:
 	if peer_id != multiplayer.get_unique_id():
 		return
 	var p: Player = null
-	var stand: StandUnit = null
-	# Wait until BOTH our player node and the target stand exist. On a
-	# fresh join this RPC can arrive while the world is still loading —
-	# giving up at ~2s left the joiner permanently stand-less, which is
-	# why owned-surface placement and the placement ghost broke until
-	# the assignment somehow arrived later.
-	for attempt in range(3600):
-		p = players_node.get_node_or_null(str(peer_id)) as Player if players_node != null else null
+	for attempt in range(120):
+		p = players_node.get_node_or_null(str(peer_id)) as Player
 		if p != null:
-			for candidate in [stand_unit, stand_unit2]:
-				if candidate != null and candidate.name == stand_name:
-					stand = candidate
-					break
-			if stand != null:
-				break
+			break
 		await get_tree().process_frame
-	if p == null or stand == null:
+	if p == null:
+		return
+	var stand: StandUnit = null
+	for candidate in [stand_unit, stand_unit2]:
+		if candidate != null and candidate.name == stand_name:
+			stand = candidate
+			break
+	if stand == null:
 		return
 	p.assigned_stand = stand
 	p.assigned_stand_name = stand.name
@@ -1873,15 +1873,6 @@ func _on_local_player_ready(p: Player) -> void:
 		_complete_pending_local_transition()
 		return
 	_local_player = p
-	# Self-heal stand assignment: the host's one-shot
-	# _assign_local_player_stand RPC can be dropped while this peer is
-	# still loading the world. Now that the player is actually ready,
-	# ask the host again if the assignment never arrived.
-	if (
-		multiplayer.has_multiplayer_peer() and not multiplayer.is_server()
-		and p.assigned_stand == null and p.assigned_stand_name == ""
-	):
-		_request_stand_assignment.rpc_id(1)
 	# Ensure the player's camera is current. There's a race condition
 	# during game start: configure_local_player() may have been called
 	# while defer_camera_claim was true (camera not made current), and
@@ -2015,18 +2006,6 @@ func _on_world_snapshot_applied() -> void:
 	# morning sun) in place.
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		_request_world_state.rpc_id(1)
-
-
-## Client→host: a ready local player without a stand asks the host to
-## re-send its assignment (the original one-shot RPC can race scene load).
-@rpc("any_peer", "reliable")
-func _request_stand_assignment() -> void:
-	if not multiplayer.is_server():
-		return
-	var sender := multiplayer.get_remote_sender_id()
-	var stand := _stand_for_peer(sender)
-	if stand:
-		_assign_local_player_stand.rpc_id(sender, sender, stand.name)
 
 
 ## Host-first readiness: called after the host's local player is ready
@@ -2175,6 +2154,9 @@ func _notification(what: int) -> void:
 
 
 func _on_window_close_requested() -> void:
+	# The window already wants to close — hide it now so save/report/
+	# teardown happen invisibly instead of the window lingering open.
+	get_window().hide()
 	# Window X (OS close) bypasses the ESC menu entirely — checkpoint here
 	# too. No-op outside a session (no active slot / not host).
 	var t0 := Time.get_ticks_msec()
@@ -2331,7 +2313,8 @@ func _on_esc_back_to_menu() -> void:
 	tw.tween_interval(0.1)
 	tw.tween_callback(
 		func():
-			_apply_lighting()
+			_enhanced_lighting = true
+			_enable_enhanced_lighting()
 			var sun_node := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
 			if sun_node and sun_node.has_method("update_for_time"):
 				sun_node.update_for_time(0.0),
@@ -2351,11 +2334,10 @@ func _on_esc_back_to_menu() -> void:
 
 ## ESC menu: Quit Game.
 func _on_esc_quit_game() -> void:
-	# Minimize the window immediately: the player already chose to leave, so
+	# Hide the window immediately: the player already chose to leave, so
 	# save + report delivery + teardown run invisibly instead of freezing
-	# the menu for seconds. (The root window can't be hidden — minimized
-	# is the closest equivalent.)
-	get_window().mode = Window.MODE_MINIMIZED
+	# the menu for seconds.
+	get_window().hide()
 	# Checkpoint before exiting — must be a synchronous write: the debounced
 	# save_game() timer never fires because get_tree().quit() destroys the
 	# tree first. _do_save() still gates on is_host(), so clients write nothing.
@@ -2369,21 +2351,16 @@ func _on_esc_quit_game() -> void:
 	get_tree().quit()
 
 
-## Tier-scaled enhanced lighting: 1=light (Medium), 2=reduced (High),
-## 3=full (Epic). Scales SSAO depth, sun shadow distance, volumetric fog
-## and VoxelGI — the look (filmic, low ambient, no fill) stays the same.
-func _enable_enhanced_lighting(level: int = 3) -> void:
-	level = clampi(level, 1, 3)
+func _enable_enhanced_lighting() -> void:
 	if _world_env and _world_env.environment:
 		var env := _world_env.environment
 		env.ssr_enabled = false
 		env.ssil_enabled = false
-		# High contrast: SSAO for dark corners and crevices (depth scales
-		# with the tier — deep AO is the most expensive piece here)
+		# High contrast: deep SSAO for dark corners and crevices
 		env.ssao_enabled = true
 		env.ssao_radius = 0.5
-		env.ssao_intensity = [1.5, 2.5, 4.0][level - 1]
-		env.ssao_power = [1.2, 1.8, 2.0][level - 1]
+		env.ssao_intensity = 4.0
+		env.ssao_power = 2.0
 		# VoxelGI only (not SDFGI) — VoxelGI respects gi_mode=DISABLED so grass
 		# ground plane won't contribute green bounced light.
 		env.sdfgi_enabled = false
@@ -2396,16 +2373,15 @@ func _enable_enhanced_lighting(level: int = 3) -> void:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 		env.ambient_light_color = Color(0.18, 0.18, 0.20, 1)
 		env.ambient_light_sky_contribution = 0.4
-		# Volumetric fog only on High+ — it costs every frame
-		env.volumetric_fog_density = 0.002 if level >= 2 else 0.001
-		env.volumetric_fog_length = 64.0 if level >= 2 else 333.13
+		# Shorter fog for atmosphere without flattening
+		env.volumetric_fog_density = 0.002
+		env.volumetric_fog_length = 64.0
 	# Sun: sharper, stronger shadows for clear definition
 	var sun := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
 	if sun:
-		if _orig_shadow_blur < 0.0:
-			_orig_shadow_blur = sun.shadow_blur
-			_orig_shadow_normal_bias = sun.shadow_normal_bias
-			_orig_shadow_bias = sun.shadow_bias
+		_orig_shadow_blur = sun.shadow_blur
+		_orig_shadow_normal_bias = sun.shadow_normal_bias
+		_orig_shadow_bias = sun.shadow_bias
 		sun.shadow_enabled = true
 		sun.shadow_blur = 1.2
 		sun.shadow_normal_bias = 1.0
@@ -2415,29 +2391,22 @@ func _enable_enhanced_lighting(level: int = 3) -> void:
 		sun.directional_shadow_split_3 = 0.6
 		sun.directional_shadow_blend_splits = true
 		sun.directional_shadow_fade_start = 0.9
-		sun.directional_shadow_max_distance = [30.0, 45.0, 60.0][level - 1]
+		sun.directional_shadow_max_distance = 60.0
 	# Kill the fill light — we want dark shadows, not flat fill
 	var fill := world.find_child("FillLight", true, false) as DirectionalLight3D
 	if fill:
-		if _orig_fill_energy < 0.0:
-			_orig_fill_energy = fill.light_energy
+		_orig_fill_energy = fill.light_energy
 		fill.visible = false
 	# No warm fill point light — let shadows be shadows
-	# VoxelGI: small volume, only for dynamic objects near stand. Only on
-	# High+ — the subdiv bake is one of the pricier parts of this bundle.
+	# VoxelGI: small volume, only for dynamic objects near stand
 	if _voxel_gi == null:
 		_voxel_gi = VoxelGI.new()
 		_voxel_gi.position = Vector3(2, 2, -2)
 		_voxel_gi.size = Vector3(16, 6, 12)
+		_voxel_gi.subdiv = VoxelGI.SUBDIV_256
 		world.add_child(_voxel_gi)
-	var target_subdiv := (VoxelGI.SUBDIV_128 if level == 2 else VoxelGI.SUBDIV_256)
-	if level >= 2:
-		if _voxel_gi.subdiv != target_subdiv:
-			_voxel_gi.subdiv = target_subdiv
-			_voxel_gi.bake()
-	_voxel_gi.visible = level >= 2
-	# Reflection probe: subtle, just for a hint of reflection on surfaces.
-	# UPDATE_ONCE — cheap, so it stays on at every enhanced tier.
+	_voxel_gi.visible = true
+	# Reflection probe: subtle, just for a hint of reflection on surfaces
 	if _reflection_probe == null:
 		_reflection_probe = ReflectionProbe.new()
 		_reflection_probe.position = Vector3(2, 2.5, -2)
@@ -2450,41 +2419,35 @@ func _enable_enhanced_lighting(level: int = 3) -> void:
 	_reflection_probe.visible = true
 	# Disable GI contribution on grass surfaces to prevent green color bleeding
 	_set_grass_gi(false)
-	print("[Lighting] Enhanced mode ON (tier %d)" % level)
+	print("[Lighting] Enhanced mode ON — High contrast: deep shadows + VoxelGI")
 
 
 func _disable_enhanced_lighting() -> void:
 	if _world_env and _world_env.environment:
 		var env := _world_env.environment
-		# SSAO/SSIL/glow belong to the graphics preset — restore the
-		# preset's values, not the pre-preset originals.
-		var preset: Dictionary = (
-			SettingsManager.GRAPHICS_PRESETS[SettingsManager.get_graphics_quality()]
-		)
 		env.ssr_enabled = _orig_ssr
-		env.ssao_enabled = preset["ssao"]
-		env.ssil_enabled = preset["ssil"]
-		env.glow_enabled = preset["glow"]
+		env.ssao_enabled = _orig_ssao
+		env.ssil_enabled = _orig_ssil
 		env.sdfgi_enabled = _orig_sdfgi
 		env.sdfgi_energy = _orig_sdfgi_energy
 		env.tonemap_mode = _orig_tonemap_mode as Environment.ToneMapper
 		env.tonemap_white = _orig_tonemap_white
 		env.tonemap_exposure = _orig_tonemap_exposure
+		env.glow_enabled = _orig_glow
 		env.ambient_light_source = _orig_ambient_source as Environment.AmbientSource
 		env.ambient_light_color = _orig_ambient_color
 		env.ambient_light_sky_contribution = _orig_ambient_sky
 		env.volumetric_fog_density = 0.001
 		env.volumetric_fog_length = 333.13
 	var sun := world.find_child("DirectionalLight", true, false) as DirectionalLight3D
-	if sun and _orig_shadow_blur >= 0.0:
+	if sun:
 		sun.shadow_blur = _orig_shadow_blur
 		sun.shadow_normal_bias = _orig_shadow_normal_bias
 		sun.shadow_bias = _orig_shadow_bias
 	var fill := world.find_child("FillLight", true, false) as DirectionalLight3D
 	if fill:
 		fill.visible = true
-		if _orig_fill_energy >= 0.0:
-			fill.light_energy = _orig_fill_energy
+		fill.light_energy = _orig_fill_energy
 	if _voxel_gi:
 		_voxel_gi.visible = false
 	if _reflection_probe:

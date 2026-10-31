@@ -14,8 +14,8 @@ func _enter_tree() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Debug tool — dead in release builds unless GameState.DEV_TOOLS is on.
-	if not OS.is_debug_build() and not GameState.DEV_TOOLS:
+	# Debug tool — dead in release builds (editor/debug runs only).
+	if not OS.is_debug_build():
 		return
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
 		if event.keycode == KEY_F1:
@@ -27,23 +27,23 @@ func _ready() -> void:
 	visible = false
 	$Panel/VBox/BtnMoney.pressed.connect(
 		func():
-			_debug_action("add_money", { "amount": 1000.0 }),
+			EventBus.debug_add_money.emit(1000.0),
 	)
 	$Panel/VBox/BtnRefill.pressed.connect(
 		func():
-			_debug_action("refill_bins", { }),
+			EventBus.debug_refill_all_bins.emit(),
 	)
 	$Panel/VBox/BtnEmpty.pressed.connect(
 		func():
-			_debug_action("empty_pitcher", { }),
+			EventBus.debug_empty_pitcher.emit(),
 	)
 	$Panel/VBox/BtnSpawn.pressed.connect(
 		func():
-			_debug_action("force_spawn_customer", { }),
+			EventBus.debug_force_spawn_customer.emit(),
 	)
 	$Panel/VBox/BtnForceHappy.pressed.connect(
 		func():
-			_debug_action("force_happy_serve", { }),
+			EventBus.debug_force_happy_serve.emit(),
 	)
 	$Panel/VBox/BtnTestPayment.pressed.connect(
 		func():
@@ -51,7 +51,7 @@ func _ready() -> void:
 				return
 			_test_payment_cooldown = 1.0
 			# Mirror customer._customer_payment() so the bill reflects the live price.
-			var price := _local_price("lemon")
+			var price := GameState.get_price("lemon")
 			var payment: float
 			if price <= 1.0:
 				payment = 1.0
@@ -64,14 +64,11 @@ func _ready() -> void:
 	)
 	$Panel/VBox/TempSlider.value_changed.connect(
 		func(v: float):
-			# Weather is world-global, not stand-scoped: apply locally for
-			# instant feedback AND through the host so the global value moves.
-			EventBus.debug_set_temperature.emit(v)
-			_debug_action("set_temperature", { "value": v }),
+			EventBus.debug_set_temperature.emit(v),
 	)
 	$Panel/VBox/TierSlider.value_changed.connect(
 		func(v: float):
-			_debug_action("set_feedback_tier", { "tier": int(v) }),
+			EventBus.debug_set_feedback_tier.emit(int(v)),
 	)
 	$Panel/VBox/SpawnSlider.value_changed.connect(
 		func(v: float):
@@ -79,7 +76,7 @@ func _ready() -> void:
 	)
 	$Panel/VBox/QueueMaxSlider.value_changed.connect(
 		func(v: float):
-			_debug_action("set_queue_max", { "value": int(v) }),
+			EventBus.debug_set_queue_max.emit(int(v)),
 	)
 	$Panel/VBox/OutlineWidthSlider.value_changed.connect(
 		func(v: float):
@@ -100,12 +97,11 @@ func _ready() -> void:
 	pop_slider.min_value = 0.0
 	pop_slider.max_value = Balancing.MAX_POPULARITY
 	pop_slider.step = 1.0
-	var stand := _local_stand()
-	pop_slider.value = stand.popularity if stand != null else GameState.popularity
+	pop_slider.value = GameState.popularity
 	pop_slider.custom_minimum_size = Vector2(0, 12)
 	pop_slider.value_changed.connect(
 		func(v: float):
-			_debug_action("set_popularity", { "value": v }),
+			EventBus.debug_set_popularity.emit(v),
 	)
 	vbox.add_child(pop_slider)
 
@@ -190,38 +186,9 @@ func _ready() -> void:
 	end_day_btn.add_theme_font_size_override("font_size", 9)
 	end_day_btn.pressed.connect(
 		func():
-			# The day is world-global but host-authoritative — route
-			# through the debug funnel so clients can trigger it too.
-			_debug_action("end_day", { }),
+			DayManager.end_day(),
 	)
 	vbox.add_child(end_day_btn)
-
-	# Upgrade branches — "+1" fills the bar to its next threshold so
-	# each click makes exactly one tier claimable.
-	vbox.add_child(HSeparator.new())
-	var up_label := Label.new()
-	up_label.text = "Upgrades (+1 tier):"
-	up_label.add_theme_font_size_override("font_size", 8)
-	vbox.add_child(up_label)
-	for branch in UpgradeManager.get_branches():
-		var row := HBoxContainer.new()
-		var branch_lbl := Label.new()
-		branch_lbl.text = str(branch.get("name", branch.get("id", "?")))
-		branch_lbl.add_theme_font_size_override("font_size", 8)
-		branch_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(branch_lbl)
-		var branch_btn := Button.new()
-		branch_btn.text = "+1"
-		branch_btn.add_theme_font_size_override("font_size", 9)
-		var branch_id := str(branch.get("id", ""))
-		branch_btn.pressed.connect(
-			func():
-				var local := WorldSync.get_local_stand() as StandUnit
-				if local != null:
-					OnboardingManager.report(local, "debug_fill_branch", { "branch": branch_id }),
-		)
-		row.add_child(branch_btn)
-		vbox.add_child(row)
 
 	# NPC roster tools
 	vbox.add_child(HSeparator.new())
@@ -259,39 +226,16 @@ func _ready() -> void:
 	_refresh()
 
 
-## The stand this peer's player is assigned to — every stand-scoped
-## debug action targets it (versus: the joiner's own stand, not the
-## host's primary stand).
-func _local_stand() -> StandUnit:
-	return WorldSync.get_local_stand() as StandUnit
-
-
-func _local_price(fruit_type: String) -> float:
-	var stand := _local_stand()
-	return stand.get_price(fruit_type) if stand != null else GameState.get_price(fruit_type)
-
-
-## Route a stand-scoped debug action through the OnboardingManager
-## report funnel: clients send an RPC to the host, the host validates
-## the sender's assigned stand, then StandUnit.apply_debug_action
-## mutates authoritative state and pushes it to all peers.
-func _debug_action(action: String, params: Dictionary) -> void:
-	var stand := _local_stand()
-	if stand == null:
-		return
-	OnboardingManager.report(stand, "debug_action", { "action": action, "params": params })
-
-
 func _on_meet_all_npcs() -> void:
-	var stand := _local_stand()
-	if stand != null:
-		stand.request_meet_all_npcs()
+	for s in get_tree().get_nodes_in_group("stand"):
+		(s as StandUnit).request_meet_all_npcs()
+		return
 
 
 func _on_set_all_nine() -> void:
-	var stand := _local_stand()
-	if stand != null:
-		stand.request_set_all_npcs_nine()
+	for s in get_tree().get_nodes_in_group("stand"):
+		(s as StandUnit).request_set_all_npcs_nine()
+		return
 
 
 func _on_spawn_named_npc(edit: LineEdit) -> void:
@@ -303,7 +247,7 @@ func _on_spawn_named_npc(edit: LineEdit) -> void:
 	var npc_name := str(NpcRoster.get_entry(npc_id).get("name", ""))
 	edit.text = ""
 	edit.placeholder_text = "Spawned %s" % npc_name
-	_debug_action("spawn_npc", { "npc_id": npc_id })
+	EventBus.debug_spawn_npc.emit(npc_id)
 
 
 func _process(delta: float) -> void:
@@ -316,16 +260,7 @@ func _process(delta: float) -> void:
 
 
 func _refresh() -> void:
-	var stand := _local_stand()
-	# Prefer a pitcher owned by the local stand; fall back to any.
-	var pitcher: Pitcher = null
-	for p in get_tree().get_nodes_in_group("pitcher"):
-		var owner := OnboardingManager.stand_for_node(p)
-		if owner != null and owner != stand:
-			continue
-		pitcher = p as Pitcher
-		if owner == stand:
-			break
+	var pitcher: Pitcher = get_tree().get_first_node_in_group("pitcher") as Pitcher
 	var recipe: Dictionary = pitcher.get_recipe_snapshot() if pitcher else { }
 	var verdict := (
 		RecipeEvaluator.get_verdict_string(recipe, GameState.temperature)
@@ -333,13 +268,14 @@ func _refresh() -> void:
 		else "No pitcher"
 	)
 
-	var money: float = stand.money if stand != null else GameState.money
-	var popularity: float = (stand.popularity if stand != null else GameState.popularity)
-	var tier: int = (stand.feedback_tier if stand != null else GameState.feedback_tier)
-	var price: float = _local_price("lemon")
-
 	stats_label.text = (
 		"Money: $%.2f\nPop: %d%%\nTemp: %.0fC\nTier: %d\nPrice: $%.2f (lemon)"
-		% [money, int(popularity / 10.0), GameState.temperature, tier, price]
+		% [
+			GameState.money,
+			int(GameState.popularity / 10.0),
+			GameState.temperature,
+			GameState.feedback_tier,
+			GameState.get_price("lemon"),
+		]
 	)
 	verdict_label.text = "Recipe: " + verdict

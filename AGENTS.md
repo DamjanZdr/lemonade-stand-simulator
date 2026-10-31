@@ -2,14 +2,21 @@
 
 Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 
-## RESOLVED — interaction frame spikes (2026-10-31)
+## RESOLVED + STILL-OPEN — interaction frame spikes (2026-10-31)
 
-**ROOT CAUSE:** `morning_hub.gd`'s `_on_stand_progress_changed` + `_on_fruit_research_changed` handlers (connected via `CONNECT_DEFERRED`) rebuilt the entire shop/upgrades UI (`_build_shop` + `_refresh_upgrades`) on **every action** — buys, placements, trash, serves — because the gate was `visible` on the script root. `visible` on that Control stays `true` when the computer is closed (the `_screen_ui` SubViewport hides, the Control doesn't) → every `stand_progress_changed`/`upgrade_purchased` emit ran a full Control-tree rebuild inside the deferred-queue flush — engine-side window invisible to `proc` timing. **Fix applied (HEAD):** gate on `panel.visible` (the actual hub-open flag). Bisect path: `6a19689` → clean-port features onto `b41a20b` → `morning_hub` isolated → subscriptions cut one-by-one → `stand_progress_changed` alone reproduced it.
+**ROOT CAUSE #1 (fixed, HEAD `05d6a0c`):** `morning_hub.gd` `_on_stand_progress_changed` + `_on_fruit_research_changed` (CONNECT_DEFERRED) rebuilt the whole shop/upgrades UI on EVERY action — gated on `visible` which stays true while the computer is closed (SubViewport hides, Control doesn't). Fix: `panel.visible`. Proven by clean-port A/B: `wlgl-cleanport` = `b41a20b` + upgrade subset + this fix = user confirms butter-smooth.
 
-**Resolved details:**
-- `visible` vs `panel.visible` on hub handlers is the definitive fix; user confirmed smooth.
-- Residual: pitcher-from-box placement still has a small drop — separate, un-investigated.
-- Prior investigation data preserved below.
+**HEAD STILL STUTTERS** with: hub fix applied, `push_state` synchronous, `_touch_progress` neutered, PreviewViewport DISABLED, `money_changed`/`price_changed` hub conns off. So a SECOND stall path lives in the ~40 files the smooth port never received (machines, NPC/assistant/customer changes, player_placement rewrite, LOD/preset code, world_sync/save_manager/people_manager/delivery changes...).
+
+**FRESH LOG DATA (post-fix HEAD build):**
+- Two signatures persist: `pgap~=frame` (present/OS-events window) AND `adraw/bgap~=frame` (internal-process + deferred flush).
+- `vgpu=53ms` GPU per frame at ~2000 draws — GPU-bound baseline; extra action draws back up the present queue.
+- `n+=700/n-=700` churn on action frames = probably NPC waves (people_manager), not the stall itself.
+- `skels=10-14` SkeletonModifiers (npc_bone_scaler) stepping per frame in the internal-process window.
+
+**NEXT BISECT STEP:** continue porting onto `wlgl-cleanport` (which stays smooth): batch = machines then player_placement, then NPC/customer files. Each batch = build -> user test.
+
+**Prior investigation data preserved below.**
 - Bisect worktrees: `../wlgl-bisect-1022`, `../wlgl-bisect-1027`, `../wlgl-bisect-head` (copy `tools/godotsteam-templates/win64/*` + `mkdir export`, then headless `--export-release "Windows Desktop" export/WhenLifeGivesYouLemons.exe`; add `steam_api64.dll` + `steam_appid.txt` beside exe).
 - Steam uploads do NOT set a branch live (VDF has no setlive) — user sets BuildID live on test branch in Steamworks manually.
 

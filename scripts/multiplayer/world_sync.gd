@@ -89,37 +89,19 @@ func _request_host(method: StringName, args: Array = []) -> void:
 ## Find the local player (the one this peer has authority over).
 ## Returns null if no local player exists yet. In single-player, returns
 ## the first player found.
-## Cached local player — find_children walks the entire world scene, and
-## this is called from per-frame interact prompts (customers, trashcans,
-## bins). On low-end machines that DFS alone was a visible hitch on every
-## interaction. The weakref invalidates itself when the player frees;
-## is_inside_tree() guards against scene-switch stragglers.
-static var _cached_local_player: WeakRef = null
-
-
 static func get_local_player() -> Node:
-	if _cached_local_player != null:
-		var c: Node = _cached_local_player.get_ref()
-		if c != null and is_instance_valid(c) and c.is_inside_tree():
-			return c
-		_cached_local_player = null
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null or tree.current_scene == null:
 		return null
 	var has_peer := tree.get_multiplayer().has_multiplayer_peer()
-	var found: Node = null
 	for p in tree.current_scene.find_children("*", "Player", true, false):
 		if not has_peer or p.is_multiplayer_authority():
-			found = p
-			break
-	if found == null:
-		# Fallback: first player (single-player or not yet claimed authority).
-		var players := tree.get_nodes_in_group("player")
-		if not players.is_empty():
-			found = players[0]
-	if found != null:
-		_cached_local_player = weakref(found)
-	return found
+			return p
+	# Fallback: first player (single-player or not yet claimed authority).
+	var players := tree.get_nodes_in_group("player")
+	if not players.is_empty():
+		return players[0]
+	return null
 
 
 ## Returns the StandUnit node name the local player is assigned to,
@@ -149,10 +131,10 @@ static func get_local_stand() -> Node:
 ## Spend money from the local player's assigned stand.
 ## Falls back to GameState for single-player / legacy primary stand.
 ## Returns true if the money was spent successfully.
-static func spend_local_money(amount: float, category: String = "") -> bool:
+static func spend_local_money(amount: float, _category: String = "") -> bool:
 	var stand := get_local_stand()
 	if stand != null and stand.has_method("spend_money"):
-		return stand.spend_money(amount, category)
+		return stand.spend_money(amount)
 	return GameState.spend_money(amount)
 
 
@@ -380,12 +362,6 @@ func _serialize_container(node: Node) -> Dictionary:
 			scene_path = "res://scenes/stand/workstation.tscn"
 		"cup":
 			scene_path = "res://scenes/objects/cup.tscn"
-		"cup_tray":
-			scene_path = "res://scenes/objects/cup_tray.tscn"
-		"lemonader":
-			scene_path = "res://scenes/objects/lemonader.tscn"
-		"fruitomatic":
-			scene_path = "res://scenes/objects/fruitomatic.tscn"
 		_:
 			return { }
 	var net_id := _get_net_id(node)
@@ -429,8 +405,6 @@ func _serialize_container(node: Node) -> Dictionary:
 		entry["fill_color"] = c.fill_color
 	elif node is CupStack:
 		entry["current_count"] = (node as CupStack).current_count
-	elif node is Lemonader:
-		entry["machine_state"] = node.machine_state.duplicate(true)
 	elif node is WaterDispenser:
 		entry["water_fillings"] = (node as WaterDispenser).max_fillings
 	elif node is Press:
@@ -573,8 +547,6 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 		_update_container_from_snapshot(existing, entry)
 		return
 	var instance := scene.instantiate()
-	if instance is Lemonader:
-		instance.machine_state = entry.get("machine_state", instance.machine_state).duplicate(true)
 	# Set state BEFORE add_child so _ready() sees correct values
 	var ctype: String = entry.get("ctype", "")
 	if instance is CupStack:
@@ -709,9 +681,6 @@ func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
 		)
 	elif existing is CupStack:
 		existing.starting_count = int(entry.get("current_count", existing.starting_count))
-	elif existing is Lemonader:
-		existing.machine_state = entry.get("machine_state", existing.machine_state).duplicate(true)
-		existing.refresh_display()
 	elif existing is WaterDispenser:
 		existing.water_fillings = int(entry.get("water_fillings", existing.water_fillings))
 	elif existing is Press:
@@ -870,7 +839,6 @@ func request_spawn(
 	state: Dictionary = { },
 	predict: bool = true,
 ) -> Node:
-	GameLog.mark("spawn:" + scene_path.get_file())
 	if is_host():
 		return spawn_networked(scene_path, get_world_objects(), pos, rot, state)
 	_request_host(&"_rpc_request_spawn", [scene_path, pos, rot, state])
@@ -1374,7 +1342,6 @@ func spawn_networked(
 ) -> Node:
 	if not is_host():
 		return null
-	var _t0 := Time.get_ticks_usec()
 	var scene := _get_scene(scene_path)
 	if scene == null:
 		GameLog.log("[WorldSync] Failed to load scene: " + scene_path)
@@ -1429,15 +1396,6 @@ func spawn_networked(
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.call_deferred("update_label")
-		get_tree().create_timer(0.5).timeout.connect(
-			func() -> void:
-				if is_instance_valid(p):
-					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
-					GameLog.log(
-						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
-						% [p.name, p.get_liquid_volume(), e.get_instance_shader_parameter("fill_y") if e else -1.0]
-					),
-		)
 	# Restore delivery grid slot metas so clients can release the slot
 	# when picking up the box.
 	if net_delivery_cell_idx >= 0:
@@ -1459,7 +1417,6 @@ func spawn_networked(
 		&"_spawn_on_clients",
 		[scene_path, parent_path, obj.name, net_id, global_pos, global_rot, obj_scale, state],
 	)
-	GameLog.time_log("spawn_networked:" + scene_path.get_file(), _t0)
 	return obj
 
 
@@ -1490,7 +1447,6 @@ static func play_place_pop(node: Node3D) -> void:
 ## If the object is a SupplyBox, also makes boxes above fall on the host
 ## and tells clients to do the same.
 func despawn_networked(obj: Node) -> void:
-	var _t0 := Time.get_ticks_usec()
 	if not is_host():
 		return
 	if obj == null or not is_instance_valid(obj):
@@ -1512,7 +1468,6 @@ func despawn_networked(obj: Node) -> void:
 		_broadcast(&"_sync_boxes_fall", [obj.global_position])
 	obj.queue_free()
 	_broadcast(&"_despawn_on_clients", [parent_path, obj_name, net_id])
-	GameLog.time_log("despawn_networked", _t0)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -1967,7 +1922,6 @@ func _spawn_on_clients(
 	if _is_despawn_pending(net_id):
 		GameLog.log("[WorldSync] Client ignoring spawn for pending-despawn net_id=%d" % net_id)
 		return
-	var _t0 := Time.get_ticks_usec()
 	GameLog.log(
 		"[WorldSync] Client received spawn: %s name=%s net_id=%d parent=%s"
 		% [scene_path, obj_name, net_id, parent_path_str]
@@ -2033,15 +1987,6 @@ func _spawn_on_clients(
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.call_deferred("update_label")
-		get_tree().create_timer(0.5).timeout.connect(
-			func() -> void:
-				if is_instance_valid(p):
-					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
-					GameLog.log(
-						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
-						% [p.name, p.get_liquid_volume(), e.get_instance_shader_parameter("fill_y") if e else -1.0]
-					),
-		)
 	# Restore delivery grid slot metas so clients can release the slot
 	# when picking up the box.
 	if net_delivery_cell_idx >= 0:
@@ -2057,7 +2002,6 @@ func _spawn_on_clients(
 	# Replace the optimistic stand-in (if this client's request created one)
 	# so the authoritative object doesn't duplicate it.
 	_consume_predicted(scene_path, global_pos)
-	GameLog.time_log("_spawn_on_clients:" + scene_path.get_file(), _t0)
 	GameLog.log("[WorldSync] Client spawned %s OK scale=%s" % [obj_name, str(obj_scale)])
 
 
@@ -2412,102 +2356,6 @@ func _find_node_by_name_only(obj_name: String) -> Node:
 	else:
 		_name_miss_cache[obj_name] = Time.get_ticks_msec()
 	return found
-
-
-## Every spawnable/NPC scene — rendered once at join so Forward+ compiles
-## their pipelines during load instead of stalling the first interaction.
-const WARMUP_SCENES := [
-	"res://scenes/objects/fruit_bin.tscn",
-	"res://scenes/objects/sugar_bin.tscn",
-	"res://scenes/objects/ice_bin.tscn",
-	"res://scenes/objects/cup_stack.tscn",
-	"res://scenes/objects/pitcher.tscn",
-	"res://scenes/objects/press.tscn",
-	"res://scenes/objects/water_dispenser.tscn",
-	"res://scenes/stand/workstation.tscn",
-	"res://scenes/objects/cup.tscn",
-	"res://scenes/objects/cup_tray.tscn",
-	"res://scenes/objects/lemonader.tscn",
-	"res://scenes/objects/fruitomatic.tscn",
-	"res://scenes/objects/supply_box.tscn",
-	"res://scenes/objects/thrown_trash.tscn",
-	"res://scenes/objects/trash_apple.tscn",
-	"res://scenes/objects/trash_banana.tscn",
-	"res://scenes/objects/trash_can.tscn",
-	"res://scenes/objects/trash_cigarettes.tscn",
-	"res://scenes/objects/trash_cup.tscn",
-	"res://scenes/customer/customer.tscn",
-	"res://scenes/customer/pedestrian.tscn",
-	"res://scenes/delivery_truck.tscn",
-]
-
-
-## Extract each scene's meshes (no _ready side effects — the scene itself
-## never enters the tree) and flash them tiny in front of the camera for a
-## couple frames so the driver compiles their pipelines up front.
-func warmup_pipelines(player: Node) -> void:
-	var cams := player.find_children("*", "Camera3D", true, false)
-	if cams.is_empty():
-		return
-	var cam := cams[0] as Camera3D
-	if cam == null:
-		return
-	var holder := Node3D.new()
-	holder.name = "PipelineWarmup"
-	cam.add_child(holder)
-	holder.position = Vector3(0, 0, -0.6)
-	holder.scale = Vector3.ONE * 0.02
-	for path in WARMUP_SCENES:
-		var packed := _get_scene(path)
-		if packed == null:
-			continue
-		var inst := packed.instantiate()
-		# Skinned meshes need their skeleton/armature context to compile the
-		# skinned pipeline variant — move whole skeletons, not loose meshes.
-		var moved_skel := false
-		for skel in inst.find_children("*", "Skeleton3D", true, false):
-			skel.get_parent().remove_child(skel)
-			holder.add_child(skel)
-			moved_skel = true
-		for m in inst.find_children("*", "MeshInstance3D", true, false):
-			if moved_skel and m is MeshInstance3D and m.skin != null:
-				continue # already carried inside the skeleton
-			(m as MeshInstance3D).get_parent().remove_child(m)
-			holder.add_child(m)
-		inst.free()
-	# Ghost/placement material variant — semi-transparent green like the
-	# real ghost, so the alpha-blend pipeline compiles up front.
-	var ghost_mat := StandardMaterial3D.new()
-	ghost_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	ghost_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	ghost_mat.albedo_color = Color(0.2, 0.9, 0.3, 0.45)
-	var ghost_probe := MeshInstance3D.new()
-	ghost_probe.mesh = BoxMesh.new()
-	ghost_probe.material_override = ghost_mat
-	holder.add_child(ghost_probe)
-	# Outline layer: the highlight overlay renders layer-2 `_Outline` fill
-	# meshes through its own SubViewport — compile that variant too.
-	var outline_probe := MeshInstance3D.new()
-	outline_probe.name = "_Outline"
-	outline_probe.mesh = BoxMesh.new()
-	outline_probe.layers = 2
-	var outline_mat := StandardMaterial3D.new()
-	outline_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	outline_mat.albedo_color = Color(1.0, 0.9, 0.2, 1.0)
-	outline_mat.cull_mode = BaseMaterial3D.CULL_FRONT
-	outline_probe.material_override = outline_mat
-	holder.add_child(outline_probe)
-	# Label3D text/emoji pipeline — order indicators and hints rasterize
-	# new glyph runs mid-game.
-	var label_probe := Label3D.new()
-	label_probe.text = "🍋❓99 $123.45"
-	label_probe.pixel_size = 0.002
-	holder.add_child(label_probe)
-	GameLog.log("[Warmup] pipelines rendering %d nodes" % holder.get_child_count())
-	await get_tree().process_frame
-	await get_tree().process_frame
-	await get_tree().process_frame
-	holder.free()
 
 
 func _get_scene(path: String) -> PackedScene:
