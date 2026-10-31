@@ -1427,6 +1427,15 @@ func spawn_networked(
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.call_deferred("update_label")
+		get_tree().create_timer(0.5).timeout.connect(
+			func() -> void:
+				if is_instance_valid(p):
+					var e := p.get_node_or_null("LemonadeFill/LemonadeEraser")
+					GameLog.log(
+						"[DIAG] spawned pitcher %s: vol=%.2f eraser_y=%.2f"
+						% [p.name, p.get_liquid_volume(), e.position.y if e else -1.0]
+					),
+		)
 	# Restore delivery grid slot metas so clients can release the slot
 	# when picking up the box.
 	if net_delivery_cell_idx >= 0:
@@ -2018,6 +2027,15 @@ func _spawn_on_clients(
 		p.set_pitcher_visible(true)
 		p.sync_fill_display()
 		p.call_deferred("update_label")
+		get_tree().create_timer(0.5).timeout.connect(
+			func() -> void:
+				if is_instance_valid(p):
+					var e := p.get_node_or_null("LemonadeFill/LemonadeEraser")
+					GameLog.log(
+						"[DIAG] spawned pitcher %s: vol=%.2f eraser_y=%.2f"
+						% [p.name, p.get_liquid_volume(), e.position.y if e else -1.0]
+					),
+		)
 	# Restore delivery grid slot metas so clients can release the slot
 	# when picking up the box.
 	if net_delivery_cell_idx >= 0:

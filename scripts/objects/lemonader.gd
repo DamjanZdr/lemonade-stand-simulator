@@ -729,6 +729,7 @@ func settle_inventory(player: Player, action: String, applied: float, output: Di
 		# Suppress set_held's own source-shrink so nothing plays twice.
 		player.inventory.suppress_next_pickup_effect()
 		_shrink_preview_then_hide()
+		GameLog.log("[DIAG] take output=%s" % str(output))
 		player.placement.hold_container("pitcher", 0.0, 0, not output.is_empty(), output)
 	elif action == "deposit":
 		var remaining := maxf(0.0, float(player.held_item_data.get("amount", 0.0)) - applied)

@@ -1229,6 +1229,10 @@ func _create_container_hand_mesh(
 		temp.queue_free()
 	elif container_type == "pitcher" and inst is Pitcher:
 		var pitcher := inst as Pitcher
+		GameLog.log(
+			"[DIAG] hand pitcher: vol=%.2f fruit=%.2f water=%.2f recipe=%s"
+			% [pitcher.get_liquid_volume(), pitcher.fruit_count, pitcher.water, str(saved_recipe)]
+		)
 		# Keep the script AND the live LemonadeFill CSG — the held pitcher
 		# must react to refills/emptying, and the press proves a fresh
 		# instance entering the tree once bakes cleanly. The old temp-node
@@ -1238,6 +1242,19 @@ func _create_container_hand_mesh(
 		var pickupable := pitcher.get_node_or_null("Pickupable")
 		if pickupable != null:
 			pickupable.queue_free()
+		get_tree().create_timer(0.5).timeout.connect(
+			func() -> void:
+				if is_instance_valid(pitcher):
+					var e := pitcher.get_node_or_null("LemonadeFill/LemonadeEraser")
+					GameLog.log(
+						"[DIAG] hand pitcher after 0.5s: vol=%.2f eraser_y=%.2f vis=%s"
+						% [
+							pitcher.get_liquid_volume(),
+							e.position.y if e else -1.0,
+							pitcher.visible,
+						]
+					),
+		)
 		# Hide for the first frame in the tree — entering mid-frame can
 		# render the CSG combiner's child primitives (including the eraser
 		# box) for one frame before the combiner bakes, which is the white
@@ -2177,7 +2194,7 @@ func _try_place_container() -> Node3D:
 	# Move the existing instance instead of creating a new one, so
 	# attached items (workstation items / tray cups / slot pitcher) follow.
 	if (
-			container_type == "workstation" or container_type == "cup_tray" \
+		container_type == "workstation" or container_type == "cup_tray" \
 				or container_type == "lemonader"
 		or container_type == "fruitomatic"
 	):
@@ -2414,7 +2431,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 	# instance so items/cups/the slot pitcher move with it (the preview is
 	# a scene child, so machine_state and the pitcher ride along for free).
 	if (
-			container_type == "workstation" or container_type == "cup_tray" \
+		container_type == "workstation" or container_type == "cup_tray" \
 				or container_type == "lemonader"
 		or container_type == "fruitomatic"
 	):
