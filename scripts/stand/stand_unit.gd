@@ -259,6 +259,7 @@ func _apply_state(
 ) -> void:
 	if is_multiplayer_authority():
 		return # Host already has correct values; don't overwrite
+	var _t0 := Time.get_ticks_usec()
 	var first_apply := not _received_authoritative_state
 	var changed_money := not is_equal_approx(money, new_money)
 	var changed_pop := not is_equal_approx(popularity, new_popularity)
@@ -365,6 +366,7 @@ func _apply_state(
 	# state arrives. On the first push after joining, the synced totals are
 	# recorded as the baseline instead — only progress made while this
 	# player is present counts toward their unlocks.
+	GameLog.time_log("stand._apply_state", _t0)
 	if first_apply:
 		AchievementManager.set_stand_baseline(self)
 	else:

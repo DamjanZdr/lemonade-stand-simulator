@@ -435,6 +435,7 @@ func _find_player_by_peer(peer_id: int) -> Player:
 ## host, the fill happens immediately; clients send an RPC to the host and
 ## wait for the authoritative result.
 func request_fill_cup(player: Player) -> void:
+	GameLog.mark("fill_cup")
 	# A fill request that never got a result (dropped RPC, e.g. the node
 	# path differed on the host) must not wedge the pitcher forever —
 	# allow a retry after a short timeout.

@@ -870,6 +870,7 @@ func request_spawn(
 	state: Dictionary = { },
 	predict: bool = true,
 ) -> Node:
+	GameLog.mark("spawn:" + scene_path.get_file())
 	if is_host():
 		return spawn_networked(scene_path, get_world_objects(), pos, rot, state)
 	_request_host(&"_rpc_request_spawn", [scene_path, pos, rot, state])
@@ -1373,6 +1374,7 @@ func spawn_networked(
 ) -> Node:
 	if not is_host():
 		return null
+	var _t0 := Time.get_ticks_usec()
 	var scene := _get_scene(scene_path)
 	if scene == null:
 		GameLog.log("[WorldSync] Failed to load scene: " + scene_path)
@@ -1457,6 +1459,7 @@ func spawn_networked(
 		&"_spawn_on_clients",
 		[scene_path, parent_path, obj.name, net_id, global_pos, global_rot, obj_scale, state],
 	)
+	GameLog.time_log("spawn_networked:" + scene_path.get_file(), _t0)
 	return obj
 
 
@@ -1962,6 +1965,7 @@ func _spawn_on_clients(
 	if _is_despawn_pending(net_id):
 		GameLog.log("[WorldSync] Client ignoring spawn for pending-despawn net_id=%d" % net_id)
 		return
+	var _t0 := Time.get_ticks_usec()
 	GameLog.log(
 		"[WorldSync] Client received spawn: %s name=%s net_id=%d parent=%s"
 		% [scene_path, obj_name, net_id, parent_path_str]
@@ -2051,6 +2055,7 @@ func _spawn_on_clients(
 	# Replace the optimistic stand-in (if this client's request created one)
 	# so the authoritative object doesn't duplicate it.
 	_consume_predicted(scene_path, global_pos)
+	GameLog.time_log("_spawn_on_clients:" + scene_path.get_file(), _t0)
 	GameLog.log("[WorldSync] Client spawned %s OK scale=%s" % [obj_name, str(obj_scale)])
 
 

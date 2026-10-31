@@ -168,6 +168,7 @@ func _do_save() -> void:
 		return
 	if not WorldSync.is_host():
 		return
+	var _t0 := Time.get_ticks_usec()
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	var data := _build_save_dict()
@@ -181,6 +182,7 @@ func _do_save() -> void:
 		file.close()
 	else:
 		push_error("Failed to save game to %s (error %d)" % [path, FileAccess.get_open_error()])
+	GameLog.time_log("_do_save", _t0)
 
 
 func load_game() -> Dictionary:

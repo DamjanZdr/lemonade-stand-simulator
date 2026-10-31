@@ -118,10 +118,34 @@ func _ready() -> void:
 		return
 
 
+## Stands that mutated since the last flush. Mutators call
+## check_stand_thresholds() per write — a single serve can trigger five
+## — but the checks only need to run once per frame per stand.
+var _pending_stands: Dictionary = { }
+var _check_flush_scheduled := false
+
+
 func check_stand_thresholds(stand: StandUnit) -> void:
 	if stand == null:
-		GameLog.log("[Ach] check skipped: stand is null")
 		return
+	_pending_stands[stand] = true
+	if not _check_flush_scheduled:
+		_check_flush_scheduled = true
+		call_deferred("_flush_stand_checks")
+
+
+func _flush_stand_checks() -> void:
+	_check_flush_scheduled = false
+	var stands := _pending_stands.keys()
+	_pending_stands.clear()
+	for s in stands:
+		if is_instance_valid(s):
+			var _t0 := Time.get_ticks_usec()
+			_check_stand_thresholds_now(s)
+			GameLog.time_log("ach.check_stand", _t0)
+
+
+func _check_stand_thresholds_now(stand: StandUnit) -> void:
 	var local_stand: Node = WorldSync.get_local_stand()
 	if local_stand == null or local_stand != stand:
 		return

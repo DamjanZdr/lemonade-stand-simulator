@@ -373,6 +373,8 @@ func _request_report(stand_name: String, event_name: String, data: Dictionary) -
 
 
 func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> void:
+	var _t0 := Time.get_ticks_usec()
+	GameLog.mark("report:" + event_name)
 	initialize_stand(stand)
 	# Record every gameplay event so work done before its task arrives can
 	# still count (see _retro_satisfy_current_task). customer_feedback is
@@ -442,6 +444,7 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 	UpgradeManager.record_event(stand, event_name, data)
 	_match_task(stand, event_name, data)
 	_retro_satisfy_current_task(stand)
+	GameLog.time_log("_apply_report:" + event_name, _t0)
 
 
 func _match_task(stand: StandUnit, event_name: String, data: Dictionary) -> void:

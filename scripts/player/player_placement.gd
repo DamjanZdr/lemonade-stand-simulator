@@ -2193,6 +2193,8 @@ func _update_ghost() -> void:
 
 
 func _try_place_container() -> Node3D:
+	GameLog.mark("place_container")
+	var _t0 := Time.get_ticks_usec()
 	if not _ghost_valid or _ghost == null:
 		EventBus.interaction_hint_changed.emit("Can only place on stand or table!")
 		return null
@@ -2395,6 +2397,7 @@ func _try_place_container() -> Node3D:
 	_player.inventory.clear_held()
 	EventBus.container_placed.emit(container_type_str, instance)
 	AudioManager.play_sfx(_get_place_sfx_key(container_type_str), place_pos, -1.0, 0.05, 0.85)
+	GameLog.time_log("_try_place_container", _t0)
 	return instance
 
 

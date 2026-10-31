@@ -12,6 +12,28 @@ var _buffer: Array[String] = []
 var _file: FileAccess = null
 var _flush_timer: float = 0.0
 
+## --- Frame-spike diagnostics (temporary) ---
+## mark() stamps the current action; when a frame exceeds SPIKE_FRAME_MS
+## we log the frame cost plus the recent marks so the log shows WHAT the
+## player was doing when the hitch happened.
+const SPIKE_FRAME_MS := 30.0
+const HOT_PATH_US := 3000.0
+
+var _marks: Array = []
+var _last_frame_usec: int = 0
+
+
+func mark(label: String) -> void:
+	_marks.append([Engine.get_process_frames(), label])
+	if _marks.size() > 8:
+		_marks.pop_front()
+
+
+func time_log(label: String, start_usec: int) -> void:
+	var dt := Time.get_ticks_usec() - start_usec
+	if float(dt) > HOT_PATH_US:
+		log("[SPIKE] %s took %.1fms" % [label, float(dt) / 1000.0])
+
 
 func _ready() -> void:
 	# Keep the file open for the session — open/seek/close per log line
@@ -31,6 +53,15 @@ func _process(delta: float) -> void:
 		_flush_timer = 0.0
 		if _file:
 			_file.flush()
+	var now := Time.get_ticks_usec()
+	if _last_frame_usec > 0:
+		var frame_ms := float(now - _last_frame_usec) / 1000.0
+		if frame_ms > SPIKE_FRAME_MS:
+			var recent: Array[String] = []
+			for m in _marks:
+				recent.append(str(m[1]))
+			log("[SPIKE] frame %.0fms marks=%s" % [frame_ms, ", ".join(recent)])
+	_last_frame_usec = now
 
 
 func _notification(what: int) -> void:

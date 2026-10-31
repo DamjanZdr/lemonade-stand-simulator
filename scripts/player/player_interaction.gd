@@ -310,6 +310,7 @@ func poll_hint() -> void:
 
 
 func primary_interact() -> void:
+	GameLog.mark("interact")
 	# Check if looking at an interactable first (even when holding items)
 	var interactable := get_looked_at_interactable()
 	if _player.held_item_data.get("snap_pending", false) \
