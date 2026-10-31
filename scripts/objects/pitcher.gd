@@ -39,23 +39,41 @@ var _prep_scale: Vector3 = Vector3.ONE
 @onready var physics: StaticBody3D = $Physics
 @onready var _lemonade_node: Node3D = $lemonade
 @onready var _glass_mesh: MeshInstance3D = $pitcher/Cylinder_001
-@onready var _lemonade_eraser: Node3D = $LemonadeFill/LemonadeEraser
+@onready var _lemonade_mesh: MeshInstance3D = $LemonadeFill/LemonadeMesh
 
 var _eraser_tween: Tween = null
 var _press_eraser_tween: Tween = null
 var _suppress_eraser_updates: bool = false
 var _last_liquid_color: Color = Color(0.0, 0.0, 0.0, -1.0)
-var _last_eraser_target_y: float = -1000.0
+var _liquid_override_mat: StandardMaterial3D = null
+var _last_fill_target: float = -1000.0
 
 var _fill_request_pending: bool = false
 var _fill_request_msec: int = 0
+
+## DIAG: last-seen volume on held copies — any drain that isn't a local
+## pour/empty gets logged so the next test log identifies the writer.
+var _held_watch_vol: float = -1.0
+
+
+func _process(_delta: float) -> void:
+	if not is_held_copy:
+		return
+	var v := get_liquid_volume()
+	if _held_watch_vol >= 0.0 and v < _held_watch_vol - 0.001:
+		GameLog.log(
+			"[DIAG] held pitcher drained %.2f->%.2f state=%s cups=%d"
+			% [_held_watch_vol, v, str(state), cups_poured]
+		)
+	_held_watch_vol = v
+
 
 ## Set by WaterDispenser while this pitcher is snapped and being filled,
 ## so the player can't pick it up mid-pour on any peer.
 var locked_by_dispenser: bool = false
 
-const ERASER_Y_EMPTY: float = 1.752
-const ERASER_Y_FULL: float = 5.245
+## Liquid display: the fill mesh pivots at its bottom, so scale.y = fill
+## fraction reproduces the old CSG eraser clip without per-frame CSG rebuilds.
 const MAX_FILL_VOLUME: float = 10.0
 
 @export_group("Liquid Colors")
@@ -258,8 +276,10 @@ func pour_portion() -> Dictionary:
 	ice -= float(serving_recipe.get("ice", ice)) * portion_ratio
 	cups_poured += 1 # Track that a cup was poured
 	GameLog.log(
-		"[Pitcher] pour %s: liq %.2f->%.2f cups=%d init_vol=%.2f " \
-				+ "fruit=%.2f water=%.2f sugar=%.2f ice=%.2f host=%s"
+		(
+			"[Pitcher] pour %s: liq %.2f->%.2f cups=%d init_vol=%.2f "
+			+ "fruit=%.2f water=%.2f sugar=%.2f ice=%.2f host=%s"
+		)
 		% [
 			str(name),
 			liquid,
@@ -676,12 +696,12 @@ func _make_hand_mesh() -> Node3D:
 	container.add_child(glass_dup)
 	# Add the matching lemonade fill (if any liquid is present)
 	var vol := get_liquid_volume()
-	if vol > 0.0 and _lemonade_eraser != null:
+	if vol > 0.0:
 		var fill_dup := $LemonadeFill.duplicate() as Node3D
-		var eraser := fill_dup.get_node_or_null("LemonadeEraser") as Node3D
-		if eraser != null:
-			var t := clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
-			eraser.position.y = lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
+		var lmesh := fill_dup.get_node_or_null("LemonadeMesh") as MeshInstance3D
+		if lmesh != null:
+			lmesh.scale.y = clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
+			lmesh.visible = true
 		container.add_child(fill_dup)
 	return container
 
@@ -698,20 +718,26 @@ func update_label() -> void:
 	_update_eraser_position()
 
 
+func _set_fill_level(t: float) -> void:
+	if _lemonade_mesh != null:
+		_lemonade_mesh.scale.y = t
+		_lemonade_mesh.visible = t > 0.001
+
+
 func _update_eraser_position(duration: float = 0.15) -> void:
 	if _suppress_eraser_updates:
 		return
 	var vol := get_liquid_volume()
 	var t := clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
-	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
-	if abs(target_y - _last_eraser_target_y) < 0.05:
+	if abs(t - _last_fill_target) < 0.02:
 		return
-	_last_eraser_target_y = target_y
+	_last_fill_target = t
 	if _eraser_tween and _eraser_tween.is_valid():
 		_eraser_tween.kill()
-	if _lemonade_eraser != null:
+	if _lemonade_mesh != null:
+		_lemonade_mesh.visible = true
 		_eraser_tween = create_tween()
-		_eraser_tween.tween_property(_lemonade_eraser, "position:y", target_y, duration) \
+		_eraser_tween.tween_property(_lemonade_mesh, "scale:y", t, duration) \
 				.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_OUT)
 
 
@@ -720,10 +746,10 @@ func start_press_eraser_animation(target_vol: float, duration: float) -> void:
 	if _press_eraser_tween and _press_eraser_tween.is_valid():
 		_press_eraser_tween.kill()
 	var t := clampf(target_vol / MAX_FILL_VOLUME, 0.0, 1.0)
-	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
-	if _lemonade_eraser != null:
+	if _lemonade_mesh != null:
+		_lemonade_mesh.visible = true
 		_press_eraser_tween = create_tween()
-		_press_eraser_tween.tween_property(_lemonade_eraser, "position:y", target_y, duration) \
+		_press_eraser_tween.tween_property(_lemonade_mesh, "scale:y", t, duration) \
 				.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_OUT)
 
 
@@ -870,13 +896,11 @@ func sync_fill_display() -> void:
 		_press_eraser_tween.kill()
 	var vol := get_liquid_volume()
 	var t := clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
-	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
-	if _lemonade_eraser != null:
-		_lemonade_eraser.position.y = target_y
-		# Keep the tween bookkeeping honest — _update_eraser_position's
-		# early-return compares targets against this, and a stale value
-		# could skip a needed update after this direct write.
-		_last_eraser_target_y = target_y
+	_set_fill_level(t)
+	# Keep the tween bookkeeping honest — _update_eraser_position's
+	# early-return compares targets against this, and a stale value
+	# could skip a needed update after this direct write.
+	_last_fill_target = t
 	update_liquid_color()
 
 
@@ -938,37 +962,17 @@ func _apply_liquid_color(color: Color) -> void:
 	if color == _last_liquid_color:
 		return
 	_last_liquid_color = color
-	var mesh := get_node_or_null("LemonadeFill/LemonadeMesh") as CSGMesh3D
-	if mesh == null or mesh.mesh == null:
+	if _lemonade_mesh == null or _lemonade_mesh.mesh == null:
 		return
-	var base_mat: Material = mesh.mesh.surface_get_material(0)
-	var mat: StandardMaterial3D
-	if base_mat != null:
-		mat = base_mat.duplicate() as StandardMaterial3D
-	else:
-		mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	# CSGCombiner3D ignores .material during rebuild; must set surface material on mesh itself
-	var dup_mesh := mesh.mesh.duplicate() as ArrayMesh
-	dup_mesh.surface_set_material(0, mat)
-	mesh.mesh = dup_mesh
-
-	# The CSG subtractive eraser defines the material of the exposed top surface.
-	# Update its material so the liquid level shows the correct color.
-	var eraser := get_node_or_null("LemonadeFill/LemonadeEraser") as CSGBox3D
-	if eraser != null:
-		var eraser_mat: Material = eraser.material
-		if eraser_mat != null:
-			var dup := eraser_mat.duplicate() as StandardMaterial3D
-			dup.albedo_color = color
-			eraser.material = dup
+	# Surface override mutates in place — no mesh duplication, no rebuild.
+	if _liquid_override_mat == null:
+		var base_mat: Material = _lemonade_mesh.mesh.surface_get_material(0)
+		if base_mat != null:
+			_liquid_override_mat = base_mat.duplicate() as StandardMaterial3D
 		else:
-			var new_mat := StandardMaterial3D.new()
-			new_mat.albedo_color = color
-			eraser.material = new_mat
-		# Nudge eraser to force CSGCombiner3D to rebuild with new materials
-		eraser.position.y += 0.0001
-		eraser.position.y -= 0.0001
+			_liquid_override_mat = StandardMaterial3D.new()
+		_lemonade_mesh.set_surface_override_material(0, _liquid_override_mat)
+	_liquid_override_mat.albedo_color = color
 
 
 func debug_empty() -> void:

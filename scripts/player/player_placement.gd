@@ -192,6 +192,9 @@ func empty_held_pitcher() -> void:
 
 	if _player.inventory.get_hand_mesh() is Pitcher:
 		var held_pitcher := _player.inventory.get_hand_mesh() as Pitcher
+		GameLog.log(
+			"[DIAG] empty_held_pitcher: vol=%.2f -> 0 (RMB path)" % held_pitcher.get_liquid_volume()
+		)
 		held_pitcher.fruit_type = ""
 		held_pitcher.fruit_count = 0.0
 		held_pitcher.water = 0.0
@@ -1252,14 +1255,10 @@ func _create_container_hand_mesh(
 		get_tree().create_timer(0.5).timeout.connect(
 			func() -> void:
 				if is_instance_valid(pitcher):
-					var e := pitcher.get_node_or_null("LemonadeFill/LemonadeEraser")
+					var e := pitcher.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
-						"[DIAG] hand pitcher after 0.5s: vol=%.2f eraser_y=%.2f vis=%s"
-						% [
-							pitcher.get_liquid_volume(),
-							e.position.y if e else -1.0,
-							pitcher.visible,
-						]
+						"[DIAG] hand pitcher after 0.5s: vol=%.2f fill_scale=%.2f vis=%s"
+						% [pitcher.get_liquid_volume(), e.scale.y if e else -1.0, pitcher.visible]
 					),
 		)
 		# Hide for the first frame in the tree — entering mid-frame can
@@ -2301,7 +2300,7 @@ func _try_place_container() -> Node3D:
 			state["_net_fruit_amounts"] = amounts.duplicate()
 	# Include pitcher recipe in spawn state for the same reason.
 	if container_type == "pitcher":
-		var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
+		var recipe := _live_held_pitcher_recipe()
 		if not recipe.is_empty():
 			state["_net_pitcher_recipe"] = recipe.duplicate()
 	var place_pos := _ghost.global_position
@@ -2357,7 +2356,7 @@ func _try_place_container() -> Node3D:
 
 	# Restore pitcher recipe (always ΓÇö water may have been added while holding)
 	if container_type == "pitcher" and instance is Pitcher:
-		var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
+		var recipe := _live_held_pitcher_recipe()
 		instance.fruit_type = recipe.get("fruit_type", "")
 		instance.fruit_count = recipe.get("fruit_count", recipe.get("lemons", 0.0))
 		instance.sugar = recipe.get("sugar", 0.0)
@@ -2387,7 +2386,7 @@ func _try_place_container() -> Node3D:
 
 	_finish_place()
 	var container_type_str: String = _player.held_item_data.get("container_type", "")
-	var placed_recipe: Dictionary = _player.held_item_data.get("saved_recipe", { }).duplicate(true)
+	var placed_recipe: Dictionary = _live_held_pitcher_recipe().duplicate(true)
 	var on_workstation := is_workstation_surface(_player.ray.get_collider())
 	OnboardingManager.report(
 		_player.assigned_stand,
@@ -2399,6 +2398,26 @@ func _try_place_container() -> Node3D:
 	AudioManager.play_sfx(_get_place_sfx_key(container_type_str), place_pos, -1.0, 0.05, 0.85)
 	GameLog.time_log("_try_place_container", _t0)
 	return instance
+
+
+## saved_recipe in held_item_data is captured at take-time and can go
+## stale — held pours mutate only the mesh, and machine/tap fills may
+## update one but not the other. The live held mesh is the source of
+## truth for contents; snapshot it at placement time.
+func _live_held_pitcher_recipe() -> Dictionary:
+	var recipe: Dictionary = _player.held_item_data.get("saved_recipe", { })
+	var mesh := _player.inventory.get_hand_mesh() as Pitcher
+	if mesh == null:
+		return recipe
+	recipe["fruit_type"] = mesh.fruit_type
+	recipe["fruit_count"] = mesh.fruit_count
+	recipe["water"] = mesh.water
+	recipe["sugar"] = mesh.sugar
+	recipe["ice"] = mesh.ice
+	recipe["cups_poured"] = mesh.cups_poured
+	recipe["serving_recipe"] = mesh.serving_recipe.duplicate(true)
+	recipe["state"] = mesh.state
+	return recipe
 
 
 func _cancel_container_placement() -> void:

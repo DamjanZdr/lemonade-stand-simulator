@@ -161,14 +161,8 @@ transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0011322498, 0.004323244, -0.0020725727)
 mesh = SubResource("ArrayMesh_01adr")
 
-[node name="LemonadeFill" type="CSGCombiner3D" parent="." unique_id=1501480683]
+[node name="LemonadeFill" type="Node3D" parent="." unique_id=1501480683]
 transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
 
-[node name="LemonadeMesh" type="CSGMesh3D" parent="LemonadeFill" unique_id=661462062]
+[node name="LemonadeMesh" type="MeshInstance3D" parent="LemonadeFill" unique_id=661462062]
 mesh = SubResource("ArrayMesh_grset")
-
-[node name="LemonadeEraser" type="CSGBox3D" parent="LemonadeFill" unique_id=1519726119]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7519999, 0)
-operation = 2
-size = Vector3(2.1210938, 3.473709, 2.2792969)
-material = SubResource("StandardMaterial3D_qlc56")

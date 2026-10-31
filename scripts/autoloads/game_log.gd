@@ -83,7 +83,12 @@ func _write(msg: String) -> void:
 ## Public log method for other scripts to use.
 func log(msg: String) -> void:
 	_write(msg)
-	print(msg)
+	# stdout goes through a pipe under Steam — dozens of prints per action
+	# add per-call syscall overhead (and can stall if the reader drains
+	# slowly). File logging already captures everything; only echo to the
+	# console in debug builds.
+	if OS.is_debug_build():
+		print(msg)
 
 
 ## Get all buffered log lines as a single string.

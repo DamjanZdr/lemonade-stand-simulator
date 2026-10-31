@@ -16,14 +16,19 @@ var _pending_snap_pitcher_net_id: int = -1
 var _tap_tween: Tween = null
 var _last_display_fillings: float = -1000.0
 
-@onready var _water_eraser: CSGBox3D = $CSGCombiner3D/WaterEraser
+@onready var _water_mesh: MeshInstance3D = $CSGCombiner3D/Water
 @onready var _tap_mesh: MeshInstance3D = $"water dispenser/TapObject"
 @onready var _snap_point: Marker3D = $Marker3D
 
 const TAP_Y_CLOSED: float = 110.0
 const TAP_Y_OPEN: float = 250.0
-const WATER_Y_FULL: float = 3.9
-const WATER_Y_EMPTY: float = 0.74
+
+## Water level is shown by scaling the tank mesh in Y (bottom-pinned) —
+## the old CSG eraser did the same clip but paid a full mesh rebuild per
+## animated frame.
+var _water_bottom: float = 0.0
+var _water_height: float = 1.0
+var _water_base_scale_y: float = 1.0
 
 
 func _ready() -> void:
@@ -33,7 +38,24 @@ func _ready() -> void:
 	var parent := get_parent()
 	if parent != null and parent is StandUnit:
 		stand_owner = parent.name
+	if _water_mesh != null and _water_mesh.mesh != null:
+		var aabb := _water_mesh.mesh.get_aabb()
+		_water_base_scale_y = _water_mesh.scale.y
+		# Effective bounds after the node's authored y-scale.
+		_water_bottom = aabb.position.y * _water_base_scale_y
+		_water_height = aabb.size.y * _water_base_scale_y
 	_update_water_visual()
+
+
+## Pins the mesh bottom and sets the fill fraction in one write.
+func _set_water_level(t: float) -> void:
+	if _water_mesh == null:
+		return
+	t = clampf(t, 0.0, 1.0)
+	_water_mesh.scale.y = _water_base_scale_y * t
+	# scale.y shrinks toward the node origin — offset so the bottom stays put.
+	_water_mesh.position.y = _water_bottom * (1.0 - t)
+	_water_mesh.visible = t > 0.001
 
 
 ## Host-only: apply a refill and sync to all clients.
@@ -220,7 +242,7 @@ func _update_snap() -> void:
 
 
 func _update_water_visual(display_fillings: float = -1.0) -> void:
-	if _water_eraser == null:
+	if _water_mesh == null:
 		return
 	if display_fillings >= 0.0 and abs(display_fillings - _last_display_fillings) < 0.05:
 		return
@@ -230,8 +252,7 @@ func _update_water_visual(display_fillings: float = -1.0) -> void:
 		t = display_fillings / float(max_fillings)
 	else:
 		t = float(water_fillings) / float(max_fillings)
-	var target_y := lerpf(WATER_Y_EMPTY, WATER_Y_FULL, t)
-	_water_eraser.position.y = target_y
+	_set_water_level(t)
 
 
 func _reset_tap() -> void:
@@ -580,8 +601,8 @@ func _animate_water_drop(start_pos: Vector3, to_add: int) -> void:
 	var drop_mesh := _make_water_drop_mesh()
 	add_child(drop_mesh)
 	var target_local := Vector3.ZERO
-	if _water_eraser:
-		target_local = to_local(_water_eraser.global_position)
+	if _water_mesh:
+		target_local = to_local(_water_mesh.global_position)
 	var tween := _animate_throw_arc(drop_mesh, start_pos, target_local)
 	if tween:
 		tween.finished.connect(
@@ -589,20 +610,20 @@ func _animate_water_drop(start_pos: Vector3, to_add: int) -> void:
 				drop_mesh.queue_free()
 				var prev_fillings := water_fillings
 				water_fillings += to_add
-				var start_y := lerpf(
-					WATER_Y_EMPTY,
-					WATER_Y_FULL,
-					float(prev_fillings) / float(max_fillings),
-				)
-				var end_y := lerpf(
-					WATER_Y_EMPTY,
-					WATER_Y_FULL,
-					float(water_fillings) / float(max_fillings),
-				)
-				_water_eraser.position.y = start_y
-				var wt := create_tween()
-				wt.tween_property(_water_eraser, "position:y", end_y, 0.35) \
-						.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+				var start_t := clampf(float(prev_fillings) / float(max_fillings), 0.0, 1.0)
+				var end_t := clampf(float(water_fillings) / float(max_fillings), 0.0, 1.0)
+				_set_water_level(start_t)
+				if _water_mesh != null:
+					var wt := create_tween()
+					wt.set_parallel(true)
+					wt \
+							.tween_property(_water_mesh, "scale:y", _water_base_scale_y * end_t, 0.35) \
+							.set_ease(Tween.EASE_OUT) \
+							.set_trans(Tween.TRANS_CUBIC)
+					wt \
+							.tween_property(_water_mesh, "position:y", _water_bottom * (1.0 - end_t), 0.35) \
+							.set_ease(Tween.EASE_OUT) \
+							.set_trans(Tween.TRANS_CUBIC)
 				EventBus.supply_box_deposited.emit("water", float(to_add))
 				EventBus.interaction_hint_changed.emit(
 					"Dispenser: %d/%d" % [water_fillings, max_fillings],

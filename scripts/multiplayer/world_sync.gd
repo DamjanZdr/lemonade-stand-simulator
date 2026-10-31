@@ -1432,10 +1432,10 @@ func spawn_networked(
 		get_tree().create_timer(0.5).timeout.connect(
 			func() -> void:
 				if is_instance_valid(p):
-					var e := p.get_node_or_null("LemonadeFill/LemonadeEraser")
+					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
-						"[DIAG] spawned pitcher %s: vol=%.2f eraser_y=%.2f"
-						% [p.name, p.get_liquid_volume(), e.position.y if e else -1.0]
+						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
+						% [p.name, p.get_liquid_volume(), e.scale.y if e else -1.0]
 					),
 		)
 	# Restore delivery grid slot metas so clients can release the slot
@@ -2034,10 +2034,10 @@ func _spawn_on_clients(
 		get_tree().create_timer(0.5).timeout.connect(
 			func() -> void:
 				if is_instance_valid(p):
-					var e := p.get_node_or_null("LemonadeFill/LemonadeEraser")
+					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
-						"[DIAG] spawned pitcher %s: vol=%.2f eraser_y=%.2f"
-						% [p.name, p.get_liquid_volume(), e.position.y if e else -1.0]
+						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
+						% [p.name, p.get_liquid_volume(), e.scale.y if e else -1.0]
 					),
 		)
 	# Restore delivery grid slot metas so clients can release the slot
