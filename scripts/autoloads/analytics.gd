@@ -864,14 +864,18 @@ func _pump() -> void:
 	var key: String = message.key
 	var payload: Dictionary = message.payload
 	_request = HTTPRequest.new()
-	# Non-threaded: freeing a threaded request mid-flight joins the worker
-	# and can stall quit for seconds. Our payloads are small JSON — polling
-	# on the main loop is plenty and cancels instantly on teardown.
-	_request.use_threads = false
+	# Threaded: non-threaded requests run DNS resolution and the TLS
+	# handshake inside HTTPClient.poll() on the main loop — a fresh
+	# connection to the Sheets endpoint costs a 100-500ms frame hitch,
+	# and every gameplay report queues another connect. The worker thread
+	# absorbs all of it; _cancel_inflight()/cancel_request() aborts the
+	# thread promptly at quit, so the join inside queue_free stays fast.
+	_request.use_threads = true
 	_request.timeout = 10.0
 	_request.max_redirects = 0
 	_following_redirect = false
 	add_child(_request)
+	GameLog.mark("analytics.connect")
 	_request.request_completed.connect(
 		func(result: int, code: int, headers: PackedStringArray, body: PackedByteArray) -> void:
 			_response_received(key, int(payload.revision), result, code, headers, body),

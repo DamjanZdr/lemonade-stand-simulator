@@ -60,7 +60,18 @@ func _process(delta: float) -> void:
 			var recent: Array[String] = []
 			for m in _marks:
 				recent.append(str(m[1]))
-			self.log("[SPIKE] frame %.0fms marks=%s" % [frame_ms, ", ".join(recent)])
+			# Engine-level attribution: if proc+physics ≪ frame, the time went
+			# to render submission/GPU-sync (pipeline compile, texture upload)
+			# or physics flush — not GDScript.
+			var proc_ms := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+			var phys_ms := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+			var nav_ms := Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0
+			var draws := Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)
+			var nodes := Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
+			self.log(
+				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f draw=%.0f nodes=%.0f marks=%s"
+				% [frame_ms, proc_ms, phys_ms, nav_ms, draws, nodes, ", ".join(recent)]
+			)
 	_last_frame_usec = now
 
 
