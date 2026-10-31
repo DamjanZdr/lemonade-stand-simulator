@@ -13,6 +13,9 @@ Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 
 **SIGNAL:** `adraw`≈frame on big stalls (post_draw→next _process = present/vsync + OS events + process lead-in); proc≈10ms phys≈1ms rblock≈5ms pticks=1, nodes static even in 4.5s frames. One frame showed adraw=4 (sync-block variant). Not script, not physics, not measured draw block.
 
+**bgap/pticks data (build 26347745):** most stalls show `bgap≈frame` (post_draw→process_frame) — vsync OFF still stalls → present isn't the blocker; remaining in-window: `DisplayServer::process_events`/input dispatch (NOT counted in proc!) or SceneTree housekeeping. A second variant `adraw≈frame bgap≈0` = stall between process_frame and _process → deferred-queue/`queue_free`/`NOTIFICATION` flush territory. `fruitomatic._unhandled_input` early-returns — dead end. `max_physics_steps_per_frame=1` set in project.godot (7d866db) — still stalls, revert before release.
+**Next split (in order):** (a) disable `_screen_ui`/computer screen entirely — user can't buy without it; throttle test failed → need dev-spawn path or keep screen on but skip hub._process; (b) `player_placement.gd` +464 revert-or-stub; (c) `upgrade_bar_column.gd`/`morning_hub.gd` stub _process; (d) `customer.gd`/`assistant.gd` order-indicator + AI stubs.
+
 **REMAINING SUSPECTS in 6a19689:** computer `_screen_ui` SubViewport UPDATE_WHEN_VISIBLE re-rendering heavy new morning_hub UI per frame while on-camera (TEST BUILD READY: `../wlgl-bisect-head/export` = HEAD + `_screen_ui` UPDATE_DISABLED). Then: `player_placement.gd` +464, `morning_hub.gd` +1394 rewrite, `upgrade_bar_column.gd` +562 new, `customer.gd` +125 order indicators, `assistant.gd` +282, `upgrade_manager.gd` rewrite, `stand_unit.gd` +94.
 
 **Symptom:** 30-3800ms hitches on nearly every interaction — shop buy button, all placements (table/press/Squeeze-E-Z/crate/cup stack), trashcan, pitcher↔dispenser/table/stand, cup fills, NPC serve/order — solo AND multiplayer.

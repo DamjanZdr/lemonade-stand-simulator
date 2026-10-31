@@ -30,6 +30,9 @@ var _phys_at_post_draw: int = -1
 # idle_frame fires before _process callbacks — bgap = post_draw→idle =
 # present/vsync + OS events + physics + lead-in (the true mystery window).
 var _idle_us: int = 0
+# End of this autoload's _process — xgap = process_end→pre_draw covers
+# deferred-queue/queue_free flush + RenderingServer.sync + trailing nodes.
+var _proc_end_us: int = 0
 
 
 func mark(label: String) -> void:
@@ -65,6 +68,8 @@ func _ready() -> void:
 			_phys_at_post_draw = Engine.get_physics_frames()
 	)
 	get_tree().process_frame.connect(func() -> void: _idle_us = Time.get_ticks_usec())
+	if OS.get_environment("LEMON_AUTOPLAY") == "1":
+		_autoplay_ready()
 
 
 func _process(delta: float) -> void:
@@ -98,14 +103,16 @@ func _process(delta: float) -> void:
 			# a catch-up spiral would show many ticks per stalled frame.
 			var pticks := Engine.get_physics_frames() - _phys_at_post_draw if _phys_at_post_draw >= 0 else -1
 			var bgap := float(_idle_us - _post_draw_us) / 1000.0 if _idle_us > _post_draw_us else -1.0
+			var xgap := float(_pre_draw_us - _proc_end_us) / 1000.0 if _pre_draw_us > _proc_end_us else -1.0
 			self.log(
-				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f bgap=%.0f pticks=%.0f draw=%.0f nodes=%.0f marks=%s"
+				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f bgap=%.0f xgap=%.0f pticks=%.0f draw=%.0f nodes=%.0f marks=%s"
 				% [
 					frame_ms, proc_ms, phys_ms, nav_ms, rcpu, rgpu,
-					rblock, adraw, bgap, pticks, draws, nodes, ", ".join(recent),
+					rblock, adraw, bgap, xgap, pticks, draws, nodes, ", ".join(recent),
 				]
 			)
 	_last_frame_usec = now
+	_proc_end_us = Time.get_ticks_usec()
 
 
 func _notification(what: int) -> void:
@@ -113,6 +120,57 @@ func _notification(what: int) -> void:
 		_file.flush()
 		_file.close()
 		_file = null
+
+
+## Autoplay harness: drives the same action paths as manual play so the
+## spike signature can be reproduced unattended (LEMON_AUTOPLAY=1).
+var _auto_tick: int = 0
+var _auto_spawned: Array[Node] = []
+
+
+func _autoplay_ready() -> void:
+	_write("[AUTOPLAY] armed — starting a session then spawn/despawn cycling")
+	var start_timer := Timer.new()
+	start_timer.wait_time = 4.0
+	start_timer.one_shot = true
+	start_timer.timeout.connect(func() -> void:
+		_write("[AUTOPLAY] load_existing_game + host_game")
+		SaveManager.load_existing_game("AUTO")
+		NetworkManager.host_game()
+	)
+	start_timer.autostart = true
+	add_child(start_timer)
+	var timer := Timer.new()
+	timer.wait_time = 3.0
+	timer.timeout.connect(_autoplay_step)
+	timer.autostart = true
+	add_child(timer)
+
+
+func _autoplay_step() -> void:
+	var player := WorldSync.get_local_player() if WorldSync.has_method("get_local_player") else null
+	if player == null:
+		return
+	var parent: Node = player.get_parent()
+	var base: Vector3 = player.global_position + Vector3(1.5, 0.05, 0)
+	var rot := Vector3.ZERO
+	_auto_tick += 1
+	mark("auto:cycle%d" % (_auto_tick % 4))
+	match _auto_tick % 4:
+		0:
+			var n := WorldSync.spawn_networked("res://scenes/stand/workstation.tscn", parent, base, rot)
+			if n: _auto_spawned.append(n)
+		1:
+			var n := WorldSync.spawn_networked("res://scenes/objects/cup_stack.tscn", parent, base, rot)
+			if n: _auto_spawned.append(n)
+		2:
+			var n := WorldSync.spawn_networked("res://scenes/objects/pitcher.tscn", parent, base, rot)
+			if n: _auto_spawned.append(n)
+		3:
+			if not _auto_spawned.is_empty():
+				var n: Node = _auto_spawned.pop_back()
+				if is_instance_valid(n):
+					WorldSync.despawn_networked(n)
 
 
 func _write(msg: String) -> void:
