@@ -2,6 +2,35 @@
 
 Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 
+## ACTIVE INVESTIGATION — interaction frame spikes (handoff, 2026-10-31)
+
+**Symptom:** 30-3800ms hitches on nearly every interaction — shop buy button, all placements (table/press/Squeeze-E-Z/crate/cup stack), trashcan, pitcher↔dispenser/table/stand, cup fills, NPC serve/order — solo AND multiplayer.
+
+**Proven so far:**
+- Spike dump in `GameLog._process` (`[SPIKE] frame Xms proc=P phys=Y nav=N draw=D nodes=N marks=...`):
+  `proc`+`phys` ≈ 10-30ms inside 400-3800ms frames → **the time is render/driver-side, NOT GDScript or physics.** Some frames have zero action marks.
+- Function timers only explain ≤80ms (`spawn_networked:lemonader.tscn` 83ms worst; `_try_place_container` ~30ms; `_do_save` ~3ms).
+- Fixed already (not the cause): pitcher/dispenser CSG liquid replaced with `scale.y` meshes (`c5946e9`); release `print()` removed; hidden debug-console label rebuild skipped; achievement checks coalesced per frame; analytics HTTP moved to `use_threads=true` + `analytics.connect` mark (`a2306b7`).
+- World uses **baked** LightmapGI + 2×VoxelGI + ReflectionProbe (check its `update_mode`), glow+fog enabled, occlusion culling on, `physics_interpolation=true`. `outline_overlay.tscn` is a separate SubViewport rendering only layer-2 `_Outline` fill meshes, UPDATE_ALWAYS only while a highlight exists.
+- **Remaining suspects (render-side):** Forward+ Vulkan pipeline compilation on first draw of new spawns/materials (each object type hitches first placement; but user reports repeats hitch too); texture upload on first visibility; delivery-truck spawn after shop orders (`equipment_ordered` → 1800ms frame, no other spawn marks); ReflectionProbe re-render; GPU present/queue stalls (draw calls ~2000-2400, nodes ~13k).
+- **Next diagnostic step:** add `RenderingServer.viewport_set_measure_render_time(root, true)` → log `viewport_get_measured_render_time_cpu/gpu()` in the spike dump to split submit vs GPU. Consider a no-analytics / no-glow / no-outline A-B build. If pipeline-compile confirmed: warm pipelines at load (spawn every placeable hidden + force render), or evaluate renderer change.
+
+**REGRESSION to fix:** pitcher liquid `scale.y` mesh "fully mismatches" the fill level vs the old CSG eraser look. Mesh AABB probe claimed bottom≈0.02, height≈3.45 — verify actual pivot/scale mapping in `pitcher.gd` fill update (`_update_eraser_position` replacement). Old eraser_y range ~1.75↔? Check `scenes/objects/pitcher.tscn` Lemonade MeshInstance transform.
+
+**Pitcher wipe:** `[DIAG]` watcher + `empty_held_pitcher` logging still active; held copies use `is_held_copy` + name `HeldPitcher` (f11baed). Unconfirmed whether wipe still occurs.
+
+**Instrumentation active in build:** `GameLog.mark()`, `GameLog.time_log()`, `[SPIKE]`, `[DIAG]` — strip or gate before final release.
+
+## Steam / Upload
+
+- Demo app `5337670` / depot `5337671` → `tools/app_build_5337670.vdf`. Upload: `powershell tools/steam_upload_playtest.ps1 -SteamUser damiandevz -SteamCmd "D:\User\Desktop\SteamworksSDK\sdk\tools\ContentBuilder\builder\steamcmd.exe" -AppId 5337670 -AppBuildVdf tools/app_build_5337670.vdf -Branch default`
+- Full game app `5000810` (depot unverified, VDF `app_build_5000810.vdf` exists). Private/beta branches need no review; both MP peers must run same app.
+- Latest demo build: **26345747** (has proc-attribution spikes). Skip broken 26345233.
+- Session log: `%APPDATA%\Godot\app_userdata\Lemonade Stand Simulator\game_log.txt`
+- 32 achievements wired in `achievement_manager.gd`; Steam-side entries are manual per-app (API names must exist in Steamworks or `setAchievement` fails silently).
+- Achievements flagged: Neighborhood Favorite = all 100 roster NPCs (roster file has 141 lines but exactly 100 entries); Squeeze 'Em All counts press OR either machine; trash counts `is_regular_trash_type` only; "It's Delicious" = zero-complaint serve.
+- Known unresolved: held-pitcher recipe wipe diagnostics pending; cumulative fruit branch bar = sum of all fruits' perfect serves.
+
 ## Build / Test
 
 - **Run headless compile check**
