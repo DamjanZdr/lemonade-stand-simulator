@@ -344,6 +344,9 @@ func initialize_stand(stand: StandUnit) -> void:
 
 
 func report(stand: StandUnit, event_name: String, data: Dictionary = { }) -> void:
+	if event_name == "debug_action" and (OS.is_debug_build() or GameState.DEV_TOOLS):
+		stand.apply_debug_action(str(data.get("action", "")), data.get("params", { }))
+	UpgradeManager.record_event(stand, event_name, data)
 	if stand == null or data.get("debug", false):
 		return
 	if not WorldSync.is_host():

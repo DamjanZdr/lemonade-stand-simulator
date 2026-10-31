@@ -237,3 +237,6 @@ func init_default_recipes() -> void:
 
 func _on_game_reset() -> void:
 	_debug_popularity = -1.0
+
+## Dev tools gate — debug panel/console check this in release builds.
+var DEV_TOOLS := true

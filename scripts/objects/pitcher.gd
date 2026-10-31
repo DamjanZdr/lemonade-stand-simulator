@@ -310,9 +310,34 @@ func set_pitcher_visible(v: bool) -> void:
 # --- Interaction ---
 
 
+func _appliance_host() -> Node:
+	if not has_meta("lemonader_host"):
+		return null
+	var host: Variant = get_meta("lemonader_host")
+	if host is Node and is_instance_valid(host):
+		return host
+	return null
+
+
+func can_player_use(player: Node) -> bool:
+	var host := _appliance_host()
+	if host != null:
+		return host.can_player_use(player)
+	return super.can_player_use(player)
+
+
 func interact(player: Node) -> void:
 	var p := player as Player
 	if p == null:
+		return
+	var host := _appliance_host()
+	if host != null:
+		# Clicking the slot pitcher takes it out with an empty hand; with
+		# something held, behave like clicking the machine itself.
+		if p.held_item == HeldItem.NONE:
+			host.call("request_action", p, "take")
+		else:
+			host.interact(p)
 		return
 	# Only the stand that owns this pitcher can interact with it.
 	if not can_player_use(player):

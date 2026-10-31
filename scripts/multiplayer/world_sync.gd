@@ -51,6 +51,7 @@ var _pending_despawns: Dictionary[int, int] = { }
 
 
 func setup(_world_objects: Node, _spawner: MultiplayerSpawner) -> void:
+	call_deferred("_warm_machine_pipelines")
 	# Currently unused (we use RPC-based spawning instead of MultiplayerSpawner),
 	# but kept for future use if we switch to spawner-based replication.
 	pass
@@ -2381,3 +2382,25 @@ func _string_to_node(path_str: String) -> Node:
 		return node
 	# Try relative to current scene
 	return root.get_node_or_null(NodePath(path_str.replace("/root/Main/", "")))
+
+## One-frame offscreen warmup for machine scenes — the first real draw of
+## their blend-shape meshes compiles new GPU pipelines and stalls the frame.
+func _warm_machine_pipelines() -> void:
+	var root: Node = get_tree().current_scene
+	if root == null:
+		return
+	var spawned: Array = [ ]
+	for path in [
+		"res://scenes/objects/lemonader.tscn",
+		"res://scenes/objects/fruitomatic.tscn",
+	]:
+		var sc: PackedScene = load(path)
+		if sc != null:
+			var inst := sc.instantiate()
+			inst.position = Vector3(0, -500, 0)
+			root.add_child(inst)
+			spawned.append(inst)
+	await get_tree().process_frame
+	for inst in spawned:
+		if is_instance_valid(inst):
+			inst.queue_free()

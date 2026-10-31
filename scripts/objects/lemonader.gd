@@ -385,7 +385,9 @@ func refresh_display() -> void:
 	if not is_node_ready():
 		return
 	refresh_stock_panels()
-	var pitcher := $PitcherPoint/PitcherPreview as Pitcher
+	var pitcher := get_node_or_null("PitcherPoint/PitcherPreview") as Pitcher
+	if pitcher == null:
+		return
 	var inserted := bool(machine_state["pitcher"])
 	# set_pitcher_visible hides the glass body and manages the collider;
 	# hide the LemonadeFill CSG too when the slot is empty — its combiner

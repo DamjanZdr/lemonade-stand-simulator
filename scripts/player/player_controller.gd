@@ -60,7 +60,9 @@ var _time_since_sync: float = 0.0
 const SYNC_ROT_THRESHOLD: float = 0.05 # Min _player.rotation (radians) to trigger sync
 var _priceboard_tween: Tween = null
 var _priceboard_camera_original_local: Transform3D
+var _priceboard_camera_original_fov := 70.0
 var _priceboard_camera_original_top_level := false
+var _priceboard_hid_hud := false
 
 # --- First-person view bob ---
 # Driven by distance travelled, so the bob rate always matches actual
@@ -283,14 +285,20 @@ func is_in_priceboard_mode() -> bool:
 	return _in_priceboard_mode
 
 
-func enter_priceboard_focus(focus_transform: Transform3D) -> void:
+func enter_priceboard_focus(
+	focus_transform: Transform3D,
+	focus_fov: float = -1.0,
+	hide_hud: bool = true,
+) -> void:
 	_in_priceboard_mode = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_priceboard_camera_original_local = _player.camera.transform
+	_priceboard_camera_original_fov = _player.camera.fov
 	_priceboard_camera_original_top_level = _player.camera.top_level
 	_player.camera.top_level = true
 	var hud := get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("set_hud_visible"):
+	_priceboard_hid_hud = hide_hud and hud != null and hud.has_method("set_hud_visible")
+	if _priceboard_hid_hud:
 		hud.set_hud_visible(false)
 	if _priceboard_tween != null and _priceboard_tween.is_valid():
 		_priceboard_tween.kill()
@@ -298,6 +306,8 @@ func enter_priceboard_focus(focus_transform: Transform3D) -> void:
 	_priceboard_tween.set_trans(Tween.TRANS_QUAD)
 	_priceboard_tween.set_ease(Tween.EASE_IN_OUT)
 	_priceboard_tween.tween_property(_player.camera, "global_transform", focus_transform, 0.4)
+	if focus_fov > 0.0:
+		_priceboard_tween.parallel().tween_property(_player.camera, "fov", focus_fov, 0.4)
 
 
 func exit_priceboard_focus() -> void:
@@ -310,6 +320,12 @@ func exit_priceboard_focus() -> void:
 	_priceboard_tween.set_trans(Tween.TRANS_QUAD)
 	_priceboard_tween.set_ease(Tween.EASE_IN_OUT)
 	_priceboard_tween.tween_property(_player.camera, "global_transform", target_global, 0.4)
+	_priceboard_tween.parallel().tween_property(
+		_player.camera,
+		"fov",
+		_priceboard_camera_original_fov,
+		0.4,
+	)
 	_priceboard_tween.finished.connect(_on_priceboard_tween_finished)
 
 
@@ -318,9 +334,11 @@ func _on_priceboard_tween_finished() -> void:
 	_player.camera.transform = _priceboard_camera_original_local
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_in_priceboard_mode = false
-	var hud := get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("set_hud_visible"):
-		hud.set_hud_visible(true)
+	if _priceboard_hid_hud:
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("set_hud_visible"):
+			hud.set_hud_visible(true)
+		_priceboard_hid_hud = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -360,6 +378,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if _player.interaction != null:
 			_player.interaction.secondary_interact()
+
+	# Mouse wheel turns the placement ghost 15 degrees per notch while a
+	# valid preview is showing — nothing is consumed otherwise.
+	if event is InputEventMouseButton and event.pressed \
+			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED \
+			and _player.placement != null:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_player.placement.rotate_ghost(-1.0)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_player.placement.rotate_ghost(1.0)
 
 
 func _process(delta: float) -> void:

@@ -1210,17 +1210,126 @@ func get_stand_name() -> String:
 		return _sign_label.text
 	return ""
 
-func record_progress(_key: String, _amount: float = 1.0) -> void:
-	pass
-func record_perfect_serve(_fruit_id: String, _count: int = 1) -> void:
-	pass
-func get_progress(_key: String) -> float:
-	return 0.0
-func get_claimed(_key: String) -> int:
-	return 0
-func claim_progress_tier(_branch_id: String, _level: int) -> void:
-	pass
-func is_fruit_unlocked_for_stand(_fruit_id: String) -> bool:
-	return true
-func get_perfect_serves(_fruit_id: String) -> int:
-	return 0
+func is_fruit_unlocked_for_stand(fruit: String) -> bool:
+	return UpgradeManager.is_fruit_unlocked_for_stand(fruit, self)
+
+
+func record_progress(key: String, amount: float = 1.0) -> void:
+	if not WorldSync.is_host():
+		return
+	var p: Dictionary = onboarding_progress.get("progress", { })
+	p[key] = float(p.get(key, 0.0)) + amount
+	onboarding_progress["progress"] = p
+	_touch_progress()
+
+
+func get_progress(key: String) -> float:
+	return float(onboarding_progress.get("progress", { }).get(key, 0.0))
+
+
+func record_perfect_serve(fruit: String) -> void:
+	if not WorldSync.is_host():
+		return
+	var p: Dictionary = onboarding_progress.get("progress", { })
+	var serves: Dictionary = p.get("perfect_serves", { })
+	serves[fruit] = int(serves.get(fruit, 0)) + 1
+	p["perfect_serves"] = serves
+	onboarding_progress["progress"] = p
+	_touch_progress()
+
+
+func get_perfect_serves(fruit: String) -> int:
+	var serves: Dictionary = onboarding_progress.get("progress", { }).get("perfect_serves", { })
+	return int(serves.get(fruit, 0))
+
+
+func get_claimed(branch_id: String) -> int:
+	return int(onboarding_progress.get("progress", { }).get("claimed", { }).get(branch_id, 0))
+
+
+func claim_progress_tier(branch_id: String, level: int) -> void:
+	if not WorldSync.is_host():
+		return
+	var p: Dictionary = onboarding_progress.get("progress", { })
+	var claimed: Dictionary = p.get("claimed", { })
+	claimed[branch_id] = level
+	p["claimed"] = claimed
+	onboarding_progress["progress"] = p
+	_touch_progress()
+
+
+func _touch_progress() -> void:
+	return # DIAGNOSTIC — emit chain under investigation
+	onboarding_progress["revision"] = int(onboarding_progress.get("revision", 0)) + 1
+	OnboardingManager.stand_progress_changed.emit(self, onboarding_progress.duplicate(true))
+	push_state()
+	AchievementManager.check_stand_thresholds(self)
+
+func apply_debug_action(action: String, params: Dictionary = { }) -> void:
+	if not (OS.is_debug_build() or GameState.DEV_TOOLS) or not WorldSync.is_host():
+		return
+	match action:
+		"add_money":
+			add_money(float(params.get("amount", 0.0)))
+		"set_popularity":
+			set_popularity(
+				clampf(float(params.get("value", popularity)), 0.0, Balancing.MAX_POPULARITY)
+			)
+		"set_feedback_tier":
+			set_feedback_tier(clampi(int(params.get("tier", feedback_tier)), 0, 2))
+		"spawn_npc", "force_spawn_customer":
+			var spawner := _debug_customer_spawner()
+			if spawner != null:
+				spawner.debug_spawn_at_free_slot(int(params.get("npc_id", -1)))
+		"force_happy_serve":
+			var spawner := _debug_customer_spawner()
+			if spawner != null:
+				spawner.debug_force_happy()
+		"set_queue_max":
+			var spawner := _debug_customer_spawner()
+			if spawner != null:
+				spawner.debug_set_queue_max(int(params.get("value", 0)))
+		"refill_bins":
+			_debug_refill_owned_bins()
+		"empty_pitcher":
+			_debug_empty_owned_pitchers()
+		"set_temperature":
+			GameState.temperature = clampf(
+				float(params.get("value", Balancing.TEMP_DEFAULT)),
+				Balancing.TEMP_MIN,
+				Balancing.TEMP_MAX,
+			)
+			EventBus.weather_changed.emit(GameState.temperature)
+		"end_day":
+			DayManager.end_day()
+		_:
+			return
+	push_state()
+
+
+func _debug_customer_spawner() -> Node:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	for sp in scene.find_children("CustomerSpawner*", "", true, false):
+		if sp.get("stand") == self:
+			return sp
+	return null
+
+
+func _debug_refill_owned_bins() -> void:
+	for node in get_tree().get_nodes_in_group("container"):
+		var owner := OnboardingManager.stand_for_node(node)
+		if owner != null and owner != self:
+			continue
+		if node.has_method("debug_refill"):
+			node.debug_refill()
+
+
+func _debug_empty_owned_pitchers() -> void:
+	for node in get_tree().get_nodes_in_group("pitcher"):
+		var owner := OnboardingManager.stand_for_node(node)
+		if owner != null and owner != self:
+			continue
+		if node.has_method("debug_empty"):
+			node.debug_empty()
