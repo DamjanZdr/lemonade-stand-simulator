@@ -678,7 +678,7 @@ func add_money_from_sale(amount: float) -> void:
 	push_state()
 
 
-func spend_money(amount: float, category: String = "") -> bool:
+func spend_money(amount: float, _category: String = "") -> bool:
 	if money < amount:
 		return false
 	money -= amount
