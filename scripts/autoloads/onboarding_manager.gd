@@ -384,6 +384,11 @@ func _apply_report(stand: StandUnit, event_name: String, data: Dictionary) -> vo
 		stand.record_fruit_pressed(str(data.get("type", "")))
 	if event_name == "pitcher_made" and str(data.get("machine", "")) != "":
 		stand.record_machine_pitcher(str(data["machine"]))
+		# Machines squeeze fruit too — count the batch's fruit toward the
+		# "squeezed every fruit" set alongside manual presses.
+		var batch_fruit := str((data.get("snapshot", { }) as Dictionary).get("fruit_type", ""))
+		if batch_fruit != "":
+			stand.record_fruit_pressed(batch_fruit)
 	if event_name == "perfect_recipe_set":
 		stand.record_perfect_recipe_set(data.get("fruit_type", ""))
 	if (

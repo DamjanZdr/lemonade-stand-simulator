@@ -221,16 +221,14 @@ func apply_trash_disposal(trash_type: String, refund: float, stand_name: String 
 		return
 	if refund > 0.0:
 		_add_money_to_stand(refund, stand_name, trash_type)
-	for node in get_tree().get_nodes_in_group("stand"):
-		var owning_stand := node as StandUnit
-		if owning_stand != null and owning_stand.name == stand_name:
-			owning_stand.record_trash_thrown()
-			break
 	if Balancing.is_regular_trash_type(trash_type):
 		Balancing.adjust_popularity_for_stand(stand_name, Balancing.POPULARITY_TRASH_DISPOSED_BONUS)
 		for node in get_tree().get_nodes_in_group("stand"):
 			var litter_stand := node as StandUnit
 			if litter_stand != null and litter_stand.name == stand_name:
+				# Only real trash counts toward the trash achievements —
+				# refunding cups/equipment/supply boxes is a different act.
+				litter_stand.record_trash_thrown()
 				OnboardingManager.report(litter_stand, "litter_trashed")
 				break
 	EventBus.trash_disposed.emit(trash_type, refund, stand_name)
