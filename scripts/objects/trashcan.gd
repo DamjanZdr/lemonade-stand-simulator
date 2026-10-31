@@ -181,6 +181,8 @@ func interact(player: Node) -> void:
 
 
 func _finish_held_disposal(player: Player) -> void:
+	var _t0 := Time.get_ticks_usec()
+	GameLog.mark("trash_dispose")
 	var mesh := player.inventory.release_hand_mesh()
 	# Pull the mesh out of hand_slot BEFORE clear_held — set_held() frees
 	# every hand_slot child, which would kill the mesh before the arc runs.
@@ -211,6 +213,7 @@ func _finish_held_disposal(player: Player) -> void:
 	if arc != null:
 		done.tween_interval(0.45)
 	done.tween_callback(mesh.queue_free)
+	GameLog.time_log("_finish_held_disposal", _t0)
 
 
 ## Host-side: apply money refund. The disposable visual was removed — the
@@ -223,6 +226,14 @@ func apply_trash_disposal(trash_type: String, refund: float, stand_name: String 
 		_add_money_to_stand(refund, stand_name, trash_type)
 	if Balancing.is_regular_trash_type(trash_type):
 		Balancing.adjust_popularity_for_stand(stand_name, Balancing.POPULARITY_TRASH_DISPOSED_BONUS)
+		for node in get_tree().get_nodes_in_group("stand"):
+			var litter_stand := node as StandUnit
+			if litter_stand != null and litter_stand.name == stand_name:
+				# Only real trash counts toward the trash achievements —
+				# refunding cups/equipment/supply boxes is a different act.
+				litter_stand.record_trash_thrown()
+				OnboardingManager.report(litter_stand, "litter_trashed")
+				break
 	EventBus.trash_disposed.emit(trash_type, refund, stand_name)
 
 
@@ -271,7 +282,12 @@ func _is_holding_trash(player: Node) -> bool:
 func _get_refund(player: Node) -> float:
 	var data: Dictionary = player.get("held_item_data")
 	var base: float = data.get("trash_value", empty_box_refund)
-	var bonus: float = 1.0 + UpgradeManager.get_effect_total("trash_rebate")
+	# The rebate pays the stand that owns the throwing player.
+	var pstand: Node = player.get("assigned_stand")
+	var bonus: float = 1.0 + UpgradeManager.get_effect_total_for_stand(
+		"trash_rebate",
+		pstand.name if pstand != null else "",
+	)
 	return base * bonus
 
 
@@ -296,6 +312,10 @@ func _get_container_cost_for_trash(container_type: String) -> float:
 			cost = Balancing.CONTAINER_COST_WORKSTATION
 		"cup_tray":
 			cost = Balancing.CONTAINER_COST_CUP_TRAY
+		"lemonader":
+			cost = Balancing.CONTAINER_COST_LEMONADER
+		"fruitomatic":
+			cost = Balancing.CONTAINER_COST_FRUITOMATIC
 	return cost * 0.7
 
 

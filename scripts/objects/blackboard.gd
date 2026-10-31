@@ -332,7 +332,7 @@ func _apply_current_fruit_recipe() -> void:
 		return
 	if label_name == "" or not label_name in StandUnit.FRUIT_TYPES:
 		return
-	var recipe := GameState.get_recipe(label_name).duplicate()
+	var recipe := stand.get_recipe(label_name).duplicate()
 	if v1 != "" and v1.is_valid_float():
 		recipe["fruit_count"] = float(v1)
 	if v2 != "" and v2.is_valid_float():
@@ -463,7 +463,7 @@ func _apply_recipes_to_stand() -> void:
 		# applies it and broadcasts the authoritative state; GameState
 		# is updated by StandUnit.set_recipe on the host and by _apply_state
 		# on clients, so we don't duplicate the write here.
-		var recipe := GameState.get_recipe(label_name).duplicate()
+		var recipe := stand.get_recipe(label_name).duplicate()
 		if v1 != "" and v1.is_valid_float():
 			recipe["fruit_count"] = float(v1)
 		if v2 != "" and v2.is_valid_float():
@@ -532,6 +532,15 @@ func _next_editable_index(from: int, direction: int) -> int:
 
 
 func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
+	_reevaluate_locked()
+	_refresh_all_labels()
+
+
+## Re-check fruit unlocks against the stand's current claimed tiers.
+## Unlocks arrive via stand_progress_changed (tier claims, state pushes)
+## — the locked flag/labels must follow or a freshly unlocked fruit keeps
+## showing its "Locked" overlay and stays uneditable.
+func _reevaluate_locked() -> void:
 	for i in range(_label_data.size()):
 		var data: Dictionary = _label_data[i]
 		var fruit_id: String = data.get("name", "").to_lower()
@@ -547,7 +556,6 @@ func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
 					var locked_lbl := parent_title.get_node_or_null(locked_name) as Label3D
 					if locked_lbl != null:
 						locked_lbl.visible = now_locked
-	_refresh_all_labels()
 
 
 func _on_game_reset() -> void:
@@ -560,6 +568,7 @@ func _on_game_reset() -> void:
 func _on_stand_progress_changed(stand: StandUnit, _progress: Dictionary) -> void:
 	if stand != _find_nearest_stand():
 		return
+	_reevaluate_locked()
 	_refresh_all_labels()
 
 

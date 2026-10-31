@@ -35,6 +35,10 @@ func _ready() -> void:
 		# Assign stand ownership based on parent StandUnit.
 		stand_owner = _stand.name
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+	# Fruit unlocks arrive as progress changes, not price changes —
+	# without this the board only showed a newly unlocked fruit's row
+	# after the player happened to interact with it.
+	OnboardingManager.stand_progress_changed.connect(_on_stand_progress_changed)
 	# Defer: children _ready() before their parent StandUnit, so prices
 	# aren't populated yet and get_price() would hit the 1.50 fallback.
 	call_deferred("_refresh_label")
@@ -231,6 +235,12 @@ func _on_price_changed(_fruit: String, _new_price: float) -> void:
 
 
 func _on_upgrade_purchased(_upgrade: int, _cost: float) -> void:
+	_refresh_label()
+
+
+func _on_stand_progress_changed(stand: StandUnit, _progress: Dictionary) -> void:
+	if stand != _stand:
+		return
 	_refresh_label()
 
 

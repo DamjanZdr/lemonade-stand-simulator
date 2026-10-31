@@ -302,9 +302,9 @@ func _get_press_duration() -> float:
 	if data == null:
 		return 1.5 * fruit_count
 	var duration := data.press_time_per_fruit * fruit_count
-	var press_bonus: float = UpgradeManager.get_effect_total("press_speed")
+	var press_bonus: float = UpgradeManager.get_effect_total_for_node("press_speed", self)
 	if press_bonus > 0.0:
-		duration *= (1.0 - press_bonus)
+		duration /= (1.0 + press_bonus)
 	return duration
 
 
@@ -440,7 +440,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	var snap_rot := Vector3.ZERO
 	var state: Dictionary = {
 		"_net_groups": ["container", "pitcher"],
-		"_net_scale": Vector3.ONE * 0.1575,
+		"_net_scale": Vector3.ONE * 0.1008,
 		"fruit_type": recipe.get("fruit_type", ""),
 		"fruit_count": recipe.get("fruit_count", recipe.get("lemons", 0.0)),
 		"sugar": recipe.get("sugar", 0.0),
@@ -459,7 +459,7 @@ func apply_pitcher_snap_request(recipe: Dictionary, stand_owner: String) -> bool
 	if pitcher == null:
 		return false
 	# Apply the placement scale so the host's pitcher matches clients.
-	pitcher.scale = Vector3.ONE * 0.1575
+	pitcher.scale = Vector3.ONE * 0.1008
 	# Apply recipe state (request_spawn on host returns the instance, but
 	# _ready() has already run with defaults, so we re-apply the recipe).
 	pitcher.fruit_type = recipe.get("fruit_type", "")
