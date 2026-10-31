@@ -1259,7 +1259,6 @@ func claim_progress_tier(branch_id: String, level: int) -> void:
 
 
 func _touch_progress() -> void:
-	return # DIAGNOSTIC — emit chain under investigation
 	onboarding_progress["revision"] = int(onboarding_progress.get("revision", 0)) + 1
 	OnboardingManager.stand_progress_changed.emit(self, onboarding_progress.duplicate(true))
 	push_state()
