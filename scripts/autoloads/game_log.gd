@@ -32,7 +32,7 @@ func mark(label: String) -> void:
 func time_log(label: String, start_usec: int) -> void:
 	var dt := Time.get_ticks_usec() - start_usec
 	if float(dt) > HOT_PATH_US:
-		log("[SPIKE] %s took %.1fms" % [label, float(dt) / 1000.0])
+		self.log("[SPIKE] %s took %.1fms" % [label, float(dt) / 1000.0])
 
 
 func _ready() -> void:
@@ -60,7 +60,7 @@ func _process(delta: float) -> void:
 			var recent: Array[String] = []
 			for m in _marks:
 				recent.append(str(m[1]))
-			log("[SPIKE] frame %.0fms marks=%s" % [frame_ms, ", ".join(recent)])
+			self.log("[SPIKE] frame %.0fms marks=%s" % [frame_ms, ", ".join(recent)])
 	_last_frame_usec = now
 
 
