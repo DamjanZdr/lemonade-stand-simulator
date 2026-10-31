@@ -588,7 +588,7 @@ func _touch_progress() -> void:
 	# the other machines kept the stale unlock state until some unrelated
 	# state change happened to broadcast.
 	push_state()
-	push_state()
+	AchievementManager.check_stand_thresholds(self)
 
 
 func init_default_prices() -> void:
@@ -780,14 +780,36 @@ func _rpc_add_money_from_sale(amount: float) -> void:
 	push_state()
 
 
-func record_fruit_pressed() -> void:
+func record_fruit_pressed(fruit_type: String = "") -> void:
 	total_fruit_pressed += 1
+	if fruit_type != "":
+		var pressed: Dictionary = lifetime_stats.get("pressed_fruits", { }).duplicate()
+		pressed[fruit_type] = true
+		lifetime_stats["pressed_fruits"] = pressed
 	AchievementManager.check_stand_thresholds(self)
 	push_state()
 
 
 func record_perfect_recipe_set(fruit_type: String) -> void:
 	perfect_recipes_set[fruit_type] = true
+	AchievementManager.check_stand_thresholds(self)
+	push_state()
+
+
+## Host-side counter for achievement input: any trash deposited in a can
+## owned by this stand — held litter, supply boxes, physics-landed junk.
+func record_trash_thrown() -> void:
+	lifetime_stats["trash_thrown"] = int(lifetime_stats.get("trash_thrown", 0)) + 1
+	AchievementManager.check_stand_thresholds(self)
+	push_state()
+
+
+## Host-side counter: a machine produced a finished pitcher (concentrate
+## or full lemonade). machine_type is lemonader/fruitomatic.
+func record_machine_pitcher(machine_type: String) -> void:
+	var m: Dictionary = lifetime_stats.get("machine_pitchers", { }).duplicate()
+	m[machine_type] = int(m.get(machine_type, 0)) + 1
+	lifetime_stats["machine_pitchers"] = m
 	AchievementManager.check_stand_thresholds(self)
 	push_state()
 
@@ -957,6 +979,7 @@ func record_npc_encounter(
 	if is_new or affinity_delta != 0.0:
 		npc_collection_changed.emit(collection.duplicate(true))
 		push_state()
+		AchievementManager.check_stand_thresholds(self)
 
 
 ## An NPC crossed to 10/10 — tell the serving/interacting peer's HUD so

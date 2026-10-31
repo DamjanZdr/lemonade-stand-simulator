@@ -357,7 +357,7 @@ func finish_batch() -> void:
 	OnboardingManager.report(
 		OnboardingManager.stand_for_node(self),
 		"pitcher_made",
-		{ "snapshot": machine_state["batch"].duplicate(true) },
+		{ "snapshot": machine_state["batch"].duplicate(true), "machine": _machine_type() },
 	)
 	var result: Dictionary = machine_state["batch"].duplicate(true)
 	if not _adds_water():
