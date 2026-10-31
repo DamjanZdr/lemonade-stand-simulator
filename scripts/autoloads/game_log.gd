@@ -24,6 +24,9 @@ var _last_frame_usec: int = 0
 var _root_vp: RID
 var _pre_draw_us: int = 0
 var _post_draw_us: int = 0
+# Physics tick counter sampled at post_draw — how many catch-up ticks ran
+# inside the post-draw→next-process window (physics_max_steps_per_frame).
+var _phys_at_post_draw: int = -1
 
 
 func mark(label: String) -> void:
@@ -53,7 +56,11 @@ func _ready() -> void:
 	_root_vp = get_viewport().get_viewport_rid()
 	RenderingServer.viewport_set_measure_render_time(_root_vp, true)
 	RenderingServer.frame_pre_draw.connect(func() -> void: _pre_draw_us = Time.get_ticks_usec())
-	RenderingServer.frame_post_draw.connect(func() -> void: _post_draw_us = Time.get_ticks_usec())
+	RenderingServer.frame_post_draw.connect(
+		func() -> void:
+			_post_draw_us = Time.get_ticks_usec()
+			_phys_at_post_draw = Engine.get_physics_frames()
+	)
 
 
 func _process(delta: float) -> void:
@@ -83,11 +90,14 @@ func _process(delta: float) -> void:
 			# adraw = time since post_draw — the present/vsync/OS tail.
 			var rblock := float(_post_draw_us - _pre_draw_us) / 1000.0
 			var adraw := float(now - _post_draw_us) / 1000.0 if _post_draw_us > 0 else -1.0
+			# pticks = physics ticks executed inside the adraw window —
+			# a catch-up spiral would show many ticks per stalled frame.
+			var pticks := Engine.get_physics_frames() - _phys_at_post_draw if _phys_at_post_draw >= 0 else -1
 			self.log(
-				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f draw=%.0f nodes=%.0f marks=%s"
+				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f rblock=%.0f adraw=%.0f pticks=%.0f draw=%.0f nodes=%.0f marks=%s"
 				% [
 					frame_ms, proc_ms, phys_ms, nav_ms, rcpu, rgpu,
-					rblock, adraw, draws, nodes, ", ".join(recent),
+					rblock, adraw, pticks, draws, nodes, ", ".join(recent),
 				]
 			)
 	_last_frame_usec = now
