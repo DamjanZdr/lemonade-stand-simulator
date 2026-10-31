@@ -1435,7 +1435,7 @@ func spawn_networked(
 					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
 						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
-						% [p.name, p.get_liquid_volume(), e.scale.y if e else -1.0]
+						% [p.name, p.get_liquid_volume(), e.get_instance_shader_parameter("fill_y") if e else -1.0]
 					),
 		)
 	# Restore delivery grid slot metas so clients can release the slot
@@ -2037,7 +2037,7 @@ func _spawn_on_clients(
 					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
 						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
-						% [p.name, p.get_liquid_volume(), e.scale.y if e else -1.0]
+						% [p.name, p.get_liquid_volume(), e.get_instance_shader_parameter("fill_y") if e else -1.0]
 					),
 		)
 	# Restore delivery grid slot metas so clients can release the slot

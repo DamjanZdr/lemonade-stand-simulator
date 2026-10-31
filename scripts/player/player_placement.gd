@@ -1258,7 +1258,7 @@ func _create_container_hand_mesh(
 					var e := pitcher.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
 						"[DIAG] hand pitcher after 0.5s: vol=%.2f fill_scale=%.2f vis=%s"
-						% [pitcher.get_liquid_volume(), e.scale.y if e else -1.0, pitcher.visible]
+						% [pitcher.get_liquid_volume(), e.get_instance_shader_parameter("fill_y") if e else -1.0, pitcher.visible]
 					),
 		)
 		# Hide for the first frame in the tree — entering mid-frame can

@@ -45,7 +45,12 @@ var _eraser_tween: Tween = null
 var _press_eraser_tween: Tween = null
 var _suppress_eraser_updates: bool = false
 var _last_liquid_color: Color = Color(0.0, 0.0, 0.0, -1.0)
-var _liquid_override_mat: StandardMaterial3D = null
+var _liquid_mat: ShaderMaterial = null
+var _lemonade_cap: MeshInstance3D = null
+var _liquid_profile: PackedVector2Array
+var _liquid_bottom: float = 0.0
+var _liquid_top: float = 1.0
+var _fill_display: float = 0.0
 var _last_fill_target: float = -1000.0
 
 var _fill_request_pending: bool = false
@@ -72,8 +77,10 @@ func _process(_delta: float) -> void:
 ## so the player can't pick it up mid-pour on any peer.
 var locked_by_dispenser: bool = false
 
-## Liquid display: the fill mesh pivots at its bottom, so scale.y = fill
-## fraction reproduces the old CSG eraser clip without per-frame CSG rebuilds.
+## Liquid display: the mesh is a shaped profile (belly/neck/rim), so the
+## fill is a flat clip via the liquid_clip shader + a cap disc at the clip
+## height — the CSG-eraser look without CSG rebuilds. scale.y would squash
+## the profile and bulge through the glass.
 const MAX_FILL_VOLUME: float = 10.0
 
 @export_group("Liquid Colors")
@@ -111,6 +118,7 @@ func _ready() -> void:
 		if orig:
 			orig.visible = false
 	_fix_glass_transparency()
+	_init_liquid_display()
 	_update_eraser_position()
 	update_label()
 	update_liquid_color()
@@ -699,9 +707,11 @@ func _make_hand_mesh() -> Node3D:
 	if vol > 0.0:
 		var fill_dup := $LemonadeFill.duplicate() as Node3D
 		var lmesh := fill_dup.get_node_or_null("LemonadeMesh") as MeshInstance3D
-		if lmesh != null:
-			lmesh.scale.y = clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
-			lmesh.visible = true
+		var lcap := fill_dup.get_node_or_null("LiquidCap") as MeshInstance3D
+		LiquidFill.apply(
+			lmesh, lcap, _liquid_profile, _liquid_bottom, _liquid_top,
+			clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0), _get_current_liquid_color()
+		)
 		container.add_child(fill_dup)
 	return container
 
@@ -718,10 +728,38 @@ func update_label() -> void:
 	_update_eraser_position()
 
 
+func _init_liquid_display() -> void:
+	if _lemonade_mesh == null or _lemonade_mesh.mesh == null:
+		return
+	# Undo any leftover squash from the scale.y approach / synced scale writes.
+	_lemonade_mesh.scale = Vector3.ONE
+	var aabb := _lemonade_mesh.mesh.get_aabb()
+	_liquid_bottom = aabb.position.y
+	_liquid_top = aabb.end.y
+	_liquid_profile = LiquidFill.build_profile(_lemonade_mesh.mesh)
+	if _liquid_mat == null:
+		_liquid_mat = LiquidFill.make_material()
+	_lemonade_mesh.material_override = _liquid_mat
+	if _lemonade_cap == null or not is_instance_valid(_lemonade_cap):
+		_lemonade_cap = _lemonade_mesh.get_parent().get_node_or_null("LiquidCap") as MeshInstance3D
+		if _lemonade_cap == null:
+			_lemonade_cap = LiquidFill.make_cap(_liquid_mat)
+			_lemonade_mesh.get_parent().add_child(_lemonade_cap)
+		_lemonade_cap.material_override = _liquid_mat
+	_fill_display = clampf(get_liquid_volume() / MAX_FILL_VOLUME, 0.0, 1.0)
+	_apply_fill(_fill_display)
+
+
 func _set_fill_level(t: float) -> void:
-	if _lemonade_mesh != null:
-		_lemonade_mesh.scale.y = t
-		_lemonade_mesh.visible = t > 0.001
+	_apply_fill(t)
+
+
+func _apply_fill(t: float) -> void:
+	_fill_display = t
+	LiquidFill.apply(
+		_lemonade_mesh, _lemonade_cap, _liquid_profile,
+		_liquid_bottom, _liquid_top, t, _last_liquid_color
+	)
 
 
 func _update_eraser_position(duration: float = 0.15) -> void:
@@ -735,9 +773,8 @@ func _update_eraser_position(duration: float = 0.15) -> void:
 	if _eraser_tween and _eraser_tween.is_valid():
 		_eraser_tween.kill()
 	if _lemonade_mesh != null:
-		_lemonade_mesh.visible = true
 		_eraser_tween = create_tween()
-		_eraser_tween.tween_property(_lemonade_mesh, "scale:y", t, duration) \
+		_eraser_tween.tween_method(_apply_fill, _fill_display, t, duration) \
 				.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_OUT)
 
 
@@ -747,9 +784,8 @@ func start_press_eraser_animation(target_vol: float, duration: float) -> void:
 		_press_eraser_tween.kill()
 	var t := clampf(target_vol / MAX_FILL_VOLUME, 0.0, 1.0)
 	if _lemonade_mesh != null:
-		_lemonade_mesh.visible = true
 		_press_eraser_tween = create_tween()
-		_press_eraser_tween.tween_property(_lemonade_mesh, "scale:y", t, duration) \
+		_press_eraser_tween.tween_method(_apply_fill, _fill_display, t, duration) \
 				.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_OUT)
 
 
@@ -964,15 +1000,12 @@ func _apply_liquid_color(color: Color) -> void:
 	_last_liquid_color = color
 	if _lemonade_mesh == null or _lemonade_mesh.mesh == null:
 		return
-	# Surface override mutates in place — no mesh duplication, no rebuild.
-	if _liquid_override_mat == null:
-		var base_mat: Material = _lemonade_mesh.mesh.surface_get_material(0)
-		if base_mat != null:
-			_liquid_override_mat = base_mat.duplicate() as StandardMaterial3D
-		else:
-			_liquid_override_mat = StandardMaterial3D.new()
-		_lemonade_mesh.set_surface_override_material(0, _liquid_override_mat)
-	_liquid_override_mat.albedo_color = color
+	# Per-instance shader params — no material duplication, no rebuild, and
+	# safe across duplicated hand meshes and synced copies.
+	if _lemonade_mesh != null:
+		_lemonade_mesh.set_instance_shader_parameter("albedo", color)
+	if _lemonade_cap != null:
+		_lemonade_cap.set_instance_shader_parameter("albedo", color)
 
 
 func debug_empty() -> void:

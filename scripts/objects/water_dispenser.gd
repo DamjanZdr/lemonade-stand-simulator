@@ -22,13 +22,20 @@ var _last_display_fillings: float = -1000.0
 
 const TAP_Y_CLOSED: float = 110.0
 const TAP_Y_OPEN: float = 250.0
+const WATER_COLOR: Color = Color(0.29411766, 0.5411765, 1.0, 1.0)
 
-## Water level is shown by scaling the tank mesh in Y (bottom-pinned) —
-## the old CSG eraser did the same clip but paid a full mesh rebuild per
-## animated frame.
+## Water level is shown by clipping the tank mesh at a local height via the
+## liquid_clip shader + a cap disc — the CSG-eraser look without rebuilds.
+## scale.y would squash the tank's shaped profile and float mid-mesh (its
+## pivot is near the center, not the bottom).
 var _water_bottom: float = 0.0
-var _water_height: float = 1.0
-var _water_base_scale_y: float = 1.0
+var _water_top: float = 1.0
+var _water_profile: PackedVector2Array
+var _water_mat: ShaderMaterial = null
+var _water_cap: MeshInstance3D = null
+var _water_display: float = 0.0
+var _water_node_scale: Vector3 = Vector3.ONE
+var _water_node_pos: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -40,22 +47,38 @@ func _ready() -> void:
 		stand_owner = parent.name
 	if _water_mesh != null and _water_mesh.mesh != null:
 		var aabb := _water_mesh.mesh.get_aabb()
-		_water_base_scale_y = _water_mesh.scale.y
-		# Effective bounds after the node's authored y-scale.
-		_water_bottom = aabb.position.y * _water_base_scale_y
-		_water_height = aabb.size.y * _water_base_scale_y
+		_water_bottom = aabb.position.y
+		_water_top = aabb.end.y
+		_water_profile = LiquidFill.build_profile(_water_mesh.mesh)
+		_water_node_scale = _water_mesh.scale
+		_water_node_pos = _water_mesh.position
+		_water_mesh.scale = _water_node_scale # undo any stale runtime squash
+		_water_mesh.position = _water_node_pos
+		_water_mat = LiquidFill.make_material()
+		_water_mesh.material_override = _water_mat
+		_water_cap = _water_mesh.get_parent().get_node_or_null("WaterCap") as MeshInstance3D
+		if _water_cap == null:
+			_water_cap = LiquidFill.make_cap(_water_mat)
+			_water_cap.name = "WaterCap"
+			_water_mesh.get_parent().add_child(_water_cap)
+		_water_cap.material_override = _water_mat
 	_update_water_visual()
 
 
-## Pins the mesh bottom and sets the fill fraction in one write.
+## Sets the displayed fill fraction in one write (mesh-local clip + cap).
 func _set_water_level(t: float) -> void:
 	if _water_mesh == null:
 		return
-	t = clampf(t, 0.0, 1.0)
-	_water_mesh.scale.y = _water_base_scale_y * t
-	# scale.y shrinks toward the node origin — offset so the bottom stays put.
-	_water_mesh.position.y = _water_bottom * (1.0 - t)
-	_water_mesh.visible = t > 0.001
+	_water_display = clampf(t, 0.0, 1.0)
+	LiquidFill.apply(
+		_water_mesh, _water_cap, _water_profile,
+		_water_bottom, _water_top, _water_display, WATER_COLOR,
+		_water_node_scale.y, _water_node_pos.y, _water_node_scale.x
+	)
+
+
+func _apply_water_display(t: float) -> void:
+	_set_water_level(t)
 
 
 ## Host-only: apply a refill and sync to all clients.
@@ -615,13 +638,8 @@ func _animate_water_drop(start_pos: Vector3, to_add: int) -> void:
 				_set_water_level(start_t)
 				if _water_mesh != null:
 					var wt := create_tween()
-					wt.set_parallel(true)
 					wt \
-							.tween_property(_water_mesh, "scale:y", _water_base_scale_y * end_t, 0.35) \
-							.set_ease(Tween.EASE_OUT) \
-							.set_trans(Tween.TRANS_CUBIC)
-					wt \
-							.tween_property(_water_mesh, "position:y", _water_bottom * (1.0 - end_t), 0.35) \
+							.tween_method(_apply_water_display, start_t, end_t, 0.35) \
 							.set_ease(Tween.EASE_OUT) \
 							.set_trans(Tween.TRANS_CUBIC)
 				EventBus.supply_box_deposited.emit("water", float(to_add))

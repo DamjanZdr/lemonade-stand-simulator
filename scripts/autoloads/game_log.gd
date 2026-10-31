@@ -21,6 +21,7 @@ const HOT_PATH_US := 3000.0
 
 var _marks: Array = []
 var _last_frame_usec: int = 0
+var _root_vp: RID
 
 
 func mark(label: String) -> void:
@@ -45,6 +46,10 @@ func _ready() -> void:
 	if _file:
 		_file.seek_end()
 	_write("=== GameLog started at %s ===" % str(Time.get_datetime_dict_from_system()))
+	# Per-frame render timing so spike dumps can separate RenderingServer
+	# submission (rcpu) from actual GPU time (rgpu) and compositor waits.
+	_root_vp = get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(_root_vp, true)
 
 
 func _process(delta: float) -> void:
@@ -68,9 +73,11 @@ func _process(delta: float) -> void:
 			var nav_ms := Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0
 			var draws := Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)
 			var nodes := Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
+			var rcpu := RenderingServer.viewport_get_measured_render_time_cpu(_root_vp) / 1000.0
+			var rgpu := RenderingServer.viewport_get_measured_render_time_gpu(_root_vp) / 1000.0
 			self.log(
-				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f draw=%.0f nodes=%.0f marks=%s"
-				% [frame_ms, proc_ms, phys_ms, nav_ms, draws, nodes, ", ".join(recent)]
+				"[SPIKE] frame %.0fms proc=%.0f phys=%.0f nav=%.0f rcpu=%.0f rgpu=%.0f draw=%.0f nodes=%.0f marks=%s"
+				% [frame_ms, proc_ms, phys_ms, nav_ms, rcpu, rgpu, draws, nodes, ", ".join(recent)]
 			)
 	_last_frame_usec = now
 
