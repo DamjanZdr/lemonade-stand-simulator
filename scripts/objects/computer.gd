@@ -35,7 +35,9 @@ func _ready() -> void:
 	_screen_camera.cull_mask &= ~2
 
 	# Render one frame so the ViewportTexture is allocated before we bind it.
-	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# UPDATE_ONCE draws the closed overlay once then stops — the idle
+	# monitor keeps that frame without paying a UI render every frame.
+	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ONCE
 	# Smooths jagged panel/text edges in the off-screen UI; without this the
 	# screen looks noticeably worse than plain on-screen UI since it's being
 	# resampled onto a 3D quad at a different pixel density.
@@ -129,7 +131,7 @@ func _enter(player: Node) -> void:
 	_screen_camera.global_transform = _player_camera.global_transform
 	_screen_camera.fov = _player_camera.fov
 
-	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_screen_ui.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	_transitioning = true
 	_zoom_tween = create_tween()
 	_zoom_tween.set_trans(Tween.TRANS_QUAD)
@@ -162,9 +164,9 @@ func _exit() -> void:
 
 	if _ui_root != null and _ui_root.has_method("_hide_morning_hub"):
 		_ui_root._hide_morning_hub()
-	# Keep rendering always so the texture doesn't fall back to a white placeholder
-	# while the computer is off-screen.
-	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# UPDATE_ONCE draws the final frame then stops — the monitor keeps the
+	# last UI state on screen without paying a full UI render every frame.
+	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 	if _player_camera != null and is_instance_valid(_player_camera):
 		_screen_camera.current = false
