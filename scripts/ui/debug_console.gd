@@ -52,6 +52,7 @@ func _toggle() -> void:
 	if _visible:
 		_previous_mouse_mode = Input.mouse_mode
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		_rich_label.text = GameLog.get_buffer_text()
 		# Scroll to bottom
 		await get_tree().process_frame
 		_rich_label.scroll_to_line(_rich_label.get_line_count() - 1)
@@ -60,9 +61,12 @@ func _toggle() -> void:
 
 
 func _on_log_added(_msg: String) -> void:
+	# Rebuilding the label re-parses the whole 200-line buffer — only worth
+	# it while the panel is actually open (text refreshes on _toggle).
+	if not _visible:
+		return
 	_rich_label.text = GameLog.get_buffer_text()
-	if _visible:
-		_rich_label.scroll_to_line(_rich_label.get_line_count() - 1)
+	_rich_label.scroll_to_line(_rich_label.get_line_count() - 1)
 
 
 func _on_copy() -> void:

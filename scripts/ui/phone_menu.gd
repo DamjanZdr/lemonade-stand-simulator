@@ -177,9 +177,10 @@ func _get_delivery_quantity() -> float:
 
 
 func _get_delivery_cost(itype: String, qty: float) -> float:
-	var bulk: float = UpgradeManager.get_effect_total("bulk_buy")
-	var haggle: float = UpgradeManager.get_effect_total("negotiation")
-	var discount: float = clampf(bulk + haggle, 0.0, 0.9)
+	var haggle: float = UpgradeManager.get_effect_total_for_stand(
+		"negotiation", WorldSync.get_local_stand_name()
+	)
+	var discount: float = clampf(haggle, 0.0, 0.9)
 	var goods := Balancing.supply_unit_cost(itype) * qty
 	return goods * (1.0 - discount) + Balancing.DELIVERY_FLAT_FEE
 
@@ -195,7 +196,7 @@ func _order(itype: String) -> void:
 	# delivery system. Clients send an RPC to the host instead.
 	var sn := WorldSync.get_local_stand_name()
 	if WorldSync.is_host():
-		if not WorldSync.spend_local_money(cost):
+		if not WorldSync.spend_local_money(cost, "supplies"):
 			EventBus.interaction_hint_changed.emit("Not enough money!")
 			return
 		EventBus.supply_order_placed.emit(itype, qty, cost, sn)
@@ -275,7 +276,7 @@ func _request_purchase(
 	var stand := _find_stand_by_name(stand_name)
 	match category:
 		"supply":
-			if not _spend_from_stand(stand, cost):
+			if not _spend_from_stand(stand, cost, "supplies"):
 				return
 			EventBus.supply_order_placed.emit(item_id, qty, cost, stand_name)
 			EventBus.checkout_completed.emit(stand_name)
@@ -309,9 +310,9 @@ func _find_stand_by_name(stand_name: String) -> Node:
 	return null
 
 
-func _spend_from_stand(stand: Node, amount: float) -> bool:
+func _spend_from_stand(stand: Node, amount: float, category: String = "") -> bool:
 	if stand != null and stand.has_method("spend_money"):
-		return stand.spend_money(amount)
+		return stand.spend_money(amount, category)
 	return GameState.spend_money(amount)
 
 
