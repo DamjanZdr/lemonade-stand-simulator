@@ -605,16 +605,9 @@ bounce_indirect_energy = 0.4
 directional = true
 light_data = ExtResource("6_j0rhc")
 
-[node name="VoxelGI" type="VoxelGI" parent="." unique_id=1156579838]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, -2)
-size = Vector3(20, 8, 20)
-
-[node name="VoxelGI2" type="VoxelGI" parent="." unique_id=1156579839]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.1, 2, -24)
-size = Vector3(20, 8, 20)
-
 [node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=207345750]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.5, -2)
+visible = false
 max_distance = 20.0
 size = Vector3(10, 6, 8)
 

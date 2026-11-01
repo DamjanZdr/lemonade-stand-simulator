@@ -482,7 +482,7 @@ func _set_icon_mat(marker: PanelContainer, mat: Material) -> void:
 
 
 func _kill_marker_tween(marker: PanelContainer) -> void:
-	var tw: Variant = marker.get_meta("tween", null)
+	var tw: Variant = marker.get_meta("tween", null) if marker.has_meta("tween") else null
 	if tw is Tween and tw.is_valid():
 		tw.kill()
 	marker.set_meta("tween", null)

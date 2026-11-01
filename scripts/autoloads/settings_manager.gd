@@ -108,6 +108,12 @@ signal settings_loaded()
 signal gameplay_changed()
 signal graphics_quality_applied()
 
+## Weak integrated GPUs render at 65 % scale on first launch — native res
+## is what kills them. Persisted once saved; the settings slider wins after.
+const WEAK_GPU_HINTS := ["intel", "iris", "uhd", "graphics", "mx130", "mx150"]
+const RENDER_SCALE_MIN := 0.5
+const RENDER_SCALE_MAX := 1.0
+
 var _mouse_sensitivity := DEFAULT_MOUSE_SENSITIVITY
 var _fov := DEFAULT_FOV
 
@@ -126,8 +132,19 @@ func load_settings() -> void:
 	# FPS cap defaults on (saves power on high-refresh machines) even
 	# before a config exists — a saved value overrides it below.
 	Engine.max_fps = DEFAULT_FPS_CAP
+	# Render scale: saved value wins; otherwise auto-detect weak iGPUs.
+	apply_render_scale(
+		float(
+			cfg.get_value(
+				SECTION_GRAPHICS, "render_scale", _detect_default_render_scale()
+			)
+		)
+	)
 	if err != OK:
-		# No config file yet — use defaults (already set by AudioManager).
+		# Fresh install on a weak iGPU: drop to the Low preset too — scale
+		# alone can't save them, shadows/grass/SSAO are the other killers.
+		if _detect_default_render_scale() < 1.0:
+			apply_graphics_quality("low")
 		settings_loaded.emit()
 		return
 	# Audio
@@ -144,7 +161,9 @@ func load_settings() -> void:
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
 	)
-	var quality := cfg.get_value(SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY) as String
+	var quality := cfg.get_value(
+		SECTION_GRAPHICS, "graphics_quality", DEFAULT_GRAPHICS_QUALITY
+	) as String
 	apply_graphics_quality(quality)
 	# Gameplay
 	_mouse_sensitivity = clampf(
@@ -234,7 +253,45 @@ func save_settings() -> void:
 	)
 	cfg.set_value(SECTION_GRAPHICS, "graphics_quality", get_graphics_quality())
 	cfg.set_value(SECTION_GRAPHICS, "fps_cap", get_fps_cap())
+	cfg.set_value(SECTION_GRAPHICS, "render_scale", get_render_scale())
 	cfg.save(CONFIG_PATH)
+
+
+func _detect_default_render_scale() -> float:
+	var gpu := RenderingServer.get_video_adapter_name().to_lower()
+	for hint in WEAK_GPU_HINTS:
+		if gpu.contains(hint):
+			return 0.65
+	return 1.0
+
+
+func apply_render_scale(scale: float) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	tree.root.scaling_3d_scale = clampf(scale, RENDER_SCALE_MIN, RENDER_SCALE_MAX)
+
+
+func get_render_scale() -> float:
+	var cfg := ConfigFile.new()
+	if cfg.load(CONFIG_PATH) != OK:
+		return _detect_default_render_scale()
+	return clampf(
+		float(
+			cfg.get_value(SECTION_GRAPHICS, "render_scale", _detect_default_render_scale())
+		),
+		RENDER_SCALE_MIN,
+		RENDER_SCALE_MAX,
+	)
+
+
+func set_render_scale(scale: float) -> void:
+	scale = clampf(scale, RENDER_SCALE_MIN, RENDER_SCALE_MAX)
+	var cfg := ConfigFile.new()
+	cfg.load(CONFIG_PATH)
+	cfg.set_value(SECTION_GRAPHICS, "render_scale", scale)
+	cfg.save(CONFIG_PATH)
+	apply_render_scale(scale)
 
 
 func get_graphics_quality() -> String:

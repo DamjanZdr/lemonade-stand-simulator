@@ -39,6 +39,8 @@ var _music_value: Label
 
 var _quality_option: OptionButton
 var _fps_cap_option: OptionButton
+var _rs_slider: HSlider
+var _rs_value_label: Label
 var _fs_check: CheckBox
 var _vsync_check: CheckBox
 var _fps_check: CheckBox
@@ -267,6 +269,21 @@ func _build_graphics_tab() -> Control:
 		func(on: bool):
 			vsync_toggled.emit(on)
 			SettingsManager.save_settings(),
+	)
+
+	var rs := _add_slider_row(tab, "Render Scale")
+	_rs_slider = rs[0] as HSlider
+	_rs_value_label = rs[1] as Label
+	_rs_slider.min_value = SettingsManager.RENDER_SCALE_MIN
+	_rs_slider.max_value = SettingsManager.RENDER_SCALE_MAX
+	_rs_slider.step = 0.05
+	_rs_slider.value_changed.connect(
+		func(v: float):
+			_rs_value_label.text = "%d%%" % int(round(v * 100))
+			SettingsManager.set_render_scale(v),
+	)
+	_rs_slider.drag_ended.connect(
+		func(_changed: bool): SettingsManager.save_settings(),
 	)
 
 	var cap_row := HBoxContainer.new()
@@ -562,6 +579,10 @@ func sync_state() -> void:
 
 	var cap_idx := SettingsManager.FPS_CAP_OPTIONS.find(SettingsManager.get_fps_cap())
 	_fps_cap_option.select(maxi(cap_idx, 0))
+
+	if _rs_slider != null:
+		_rs_slider.value = SettingsManager.get_render_scale()
+		_rs_value_label.text = "%d%%" % int(round(_rs_slider.value * 100))
 
 
 

@@ -48,6 +48,30 @@ var _last_juice_color: Color = Color(0.0, 0.0, 0.0, -1.0)
 
 
 func _ready() -> void:
+	_bake_juice_mesh()
+
+
+## The JuiceMesh CSGCombiner3D rebuilds its boolean mesh on every visibility
+## toggle (it flips during pressing) — a synchronous manifold op on the main
+## thread that can stall or crash natively. Bake it to a static mesh once at
+## spawn; _set_juice_color already handles MeshInstance3D.
+func _bake_juice_mesh() -> void:
+	var combiner := _juice_mesh as CSGShape3D
+	if combiner == null:
+		return
+	var meshes := combiner.get_meshes()
+	if meshes.size() < 2 or meshes[1] == null:
+		return
+	var mi := MeshInstance3D.new()
+	mi.name = combiner.name
+	mi.transform = combiner.transform
+	mi.mesh = meshes[1]
+	var parent := combiner.get_parent()
+	parent.add_child(mi)
+	parent.move_child(mi, combiner.get_index())
+	parent.remove_child(combiner)
+	combiner.free()
+	_juice_mesh = mi
 	add_to_group("press")
 	add_to_group("container")
 	var p := Pickupable.setup_for_container(self, "press")

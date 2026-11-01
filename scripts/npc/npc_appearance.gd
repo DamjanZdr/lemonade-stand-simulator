@@ -164,6 +164,33 @@ func _ready() -> void:
 	# Hide the newman node — it's only used as an animation source.
 	if _newman:
 		_newman.visible = false
+	_setup_visibility_lod()
+
+
+## Pauses bone animation and eye tracking while this peer can't see the NPC —
+## purely local/visual, so host AI and other peers' views are unaffected.
+func _setup_visibility_lod() -> void:
+	var notifier := VisibleOnScreenNotifier3D.new()
+	notifier.aabb = AABB(Vector3(-0.5, 0.0, -0.5), Vector3(1.0, 2.0, 1.0))
+	add_child(notifier)
+	notifier.screen_entered.connect(_on_screen_visibility_changed.bind(true))
+	notifier.screen_exited.connect(_on_screen_visibility_changed.bind(false))
+	# The signals only fire on transitions — NPCs spawning offscreen would
+	# keep animating forever, so seed the initial state after a frame.
+	_apply_visibility_lod_state.call_deferred(notifier)
+
+
+func _apply_visibility_lod_state(notifier: VisibleOnScreenNotifier3D) -> void:
+	if is_instance_valid(notifier):
+		_on_screen_visibility_changed(notifier.is_on_screen())
+
+
+func _on_screen_visibility_changed(on_screen: bool) -> void:
+	if _active_anim != null:
+		# play() calls while paused still set assigned_animation, so the
+		# correct clip resumes when the NPC comes back on screen.
+		_active_anim.playback_active = on_screen
+	set_process(on_screen)
 
 
 func _disable_cast_shadows() -> void:
@@ -523,7 +550,9 @@ func _target_eye_rot(
 	var ang := rest_fwd.angle_to(want_fwd)
 	if ang < 0.001:
 		return Quaternion.IDENTITY
-	var clamped_fwd := rest_fwd.slerp(want_fwd, minf(deg_to_rad(eye_look_max_deg) / ang, 1.0)).normalized()
+	var clamped_fwd := rest_fwd.slerp(
+		want_fwd, minf(deg_to_rad(eye_look_max_deg) / ang, 1.0)
+	).normalized()
 	var clamped_ang := rest_fwd.angle_to(clamped_fwd)
 	if clamped_ang < 0.001:
 		return Quaternion.IDENTITY
@@ -538,9 +567,9 @@ func _apply_eye(eye: MeshInstance3D, world_rot: Quaternion) -> void:
 	var par := eye.get_parent() as Node3D
 	if par == null:
 		return
-	var P := par.global_transform.basis
+	var p_basis := par.global_transform.basis
 	# Convert world-space rotation to parent-local: L = P⁻¹ · Rw · P
-	var local_rot := P.inverse() * Basis(world_rot) * P
+	var local_rot := p_basis.inverse() * Basis(world_rot) * p_basis
 	eye.transform = Transform3D(
 		local_rot * Basis.from_scale(Vector3.ONE * _EYE_SCALE),
 		eye.transform.origin,
@@ -622,7 +651,8 @@ func apply_appearance(def: Dictionary) -> void:
 					color_name = str(def.get("skin", ""))
 					if SKIN_COLOR_MAP.has(color_name):
 						_set_surface_color(body, i, SKIN_COLOR_MAP[color_name])
-				"shirt", "top", "dress", "skirt", "jacket", "shorts", "blouse", "trousers", "suit", "coat", "sweater", "pullover":
+				"shirt", "top", "dress", "skirt", "jacket", "shorts", "blouse", \
+						"trousers", "suit", "coat", "sweater", "pullover":
 					color_name = str(def.get("shirt", ""))
 				"pants":
 					color_name = str(def.get("pants", ""))

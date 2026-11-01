@@ -934,8 +934,10 @@ func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:
 		"scam":
 			return -Balancing.POPULARITY_LOSS_SCAM
 
-	## Paying customers: sum per-axis scores. If a metric did not generate a
-	## complaint this cup, it scores as if it were perfect.
+	## Paying customers: average per-axis scores across the order's cups so
+	## multi-cup orders don't multiply popularity gain — consistency matters,
+	## not order size. If a metric did not generate a complaint this cup, it
+	## scores as if it were perfect.
 	var delta := 0.0
 	for eval in evaluations:
 		var complaints: Array = eval.get("complaints", [])
@@ -957,6 +959,8 @@ func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:
 			ice_complained,
 			Balancing.POPULARITY_ICE_SCORES,
 		)
+	if not evaluations.is_empty():
+		delta /= float(evaluations.size())
 	return delta
 
 

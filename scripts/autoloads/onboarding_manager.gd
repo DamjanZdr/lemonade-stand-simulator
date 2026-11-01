@@ -664,23 +664,23 @@ func _evaluate_mastery(stand: StandUnit, data: Dictionary) -> void:
 		return
 	var p := stand.onboarding_progress
 	var complaints: Array = data.get("complaints", []).duplicate()
+	var candidate := {
+		"fruit_count": snap.get("fruit_count", 0.0),
+		"sugar": snap.get("sugar", 0.0),
+	}
+	var had_fruit_complaint: bool = complaints.any(
+		func(c):
+			return c in FRUIT_COMPLAINTS,
+	)
+	var is_perfect := _fruit_is_perfect(fruit, candidate)
+	# Cumulative perfect serves drive the Fruit unlock bar — they count even
+	# after the recipe is discovered; the bar is not tied to discovery state.
+	if is_perfect and not had_fruit_complaint:
+		stand.record_perfect_serve(fruit)
 	if not p.discovered_recipes.has(fruit):
-		var candidate := {
-			"fruit_count": snap.get("fruit_count", 0.0),
-			"sugar": snap.get("sugar", 0.0),
-		}
 		var state: Dictionary = p.active_recipe_candidates.get(fruit, { })
-		var had_fruit_complaint: bool = complaints.any(
-			func(c):
-				return c in FRUIT_COMPLAINTS,
-		)
-		var is_perfect := _fruit_is_perfect(fruit, candidate)
 		state = _advance_candidate(state, candidate, had_fruit_complaint, is_perfect)
 		p.active_recipe_candidates[fruit] = state
-		# Cumulative perfect serves drive the Fruit unlock bar — one number,
-		# no streak resets.
-		if is_perfect and not had_fruit_complaint:
-			stand.record_perfect_serve(fruit)
 		if state.streak >= 5 and state.perfect:
 			p.discovered_recipes[fruit] = candidate
 			p.active_recipe_candidates.erase(fruit)
