@@ -716,7 +716,7 @@ func _rpc_add_money_from_sale(amount: float) -> void:
 	push_state()
 
 
-func record_fruit_pressed() -> void:
+func record_fruit_pressed(_fruit: String = "") -> void:
 	total_fruit_pressed += 1
 	AchievementManager.check_stand_thresholds(self)
 	push_state()

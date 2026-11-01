@@ -17,6 +17,8 @@ const CONTAINER_SCENES: Dictionary = {
 	"cup_stack": preload("res://scenes/objects/cup_stack.tscn"),
 	"cup": preload("res://scenes/objects/cup.tscn"),
 	"cup_tray": preload("res://scenes/objects/cup_tray.tscn"),
+	"lemonader": preload("res://scenes/objects/lemonader.tscn"),
+	"fruitomatic": preload("res://scenes/objects/fruitomatic.tscn"),
 }
 
 # Workstation is loaded at runtime to avoid compile-time preload issues while the
@@ -166,6 +168,7 @@ func _do_save() -> void:
 		return
 	if not WorldSync.is_host():
 		return
+	var _t0 := Time.get_ticks_usec()
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	var data := _build_save_dict()
@@ -179,6 +182,7 @@ func _do_save() -> void:
 		file.close()
 	else:
 		push_error("Failed to save game to %s (error %d)" % [path, FileAccess.get_open_error()])
+	GameLog.time_log("_do_save", _t0)
 
 
 func load_game() -> Dictionary:
@@ -496,6 +500,26 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 		GameState.recipes.clear()
 		GameState.init_default_recipes()
 	_sync_live_stand_recipes(true)
+	# Per-stand recipes/prices: the flat "recipes"/"prices" keys only ever
+	# held the primary stand's view, so a versus second stand loaded with
+	# defaults every session. Restore each stand's own saved values where
+	# present — absent keys (legacy saves) keep the defaults/primary
+	# assignment _sync_live_stand_recipes already applied.
+	var saved_stand_recipes: Dictionary = data.get("stand_recipes", { })
+	var saved_stand_prices: Dictionary = data.get("stand_prices", { })
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if not stand is StandUnit:
+			continue
+		var sr: Variant = saved_stand_recipes.get(stand.name, null)
+		if sr is Dictionary and not sr.is_empty():
+			stand.recipes = (sr as Dictionary).duplicate(true)
+			for ft in stand.recipes:
+				stand.recipe_changed.emit(ft, stand.recipes[ft])
+		var sp: Variant = saved_stand_prices.get(stand.name, null)
+		if sp is Dictionary and not sp.is_empty():
+			stand.prices = (sp as Dictionary).duplicate(true)
+			for ft in stand.prices:
+				stand.price_changed.emit(ft, stand.prices[ft])
 	GameState.ice_degrees_per_scoop = data.get("ice_degrees_per_scoop", 4.0)
 	GameState.feedback_tier = data.get("feedback_tier", 0)
 	GameState.customers_served_happy = data.get("customers_served_happy", 0)
@@ -605,6 +629,22 @@ func _collect_stand_popularity() -> Dictionary:
 	return pops
 
 
+func _collect_stand_recipes() -> Dictionary:
+	var out := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			out[stand.name] = stand.recipes.duplicate(true)
+	return out
+
+
+func _collect_stand_prices() -> Dictionary:
+	var out := { }
+	for stand in get_tree().get_nodes_in_group("stand"):
+		if stand is StandUnit:
+			out[stand.name] = stand.prices.duplicate(true)
+	return out
+
+
 func _collect_stand_last_day_stats() -> Dictionary:
 	var stats := { }
 	for stand in get_tree().get_nodes_in_group("stand"):
@@ -673,6 +713,8 @@ func _build_save_dict() -> Dictionary:
 		"stand_popularity": _collect_stand_popularity(),
 		"stand_last_day_stats": _collect_stand_last_day_stats(),
 		"stand_lifetime_stats": _collect_stand_lifetime_stats(),
+		"stand_recipes": _collect_stand_recipes(),
+		"stand_prices": _collect_stand_prices(),
 		"game_mode": GameState.game_mode,
 		"creator_steam_id": str(NetworkManager.steam_id),
 		"money": GameState.money,
@@ -859,6 +901,8 @@ func _scan_placed_containers() -> Array:
 			"scale": [node.scale.x, node.scale.y, node.scale.z],
 			"stand_owner": _container_stand_owner(node),
 		}
+		if node is Lemonader:
+			entry["machine_state"] = node.machine_state.duplicate(true)
 		# Capture container contents
 		if node is FruitBin:
 			entry["fruit_amounts"] = _dict_to_arrays(node.fruit_amounts)
@@ -1001,6 +1045,12 @@ func get_container_type(node: Node) -> String:
 		return "cup"
 	if node is CupTray:
 		return "cup_tray"
+	if node is FruitOMatic:
+		# Subclass of Lemonader — must be checked first or it serializes
+		# as the wrong machine type.
+		return "fruitomatic"
+	if node is Lemonader:
+		return "lemonader"
 	var node_script: Script = node.get_script() as Script
 	if node_script != null and node_script.resource_path == "res://scripts/objects/workstation.gd":
 		return "workstation"
@@ -1116,6 +1166,10 @@ func _do_respawn() -> void:
 			if scene == null:
 				continue
 			var instance := scene.instantiate()
+			if instance is Lemonader:
+				instance.machine_state = entry \
+						.get("machine_state", instance.machine_state) \
+						.duplicate(true)
 			# Set state BEFORE add_child so _ready() sees correct values
 			if instance is CupStack:
 				instance.starting_count = entry.get("current_count", instance.starting_count)
