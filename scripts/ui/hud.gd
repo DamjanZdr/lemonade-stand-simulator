@@ -54,6 +54,7 @@ var _onboarding_panel: PanelContainer
 var _onboarding_text: RichTextLabel
 var _displayed_task_id := ""
 var _displayed_parts: Dictionary = { }
+var _hud_suppressed := false
 var _task_transitioning := false
 var _discovery_overlay: Control
 var _discovery_title: Label
@@ -806,9 +807,15 @@ func _render_onboarding(
 	force_visible: bool = false,
 	whole_task_complete: bool = false,
 ) -> void:
+	# Suppression wins over everything: the computer view (and any other
+	# full-screen UI) hides the whole HUD, and a mid-refresh progress
+	# event must not pop the task panel back over it.
 	_onboarding_panel.visible = (
-		force_visible
-		or (not progress.get("completed", false) and not progress.get("skipped", false))
+		not _hud_suppressed
+		and (
+			force_visible
+			or (not progress.get("completed", false) and not progress.get("skipped", false))
+		)
 	)
 	var task := OnboardingManager.get_task(progress)
 	var text: String = task.get("text", "")
@@ -1015,6 +1022,7 @@ func _refresh() -> void:
 
 
 func set_hud_visible(vis: bool) -> void:
+	_hud_suppressed = not vis
 	if _main_panel:
 		_main_panel.visible = vis
 	if _hint_box:
