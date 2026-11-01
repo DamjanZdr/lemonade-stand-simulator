@@ -18,6 +18,13 @@ var fruit_count: float = 0.0 ## How many fruits worth of juice in the pitcher.
 var water: float = 0.0
 var sugar: float = 0.0
 var ice: float = 0.0
+
+## True for first-person hand copies — set by PlayerPlacement BEFORE the
+## node enters the tree. Held copies must not register as world pitchers:
+## _ready() would re-add them to the "pitcher"/"container" groups where
+## water-tap scans, debug empties, save sweeps, and WorldSync name
+## fallbacks can find them and stomp or despawn the wrong node.
+var is_held_copy := false
 var cups_poured: int = 0 # Once > 0, can no longer add sugar/ice
 ## Recipe frozen at the first pour — every cup from this batch carries it.
 ## Without this, later cups get the proportionally-drained totals, which the
@@ -32,22 +39,48 @@ var _prep_scale: Vector3 = Vector3.ONE
 @onready var physics: StaticBody3D = $Physics
 @onready var _lemonade_node: Node3D = $lemonade
 @onready var _glass_mesh: MeshInstance3D = $pitcher/Cylinder_001
-@onready var _lemonade_eraser: Node3D = $LemonadeFill/LemonadeEraser
+@onready var _lemonade_mesh: MeshInstance3D = $LemonadeFill/LemonadeMesh
 
 var _eraser_tween: Tween = null
 var _press_eraser_tween: Tween = null
 var _suppress_eraser_updates: bool = false
 var _last_liquid_color: Color = Color(0.0, 0.0, 0.0, -1.0)
-var _last_eraser_target_y: float = -1000.0
+var _liquid_mat: ShaderMaterial = null
+var _lemonade_cap: MeshInstance3D = null
+var _liquid_profile: PackedVector2Array
+var _liquid_bottom: float = 0.0
+var _liquid_top: float = 1.0
+var _fill_display: float = 0.0
+var _last_fill_target: float = -1000.0
+
 var _fill_request_pending: bool = false
 var _fill_request_msec: int = 0
+
+## DIAG: last-seen volume on held copies — any drain that isn't a local
+## pour/empty gets logged so the next test log identifies the writer.
+var _held_watch_vol: float = -1.0
+
+
+func _process(_delta: float) -> void:
+	if not is_held_copy:
+		return
+	var v := get_liquid_volume()
+	if _held_watch_vol >= 0.0 and v < _held_watch_vol - 0.001:
+		GameLog.log(
+			"[DIAG] held pitcher drained %.2f->%.2f state=%s cups=%d"
+			% [_held_watch_vol, v, str(state), cups_poured]
+		)
+	_held_watch_vol = v
+
 
 ## Set by WaterDispenser while this pitcher is snapped and being filled,
 ## so the player can't pick it up mid-pour on any peer.
 var locked_by_dispenser: bool = false
 
-const ERASER_Y_EMPTY: float = 1.752
-const ERASER_Y_FULL: float = 5.245
+## Liquid display: the mesh is a shaped profile (belly/neck/rim), so the
+## fill is a flat clip via the liquid_clip shader + a cap disc at the clip
+## height — the CSG-eraser look without CSG rebuilds. scale.y would squash
+## the profile and bulge through the glass.
 const MAX_FILL_VOLUME: float = 10.0
 
 @export_group("Liquid Colors")
@@ -63,27 +96,29 @@ const MAX_FILL_VOLUME: float = 10.0
 
 
 func _ready() -> void:
-	add_to_group("pitcher")
-	add_to_group("container")
-	var pickupable := Pickupable.setup_for_container(self, "pitcher")
-	# Wrap the default container pickup check so a pitcher that is locked
-	# to a water dispenser cannot be pulled out mid-fill by clicking the
-	# pitcher itself (which would bypass the dispenser's own lock check).
-	var base_can_pickup := pickupable.can_pickup_callback
-	pickupable.can_pickup_callback = func(player: Node) -> bool:
-		if locked_by_dispenser:
-			EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
-			return false
-		return base_can_pickup.call(player) as bool
+	if not is_held_copy:
+		add_to_group("pitcher")
+		add_to_group("container")
+		var pickupable := Pickupable.setup_for_container(self, "pitcher")
+		# Wrap the default container pickup check so a pitcher that is locked
+		# to a water dispenser cannot be pulled out mid-fill by clicking the
+		# pitcher itself (which would bypass the dispenser's own lock check).
+		var base_can_pickup := pickupable.can_pickup_callback
+		pickupable.can_pickup_callback = func(player: Node) -> bool:
+			if locked_by_dispenser:
+				EventBus.interaction_hint_changed.emit("Wait for the pitcher to finish filling")
+				return false
+			return base_can_pickup.call(player) as bool
+		EventBus.debug_empty_pitcher.connect(_on_debug_empty_pitcher)
 	prep_position = global_position
 	_prep_scale = scale
-	EventBus.debug_empty_pitcher.connect(_on_debug_empty_pitcher)
 	# Hide the original GLB lemonade cylinders (the CSG fill is used instead).
 	for n in ["Cylinder_002", "Cylinder_003"]:
 		var orig := _lemonade_node.get_node_or_null(n) as MeshInstance3D
 		if orig:
 			orig.visible = false
 	_fix_glass_transparency()
+	_init_liquid_display()
 	_update_eraser_position()
 	update_label()
 	update_liquid_color()
@@ -113,7 +148,18 @@ func is_fully_empty() -> bool:
 # --- Mutation ---
 
 
+## A fully-drained pitcher is fresh again — stale SERVING/cups_poured
+## left by drain paths that skip _clear_and_return (e.g. direct
+## pour_portion() calls) must not keep the recipe lock forever.
+func _normalize_if_empty() -> void:
+	if is_fully_empty() and (cups_poured > 0 or state == PitcherState.SERVING):
+		cups_poured = 0
+		serving_recipe = { }
+		state = PitcherState.PREPPING
+
+
 func add_ingredient(ingredient_type: String, amount: float) -> bool:
+	_normalize_if_empty()
 	# Can only add ingredients in PREPPING or COMPLETE state
 	if state != PitcherState.PREPPING and state != PitcherState.COMPLETE:
 		return false
@@ -238,7 +284,10 @@ func pour_portion() -> Dictionary:
 	ice -= float(serving_recipe.get("ice", ice)) * portion_ratio
 	cups_poured += 1 # Track that a cup was poured
 	GameLog.log(
-		"[Pitcher] pour %s: liq %.2f->%.2f cups=%d init_vol=%.2f fruit=%.2f water=%.2f sugar=%.2f ice=%.2f host=%s"
+		(
+			"[Pitcher] pour %s: liq %.2f->%.2f cups=%d init_vol=%.2f "
+			+ "fruit=%.2f water=%.2f sugar=%.2f ice=%.2f host=%s"
+		)
 		% [
 			str(name),
 			liquid,
@@ -307,9 +356,12 @@ func set_pitcher_visible(v: bool) -> void:
 	_lemonade_node.visible = v
 	physics.collision_layer = 1 if v else 0
 
-# --- Interaction ---
 
-
+## If this instance is embedded inside a fixed appliance as a slot preview
+## (e.g. the Squeeze-E-Z pitcher slot), interactions route to that appliance
+## instead of treating the preview as a real world container.
+## Kept untyped: naming the Lemonader class here would create a script
+## dependency cycle (Lemonader already references Pitcher).
 func _appliance_host() -> Node:
 	if not has_meta("lemonader_host"):
 		return null
@@ -325,8 +377,11 @@ func can_player_use(player: Node) -> bool:
 		return host.can_player_use(player)
 	return super.can_player_use(player)
 
+# --- Interaction ---
+
 
 func interact(player: Node) -> void:
+	_normalize_if_empty()
 	var p := player as Player
 	if p == null:
 		return
@@ -408,6 +463,7 @@ func _find_player_by_peer(peer_id: int) -> Player:
 ## host, the fill happens immediately; clients send an RPC to the host and
 ## wait for the authoritative result.
 func request_fill_cup(player: Player) -> void:
+	GameLog.mark("fill_cup")
 	# A fill request that never got a result (dropped RPC, e.g. the node
 	# path differed on the host) must not wedge the pitcher forever —
 	# allow a retry after a short timeout.
@@ -590,7 +646,16 @@ func get_contents_string() -> String:
 	return " ".join(parts)
 
 
+func interact_secondary(player: Node) -> void:
+	var host := _appliance_host()
+	if host != null:
+		host.interact_secondary(player)
+
+
 func get_hint(player: Node) -> String:
+	var host := _appliance_host()
+	if host != null:
+		return host.get_hint(player)
 	var p := player as Player
 	if p == null:
 		return ""
@@ -631,7 +696,7 @@ func get_hint(player: Node) -> String:
 func _make_hand_mesh() -> Node3D:
 	var container := Node3D.new()
 	# Scale to match the world display scale (pitcher is placed at 0.105 in world.tscn)
-	container.scale = Vector3.ONE * 0.105
+	container.scale = Vector3.ONE * 0.0672
 	# Duplicate the existing glass visual; material_override already has transparency fixed.
 	# Force visible=true since _set_visible(false) is called before this on pickup.
 	var glass_dup := _body_mesh.duplicate() as Node3D
@@ -639,12 +704,14 @@ func _make_hand_mesh() -> Node3D:
 	container.add_child(glass_dup)
 	# Add the matching lemonade fill (if any liquid is present)
 	var vol := get_liquid_volume()
-	if vol > 0.0 and _lemonade_eraser != null:
+	if vol > 0.0:
 		var fill_dup := $LemonadeFill.duplicate() as Node3D
-		var eraser := fill_dup.get_node_or_null("LemonadeEraser") as Node3D
-		if eraser != null:
-			var t := clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
-			eraser.position.y = lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
+		var lmesh := fill_dup.get_node_or_null("LemonadeMesh") as MeshInstance3D
+		var lcap := fill_dup.get_node_or_null("LiquidCap") as MeshInstance3D
+		LiquidFill.apply(
+			lmesh, lcap, _liquid_mat, _liquid_profile, _liquid_bottom, _liquid_top,
+			clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0), _get_current_liquid_color()
+		)
 		container.add_child(fill_dup)
 	return container
 
@@ -661,20 +728,53 @@ func update_label() -> void:
 	_update_eraser_position()
 
 
+func _init_liquid_display() -> void:
+	if _lemonade_mesh == null or _lemonade_mesh.mesh == null:
+		return
+	# Undo any leftover squash from the scale.y approach / synced scale writes.
+	_lemonade_mesh.scale = Vector3.ONE
+	var aabb := _lemonade_mesh.mesh.get_aabb()
+	_liquid_bottom = aabb.position.y
+	_liquid_top = aabb.end.y
+	_liquid_profile = LiquidFill.build_profile(_lemonade_mesh.mesh)
+	if _liquid_mat == null:
+		_liquid_mat = LiquidFill.make_material()
+	_lemonade_mesh.material_override = _liquid_mat
+	if _lemonade_cap == null or not is_instance_valid(_lemonade_cap):
+		_lemonade_cap = _lemonade_mesh.get_parent().get_node_or_null("LiquidCap") as MeshInstance3D
+		if _lemonade_cap == null:
+			_lemonade_cap = LiquidFill.make_cap(_liquid_mat)
+			_lemonade_mesh.get_parent().add_child(_lemonade_cap)
+		_lemonade_cap.material_override = _liquid_mat
+	_fill_display = clampf(get_liquid_volume() / MAX_FILL_VOLUME, 0.0, 1.0)
+	_apply_fill(_fill_display)
+
+
+func _set_fill_level(t: float) -> void:
+	_apply_fill(t)
+
+
+func _apply_fill(t: float) -> void:
+	_fill_display = t
+	LiquidFill.apply(
+		_lemonade_mesh, _lemonade_cap, _liquid_mat, _liquid_profile,
+		_liquid_bottom, _liquid_top, t, _last_liquid_color
+	)
+
+
 func _update_eraser_position(duration: float = 0.15) -> void:
 	if _suppress_eraser_updates:
 		return
 	var vol := get_liquid_volume()
 	var t := clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
-	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
-	if abs(target_y - _last_eraser_target_y) < 0.05:
+	if abs(t - _last_fill_target) < 0.02:
 		return
-	_last_eraser_target_y = target_y
-	if _lemonade_eraser != null:
-		if _eraser_tween and _eraser_tween.is_valid():
-			_eraser_tween.kill()
+	_last_fill_target = t
+	if _eraser_tween and _eraser_tween.is_valid():
+		_eraser_tween.kill()
+	if _lemonade_mesh != null:
 		_eraser_tween = create_tween()
-		_eraser_tween.tween_property(_lemonade_eraser, "position:y", target_y, duration) \
+		_eraser_tween.tween_method(_apply_fill, _fill_display, t, duration) \
 				.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_OUT)
 
 
@@ -683,10 +783,9 @@ func start_press_eraser_animation(target_vol: float, duration: float) -> void:
 	if _press_eraser_tween and _press_eraser_tween.is_valid():
 		_press_eraser_tween.kill()
 	var t := clampf(target_vol / MAX_FILL_VOLUME, 0.0, 1.0)
-	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
-	if _lemonade_eraser != null:
+	if _lemonade_mesh != null:
 		_press_eraser_tween = create_tween()
-		_press_eraser_tween.tween_property(_lemonade_eraser, "position:y", target_y, duration) \
+		_press_eraser_tween.tween_method(_apply_fill, _fill_display, t, duration) \
 				.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_OUT)
 
 
@@ -713,8 +812,7 @@ func fill_water_slow(amount: float, duration: float = 2.0) -> void:
 		EventBus.pitcher_state_changed.emit(int(state))
 
 
-@warning_ignore("unused_parameter")
-func tween_color_for_water_addition(water_amount: float, duration: float) -> void:
+func tween_color_for_water_addition(water_amount: float, _duration: float) -> void:
 	# Show the post-fill color immediately — color is categorical so
 	# there's nothing to animate (and per-frame CSG rebuilds tanked FPS).
 	var original_water := water
@@ -725,6 +823,7 @@ func tween_color_for_water_addition(water_amount: float, duration: float) -> voi
 
 
 func _can_add_ingredient(ingredient_type: String, amount: float) -> bool:
+	_normalize_if_empty()
 	# Can only add ingredients in PREPPING or COMPLETE state
 	if state != PitcherState.PREPPING and state != PitcherState.COMPLETE:
 		return false
@@ -825,11 +924,24 @@ func _make_drop_mesh(ingredient_type: String) -> Node3D:
 func sync_fill_display() -> void:
 	## Set fill display directly to current volume without animating.
 	## Call this after placing a pitcher so it doesn't replay 0→N.
+	## Kill any in-flight eraser tween first — _ready()'s empty-volume
+	## tween would otherwise finish after this snap and stomp it.
+	# Skip while a press fill animation owns the display: a mid-press state
+	# sync would snap the liquid to the final level, then the still-running
+	# tween would drain it back and fill again (snap + double fill).
+	if _suppress_eraser_updates:
+		return
+	if _eraser_tween and _eraser_tween.is_valid():
+		_eraser_tween.kill()
+	if _press_eraser_tween and _press_eraser_tween.is_valid():
+		_press_eraser_tween.kill()
 	var vol := get_liquid_volume()
 	var t := clampf(vol / MAX_FILL_VOLUME, 0.0, 1.0)
-	var target_y := lerpf(ERASER_Y_EMPTY, ERASER_Y_FULL, t)
-	if _lemonade_eraser != null:
-		_lemonade_eraser.position.y = target_y
+	_set_fill_level(t)
+	# Keep the tween bookkeeping honest — _update_eraser_position's
+	# early-return compares targets against this, and a stale value
+	# could skip a needed update after this direct write.
+	_last_fill_target = t
 	update_liquid_color()
 
 
@@ -891,37 +1003,16 @@ func _apply_liquid_color(color: Color) -> void:
 	if color == _last_liquid_color:
 		return
 	_last_liquid_color = color
-	var mesh := $LemonadeFill/LemonadeMesh as CSGMesh3D
-	if mesh == null or mesh.mesh == null:
+	if _lemonade_mesh == null or _lemonade_mesh.mesh == null:
 		return
-	var base_mat: Material = mesh.mesh.surface_get_material(0)
-	var mat: StandardMaterial3D
-	if base_mat != null:
-		mat = base_mat.duplicate() as StandardMaterial3D
-	else:
-		mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	# CSGCombiner3D ignores .material during rebuild; must set surface material on mesh itself
-	var dup_mesh := mesh.mesh.duplicate() as ArrayMesh
-	dup_mesh.surface_set_material(0, mat)
-	mesh.mesh = dup_mesh
+	# Base uniform on this pitcher's own material — no mesh duplication, no
+	# rebuild; dup'd fill nodes share it (same liquid anyway).
+	if _liquid_mat != null:
+		_liquid_mat.set_shader_parameter("albedo", color)
 
-	# The CSG subtractive eraser defines the material of the exposed top surface.
-	# Update its material so the liquid level shows the correct color.
-	var eraser := $LemonadeFill/LemonadeEraser as CSGBox3D
-	if eraser != null:
-		var eraser_mat: Material = eraser.material
-		if eraser_mat != null:
-			var dup := eraser_mat.duplicate() as StandardMaterial3D
-			dup.albedo_color = color
-			eraser.material = dup
-		else:
-			var new_mat := StandardMaterial3D.new()
-			new_mat.albedo_color = color
-			eraser.material = new_mat
-		# Nudge eraser to force CSGCombiner3D to rebuild with new materials
-		eraser.position.y += 0.0001
-		eraser.position.y -= 0.0001
+
+func debug_empty() -> void:
+	_on_debug_empty_pitcher()
 
 
 func _on_debug_empty_pitcher() -> void:

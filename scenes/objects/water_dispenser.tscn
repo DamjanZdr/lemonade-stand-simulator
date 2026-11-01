@@ -354,18 +354,12 @@ mesh = SubResource("ArrayMesh_2iae2")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="water dispenser" unique_id=2125977363]
 libraries/ = SubResource("AnimationLibrary_sull2")
 
-[node name="CSGCombiner3D" type="CSGCombiner3D" parent="." unique_id=532142786]
+[node name="CSGCombiner3D" type="Node3D" parent="." unique_id=532142786]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, 0)
 
-[node name="Water" type="CSGMesh3D" parent="CSGCombiner3D" unique_id=804566432]
+[node name="Water" type="MeshInstance3D" parent="CSGCombiner3D" unique_id=804566432]
 transform = Transform3D(0.95, 0, 0, 0, 0.98, 0, 0, 0, 0.95, 0, 0, 0)
 mesh = SubResource("ArrayMesh_vt45c")
-
-[node name="WaterEraser" type="CSGBox3D" parent="CSGCombiner3D" unique_id=2010646788]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7359791, 0)
-operation = 2
-size = Vector3(3, 4, 3)
-material = SubResource("StandardMaterial3D_6jvyv")
 
 [node name="Marker3D" type="Marker3D" parent="." unique_id=325260024]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1785065, 0.78946257)
