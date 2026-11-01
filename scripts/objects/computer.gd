@@ -148,6 +148,10 @@ func _on_zoom_finished() -> void:
 		EventBus.interaction_hint_changed.emit(get_hint(_player))
 
 
+func close_view() -> void:
+	_exit()
+
+
 func _exit() -> void:
 	if _zoom_tween != null and _zoom_tween.is_valid():
 		_zoom_tween.kill()
