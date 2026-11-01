@@ -526,6 +526,10 @@ func _on_global_upgrade_purchased_bridge(_upgrade_id: int, _cost: float) -> void
 func is_fruit_unlocked(fruit: String) -> bool:
 	if fruit == "lemon":
 		return true
+	# Progress-bar claims write 'claimed' levels, not purchased_upgrade_nodes —
+	# check both so claiming actually unlocks the fruit on boards/shop/UI.
+	if UpgradeManager.is_fruit_unlocked_for_stand(fruit, self):
+		return true
 	var unlock_id := fruit + "_unlock"
 	for node_name in purchased_upgrade_nodes.keys():
 		var data: Dictionary = UpgradeManager.tree_nodes.get(node_name, { })

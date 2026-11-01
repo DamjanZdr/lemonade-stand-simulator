@@ -111,6 +111,9 @@ signal graphics_quality_applied()
 ## Weak integrated GPUs render at 65 % scale on first launch — native res
 ## is what kills them. Persisted once saved; the settings slider wins after.
 const WEAK_GPU_HINTS := ["intel", "iris", "uhd", "graphics", "mx130", "mx150"]
+## Mobile dGPUs ("RTX 3050 Laptop GPU" etc.) — capable but thermally
+## limited, so they get a lighter default (90% scale, Medium) not the floor.
+const LAPTOP_GPU_HINTS := ["laptop"]
 const RENDER_SCALE_MIN := 0.5
 const RENDER_SCALE_MAX := 1.0
 
@@ -141,10 +144,14 @@ func load_settings() -> void:
 		)
 	)
 	if err != OK:
-		# Fresh install on a weak iGPU: drop to the Low preset too — scale
-		# alone can't save them, shadows/grass/SSAO are the other killers.
-		if _detect_default_render_scale() < 1.0:
+		# Fresh install on weak hardware: pair the lower render scale with a
+		# lighter preset — scale alone can't save iGPUs, and laptop dGPUs
+		# throttle under Medium+ anyway.
+		var scale := _detect_default_render_scale()
+		if scale <= 0.65:
 			apply_graphics_quality("low")
+		elif scale < 1.0:
+			apply_graphics_quality("medium")
 		settings_loaded.emit()
 		return
 	# Audio
@@ -262,6 +269,9 @@ func _detect_default_render_scale() -> float:
 	for hint in WEAK_GPU_HINTS:
 		if gpu.contains(hint):
 			return 0.65
+	for hint in LAPTOP_GPU_HINTS:
+		if gpu.contains(hint):
+			return 0.9
 	return 1.0
 
 

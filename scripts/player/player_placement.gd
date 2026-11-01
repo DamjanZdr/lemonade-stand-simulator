@@ -204,6 +204,13 @@ func empty_held_pitcher() -> void:
 		held_pitcher.update_label()
 		held_pitcher.update_liquid_color()
 
+	# Mirror the cleared recipe to the host's copy of this player — machine
+	# attach validation reads held_item_data host-side, so a client that
+	# only clears locally gets "pitcher must be empty" on a truly empty one.
+	_player.inventory._sync_held_to_host(
+		_player.inventory.held_item, _player.held_item_data
+	)
+
 	EventBus.interaction_hint_changed.emit("Pitcher emptied!")
 
 
@@ -1258,7 +1265,11 @@ func _create_container_hand_mesh(
 					var e := pitcher.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
 						"[DIAG] hand pitcher after 0.5s: vol=%.2f fill_scale=%.2f vis=%s"
-						% [pitcher.get_liquid_volume(), e.get_instance_shader_parameter("fill_y") if e else -1.0, pitcher.visible]
+						% [
+							pitcher.get_liquid_volume(),
+							e.get_instance_shader_parameter("fill_y") if e else -1.0,
+							pitcher.visible,
+						]
 					),
 		)
 		# Hide for the first frame in the tree — entering mid-frame can
