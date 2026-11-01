@@ -9,7 +9,6 @@ signal host_pressed
 signal settings_pressed
 signal fullscreen_toggled(enabled: bool)
 signal vsync_toggled(enabled: bool)
-signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
 signal new_stand_requested(stand_name: String, game_mode: int)
 signal load_stand_requested(slot_name: String)
@@ -79,10 +78,6 @@ func _ready() -> void:
 	_settings_panel.vsync_toggled.connect(
 		func(on: bool):
 			vsync_toggled.emit(on),
-	)
-	_settings_panel.enhanced_lighting_toggled.connect(
-		func(on: bool):
-			enhanced_lighting_toggled.emit(on),
 	)
 	_settings_panel.fps_toggled.connect(
 		func(on: bool):

@@ -6,7 +6,6 @@ const MENU_THEME := preload("res://assets/themes/menu_theme.tres")
 signal back_pressed
 signal fullscreen_toggled(enabled: bool)
 signal vsync_toggled(enabled: bool)
-signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
 
 const _TAB_NAMES: Array[String] = ["Gameplay", "Graphics", "Audio", "Controls"]
@@ -39,9 +38,9 @@ var _music_slider: HSlider
 var _music_value: Label
 
 var _quality_option: OptionButton
+var _fps_cap_option: OptionButton
 var _fs_check: CheckBox
 var _vsync_check: CheckBox
-var _lighting_check: CheckBox
 var _fps_check: CheckBox
 
 var _autosave_slider: HSlider
@@ -270,12 +269,32 @@ func _build_graphics_tab() -> Control:
 			SettingsManager.save_settings(),
 	)
 
-	_lighting_check = _add_checkbox_row(tab, "Enhanced Lighting")
-	_lighting_check.toggled.connect(
-		func(on: bool):
-			enhanced_lighting_toggled.emit(on)
-			SettingsManager.save_graphics_bool("enhanced_lighting", on),
+	var cap_row := HBoxContainer.new()
+	cap_row.add_theme_constant_override("separation", 12)
+	tab.add_child(cap_row)
+
+	var cap_label := Label.new()
+	cap_label.custom_minimum_size = Vector2(120, 0)
+	cap_label.add_theme_font_size_override("font_size", 18)
+	cap_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	cap_label.text = "FPS Cap"
+	cap_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cap_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	cap_row.add_child(cap_label)
+
+	_fps_cap_option = OptionButton.new()
+	_fps_cap_option.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_fps_cap_option.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_fps_cap_option.custom_minimum_size = Vector2(120, 0)
+	for cap in SettingsManager.FPS_CAP_OPTIONS:
+		_fps_cap_option.add_item("Unlimited" if cap == 0 else str(cap))
+	_style_option_button(_fps_cap_option)
+	_fps_cap_option.item_selected.connect(
+		func(idx: int):
+			SettingsManager.set_fps_cap(SettingsManager.FPS_CAP_OPTIONS[idx])
+			AudioManager.play_sfx_ui("tab_click", 1.0, 0.03),
 	)
+	cap_row.add_child(_fps_cap_option)
 
 	_fps_check = _add_checkbox_row(tab, "Show FPS")
 	_fps_check.toggled.connect(
@@ -524,10 +543,6 @@ func sync_state() -> void:
 	_vsync_check.button_pressed = (
 		DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
 	)
-	_lighting_check.button_pressed = SettingsManager.get_graphics_bool(
-		"enhanced_lighting",
-		SettingsManager.DEFAULT_ENHANCED_LIGHTING,
-	)
 	_fps_check.button_pressed = SettingsManager.get_graphics_bool(
 		"fps_counter",
 		SettingsManager.DEFAULT_FPS_COUNTER,
@@ -544,6 +559,10 @@ func sync_state() -> void:
 		if _quality_option.get_item_text(i).to_lower() == quality:
 			_quality_option.select(i)
 			break
+
+	var cap_idx := SettingsManager.FPS_CAP_OPTIONS.find(SettingsManager.get_fps_cap())
+	_fps_cap_option.select(maxi(cap_idx, 0))
+
 
 
 func _add_slider_row(parent: Node, label_text: String) -> Array:

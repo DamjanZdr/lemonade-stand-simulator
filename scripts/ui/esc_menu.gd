@@ -15,7 +15,6 @@ signal settings_pressed
 signal settings_back
 signal fullscreen_toggled(enabled: bool)
 signal vsync_toggled(enabled: bool)
-signal enhanced_lighting_toggled(enabled: bool)
 signal fps_toggled(enabled: bool)
 
 const HOVER_POP: float = 1.12
@@ -203,10 +202,6 @@ func _build_ui() -> void:
 	_settings_panel.vsync_toggled.connect(
 		func(on: bool):
 			vsync_toggled.emit(on),
-	)
-	_settings_panel.enhanced_lighting_toggled.connect(
-		func(on: bool):
-			enhanced_lighting_toggled.emit(on),
 	)
 	_settings_panel.fps_toggled.connect(
 		func(on: bool):
