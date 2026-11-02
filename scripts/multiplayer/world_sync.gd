@@ -430,6 +430,9 @@ func _serialize_container(node: Node) -> Dictionary:
 		"name": node.name,
 		"net_id": net_id,
 		"ctype": ctype,
+		"authored_path": (
+			str(get_tree().current_scene.get_path_to(node)) if node.owner != null else ""
+		),
 		"position": [node.global_position.x, node.global_position.y, node.global_position.z],
 		"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
 		"scale": [node.scale.x, node.scale.y, node.scale.z],
@@ -638,7 +641,26 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 	# Recursive: authored containers nest under stand/house subtrees, not
 	# directly under root — a shallow lookup would miss them and spawn a
 	# duplicate on top of the authored copy.
-	var existing := root.find_child(obj_name, true, false)
+	var authored_path: String = entry.get("authored_path", "")
+	var existing: Node = (
+		root.get_node_or_null(NodePath(authored_path)) if authored_path != "" else null
+	)
+	if existing == null:
+		for candidate in root.find_children(obj_name, "", true, false):
+			if candidate.is_queued_for_deletion() or candidate.is_in_group("ghost"):
+				continue
+			if candidate.scene_file_path != scene_path:
+				continue
+			if (
+				"stand_owner" in candidate
+				and str(candidate.stand_owner) != str(entry.get("stand_owner", ""))
+			):
+				continue
+			var candidate_id := get_net_id(candidate)
+			if candidate_id >= 0 and candidate_id != int(entry.get("net_id", -1)):
+				continue
+			existing = candidate
+			break
 	if existing != null and not existing.is_queued_for_deletion():
 		_update_container_from_snapshot(existing, entry)
 		return
@@ -723,11 +745,20 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 ## entry instead of spawning a duplicate.
 func _update_container_from_snapshot(existing: Node, entry: Dictionary) -> void:
 	var net_id: int = entry.get("net_id", -1)
-	if net_id >= 0 and _get_net_id(existing) < 0:
+	if net_id >= 0:
+		var previous_id := get_net_id(existing)
+		if previous_id >= 0 and previous_id != net_id:
+			_net_id_to_node.erase(previous_id)
+			_placed_objects.erase(previous_id)
+			var previous_callback := _on_net_object_tree_exited.bind(previous_id)
+			if existing.tree_exited.is_connected(previous_callback):
+				existing.tree_exited.disconnect(previous_callback)
 		existing.set_meta(NET_ID_META, net_id)
 		_net_id_to_node[net_id] = weakref(existing)
 		_node_to_net_id[existing] = net_id
-		existing.tree_exited.connect(_on_net_object_tree_exited.bind(net_id))
+		var callback := _on_net_object_tree_exited.bind(net_id)
+		if not existing.tree_exited.is_connected(callback):
+			existing.tree_exited.connect(callback)
 	var pos: Array = entry.get("position", [0, 0, 0])
 	var rot: Array = entry.get("rotation", [0, 0, 0])
 	var scl: Array = entry.get("scale", [1.0, 1.0, 1.0])
