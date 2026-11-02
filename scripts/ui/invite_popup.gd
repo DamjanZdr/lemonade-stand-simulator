@@ -40,9 +40,14 @@ func show_invite(lobby_id: int, friend_name: String) -> void:
 	_time_left = INVITE_TIMEOUT
 
 	var panel := PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	panel.position = Vector2(0, 24)
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	# Top-right, lowered to sit level with the menu title's center —
+	# slides in from the right and leaves the same way.
+	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	panel.position = Vector2(-24, 60)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	var target_x := panel.position.x
+	panel.position.x = target_x + 80
+	panel.modulate = Color(1, 1, 1, 0)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.08, 0.09, 0.12, 0.95)
 	style.corner_radius_top_left = 10
@@ -122,9 +127,21 @@ func show_invite(lobby_id: int, friend_name: String) -> void:
 	_timer_track.add_child(_timer_bar)
 
 	visible = true
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.set_ease(Tween.EASE_OUT)
+	tw.tween_property(panel, "position:x", target_x, 0.25)
+	tw.tween_property(panel, "modulate:a", 1.0, 0.2)
 
 
 func hide_popup() -> void:
+	var panel: Control = get_children()[0] if get_child_count() > 0 else null
+	if panel != null:
+		var tw := create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(panel, "position:x", panel.position.x + 80, 0.2)
+		tw.tween_property(panel, "modulate:a", 0.0, 0.2)
+		await tw.finished
 	visible = false
 
 
