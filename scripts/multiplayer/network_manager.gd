@@ -121,6 +121,7 @@ func _connect_signals() -> void:
 	Steam.lobby_created.connect(_on_lobby_created)
 	Steam.lobby_joined.connect(_on_lobby_joined)
 	Steam.join_requested.connect(_on_join_requested)
+	Steam.lobby_invite.connect(_on_lobby_invite)
 	Steam.lobby_match_list.connect(_on_lobby_match_list)
 	# Multiplayer peer signals
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -262,10 +263,17 @@ func _on_lobby_joined(this_lobby_id: int, _permissions: int, _locked: bool, resp
 	lobby_joined.emit(lobby_id)
 
 
-func _on_join_requested(this_lobby_id: int, friend_id: int) -> void:
-	# Route through the invite popup — the player chooses to accept or
-	# ignore instead of being ripped out of whatever they were doing.
-	var friend_name := Steam.getFriendPersonaName(friend_id)
+func _on_join_requested(this_lobby_id: int, _friend_id: int) -> void:
+	# The player already accepted inside Steam's own UI — join directly,
+	# showing our invite popup on top would be redundant.
+	print("[NetworkManager] Join requested for lobby: ", this_lobby_id)
+	join_game(this_lobby_id)
+
+
+## Steam lobby_invite callback — fires the moment an invite ARRIVES,
+## before any overlay interaction. This is what shows the in-game popup.
+func _on_lobby_invite(inviter_id: int, this_lobby_id: int, _game_id: int) -> void:
+	var friend_name := Steam.getFriendPersonaName(inviter_id)
 	print("[NetworkManager] Invite from %s for lobby %s" % [friend_name, this_lobby_id])
 	lobby_invite_received.emit(this_lobby_id, friend_name)
 

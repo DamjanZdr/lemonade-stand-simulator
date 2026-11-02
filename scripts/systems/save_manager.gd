@@ -338,7 +338,10 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	# the world reload into the new game unless freed here. Must be
 	# immediate: deferring risks killing the fresh defaults _do_respawn
 	# instantiates later. _do_respawn repeats the sweep anyway.
-	WorldSync.despawn_all_spawned()
+	# Host-only: on a client this sweep would delete every
+	# snapshot-spawned object (owner==null) — dispensers included.
+	if WorldSync.is_host():
+		WorldSync.despawn_all_spawned()
 	# Restore the authored starting layout — the previous save's respawn
 	# may have freed scene objects (e.g. water dispensers) and the sweep
 	# above removed its Main-parented replacements, so the world needs
