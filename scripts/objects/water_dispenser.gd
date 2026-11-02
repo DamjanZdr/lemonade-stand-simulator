@@ -41,6 +41,9 @@ var _water_node_pos: Vector3 = Vector3.ZERO
 func _ready() -> void:
 	add_to_group("water_dispenser")
 	add_to_group("container")
+	# Fixed authored appliance (like the stand/computer) — never swept,
+	# freed, or respawned; only its net_id/state syncs.
+	add_to_group("fixed_object")
 	# Assign stand ownership based on parent StandUnit.
 	var parent := get_parent()
 	if parent != null and parent is StandUnit:

@@ -56,12 +56,10 @@ func show_invite(lobby_id: int, friend_name: String) -> void:
 		else null
 	)
 	if anchor is Control:
-		var ac := anchor as Control
-		# Anchor = the popup's top-right corner (in screen px). TOP_RIGHT
-		# positions are offsets from the viewport's right edge.
-		panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		var vw := get_viewport().get_visible_rect().size.x
-		panel.position = Vector2(ac.global_position.x - vw, ac.global_position.y)
+		# Anchor's top-left = the popup's top-left, in resolved screen px.
+		# Read the global rect AFTER the panel is in the tree — before that
+		# the anchor's own anchors may not have laid out yet.
+		panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	else:
 		panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		panel.position = Vector2(-24, 60)
@@ -148,6 +146,11 @@ func show_invite(lobby_id: int, friend_name: String) -> void:
 	_timer_track.add_child(_timer_bar)
 
 	visible = true
+	if anchor is Control:
+		await get_tree().process_frame  # let anchors lay out
+		var r := (anchor as Control).get_global_rect()
+		panel.position = r.position
+	target_x = panel.position.x
 	var tw := create_tween()
 	tw.set_parallel(true)
 	tw.set_ease(Tween.EASE_OUT)

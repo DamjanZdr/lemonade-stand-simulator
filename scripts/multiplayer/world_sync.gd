@@ -176,7 +176,8 @@ func despawn_all_spawned() -> void:
 	var freed_meta := 0
 	for group in ["container", "supply_box"]:
 		for node in get_tree().get_nodes_in_group(group):
-			if is_instance_valid(node) and node.owner == null:
+			if is_instance_valid(node) and node.owner == null \
+					and not node.is_in_group("fixed_object"):
 				node.queue_free()
 				freed_meta += 1
 	GameLog.log(
@@ -578,10 +579,10 @@ func _clear_client_world_objects() -> void:
 				continue
 			if node.is_in_group("ghost") or removed.has(node.get_instance_id()):
 				continue
-			# Authored scene objects (owner != null) are never swept —
-			# the snapshot doesn't contain them, so freeing them would
-			# leave the client with no dispenser/press/etc. at all.
-			if node.owner != null:
+			# Authored scene objects (owner != null) and fixed appliances
+			# are never swept — the snapshot doesn't always contain them,
+			# so freeing them would leave the client with no dispenser at all.
+			if node.owner != null or node.is_in_group("fixed_object"):
 				continue
 			var ctype := SaveManager.get_container_type(node)
 			if group_name == "container" and not SaveManager.is_known_container_type(ctype):

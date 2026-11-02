@@ -1200,7 +1200,8 @@ func _do_respawn() -> void:
 				node.get_parent().get_path() if node.get_parent() else "none",
 			]
 		)
-		if ctype != "" and is_known_container_type(ctype) and node.owner == null:
+		if ctype != "" and is_known_container_type(ctype) and node.owner == null \
+				and not node.is_in_group("fixed_object"):
 			node.queue_free()
 	# Same for every spawned object — restored items from a previous save
 	# aren't in the container sweep's coverage, so a switched save leaked
