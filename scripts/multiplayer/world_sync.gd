@@ -532,7 +532,9 @@ func _apply_world_snapshot(snapshot: Dictionary) -> void:
 	if root == null:
 		world_snapshot_applied.emit()
 		return
+	_dump_world_objects("pre-clear")
 	_clear_client_world_objects()
+	_dump_world_objects("post-clear")
 	# Spawn containers + supply boxes, yielding periodically so the frame
 	# stays responsive (the late-join Day X screen can keep animating).
 	var spawned_since_yield := 0
@@ -558,7 +560,30 @@ func _apply_world_snapshot(snapshot: Dictionary) -> void:
 			snapshot.get("trash_items", []).size(),
 		]
 	)
+	_dump_world_objects("post-apply")
 	world_snapshot_applied.emit()
+
+
+## Diagnostic: dump every container/dispenser node — name, authored vs
+## dynamic, parent path, visibility, position. Used to find which path
+## removes the client's authored dispenser.
+func _dump_world_objects(tag: String) -> void:
+	GameLog.log("[SYNC-DIAG] --- %s ---" % tag)
+	for group_name in ["container", "water_dispenser", "supply_box"]:
+		for node in get_tree().get_nodes_in_group(group_name):
+			if not is_instance_valid(node):
+				continue
+			GameLog.log(
+				"[SYNC-DIAG] %s '%s' owner=%s parent=%s visible=%s pos=%s"
+				% [
+					group_name,
+					node.name,
+					"authored" if node.owner != null else "DYNAMIC",
+					node.get_parent().get_path() if node.get_parent() else "none",
+					node.visible if "visible" in node else "?",
+					node.global_position if "global_position" in node else "?",
+				]
+			)
 
 
 func _clear_client_world_objects() -> void:
@@ -1166,12 +1191,23 @@ func _apply_pitcher_snap(
 	stand_owner: String,
 ) -> bool:
 	var target := _find_node_by_net_id(net_id)
+	if target == null:
+		GameLog.log("[SYNC-DIAG] pitcher snap rejected: no node for net_id=%d" % net_id)
+		return false
 	if target is Interactable and target.stand_owner != "" and target.stand_owner != stand_owner:
+		GameLog.log(
+			"[SYNC-DIAG] pitcher snap rejected: owner '%s' != requester '%s'"
+			% [target.stand_owner, stand_owner]
+		)
 		return false
 	if target_type == "press" and target is Press:
 		return target.apply_pitcher_snap_request(recipe, stand_owner)
 	if target_type == "water_dispenser" and target is WaterDispenser:
 		return target.apply_pitcher_snap_request(recipe, stand_owner)
+	GameLog.log(
+		"[SYNC-DIAG] pitcher snap rejected: type '%s' doesn't match node '%s'"
+		% [target_type, target.name]
+	)
 	return false
 
 
