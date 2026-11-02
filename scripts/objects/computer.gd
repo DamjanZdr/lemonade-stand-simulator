@@ -147,8 +147,8 @@ func _enter(player: Node) -> void:
 func _on_zoom_finished() -> void:
 	_transitioning = false
 	_active = true
-	if _ui_root.has_method("_show_morning_hub"):
-		_ui_root._show_morning_hub()
+	if _ui_root.has_method("show_morning_hub"):
+		_ui_root.show_morning_hub()
 	if _player != null and is_instance_valid(_player):
 		EventBus.interaction_hint_changed.emit(get_hint(_player))
 
@@ -165,8 +165,8 @@ func _exit() -> void:
 	_transitioning = false
 	_active = false
 
-	if _ui_root != null and _ui_root.has_method("_hide_morning_hub"):
-		_ui_root._hide_morning_hub()
+	if _ui_root != null and _ui_root.has_method("hide_morning_hub"):
+		_ui_root.hide_morning_hub()
 	# UPDATE_ONCE draws the final frame then stops — the monitor keeps the
 	# last UI state on screen without paying a full UI render every frame.
 	_screen_ui.render_target_update_mode = SubViewport.UPDATE_ONCE

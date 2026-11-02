@@ -1982,7 +1982,7 @@ func _on_day_phase_changed(phase: int, day: int) -> void:
 	if phase == DayManager.Phase.MORNING:
 		_update_morning_data(day)
 	else:
-		_hide_morning_hub()
+		hide_morning_hub()
 
 
 func _update_morning_data(day: int) -> void:
@@ -2000,7 +2000,7 @@ func _update_morning_data(day: int) -> void:
 		pass
 
 
-func _show_morning_hub() -> void:
+func show_morning_hub() -> void:
 	_update_morning_data(DayManager.day_number)
 	_scan_stand_state()
 	# Set the active stand for research so upgrades are per-stand.
@@ -2050,7 +2050,7 @@ func _on_exit_button_pressed() -> void:
 ## keep_on_screen: leave the hub drawn on the monitor (the SubViewport
 ## holds whatever was last rendered — the screen looks "left on").
 ## HUD is always restored either way.
-func _hide_morning_hub(keep_on_screen := false) -> void:
+func hide_morning_hub(keep_on_screen := false) -> void:
 	# Reset modulate so the next fade-in starts from fully opaque.
 	panel.modulate = Color(1, 1, 1, 1)
 	backdrop.modulate = Color(1, 1, 1, 1)
