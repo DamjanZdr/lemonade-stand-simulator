@@ -1882,12 +1882,7 @@ func _update_equipment_box_ghost() -> void:
 		return
 
 	# Workstations are tables ΓÇö they can only be placed on the floor.
-	if equipment_type == "workstation":
-		if not is_table_floor_surface(collider):
-			_destroy_ghost()
-			_ghost_valid = false
-			_stack_target_id = -1
-			return
+	if equipment_type == "workstation" and is_table_floor_surface(collider):
 		_ensure_container_ghost(equipment_type)
 		if _ghost == null:
 			_ghost_valid = false
@@ -1911,8 +1906,7 @@ func _update_equipment_box_ghost() -> void:
 	# Only floor-standing equipment (workstation, water dispenser, Fruit-O-Matic)
 	# may be placed directly on the ground/floor. Other equipment must go on a
 	# table/workstation.
-	if equipment_type in ["workstation", "water_dispenser", "fruitomatic"] \
-			and _is_box_floor_hit(collider):
+	if _is_box_floor_hit(collider):
 		_ensure_box_ghost()
 		_ghost.global_position = hit_point + Vector3(0, SupplyBox.DEFAULT_BOTTOM_OFFSET, 0)
 		_ghost.visible = true
@@ -2691,6 +2685,8 @@ func is_owned_stand_surface(collider: Node) -> bool:
 func is_box_placeable_surface(collider: Node) -> bool:
 	if collider == null:
 		return false
+	if _is_box_floor_hit(collider):
+		return _get_placement_owner_stand(collider) != ""
 	# Table/workstation surfaces still require own-stand ownership.
 	if is_table_floor_surface(collider) or is_workstation_surface(collider):
 		return is_owned_stand_surface(collider)

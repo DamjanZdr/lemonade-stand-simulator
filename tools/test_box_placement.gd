@@ -21,6 +21,14 @@ func _run() -> void:
 	# Stand with a palette floor on the ground collision layer (mask 8).
 	var stand: Node = load("res://scripts/stand/stand_unit.gd").new()
 	stand.name = "TestStand"
+	stand.is_legacy_primary = false
+	for child_name in [
+		"DeliveryGrid", "DeliveryMarker", "QueueMarkerActive", "QueueMarker1", "QueueMarker2",
+		"PriceBoard", "Thermometer", "WaterDispenser", "Stand",
+	]:
+		var child := Marker3D.new()
+		child.name = child_name
+		stand.add_child(child)
 	world.add_child(stand)
 	var floor_body := StaticBody3D.new()
 	floor_body.name = "PlacableFloor"
@@ -34,13 +42,12 @@ func _run() -> void:
 	stand.add_child(floor_body)
 
 	# Player + placement component (same harness style as test_lemonader).
-	var player: Node = load("res://scripts/player/player.gd").new()
+	var player: Node = load("res://scenes/player/player.tscn").instantiate()
+	player.set_script(load("res://tools/local_player_test_actor.gd"))
 	player.set_multiplayer_authority(1)
+	player.process_mode = Node.PROCESS_MODE_DISABLED
 	world.add_child(player)
-	var placement: Node = load("res://scripts/player/player_placement.gd").new()
-	player.add_child(placement)
-	player.placement = placement
-	placement._player = player
+	var placement: Node = player.placement
 
 	# A floating prop collider that merely has floor below it — the old
 	# downward-probe logic treated this as "ground".
@@ -105,6 +112,7 @@ func _run() -> void:
 
 	# --- Physics overlap: any body the ghost clips must invalidate it ---
 	var ray := RayCast3D.new()
+	ray.process_mode = Node.PROCESS_MODE_ALWAYS
 	ray.collision_mask = 9
 	ray.target_position = Vector3(0, -2, 0)
 	ray.enabled = true
@@ -113,6 +121,26 @@ func _run() -> void:
 	player.global_position = Vector3(0, 1.5, 5)
 	await physics_frame
 	check(ray.is_colliding(), "test ray reaches the floor")
+	var rival: Node = load("res://scripts/stand/stand_unit.gd").new()
+	rival.name = "RivalStand"
+	player.assigned_stand = rival
+	player.assigned_stand_name = "RivalStand"
+	check(placement.is_box_placeable_surface(floor_body), "boxed items allow rival palette floor")
+	check(not placement.is_table_floor_surface(floor_body), "unboxed tables reject rival floor")
+	player.held_item_data = {
+		"is_equipment": true,
+		"equipment_type": "pitcher",
+		"source": "delivery",
+	}
+	placement._update_equipment_box_ghost()
+	check(placement._ghost != null, "pitcher box has a floor ghost")
+	check(placement._ghost_valid, "pitcher box ghost is valid on rival floor")
+	if placement._ghost != null:
+		check(placement._ghost.get_meta("ghost_type", "") == "box", "floor ghost stays boxed")
+	placement._destroy_ghost()
+	player.assigned_stand = stand
+	player.assigned_stand_name = stand.name
+	rival.free()
 
 	var ghost: Node = box_scene.instantiate()
 	world.add_child(ghost)

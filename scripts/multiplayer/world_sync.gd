@@ -99,21 +99,25 @@ static var _cached_local_player: WeakRef = null
 
 
 static func get_local_player() -> Node:
-	if _cached_local_player != null:
-		var c: Node = _cached_local_player.get_ref()
-		if c != null and is_instance_valid(c) and c.is_inside_tree():
-			return c
-		_cached_local_player = null
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null or tree.current_scene == null:
 		return null
 	var has_peer := tree.get_multiplayer().has_multiplayer_peer()
+	if _cached_local_player != null:
+		var c: Node = _cached_local_player.get_ref()
+		if (
+			c != null and is_instance_valid(c) and c.is_inside_tree()
+			and tree.current_scene.is_ancestor_of(c)
+			and (not has_peer or c.is_multiplayer_authority())
+		):
+			return c
+		_cached_local_player = null
 	var found: Node = null
 	for p in tree.current_scene.find_children("*", "Player", true, false):
 		if not has_peer or p.is_multiplayer_authority():
 			found = p
 			break
-	if found == null:
+	if found == null and not has_peer:
 		# Fallback: first player (single-player or not yet claimed authority).
 		var players := tree.get_nodes_in_group("player")
 		if not players.is_empty():

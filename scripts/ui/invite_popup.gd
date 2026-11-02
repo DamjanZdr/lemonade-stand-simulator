@@ -64,8 +64,6 @@ func show_invite(lobby_id: int, friend_name: String) -> void:
 		panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		panel.position = Vector2(-24, 60)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	var target_x := panel.position.x
-	panel.position.x = target_x + 80
 	panel.modulate = Color(1, 1, 1, 0)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.08, 0.09, 0.12, 0.95)
@@ -146,11 +144,16 @@ func show_invite(lobby_id: int, friend_name: String) -> void:
 	_timer_track.add_child(_timer_bar)
 
 	visible = true
+	await get_tree().process_frame  # let anchors lay out
+	if not is_instance_valid(panel) or panel.is_queued_for_deletion():
+		return
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.reset_size()
+	var landing := Vector2(get_viewport().get_visible_rect().size.x - 24, 60)
 	if anchor is Control:
-		await get_tree().process_frame  # let anchors lay out
-		var r := (anchor as Control).get_global_rect()
-		panel.position = r.position
-	target_x = panel.position.x
+		landing = (anchor as Control).get_global_rect().position
+	var target_x := maxf(0.0, landing.x - panel.size.x)
+	panel.position = Vector2(target_x + 80, landing.y)
 	var tw := create_tween()
 	tw.set_parallel(true)
 	tw.set_ease(Tween.EASE_OUT)
