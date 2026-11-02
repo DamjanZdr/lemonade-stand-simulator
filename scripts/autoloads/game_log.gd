@@ -36,6 +36,28 @@ func log(msg: String) -> void:
 	print(msg)
 
 
+var _marks: Dictionary = { }
+var _last_mark: int = 0
+var _last_mark_label: String = ""
+
+
+## Breadcrumb marker for diagnostics — records the time since the
+## previous mark under a rolling label. Silent (no file write) so hot
+## paths can call it freely; used by the spike-dump tooling.
+func mark(label: String) -> void:
+	var now := Time.get_ticks_msec()
+	_marks[label] = now
+	_last_mark = now
+	_last_mark_label = label
+
+
+## Log how long a measured section took. t0 is a Time.get_ticks_usec()
+## snapshot taken by the caller before the work ran.
+func time_log(label: String, t0: int) -> void:
+	var elapsed_us := Time.get_ticks_usec() - t0
+	_write("[time] %s: %.1fms" % [label, elapsed_us / 1000.0])
+
+
 ## Get all buffered log lines as a single string.
 func get_buffer_text() -> String:
 	return "\n".join(_buffer)

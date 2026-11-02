@@ -38,7 +38,6 @@
 [ext_resource type="PackedScene" uid="uid://obyjd43o0urt" path="res://assets/models/environment/surroundings/trees/Pine/1.glb" id="29_famyc"]
 [ext_resource type="PackedScene" uid="uid://br7nxb25nm6oh" path="res://assets/models/environment/surroundings/street_lights/street light.glb" id="29_rbikm"]
 [ext_resource type="PackedScene" uid="uid://5hb07jmuxlfh" path="res://assets/models/characters/npc_attributes/Male/Hairstyles/Hair3M.glb" id="30_c4p11"]
-[ext_resource type="PackedScene" uid="uid://dgi7bbvi7kuhm" path="res://assets/danis_karlson_milk.glb" id="30_wewmw"]
 [ext_resource type="PackedScene" uid="uid://bxj42cokmtmp5" path="res://assets/models/characters/npc_attributes/Male/Hairstyles/Hair4M.glb" id="31_c4dtt"]
 [ext_resource type="PackedScene" uid="uid://cltnh84yk0ely" path="res://assets/models/environment/surroundings/trees/Orange/Vert.026.glb" id="31_jssxv"]
 [ext_resource type="PackedScene" uid="uid://bukmqp2x7uusp" path="res://assets/models/environment/surroundings/trees/Orange/Vert.025.glb" id="32_f8gkk"]
@@ -57,8 +56,8 @@
 [ext_resource type="Texture2D" uid="uid://dypa6kron6oro" path="res://assets/models/characters/man_Shoes Base Color.png" id="44_7iotn"]
 [ext_resource type="PackedScene" uid="uid://dr4k7li21a5fg" path="res://scenes/objects/cash_pickup.tscn" id="45_i4fc3"]
 [ext_resource type="PackedScene" uid="uid://djukgdu6j3p67" path="res://scenes/duck.tscn" id="46_c4p11"]
-[ext_resource type="PackedScene" path="res://scenes/milk.tscn" id="47_milk"]
 [ext_resource type="Script" uid="uid://e7o24oyy11ah" path="res://scripts/objects/cup.gd" id="46_myl1y"]
+[ext_resource type="PackedScene" path="res://scenes/milk.tscn" id="47_milk"]
 [ext_resource type="PackedScene" uid="uid://brj3o5pdhl8h4" path="res://scenes/plant_pot_1.tscn" id="49_l4ul6"]
 [ext_resource type="PackedScene" uid="uid://b3eqd0d3p6wd1" path="res://scenes/plant_pot_2.tscn" id="50_q3hpu"]
 [ext_resource type="Texture2D" uid="uid://b7w77s43dcra5" path="res://assets/textures/Cartoon_green_texture_grass.jpg" id="51_cartoon"]
@@ -2588,6 +2587,7 @@ transform = Transform3D(0.14999999, 0, 2.6226832e-08, 0, 0.14999999, 0, -2.62268
 
 [node name="single_stand_house2" parent="Houses" unique_id=1132182983 instance=ExtResource("5_wlhmk")]
 transform = Transform3D(1.2457745e-07, 0, -0.95, 0, 0.95, 0, 0.95, 0, 1.2457745e-07, 29.7573, 3.1371675, -4.946823)
+visible = false
 metadata/house_color_index = 2
 
 [node name="house -col6" parent="Houses/single_stand_house2" unique_id=195437753 instance=ExtResource("9_r8fkd")]
@@ -3019,12 +3019,12 @@ shape = SubResource("BoxShape3D_g4v7s")
 transform = Transform3D(0.23706862, 0, 0.44022548, 0, 0.5, 0, -0.44022548, 0, 0.23706862, -0.5208144, -1.3802583, 14.543913)
 
 [node name="pickup truck12" parent="Houses/player_house" unique_id=1923883066 instance=ExtResource("21_kyhvj")]
-transform = Transform3D(-0.001943293, 0, -0.29999372, 0, 0.3, 0, 0.29999372, 0, -0.001943293, -7.9648533, -1.252958, 5.199999)
+transform = Transform3D(-0.001943293, 0, -0.29999372, 0, 0.3, 0, 0.29999372, 0, -0.001943293, -7.9648533, -1.252958, 2.8957195)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Houses/player_house/pickup truck12" unique_id=490961188]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Houses/player_house/pickup truck12/StaticBody3D" unique_id=2138900894]
-transform = Transform3D(1, 0, 9.313226e-10, 0, 1.0000002, 0, -9.313226e-10, 0, 1, -8.889439, 4.1528053, -0.061523438)
+transform = Transform3D(1, 0, 9.313226e-10, 0, 1.0000002, 0, -9.313226e-10, 0, 1, -1.003376, 4.1528053, -0.112607956)
 shape = SubResource("BoxShape3D_yf5fn")
 
 [node name="playerhouse -col" type="Node3D" parent="Houses/player_house" unique_id=528387326]
@@ -3042,8 +3042,8 @@ shape = SubResource("ConcavePolygonShape3D_pky1k")
 [node name="LED Light" parent="Houses/player_house" unique_id=1164034614 instance=ExtResource("11_c4dtt")]
 transform = Transform3D(-4.371139e-09, 0, 0.1, 0, 0.1, 0, -0.1, 0, -4.371139e-09, -5.512087, 2.0045946, 1.679718)
 
-[node name="OmniLight3D" type="OmniLight3D" parent="Houses/player_house/LED Light" unique_id=96629331]
-transform = Transform3D(10, 0, 5.684342e-14, 0, 10, 0, -5.684342e-14, 0, 10, 0, -19.999998, 0)
+[node name="OmniLight3D" type="OmniLight3D" parent="Houses/player_house" unique_id=96629331]
+transform = Transform3D(-4.3711402e-08, 0, 1, 0, 1, 0, -1, 0, -4.3711402e-08, -5.512087, 0.0045945644, 1.679718)
 light_energy = 0.2
 
 [node name="Mailbox" parent="Houses/player_house" unique_id=188093175 instance=ExtResource("12_kyhvj")]
@@ -3276,12 +3276,12 @@ shape = SubResource("BoxShape3D_g4v7s")
 transform = Transform3D(0.23706862, 0, 0.44022548, 0, 0.5, 0, -0.44022548, 0, 0.23706862, -0.18482351, -1.3802583, 14.524153)
 
 [node name="pickup truck20" parent="Houses/player_house2" unique_id=1923883067 instance=ExtResource("21_kyhvj")]
-transform = Transform3D(-0.001943293, 0, -0.29999372, 0, 0.3, 0, 0.29999372, 0, -0.001943293, -7.9648533, -1.252958, 5.199999)
+transform = Transform3D(-0.001943293, 0, -0.29999372, 0, 0.3, 0, 0.29999372, 0, -0.001943293, -7.964853, -1.252958, 3.037508)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Houses/player_house2/pickup truck20" unique_id=490961189]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Houses/player_house2/pickup truck20/StaticBody3D" unique_id=2138900895]
-transform = Transform3D(1, 0, 9.313226e-10, 0, 1.0000002, 0, -9.313226e-10, 0, 1, -8.889439, 4.1528053, -0.061523438)
+transform = Transform3D(1, 0, 4.656613e-10, 0, 1.0000002, 0, -4.656613e-10, 0, 1, -0.8815689, 4.152805, -0.11339569)
 shape = SubResource("BoxShape3D_yf5fn")
 
 [node name="playerhouse -col" type="Node3D" parent="Houses/player_house2" unique_id=528387327]
@@ -3299,8 +3299,8 @@ shape = SubResource("ConcavePolygonShape3D_pcth3")
 [node name="LED Light" parent="Houses/player_house2" unique_id=1208519416 instance=ExtResource("11_c4dtt")]
 transform = Transform3D(1.3113417e-08, 0, -0.1, 0, 0.1, 0, 0.1, 0, 1.3113417e-08, -5.3669515, 1.9888508, 2.273531)
 
-[node name="OmniLight3D" type="OmniLight3D" parent="Houses/player_house2/LED Light" unique_id=1200459184]
-transform = Transform3D(10, 0, 5.684342e-14, 0, 10, 0, -5.684342e-14, 0, 10, 0, -19.999998, 0)
+[node name="OmniLight3D" type="OmniLight3D" parent="Houses/player_house2" unique_id=1200459184]
+transform = Transform3D(1.3113419e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113419e-07, -5.3669505, -0.011149168, 2.273531)
 light_energy = 0.2
 
 [node name="Mailbox" parent="Houses/player_house2" unique_id=1508242398 instance=ExtResource("17_t3nbc")]
@@ -5381,476 +5381,38 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.002293542, -56)
 [node name="street13" parent="NonPlayableArea/Street" unique_id=483674640 instance=ExtResource("6_15euc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.002293542, -52)
 
-[node name="street15" parent="NonPlayableArea/Street" unique_id=1111692252 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -6, 0.032506898, -92)
-
-[node name="street61" parent="NonPlayableArea/Street" unique_id=1037900180 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -10, 0.032506898, -92)
-
-[node name="street62" parent="NonPlayableArea/Street" unique_id=1706444629 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -14, 0.032506898, -92)
-
-[node name="street63" parent="NonPlayableArea/Street" unique_id=221490128 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -18, 0.032506898, -92)
-
-[node name="street64" parent="NonPlayableArea/Street" unique_id=600986150 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -22, 0.032506898, -92)
-
-[node name="street65" parent="NonPlayableArea/Street" unique_id=759699123 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -26, 0.032506898, -92)
-
-[node name="street66" parent="NonPlayableArea/Street" unique_id=444283047 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -30, 0.032506898, -92)
-
-[node name="street68" parent="NonPlayableArea/Street" unique_id=833206894 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -38, 0.032506898, -92)
-
-[node name="street69" parent="NonPlayableArea/Street" unique_id=1289374916 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -42, 0.032506898, -92)
-
-[node name="street70" parent="NonPlayableArea/Street" unique_id=530709888 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -46, 0.032506898, -92)
-
-[node name="street71" parent="NonPlayableArea/Street" unique_id=913628615 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -50, 0.032506898, -92)
-
-[node name="street72" parent="NonPlayableArea/Street" unique_id=2039719925 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -54, 0.032506898, -92)
-
-[node name="street73" parent="NonPlayableArea/Street" unique_id=163654929 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -58, 0.032506898, -92)
-
-[node name="street163" parent="NonPlayableArea/Street" unique_id=864879181 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -62, 0.032506898, -92)
-
-[node name="street67" parent="NonPlayableArea/Street" unique_id=1681916025 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -34, 0.032506898, -92)
-
-[node name="street74" parent="NonPlayableArea/Street" unique_id=177611967 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 66, 0.032506898, -92)
-
-[node name="street164" parent="NonPlayableArea/Street" unique_id=1758043423 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 70, 0.032506898, -92)
-
-[node name="street75" parent="NonPlayableArea/Street" unique_id=2086214380 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 62, 0.032506898, -92)
-
-[node name="street76" parent="NonPlayableArea/Street" unique_id=1387086874 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 58, 0.032506898, -92)
-
-[node name="street77" parent="NonPlayableArea/Street" unique_id=13717447 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 54, 0.032506898, -92)
-
-[node name="street78" parent="NonPlayableArea/Street" unique_id=1134837071 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 50, 0.032506898, -92)
-
-[node name="street79" parent="NonPlayableArea/Street" unique_id=966249597 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 46, 0.032506898, -92)
-
-[node name="street80" parent="NonPlayableArea/Street" unique_id=2051341569 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 38, 0.032506898, -92)
-
-[node name="street81" parent="NonPlayableArea/Street" unique_id=169679864 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 34, 0.032506898, -92)
-
-[node name="street82" parent="NonPlayableArea/Street" unique_id=509077790 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 30, 0.032506898, -92)
-
-[node name="street83" parent="NonPlayableArea/Street" unique_id=282010994 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 26, 0.032506898, -92)
-
-[node name="street84" parent="NonPlayableArea/Street" unique_id=1799574694 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 22, 0.032506898, -92)
-
-[node name="street85" parent="NonPlayableArea/Street" unique_id=1380226213 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 18, 0.032506898, -92)
-
-[node name="street86" parent="NonPlayableArea/Street" unique_id=1448566239 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 42, 0.032506898, -92)
-
-[node name="street16" parent="NonPlayableArea/Street" unique_id=991838642 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2, 0.032506898, -92)
-
 [node name="street17" parent="NonPlayableArea/Street" unique_id=965020843 instance=ExtResource("6_15euc")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 2, 0.002293542, -84)
 
 [node name="street18" parent="NonPlayableArea/Street" unique_id=1664053947 instance=ExtResource("6_15euc")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 6, 0.002293542, -84)
 
-[node name="street19" parent="NonPlayableArea/Street" unique_id=172124117 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 10, 0.032506898, -92)
-
-[node name="street20" parent="NonPlayableArea/Street" unique_id=245757703 instance=ExtResource("6_15euc")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 14, 0.032506898, -92)
-
 [node name="street14" parent="NonPlayableArea/Street" unique_id=1452472711 instance=ExtResource("6_15euc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.002293542, -48)
 
-[node name="street23" parent="NonPlayableArea/Street" unique_id=232360333 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -120)
-
-[node name="street30" parent="NonPlayableArea/Street" unique_id=809122532 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -124)
-
-[node name="street24" parent="NonPlayableArea/Street" unique_id=280953612 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -116)
-
-[node name="street25" parent="NonPlayableArea/Street" unique_id=270545592 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -112)
-
-[node name="street26" parent="NonPlayableArea/Street" unique_id=640718194 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -108)
-
-[node name="street27" parent="NonPlayableArea/Street" unique_id=1228068032 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -104)
-
-[node name="street28" parent="NonPlayableArea/Street" unique_id=1339297687 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -100)
-
-[node name="street31" parent="NonPlayableArea/Street" unique_id=1903401456 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -148)
-
-[node name="street32" parent="NonPlayableArea/Street" unique_id=280002252 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -152)
-
 [node name="street38" parent="NonPlayableArea/Street" unique_id=810083806 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, 4, 0, -254)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, 4, 0, -196)
 
 [node name="street39" parent="NonPlayableArea/Street" unique_id=118306329 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, 76, 0, -254)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, 76, 0, -196)
 
 [node name="street40" parent="NonPlayableArea/Street" unique_id=1996673285 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, -68, 0, -254)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, -68, 0, -196)
 
 [node name="street41" parent="NonPlayableArea/Street" unique_id=278076480 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, 4, 0, 242)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, 4, 0, 179.4693)
 
-[node name="street42" parent="NonPlayableArea/Street" unique_id=139589588 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, 76, 0, 242)
+[node name="street42" parent="NonPlayableArea/Street" unique_id=199906261 instance=ExtResource("6_15euc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, 76, 0, 179.4693)
 
 [node name="street43" parent="NonPlayableArea/Street" unique_id=1440707705 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, -68, 0, 242)
-
-[node name="street33" parent="NonPlayableArea/Street" unique_id=634110582 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -144)
-
-[node name="street34" parent="NonPlayableArea/Street" unique_id=1628292553 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -140)
-
-[node name="street35" parent="NonPlayableArea/Street" unique_id=498926114 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -136)
-
-[node name="street36" parent="NonPlayableArea/Street" unique_id=935574934 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -132)
-
-[node name="street37" parent="NonPlayableArea/Street" unique_id=464508552 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -128)
-
-[node name="street29" parent="NonPlayableArea/Street" unique_id=838012623 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.032506898, -96)
-
-[node name="street59" parent="NonPlayableArea/Street" unique_id=656079812 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.002293542, -92)
-
-[node name="street60" parent="NonPlayableArea/Street" unique_id=1278762330 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.002293542, -90)
-
-[node name="street87" parent="NonPlayableArea/Street" unique_id=1599128108 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -120)
-
-[node name="street88" parent="NonPlayableArea/Street" unique_id=1626963656 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -124)
-
-[node name="street89" parent="NonPlayableArea/Street" unique_id=1006656770 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -116)
-
-[node name="street90" parent="NonPlayableArea/Street" unique_id=610776033 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -112)
-
-[node name="street91" parent="NonPlayableArea/Street" unique_id=500743517 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -108)
-
-[node name="street92" parent="NonPlayableArea/Street" unique_id=360977470 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -104)
-
-[node name="street93" parent="NonPlayableArea/Street" unique_id=1068516840 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -100)
-
-[node name="street94" parent="NonPlayableArea/Street" unique_id=1822324641 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0, -148)
-
-[node name="street95" parent="NonPlayableArea/Street" unique_id=1428379608 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0, -152)
-
-[node name="street96" parent="NonPlayableArea/Street" unique_id=473439475 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0, -144)
-
-[node name="street97" parent="NonPlayableArea/Street" unique_id=445120568 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -140)
-
-[node name="street98" parent="NonPlayableArea/Street" unique_id=1142886303 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -136)
-
-[node name="street99" parent="NonPlayableArea/Street" unique_id=212771187 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -132)
-
-[node name="street100" parent="NonPlayableArea/Street" unique_id=895520578 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -128)
-
-[node name="street122" parent="NonPlayableArea/Street" unique_id=1625396048 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -96)
-
-[node name="street123" parent="NonPlayableArea/Street" unique_id=487983553 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -92)
-
-[node name="street124" parent="NonPlayableArea/Street" unique_id=16740702 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -68, 0.032506898, -90)
-
-[node name="street125" parent="NonPlayableArea/Street" unique_id=546361316 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -120)
-
-[node name="street126" parent="NonPlayableArea/Street" unique_id=1535857822 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -124)
-
-[node name="street127" parent="NonPlayableArea/Street" unique_id=641011249 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -116)
-
-[node name="street128" parent="NonPlayableArea/Street" unique_id=1798185364 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -112)
-
-[node name="street129" parent="NonPlayableArea/Street" unique_id=1252550602 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -108)
-
-[node name="street130" parent="NonPlayableArea/Street" unique_id=1103782495 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -104)
-
-[node name="street131" parent="NonPlayableArea/Street" unique_id=407115373 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -100)
-
-[node name="street132" parent="NonPlayableArea/Street" unique_id=617060130 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -148)
-
-[node name="street133" parent="NonPlayableArea/Street" unique_id=700522346 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -152)
-
-[node name="street134" parent="NonPlayableArea/Street" unique_id=1846037603 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -144)
-
-[node name="street135" parent="NonPlayableArea/Street" unique_id=1235930527 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -140)
-
-[node name="street136" parent="NonPlayableArea/Street" unique_id=539332427 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -136)
-
-[node name="street137" parent="NonPlayableArea/Street" unique_id=1252881625 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -132)
-
-[node name="street138" parent="NonPlayableArea/Street" unique_id=507239295 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -128)
-
-[node name="street160" parent="NonPlayableArea/Street" unique_id=549366797 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -96)
-
-[node name="street161" parent="NonPlayableArea/Street" unique_id=2103497179 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -92)
-
-[node name="street162" parent="NonPlayableArea/Street" unique_id=194613275 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 0.032506898, -90)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 50, -68, 0, 178.51257)
 
 [node name="street165" parent="NonPlayableArea/Street" unique_id=520177991 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007653, 0.0070258155, 67.915)
 
 [node name="street166" parent="NonPlayableArea/Street" unique_id=827504450 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007653, 0.0070258155, 71.915)
-
-[node name="street167" parent="NonPlayableArea/Street" unique_id=755529645 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 14.000765, 0.1, 75.915)
-
-[node name="street168" parent="NonPlayableArea/Street" unique_id=781512531 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 18.000765, 0.1, 75.915)
-
-[node name="street169" parent="NonPlayableArea/Street" unique_id=1078166706 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 22.000765, 0.1, 75.915)
-
-[node name="street170" parent="NonPlayableArea/Street" unique_id=975630990 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 26.000765, 0.1, 75.915)
-
-[node name="street171" parent="NonPlayableArea/Street" unique_id=1118458771 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 30.000765, 0.1, 75.915)
-
-[node name="street172" parent="NonPlayableArea/Street" unique_id=1810057204 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 34.000767, 0.1, 75.915)
-
-[node name="street173" parent="NonPlayableArea/Street" unique_id=1387696759 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 38.000767, 0.1, 75.915)
-
-[node name="street174" parent="NonPlayableArea/Street" unique_id=831293392 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 46.000767, 0.1, 75.915)
-
-[node name="street175" parent="NonPlayableArea/Street" unique_id=616954417 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 50.000767, 0.1, 75.91499)
-
-[node name="street176" parent="NonPlayableArea/Street" unique_id=1050427172 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 54.000767, 0.1, 75.91499)
-
-[node name="street177" parent="NonPlayableArea/Street" unique_id=1779116474 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 58.000767, 0.1, 75.91499)
-
-[node name="street178" parent="NonPlayableArea/Street" unique_id=55431970 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 62.000767, 0.1, 75.91499)
-
-[node name="street179" parent="NonPlayableArea/Street" unique_id=189872 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 66.00077, 0.1, 75.91499)
-
-[node name="street180" parent="NonPlayableArea/Street" unique_id=629369375 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 70.00077, 0.1, 75.91499)
-
-[node name="street181" parent="NonPlayableArea/Street" unique_id=435650786 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 42.000767, 0.1, 75.915)
-
-[node name="street182" parent="NonPlayableArea/Street" unique_id=1449282495 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -57.999233, 0.1, 75.91501)
-
-[node name="street183" parent="NonPlayableArea/Street" unique_id=612406758 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -61.999233, 0.1, 75.91501)
-
-[node name="street184" parent="NonPlayableArea/Street" unique_id=1744813805 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -53.999233, 0.1, 75.91501)
-
-[node name="street185" parent="NonPlayableArea/Street" unique_id=682336155 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -49.999233, 0.1, 75.91501)
-
-[node name="street186" parent="NonPlayableArea/Street" unique_id=1789269930 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -45.999233, 0.1, 75.91501)
-
-[node name="street187" parent="NonPlayableArea/Street" unique_id=1888344844 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -41.999233, 0.1, 75.91501)
-
-[node name="street188" parent="NonPlayableArea/Street" unique_id=1989123992 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -37.999233, 0.1, 75.915)
-
-[node name="street189" parent="NonPlayableArea/Street" unique_id=2048335918 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -29.999233, 0.1, 75.915)
-
-[node name="street190" parent="NonPlayableArea/Street" unique_id=311592731 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -25.999235, 0.1, 75.915)
-
-[node name="street191" parent="NonPlayableArea/Street" unique_id=51497119 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -21.999235, 0.1, 75.915)
-
-[node name="street192" parent="NonPlayableArea/Street" unique_id=2001328588 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -17.999235, 0.1, 75.915)
-
-[node name="street193" parent="NonPlayableArea/Street" unique_id=270681292 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -13.999235, 0.015538551, 75.915)
-
-[node name="street194" parent="NonPlayableArea/Street" unique_id=531705684 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -9.999235, 0.015538551, 75.915)
-
-[node name="street195" parent="NonPlayableArea/Street" unique_id=71287268 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -33.999233, 0.1, 75.915)
-
-[node name="street196" parent="NonPlayableArea/Street" unique_id=2118733993 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 10.000766, 0.1, 75.915)
-
-[node name="street197" parent="NonPlayableArea/Street" unique_id=850224350 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 6.000766, 0.0070258155, 75.915)
-
-[node name="street198" parent="NonPlayableArea/Street" unique_id=2049803917 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 2.0007658, 0.0070258155, 75.915)
-
-[node name="street199" parent="NonPlayableArea/Street" unique_id=1145206481 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -1.9992342, 0.015538551, 75.915)
-
-[node name="street200" parent="NonPlayableArea/Street" unique_id=1350772484 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -5.9992347, 0.015538551, 75.915)
-
-[node name="street201" parent="NonPlayableArea/Street" unique_id=1758172011 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.000769, 0.1, 111.915)
-
-[node name="street202" parent="NonPlayableArea/Street" unique_id=198887682 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.000769, 0.1, 115.915)
-
-[node name="street203" parent="NonPlayableArea/Street" unique_id=860763433 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007687, 0.1, 107.915)
-
-[node name="street204" parent="NonPlayableArea/Street" unique_id=2011160543 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.000768, 0.015538551, 103.915)
-
-[node name="street205" parent="NonPlayableArea/Street" unique_id=1978521396 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.000768, 0.015538551, 99.915)
-
-[node name="street206" parent="NonPlayableArea/Street" unique_id=1474485701 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007677, 0.015538551, 95.915)
-
-[node name="street207" parent="NonPlayableArea/Street" unique_id=1338516308 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.000767, 0.015538551, 91.915)
-
-[node name="street208" parent="NonPlayableArea/Street" unique_id=767949277 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007715, 0.1, 139.915)
-
-[node name="street210" parent="NonPlayableArea/Street" unique_id=99434110 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.000771, 0.1, 135.915)
-
-[node name="street211" parent="NonPlayableArea/Street" unique_id=1452722199 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007706, 0.1, 131.915)
-
-[node name="street212" parent="NonPlayableArea/Street" unique_id=1827002884 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007706, 0.1, 127.915)
-
-[node name="street213" parent="NonPlayableArea/Street" unique_id=801653403 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.00077, 0.1, 123.915)
-
-[node name="street214" parent="NonPlayableArea/Street" unique_id=1494958083 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007696, 0.1, 119.915)
-
-[node name="street236" parent="NonPlayableArea/Street" unique_id=882415529 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007668, 0.015538551, 87.915)
-
-[node name="street237" parent="NonPlayableArea/Street" unique_id=1050757770 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007668, 0.015538551, 83.915)
-
-[node name="street238" parent="NonPlayableArea/Street" unique_id=31568540 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.0007663, 0.015538551, 81.915)
-
-[node name="street239" parent="NonPlayableArea/Street" unique_id=971068458 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 111.91499)
-
-[node name="street240" parent="NonPlayableArea/Street" unique_id=1304644333 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 115.915)
-
-[node name="street241" parent="NonPlayableArea/Street" unique_id=1274389913 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 107.91499)
-
-[node name="street242" parent="NonPlayableArea/Street" unique_id=1811430672 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 103.91499)
-
-[node name="street243" parent="NonPlayableArea/Street" unique_id=362180851 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 99.91499)
-
-[node name="street244" parent="NonPlayableArea/Street" unique_id=1837563049 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00077, 0.1, 95.91499)
-
-[node name="street245" parent="NonPlayableArea/Street" unique_id=197811812 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00077, 0.1, 91.91499)
-
-[node name="street246" parent="NonPlayableArea/Street" unique_id=1844962364 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 139.915)
-
-[node name="street248" parent="NonPlayableArea/Street" unique_id=1834855381 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 135.915)
-
-[node name="street249" parent="NonPlayableArea/Street" unique_id=34543129 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 131.915)
-
-[node name="street250" parent="NonPlayableArea/Street" unique_id=824680903 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 127.915)
-
-[node name="street251" parent="NonPlayableArea/Street" unique_id=1242889978 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 123.915)
-
-[node name="street252" parent="NonPlayableArea/Street" unique_id=2109913601 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.1, 119.915)
 
 [node name="street359" parent="NonPlayableArea/Street" unique_id=926257097 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00078, 0.032506898, -52.085007)
@@ -5960,12 +5522,6 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.0
 [node name="street395" parent="NonPlayableArea/Street" unique_id=1134573456 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.000786, 0.1, 71.91499)
 
-[node name="street396" parent="NonPlayableArea/Street" unique_id=120061399 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.000786, 0.1, 75.91499)
-
-[node name="street397" parent="NonPlayableArea/Street" unique_id=551485340 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.000786, 0.1, 77.91499)
-
 [node name="street389" parent="NonPlayableArea/Street" unique_id=1503212465 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.000786, 0.1, 55.914993)
 
@@ -5980,54 +5536,6 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.0
 
 [node name="street393" parent="NonPlayableArea/Street" unique_id=1997130729 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.000786, 0.1, 39.914993)
-
-[node name="street274" parent="NonPlayableArea/Street" unique_id=1549704992 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00077, 0.1, 87.91499)
-
-[node name="street275" parent="NonPlayableArea/Street" unique_id=527987626 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00077, 0.1, 83.91499)
-
-[node name="street276" parent="NonPlayableArea/Street" unique_id=800203350 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 76.00077, 0.1, 81.91499)
-
-[node name="street277" parent="NonPlayableArea/Street" unique_id=1079245335 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 111.91501)
-
-[node name="street278" parent="NonPlayableArea/Street" unique_id=964654476 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 115.915)
-
-[node name="street279" parent="NonPlayableArea/Street" unique_id=82497437 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 107.91501)
-
-[node name="street280" parent="NonPlayableArea/Street" unique_id=892060006 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 103.91501)
-
-[node name="street281" parent="NonPlayableArea/Street" unique_id=1224750382 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 99.91501)
-
-[node name="street282" parent="NonPlayableArea/Street" unique_id=1406605510 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 95.91501)
-
-[node name="street283" parent="NonPlayableArea/Street" unique_id=1842344181 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 91.91501)
-
-[node name="street284" parent="NonPlayableArea/Street" unique_id=1796734842 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 139.915)
-
-[node name="street286" parent="NonPlayableArea/Street" unique_id=1687623296 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 135.915)
-
-[node name="street287" parent="NonPlayableArea/Street" unique_id=516022187 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 131.915)
-
-[node name="street288" parent="NonPlayableArea/Street" unique_id=306035130 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 127.915)
-
-[node name="street289" parent="NonPlayableArea/Street" unique_id=2064496433 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 123.915)
-
-[node name="street290" parent="NonPlayableArea/Street" unique_id=1440526459 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 119.915)
 
 [node name="street315" parent="NonPlayableArea/Street" unique_id=2125742070 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.032506898, -48.08499)
@@ -6140,12 +5648,6 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.
 [node name="street356" parent="NonPlayableArea/Street" unique_id=2117885498 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.999214, 0.1, 71.91499)
 
-[node name="street357" parent="NonPlayableArea/Street" unique_id=1587651059 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.999214, 0.1, 75.91499)
-
-[node name="street358" parent="NonPlayableArea/Street" unique_id=663886838 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.999214, 0.1, 77.91499)
-
 [node name="street345" parent="NonPlayableArea/Street" unique_id=1501898574 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.999214, 0.1, 59.914993)
 
@@ -6160,153 +5662,6 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.
 
 [node name="street349" parent="NonPlayableArea/Street" unique_id=2109096368 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.999214, 0.1, 43.914993)
-
-[node name="street312" parent="NonPlayableArea/Street" unique_id=1208157873 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 87.91501)
-
-[node name="street313" parent="NonPlayableArea/Street" unique_id=1829051017 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 83.91501)
-
-[node name="street314" parent="NonPlayableArea/Street" unique_id=327665281 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 81.91501)
-
-[node name="street727" parent="NonPlayableArea/Street" unique_id=226943871 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -125.99924, 0.1, 75.915)
-
-[node name="street728" parent="NonPlayableArea/Street" unique_id=1213037371 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -121.99924, 0.1, 75.915)
-
-[node name="street729" parent="NonPlayableArea/Street" unique_id=285481326 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -117.99924, 0.1, 75.915)
-
-[node name="street730" parent="NonPlayableArea/Street" unique_id=828226765 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -113.99924, 0.1, 75.915)
-
-[node name="street731" parent="NonPlayableArea/Street" unique_id=9432417 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -109.99924, 0.1, 75.915)
-
-[node name="street732" parent="NonPlayableArea/Street" unique_id=155798762 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -105.99924, 0.1, 75.915)
-
-[node name="street733" parent="NonPlayableArea/Street" unique_id=1865196003 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -97.99924, 0.1, 75.915)
-
-[node name="street734" parent="NonPlayableArea/Street" unique_id=712247560 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -93.99924, 0.1, 75.91499)
-
-[node name="street735" parent="NonPlayableArea/Street" unique_id=1496591740 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -89.99924, 0.1, 75.91499)
-
-[node name="street736" parent="NonPlayableArea/Street" unique_id=477918162 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -85.99924, 0.1, 75.91499)
-
-[node name="street737" parent="NonPlayableArea/Street" unique_id=1794280195 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -81.99924, 0.1, 75.91499)
-
-[node name="street738" parent="NonPlayableArea/Street" unique_id=1449608736 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -77.99923, 0.1, 75.91499)
-
-[node name="street739" parent="NonPlayableArea/Street" unique_id=219210982 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -73.99923, 0.1, 75.91499)
-
-[node name="street740" parent="NonPlayableArea/Street" unique_id=200780554 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -101.99924, 0.1, 75.915)
-
-[node name="street798" parent="NonPlayableArea/Street" unique_id=1014165710 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 111.91499)
-
-[node name="street799" parent="NonPlayableArea/Street" unique_id=293956737 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 115.915)
-
-[node name="street800" parent="NonPlayableArea/Street" unique_id=1842135013 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 107.91499)
-
-[node name="street801" parent="NonPlayableArea/Street" unique_id=2140718768 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 103.91499)
-
-[node name="street802" parent="NonPlayableArea/Street" unique_id=505930604 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 99.91499)
-
-[node name="street803" parent="NonPlayableArea/Street" unique_id=2037941537 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 95.91499)
-
-[node name="street804" parent="NonPlayableArea/Street" unique_id=925249232 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 91.91499)
-
-[node name="street805" parent="NonPlayableArea/Street" unique_id=242861201 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 139.915)
-
-[node name="street807" parent="NonPlayableArea/Street" unique_id=1250176002 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 135.915)
-
-[node name="street808" parent="NonPlayableArea/Street" unique_id=855414198 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 131.915)
-
-[node name="street809" parent="NonPlayableArea/Street" unique_id=683004827 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 127.915)
-
-[node name="street810" parent="NonPlayableArea/Street" unique_id=101161779 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 123.915)
-
-[node name="street811" parent="NonPlayableArea/Street" unique_id=339251385 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99922, 0.1, 119.915)
-
-[node name="street833" parent="NonPlayableArea/Street" unique_id=1570222286 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.999214, 0.1, 75.91499)
-
-[node name="street834" parent="NonPlayableArea/Street" unique_id=1701257101 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.999214, 0.1, 77.91499)
-
-[node name="street835" parent="NonPlayableArea/Street" unique_id=1962974721 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 87.91499)
-
-[node name="street836" parent="NonPlayableArea/Street" unique_id=1667289194 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 83.91499)
-
-[node name="street837" parent="NonPlayableArea/Street" unique_id=40010322 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -67.99923, 0.1, 81.91499)
-
-[node name="street1055" parent="NonPlayableArea/Street" unique_id=1338446000 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -77.879166, 0.1, 75.85257)
-
-[node name="street1056" parent="NonPlayableArea/Street" unique_id=1562169486 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -73.879166, 0.1, 75.85257)
-
-[node name="street1057" parent="NonPlayableArea/Street" unique_id=1903844384 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -81.879166, 0.1, 75.85257)
-
-[node name="street1058" parent="NonPlayableArea/Street" unique_id=1955271426 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -85.879166, 0.1, 75.85257)
-
-[node name="street1059" parent="NonPlayableArea/Street" unique_id=1418303155 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -89.879166, 0.1, 75.85257)
-
-[node name="street1060" parent="NonPlayableArea/Street" unique_id=1919617330 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -93.879166, 0.1, 75.85257)
-
-[node name="street1061" parent="NonPlayableArea/Street" unique_id=1223578905 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -97.879166, 0.1, 75.85257)
-
-[node name="street1062" parent="NonPlayableArea/Street" unique_id=1552525624 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -105.879166, 0.1, 75.85257)
-
-[node name="street1063" parent="NonPlayableArea/Street" unique_id=1302758044 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -109.879166, 0.1, 75.85257)
-
-[node name="street1064" parent="NonPlayableArea/Street" unique_id=205324160 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -113.879166, 0.1, 75.85257)
-
-[node name="street1065" parent="NonPlayableArea/Street" unique_id=733945553 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -117.879166, 0.1, 75.85257)
-
-[node name="street1066" parent="NonPlayableArea/Street" unique_id=1745349426 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -121.879166, 0.1, 75.85257)
-
-[node name="street1067" parent="NonPlayableArea/Street" unique_id=1063119505 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -125.879166, 0.1, 75.85257)
-
-[node name="street1068" parent="NonPlayableArea/Street" unique_id=1973542029 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -101.879166, 0.1, 75.85257)
 
 [node name="street1152" parent="NonPlayableArea/Street" unique_id=1821763893 instance=ExtResource("6_15euc")]
 transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.87919, 0.1, 39.852577)
@@ -6413,48 +5768,6 @@ transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.
 [node name="street1186" parent="NonPlayableArea/Street" unique_id=1337309349 instance=ExtResource("6_15euc")]
 transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.87921, 0.032506898, -52.14741)
 
-[node name="street1205" parent="NonPlayableArea/Street" unique_id=921516283 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -77.90898, 0.032506898, -92.08359)
-
-[node name="street1206" parent="NonPlayableArea/Street" unique_id=72075226 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -73.90898, 0.032506898, -92.08359)
-
-[node name="street1207" parent="NonPlayableArea/Street" unique_id=1880232704 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -81.90898, 0.032506898, -92.08359)
-
-[node name="street1208" parent="NonPlayableArea/Street" unique_id=286089440 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -85.90898, 0.032506898, -92.08359)
-
-[node name="street1209" parent="NonPlayableArea/Street" unique_id=1392885332 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -89.90898, 0.032506898, -92.08359)
-
-[node name="street1210" parent="NonPlayableArea/Street" unique_id=1918009178 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -93.90898, 0.032506898, -92.08358)
-
-[node name="street1211" parent="NonPlayableArea/Street" unique_id=2131254259 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -97.90898, 0.032506898, -92.08358)
-
-[node name="street1212" parent="NonPlayableArea/Street" unique_id=1662247435 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -105.90898, 0.032506898, -92.08358)
-
-[node name="street1213" parent="NonPlayableArea/Street" unique_id=334970110 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -109.90898, 0.032506898, -92.08358)
-
-[node name="street1214" parent="NonPlayableArea/Street" unique_id=1675721007 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -113.90898, 0.032506898, -92.08358)
-
-[node name="street1215" parent="NonPlayableArea/Street" unique_id=1140920586 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -117.90898, 0.032506898, -92.08358)
-
-[node name="street1216" parent="NonPlayableArea/Street" unique_id=1397424084 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -121.90898, 0.032506898, -92.08358)
-
-[node name="street1217" parent="NonPlayableArea/Street" unique_id=860824275 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -125.90898, 0.032506898, -92.08358)
-
-[node name="street1218" parent="NonPlayableArea/Street" unique_id=1767711720 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -101.90898, 0.032506898, -92.08358)
-
 [node name="street1300" parent="NonPlayableArea/Street" unique_id=204241223 instance=ExtResource("6_15euc")]
 transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.90899, 0.032506898, -128.08359)
 
@@ -6509,18 +5822,6 @@ transform = Transform3D(-1, 0, -2.6226832e-07, 0, 1, 0, 2.6226832e-07, 0, -1, -6
 [node name="street1340" parent="NonPlayableArea/Street" unique_id=436054533 instance=ExtResource("6_15euc")]
 transform = Transform3D(-1, 0, -2.6226832e-07, 0, 1, 0, 2.6226832e-07, 0, -1, -67.9082, 0.032506898, -88.16861)
 
-[node name="street1341" parent="NonPlayableArea/Street" unique_id=248247573 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -2.6226832e-07, 0, 1, 0, 2.6226832e-07, 0, -1, -67.9082, 0.032506898, -92.16861)
-
-[node name="street1342" parent="NonPlayableArea/Street" unique_id=2030863571 instance=ExtResource("6_15euc")]
-transform = Transform3D(-1, 0, -2.6226832e-07, 0, 1, 0, 2.6226832e-07, 0, -1, -67.9082, 0.032506898, -94.16861)
-
-[node name="street1349" parent="NonPlayableArea/Street" unique_id=551013904 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.879196, 0.1, 75.852585)
-
-[node name="street1350" parent="NonPlayableArea/Street" unique_id=653445276 instance=ExtResource("6_15euc")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.879196, 0.1, 73.852585)
-
 [node name="street1351" parent="NonPlayableArea/Street" unique_id=1109586025 instance=ExtResource("6_15euc")]
 transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.879166, 0.1, 63.85257)
 
@@ -6530,131 +5831,11 @@ transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.
 [node name="street1353" parent="NonPlayableArea/Street" unique_id=1798691008 instance=ExtResource("6_15euc")]
 transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -67.879166, 0.1, 69.85257)
 
-[node name="street1668" parent="NonPlayableArea/Street" unique_id=225124393 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 86.00076, 0.1, 75.91501)
-
-[node name="street1669" parent="NonPlayableArea/Street" unique_id=1860561615 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 82.00076, 0.1, 75.91501)
-
-[node name="street1670" parent="NonPlayableArea/Street" unique_id=1345557934 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 90.00076, 0.1, 75.91501)
-
-[node name="street1671" parent="NonPlayableArea/Street" unique_id=92852868 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 94.00076, 0.1, 75.91501)
-
-[node name="street1672" parent="NonPlayableArea/Street" unique_id=175674409 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 98.00076, 0.1, 75.91501)
-
-[node name="street1673" parent="NonPlayableArea/Street" unique_id=474936714 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 102.00076, 0.1, 75.91501)
-
-[node name="street1674" parent="NonPlayableArea/Street" unique_id=627124757 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 106.00076, 0.1, 75.915)
-
-[node name="street1675" parent="NonPlayableArea/Street" unique_id=107993934 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 114.00076, 0.1, 75.915)
-
-[node name="street1676" parent="NonPlayableArea/Street" unique_id=2120261321 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 118.00076, 0.1, 75.915)
-
-[node name="street1677" parent="NonPlayableArea/Street" unique_id=1637565487 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 122.00076, 0.1, 75.915)
-
-[node name="street1678" parent="NonPlayableArea/Street" unique_id=735600391 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 126.00076, 0.1, 75.915)
-
-[node name="street1679" parent="NonPlayableArea/Street" unique_id=1295573309 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 130.00076, 0.1, 75.915)
-
-[node name="street1680" parent="NonPlayableArea/Street" unique_id=881687896 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 134.00076, 0.1, 75.915)
-
-[node name="street1681" parent="NonPlayableArea/Street" unique_id=178311908 instance=ExtResource("6_15euc")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 110.00076, 0.1, 75.915)
-
 [node name="street1696" parent="NonPlayableArea/Street" unique_id=2072383384 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 134.12083, 0.1, 75.85257)
+transform = Transform3D(-1.6292068e-07, 0, 90, 0, 1, 0, -1, 0, -1.4662862e-05, 4.0147552, 0.1, 75.85257)
 
-[node name="street1697" parent="NonPlayableArea/Street" unique_id=274810605 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 130.12083, 0.1, 75.85257)
-
-[node name="street1698" parent="NonPlayableArea/Street" unique_id=2045687939 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 126.120834, 0.1, 75.85257)
-
-[node name="street1699" parent="NonPlayableArea/Street" unique_id=931728860 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 122.120834, 0.1, 75.85257)
-
-[node name="street1700" parent="NonPlayableArea/Street" unique_id=587607803 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 118.120834, 0.1, 75.85257)
-
-[node name="street1701" parent="NonPlayableArea/Street" unique_id=328415903 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 114.120834, 0.1, 75.85257)
-
-[node name="street1702" parent="NonPlayableArea/Street" unique_id=322067373 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 106.120834, 0.1, 75.85257)
-
-[node name="street1703" parent="NonPlayableArea/Street" unique_id=1363620126 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 102.120834, 0.1, 75.852585)
-
-[node name="street1704" parent="NonPlayableArea/Street" unique_id=51383542 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 98.120834, 0.1, 75.852585)
-
-[node name="street1705" parent="NonPlayableArea/Street" unique_id=1029355052 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 94.120834, 0.1, 75.852585)
-
-[node name="street1706" parent="NonPlayableArea/Street" unique_id=612595971 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 90.120834, 0.1, 75.852585)
-
-[node name="street1707" parent="NonPlayableArea/Street" unique_id=110642872 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 86.12082, 0.1, 75.852585)
-
-[node name="street1708" parent="NonPlayableArea/Street" unique_id=1613640521 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 82.12082, 0.1, 75.852585)
-
-[node name="street1709" parent="NonPlayableArea/Street" unique_id=1996251509 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 110.120834, 0.1, 75.85257)
-
-[node name="street1710" parent="NonPlayableArea/Street" unique_id=1092276589 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 134.09102, 0.032506898, -92.08358)
-
-[node name="street1711" parent="NonPlayableArea/Street" unique_id=807739301 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 130.09102, 0.032506898, -92.08358)
-
-[node name="street1712" parent="NonPlayableArea/Street" unique_id=1637396834 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 126.09102, 0.032506898, -92.08358)
-
-[node name="street1713" parent="NonPlayableArea/Street" unique_id=184276681 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 122.09102, 0.032506898, -92.08358)
-
-[node name="street1714" parent="NonPlayableArea/Street" unique_id=1150335553 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 118.09102, 0.032506898, -92.08358)
-
-[node name="street1715" parent="NonPlayableArea/Street" unique_id=2012384961 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 114.09102, 0.032506898, -92.08358)
-
-[node name="street1716" parent="NonPlayableArea/Street" unique_id=1397223351 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 106.09102, 0.032506898, -92.08357)
-
-[node name="street1717" parent="NonPlayableArea/Street" unique_id=655001003 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 102.09102, 0.032506898, -92.08357)
-
-[node name="street1718" parent="NonPlayableArea/Street" unique_id=2114098180 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 98.09102, 0.032506898, -92.08357)
-
-[node name="street1719" parent="NonPlayableArea/Street" unique_id=558836161 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 94.09102, 0.032506898, -92.08357)
-
-[node name="street1720" parent="NonPlayableArea/Street" unique_id=268745975 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 90.09102, 0.032506898, -92.08357)
-
-[node name="street1721" parent="NonPlayableArea/Street" unique_id=241527098 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 86.09102, 0.032506898, -92.08357)
-
-[node name="street1722" parent="NonPlayableArea/Street" unique_id=1207328713 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 82.091034, 0.032506898, -92.08357)
-
-[node name="street1723" parent="NonPlayableArea/Street" unique_id=235040057 instance=ExtResource("6_15euc")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 110.09102, 0.032506898, -92.08358)
+[node name="street1697" parent="NonPlayableArea/Street" unique_id=454743269 instance=ExtResource("6_15euc")]
+transform = Transform3D(-1.6292068e-07, 0, 90, 0, 1, 0, -1, 0, -1.4662862e-05, 4.0147552, 0.1, -92.14743)
 
 [node name="Sidewalk" type="Node3D" parent="NonPlayableArea" unique_id=2111956512]
 
@@ -7234,18 +6415,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34, 0.032506898, -83)
 [node name="sidewalk410" parent="NonPlayableArea/Sidewalk" unique_id=1245100935 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34, 0.032506898, -87)
 
-[node name="sidewalk437" parent="NonPlayableArea/Sidewalk" unique_id=1868687821 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 66, 0.032506898, -83)
-
-[node name="sidewalk438" parent="NonPlayableArea/Sidewalk" unique_id=1343432309 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 66, 0.032506898, -87)
-
-[node name="sidewalk759" parent="NonPlayableArea/Sidewalk" unique_id=1718014349 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 71, 0.032506898, -84)
-
-[node name="sidewalk760" parent="NonPlayableArea/Sidewalk" unique_id=1046326796 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 0.032506898, -87)
-
 [node name="sidewalk441" parent="NonPlayableArea/Sidewalk" unique_id=1157338050 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 62, 0.032506898, -83)
 
@@ -7461,18 +6630,6 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 9.00
 
 [node name="sidewalk1688" parent="NonPlayableArea/Sidewalk" unique_id=374981197 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 9.000767, 0.032506898, -80.08499)
-
-[node name="sidewalk1689" parent="NonPlayableArea/Sidewalk" unique_id=546463700 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 71.00076, 0.032506898, -76.085)
-
-[node name="sidewalk1690" parent="NonPlayableArea/Sidewalk" unique_id=781986442 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 71.00076, 0.032506898, -80.085)
-
-[node name="sidewalk1691" parent="NonPlayableArea/Sidewalk" unique_id=1876625622 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 67.00076, 0.032506898, -76.08499)
-
-[node name="sidewalk1692" parent="NonPlayableArea/Sidewalk" unique_id=2056669013 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 67.00076, 0.032506898, -80.08499)
 
 [node name="sidewalk1443" parent="NonPlayableArea/Sidewalk" unique_id=142996742 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -58.99923, 0, -20.085007)
@@ -8233,24 +7390,6 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 58.0
 [node name="sidewalk1340" parent="NonPlayableArea/Sidewalk" unique_id=420948613 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 58.000763, 0.1, 70.91499)
 
-[node name="sidewalk1343" parent="NonPlayableArea/Sidewalk" unique_id=305374832 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 62.000763, 0.1, 66.91499)
-
-[node name="sidewalk1344" parent="NonPlayableArea/Sidewalk" unique_id=1287076291 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 62.000763, 0.1, 70.91499)
-
-[node name="sidewalk1347" parent="NonPlayableArea/Sidewalk" unique_id=2001069999 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 66.00076, 0.1, 66.91499)
-
-[node name="sidewalk1348" parent="NonPlayableArea/Sidewalk" unique_id=383339171 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 66.00076, 0.1, 70.91499)
-
-[node name="sidewalk1349" parent="NonPlayableArea/Sidewalk" unique_id=55442940 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, 71.00077, 0.1, 67.91499)
-
-[node name="sidewalk1350" parent="NonPlayableArea/Sidewalk" unique_id=1501416138 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 70.00077, 0.1, 70.91499)
-
 [node name="sidewalk1354" parent="NonPlayableArea/Sidewalk" unique_id=536702088 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 42.000763, 0.1, 66.915)
 
@@ -8421,9 +7560,6 @@ transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -72.
 
 [node name="sidewalk4550" parent="NonPlayableArea/Sidewalk" unique_id=1261835281 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -72.879166, 0.1, 63.85257)
-
-[node name="sidewalk4551" parent="NonPlayableArea/Sidewalk" unique_id=603663724 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -72.879166, 0.1, 67.85257)
 
 [node name="sidewalk4552" parent="NonPlayableArea/Sidewalk" unique_id=2046265140 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -76.87917, 0, 11.852592)
@@ -8737,92 +7873,11 @@ transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -74.
 [node name="sidewalk4655" parent="NonPlayableArea/Sidewalk" unique_id=1434163000 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -72.879196, 0.032506898, -52.14741)
 
-[node name="sidewalk5394" parent="NonPlayableArea/Sidewalk" unique_id=1864168946 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -77.90898, 0.032506898, -83.08359)
-
-[node name="sidewalk5395" parent="NonPlayableArea/Sidewalk" unique_id=1269560255 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -77.90898, 0.032506898, -87.08359)
-
-[node name="sidewalk5396" parent="NonPlayableArea/Sidewalk" unique_id=1213244907 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, -72.90898, 0.032506898, -84.08359)
-
-[node name="sidewalk5397" parent="NonPlayableArea/Sidewalk" unique_id=501807143 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -73.90898, 0.032506898, -87.08359)
-
-[node name="sidewalk5401" parent="NonPlayableArea/Sidewalk" unique_id=1675348200 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -81.90898, 0.032506898, -83.08359)
-
-[node name="sidewalk5402" parent="NonPlayableArea/Sidewalk" unique_id=274266396 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -81.90898, 0.032506898, -87.08359)
-
-[node name="sidewalk5405" parent="NonPlayableArea/Sidewalk" unique_id=247641662 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -85.90898, 0.032506898, -83.08359)
-
-[node name="sidewalk5406" parent="NonPlayableArea/Sidewalk" unique_id=1936909601 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -85.90898, 0.032506898, -87.08359)
-
-[node name="sidewalk5409" parent="NonPlayableArea/Sidewalk" unique_id=837029106 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -89.90898, 0.032506898, -83.08358)
-
-[node name="sidewalk5410" parent="NonPlayableArea/Sidewalk" unique_id=262057174 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -89.90898, 0.032506898, -87.08358)
-
-[node name="sidewalk5413" parent="NonPlayableArea/Sidewalk" unique_id=718328839 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -93.90898, 0.032506898, -83.08358)
-
-[node name="sidewalk5414" parent="NonPlayableArea/Sidewalk" unique_id=1495612858 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -93.90898, 0.032506898, -87.08358)
-
-[node name="sidewalk5417" parent="NonPlayableArea/Sidewalk" unique_id=290700960 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -97.90898, 0.032506898, -83.08358)
-
-[node name="sidewalk5418" parent="NonPlayableArea/Sidewalk" unique_id=1691971156 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -97.90898, 0.032506898, -87.08358)
-
 [node name="sidewalk5455" parent="NonPlayableArea/Sidewalk" unique_id=1888882592 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(3.059797e-07, 0, -1, 0, 1, 0, 1, 0, 3.059797e-07, -76.90802, 0.032506898, -80.16647)
 
 [node name="sidewalk5456" parent="NonPlayableArea/Sidewalk" unique_id=1718742228 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(3.059797e-07, 0, -1, 0, 1, 0, 1, 0, 3.059797e-07, -72.90802, 0.032506898, -80.16647)
-
-[node name="sidewalk5486" parent="NonPlayableArea/Sidewalk" unique_id=1301182690 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -77.879166, 0.1, 70.85257)
-
-[node name="sidewalk5487" parent="NonPlayableArea/Sidewalk" unique_id=111740003 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -73.879166, 0.1, 70.85257)
-
-[node name="sidewalk5488" parent="NonPlayableArea/Sidewalk" unique_id=1424151067 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -77.879166, 0.1, 66.85257)
-
-[node name="sidewalk5489" parent="NonPlayableArea/Sidewalk" unique_id=951888969 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -81.879166, 0.1, 70.85257)
-
-[node name="sidewalk5490" parent="NonPlayableArea/Sidewalk" unique_id=399214729 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -81.879166, 0.1, 66.85257)
-
-[node name="sidewalk5491" parent="NonPlayableArea/Sidewalk" unique_id=167339577 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -85.879166, 0.1, 70.85257)
-
-[node name="sidewalk5492" parent="NonPlayableArea/Sidewalk" unique_id=328997614 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -85.879166, 0.1, 66.85257)
-
-[node name="sidewalk5493" parent="NonPlayableArea/Sidewalk" unique_id=274137877 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -89.879166, 0.1, 70.85257)
-
-[node name="sidewalk5494" parent="NonPlayableArea/Sidewalk" unique_id=1903647204 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -89.879166, 0.1, 66.85257)
-
-[node name="sidewalk5495" parent="NonPlayableArea/Sidewalk" unique_id=297255651 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -93.879166, 0.1, 70.85257)
-
-[node name="sidewalk5496" parent="NonPlayableArea/Sidewalk" unique_id=1866572649 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -93.879166, 0.1, 66.85257)
-
-[node name="sidewalk5497" parent="NonPlayableArea/Sidewalk" unique_id=1763680183 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -97.879166, 0.1, 70.85257)
-
-[node name="sidewalk5498" parent="NonPlayableArea/Sidewalk" unique_id=1663198089 instance=ExtResource("8_mjyjd")]
-transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, -97.879166, 0.1, 66.85257)
 
 [node name="sidewalk7243" parent="NonPlayableArea/Sidewalk" unique_id=428858907 instance=ExtResource("8_mjyjd")]
 transform = Transform3D(-2.1855693e-07, 0, 1, 0, 1, 0, -1, 0, -2.1855693e-07, 85.120605, 0.032506898, -52.149536)
@@ -9426,10 +8481,10 @@ transform = Transform3D(-5.3642207e-08, 0, -0.5, 0, 0.5, 0, 0.5, 0, -5.3642207e-
 [node name="Vehicles" type="Node3D" parent="NonPlayableArea" unique_id=1850056094]
 
 [node name="pickup truck" parent="NonPlayableArea/Vehicles" unique_id=72104086 instance=ExtResource("21_kyhvj")]
-transform = Transform3D(0.29868278, 0, -0.028082062, 0, 0.3, 0, 0.028082062, 0, 0.29868278, -6, 1.9412189, -52.62195)
+transform = Transform3D(0.29868278, 0, -0.028082062, 0, 0.3, 0, 0.028082062, 0, 0.29868278, -10.342754, 1.9412189, -52.62195)
 
 [node name="pickup truck11" parent="NonPlayableArea/Vehicles" unique_id=842215514 instance=ExtResource("21_kyhvj")]
-transform = Transform3D(0.29868278, 0, -0.028082062, 0, 0.3, 0, 0.028082062, 0, 0.29868278, -8.062759, 1.9087119, 31.564854)
+transform = Transform3D(0.29868278, 0, -0.028082062, 0, 0.3, 0, 0.028082062, 0, 0.29868278, -11.577907, 1.9087119, 31.564854)
 
 [node name="pickup truck6" parent="NonPlayableArea/Vehicles" unique_id=880296569 instance=ExtResource("21_kyhvj")]
 transform = Transform3D(0.29868278, 0, -0.028082062, 0, 0.3, 0, 0.028082062, 0, 0.29868278, -6, 1.9412189, -142.62195)
@@ -9444,16 +8499,16 @@ transform = Transform3D(0.299498, 0, -0.017348334, 0, 0.3, 0, 0.017348334, 0, 0.
 transform = Transform3D(0.299498, 0, -0.017348334, 0, 0.3, 0, 0.017348334, 0, 0.299498, -6, 1.9087119, 163)
 
 [node name="pickup truck3" parent="NonPlayableArea/Vehicles" unique_id=402319060 instance=ExtResource("21_kyhvj")]
-transform = Transform3D(-0.29991198, 0, -0.0072677634, 0, 0.3, 0, 0.0072677634, 0, -0.29991198, 16.278713, 1.9087119, 18)
+transform = Transform3D(-0.29991198, 0, -0.0072677634, 0, 0.3, 0, 0.0072677634, 0, -0.29991198, 17.08276, 1.9087119, 18)
 
 [node name="pickup truck8" parent="NonPlayableArea/Vehicles" unique_id=161175313 instance=ExtResource("21_kyhvj")]
-transform = Transform3D(-0.29991198, 0, -0.0072677634, 0, 0.3, 0, 0.0072677634, 0, -0.29991198, 15.792188, 1.9087119, 94)
+transform = Transform3D(-0.29991198, 0, -0.0072677634, 0, 0.3, 0, 0.0072677634, 0, -0.29991198, 18.2966, 1.9087119, 94)
 
 [node name="pickup truck9" parent="NonPlayableArea/Vehicles" unique_id=464179503 instance=ExtResource("21_kyhvj")]
 transform = Transform3D(-0.29991198, 0, -0.0072677634, 0, 0.3, 0, 0.0072677634, 0, -0.29991198, 13.8, 1.9087119, 150)
 
 [node name="pickup truck5" parent="NonPlayableArea/Vehicles" unique_id=74828479 instance=ExtResource("21_kyhvj")]
-transform = Transform3D(-0.29672292, 0, -0.04422123, 0, 0.3, 0, 0.04422123, 0, -0.29672292, 16.774426, 1.9412189, -67)
+transform = Transform3D(-0.29672292, 0, -0.04422123, 0, 0.3, 0, 0.04422123, 0, -0.29672292, 18.23124, 1.9412189, -67)
 
 [node name="pickup truck7" parent="NonPlayableArea/Vehicles" unique_id=1924600285 instance=ExtResource("21_kyhvj")]
 transform = Transform3D(-0.29805762, 0, 0.03408312, 0, 0.3, 0, -0.03408312, 0, -0.29805762, 13.8, 1.9412189, -154)
@@ -9700,6 +8755,7 @@ bone_idx = 4
 
 [node name="LeftEyeMale" type="MeshInstance3D" parent="Grass/NPC/man/Armature/Skeleton3D/Head" unique_id=1970188787]
 transform = Transform3D(0.30564013, 0, 0, 0, 0.30564013, 0, 0, 0, 0.30564013, 0.49693987, 1.7207661, 1.3990625)
+gi_mode = 2
 mesh = SubResource("ArrayMesh_l7u6r")
 
 [node name="Marker3D" type="Marker3D" parent="Grass/NPC/man/Armature/Skeleton3D/Head/LeftEyeMale" unique_id=1949522146]
@@ -9707,6 +8763,7 @@ transform = Transform3D(3.2718217, 0, 0, 0, 3.2718217, 0, 0, 0, 3.2718217, -0.00
 
 [node name="RightEyeMale" type="MeshInstance3D" parent="Grass/NPC/man/Armature/Skeleton3D/Head" unique_id=376396660]
 transform = Transform3D(0.30564013, 0, 0, 0, 0.30564013, 0, 0, 0, 0.30564013, -0.50306016, 1.7207661, 1.3990625)
+gi_mode = 2
 mesh = SubResource("ArrayMesh_16xex")
 
 [node name="Marker3D" type="Marker3D" parent="Grass/NPC/man/Armature/Skeleton3D/Head/RightEyeMale" unique_id=1676643000]
@@ -9771,6 +8828,7 @@ visible = false
 visible = false
 
 [node name="MaleMesh" type="MeshInstance3D" parent="Grass/NPC/man/Armature/Skeleton3D" unique_id=1909113374]
+gi_mode = 2
 mesh = SubResource("ArrayMesh_sva0g")
 skin = SubResource("Skin_27xht")
 skeleton = NodePath("..")
@@ -9800,10 +8858,12 @@ script = ExtResource("46_myl1y")
 visible = false
 
 [node name="Cup" type="MeshInstance3D" parent="Grass/NPC/Cup/Model" unique_id=727562262]
+gi_mode = 2
 mesh = SubResource("ArrayMesh_ux7dx")
 
 [node name="Fill" type="MeshInstance3D" parent="Grass/NPC/Cup/Model" unique_id=437502802]
 transform = Transform3D(1.0329157, 0, 0, 0, 1.0329157, 0, 0, 0, 1.0329157, 0, -0.117733896, 0)
+gi_mode = 2
 mesh = SubResource("ArrayMesh_c4p11")
 
 [node name="Physics" type="StaticBody3D" parent="Grass/NPC/Cup" unique_id=707460190]
@@ -9822,6 +8882,7 @@ omni_range = 4.798807
 
 [node name="MeshInstance3D6" type="MeshInstance3D" parent="Grass" unique_id=391908480]
 transform = Transform3D(-0.08997229, -0.019288015, 0.03915309, -0.038955387, -0.0049697254, -0.091966175, 0.019684222, -0.097996324, -0.0030423375, -1052.1968, 5.589947, 740.08295)
+gi_mode = 2
 mesh = SubResource("PlaneMesh_82f87")
 
 [node name="GrassPatchFront18" type="MultiMeshInstance3D" parent="Grass" unique_id=1208437596]

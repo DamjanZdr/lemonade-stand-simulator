@@ -149,6 +149,9 @@ var _day_intro_dim_panel: ColorRect = null
 # transition completes. Used by _on_menu_new_stand so the loading
 # transition plays before the lobby is created.
 var _host_after_transition: bool = false
+# Deferred save/mode apply — consumed at the whip's snap point (max
+# blur, camera away) so object respawn and layout swaps are hidden.
+var _pending_apply: Callable = Callable()
 var _transition_tween: Tween = null
 var _transition_blur_tween: Tween = null
 const TRANSITION_WHIP_TIME: float = 0.5
@@ -346,6 +349,13 @@ func _apply_player_house_colors() -> void:
 			roof if roof is Color else Color.TRANSPARENT,
 			fence_band,
 		)
+	# Kill specular reflections on player-house surfaces — some ship at
+	# roughness 0.5 and read as plastic shine under the sun. Surface 11 is
+	# exempt (glossy accent the user wants to keep).
+	for house_name in [&"player_house", &"player_house2"]:
+		var house := neighborhood.find_child(String(house_name), true, false)
+		if house != null:
+			_set_surfaces_rough_except(house, 11)
 
 
 func _set_stand2_name() -> void:
@@ -551,36 +561,35 @@ func _set_systems_paused(paused: bool) -> void:
 func _on_menu_play() -> void:
 	# If the player already selected a save in the saves panel, host that one.
 	# Otherwise fall back to the most recently saved slot.
-	if SaveManager.has_save():
-		SaveManager.load_existing_game(SaveManager.current_slot)
-		LobbyManager.game_mode = GameState.game_mode
-		_apply_game_mode_layout()
-		NetworkManager.host_game()
-		return
-	var saves := SaveManager.list_saves()
-	if not saves.is_empty():
-		var latest: Dictionary = saves[0]
-		var slot: String = latest.get("slot", "")
-		if slot != "":
+	var slot := SaveManager.current_slot if SaveManager.has_save() else ""
+	if slot == "":
+		var saves := SaveManager.list_saves()
+		if not saves.is_empty():
+			slot = saves[0].get("slot", "")
+	if slot != "":
+		# Defer the apply to the whip's snap point so the world swap
+		# is hidden by the blur — then host once it finishes.
+		_pending_apply = func():
 			SaveManager.load_existing_game(slot)
 			LobbyManager.game_mode = GameState.game_mode
 			_apply_game_mode_layout()
-			NetworkManager.host_game()
-			_world_menu.hide_menu()
-			return
+		_host_after_transition = true
+		_start_stand_transition(slot, slot)
+		return
 	# No saves — prompt for a stand name.
 	_world_menu.show_name_entry()
 
 
 ## New stand created from the saves panel name dialog.
 func _on_menu_new_stand(stand_name: String, game_mode: int) -> void:
-	SaveManager.start_new_game(stand_name, game_mode)
-	LobbyManager.game_mode = GameState.normalize_game_mode(game_mode)
-	_apply_game_mode_layout()
-	# Use the same whip loading transition as _on_menu_load_stand so
-	# the player sees the "Loading..." feedback instead of an instant
-	# menu hide. host_game() is deferred to _finish_transition so the
-	# lobby transition doesn't conflict with the whip camera tween.
+	# Defer the new-game apply to the whip's snap point so the world
+	# reset is hidden by the blur. host_game() is deferred to
+	# _finish_transition so the lobby transition doesn't conflict with
+	# the whip camera tween.
+	_pending_apply = func():
+		SaveManager.start_new_game(stand_name, game_mode)
+		LobbyManager.game_mode = GameState.normalize_game_mode(game_mode)
+		_apply_game_mode_layout()
 	_host_after_transition = true
 	_start_stand_transition(stand_name, stand_name)
 
@@ -593,10 +602,18 @@ func _on_menu_load_stand(slot_name: String) -> void:
 		if s.get("slot", "") == slot_name:
 			stand_name = s.get("stand_name", slot_name)
 			break
-	SaveManager.load_existing_game(slot_name)
-	LobbyManager.game_mode = GameState.game_mode
-	_apply_game_mode_layout()
-	_start_stand_transition(slot_name, stand_name)
+	# Defer the apply to the whip's snap point (max blur) so objects
+	# respawn out of sight. If a transition is already running, apply
+	# immediately — the camera is mid-flight anyway.
+	var apply := func():
+		SaveManager.load_existing_game(slot_name)
+		LobbyManager.game_mode = GameState.game_mode
+		_apply_game_mode_layout()
+	if _transition_active:
+		apply.call()
+	else:
+		_pending_apply = apply
+		_start_stand_transition(slot_name, stand_name)
 
 
 ## Host button (from Saves panel): a save was selected, host a new game.
@@ -700,6 +717,13 @@ func _do_transition_whip() -> void:
 		func():
 			# Snap to Start position (keep rotation).
 			main_menu_camera.global_position = stand_change_cam_start.global_position
+			# Apply the pending save/mode change while the screen is
+			# fully blurred and the camera is on the far side — the
+			# world mutates where the player can't see it.
+			if _pending_apply.is_valid():
+				var apply := _pending_apply
+				_pending_apply = Callable()
+				apply.call()
 			print("[Transition] SNAP to Start, pos=%s" % main_menu_camera.global_position)
 			# Blur out slightly.
 			_tween_blur(0.3, TRANSITION_SETTLE_TIME * 0.3)
@@ -2391,11 +2415,22 @@ func _enable_enhanced_lighting(level: int = 3) -> void:
 		env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 		env.tonemap_white = 5.0
 		env.tonemap_exposure = 1.0
-		env.glow_enabled = false
-		# Very low ambient so shadows are actually dark
+		# Glow stays at whatever the graphics preset chose — this used to
+		# force it off, which is why streetlights only bloomed on Low.
+		env.glow_enabled = SettingsManager.GRAPHICS_PRESETS[
+			SettingsManager.get_graphics_quality()
+		]["glow"]
+		# Very low ambient so shadows are actually dark — but only where
+		# VoxelGI (level 2+) actually supplies the missing bounce light.
+		# On Medium there's no runtime GI, so keep a warm ambient floor
+		# or unbaked surfaces go almost black.
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_color = Color(0.18, 0.18, 0.20, 1)
-		env.ambient_light_sky_contribution = 0.4
+		if level >= 2:
+			env.ambient_light_color = Color(0.18, 0.18, 0.20, 1)
+			env.ambient_light_sky_contribution = 0.4
+		else:
+			env.ambient_light_color = Color(0.35, 0.35, 0.38, 1)
+			env.ambient_light_sky_contribution = 0.6
 		# Volumetric fog only on High+ — it costs every frame
 		env.volumetric_fog_density = 0.002 if level >= 2 else 0.001
 		env.volumetric_fog_length = 64.0 if level >= 2 else 333.13
@@ -2415,27 +2450,32 @@ func _enable_enhanced_lighting(level: int = 3) -> void:
 		sun.directional_shadow_split_3 = 0.6
 		sun.directional_shadow_blend_splits = true
 		sun.directional_shadow_fade_start = 0.9
-		sun.directional_shadow_max_distance = [30.0, 45.0, 60.0][level - 1]
-	# Kill the fill light — we want dark shadows, not flat fill
+		sun.directional_shadow_max_distance = [45.0, 45.0, 60.0][level - 1]
+	# Kill the fill light on tiers with VoxelGI — we want dark shadows,
+	# not flat fill. On Medium keep it: no runtime GI means the fill is
+	# the only thing stopping unbaked surfaces from going black.
 	var fill := world.find_child("FillLight", true, false) as DirectionalLight3D
 	if fill:
 		if _orig_fill_energy < 0.0:
 			_orig_fill_energy = fill.light_energy
-		fill.visible = false
+		fill.visible = level < 2
 	# No warm fill point light — let shadows be shadows
-	# VoxelGI: small volume, only for dynamic objects near stand. Only on
-	# High+ — the subdiv bake is one of the pricier parts of this bundle.
+	# VoxelGI: small volume covering dynamic objects near the stand.
+	# SUBDIV scales with the tier — Medium gets the cheap 64 bake, which
+	# still supplies bounce light where the lightmap radius ends.
 	if _voxel_gi == null:
 		_voxel_gi = VoxelGI.new()
 		_voxel_gi.position = Vector3(2, 2, -2)
 		_voxel_gi.size = Vector3(16, 6, 12)
 		world.add_child(_voxel_gi)
-	var target_subdiv := (VoxelGI.SUBDIV_128 if level == 2 else VoxelGI.SUBDIV_256)
-	if level >= 2:
-		if _voxel_gi.subdiv != target_subdiv:
-			_voxel_gi.subdiv = target_subdiv
-			_voxel_gi.bake()
-	_voxel_gi.visible = level >= 2
+	var subdiv_options: Array[int] = [
+		VoxelGI.SUBDIV_64, VoxelGI.SUBDIV_128, VoxelGI.SUBDIV_256,
+	]
+	var target_subdiv: int = subdiv_options[level - 1]
+	if _voxel_gi.subdiv != target_subdiv:
+		_voxel_gi.subdiv = target_subdiv
+		_voxel_gi.bake()
+	_voxel_gi.visible = true
 	# Reflection probe: subtle, just for a hint of reflection on surfaces.
 	# UPDATE_ONCE — cheap, so it stays on at every enhanced tier.
 	if _reflection_probe == null:
@@ -2463,6 +2503,12 @@ func _disable_enhanced_lighting() -> void:
 		)
 		env.ssr_enabled = _orig_ssr
 		env.ssao_enabled = preset["ssao"]
+		# Low tier runs a light contact AO — just enough to darken
+		# corners/edges without the higher tiers' cost.
+		if preset["ssao"]:
+			env.ssao_intensity = 1.0
+			env.ssao_power = 1.0
+			env.ssao_radius = 0.5
 		env.ssil_enabled = preset["ssil"]
 		env.glow_enabled = preset["glow"]
 		env.sdfgi_enabled = _orig_sdfgi
@@ -2515,36 +2561,70 @@ const STAND_POSITIONS := [
 
 
 func _mark_static_gi(node: Node) -> void:
-	# Distance-based GI mode: meshes within BAKE_RADIUS of either stand
-	# are STATIC (use baked lightmaps), meshes outside are DYNAMIC (lit
-	# by VoxelGI at runtime). Street lights are always DISABLED.
-	# This matches set_lightmap_gi.gd so the bake only processes nearby
-	# geometry instead of the entire 2000+ node neighborhood.
-	if node is MeshInstance3D:
-		var mi := node as MeshInstance3D
-		var parent := mi.get_parent()
-		if parent is StaticBody3D or parent.get_meta("static_gi", false):
-			var is_street_light := false
-			var p: Node = mi
-			while p:
-				if p.name.begins_with("street light"):
-					is_street_light = true
-					break
-				p = p.get_parent()
-			if is_street_light:
-				mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+	# Distance-based GI mode matching lightmap_bake_prep.gd: every mesh
+	# within BAKE_RADIUS of either stand is STATIC (samples the bake),
+	# outside is DYNAMIC (runtime GI). Street lights are DISABLED.
+	# Previously this also required a StaticBody3D/static_gi parent —
+	# that flipped most baked meshes to DYNAMIC at runtime, so the
+	# lightmap only applied on tiers with VoxelGI to cover the gap.
+	if node is GeometryInstance3D:
+		var mi := node as GeometryInstance3D
+		# Grass never samples the bake (would bleed green) — same
+		# exclusion the bake prep applies. "no_bake"-grouped ancestors
+		# (trucks, desks with broken bake texels) stay dynamic too.
+		var excluded := mi.is_in_group(&"grass_surface")
+		var no_bake := false
+		var p: Node = mi
+		while p:
+			if p.name.begins_with("street light"):
+				excluded = true
+			if p.is_in_group(&"no_bake"):
+				no_bake = true
+			if excluded and no_bake:
+				break
+			p = p.get_parent()
+		# no_bake nodes skip the lightmap but still sample runtime GI —
+		# DISABLED would get no bounce light at all (pure black in shade).
+		if no_bake:
+			mi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC
+		elif excluded:
+			mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		else:
+			var min_dist := INF
+			for pos in STAND_POSITIONS:
+				var d := mi.global_position.distance_to(pos)
+				if d < min_dist:
+					min_dist = d
+			if min_dist <= BAKE_RADIUS:
+				mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
 			else:
-				var min_dist := INF
-				for pos in STAND_POSITIONS:
-					var d := mi.global_position.distance_to(pos)
-					if d < min_dist:
-						min_dist = d
-				if min_dist <= BAKE_RADIUS:
-					mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
-				else:
-					mi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC
+				mi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC
 	for child in node.get_children():
 		_mark_static_gi(child)
+
+
+## Set roughness=1 on every mesh surface under root except `skip_index`
+## (the mesh surface index to leave alone). Uses per-surface overrides so
+## the source materials stay untouched for other instances.
+func _set_surfaces_rough_except(root: Node, skip_index: int) -> void:
+	if root is MeshInstance3D:
+		var mi := root as MeshInstance3D
+		var mesh := mi.mesh
+		if mesh != null:
+			for i in range(mesh.get_surface_count()):
+				if i == skip_index:
+					continue
+				var mat := (
+					mi.get_surface_override_material(i)
+					if mi.get_surface_override_material(i) != null
+					else mesh.surface_get_material(i)
+				)
+				if mat is BaseMaterial3D:
+					var dup := (mat as BaseMaterial3D).duplicate() as BaseMaterial3D
+					dup.roughness = 1.0
+					mi.set_surface_override_material(i, dup)
+	for child in root.get_children():
+		_set_surfaces_rough_except(child, skip_index)
 
 
 func _set_material_roughness(node: Node, roughness: float) -> void:

@@ -818,11 +818,13 @@ func try_serve(player: Node) -> void:
 	# Free-sample NPCs give deterministic feedback — every off-ideal axis is
 	# named, no unhappy-chance rolls hiding real problems.
 	var result := RecipeEvaluator.evaluate_detailed(recipe, GameState.temperature, "", true)
-	# Free samples count the same way — a clean cup is +1 on their bar.
+	# Free samples count the same way — a clean cup marks that fruit on
+	# their bar.
 	if p.assigned_stand != null and is_instance_valid(p.assigned_stand):
+		var f := str(recipe.get("fruit_type", ""))
 		p.assigned_stand.record_npc_encounter(
 			npc_id,
-			1.0 if result.complaints.is_empty() else 0.0,
+			[f] if result.complaints.is_empty() and f != "" else [],
 			p.get_multiplayer_authority(),
 		)
 		OnboardingManager.report(p.assigned_stand, "sample_served")
@@ -1082,7 +1084,7 @@ func _is_regular(p: Node) -> bool:
 	if s == null or npc_id < 0:
 		return false
 	var entry: Dictionary = s.get_npc_collection().get(npc_id, { })
-	return float(entry.get("affinity", 0.0)) >= 10.0
+	return StandUnit.npc_is_regular(entry)
 
 
 func show_interact_prompt(player: Node) -> void:

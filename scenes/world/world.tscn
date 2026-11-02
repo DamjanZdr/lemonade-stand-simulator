@@ -2,11 +2,11 @@
 
 [ext_resource type="PackedScene" uid="uid://1v1tem4n2kjm" path="res://scenes/stand/stand.tscn" id="1_stand"]
 [ext_resource type="PackedScene" uid="uid://bpiux7tbvj0ky" path="res://scenes/objects/water_dispenser.tscn" id="3_wdispenser"]
-[ext_resource type="LightmapGIData" uid="uid://60b7fspwoxly" path="res://scenes/world/world.lmbake" id="6_j0rhc"]
 [ext_resource type="PackedScene" uid="uid://c7m3x1q2y405a" path="res://scenes/world/delivery_grid.tscn" id="7_dgrid"]
 [ext_resource type="PackedScene" uid="uid://vc244erl2bi2" path="res://assets/models/props/Desk2.0.glb" id="14_mxkvs"]
 [ext_resource type="PackedScene" uid="uid://csb7yl8gpw1q3" path="res://scenes/objects/computer.tscn" id="15_m114p"]
 [ext_resource type="PackedScene" uid="uid://3iu5tq16nvb0" path="res://scenes/building_blocks/neighborhood.tscn" id="15_mxkvs"]
+[ext_resource type="LightmapGIData" uid="uid://bogyxthgwcj7r" path="res://scenes/world/world_versus.lmbake" id="16_71ii3"]
 [ext_resource type="Script" uid="uid://bn6bh5tbnfnov" path="res://scripts/customer/pedestrian_path.gd" id="36_0wrxw"]
 [ext_resource type="Script" uid="uid://cdxr72odv3l18" path="res://scripts/customer/pedestrian_waypoint.gd" id="36_sygq6"]
 [ext_resource type="Script" uid="uid://cp361e4vcklhx" path="res://scripts/objects/sky_controller.gd" id="37_sky"]
@@ -117,18 +117,13 @@ script = ExtResource("70_neigh")
 [node name="Environment" type="Node3D" parent="." unique_id=474609019]
 
 [node name="DirectionalLight" type="DirectionalLight3D" parent="Environment" unique_id=285599754]
-transform = Transform3D(0.81629366, -0.46448538, -0.34339193, 0.33309382, -0.10717513, 0.9367827, -0.47192508, -0.8790716, 0.06723085, 0, 10, 0)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 14.730251, -12.131649)
 light_angular_distance = 0.3
 shadow_enabled = true
 directional_shadow_blend_splits = true
 script = ExtResource("37_sun")
 start_rotation_deg = Vector3(-50, 60, -80)
 end_rotation_deg = Vector3(-20, -70, 67)
-
-[node name="FillLight" type="DirectionalLight3D" parent="Environment" unique_id=1098989604]
-transform = Transform3D(-0.866, -0.25, -0.433, 0, 0.866, -0.5, 0.5, -0.433, -0.75, 0, 8, 0)
-light_color = Color(0.85, 0.82, 0.75, 1)
-light_energy = 0.6
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=305494689]
 environment = SubResource("Environment_main")
@@ -599,11 +594,11 @@ transform = Transform3D(0.90460753, 0.21082218, -0.37045813, 0, 0.86911917, 0.49
 fov = 30.0
 
 [node name="LightmapGI" type="LightmapGI" parent="." unique_id=1827849850]
-quality = 2
-bounces = 4
-bounce_indirect_energy = 0.4
+quality = 3
+bounce_indirect_energy = 0.8
 directional = true
-light_data = ExtResource("6_j0rhc")
+denoiser_strength = 0.5
+light_data = ExtResource("16_71ii3")
 
 [node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=207345750]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.5, -2)
@@ -615,6 +610,7 @@ size = Vector3(10, 6, 8)
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.0044355392, -1.0999998, -7.9913626)
 
 [node name="Occlusions" type="Node3D" parent="." unique_id=2092071078]
+visible = false
 
 [node name="OccluderInstance3D2" type="OccluderInstance3D" parent="Occlusions" unique_id=1410063400]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.191738, 2.313859, 17.78254)

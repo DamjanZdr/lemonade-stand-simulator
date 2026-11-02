@@ -852,13 +852,30 @@ func set_feedback_tier(tier: int) -> void:
 
 ## Per-stand NPC collection, stored inside lifetime_stats under
 ## "npc_collection" so it rides the existing save + push_state channels:
-## { npc_id: { "affinity": float } }. Presence in the dict = discovered;
-## "affinity" is a perfect-cup count capped at 10 — a counter, not a
-## second popularity meter.
+## { npc_id: { "affinity": float, "perfect_fruits": Array[String] } }.
+## Presence in the dict = discovered; "perfect_fruits" is the set of fruits
+## the NPC has received a clean (zero-complaint) cup of — one per fruit —
+## and "affinity" mirrors its size for display. Legacy saves that only have
+## a raw affinity counter (>= 10) stay regular via npc_is_regular.
 ## Host-authoritative — NPC scripts call this on the host only.
+static func npc_is_regular(entry: Dictionary) -> bool:
+	# Daily-rolled requirement: every required fruit at its cup count.
+	var required: Dictionary = entry.get("required", { })
+	if not required.is_empty():
+		var cups: Dictionary = entry.get("perfect_cups", { })
+		for ft in required:
+			if float(cups.get(ft, 0.0)) < float(required[ft]):
+				return false
+		return true
+	# Legacy saves: all-6 set or the old raw counter.
+	if (entry.get("perfect_fruits", []) as Array).size() >= FRUIT_TYPES.size():
+		return true
+	return float(entry.get("affinity", 0.0)) >= 10.0
+
+
 func record_npc_encounter(
 	npc_id: int,
-	affinity_delta: float = 0.0,
+	perfect_fruits: Array = [],
 	notify_peer_id: int = 0,
 ) -> void:
 	if npc_id < 0:
@@ -868,15 +885,36 @@ func record_npc_encounter(
 	var collection := get_npc_collection()
 	var is_new := not collection.has(npc_id)
 	var entry: Dictionary = collection.get(npc_id, { })
-	var old_affinity := float(entry.get("affinity", 0.0))
+	var was_regular := npc_is_regular(entry)
 	if is_new:
 		entry["order"] = collection.size()
-	entry["affinity"] = clampf(old_affinity + affinity_delta, 0.0, 10.0)
+	# Requirement is rolled once per NPC and stays fixed.
+	if not entry.has("required"):
+		entry["required"] = NpcRoster.slots_for(npc_id, NpcRoster.get_entry(npc_id))
+	var required: Dictionary = entry.get("required", { })
+	var cups: Dictionary = entry.get("perfect_cups", { })
+	for f in perfect_fruits:
+		var fs := str(f)
+		if required.has(fs):
+			cups[fs] = mini(float(cups.get(fs, 0.0)) + 1.0, float(required[fs]))
+	entry["perfect_cups"] = cups
+	# Keep the older fields in sync for save/display back-compat.
+	var merged: Array = entry.get("perfect_fruits", [])
+	for f in perfect_fruits:
+		var fs := str(f)
+		if fs != "" and fs not in merged:
+			merged.append(fs)
+	entry["perfect_fruits"] = merged
+	var done := 0
+	for ft in required:
+		if float(cups.get(ft, 0.0)) >= float(required[ft]):
+			done += 1
+	entry["affinity"] = float(done)
 	collection[npc_id] = entry
 	lifetime_stats["npc_collection"] = collection
-	if old_affinity < 10.0 and float(entry["affinity"]) >= 10.0:
+	if not was_regular and npc_is_regular(entry):
 		_notify_regular_unlocked(npc_id, notify_peer_id)
-	if is_new or affinity_delta != 0.0:
+	if is_new or not perfect_fruits.is_empty():
 		npc_collection_changed.emit(collection.duplicate(true))
 		push_state()
 

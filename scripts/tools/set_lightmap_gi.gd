@@ -19,27 +19,44 @@ func _run() -> void:
 	if edited == null:
 		print("SetLightmapGI: No scene open in editor!")
 		return
-	var counts := { "static": 0, "dynamic": 0 }
+	var counts := { "static": 0, "dynamic": 0, "skipped": 0 }
 	_set_gi_by_distance(edited, counts)
 	print(
-		"SetLightmapGI: %d STATIC (within %.0f units of a stand), %d DYNAMIC (far)"
-		% [counts.static, BAKE_RADIUS, counts.dynamic]
+		(
+			"SetLightmapGI: %d STATIC (within %.0f of a stand), %d DYNAMIC (far), "
+			+ "%d SKIPPED (grass/street lights)"
+		)
+		% [counts.static, BAKE_RADIUS, counts.dynamic, counts.skipped]
 	)
 
 
 func _set_gi_by_distance(node: Node, counts: Dictionary) -> void:
-	if node is MeshInstance3D:
-		var mi := node as MeshInstance3D
-		var min_dist := INF
-		for pos in STAND_POSITIONS:
-			var d := mi.global_position.distance_to(pos)
-			if d < min_dist:
-				min_dist = d
-		if min_dist <= BAKE_RADIUS:
-			mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
-			counts.static += 1
+	if node is GeometryInstance3D:
+		var mi := node as GeometryInstance3D
+		# Skip grass (would bleed green into the bake) and street lights —
+		# matches the exclusions in main.gd's _mark_static_gi/_set_grass_gi.
+		var excluded := mi.is_in_group("grass_surface")
+		if not excluded:
+			var p: Node = mi
+			while p != null:
+				if p.name.begins_with("street light"):
+					excluded = true
+					break
+				p = p.get_parent()
+		if excluded:
+			mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+			counts.skipped += 1
 		else:
-			mi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC
-			counts.dynamic += 1
+			var min_dist := INF
+			for pos in STAND_POSITIONS:
+				var d := mi.global_position.distance_to(pos)
+				if d < min_dist:
+					min_dist = d
+			if min_dist <= BAKE_RADIUS:
+				mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
+				counts.static += 1
+			else:
+				mi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC
+				counts.dynamic += 1
 	for child in node.get_children():
 		_set_gi_by_distance(child, counts)

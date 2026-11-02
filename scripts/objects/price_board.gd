@@ -19,7 +19,7 @@ const FRUIT_LABELS: Dictionary = {
 
 var _editing_index := -1
 var _edit_buffer := ""
-var _price_prefix: Dictionary = { }
+
 ## The player who is currently editing prices on this board. Stored so we
 ## can release THEM from priceboard focus when editing ends — not just
 ## whichever player happens to be first in the "player" group (which in
@@ -29,7 +29,6 @@ var _editing_player: Player = null
 
 func _ready() -> void:
 	_setup_prices_label()
-	_load_price_prefixes()
 	if _stand:
 		_stand.price_changed.connect(_on_price_changed)
 		# Assign stand ownership based on parent StandUnit.
@@ -117,28 +116,26 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func _process(_delta: float) -> void:
+	# ESC→menu and other focus exits can bypass _cancel_edit — if the editing
+	# player is no longer in board focus, drop the ">" marker unconditionally.
+	if (
+		_editing_index >= 0
+		and (
+			_editing_player == null
+			or not is_instance_valid(_editing_player)
+			or not _editing_player.is_in_priceboard_mode()
+		)
+	):
+		_editing_index = -1
+		_edit_buffer = ""
+		_editing_player = null
+		_refresh_label()
+
+
 func _setup_prices_label() -> void:
 	label_3d.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	label_3d.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-
-
-func _load_price_prefixes() -> void:
-	_price_prefix.clear()
-	for line in label_3d.text.split("\n"):
-		if line == "":
-			continue
-		var prefix := ""
-		for c in line:
-			if c.is_valid_int():
-				break
-			prefix += c
-		if prefix == "":
-			continue
-		for ft in StandUnit.FRUIT_TYPES:
-			var label: String = FRUIT_LABELS.get(ft, ft.capitalize())
-			if prefix.begins_with(label):
-				_price_prefix[ft] = prefix
-				break
 
 
 func _start_edit() -> void:
@@ -213,13 +210,20 @@ func _append_char(c: String) -> void:
 func _refresh_label() -> void:
 	if _stand == null:
 		return
+	# Price column width = longest visible label + dot padding, so every
+	# line's dots equalize instead of using the scene's authored counts.
+	var max_len := 0
+	for ft in StandUnit.FRUIT_TYPES:
+		if _stand.is_fruit_unlocked(ft):
+			max_len = maxi(max_len, String(FRUIT_LABELS.get(ft, ft.capitalize())).length())
+	var col := max_len + 4
 	var txt := ""
 	for i in range(StandUnit.FRUIT_TYPES.size()):
 		var ft: String = StandUnit.FRUIT_TYPES[i]
 		if _stand == null or not _stand.is_fruit_unlocked(ft):
 			continue
 		var label: String = FRUIT_LABELS.get(ft, ft.capitalize())
-		var prefix: String = _price_prefix.get(ft, label + ".....")
+		var prefix := label + ".".repeat(maxi(3, col - label.length()))
 		if i == _editing_index:
 			if _edit_buffer == "":
 				txt += "> %s%.2f\n" % [prefix, _stand.get_price(ft)]

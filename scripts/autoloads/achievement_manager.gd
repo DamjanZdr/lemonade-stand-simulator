@@ -91,7 +91,7 @@ func _regulars_count(stand: StandUnit) -> int:
 	var n := 0
 	var collection := stand.get_npc_collection()
 	for id in collection:
-		if float(collection[id].get("affinity", 0.0)) >= 10.0:
+		if StandUnit.npc_is_regular(collection[id]):
 			n += 1
 	return n
 
@@ -259,7 +259,8 @@ func _check_stand_thresholds_now(stand: StandUnit) -> void:
 		_unlock(ACH_ROCKSTAR)
 
 
-## Legacy primary stand: GameState is the source of truth for single-player / the host's primary stand.
+## Legacy primary stand: GameState is the source of truth for
+## single-player / the host's primary stand.
 func check_game_state_thresholds() -> void:
 	GameLog.log(
 		"[Ach] GameState cups=%d sales=$%.2f spent=$%.2f happy=%d"

@@ -34,6 +34,33 @@ var _entries: Array[Dictionary] = []
 var _by_tier: Dictionary = { }
 
 
+## Per-NPC chunk requirement — deterministic from npc_id so every peer
+## computes the same set without syncing, fixed for the NPC's lifetime.
+## Slot count is a seeded roll inside the rarity range (CaseOh gets the
+## joke number); fruit per slot is rolled WITH replacement, so repeats
+## mean extra cups of that fruit. Any-order fill; all lit = regular.
+const RARITY_SLOT_RANGES: Dictionary = {
+	"common": [1, 3], "community": [2, 3], "rare": [2, 4], "elite": [2, 5],
+}
+
+static func slots_for(npc_id: int, entry: Dictionary = { }) -> Dictionary:
+	var rarity := str(entry.get("rarity", "common"))
+	var name := str(entry.get("name", ""))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(npc_id) * 100003
+	var range: Array = RARITY_SLOT_RANGES.get(rarity, [1, 3])
+	var count: int = (
+		10 if name.to_lower() == "caseoh"
+		else rng.randi_range(int(range[0]), int(range[1]))
+	)
+	var fruits := StandUnit.FRUIT_TYPES
+	var out := { }
+	for _i in count:
+		var ft: String = fruits[rng.randi() % fruits.size()]
+		out[ft] = int(out.get(ft, 0)) + 1
+	return out
+
+
 func _ready() -> void:
 	_load_roster()
 

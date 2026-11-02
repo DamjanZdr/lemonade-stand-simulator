@@ -3,6 +3,11 @@ extends RefCounted
 
 const BAKE_RADIUS := 70.0
 const STAND_POSITIONS := [Vector3(2.0, 0.0, -2.0), Vector3(-8.1, 0.0, -24.0)]
+## Neutral grey for player-house roofs at bake time — mid-luminance grey
+## shadows read acceptably under any player-chosen roof tint.
+const BAKE_ROOF_COLOR := Color(0.5, 0.5, 0.5)
+## Top-down sun for baking — symmetrical light on both stands.
+const BAKE_SUN_ROTATION := Vector3(-90.0, 0.0, 0.0)
 
 
 static func prepare(root: Node, versus: bool) -> void:
@@ -21,6 +26,13 @@ static func prepare(root: Node, versus: bool) -> void:
 	)
 	# Clear any stale baked data so the bake does not try to remap missing nodes.
 	lightmap_gi.light_data = null
+	# Put the sun near-zenith (80° elevation) for the bake — an almost
+	# overhead light keeps both stands' houses lit symmetrically, instead
+	# of baking a diagonal day-cycle angle that favors one facade.
+	var sun := root.find_child("DirectionalLight", true, false) as DirectionalLight3D
+	if sun != null:
+		sun.rotation_degrees = BAKE_SUN_ROTATION
+		print("LightmapBakePrep: sun set to bake rotation %s" % sun.rotation_degrees)
 	var counts := { "static": 0, "dynamic": 0, "disabled": 0 }
 	_set_radius_gi(root, counts)
 	var neighborhood := root.find_child("Neighborhood", true, false)
@@ -32,6 +44,15 @@ static func prepare(root: Node, versus: bool) -> void:
 	if material_overrides <= 0:
 		push_error("LightmapBakePrep: runtime house materials were not applied.")
 		return
+	# Player houses keep the authored red roof (they're skipped by the
+	# palette recolor so players can tint them). Red roofs bake red bounce
+	# into the lightmap, which looks wrong under other roof colors — bake
+	# both player houses with a neutral grey roof instead.
+	if neighborhood.has_method("apply_player_house_colors"):
+		for house_name in ["player_house", "player_house2"]:
+			neighborhood.apply_player_house_colors(
+				house_name, Color.TRANSPARENT, BAKE_ROOF_COLOR
+			)
 	var single_house := root.find_child("single_stand_house2", true, false)
 	var player_house2 := root.find_child("player_house2", true, false)
 	if single_house == null or player_house2 == null:
@@ -69,9 +90,15 @@ static func prepare(root: Node, versus: bool) -> void:
 
 
 static func _set_radius_gi(node: Node, counts: Dictionary) -> void:
-	if node is MeshInstance3D:
-		var mesh := node as MeshInstance3D
-		if _is_street_light(mesh):
+	if node is GeometryInstance3D:
+		var mesh := node as GeometryInstance3D
+		# Grass must never bake — it bleeds green bounce into everything.
+		# "no_bake"-grouped nodes (trucks, desks with black bake texels)
+		# and street lights stay dynamic at runtime instead.
+		if mesh.is_in_group("grass_surface") or _has_no_bake_ancestor(mesh):
+			mesh.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+			counts.disabled += 1
+		elif _is_street_light(mesh):
 			mesh.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 			counts.disabled += 1
 		else:
@@ -107,6 +134,17 @@ static func _set_variant(house: Node, active: bool) -> void:
 			if active
 			else GeometryInstance3D.GI_MODE_DISABLED
 		)
+
+
+## True if the node or any ancestor is in the "no_bake" group — tag an
+## instance root to keep it (and its whole subtree) out of the lightmap.
+static func _has_no_bake_ancestor(node: Node) -> bool:
+	var ancestor := node
+	while ancestor != null:
+		if ancestor.is_in_group("no_bake"):
+			return true
+		ancestor = ancestor.get_parent()
+	return false
 
 
 static func _is_street_light(node: Node) -> bool:

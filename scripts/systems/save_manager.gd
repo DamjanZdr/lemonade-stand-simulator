@@ -283,6 +283,7 @@ func list_saves() -> Array:
 ## the save file name and the text on the stand sign in-game.
 ## game_mode determines the lobby layout (solo/coop/versus).
 func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode.COOP) -> void:
+	GameLog.log("[SAVE-DIAG] start_new_game '%s'" % stand_name)
 	game_mode = GameState.normalize_game_mode(game_mode)
 	if stand_name == "":
 		stand_name = "Lemonade Stand"
@@ -332,6 +333,18 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 	# fall back to _default_container_positions when _pending is empty.
 	_pending_container_respawn = []
 	_pending_supply_box_respawn = []
+	# Wipe leftovers from the previously applied save NOW — respawned
+	# containers are parented to the scene root (Main), so they survive
+	# the world reload into the new game unless freed here. Must be
+	# immediate: deferring risks killing the fresh defaults _do_respawn
+	# instantiates later. _do_respawn repeats the sweep anyway.
+	WorldSync.despawn_all_spawned()
+	# Restore the authored starting layout — the previous save's respawn
+	# may have freed scene objects (e.g. water dispensers) and the sweep
+	# above removed its Main-parented replacements, so the world needs
+	# its defaults instantiated again or equipment is missing.
+	if has_default_container_snapshot():
+		respawn_default_containers()
 	# Fresh stand, fresh house — reset to authored colors.
 	LobbyManager.stand_house_styles.clear()
 	# Propagate the reset to live stands/UI — the direct assignments
@@ -355,6 +368,7 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 
 ## Load an existing save slot and set it as the current slot.
 func load_existing_game(slot_name: String) -> void:
+	GameLog.log("[SAVE-DIAG] load_existing_game '%s'" % slot_name)
 	current_slot = slot_name
 	auto_save_enabled = true
 	var data := load_slot(slot_name)
@@ -588,6 +602,11 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	EventBus.feedback_tier_changed.emit(GameState.feedback_tier)
 	_applying_save = false
 	GameLog.log("[SaveManager] Apply done: GameState.money=$%.2f" % GameState.money)
+	# Always schedule the world-object restore here. Previously it only ran
+	# when the world-mode swap happened to call respawn_placed_containers —
+	# switching between two same-mode saves left the previous save's placed
+	# objects live in the world (and in the next snapshot/save).
+	call_deferred("_do_respawn")
 
 
 func _sync_live_stand_recipes(announce: bool) -> void:
@@ -680,6 +699,28 @@ func _default_container_entry(ctype: String, stand_owner: String) -> Dictionary:
 			continue
 		return entry
 	return { }
+
+
+## Find an authored (owner != null) scene container matching the type —
+## and stand owner when given — that hasn't been claimed this respawn.
+## Authored objects are never freed by the respawn sweep, so entries reuse
+## them instead of instantiating duplicates under the scene root.
+func _claim_authored_container(
+	ctype: String, stand_owner: String, claimed: Array
+) -> Node:
+	if get_tree() == null:
+		return null
+	for node in get_tree().get_nodes_in_group("container"):
+		if not is_instance_valid(node) or node.is_queued_for_deletion():
+			continue
+		if node.owner == null or node in claimed:
+			continue
+		if get_container_type(node) != ctype:
+			continue
+		if stand_owner != "" and _container_stand_owner(node) != stand_owner:
+			continue
+		return node
+	return null
 
 
 func _stand_owner_is_active(owner: String) -> bool:
@@ -1086,6 +1127,12 @@ func capture_default_containers() -> void:
 			continue
 		if node.is_in_group("ghost"):
 			continue
+		# Authored scene items only — they have owner != null wherever
+		# they live (World subtrees or directly under Main). Save-restored
+		# objects are add_child()'d at runtime so owner == null; capturing
+		# them here would bake a loaded save's layout into every new game.
+		if node.owner == null:
+			continue
 		var ctype := get_container_type(node)
 		if ctype == "" or not is_known_container_type(ctype):
 			continue
@@ -1114,6 +1161,7 @@ func respawn_default_containers() -> void:
 func _do_respawn() -> void:
 	if get_tree() == null or get_tree().current_scene == null:
 		return
+	GameLog.log("[SAVE-DIAG] _do_respawn begin, pending=%d" % _pending_container_respawn.size())
 	var root := get_tree().current_scene
 
 	# --- Respawn containers ---
@@ -1127,14 +1175,28 @@ func _do_respawn() -> void:
 	if cdata.is_empty() and not _default_container_positions.is_empty():
 		cdata = _default_container_positions.duplicate(true)
 	cdata = _active_container_entries(cdata)
-	# Always remove existing containers of known types so the world is
-	# reset cleanly. Without this, containers from a previous game
-	# persist when the new save has no placed containers (e.g. a
-	# brand-new game).
+	# Free only dynamically-added containers (owner == null). Authored
+	# scene objects are never destroyed — respawned entries below claim
+	# the matching authored node and restore its state in place. Without
+	# this, containers from a previous game persist when the new save has
+	# no placed containers (e.g. a brand-new game).
 	for node in root.get_tree().get_nodes_in_group("container"):
 		var ctype := get_container_type(node)
-		if ctype != "" and is_known_container_type(ctype):
+		GameLog.log(
+			"[SAVE-DIAG] container node: '%s' type=%s owner=%s parent=%s"
+			% [
+				node.name, ctype,
+				"authored" if node.owner != null else "dynamic",
+				node.get_parent().get_path() if node.get_parent() else "none",
+			]
+		)
+		if ctype != "" and is_known_container_type(ctype) and node.owner == null:
 			node.queue_free()
+	# Same for every spawned object — restored items from a previous save
+	# aren't in the container sweep's coverage, so a switched save leaked
+	# table/press/etc into the next world.
+	WorldSync.despawn_all_spawned()
+	var _claimed: Array[Node] = []
 	if not cdata.is_empty():
 		for entry in cdata:
 			var ctype: String = entry.get("type", "")
@@ -1162,10 +1224,23 @@ func _do_respawn() -> void:
 			# into the ground.
 			if pos[0] == 0.0 and pos[1] == 0.0 and pos[2] == 0.0:
 				continue
-			var scene: PackedScene = _get_container_scene(ctype)
-			if scene == null:
-				continue
-			var instance := scene.instantiate()
+			# Reuse an authored scene object of this type when one is
+			# unclaimed — the sweep above never frees authored nodes, and
+			# reusing them keeps scene wiring/references intact. Extra
+			# entries beyond the authored count spawn fresh instances.
+			var instance: Node = _claim_authored_container(
+				ctype, str(entry.get("stand_owner", "")), _claimed
+			)
+			var spawned := instance == null
+			if spawned:
+				var scene: PackedScene = _get_container_scene(ctype)
+				if scene == null:
+					continue
+				instance = scene.instantiate()
+			GameLog.log(
+				"[SAVE-DIAG] respawn %s type=%s pos=%s"
+				% ["spawn" if spawned else "reuse", ctype, str(pos)]
+			)
 			if instance is Lemonader:
 				instance.machine_state = entry \
 						.get("machine_state", instance.machine_state) \
@@ -1181,16 +1256,17 @@ func _do_respawn() -> void:
 			# Restore stand ownership.
 			if "stand_owner" in instance:
 				instance.stand_owner = entry.get("stand_owner", "")
-			if scl.size() >= 3:
-				instance.scale = Vector3(scl[0], scl[1], scl[2])
-			root.add_child(instance)
-			instance.global_position = Vector3(pos[0], pos[1], pos[2])
-			instance.global_rotation = Vector3(
-				rot[0] if rot.size() > 0 else 0.0,
-				rot[1] if rot.size() > 1 else 0.0,
-				rot[2] if rot.size() > 2 else 0.0,
-			)
-			instance.add_to_group("container")
+			if spawned:
+				if scl.size() >= 3:
+					instance.scale = Vector3(scl[0], scl[1], scl[2])
+				root.add_child(instance)
+				instance.global_position = Vector3(pos[0], pos[1], pos[2])
+				instance.global_rotation = Vector3(
+					rot[0] if rot.size() > 0 else 0.0,
+					rot[1] if rot.size() > 1 else 0.0,
+					rot[2] if rot.size() > 2 else 0.0,
+				)
+				instance.add_to_group("container")
 
 			# Restore container contents
 			if instance is FruitBin:

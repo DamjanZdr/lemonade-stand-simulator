@@ -1,6 +1,5 @@
 [gd_scene format=3 uid="uid://dk6i3an03mr2w"]
 
-[ext_resource type="PackedScene" uid="uid://7bukla7g0dec" path="res://assets/models/environment/surroundings/vehicles/pickup truck.glb" id="1_gbkk1"]
 [ext_resource type="Script" uid="uid://gyiq1jhsrlxw" path="res://scripts/systems/delivery_grid.gd" id="2_x6qr4"]
 [ext_resource type="Script" uid="uid://cp8o80blhptkk" path="res://scripts/systems/delivery_truck.gd" id="3_truck"]
 [ext_resource type="PackedScene" uid="uid://b1f5fsl5gvgd7" path="res://assets/models/vehicles/pickup truck2.glb" id="4_4aq80"]
@@ -11,10 +10,6 @@ size = Vector3(2, 0.01, 2)
 
 [node name="DeliveryTruck" type="Node3D" unique_id=1680832463]
 script = ExtResource("3_truck")
-
-[node name="pickup truck" parent="." unique_id=72104086 instance=ExtResource("1_gbkk1")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0.044558764, 0, 9.76675)
-visible = false
 
 [node name="DeliveryGrid" type="Node3D" parent="." unique_id=2129210621]
 transform = Transform3D(-8.742278e-08, 0, -2, 0, 2, 0, 2, 0, -8.742278e-08, 0.033249855, -0.3125341, 6.459907)

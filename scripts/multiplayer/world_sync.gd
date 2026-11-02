@@ -54,7 +54,7 @@ func setup(_world_objects: Node, _spawner: MultiplayerSpawner) -> void:
 	call_deferred("_warm_machine_pipelines")
 	# Currently unused (we use RPC-based spawning instead of MultiplayerSpawner),
 	# but kept for future use if we switch to spawner-based replication.
-	pass
+	return
 
 
 func is_host() -> bool:
@@ -159,6 +159,32 @@ static func spend_local_money(amount: float, category: String = "") -> bool:
 
 ## Assign a stable network ID to a node. Returns the ID. If the node is
 ## freed, the ID is automatically unregistered.
+## Frees every spawned/restored object — new-game reset calls this so a
+## previous save's items can't leak into the fresh world. The reliable
+## discriminator is `owner`: authored scene children have owner != null
+## (wherever they live — World subtrees or directly under Main), while
+## anything added via add_child() at runtime has owner == null. net_id
+## alone can't distinguish — authored objects get net_ids assigned by
+## the snapshot registry too.
+func despawn_all_spawned() -> void:
+	var freed := 0
+	for obj in _node_to_net_id.keys():
+		if is_instance_valid(obj) and obj.owner == null:
+			obj.queue_free()
+			freed += 1
+	_node_to_net_id.clear()
+	var freed_meta := 0
+	for group in ["container", "supply_box"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if is_instance_valid(node) and node.owner == null:
+				node.queue_free()
+				freed_meta += 1
+	GameLog.log(
+		"[SAVE-DIAG] despawn_all_spawned: registry=%d, dynamic=%d"
+		% [freed, freed_meta]
+	)
+
+
 func _assign_net_id(obj: Node) -> int:
 	var id := _net_id_counter
 	_net_id_counter += 1
@@ -167,6 +193,12 @@ func _assign_net_id(obj: Node) -> int:
 	_node_to_net_id[obj] = id
 	_placed_objects[id] = obj
 	obj.tree_exited.connect(_on_net_object_tree_exited.bind(id))
+	if obj.is_in_group("container"):
+		GameLog.log(
+			"[SAVE-DIAG] net_id %d -> container '%s' (%s) parent=%s"
+			% [id, obj.name, obj.get_class(),
+				obj.get_parent().get_path() if obj.get_parent() else "none"]
+		)
 	return id
 
 
@@ -1436,7 +1468,11 @@ func spawn_networked(
 					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
 						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
-						% [p.name, p.get_liquid_volume(), e.get_instance_shader_parameter("fill_y") if e else -1.0]
+						% [
+							p.name,
+							p.get_liquid_volume(),
+							e.get_instance_shader_parameter("fill_y") if e else -1.0,
+						]
 					),
 		)
 	# Restore delivery grid slot metas so clients can release the slot
@@ -2040,7 +2076,11 @@ func _spawn_on_clients(
 					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
 					GameLog.log(
 						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
-						% [p.name, p.get_liquid_volume(), e.get_instance_shader_parameter("fill_y") if e else -1.0]
+						% [
+							p.name,
+							p.get_liquid_volume(),
+							e.get_instance_shader_parameter("fill_y") if e else -1.0,
+						]
 					),
 		)
 	# Restore delivery grid slot metas so clients can release the slot
@@ -2246,7 +2286,8 @@ func _rpc_request_properties(
 		obj.set(key, props[key])
 	if obj is Pitcher:
 		GameLog.log(
-			"[WorldSync] client props applied to %s from peer %d: water=%.2f fruit=%.2f sugar=%.2f ice=%.2f liq=%.2f cups=%d"
+			"[WorldSync] client props applied to %s from peer %d: "
+			+ "water=%.2f fruit=%.2f sugar=%.2f ice=%.2f liq=%.2f cups=%d"
 			% [
 				str(obj.name),
 				multiplayer.get_remote_sender_id(),
@@ -2401,8 +2442,7 @@ func _find_node_by_name_only(obj_name: String) -> Node:
 		var cached: Node = _node_cache[obj_name]
 		if is_instance_valid(cached):
 			return cached
-		else:
-			_node_cache.erase(obj_name)
+		_node_cache.erase(obj_name)
 	var last_miss: int = _name_miss_cache.get(obj_name, 0)
 	if last_miss > 0 and Time.get_ticks_msec() - last_miss < NAME_MISS_TTL_MSEC:
 		return null

@@ -19,8 +19,8 @@ const PRODUCT_IMAGES: Dictionary = {
 	"press": "res://assets/textures/ui/products/press.png",
 	"workstation": "res://assets/textures/ui/products/table.png",
 	"cup_tray": "res://assets/textures/ui/products/cup.png",
-	"lemonader": "res://assets/textures/ui/products/press.png",
-	"fruitomatic": "res://assets/textures/ui/products/press.png",
+	"lemonader": "res://assets/textures/ui/products/squeeze-e-z.png",
+	"fruitomatic": "res://assets/textures/ui/products/fruit-o-matic.png",
 }
 
 const BRANCH_COLORS: Array[Color] = [
@@ -1129,7 +1129,7 @@ func _populate_npc_page() -> void:
 	var collection: Dictionary = (stand.get_npc_collection() if stand != null else { })
 	var perfected := 0
 	for k in collection:
-		if float((collection[k] as Dictionary).get("affinity", 0.0)) >= 10.0:
+		if StandUnit.npc_is_regular(collection[k] as Dictionary):
 			perfected += 1
 	header.text = "%d / %d / %d" % [perfected, collection.size(), NpcRoster.size()]
 	# Refresh live if the collection changes while the tab is open.
@@ -1214,15 +1214,18 @@ func _npc_fill_column(
 		var id := int(raw_id)
 		var entry := NpcRoster.get_entry(id)
 		var met := collection.has(id) or collection.has(str(id))
-		var cups := 0
+		var coll_entry: Dictionary = {}
 		if met:
-			cups = int((collection.get(id, collection.get(str(id), { }))).get("affinity", 0.0))
-		col.add_child(_make_npc_card(entry, met, cups))
+			coll_entry = collection.get(id, collection.get(str(id), { })) as Dictionary
+		col.add_child(_make_npc_card(int(id), entry, met, coll_entry))
 
 
 ## One NPC collection card: name (or "Unknown") in its rarity color +
-## a row of 10 chunk pips that fill yellow per perfect cup served.
-func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
+## a row of 6 chunk pips — grey until earned, fruit-colored per clean
+## cup of that fruit served.
+func _make_npc_card(
+	npc_id: int, entry: Dictionary, met: bool, coll_entry: Dictionary
+) -> PanelContainer:
 	var card := PanelContainer.new()
 	# Same card chrome as the shop item cards.
 	var st := StyleBoxFlat.new()
@@ -1241,14 +1244,15 @@ func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
 	var rarity := str(entry.get("rarity", "common"))
 	var name_lbl := Label.new()
 	var npc_name := str(entry.get("name", ""))
-	name_lbl.text = npc_name
+	name_lbl.text = npc_name if met else "Unknown"
 	name_lbl.clip_text = true
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# Shrink long names so they fit inside the card on a single line.
 	var name_size := 18
-	if npc_name.length() > 28:
+	var shown_len := npc_name.length() if met else 7
+	if shown_len > 28:
 		name_size = 12
-	elif npc_name.length() > 20:
+	elif shown_len > 20:
 		name_size = 15
 	name_lbl.add_theme_font_size_override("font_size", name_size)
 	name_lbl.add_theme_color_override(
@@ -1259,19 +1263,49 @@ func _make_npc_card(entry: Dictionary, met: bool, cups: int) -> PanelContainer:
 	)
 	vbox.add_child(name_lbl)
 
-	# 10 chunk pips — grey until earned, yellow per perfect cup.
+	# Chunk pips = the NPC's daily requirement: "?" while unmet, fruit
+	# icons once met — lit chunk + full-color icon once its count is hit.
+	var required: Dictionary = coll_entry.get(
+		"required", NpcRoster.slots_for(npc_id, entry)
+	)
+	var cups: Dictionary = coll_entry.get("perfect_cups", { })
+	var regular := met and StandUnit.npc_is_regular(coll_entry)
 	var pips := HBoxContainer.new()
 	pips.alignment = BoxContainer.ALIGNMENT_CENTER
 	pips.add_theme_constant_override("separation", 3)
-	for i in 10:
-		var pip := Panel.new()
-		pip.custom_minimum_size = Vector2(15, 15)
-		var pip_st := StyleBoxFlat.new()
-		pip_st.bg_color = Color(0.88, 0.65, 0.12) if i < cups \
-				else Color(0.16, 0.17, 0.21)
-		pip_st.set_corner_radius_all(3)
-		pip.add_theme_stylebox_override("panel", pip_st)
-		pips.add_child(pip)
+	# One chunk per slot — a fruit repeated in the requirement gets one
+	# chunk per count; the k-th chunk of a fruit lights at k cups served.
+	for ft in required:
+		for k in int(required[ft]):
+			var got := regular or float(cups.get(ft, 0.0)) >= float(k + 1)
+			var pip := PanelContainer.new()
+			pip.custom_minimum_size = Vector2(30, 30)
+			var pip_st := StyleBoxFlat.new()
+			pip_st.bg_color = Color(0.95, 0.85, 0.45) if got \
+					else Color(0.16, 0.17, 0.21)
+			pip_st.set_corner_radius_all(5)
+			pip_st.set_content_margin_all(3)
+			pip.add_theme_stylebox_override("panel", pip_st)
+			if met:
+				var icon := TextureRect.new()
+				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				var img: String = PRODUCT_IMAGES.get(ft, "")
+				if img != "" and ResourceLoader.exists(img):
+					icon.texture = load(img) as Texture2D
+				icon.modulate = Color(1, 1, 1) if got \
+						else Color(0.75, 0.76, 0.8)
+				pip.add_child(icon)
+			else:
+				var q := Label.new()
+				q.text = "?"
+				q.add_theme_font_size_override("font_size", 16)
+				q.add_theme_color_override("font_color", Color(0.5, 0.52, 0.58))
+				q.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				q.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+				q.set_anchors_preset(Control.PRESET_FULL_RECT)
+				pip.add_child(q)
+			pips.add_child(pip)
 	vbox.add_child(pips)
 	return card
 

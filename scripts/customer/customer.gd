@@ -910,20 +910,22 @@ func _record_customer_served(outcome: String) -> void:
 	# sync inside StandUnit.on_customer_served() for the primary stand.
 	if stand != null:
 		stand.request_customer_served(outcome, pop_delta, _served_evaluations.size())
-		stand.record_npc_encounter(npc_id, _affinity_delta(outcome), _serving_peer_id)
+		stand.record_npc_encounter(npc_id, _perfect_serve_fruits(), _serving_peer_id)
 		if outcome == "timeout":
 			OnboardingManager.report(stand, "customer_lost")
 
 
-## The bar counts perfect cups: +1 for each clean (zero-complaint) cup,
-## nothing else. A 3-cup order can tick it up to 3 times at once;
-## non-serve outcomes never move it.
-func _affinity_delta(_outcome: String) -> float:
-	var clean := 0.0
+## The bar tracks which fruits this NPC has had a clean (zero-complaint)
+## cup of — one chunk per fruit. A multi-cup order can mark several
+## fruits at once; non-serve outcomes move nothing.
+func _perfect_serve_fruits() -> Array:
+	var out: Array = []
 	for eval in _served_evaluations:
 		if (eval.get("complaints", []) as Array).is_empty():
-			clean += 1.0
-	return clean
+			var f := str(eval.get("requested_fruit", ""))
+			if f != "" and f not in out:
+				out.append(f)
+	return out
 
 
 func _compute_popularity_delta(outcome: String, evaluations: Array) -> float:
@@ -1099,7 +1101,7 @@ func _compute_tip() -> float:
 	if stand == null or npc_id < 0 or not NpcRoster.has_id(npc_id):
 		return 0.0
 	var entry: Dictionary = stand.get_npc_collection().get(npc_id, { })
-	if float(entry.get("affinity", 0.0)) < 10.0:
+	if not StandUnit.npc_is_regular(entry):
 		return 0.0
 	var rarity := str(NpcRoster.get_entry(npc_id).get("rarity", "common"))
 	return _accumulated_price * float(NpcRoster.RARITY_TIP_PCT.get(rarity, 0.0))
@@ -1605,7 +1607,7 @@ func _is_regular() -> bool:
 	if stand == null or npc_id < 0:
 		return false
 	var entry: Dictionary = stand.get_npc_collection().get(npc_id, { })
-	return float(entry.get("affinity", 0.0)) >= 10.0
+	return StandUnit.npc_is_regular(entry)
 
 
 func show_interact_prompt(player: Node) -> void:
