@@ -600,9 +600,12 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 		return
 	var obj_name: String = entry.get("name", "")
 	# If an object with this name already exists under the expected root,
-	# update its transform/contents instead of spawning a duplicate.
+	# update its transform/contents instead of spawning a duplicate —
+	# UNLESS it's queued for deletion: _clear_client_world_objects frees
+	# deferred, so a dying authored node would be "updated" then still
+	# deleted, leaving the client with no copy at all.
 	var existing := root.get_node_or_null(obj_name)
-	if existing != null:
+	if existing != null and not existing.is_queued_for_deletion():
 		_update_container_from_snapshot(existing, entry)
 		return
 	var instance := scene.instantiate()
@@ -759,7 +762,7 @@ func _spawn_supply_box_from_snapshot(entry: Dictionary, root: Node) -> void:
 		return
 	var box_name: String = entry.get("name", "")
 	var existing := root.get_node_or_null(box_name) as SupplyBox
-	if existing != null:
+	if existing != null and not existing.is_queued_for_deletion():
 		_update_supply_box_from_snapshot(existing, entry)
 		return
 	var box := scene.instantiate() as SupplyBox
