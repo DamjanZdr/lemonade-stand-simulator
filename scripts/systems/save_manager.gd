@@ -1159,6 +1159,13 @@ func respawn_default_containers() -> void:
 
 
 func _do_respawn() -> void:
+	# Container respawn is host-authoritative — clients receive the world
+	# exclusively via WorldSync snapshots. Running this on a client sweeps
+	# every owner==null node (i.e. all snapshot-spawned objects, including
+	# dispensers) then fails to reclaim the authored nodes it freed in
+	# _clear_client_world_objects — permanently deleting them locally.
+	if not WorldSync.is_host():
+		return
 	if get_tree() == null or get_tree().current_scene == null:
 		return
 	GameLog.log("[SAVE-DIAG] _do_respawn begin, pending=%d" % _pending_container_respawn.size())

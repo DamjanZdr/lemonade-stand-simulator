@@ -9,6 +9,7 @@ extends Node
 
 signal lobby_created(lobby_id: int)
 signal lobby_joined(lobby_id: int)
+signal lobby_invite_received(lobby_id: int, friend_name: String)
 signal connection_failed(reason: String)
 signal peer_connected(peer_id: int)
 signal peer_disconnected(peer_id: int)
@@ -261,9 +262,12 @@ func _on_lobby_joined(this_lobby_id: int, _permissions: int, _locked: bool, resp
 	lobby_joined.emit(lobby_id)
 
 
-func _on_join_requested(this_lobby_id: int, _friend_id: int) -> void:
-	print("[NetworkManager] Join requested for lobby: ", this_lobby_id)
-	join_game(this_lobby_id)
+func _on_join_requested(this_lobby_id: int, friend_id: int) -> void:
+	# Route through the invite popup — the player chooses to accept or
+	# ignore instead of being ripped out of whatever they were doing.
+	var friend_name := Steam.getFriendPersonaName(friend_id)
+	print("[NetworkManager] Invite from %s for lobby %s" % [friend_name, this_lobby_id])
+	lobby_invite_received.emit(this_lobby_id, friend_name)
 
 # --- Multiplayer callbacks ---
 

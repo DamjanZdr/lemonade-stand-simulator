@@ -232,6 +232,13 @@ func _ready() -> void:
 	LobbyManager.late_join_denied.connect(_on_late_join_denied)
 	WorldSync.world_snapshot_applied.connect(_on_world_snapshot_applied)
 
+	# Steam lobby invite popup — works in menu and in-game; the player
+	# accepts/ignores instead of being auto-joined.
+	var invite_popup := preload("res://scripts/ui/invite_popup.gd").new()
+	add_child(invite_popup)
+	NetworkManager.lobby_invite_received.connect(invite_popup.show_invite)
+	invite_popup.accepted.connect(NetworkManager.join_game)
+
 	# If we're connected to a server (joining an existing game), go
 	# straight to the lobby/game flow. Otherwise, show the in-world
 	# main menu so the player can choose Play, Saves, or Join.
