@@ -265,9 +265,8 @@ func _build_ui() -> void:
 	# Music player widget (bottom-right, same as main menu).
 	_build_music_player()
 
-	# Promo slideshow above the music player (same as main menu).
-	_promo_widget = PromoWidget.new()
-	add_child(_promo_widget)
+	# Promo wishlist widget removed for the full-game build — owners
+	# don't need a wishlist CTA. Null-guarded toggles stay as no-ops.
 
 
 func _make_menu_button(text: String) -> Button:

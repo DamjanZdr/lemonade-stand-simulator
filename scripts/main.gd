@@ -4,7 +4,7 @@ extends Node
 const CASH_PICKUP_SCENE: PackedScene = preload("res://scenes/objects/cash_pickup.tscn")
 const OUTLINE_SCENE: PackedScene = preload("res://scenes/ui/outline_overlay.tscn")
 const DAY_SUMMARY_SCENE: PackedScene = preload("res://scenes/ui/day_summary.tscn")
-const DEMO_COMPLETE_SCENE: PackedScene = preload("res://scenes/ui/demo_complete.tscn")
+
 const WORLD_MENU_SCENE: PackedScene = preload("res://scenes/ui/world_menu.tscn")
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const COOP_LIGHTMAP_PATH := "res://scenes/world/world_coop.lmbake"
@@ -231,10 +231,6 @@ func _ready() -> void:
 	LobbyManager.late_join_starting.connect(_on_late_join_starting)
 	LobbyManager.late_join_denied.connect(_on_late_join_denied)
 	WorldSync.world_snapshot_applied.connect(_on_world_snapshot_applied)
-
-	# Demo-complete screen (credits + wishlist CTA). It listens for the
-	# local stand's onboarding reaching the terminal task; hidden until then.
-	add_child(DEMO_COMPLETE_SCENE.instantiate())
 
 	# If we're connected to a server (joining an existing game), go
 	# straight to the lobby/game flow. Otherwise, show the in-world
