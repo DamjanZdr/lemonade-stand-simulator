@@ -578,6 +578,11 @@ func _clear_client_world_objects() -> void:
 				continue
 			if node.is_in_group("ghost") or removed.has(node.get_instance_id()):
 				continue
+			# Authored scene objects (owner != null) are never swept —
+			# the snapshot doesn't contain them, so freeing them would
+			# leave the client with no dispenser/press/etc. at all.
+			if node.owner != null:
+				continue
 			var ctype := SaveManager.get_container_type(node)
 			if group_name == "container" and not SaveManager.is_known_container_type(ctype):
 				continue
@@ -604,7 +609,10 @@ func _spawn_container_from_snapshot(entry: Dictionary, root: Node) -> void:
 	# UNLESS it's queued for deletion: _clear_client_world_objects frees
 	# deferred, so a dying authored node would be "updated" then still
 	# deleted, leaving the client with no copy at all.
-	var existing := root.get_node_or_null(obj_name)
+	# Recursive: authored containers nest under stand/house subtrees, not
+	# directly under root — a shallow lookup would miss them and spawn a
+	# duplicate on top of the authored copy.
+	var existing := root.find_child(obj_name, true, false)
 	if existing != null and not existing.is_queued_for_deletion():
 		_update_container_from_snapshot(existing, entry)
 		return

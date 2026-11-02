@@ -18,6 +18,14 @@ var _timer_track: Control = null
 func _ready() -> void:
 	layer = 200
 	visible = false
+	# The InviteTemplate mockup is an editor-positioning aid only.
+	var tpl := (
+		get_tree().current_scene.find_child("InviteTemplate", true, false)
+		if get_tree().current_scene
+		else null
+	)
+	if tpl:
+		tpl.visible = false
 
 
 func _process(delta: float) -> void:
@@ -40,10 +48,23 @@ func show_invite(lobby_id: int, friend_name: String) -> void:
 	_time_left = INVITE_TIMEOUT
 
 	var panel := PanelContainer.new()
-	# Top-right, lowered to sit level with the menu title's center —
-	# slides in from the right and leaves the same way.
-	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	panel.position = Vector2(-24, 60)
+	# Position comes from an "InviteAnchor" Control placed in the scene —
+	# drag it in the editor to move the popup. Falls back to top-right.
+	var anchor := (
+		get_tree().current_scene.find_child("InviteAnchor", true, false)
+		if get_tree().current_scene
+		else null
+	)
+	if anchor is Control:
+		var ac := anchor as Control
+		# Anchor = the popup's top-right corner (in screen px). TOP_RIGHT
+		# positions are offsets from the viewport's right edge.
+		panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		var vw := get_viewport().get_visible_rect().size.x
+		panel.position = Vector2(ac.global_position.x - vw, ac.global_position.y)
+	else:
+		panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		panel.position = Vector2(-24, 60)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	var target_x := panel.position.x
 	panel.position.x = target_x + 80
