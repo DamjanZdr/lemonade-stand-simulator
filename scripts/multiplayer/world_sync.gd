@@ -1595,20 +1595,7 @@ func spawn_networked(
 		p.sync_fill_display()
 		p.call_deferred("update_label")
 		get_tree().create_timer(0.5).timeout.connect(
-			func() -> void:
-				if is_instance_valid(p):
-					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
-					var material := (
-						e.material_override as ShaderMaterial if e is MeshInstance3D else null
-					)
-					GameLog.log(
-						"[DIAG] spawned pitcher %s: vol=%.2f fill_y=%s"
-						% [
-							p.name,
-							p.get_liquid_volume(),
-							material.get_shader_parameter("fill_y") if material != null else null,
-						]
-					),
+			_log_spawned_pitcher.bind(weakref(p)), Object.CONNECT_ONE_SHOT,
 		)
 	# Restore delivery grid slot metas so clients can release the slot
 	# when picking up the box.
@@ -1635,6 +1622,22 @@ func spawn_networked(
 	return obj
 
 
+func _log_spawned_pitcher(pitcher_ref: WeakRef) -> void:
+	var pitcher := pitcher_ref.get_ref() as Pitcher
+	if pitcher == null:
+		return
+	var mesh := pitcher.get_node_or_null("LemonadeFill/LemonadeMesh")
+	var material := mesh.material_override as ShaderMaterial if mesh is MeshInstance3D else null
+	GameLog.log(
+		"[DIAG] spawned pitcher %s: vol=%.2f fill_y=%s"
+		% [
+			pitcher.name,
+			pitcher.get_liquid_volume(),
+			material.get_shader_parameter("fill_y") if material != null else null,
+		]
+	)
+
+
 ## Scale-pop juice for player-placed objects: grow from ~zero, slight
 ## overshoot, settle at the final scale. Objects opt in via the
 ## "_net_place_fx" spawn-state flag so host and remote clients both see it.
@@ -1651,10 +1654,13 @@ static func play_place_pop(node: Node3D) -> void:
 	t.tween_property(node, "scale", target, 0.09) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	# Guarantee restoration even if the tween is killed mid-run.
+	var node_ref: WeakRef = weakref(node)
 	node.get_tree().create_timer(0.4).timeout.connect(
-		func():
-			if is_instance_valid(node):
-				node.scale = target,
+		func() -> void:
+			var placed_node := node_ref.get_ref() as Node3D
+			if placed_node != null:
+				placed_node.scale = target,
+		Object.CONNECT_ONE_SHOT,
 	)
 
 
@@ -2220,20 +2226,7 @@ func _spawn_on_clients(
 		p.sync_fill_display()
 		p.call_deferred("update_label")
 		get_tree().create_timer(0.5).timeout.connect(
-			func() -> void:
-				if is_instance_valid(p):
-					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
-					var material := (
-						e.material_override as ShaderMaterial if e is MeshInstance3D else null
-					)
-					GameLog.log(
-						"[DIAG] spawned pitcher %s: vol=%.2f fill_y=%s"
-						% [
-							p.name,
-							p.get_liquid_volume(),
-							material.get_shader_parameter("fill_y") if material != null else null,
-						]
-					),
+			_log_spawned_pitcher.bind(weakref(p)), Object.CONNECT_ONE_SHOT,
 		)
 	# Restore delivery grid slot metas so clients can release the slot
 	# when picking up the box.

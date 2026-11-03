@@ -1260,20 +1260,7 @@ func _create_container_hand_mesh(
 		if pickupable != null:
 			pickupable.queue_free()
 		get_tree().create_timer(0.5).timeout.connect(
-			func() -> void:
-				if is_instance_valid(pitcher):
-					var e := pitcher.get_node_or_null("LemonadeFill/LemonadeMesh")
-					var material := (
-						e.material_override as ShaderMaterial if e is MeshInstance3D else null
-					)
-					GameLog.log(
-						"[DIAG] hand pitcher after 0.5s: vol=%.2f fill_y=%s vis=%s"
-						% [
-							pitcher.get_liquid_volume(),
-							material.get_shader_parameter("fill_y") if material != null else null,
-							pitcher.visible,
-						]
-					),
+			_log_hand_pitcher.bind(weakref(pitcher)), Object.CONNECT_ONE_SHOT,
 		)
 		# Hide for the first frame in the tree — entering mid-frame can
 		# render the CSG combiner's child primitives (including the eraser
@@ -1343,6 +1330,33 @@ func _create_container_hand_mesh(
 	return inst
 
 
+func _log_hand_pitcher(pitcher_ref: WeakRef) -> void:
+	var pitcher := pitcher_ref.get_ref() as Pitcher
+	if pitcher == null:
+		return
+	var mesh := pitcher.get_node_or_null("LemonadeFill/LemonadeMesh")
+	var material := mesh.material_override as ShaderMaterial if mesh is MeshInstance3D else null
+	GameLog.log(
+		"[DIAG] hand pitcher after 0.5s: vol=%.2f fill_y=%s vis=%s"
+		% [
+			pitcher.get_liquid_volume(),
+			material.get_shader_parameter("fill_y") if material != null else null,
+			pitcher.visible,
+		]
+	)
+
+
+func _log_placed_container(container_ref: WeakRef) -> void:
+	var container := container_ref.get_ref() as Node3D
+	if container == null:
+		GameLog.log("[WS-PLACE] placed container freed before delayed state check")
+		return
+	GameLog.log(
+		"[WS-PLACE] placer state after 0.7s: node=%s valid=true visible=%s pos=%s scale=%s"
+		% [container.name, container.visible, container.global_position, container.scale]
+	)
+
+
 func _set_container_starting_state(
 	inst: Node,
 	container_type: String,
@@ -1391,6 +1405,8 @@ func _set_container_starting_state(
 				pitcher.sugar = saved_recipe.get("sugar", 0.0)
 				pitcher.ice = saved_recipe.get("ice", 0.0)
 				pitcher.cups_poured = saved_recipe.get("cups_poured", 0)
+				pitcher.serving_recipe = saved_recipe.get("serving_recipe", { }).duplicate(true)
+				pitcher.state = saved_recipe.get("state", Pitcher.PitcherState.PREPPING)
 
 
 func _refresh_held_container_mesh() -> void:
@@ -1523,7 +1539,13 @@ func _mark_ghost(node: Node) -> void:
 	remove_placement_groups(node)
 	# _ready() may add the node to placement groups after add_child,
 	# so remove them again once the tree is done setting up.
-	call_deferred("remove_placement_groups", node)
+	call_deferred("_remove_placement_groups_if_alive", weakref(node))
+
+
+func _remove_placement_groups_if_alive(node_ref: WeakRef) -> void:
+	var node := node_ref.get_ref() as Node
+	if node != null:
+		remove_placement_groups(node)
 
 
 func _destroy_ghost() -> void:
@@ -2272,22 +2294,8 @@ func _try_place_container() -> Node3D:
 			AudioManager.play_sfx("table", source_node.global_position, -1.0, 0.05, 0.85)
 			_destroy_ghost()
 			_player.inventory.clear_held()
-			var placed_ref := source_node
 			get_tree().create_timer(0.7).timeout.connect(
-				func():
-					GameLog.log(
-						(
-							"[WS-PLACE] placer state after 0.7s: "
-							+ "node=%s valid=%s visible=%s pos=%s scale=%s"
-						)
-						% [
-							placed_ref.name,
-							is_instance_valid(placed_ref),
-							placed_ref.visible if is_instance_valid(placed_ref) else "?",
-							placed_ref.global_position if is_instance_valid(placed_ref) else "?",
-							placed_ref.scale if is_instance_valid(placed_ref) else "?",
-						]
-					),
+				_log_placed_container.bind(weakref(source_node)), Object.CONNECT_ONE_SHOT,
 			)
 			return source_node
 		return null

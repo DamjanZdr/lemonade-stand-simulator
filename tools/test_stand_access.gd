@@ -41,6 +41,10 @@ func _run() -> void:
 	player.add_child(inventory)
 	player.inventory = inventory
 	check(inventory.clear_freed_mesh(), "clearing a freed hand mesh resets its cached reference")
+	check(
+		await inventory.hand_animation_stays_invertible(),
+		"hand item animations never use a singular scale",
+	)
 	check(not first.can_be_served_by(player), "no remote peers does not grant rival stand access")
 	check(second.can_be_served_by(player), "assigned stand remains usable without remote peers")
 	var modes: Dictionary = load("res://scripts/autoloads/game_state.gd").get_script_constant_map()[
@@ -71,6 +75,7 @@ func _run() -> void:
 	else:
 		check(false, "host authorization helper exists")
 	box.free()
+	await _test_place_pop(world, sync)
 	await _test_host_requests(world, player, first, second)
 	var lobby: Node = load("res://tools/lobby_access_test_harness.gd").new()
 	world.add_child(lobby)
@@ -118,6 +123,28 @@ func _run() -> void:
 	await process_frame
 	print("STAND ACCESS: ", "PASS" if failures == 0 else "FAIL (%d)" % failures)
 	quit(0 if failures == 0 else 1)
+
+
+func _test_place_pop(world: Node, sync: Node) -> void:
+	var fleeting := Node3D.new()
+	world.add_child(fleeting)
+	sync.play_place_pop(fleeting)
+	await create_timer(0.025).timeout
+	fleeting.free()
+	await create_timer(0.45).timeout
+	check(not is_instance_valid(fleeting), "placement timer tolerates an already freed object")
+	var retained := Node3D.new()
+	world.add_child(retained)
+	var target := Vector3(0.3, 0.4, 0.5)
+	retained.scale = target
+	var existing_tweens := get_processed_tweens()
+	sync.play_place_pop(retained)
+	for tween in get_processed_tweens():
+		if tween not in existing_tweens:
+			tween.kill()
+	await create_timer(0.45).timeout
+	check(retained.scale.is_equal_approx(target), "cancelled placement pop restores real scale")
+	retained.free()
 
 
 func _test_host_requests(world: Node, player: Node, first: Node, second: Node) -> void:

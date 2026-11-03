@@ -97,7 +97,7 @@ func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 
 func _animate_mesh_in(mesh: Node3D) -> void:
 	var target_scale := mesh.scale
-	mesh.scale = Vector3.ZERO
+	mesh.scale = target_scale * 0.001
 	var tween := mesh.create_tween()
 	tween.tween_property(mesh, "scale", target_scale * 1.12, TRANSFER_DURATION) \
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -109,7 +109,7 @@ func _animate_mesh_out(mesh: Node3D) -> void:
 	var tween := mesh.create_tween()
 	tween.tween_property(mesh, "scale", mesh.scale * 1.08, 0.05) \
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(mesh, "scale", Vector3.ZERO, TRANSFER_DURATION) \
+	tween.tween_property(mesh, "scale", mesh.scale * 0.001, TRANSFER_DURATION) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_BACK)
 	tween.finished.connect(mesh.queue_free)
 
