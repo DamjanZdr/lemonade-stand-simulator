@@ -35,6 +35,7 @@ var _node_cache: Dictionary = { }
 ## unique integer ID that survives reparenting, unlike name/path lookups.
 const NET_ID_META := "_net_id"
 var _net_id_counter: int = 0
+var _snapshot_applying: bool = false
 var _net_id_to_node: Dictionary = { }
 var _node_to_net_id: Dictionary = { }
 
@@ -395,6 +396,8 @@ func _cleanup_expired_despawns() -> void:
 
 
 func _serialize_container(node: Node) -> Dictionary:
+	if node.is_in_group("ghost") or SaveManager._is_child_of_player(node, null):
+		return { }
 	var ctype := SaveManager.get_container_type(node)
 	if ctype == "" or not SaveManager.is_known_container_type(ctype):
 		return { }
@@ -441,7 +444,14 @@ func _serialize_container(node: Node) -> Dictionary:
 		"rotation": [node.global_rotation.x, node.global_rotation.y, node.global_rotation.z],
 		"scale": [node.scale.x, node.scale.y, node.scale.z],
 		"stand_owner": node.get("stand_owner") if "stand_owner" in node else "",
+		"hidden": not node.visible,
 	}
+	var parent := node.get_parent()
+	if parent is Node3D and parent.is_in_group("container") and not parent.visible:
+		var parent_id := get_net_id(parent)
+		if parent_id < 0:
+			parent_id = _assign_net_id(parent)
+		entry["carried_parent_id"] = parent_id
 	# Capture container-specific state
 	if node is FruitBin:
 		var fb := node as FruitBin
@@ -539,6 +549,7 @@ func _apply_world_snapshot(snapshot: Dictionary) -> void:
 	if root == null:
 		world_snapshot_applied.emit()
 		return
+	_snapshot_applying = true
 	_dump_world_objects("pre-clear")
 	_clear_client_world_objects()
 	_dump_world_objects("post-clear")
@@ -567,7 +578,19 @@ func _apply_world_snapshot(snapshot: Dictionary) -> void:
 			snapshot.get("trash_items", []).size(),
 		]
 	)
+	for entry in snapshot.get("containers", []):
+		var child := find_node_by_net_id(int(entry.get("net_id", -1)))
+		var parent := find_node_by_net_id(int(entry.get("carried_parent_id", -1)))
+		if child != null and parent != null and child.get_parent() != parent:
+			child.reparent(parent, true)
+	for entry in snapshot.get("containers", []):
+		var node := find_node_by_net_id(int(entry.get("net_id", -1)))
+		if node != null and entry.get("hidden", false):
+			node.visible = false
+			for shape in node.find_children("*", "CollisionShape3D", true, false):
+				shape.disabled = true
 	_dump_world_objects("post-apply")
+	_snapshot_applying = false
 	world_snapshot_applied.emit()
 
 

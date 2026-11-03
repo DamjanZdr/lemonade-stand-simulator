@@ -14,6 +14,8 @@ var held_item_data: Dictionary = { }
 ## The Node3D attached to the camera hand slot.
 var _held_mesh: Node3D = null
 var _pickup_effect_preplayed: bool = false
+var _last_synced_type: int = -1
+var _last_synced_data: Dictionary = { }
 
 @onready var _player: Player = get_parent() as Player
 
@@ -244,7 +246,84 @@ func _sync_held_to_host(item_type: int, data: Dictionary) -> void:
 		return
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		return
-	WorldSync.request_held_item_sync(item_type, data)
+	var snapshot := WorldSync._rpc_safe_dict(data)
+	if _last_synced_type == item_type and _last_synced_data == snapshot:
+		return
+	_last_synced_type = item_type
+	_last_synced_data = snapshot.duplicate(true)
+	WorldSync.request_held_item_sync(item_type, snapshot)
+
+
+func get_save_data() -> Dictionary:
+	var data := held_item_data.duplicate(true)
+	if held_item == HeldItem.CONTAINER and data.get("container_type", "") == "pitcher":
+		if _player != null and _player.placement != null and is_instance_valid(_held_mesh):
+			data["saved_recipe"] = _player.placement._live_held_pitcher_recipe().duplicate(true)
+	return data
+
+
+@rpc("any_peer", "reliable")
+func restore_saved_inventory(item_type: int, data: Dictionary) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	if sender != 1 and (sender != 0 or not WorldSync.is_host()):
+		return
+	if _player == null or not _player.is_multiplayer_authority():
+		return
+	await get_tree().physics_frame
+	var source: Node3D = null
+	for attempt in range(300):
+		if not is_instance_valid(_player):
+			return
+		source = WorldSync.find_node_by_net_id(int(data.get("recovery_source", -1))) as Node3D
+		if not WorldSync._snapshot_applying \
+				and (not data.get("source_retained", false) or is_instance_valid(source)) \
+				and _player.assigned_stand != null:
+			break
+		await get_tree().process_frame
+	if data.get("source_retained", false) and not is_instance_valid(source):
+		return
+	data["box_stand_owner"] = _player.assigned_stand.name
+	data["stand_name"] = _player.assigned_stand.name
+	match item_type:
+		HeldItem.CONTAINER:
+			var ctype: String = data.get("container_type", "")
+			if ctype == "workstation" and _player.placement._workstation_scene == null:
+				_player.placement._workstation_scene = load("res://scenes/stand/workstation.tscn")
+			_player.placement.hold_container(
+				ctype, float(data.get("saved_amount", 0.0)), int(data.get("saved_count", 0)),
+				bool(data.get("has_liquid", false)), data.get("saved_recipe", { }),
+				bool(data.get("from_delivery_box", false)), data,
+			)
+			if is_instance_valid(source):
+				held_item_data["source_node"] = source
+				held_item_data["source_parent"] = source.get_parent()
+				held_item_data["source_original_transform"] = source.global_transform
+				var attached: Array[Dictionary] = []
+				for child in source.get_children():
+					if child.is_in_group("container"):
+						attached.append({"name": child.name, "net_id": WorldSync.get_net_id(child)})
+				held_item_data["workstation_attached_items"] = attached
+				for child in [source] + source.find_children("*", "Node3D", true, false):
+					if "stand_owner" in child:
+						child.stand_owner = _player.assigned_stand.name
+				source.visible = false
+				_player.placement._disable_physics(source)
+		HeldItem.SUPPLY_BOX:
+			var mesh := SUPPLY_BOX_SCENE.instantiate() as SupplyBox
+			mesh.is_hand_mesh = true
+			mesh.quantity = float(data.get("amount", 1.0))
+			mesh.is_equipment = bool(data.get("is_equipment", false))
+			mesh.equipment_type = str(data.get("equipment_type", ""))
+			mesh.ingredient_type = str(data.get("ingredient_type", "lemon"))
+			mesh.scale = Vector3.ONE * (0.05 / 0.3)
+			set_held(item_type, data, mesh)
+		HeldItem.CUP_EMPTY, HeldItem.CUP_FILLED:
+			var recipe: Dictionary = data.get("recipe", { })
+			set_held(item_type, data, Cup.make_hand_mesh(
+				item_type == HeldItem.CUP_FILLED, recipe.get("color", Color.WHITE),
+			))
+		HeldItem.TRASH:
+			make_held_trash(float(data.get("trash_value", 0.0)), str(data.get("trash_type", "")))
 
 
 func _apply_hand_offset(item_type: int, data: Dictionary) -> void:
@@ -280,6 +359,7 @@ func update_held_amount(new_amount: float) -> void:
 	if _player != null:
 		_player.held_item_data = held_item_data
 		_player.held_mesh = _held_mesh
+	_sync_held_to_host(held_item, get_save_data())
 
 
 func release_hand_mesh() -> Node3D:
@@ -333,6 +413,8 @@ func _process(_delta: float) -> void:
 	# replicated by the multiplayer spawner, and the owning peer must clear them.
 	if _player == null or not _player.is_multiplayer_authority():
 		return
+	if held_item != HeldItem.NONE and not WorldSync.is_host():
+		_sync_held_to_host(held_item, get_save_data())
 	if held_item != HeldItem.NONE or _held_mesh != null:
 		return
 	var slot := _player.hand_slot

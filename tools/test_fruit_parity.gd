@@ -14,6 +14,7 @@ func check(condition: bool, label: String) -> void:
 
 
 func _run() -> void:
+	root.get_node("AchievementManager").set_script(load("res://tools/achievement_test_harness.gd"))
 	var world := Node3D.new()
 	root.add_child(world)
 	current_scene = world

@@ -34,6 +34,8 @@ var _pending_supply_box_respawn: Array = []
 var _default_container_positions: Array = []
 var _world_restore_pending: bool = false
 var _world_restore_revision: int = 0
+var _saved_inventories: Dictionary = { }
+var _inventory_sources: Dictionary = { }
 
 ## When true, _build_save_dict uses pristine default containers instead
 ## of scanning the (potentially dirty) world. Set by start_new_game() so
@@ -178,15 +180,52 @@ func _do_save() -> void:
 	var data := _build_save_dict()
 	data["slot_name"] = current_slot
 	data["saved_at"] = Time.get_unix_time_from_system()
-	var json := JSON.stringify(data)
 	var path := _slot_path(current_slot)
-	var file := FileAccess.open(path, FileAccess.WRITE)
-	if file:
-		file.store_string(json)
-		file.close()
-	else:
-		push_error("Failed to save game to %s (error %d)" % [path, FileAccess.get_open_error()])
+	var error := _write_save_atomic(path, data)
+	if error != OK:
+		push_error("Failed to save game to %s (error %d)" % [path, error])
 	GameLog.time_log("_do_save", _t0)
+
+
+func _write_save_atomic(path: String, data: Dictionary) -> Error:
+	if data.is_empty():
+		return ERR_INVALID_DATA
+	var temporary := path + ".tmp"
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
+	if file == null:
+		return FileAccess.get_open_error()
+	file.store_string(JSON.stringify(data))
+	file.flush()
+	var error := file.get_error()
+	file.close()
+	if error != OK:
+		return error
+	if _read_save_file(temporary).is_empty():
+		return ERR_FILE_CORRUPT
+	if not _read_save_file(path).is_empty():
+		error = DirAccess.copy_absolute(path, path + ".bak.tmp")
+		if error != OK:
+			return error
+		error = _replace_save_file(path + ".bak.tmp", path + ".bak")
+		if error != OK:
+			return error
+	return _replace_save_file(temporary, path)
+
+
+func _replace_save_file(source: String, target: String) -> Error:
+	return DirAccess.rename_absolute(source, target)
+
+
+func _read_save_file(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return { }
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return { }
+	var parser := JSON.new()
+	var error := parser.parse(file.get_as_text())
+	file.close()
+	return parser.data if error == OK and parser.data is Dictionary else { }
 
 
 func load_game() -> Dictionary:
@@ -197,34 +236,27 @@ func load_slot(slot_name: String) -> Dictionary:
 	if slot_name == "":
 		return { }
 	var path := _slot_path(slot_name)
-	if not FileAccess.file_exists(path):
-		return { }
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return { }
-	var json := file.get_as_text()
-	file.close()
-	var parsed = JSON.parse_string(json)
-	if parsed is Dictionary:
-		return parsed
-	return { }
+	var data := _read_save_file(path)
+	if not data.is_empty():
+		return data
+	return _read_save_file(path + ".bak")
 
 
 func has_save() -> bool:
-	return current_slot != "" and FileAccess.file_exists(_slot_path(current_slot))
+	return current_slot != "" and not load_slot(current_slot).is_empty()
 
 
 func delete_save() -> void:
-	if current_slot != "" and FileAccess.file_exists(_slot_path(current_slot)):
-		DirAccess.remove_absolute(_slot_path(current_slot))
-		print("Save deleted: ", current_slot)
+	if current_slot != "":
+		delete_slot(current_slot)
 
 
 func delete_slot(slot_name: String) -> void:
 	var path := _slot_path(slot_name)
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(path)
-		print("Save deleted: ", slot_name)
+	for suffix in ["", ".bak", ".tmp", ".bak.tmp"]:
+		if FileAccess.file_exists(path + suffix):
+			DirAccess.remove_absolute(path + suffix)
+	print("Save deleted: ", slot_name)
 
 
 ## Returns info about all save slots for the Load Game UI.
@@ -238,14 +270,20 @@ func list_saves() -> Array:
 		return []
 	var my_steam_id: int = NetworkManager.steam_id
 	var saves: Array = []
+	var seen_slots: Dictionary = { }
 	var dir := DirAccess.open(SAVE_DIR)
 	if dir == null:
 		return []
 	dir.list_dir_begin()
 	var file_name := dir.get_next()
 	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".json"):
-			var slot_name := file_name.get_basename()
+		if not dir.current_is_dir() \
+				and (file_name.ends_with(".json") or file_name.ends_with(".json.bak")):
+			var slot_name := file_name.trim_suffix(".bak").get_basename()
+			if seen_slots.has(slot_name):
+				file_name = dir.get_next()
+				continue
+			seen_slots[slot_name] = true
 			var data := load_slot(slot_name)
 			if not data.is_empty():
 				# Filter by creator Steam ID so joiners don't see the
@@ -293,6 +331,8 @@ func start_new_game(stand_name: String = "", game_mode: int = GameState.GameMode
 		stand_name = "Lemonade Stand"
 	# Use the stand name as the slot (file) name.
 	current_slot = stand_name
+	_saved_inventories.clear()
+	_inventory_sources.clear()
 	auto_save_enabled = true
 	# Store the stand name and mode so they're available when loaded.
 	GameState.stand_name = stand_name
@@ -449,6 +489,8 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	if data.is_empty():
 		return
 	_applying_save = true
+	_saved_inventories = data.get("player_inventories", { }).duplicate(true)
+	_inventory_sources.clear()
 	GameLog.log(
 		"[SaveManager] Applying '%s': stored money=$%.2f, live money=$%.2f"
 		% [current_slot, float(data.get("money", -1.0)), GameState.money]
@@ -741,6 +783,117 @@ func _active_container_entries(entries: Array) -> Array:
 	)
 
 
+func _player_inventory_key(player: Player) -> String:
+	if player.has_meta("_save_inventory_key"):
+		return str(player.get_meta("_save_inventory_key"))
+	var peer_id := player.get_multiplayer_authority()
+	var steam_id: int = 0
+	if peer_id == multiplayer.get_unique_id():
+		steam_id = NetworkManager.steam_id
+	elif multiplayer.has_multiplayer_peer():
+		var peer := multiplayer.multiplayer_peer
+		if peer.has_method("get_steam_id_for_peer_id"):
+			steam_id = int(peer.call("get_steam_id_for_peer_id", peer_id))
+	var key := "steam:%d" % steam_id if steam_id != 0 else ""
+	if key == "" and peer_id == multiplayer.get_unique_id():
+		key = "local"
+	if key != "":
+		player.set_meta("_save_inventory_key", key)
+	return key
+
+
+func register_player_inventory(player: Player) -> void:
+	if WorldSync.is_host():
+		_player_inventory_key(player)
+
+
+func _inventory_value(value: Variant, encode: bool) -> Variant:
+	if encode and value is Color:
+		return { "_saved_color": _color_to_array(value) }
+	if value is Dictionary:
+		if not encode and value.size() == 1 and value.has("_saved_color"):
+			return _array_to_color(value._saved_color, Color.WHITE)
+		var result := { }
+		for key in value:
+			result[key] = _inventory_value(value[key], encode)
+			if not encode and key in ["color", "fill_color"]:
+				var color: Variant = _color_from_save(result[key])
+				if color is Color:
+					result[key] = color
+		return result
+	if value is Array:
+		var result: Array = []
+		for item in value:
+			result.append(_inventory_value(item, encode))
+		return result
+	return value
+
+
+func capture_player_inventory(player: Player) -> void:
+	if not WorldSync.is_host() or player.inventory == null:
+		return
+	var key := _player_inventory_key(player)
+	if key == "":
+		return
+	if player.held_item == HeldItem.NONE:
+		_saved_inventories.erase(key)
+		return
+	var data := player.inventory.get_save_data()
+	var source: Variant = data.get("source_node")
+	if not is_instance_valid(source) and data.get("source_retained", false):
+		source = WorldSync.find_node_by_net_id(int(data.get("recovery_source", -1)))
+	if is_instance_valid(source) and not source.visible:
+		if not source is Interactable or not source.can_player_use(player):
+			return
+		source.set_meta("_saved_inventory_owner", key)
+		_inventory_sources[key] = source
+		if source is Lemonader:
+			data["saved_recipe"] = source.machine_state.duplicate(true)
+	var stored := { }
+	for field in [
+		"container_type", "saved_amount", "saved_count", "has_liquid", "saved_recipe",
+		"from_delivery_box", "deployed", "ingredient_type", "amount", "source",
+		"is_equipment", "equipment_type", "recipe", "trash_value", "trash_type", "is_trash",
+	]:
+		if data.has(field):
+			stored[field] = data[field]
+	_saved_inventories[key] = {
+		"item_type": player.held_item,
+		"data": _inventory_value(stored, true),
+	}
+
+
+func restore_player_inventory(player: Player) -> void:
+	if not WorldSync.is_host() or player.inventory == null or player.assigned_stand == null:
+		return
+	var key := _player_inventory_key(player)
+	if key == "" or not _saved_inventories.has(key) \
+			or player.has_meta("_saved_inventory_restored"):
+		return
+	var record: Dictionary = _saved_inventories[key]
+	var data: Dictionary = _inventory_value(record.get("data", { }), false)
+	var source: Variant = _inventory_sources.get(key)
+	if is_instance_valid(source):
+		if source is Lemonader:
+			data["saved_recipe"] = source.machine_state.duplicate(true)
+		data["recovery_source"] = WorldSync._serialize_container(source).get("net_id", -1)
+		data["source_retained"] = true
+		for item in [source] + source.find_children("*", "Node3D", true, false):
+			if "stand_owner" in item:
+				item.stand_owner = player.assigned_stand.name
+				WorldSync.sync_property(item, "stand_owner", item.stand_owner)
+	data["box_stand_owner"] = player.assigned_stand.name
+	data["stand_name"] = player.assigned_stand.name
+	player.set_meta("_saved_inventory_restored", true)
+	player.inventory.set_held(int(record.get("item_type", 0)), data)
+	if player.is_multiplayer_authority():
+		player.inventory.restore_saved_inventory(int(record.get("item_type", 0)), data)
+	else:
+		player.inventory.restore_saved_inventory.rpc_id(
+			player.get_multiplayer_authority(), int(record.get("item_type", 0)), data,
+		)
+
+
 func _build_save_dict() -> Dictionary:
 	# For a brand-new game, save the pristine default containers
 	# instead of scanning the (potentially dirty) world. The world
@@ -752,9 +905,13 @@ func _build_save_dict() -> Dictionary:
 		placed_containers = _active_container_entries(_default_container_positions.duplicate(true))
 		supply_boxes = []
 	else:
+		for player in get_tree().get_nodes_in_group("player"):
+			if player is Player:
+				capture_player_inventory(player)
 		placed_containers = _scan_placed_containers()
 		supply_boxes = _scan_supply_boxes()
 	return {
+		"player_inventories": { } if _save_use_defaults else _saved_inventories.duplicate(true),
 		"stand_name": GameState.stand_name,
 		"stand_names": _collect_stand_names(),
 		"stand_money": _collect_stand_money(),
@@ -949,8 +1106,16 @@ func _scan_placed_containers() -> Array:
 			"scale": [node.scale.x, node.scale.y, node.scale.z],
 			"stand_owner": _container_stand_owner(node),
 		}
+		if node.has_meta("_saved_inventory_owner") and not node.visible:
+			entry["inventory_owner"] = str(node.get_meta("_saved_inventory_owner"))
+		var parent := node.get_parent()
+		while parent is Node3D:
+			if parent.has_meta("_saved_inventory_owner") and not parent.visible:
+				entry["inventory_parent"] = str(parent.get_meta("_saved_inventory_owner"))
+				break
+			parent = parent.get_parent()
 		if node is Lemonader:
-			entry["machine_state"] = node.machine_state.duplicate(true)
+			entry["machine_state"] = _inventory_value(node.machine_state, true)
 		# Capture container contents
 		if node is FruitBin:
 			entry["fruit_amounts"] = _dict_to_arrays(node.fruit_amounts)
@@ -982,11 +1147,11 @@ func _scan_placed_containers() -> Array:
 
 
 func _is_child_of_player(node: Node, player: Node) -> bool:
-	if player == null or node == null:
+	if node == null:
 		return false
 	var parent := node.get_parent()
 	while parent != null:
-		if parent == player:
+		if parent == player or parent is Player or parent.is_in_group("ghost"):
 			return true
 		parent = parent.get_parent()
 	return false
@@ -1241,6 +1406,8 @@ func _do_respawn() -> void:
 	# table/press/etc into the next world.
 	WorldSync.despawn_all_spawned()
 	var _claimed: Array[Node] = []
+	var inventory_children: Array = []
+	_inventory_sources.clear()
 	if not cdata.is_empty():
 		for entry in cdata:
 			var ctype: String = entry.get("type", "")
@@ -1286,9 +1453,9 @@ func _do_respawn() -> void:
 				% ["spawn" if spawned else "reuse", ctype, str(pos)]
 			)
 			if instance is Lemonader:
-				instance.machine_state = entry \
-						.get("machine_state", instance.machine_state) \
-						.duplicate(true)
+				instance.machine_state = _inventory_value(
+					entry.get("machine_state", instance.machine_state), false,
+				)
 			# Set state BEFORE add_child so _ready() sees correct values
 			if instance is CupStack:
 				instance.starting_count = entry.get("current_count", instance.starting_count)
@@ -1311,6 +1478,16 @@ func _do_respawn() -> void:
 					rot[2] if rot.size() > 2 else 0.0,
 				)
 				instance.add_to_group("container")
+
+			var inventory_owner: String = str(entry.get("inventory_owner", ""))
+			if inventory_owner != "":
+				instance.set_meta("_saved_inventory_owner", inventory_owner)
+				_inventory_sources[inventory_owner] = instance
+			elif instance.has_meta("_saved_inventory_owner"):
+				instance.remove_meta("_saved_inventory_owner")
+				instance.visible = true
+			if entry.has("inventory_parent"):
+				inventory_children.append([instance, str(entry.inventory_parent)])
 
 			# Restore container contents
 			if instance is FruitBin:
@@ -1354,6 +1531,15 @@ func _do_respawn() -> void:
 					instance.starting_amount = 0.0
 				if "starting_count" in instance:
 					instance.starting_count = 0
+
+		for link in inventory_children:
+			var source: Node = _inventory_sources.get(link[1])
+			if is_instance_valid(source):
+				link[0].reparent(source, true)
+		for source in _inventory_sources.values():
+			source.visible = false
+			for shape in source.find_children("*", "CollisionShape3D", true, false):
+				shape.disabled = true
 
 		# Link pitchers to presses/water dispensers based on proximity to snap points
 		for container in root.get_tree().get_nodes_in_group("container"):

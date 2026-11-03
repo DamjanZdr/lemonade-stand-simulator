@@ -1658,6 +1658,9 @@ func _push_world_state_to_clients() -> void:
 ## Same as above but only to a specific peer (for late joiners).
 func _push_world_state_to_client(peer_id: int) -> void:
 	WorldSync.sync_world_state_to_peer(peer_id)
+	var player := players_node.get_node_or_null(str(peer_id)) as Player
+	if player != null:
+		SaveManager.restore_player_inventory(player)
 	# Static StandUnit nodes use their own RPC payload instead of the world snapshot.
 	if stand_unit:
 		stand_unit.push_state()
@@ -1771,7 +1774,10 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	GameLog.log("[Main] Peer %d disconnected, removing player" % peer_id)
 	var player_name := str(peer_id)
 	if players_node.has_node(player_name):
-		var p := players_node.get_node(player_name)
+		var p := players_node.get_node(player_name) as Player
+		if p != null:
+			SaveManager.capture_player_inventory(p)
+			SaveManager.save_game()
 		p.queue_free()
 	# Clean up any cached references
 	WorldSync.erase_node_cache(player_name)
@@ -1838,7 +1844,9 @@ func _spawn_player_for_peer(peer_id: int) -> void:
 		"[Main] Spawned player %d (stand=%s, is_me=%s)"
 		% [peer_id, stand.name if stand else "null", peer_id == multiplayer.get_unique_id()]
 	)
+	SaveManager.register_player_inventory(p)
 	if peer_id == multiplayer.get_unique_id():
+		SaveManager.restore_player_inventory(p)
 		_on_local_player_ready(p)
 
 

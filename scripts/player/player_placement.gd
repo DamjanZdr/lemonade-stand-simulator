@@ -1133,6 +1133,7 @@ func hold_container(
 	has_liquid: bool = false,
 	saved_recipe: Dictionary = { },
 	from_box: bool = false,
+	recovery: Dictionary = { },
 ) -> void:
 	var scene: PackedScene = _get_container_scene(container_type)
 	if scene == null:
@@ -1159,7 +1160,7 @@ func hold_container(
 			"has_liquid": has_liquid,
 			"saved_recipe": saved_recipe,
 			"from_delivery_box": from_box,
-		},
+		}.merged(recovery, true),
 		hand_mesh,
 	)
 
@@ -1375,7 +1376,13 @@ func _set_container_starting_state(
 				var fbin := inst as FruitBin
 				var amounts: Dictionary = saved_recipe.get("fruit_amounts", { })
 				if not amounts.is_empty():
-					fbin.fruit_amounts = amounts.duplicate()
+					fbin.fruit_amounts.clear()
+					for fruit in amounts:
+						fbin.fruit_amounts[str(fruit)] = float(amounts[fruit])
+		"press":
+			if inst is Press:
+				inst.fruit_type = saved_recipe.get("fruit_type", "")
+				inst.fruit_count = saved_recipe.get("fruit_count", 0.0)
 		"cup_stack":
 			if "starting_count" in inst:
 				inst.starting_count = saved_count
@@ -2473,6 +2480,14 @@ func _cancel_container_placement() -> void:
 
 
 func pickup_container(interactable: Interactable, container_type: String) -> void:
+	var recovery := {
+		"recovery_position": interactable.global_position,
+		"recovery_rotation": interactable.global_rotation,
+		"recovery_scale": interactable.scale,
+		"recovery_source": WorldSync.get_net_id(interactable),
+		"source_retained": container_type in ["workstation", "cup_tray", "lemonader", "fruitomatic"],
+		"deployed": true,
+	}
 	if container_type in ["lemonader", "fruitomatic"]:
 		# No copied-mesh afterimage for the machine — it's the same copy
 		# path that produced the white-box flash, and a giant translucent
@@ -2520,7 +2535,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 			# The hand mesh shows the machine's real state (slot pitcher,
 			# batch, stock); the hidden original keeps processing.
 			saved_state = (interactable as Lemonader).machine_state.duplicate(true)
-		hold_container(container_type, 0.0, 0, false, saved_state)
+		hold_container(container_type, 0.0, 0, false, saved_state, false, recovery)
 		_player.held_item_data["source_node"] = interactable
 		_player.held_item_data["deployed"] = true
 		return
@@ -2552,6 +2567,11 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 	if interactable is FruitBin:
 		var fbin := interactable as FruitBin
 		saved_recipe = { "fruit_amounts": fbin.fruit_amounts.duplicate() }
+	elif interactable is Press:
+		saved_recipe = {
+			"fruit_type": interactable.fruit_type,
+			"fruit_count": interactable.fruit_count,
+		}
 
 	EventBus.container_picked_up.emit(container_type, interactable)
 	var pickup_key: String = container_type
@@ -2572,7 +2592,7 @@ func pickup_container(interactable: Interactable, container_type: String) -> voi
 		if ip != null:
 			ip.remove_child(interactable)
 			interactable.queue_free()
-	hold_container(container_type, saved_amount, saved_count, has_liquid, saved_recipe)
+	hold_container(container_type, saved_amount, saved_count, has_liquid, saved_recipe, false, recovery)
 	# Mark as deployed (was already placed on a workstation) so it can't go on the floor
 	_player.held_item_data["deployed"] = true
 
