@@ -127,6 +127,12 @@ Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 - Write durability gap: SaveManager._do_save opens the live JSON path with FileAccess.WRITE, stores/closes directly, and has no atomic replacement/backup scheme. A failure during that write could damage the previous file. This is a code-inspection risk, not observed corruption in the captured session.
 - Final audit assertions passed and process exited 0, with six ObjectDB/three resource cleanup warnings remaining. Initial matrix fixture errors were corrected: typed FruitBin dictionaries require element assignment, and direct scene instantiation of Press/Cup must explicitly add the container group to emulate deployment; those fixture errors were not established gameplay bugs. The real save was read only; all fixture saves were disabled (empty current slot).
 
+## Computer UI exposure and locked names (2026-11-03)
+
+- Computer screen shader must clamp texture-linear RGB BEFORE applying inverse-exposure `boost`. Clamping after boost clips bright UI pixels at low day/night exposure and crushes contrast. Rendered probes reproduced a 0.349 brightness spread before correction and zero afterward; white and grey probes passed with glow enabled, including Vulkan and D3D12 white checks. Do not change world lighting or viewport update scheduling for this fix.
+- Morning hub locked machine cards use `Unknown Equipment`; real names appear at claimed technology tier 1 (Squeeze-E-Z) and 2 (Fruit-O-Matic). Locked fruits remain `Unknown Fruit`. Nine native card checks passed. Temporary probes: `C:/Users/sw3at/AppData/Local/Temp/test_computer_colors.gd` and `test_locked_equipment_names.gd`; isolate APPDATA and fake achievement writes.
+- Previous save fixes were pushed as `bddad52` and uploaded to full-game App 5000810, BuildID 26405522 (manual branch activation). These newer UI changes are local until separately committed/exported/uploaded.
+
 ## Implemented locally — carried-item persistence and safe writes (2026-11-03)
 
 - Supersedes the audit gaps above. User rule: restore the same player's hands, transfer the item to their newly assigned stand, never restore old stand privileges or auto-place ordinary carried items at pickup positions. World-placement recovery was removed.

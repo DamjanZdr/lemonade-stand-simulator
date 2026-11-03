@@ -75,7 +75,7 @@ func _setup_screen_material() -> void:
 		+ "\tvec4 col = texture(screen_texture, UV);\n"
 		# Clamp just under the 1.0 bloom threshold — keeps whites white
 		# while making bloom physically impossible on the screen.
-		+ "\tALBEDO = min(pow(col.rgb, vec3(2.2)) * boost, vec3(0.98));\n"
+		+ "\tALBEDO = min(pow(col.rgb, vec3(2.2)), vec3(0.98)) * boost;\n"
 		+ "\tALPHA = 1.0;\n" + "}\n"
 	)
 	var mat := ShaderMaterial.new()

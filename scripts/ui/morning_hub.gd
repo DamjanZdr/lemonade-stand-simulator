@@ -576,7 +576,11 @@ func _create_item_card(
 	inner.add_child(right_box)
 
 	var name_lbl := Label.new()
-	name_lbl.text = "Unknown Fruit" if is_locked_fruit else item["name"]
+	name_lbl.text = (
+		"Unknown Fruit" if is_locked_fruit
+		else "Unknown Equipment" if is_locked_machine
+		else item["name"]
+	)
 	name_lbl.add_theme_font_size_override("font_size", 18)
 	name_lbl.add_theme_color_override(
 		"font_color",
