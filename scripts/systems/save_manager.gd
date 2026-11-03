@@ -3,6 +3,8 @@ extends Node
 ## Supports multiple save slots so the host can start New Game (fresh)
 ## or Load Game (pick a previous save).
 
+signal world_restore_completed
+
 const SAVE_DIR: String = "user://saves/"
 const LEGACY_SAVE_PATH: String = "user://save.json"
 const MAX_SLOTS: int = 20
@@ -30,6 +32,8 @@ const SUPPLY_BOX_SCENE: PackedScene = preload("res://scenes/objects/supply_box.t
 var _pending_container_respawn: Array = []
 var _pending_supply_box_respawn: Array = []
 var _default_container_positions: Array = []
+var _world_restore_pending: bool = false
+var _world_restore_revision: int = 0
 
 ## When true, _build_save_dict uses pristine default containers instead
 ## of scanning the (potentially dirty) world. Set by start_new_game() so
@@ -609,7 +613,7 @@ func apply_save_to_game_state(data: Dictionary) -> void:
 	# when the world-mode swap happened to call respawn_placed_containers —
 	# switching between two same-mode saves left the previous save's placed
 	# objects live in the world (and in the next snapshot/save).
-	call_deferred("_do_respawn")
+	_queue_world_restore()
 
 
 func _sync_live_stand_recipes(announce: bool) -> void:
@@ -1106,12 +1110,41 @@ func get_container_type(node: Node) -> String:
 	return ""
 
 
+func is_world_restore_pending() -> bool:
+	return _world_restore_pending
+
+
+func has_restored_world() -> bool:
+	return _world_restore_revision > 0
+
+
+func _queue_world_restore() -> void:
+	if not WorldSync.is_host():
+		return
+	_world_restore_revision += 1
+	if _world_restore_pending:
+		return
+	_world_restore_pending = true
+	call_deferred("_restore_world")
+
+
+func _restore_world() -> void:
+	while true:
+		var revision := _world_restore_revision
+		_do_respawn()
+		await get_tree().process_frame
+		if revision == _world_restore_revision:
+			break
+	_world_restore_pending = false
+	world_restore_completed.emit()
+
+
 func respawn_placed_containers() -> void:
 	# Only the host respawns saved containers. Clients will receive them
 	# via WorldSync replication.
 	if not WorldSync.is_host():
 		return
-	call_deferred("_do_respawn")
+	_queue_world_restore()
 
 
 func capture_default_containers() -> void:
@@ -1158,7 +1191,7 @@ func capture_default_containers() -> void:
 
 func respawn_default_containers() -> void:
 	_pending_container_respawn = _default_container_positions.duplicate(true)
-	call_deferred("_do_respawn")
+	_queue_world_restore()
 
 
 func _do_respawn() -> void:

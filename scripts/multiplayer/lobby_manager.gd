@@ -147,25 +147,25 @@ func _sender_id() -> int:
 	return id if id != 0 else multiplayer.get_unique_id()
 
 
-## Returns the first unclaimed stand index (0 or 1), or -1 if both are taken.
+## Returns the first stand index with player capacity, or -1 if all are full.
 func _first_free_stand() -> int:
 	# Co-op shares a single stand — a late joiner joins the shared stand
 	# rather than needing a free index. Capacity is per-stand
 	# (MAX_PLAYERS), and roster already includes the joining peer here.
-	if game_mode != GameState.GameMode.VERSUS:
-		return 0 if roster.size() <= MAX_PLAYERS else -1
-	var used: Array[int] = []
-	for id in roster:
-		if id == _sender_id():
-			continue
-		var idx: int = roster[id].get("stand_index", -1)
-		if idx >= 0:
-			used.append(idx)
-	var count := stand_count()
-	for i in range(count):
-		if not used.has(i):
+	for i in range(stand_count()):
+		if can_join_stand(_sender_id(), i):
 			return i
 	return -1
+
+
+func can_join_stand(peer_id: int, stand_index: int) -> bool:
+	if stand_index < 0 or stand_index >= stand_count():
+		return false
+	var occupants := 0
+	for id in roster:
+		if id != peer_id and int(roster[id].get("stand_index", -1)) == stand_index:
+			occupants += 1
+	return occupants < max_players_per_stand()
 
 
 func _disconnect_peer_deferred(peer_id: int) -> void:
@@ -241,9 +241,16 @@ func _request_set_stand(stand_index: int) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := _sender_id()
-	if roster.has(id):
-		roster[id]["stand_index"] = stand_index
-		_broadcast_roster()
+	if not roster.has(id) or not can_join_stand(id, stand_index):
+		return
+	if int(roster[id].get("stand_index", -1)) == stand_index:
+		return
+	var scene := get_tree().current_scene
+	if game_started and scene != null and scene.has_node("Players/" + str(id)):
+		return
+	roster[id]["stand_index"] = stand_index
+	roster[id]["ready"] = false
+	_broadcast_roster()
 
 
 func set_my_ready(is_ready: bool) -> void:
@@ -304,6 +311,8 @@ func _request_set_ready(is_ready: bool) -> void:
 		return
 	var id := _sender_id()
 	if roster.has(id):
+		if is_ready and not can_join_stand(id, int(roster[id].get("stand_index", -1))):
+			return
 		roster[id]["ready"] = is_ready
 		_broadcast_roster()
 		# If the game is already in progress, a late joiner starts the moment

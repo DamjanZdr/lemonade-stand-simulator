@@ -1062,6 +1062,29 @@ func _consume_predicted(scene_path: String, pos: Vector3) -> void:
 		best.queue_free()
 
 
+func can_peer_use_object(obj: Node, peer_id: int) -> bool:
+	if obj == null or not is_instance_valid(obj) or obj.is_queued_for_deletion():
+		return false
+	var root := get_tree().current_scene
+	var player := root.get_node_or_null("Players/" + str(peer_id)) as Player if root else null
+	if player == null or (
+		player.assigned_stand == null and player.assigned_stand_name == ""
+	):
+		return false
+	if obj is SupplyBox:
+		return true
+	var target := obj
+	while target != null:
+		if target is Interactable:
+			return target.can_player_use(player)
+		if target is StandUnit:
+			if player.assigned_stand != null and is_instance_valid(player.assigned_stand):
+				return player.assigned_stand == target
+			return player.assigned_stand_name == target.name
+		target = target.get_parent()
+	return false
+
+
 @rpc("any_peer", "reliable")
 func _rpc_request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: Dictionary) -> void:
 	if not is_host():
@@ -1070,12 +1093,14 @@ func _rpc_request_spawn(scene_path: String, pos: Vector3, rot: Vector3, state: D
 	var sender := multiplayer.get_remote_sender_id()
 	var root := get_tree().current_scene
 	var player := root.get_node_or_null("Players/" + str(sender)) as Player if root else null
-	if player != null:
-		var stand_name := player.assigned_stand_name
-		if player.assigned_stand != null and is_instance_valid(player.assigned_stand):
-			stand_name = player.assigned_stand.name
-		if stand_name != "":
-			authoritative_state["stand_owner"] = stand_name
+	if player == null:
+		return
+	var stand_name := player.assigned_stand_name
+	if player.assigned_stand != null and is_instance_valid(player.assigned_stand):
+		stand_name = player.assigned_stand.name
+	if stand_name == "":
+		return
+	authoritative_state["stand_owner"] = stand_name
 	spawn_networked(scene_path, get_world_objects(), pos, rot, authoritative_state)
 
 
@@ -1103,6 +1128,9 @@ func _rpc_request_pitcher_fill_cup(peer_id: int, pitcher_net_id: int) -> void:
 			"[WorldSync] pitcher fill dropped: player=%s pitcher=%s net_id=%d peer=%d"
 			% [str(player), str(pitcher), pitcher_net_id, peer_id]
 		)
+		return
+	if not can_peer_use_object(pitcher, sender):
+		deliver_pitcher_fill_result(peer_id, pitcher_net_id, { })
 		return
 	pitcher._fill_cup_for_player(player)
 
@@ -1215,7 +1243,10 @@ func _rpc_request_pitcher_snap(
 			stand_owner = player.assigned_stand.name
 		elif player.assigned_stand_name != "":
 			stand_owner = player.assigned_stand_name
-	var accepted := _apply_pitcher_snap(net_id, target_type, recipe, stand_owner)
+	var accepted := (
+		can_peer_use_object(_find_node_by_net_id(net_id), requester)
+		and _apply_pitcher_snap(net_id, target_type, recipe, stand_owner)
+	)
 	_apply_pitcher_snap_result.rpc_id(requester, accepted, target_type)
 
 
@@ -1281,6 +1312,10 @@ func request_container_action(obj: Node, action: String, args: Array) -> void:
 @rpc("any_peer", "reliable")
 func _rpc_request_container_action(net_id: int, action: String, args: Array) -> void:
 	if not is_host():
+		return
+	if not can_peer_use_object(_find_node_by_net_id(net_id), multiplayer.get_remote_sender_id()):
+		if action in ["add", "refill"]:
+			_confirm_deposit(net_id, 0.0)
 		return
 	_apply_container_action(net_id, action, args)
 
@@ -1430,19 +1465,30 @@ func _rpc_request_despawn(
 		# Last-ditch global search by name in case the client's parent path
 		# doesn't match the host's tree layout.
 		obj = _find_node_by_name_only(obj_name)
-	if obj:
+	var accepted := can_peer_use_object(obj, requester)
+	if accepted and obj.is_in_group("fixed_object"):
+		accepted = false
+	if accepted:
 		despawn_networked(obj)
-	else:
+	elif obj == null:
 		GameLog.log("[WorldSync] Host despawn: object not found: " + obj_name)
 	if confirm_pickup:
 		await get_tree().create_timer(0.3).timeout
-		_confirm_pickup_despawn.rpc_id(requester)
+		if not multiplayer.get_peers().has(requester):
+			return
+		_confirm_pickup_despawn.rpc_id(requester, accepted, net_id)
+		if not accepted:
+			sync_world_state_to_peer(requester)
 
 
 @rpc("authority", "reliable")
-func _confirm_pickup_despawn() -> void:
+func _confirm_pickup_despawn(accepted: bool = true, net_id: int = -1) -> void:
+	if not accepted:
+		_pending_despawns.erase(net_id)
 	var player := get_local_player()
 	if player != null:
+		if not accepted and player.held_item_data.get("pickup_pending", false):
+			player.inventory.clear_held()
 		player.held_item_data.erase("pickup_pending")
 
 
@@ -1461,6 +1507,9 @@ func request_thrown_trash_pickup(obj: Node, player_path: String) -> void:
 @rpc("any_peer", "reliable")
 func _rpc_request_thrown_trash_pickup(net_id: int, player_path: String) -> void:
 	if not is_host():
+		return
+	var player := _string_to_node(player_path) as Player
+	if player == null or player.get_multiplayer_authority() != multiplayer.get_remote_sender_id():
 		return
 	_do_thrown_trash_pickup(net_id, player_path)
 
@@ -1549,12 +1598,15 @@ func spawn_networked(
 			func() -> void:
 				if is_instance_valid(p):
 					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
+					var material := (
+						e.material_override as ShaderMaterial if e is MeshInstance3D else null
+					)
 					GameLog.log(
-						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
+						"[DIAG] spawned pitcher %s: vol=%.2f fill_y=%s"
 						% [
 							p.name,
 							p.get_liquid_volume(),
-							e.get_instance_shader_parameter("fill_y") if e else -1.0,
+							material.get_shader_parameter("fill_y") if material != null else null,
 						]
 					),
 		)
@@ -1707,7 +1759,15 @@ func _rpc_request_workstation_items(
 ) -> void:
 	if not is_host():
 		return
-	_reparent_workstation_items_on_host(parent_name, parent_net_id, parent_path_str, item_data)
+	var requester := multiplayer.get_remote_sender_id()
+	if not can_peer_use_object(_find_node(parent_path_str, parent_name, parent_net_id), requester):
+		return
+	var allowed_items: Array[Dictionary] = []
+	for entry in item_data:
+		var item := _find_node("", str(entry.get("name", "")), int(entry.get("net_id", -1)))
+		if can_peer_use_object(item, requester):
+			allowed_items.append(entry)
+	_reparent_workstation_items_on_host(parent_name, parent_net_id, parent_path_str, allowed_items)
 
 
 func _reparent_workstation_items_on_host(
@@ -1814,6 +1874,8 @@ func _rpc_request_move(obj_name: String, net_id: int, new_pos: Vector3, new_rot:
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] Host _rpc_request_move: object not found: " + obj_name)
 		return
+	if not can_peer_use_object(obj, multiplayer.get_remote_sender_id()):
+		return
 	_attach_surface_items(obj)
 	obj.global_position = new_pos
 	obj.global_rotation = new_rot
@@ -1872,6 +1934,8 @@ func _rpc_request_move_and_show(
 	var obj := _find_node(parent_path_str, obj_name, net_id)
 	if obj == null or not is_instance_valid(obj):
 		GameLog.log("[WorldSync] Host _rpc_request_move_and_show: object not found: " + obj_name)
+		return
+	if not can_peer_use_object(obj, multiplayer.get_remote_sender_id()):
 		return
 	net_id = _get_net_id(obj)
 	if net_id < 0:
@@ -2023,6 +2087,8 @@ func _rpc_request_set_visible(
 			% [obj_name, net_id]
 		)
 		return
+	if not can_peer_use_object(obj, multiplayer.get_remote_sender_id()):
+		return
 	net_id = _get_net_id(obj)
 	if net_id < 0:
 		net_id = _assign_net_id(obj)
@@ -2157,12 +2223,15 @@ func _spawn_on_clients(
 			func() -> void:
 				if is_instance_valid(p):
 					var e := p.get_node_or_null("LemonadeFill/LemonadeMesh")
+					var material := (
+						e.material_override as ShaderMaterial if e is MeshInstance3D else null
+					)
 					GameLog.log(
-						"[DIAG] spawned pitcher %s: vol=%.2f fill_scale=%.2f"
+						"[DIAG] spawned pitcher %s: vol=%.2f fill_y=%s"
 						% [
 							p.name,
 							p.get_liquid_volume(),
-							e.get_instance_shader_parameter("fill_y") if e else -1.0,
+							material.get_shader_parameter("fill_y") if material != null else null,
 						]
 					),
 		)
@@ -2332,7 +2401,7 @@ func _rpc_request_property(
 	if not is_host():
 		return
 	var obj := _find_node(parent_path_str, obj_name, net_id)
-	if obj == null or not is_instance_valid(obj):
+	if not can_peer_use_object(obj, multiplayer.get_remote_sender_id()):
 		return
 	obj.set(prop, value)
 	var parent_path := _node_path_to_string(obj.get_parent().get_path())
@@ -2363,14 +2432,16 @@ func _rpc_request_properties(
 	if not is_host():
 		return
 	var obj := _find_node(parent_path_str, obj_name, net_id)
-	if obj == null or not is_instance_valid(obj):
+	if not can_peer_use_object(obj, multiplayer.get_remote_sender_id()):
 		return
 	for key in props:
 		obj.set(key, props[key])
 	if obj is Pitcher:
 		GameLog.log(
-			"[WorldSync] client props applied to %s from peer %d: "
-			+ "water=%.2f fruit=%.2f sugar=%.2f ice=%.2f liq=%.2f cups=%d"
+			(
+				"[WorldSync] client props applied to %s from peer %d: "
+				+ "water=%.2f fruit=%.2f sugar=%.2f ice=%.2f liq=%.2f cups=%d"
+			)
 			% [
 				str(obj.name),
 				multiplayer.get_remote_sender_id(),
@@ -2410,7 +2481,7 @@ func _rpc_request_call(
 	if not is_host():
 		return
 	var obj := _find_node(parent_path_str, obj_name, net_id)
-	if obj == null or not is_instance_valid(obj):
+	if not can_peer_use_object(obj, multiplayer.get_remote_sender_id()):
 		return
 	if obj.has_method(method):
 		obj.callv(method, args)

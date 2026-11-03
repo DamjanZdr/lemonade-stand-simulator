@@ -9,10 +9,50 @@ signal log_added(msg: String)
 const MAX_BUFFER: int = 200
 
 var _buffer: Array[String] = []
+var _last_frame_usec: int = 0
+var _last_post_draw_usec: int = 0
+var _trace_stalls: bool = false
 
 
 func _ready() -> void:
 	_write("=== GameLog started at %s ===" % str(Time.get_datetime_dict_from_system()))
+	_trace_stalls = "--diagnose-stalls" in OS.get_cmdline_user_args()
+	set_process(_trace_stalls)
+	if _trace_stalls:
+		RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
+		RenderingServer.frame_post_draw.connect(_record_post_draw)
+		self.log("[STALL] diagnostics enabled; GPU timings may lag behind the reported frame")
+
+
+func _record_post_draw() -> void:
+	_last_post_draw_usec = Time.get_ticks_usec()
+
+
+func _process(_delta: float) -> void:
+	var now := Time.get_ticks_usec()
+	var elapsed := now - _last_frame_usec if _last_frame_usec > 0 else 0
+	_last_frame_usec = now
+	if elapsed < 250000:
+		return
+	var viewport_rid := get_viewport().get_viewport_rid()
+	self.log(
+		(
+			"[STALL] frame=%.1fms process=%.1fms physics=%.1fms "
+			+ "render_cpu=%.1fms render_gpu=%.1fms since_post_draw=%.1fms "
+			+ "mark=%s mark_age=%dms nodes=%d"
+		)
+		% [
+			elapsed / 1000.0,
+			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+			Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+			RenderingServer.viewport_get_measured_render_time_cpu(viewport_rid),
+			RenderingServer.viewport_get_measured_render_time_gpu(viewport_rid),
+			(now - _last_post_draw_usec) / 1000.0 if _last_post_draw_usec > 0 else -1.0,
+			_last_mark_label,
+			Time.get_ticks_msec() - _last_mark,
+			get_tree().get_node_count(),
+		]
+	)
 
 
 func _write(msg: String) -> void:

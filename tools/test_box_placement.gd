@@ -17,6 +17,9 @@ func _run() -> void:
 	var world := Node3D.new()
 	root.add_child(world)
 	current_scene = world
+	var world_objects := Node3D.new()
+	world_objects.name = "WorldObjects"
+	world.add_child(world_objects)
 
 	# Stand with a palette floor on the ground collision layer (mask 8).
 	var stand_script: Script = load("res://scripts/stand/stand_unit.gd")
@@ -199,6 +202,41 @@ func _run() -> void:
 	placement.destroy_ghost()
 	item.free()
 	fake_table.free()
+
+	var dispenser: Node = load("res://scenes/objects/water_dispenser.tscn").instantiate()
+	world.add_child(dispenser)
+	var juice_recipe := {
+		"fruit_type": "lemon", "fruit_count": 2.0, "water": 0.0,
+		"sugar": 0.0, "ice": 0.0, "cups_poured": 0, "state": 0,
+	}
+	check(dispenser.can_snap_pitcher_from_recipe(juice_recipe), "lemon juice can snap to dispenser")
+	player.held_item = HeldItem.CONTAINER
+	player.held_item_data = { "container_type": "pitcher", "saved_recipe": juice_recipe }
+	check(
+		placement.ensure_snap_ghost(dispenser.get_snap_global_position()),
+		"juice snap ghost exists",
+	)
+	var placed: Node = placement.place_container()
+	check(placed != null, "host can place a lemon-only pitcher without emptying it")
+	if placed != null:
+		check(is_equal_approx(placed.fruit_count, 2.0), "placement retains squeezed fruit")
+		check(is_zero_approx(placed.water), "placement retains lemon-only recipe")
+		dispenser.snap_pitcher(placed)
+		check(
+			not dispenser.can_snap_pitcher_from_recipe(juice_recipe),
+			"occupied snap rejects another",
+		)
+		await create_timer(0.6).timeout
+		placed.queue_free()
+	dispenser.queue_free()
+	await process_frame
+	if "--diagnose-stalls" in OS.get_cmdline_user_args():
+		var logger := root.get_node("GameLog")
+		logger.mark("pitcher_snap_test")
+		OS.delay_msec(300)
+		await process_frame
+		await process_frame
+		check("[STALL] frame=" in logger.get_buffer_text(), "stall trace records delayed frames")
 
 	for b in stack:
 		b.free()

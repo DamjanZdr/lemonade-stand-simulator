@@ -688,10 +688,10 @@ func _start_stand_transition(slot_name: String, stand_name: String) -> void:
 	print("[Transition] End marker pos=%s" % stand_change_cam_end.global_position)
 	print("[Transition] Start marker pos=%s" % stand_change_cam_start.global_position)
 	print("[Transition] Stored main menu cam transform: %s" % _get_main_menu_cam_transform())
-	# Mark as loaded — SaveManager.load_existing_game/start_new_game are
-	# synchronous, so by the time we get here the state is already applied.
-	# In the future if loading becomes async, this is where we'd wait.
-	_transition_loaded = true
+	# Mark as loaded only after the midpoint apply and world restore finish.
+	# Save data applies synchronously, but object restoration is deferred.
+	# The midpoint callback waits before revealing the selected world.
+	_transition_loaded = false
 	# Start the whip loop.
 	_do_transition_whip()
 
@@ -723,10 +723,18 @@ func _do_transition_whip() -> void:
 			# Apply the pending save/mode change while the screen is
 			# fully blurred and the camera is on the far side — the
 			# world mutates where the player can't see it.
+			SaveManager.capture_default_containers()
 			if _pending_apply.is_valid():
 				var apply := _pending_apply
 				_pending_apply = Callable()
 				apply.call()
+				_world_setup_done = false
+			_setup_world_systems()
+			while SaveManager.is_world_restore_pending():
+				await SaveManager.world_restore_completed
+			if not _transition_active:
+				return
+			_transition_loaded = true
 			print("[Transition] SNAP to Start, pos=%s" % main_menu_camera.global_position)
 			# Blur out slightly.
 			_tween_blur(0.3, TRANSITION_SETTLE_TIME * 0.3)
@@ -1538,7 +1546,8 @@ func _setup_world_systems() -> void:
 	# Containers + evening summary (no day cycle yet — that starts
 	# when the camera tween runs from lobby to first-person).
 	SaveManager.capture_default_containers()
-	SaveManager.respawn_placed_containers()
+	if not SaveManager.has_restored_world():
+		SaveManager.respawn_placed_containers()
 	# Only create the DaySummary once. _setup_world_systems can run
 	# again after returning to menu (we reset _world_setup_done), so
 	# guard against duplicate DaySummary nodes.

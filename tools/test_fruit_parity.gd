@@ -20,11 +20,13 @@ func _run() -> void:
 	var upgrades := root.get_node("UpgradeManager")
 	var evaluator := root.get_node("RecipeEvaluator")
 	var manager: Node = load("res://scripts/systems/recipe_manager.gd").new()
-	var stand_script: Script = load("res://scripts/stand/stand_unit.gd")
+	var stand_script: Script = load("res://tools/stand_access_test_harness.gd")
 	var own: Node = stand_script.new()
 	var rival: Node = stand_script.new()
 	own.name = "FruitTestOwn"
 	rival.name = "FruitTestRival"
+	world.add_child(own)
+	world.add_child(rival)
 	var spawner: Node = load("res://scripts/customer/customer_spawner.gd").new()
 	spawner.set_stand(own)
 	for fruit in root.get_node("GameState").FRUIT_TYPES:
@@ -107,6 +109,19 @@ func _run() -> void:
 	check(bubble.visible, "feedback is not expired by the order dialogue timer")
 	customer.free()
 	spawner.free()
+	own.add_to_group("stand")
+	rival.add_to_group("stand")
+	var onboarding := root.get_node("OnboardingManager")
+	var progression_save: Dictionary = JSON.parse_string(JSON.stringify(onboarding.serialize()))
+	check(progression_save.stands.has(own.name), "progression save contains owning stand")
+	check(progression_save.stands.has(rival.name), "progression save contains rival stand")
+	own.onboarding_progress = { }
+	rival.onboarding_progress = { }
+	check(not own.is_fruit_unlocked("watermelon"), "progression clears before restoration")
+	onboarding.deserialize(progression_save)
+	await process_frame
+	check(own.is_fruit_unlocked("watermelon"), "own progression survives save JSON restoration")
+	check(not rival.is_fruit_unlocked("watermelon"), "restored progression stays stand-isolated")
 	own.free()
 	rival.free()
 	manager.free()

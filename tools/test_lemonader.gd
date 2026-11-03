@@ -23,6 +23,9 @@ func _run() -> void:
 	root.add_child(world)
 	current_scene = world
 	var scene: PackedScene = load("res://scenes/objects/lemonader.tscn")
+	var player_scene: PackedScene = load("res://scenes/player/player.tscn")
+	var player_script: Script = load("res://tools/local_player_test_actor.gd")
+	var stand_script: Script = load("res://scripts/stand/stand_unit.gd")
 	var sync := root.get_node("WorldSync")
 	var saves := root.get_node("SaveManager")
 	for fruit in root.get_node("GameState").FRUIT_TYPES:
@@ -97,19 +100,14 @@ func _run() -> void:
 	)
 	check(offset > -0.01, "decorative origins cannot lift the machine")
 	placement.free()
-	var player: Node = load("res://scripts/player/player.gd").new()
+	var player: Node = player_scene.instantiate()
+	player.set_script(player_script)
 	player.set_multiplayer_authority(1)
 	world.add_child(player)
-	var inventory: Node = load("res://scripts/player/player_inventory.gd").new()
-	player.add_child(inventory)
-	player.inventory = inventory
-	inventory._player = player
-	var placement2: Node = load("res://scripts/player/player_placement.gd").new()
-	player.add_child(placement2)
-	player.placement = placement2
-	placement2._player = player
-	player.hand_slot = Node3D.new()
-	player.add_child(player.hand_slot)
+	player.set_process(false)
+	player.set_physics_process(false)
+	var inventory: Node = player.inventory
+	var placement2: Node = player.placement
 	var items := root.get_node("HeldItem")
 	for ingredient in ["lemon", "sugar", "ice"]:
 		var held := { "ingredient_type": ingredient, "amount": 1.0, "source": "bin_scoop" }
@@ -119,7 +117,7 @@ func _run() -> void:
 		inventory.held_item_data = held
 		fixture.settle_inventory(player, "deposit", 1.0, { })
 		check(inventory.held_item == items.NONE, "loose " + ingredient + " leaves no trash box")
-	var stand_early: Node = load("res://scripts/stand/stand_unit.gd").new()
+	var stand_early: Node = stand_script.new()
 	player.assigned_stand = stand_early
 	var box := { "ingredient_type": "sugar", "amount": 5.0, "source": "delivery" }
 	player.held_item = items.SUPPLY_BOX
@@ -154,6 +152,11 @@ func _run() -> void:
 	inventory.held_item = items.NONE
 	inventory.held_item_data = { }
 	fixture.execute_action(player, "take")
+	if DisplayServer.get_name() == "headless":
+		check(
+			inventory.get_hand_mesh().visible,
+			"headless pitcher does not wait for rendered frames",
+		)
 	check(inventory.held_item == items.CONTAINER, "take yields the actual pitcher")
 	check(
 		float(inventory.held_item_data.get("saved_recipe", { }).get("sugar", 0.0)) == 2.0,
@@ -165,9 +168,10 @@ func _run() -> void:
 			hidden += 1
 	check(hidden == 0, "machine meshes stay visible after take")
 	check(phys.collision_layer == 0, "empty slot is not clickable")
+	await create_timer(0.6).timeout
 	player.free()
 	stand_early.free()
-	var stand: Node = load("res://scripts/stand/stand_unit.gd").new()
+	var stand: Node = stand_script.new()
 	fixture.machine_state["fruit"] = "lemon"
 	fixture.machine_state["pitcher"] = true
 	fixture.machine_state["stock"] = { "fruit": 10.0, "sugar": 10.0, "ice": 10.0 }
@@ -215,19 +219,14 @@ func _run() -> void:
 	var machine2: Node = scene.instantiate()
 	world.add_child(machine2)
 	machine2.position = Vector3(5, 1, 5)
-	var player2: Node = load("res://scripts/player/player.gd").new()
+	var player2: Node = player_scene.instantiate()
+	player2.set_script(player_script)
 	player2.set_multiplayer_authority(1)
 	world.add_child(player2)
-	var inventory2: Node = load("res://scripts/player/player_inventory.gd").new()
-	player2.add_child(inventory2)
-	player2.inventory = inventory2
-	inventory2._player = player2
-	var placement3: Node = load("res://scripts/player/player_placement.gd").new()
-	player2.add_child(placement3)
-	player2.placement = placement3
-	placement3._player = player2
-	player2.hand_slot = Node3D.new()
-	player2.add_child(player2.hand_slot)
+	player2.set_process(false)
+	player2.set_physics_process(false)
+	var inventory2: Node = player2.inventory
+	var placement3: Node = player2.placement
 	player2.held_item = items.NONE
 	player2.held_item_data = { }
 	inventory2.held_item = items.NONE
@@ -249,6 +248,7 @@ func _run() -> void:
 	}
 	machine2.refresh_display()
 	machine2.interact_secondary(player2)
+	await process_frame
 	check(inventory2.held_item == items.CONTAINER, "RMB picks up the machine")
 	check(
 		inventory2.held_item_data.get("container_type") == "lemonader",
@@ -270,6 +270,7 @@ func _run() -> void:
 	placement3._ghost = ghost_node
 	placement3._ghost_valid = true
 	var placed: Node = placement3._try_place_container()
+	await create_timer(0.6).timeout
 	check(placed == machine2, "placement restores the same machine instance")
 	check(machine2.visible, "machine visible again after place")
 	check(bool(machine2.machine_state["pitcher"]), "placed machine still has its pitcher")
@@ -282,6 +283,7 @@ func _run() -> void:
 	# execute_action enforces a 4m reach — stand next to the placed machine.
 	player2.global_position = machine2.global_position + Vector3(0.0, 0.0, 1.5)
 	machine2.execute_action(player2, "take")
+	await create_timer(0.6).timeout
 	check(inventory2.held_item == items.CONTAINER, "LMB take yields a container")
 	check(
 		inventory2.held_item_data.get("container_type") == "pitcher",
@@ -300,7 +302,10 @@ func _run() -> void:
 		"LMB on an empty machine picks the machine up",
 	)
 	check(not machine2.visible, "empty machine hidden after LMB pickup")
+	await create_timer(0.6).timeout
 	player2.free()
 	machine2.free()
+	world.free()
+	await process_frame
 	print("LEMONADER: ", "PASS" if failures == 0 else "FAIL (%d)" % failures)
 	quit(0 if failures == 0 else 1)

@@ -58,6 +58,12 @@ Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 
 ## Build / Test
 
+- **Stand/save access regression:** run the headless executable with `--path . --script res://tools/test_stand_access.gd`. Covers save-restore request coalescing/completion, per-stand lobby capacity, selection validation, reassignment, shared boxes, stale hand-mesh clearing, and actual local ENet RPC acceptance/rejection. It is not a full two-machine Steam session.
+- Save application starts at the camera midpoint; keep the transition covered until `SaveManager.world_restore_completed`. Do not schedule a second default-layout restore after applying loaded container data.
+- Headless runs never emit the rendered-frame signal needed by the held-pitcher reveal gate. Bypass that visual gate only for the headless display server; pending render callbacks previously caused the Squeeze-E-Z fixture to crash during engine teardown despite passing assertions. Use target-bound callables or weak references for delayed reveal callbacks when carried meshes can be freed before the timer runs.
+- `PlayerInventory.set_held()` must reset its cached mesh even when the previous mesh was already freed. Godot compares a freed object equal to null, so the regression checks `typeof(...) == TYPE_NIL` to distinguish an actual cleared reference.
+- Current bar progression is stored in each stand's `onboarding_progress["progress"]` and saved/restored through `OnboardingManager.serialize()/deserialize()` under the save's `onboarding` key. Empty legacy purchase-tree compatibility methods in `UpgradeManager` are not the current persistence path. The fruit-parity regression now JSON-round-trips both stands' progression and verifies that restored fruit unlocks remain isolated.
+
 - **Run headless compile check**
   ```powershell
   D:\User\Desktop\Godot Projects\lemonade-stand-simulator\tools\godotsteam-editor\godotsteam.471.editor.win64.console.exe --headless --path "D:\User\Desktop\Godot Projects\lemonade-stand-simulator" --main-scene res://scenes/main.tscn
@@ -70,6 +76,11 @@ Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 - **Lemonader regression:** run `tools/godotsteam-editor/godotsteam.471.editor.win64.console.exe --headless --path . --script res://tools/test_lemonader.gd`. Covers fruit locking, exact batch consumption, rejected/double starts, immutable recipes, running-batch snapshot/JSON restoration, and pitcher output for all six fruits.
 - `scenes/objects/lemonader.tscn` is the single-fruit Squeeze-E-Z. Its imported `sqeeze-e-z.glb` has `Sugar`, `Fruit`, and `Ice` meshes, each with a `Key 1` blend shape (0 closed, 1 open). Preserve `Physics`, `PitcherPoint/PitcherPreview`, `PitcherPosition` (visual bottom), `SugarDrop`, `FruitDrop`, and `IceDrop`. The machine is plumbed — it has no water stock or deposits; batches fill the pitcher to capacity automatically and compute ice from `GameState.temperature` and the stand's `ice_degrees_per_scoop` at mix time. Empty-hand LMB mixes using the owning stand's board recipe; an unconfigured board shows "Please set a recipe on the board." on `MessageLabel`. Ingredients and the inserted pitcher are stored in `machine_state`; the preview is not a second world pitcher. The appliance is fixed after deployment and does not unload stock.
 - **Squeeze-E-Z model/animation regression:** run the same headless executable with `--path . --script res://tools/test_lemonader_model.gd`. Checks pitcher bottom alignment, all three hopper shapes opening/closing, overlapping deposits, flight-visual cleanup, and stock-panel X/icon/count visibility for all six fruits. `StockPanels/Sugar`, `StockPanels/Fruit`, and `StockPanels/Ice` are editor-positionable instances of `lemonader_stock_panel.tscn`; stock updates refresh them through the existing host state broadcast. Deposit animations are cosmetic, broadcast only after host acceptance; they must not consume ingredients.
+
+## Native-crash evidence (2026-11-02)
+
+- Windows Application Error 1000 records the installed main-game executable faulting at 22:02:57 in `nvoglv64.dll` with `0xc0000005`, followed by a separate 22:08:09 fault in `ntdll.dll` with `0xc0000374` (heap corruption). These are observations, not identified gameplay triggers; do not collapse both into a single VRAM/driver explanation or equate them with the headless fixture teardown issue.
+- The intermittent live pitcher-placement lock and the live crash trigger remain unconfirmed. The stale hand-mesh reset regression passing does not prove that reported interaction fixed.
 
 ## Multiplayer Architecture Notes
 
@@ -205,3 +216,11 @@ func _rpc_do_thing(params) -> void:
 - Release preset is `Windows Desktop` → `export/WhenLifeGivesYouLemons.exe`, using the custom GodotSteam templates in `tools/godotsteam-templates/win64/`. Export with `tools/godotsteam-editor/godotsteam.471.editor.win64.console.exe --headless --path . --export-release "Windows Desktop" export/WhenLifeGivesYouLemons.exe`. Keep `steam_api64.dll` and `steam_appid.txt` beside the exe.
 - Export packs `.godot/exported/*.scn` conversions, not the `.tscn`/`.gd` sources. If a shipped build shows old UI or stale behavior despite current sources, delete `.godot/exported` and `.godot/imported` and re-export — cached scene conversions have served stale content.
 - Release builds hide the F1 dev panel (`OS.is_debug_build()`); use `--export-debug` to a separate folder if a built binary needs it.
+
+## Multiplayer / Stall Diagnostics
+
+- Known-good demo Steam BuildID `26100722` (App `5337670`) is paired with Git commit `c573af0aa2764973e846ed2de138499162c95fd0`. Evidence: the push → export → BuildID sequence in `history_62a5057d6d474565.md` (CLI summaries, messages 184–191) and SteamCMD `ContentBuilder/builder/logs/console_log.txt`, which records successful upload on 2026-10-21 at 10:05:28 local time (UTC+2, equivalent to 01:05 PDT). Do not substitute the later smooth `b41a20b` baseline for this exact demo revision.
+- Run `tools/test_box_placement.gd`, `tools/test_dispenser_snapshot.gd`, `tools/test_local_player_identity.gd`, and `tools/test_invite_popup.gd` with the headless Godot executable and `--path . --script res://<test path>`.
+- Pass `-- --diagnose-stalls` to opt into GameLog frame-stall tracing and viewport CPU/GPU render timing. Samples can lag the reported frame. The box-placement test also checks this mode using an intentional 300 ms pause; it is not a performance benchmark.
+- `test_box_placement.gd` checks host placement of a lemon-only pitcher onto a dispenser without emptying it. This exercises recipe restoration and snap placement, not the complete camera/raycast or live two-peer flow.
+- Preserve rotated `user://logs/godot*.log` files when investigating crashes; `game_log.txt` does not capture all native engine errors. A Vulkan fence error with result `-4` means device loss, not proof of a specific script fault. The November 2 test had a matching NVIDIA driver event 153 at 22:02:56; the trigger remains unconfirmed.

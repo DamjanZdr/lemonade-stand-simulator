@@ -62,7 +62,7 @@ func set_held(item_type: int, data: Dictionary, mesh: Node3D = null) -> void:
 	_pickup_effect_preplayed = false
 	if previous_mesh and is_instance_valid(previous_mesh):
 		_animate_mesh_out(previous_mesh)
-		_held_mesh = null
+	_held_mesh = null
 	held_item = item_type
 	held_item_data = data
 	if _player != null:

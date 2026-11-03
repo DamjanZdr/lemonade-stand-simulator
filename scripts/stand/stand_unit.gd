@@ -119,7 +119,7 @@ var perfect_recipes_set: Dictionary = { }
 @onready var queue_marker_1: Marker3D = $QueueMarker1
 @onready var queue_marker_2: Marker3D = $QueueMarker2
 @onready var price_board: Node3D = $PriceBoard
-@onready var thermometer: Node3D = $Thermometer
+@onready var thermometer: Node3D = get_node_or_null("Thermometer") as Node3D
 @onready var water_dispenser: Node3D = $WaterDispenser
 @onready var stand_mesh: Node3D = $Stand
 @onready var _sign_label: Label3D = get_node_or_null("Stand/stand/SignLabel")
@@ -1188,7 +1188,7 @@ func _despawn_assistants() -> void:
 
 
 func can_be_served_by(player: Node) -> bool:
-	if multiplayer.get_peers().is_empty():
+	if not multiplayer.has_multiplayer_peer():
 		return true
 	if player == null or not ("assigned_stand" in player):
 		return false

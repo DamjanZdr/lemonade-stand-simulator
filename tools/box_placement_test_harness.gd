@@ -51,3 +51,7 @@ func check_ghost_overlap() -> bool:
 
 func create_ghost(container_type: String) -> void:
 	_create_ghost(container_type)
+
+
+func place_container() -> Node3D:
+	return _try_place_container()

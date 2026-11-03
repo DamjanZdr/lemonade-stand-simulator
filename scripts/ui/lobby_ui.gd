@@ -635,13 +635,14 @@ func _ready() -> void:
 func _default_to_stand_1() -> void:
 	var mine := LobbyManager.get_my_entry()
 	if mine.get("stand_index", -1) < 0:
-		LobbyManager.set_my_stand(0)
-		# Also update local roster immediately so _refresh shows us.
-		var my_id := multiplayer.get_unique_id()
-		if LobbyManager.roster.has(my_id):
-			LobbyManager.roster[my_id]["stand_index"] = 0
-		_current_stand = 0
-		stand_switched.emit(0)
+		for index in range(LobbyManager.stand_count()):
+			if LobbyManager.can_join_stand(multiplayer.get_unique_id(), index):
+				LobbyManager.set_my_stand(index)
+				break
+		# Let the authoritative roster update drive _refresh and stand selection.
+		mine = LobbyManager.get_my_entry()
+		_current_stand = maxi(0, int(mine.get("stand_index", 0)))
+		stand_switched.emit(_current_stand)
 	else:
 		_current_stand = mine.get("stand_index", 0)
 	# Set initial drag offset to 0 — per-model base yaw is handled
@@ -665,9 +666,10 @@ func _update_room_display() -> void:
 
 
 func _on_switch_stand() -> void:
-	_current_stand = 1 - _current_stand
-	LobbyManager.set_my_stand(_current_stand)
-	stand_switched.emit(_current_stand)
+	var next_stand := 1 - _current_stand
+	if not LobbyManager.can_join_stand(multiplayer.get_unique_id(), next_stand):
+		return
+	LobbyManager.set_my_stand(next_stand)
 	# Smoothly tween the drag offset back to 0 so the model rotates
 	# gracefully instead of snapping.
 	var start_yaw := _model_yaw_offset
@@ -766,8 +768,9 @@ func _refresh() -> void:
 
 	# Keep _current_stand in sync with roster
 	var my_stand: int = mine.get("stand_index", _current_stand)
-	if my_stand >= 0:
+	if my_stand >= 0 and my_stand != _current_stand:
 		_current_stand = my_stand
+		stand_switched.emit(my_stand)
 
 	for peer_id in LobbyManager.roster:
 		var entry: Dictionary = LobbyManager.roster[peer_id]

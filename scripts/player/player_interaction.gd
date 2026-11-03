@@ -316,6 +316,14 @@ func primary_interact() -> void:
 	if _player.held_item_data.get("snap_pending", false) \
 			or _player.held_item_data.get("pickup_pending", false) \
 			or _player.held_item_data.get("serve_pending", false):
+		GameLog.log(
+			"[PLACE-DIAG] interaction blocked snap=%s pickup=%s serve=%s"
+			% [
+				_player.held_item_data.get("snap_pending", false),
+				_player.held_item_data.get("pickup_pending", false),
+				_player.held_item_data.get("serve_pending", false),
+			]
+		)
 		return
 
 	# Duck-typed: naming the Lemonader class here would form a script
@@ -502,6 +510,10 @@ func primary_interact() -> void:
 							_player.held_item_data["snap_pending"] = true
 							WorldSync.request_pitcher_snap(press, snap_recipe, stand_owner)
 					return
+				GameLog.log(
+					"[PLACE-DIAG] press snap rejected target=%s recipe=%s"
+					% [press.get_path(), snap_recipe]
+				)
 				EventBus.interaction_hint_changed.emit(press.get_pitcher_snap_hint(snap_recipe))
 				return
 			var dispenser := _find_looked_at_dispenser()
@@ -530,6 +542,10 @@ func primary_interact() -> void:
 							_player.held_item_data["snap_pending"] = true
 							WorldSync.request_pitcher_snap(dispenser, _recipe, stand_owner)
 					return
+				GameLog.log(
+					"[PLACE-DIAG] dispenser snap rejected target=%s recipe=%s"
+					% [dispenser.get_path(), _recipe]
+				)
 				# Can't snap to dispenser — fall through to normal placement
 		var from_box: bool = _player.inventory.held_item_data.get("from_delivery_box", false)
 		if from_box and _player.ray.is_colliding():

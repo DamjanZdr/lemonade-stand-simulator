@@ -1263,11 +1263,14 @@ func _create_container_hand_mesh(
 			func() -> void:
 				if is_instance_valid(pitcher):
 					var e := pitcher.get_node_or_null("LemonadeFill/LemonadeMesh")
+					var material := (
+						e.material_override as ShaderMaterial if e is MeshInstance3D else null
+					)
 					GameLog.log(
-						"[DIAG] hand pitcher after 0.5s: vol=%.2f fill_scale=%.2f vis=%s"
+						"[DIAG] hand pitcher after 0.5s: vol=%.2f fill_y=%s vis=%s"
 						% [
 							pitcher.get_liquid_volume(),
-							e.get_instance_shader_parameter("fill_y") if e else -1.0,
+							material.get_shader_parameter("fill_y") if material != null else null,
 							pitcher.visible,
 						]
 					),
@@ -1282,15 +1285,15 @@ func _create_container_hand_mesh(
 			func() -> void:
 				if not is_instance_valid(pitcher):
 					return
+				if DisplayServer.get_name() == "headless":
+					pitcher.visible = true
+					return
 				# Wait until one full frame has been rendered with the
 				# clone in the tree: frame_post_draw guarantees the CSG's
 				# deferred bake flushed, so the combiner never shows its
 				# raw primitives (the eraser box = white box flash).
 				RenderingServer.frame_post_draw.connect(
-					func() -> void:
-						if is_instance_valid(pitcher):
-							pitcher.visible = true,
-					Object.CONNECT_ONE_SHOT,
+					pitcher.show, Object.CONNECT_ONE_SHOT,
 				),
 			Object.CONNECT_ONE_SHOT,
 		)
@@ -1313,10 +1316,7 @@ func _create_container_hand_mesh(
 					return
 				machine.refresh_display()
 				machine.get_tree().create_timer(0.1).timeout.connect(
-					func() -> void:
-						if is_instance_valid(machine):
-							machine.visible = true,
-					Object.CONNECT_ONE_SHOT,
+					machine.show, Object.CONNECT_ONE_SHOT,
 				),
 			Object.CONNECT_ONE_SHOT,
 		)
@@ -2200,6 +2200,17 @@ func _try_place_container() -> Node3D:
 	GameLog.mark("place_container")
 	var _t0 := Time.get_ticks_usec()
 	if not _ghost_valid or _ghost == null:
+		GameLog.log(
+			"[PLACE-DIAG] rejected type=%s ghost=%s valid=%s collider=%s stand=%s recipe=%s"
+			% [
+				_player.held_item_data.get("container_type", ""),
+				is_instance_valid(_ghost),
+				_ghost_valid,
+				_player.ray.get_collider() if _player.ray.is_colliding() else null,
+				_get_assigned_stand_name(),
+				_player.held_item_data.get("saved_recipe", { }),
+			]
+		)
 		EventBus.interaction_hint_changed.emit("Can only place on stand or table!")
 		return null
 
