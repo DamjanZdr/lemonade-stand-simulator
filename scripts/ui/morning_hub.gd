@@ -722,10 +722,10 @@ func _refresh_stand_name_editor() -> void:
 			roof_default = rc[0]
 	if _wall_swatch != null:
 		var wc_val = custom.get("wall_color", null)
-		_wall_swatch.color = wc_val if wc_val is Color else wall_default
+		_wall_swatch.color = wc_val if wc_val is Color and wc_val.a > 0.0 else wall_default
 	if _roof_swatch != null:
 		var rc_val = custom.get("roof_color", null)
-		_roof_swatch.color = rc_val if rc_val is Color else roof_default
+		_roof_swatch.color = rc_val if rc_val is Color and rc_val.a > 0.0 else roof_default
 	_fence_band = posmod(int(custom.get("fence_gradient", FENCE_DEFAULT_BAND)), FENCE_BAND_COUNT)
 	_update_fence_preview()
 
@@ -1018,8 +1018,8 @@ func _build_npcs_tab() -> void:
 			"[color=#%s]%s +%d%%[/color]"
 			% [col.to_html(false), rarity, int(NpcRoster.RARITY_TIP_PCT[rarity] * 100.0)],
 		)
-	desc.text = "[center]Serve a customer 10 perfect cups and they" \
-			+ " leave a tip on every sale:  %s[/center]" % " · ".join(tip_parts)
+	desc.text = "[center]Fill a customer's fruit slots with perfect cups, and they'll" \
+			+ " tip on every future sale:  %s[/center]" % " · ".join(tip_parts)
 	page.add_child(desc)
 
 	# Four columns: common | community | rare | elite.
@@ -1231,11 +1231,15 @@ func _make_npc_card(
 	npc_id: int, entry: Dictionary, met: bool, coll_entry: Dictionary
 ) -> PanelContainer:
 	var card := PanelContainer.new()
+	var regular := met and StandUnit.npc_is_regular(coll_entry)
 	# Same card chrome as the shop item cards.
 	var st := StyleBoxFlat.new()
 	st.bg_color = Color(0.10, 0.11, 0.14)
-	st.border_color = Color(0.20, 0.22, 0.27)
-	st.set_border_width_all(1)
+	st.border_color = (
+		NpcRoster.RARITY_NAME_COLORS.get(str(entry.get("rarity", "common")), Color.WHITE)
+		if regular else Color(0.20, 0.22, 0.27)
+	)
+	st.set_border_width_all(2 if regular else 1)
 	st.set_corner_radius_all(10)
 	st.set_content_margin_all(8)
 	card.add_theme_stylebox_override("panel", st)
@@ -1273,7 +1277,6 @@ func _make_npc_card(
 		"required", NpcRoster.slots_for(npc_id, entry)
 	)
 	var cups: Dictionary = coll_entry.get("perfect_cups", { })
-	var regular := met and StandUnit.npc_is_regular(coll_entry)
 	var pips := HBoxContainer.new()
 	pips.alignment = BoxContainer.ALIGNMENT_CENTER
 	pips.add_theme_constant_override("separation", 3)

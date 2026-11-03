@@ -127,6 +127,11 @@ Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 - Write durability gap: SaveManager._do_save opens the live JSON path with FileAccess.WRITE, stores/closes directly, and has no atomic replacement/backup scheme. A failure during that write could damage the previous file. This is a code-inspection risk, not observed corruption in the captured session.
 - Final audit assertions passed and process exited 0, with six ObjectDB/three resource cleanup warnings remaining. Initial matrix fixture errors were corrected: typed FruitBin dictionaries require element assignment, and direct scene instantiation of Press/Cup must explicitly add the container group to emulate deployment; those fixture errors were not established gameplay bugs. The real save was read only; all fixture saves were disabled (empty current slot).
 
+## Customer collection and house swatches (2026-11-03)
+
+- Customer tip completion uses `StandUnit.npc_is_regular`: fill every required fruit slot, including repeats; no universal ten-cup requirement. Completed collection cards use a 2px rarity-colored border; unfinished cards retain the neutral 1px border.
+- House style `Color.TRANSPARENT` means use the default palette, not a transparent UI swatch. `_refresh_stand_name_editor` must fall back for zero-alpha colors as well as absent values. Reproduced both invisible swatches with transparent styles; focused tests now pass for defaults, custom colors, picker opening/updating, and all four completed/incomplete card colors. Probe: `C:/Users/sw3at/AppData/Local/Temp/test_customer_ui.gd`, isolated APPDATA; Steam offline and existing shutdown leak warnings do not fail these UI assertions.
+
 ## Computer UI exposure and locked names (2026-11-03)
 
 - Computer screen shader must clamp texture-linear RGB BEFORE applying inverse-exposure `boost`. Clamping after boost clips bright UI pixels at low day/night exposure and crushes contrast. Rendered probes reproduced a 0.349 brightness spread before correction and zero afterward; white and grey probes passed with glow enabled, including Vulkan and D3D12 white checks. Do not change world lighting or viewport update scheduling for this fix.
