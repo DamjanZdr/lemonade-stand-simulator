@@ -127,6 +127,11 @@ Godot 4.7.1 + GDScript + Steam multiplayer (planned).
 - Write durability gap: SaveManager._do_save opens the live JSON path with FileAccess.WRITE, stores/closes directly, and has no atomic replacement/backup scheme. A failure during that write could damage the previous file. This is a code-inspection risk, not observed corruption in the captured session.
 - Final audit assertions passed and process exited 0, with six ObjectDB/three resource cleanup warnings remaining. Initial matrix fixture errors were corrected: typed FruitBin dictionaries require element assignment, and direct scene instantiation of Press/Cup must explicitly add the container group to emulate deployment; those fixture errors were not established gameplay bugs. The real save was read only; all fixture saves were disabled (empty current slot).
 
+## Community widget restoration (2026-11-03)
+
+- Full-game wishlist removal in `4dc1646` also removed Discord and Report a Bug because all three shared PromoWidget. Main and ESC menus must instantiate it; `show_wishlist` defaults false, keeping Discord/report available without a wishlist ad. Single-slide mode hides dots and does not start its rotation timer; optional two-slide mode remains available.
+- `C:/Users/sw3at/AppData/Local/Temp/test_community_widget.gd` passes 21 checks headlessly and under Vulkan: both menu instances, above-music positioning, menu visibility, original Discord target, report-form opening without submitting, and optional wishlist mode. Use isolated APPDATA and the achievement stub; never open external links or submit test bug reports automatically.
+
 ## Customer collection and house swatches (2026-11-03)
 
 - Customer tip completion uses `StandUnit.npc_is_regular`: fill every required fruit slot, including repeats; no universal ten-cup requirement. Completed collection cards use a 2px rarity-colored border; unfinished cards retain the neutral 1px border.

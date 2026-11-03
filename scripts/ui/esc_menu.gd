@@ -267,6 +267,8 @@ func _build_ui() -> void:
 
 	# Promo wishlist widget removed for the full-game build — owners
 	# don't need a wishlist CTA. Null-guarded toggles stay as no-ops.
+	_promo_widget = PromoWidget.new()
+	add_child(_promo_widget)
 
 
 func _make_menu_button(text: String) -> Button:

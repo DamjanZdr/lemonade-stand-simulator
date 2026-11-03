@@ -19,6 +19,8 @@ const WIDGET_W: float = 280.0
 const WIDGET_H: float = 160.0
 const MUSIC_WIDGET_H: float = 88.0
 
+@export var show_wishlist: bool = false
+
 var _slides: Array[Control] = []
 var _labels: Array[String] = ["Join the Discord", "Wishlist on Steam"]
 var _urls: Array[String] = [PROMO_DISCORD_URL, PROMO_WISHLIST_URL]
@@ -86,10 +88,12 @@ func _build() -> void:
 	clip_frame.clip_contents = true
 	add_child(clip_frame)
 
-	var textures: Array[Texture2D] = [
-		load(PROMO_DISCORD_PATH) as Texture2D,
-		load(PROMO_WISHLIST_PATH) as Texture2D,
-	]
+	var textures: Array[Texture2D] = [load(PROMO_DISCORD_PATH) as Texture2D]
+	if show_wishlist:
+		textures.append(load(PROMO_WISHLIST_PATH) as Texture2D)
+	else:
+		_labels.resize(1)
+		_urls.resize(1)
 	var panel_color := Color(0.15, 0.22, 0.32, 0.92)
 	for i in range(textures.size()):
 		var slide := Control.new()
@@ -190,6 +194,7 @@ func _build() -> void:
 	# Slide indicator dots (below the widget, not on the panel).
 	var dots_row := HBoxContainer.new()
 	dots_row.name = "DotsRow"
+	dots_row.visible = _slides.size() > 1
 	dots_row.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	dots_row.anchor_top = 1.0
 	dots_row.anchor_bottom = 1.0
@@ -244,7 +249,7 @@ func _build() -> void:
 	_timer = Timer.new()
 	_timer.name = "PromoTimer"
 	_timer.wait_time = 6.0
-	_timer.autostart = true
+	_timer.autostart = _slides.size() > 1
 	_timer.timeout.connect(_advance_slide)
 	add_child(_timer)
 

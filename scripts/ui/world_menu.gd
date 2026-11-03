@@ -1411,7 +1411,8 @@ func _on_load_save(slot_name: String, stand_name: String) -> void:
 ## Promo wishlist widget removed for the full-game build — owners
 ## don't need a wishlist CTA. Kept as a no-op so the call site stays.
 func _build_promo_widget() -> void:
-	pass
+	_promo_widget = PromoWidget.new()
+	add_child(_promo_widget)
 
 # ─── Music Player Widget ───
 
